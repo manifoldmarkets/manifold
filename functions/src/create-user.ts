@@ -74,6 +74,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     shouldShowWelcome: true,
     fractionResolvedCorrectly: 1,
     achievements: {},
+    creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
   })
 
   await firestore.collection('users').doc(auth.uid).create(user)

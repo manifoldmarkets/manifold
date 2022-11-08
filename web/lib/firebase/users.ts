@@ -241,7 +241,7 @@ export function getTopTraders(period: Period) {
 export function getTopCreators(period: Period) {
   const topCreators = query(
     users,
-    orderBy('creatorVolumeCached.' + period, 'desc'),
+    orderBy('creatorTraders.' + period, 'desc'),
     limit(20)
   )
   return getValues<User>(topCreators)

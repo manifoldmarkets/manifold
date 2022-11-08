@@ -28,11 +28,6 @@ export const emojiSuggestion: Suggestion = {
   allowedPrefixes: [' '],
   items: ({ editor, query }) => {
     const emojis: EmojiItem[] = editor.storage.emoji.emojis
-    if (query.endsWith(':')) {
-      return emojis.filter(({ shortcodes }) =>
-        shortcodes.includes(query.slice(0, -1))
-      )
-    }
 
     const matches = emojis.filter(({ shortcodes, tags, emoticons = [] }) =>
       searchInAny(query, ...shortcodes, ...tags, ...emoticons)
@@ -41,12 +36,11 @@ export const emojiSuggestion: Suggestion = {
     return orderBy(
       matches,
       [
-        (e) => rank(e.emoji ?? ''),
-        (e) =>
-          e.shortcodes.some((s) => beginsWith(s, query)) ||
-          e.emoticons?.some((s) => beginsWith(s, query)),
+        (e) => e.emoticons?.some((s) => s.replace(/^\:/, '').startsWith(query)),
+        (e) => e.shortcodes.some((s) => beginsWith(s, query)),
+        (e) => rank(e.emoji ?? ' '),
       ],
-      ['asc', 'desc']
+      ['desc', 'desc', 'asc']
     ).slice(0, 5)
   },
 

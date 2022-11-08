@@ -49,7 +49,7 @@ export function PostCard(props: {
           </Row>
           {pinned && <FeaturedPill />}
         </Row>
-        <div className="text-greyscale-7 mb-1 text-lg font-medium transition-all">
+        <div className="text-greyscale-7 text-md mb-1 font-medium transition-all">
           {post.title}
         </div>
         <div className="text-greyscale-6 break-words text-sm">
@@ -107,6 +107,8 @@ export function PostCardList(props: {
   useEffect(() => {
     if (limit && limit != 0) {
       setShownPosts(posts.slice(0, limit))
+    } else {
+      setShownPosts(posts)
     }
   }, [posts, limit])
 
@@ -122,7 +124,7 @@ export function PostCardList(props: {
           />
         </div>
       ))}
-      {limit && posts.length > limit && (
+      {limit && limit != 0 && posts.length > limit && (
         <div className="flex justify-center">
           <button
             className="text-sm font-semibold text-indigo-700"

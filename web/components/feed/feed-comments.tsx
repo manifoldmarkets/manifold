@@ -26,10 +26,7 @@ import { AwardBountyButton } from 'web/components/buttons/award-bounty-button'
 import { ReplyIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { ReportButton } from 'web/components/buttons/report-button'
-import { FlagIcon } from '@heroicons/react/outline'
-import { getIsNative } from 'web/lib/native/is-native'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -190,7 +187,6 @@ export function CommentActions(props: {
   contract: Contract
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
-  const isNative = getIsNative()
 
   return (
     <Row className="grow items-center justify-end">
@@ -205,21 +201,14 @@ export function CommentActions(props: {
       {(contract.openCommentBounties ?? 0) > 0 && (
         <AwardBountyButton comment={comment} contract={contract} />
       )}
-      {isNative && (
-        <Tooltip text={'Report comment'}>
-          <ReportButton
-            userId={comment.userId}
-            label={'comment'}
-            icon={
-              <FlagIcon
-                className={
-                  'disabled:text-greyscale-2 text-greyscale-5 hover:text-greyscale-6 h-5 w-5'
-                }
-              />
-            }
-          />
-        </Tooltip>
-      )}
+      <ReportButton
+        contentOwnerId={comment.userId}
+        contentId={comment.id}
+        parentId={contract.id}
+        parentType={'contract'}
+        contentType={'comment'}
+        iconButton={true}
+      />
     </Row>
   )
 }

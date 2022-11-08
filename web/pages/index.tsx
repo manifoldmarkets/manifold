@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import Router from 'next/router'
 
-import { Contract, getTrendingContracts } from 'web/lib/firebase/contracts'
 import { Page } from 'web/components/layout/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
@@ -27,9 +26,34 @@ import { Sort } from 'web/components/contract-search'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { PostCard } from 'web/components/posts/post-card'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
+import { trendingIndex } from 'web/lib/service/algolia'
+import { CPMMBinaryContract, Contract } from 'common/contract'
+import { sortBy } from 'lodash'
+
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
-  const hotContracts = await getTrendingContracts()
-  return { props: { hotContracts } }
+  const trending = await trendingIndex.search<CPMMBinaryContract>('', {
+    facetFilters: ['isResolved:false', 'visibility:public'].concat([
+      'groupSlugs:-destinygg',
+    ]),
+    hitsPerPage: 10,
+  })
+  const trendingPossiblyWithDestiny =
+    await trendingIndex.search<CPMMBinaryContract>('', {
+      facetFilters: ['isResolved:false', 'visibility:public'],
+      hitsPerPage: 10,
+    })
+  const destinyMarket = trendingPossiblyWithDestiny.hits.filter((c) =>
+    c.groupSlugs?.includes('destinygg')
+  )
+  // add one destiny market to trending
+  if (destinyMarket.length > 0) trending.hits.push(destinyMarket[0])
+
+  return {
+    props: {
+      hotContracts: 
+      (trending.hits, (c) => -(c.popularityScore ?? 0)),
+    },
+  }
 })
 
 export default function Home() {

@@ -24,9 +24,9 @@ export default function LabsPage() {
           columnClassName="pl-4 bg-clip-padding"
         >
           <LabCard
-            title="🇺🇸 US 2022 Midterms"
-            description="See Manifold's state-by-state breakdown of senate and governor races"
-            href="/midterms"
+            title="🫀 Charity"
+            description="Turn your M$ earnings into real donations to causes you care about"
+            href="/charity"
           />
 
           {CHALLENGES_ENABLED && (
@@ -51,7 +51,7 @@ export default function LabsPage() {
 
           <LabCard
             title="📈 Stats"
-            description="Check up on Manifold's usage stats"
+            description="See how Manifold is doing"
             href="/stats"
           />
 

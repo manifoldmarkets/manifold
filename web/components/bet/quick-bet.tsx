@@ -33,6 +33,16 @@ import { sellShares } from 'web/lib/firebase/api'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { formatNumericProbability } from 'common/pseudo-numeric'
+import {
+  calculateCpmmSale,
+  getCpmmProbability,
+  getCpmmProbabilityAfterSale,
+} from 'common/calculate-cpmm'
+import { track } from 'web/lib/service/analytics'
+import {
+  formatNumericProbability,
+  getFormattedMappedValue,
+} from 'common/pseudo-numeric'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getBinaryProb } from 'common/contract-details'
 import { Row } from '../layout/row'
@@ -153,7 +163,7 @@ function SignedInQuickBet(props: {
   let sharesSold: number | undefined
   let sellOutcome: 'YES' | 'NO' | undefined
   let saleAmount: number | undefined
-  if (isCpmm && (upHover || downHover)) {
+  if (isCpmm && ((upHover && hasNoShares) || (downHover && hasYesShares))) {
     const oppositeShares = upHover ? noShares : yesShares
     if (oppositeShares) {
       sellOutcome = upHover ? 'NO' : 'YES'
@@ -161,6 +171,20 @@ function SignedInQuickBet(props: {
       const prob = getProb(contract)
       const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
       sharesSold = Math.min(oppositeShares, maxSharesSold)
+      const probAfterSale = getCpmmProbabilityAfterSale(
+        contract,
+        sharesSold,
+        sellOutcome,
+        unfilledBets,
+        balanceByUserId
+      )
+
+      // Recompute max shares sold using prob after selling.
+      // This lower price for your shares means the max is more generous.
+      // Which fixes the issue where you sell 99% of your shares instead of all.
+      const maxSharesSold2 =
+        BET_SIZE / (sellOutcome === 'YES' ? probAfterSale : 1 - probAfterSale)
+      sharesSold = Math.min(oppositeShares, maxSharesSold2)
 
       const { cpmmState, saleValue } = calculateCpmmSale(
         contract,
@@ -194,7 +218,7 @@ function SignedInQuickBet(props: {
     const shortQ = contract.question.slice(0, 20)
     const message =
       sellOutcome && saleAmount
-        ? `${formatMoney(saleAmount)} sold of "${shortQ}"...`
+        ? `${formatMoney(Math.round(saleAmount))} sold of "${shortQ}"...`
         : `${formatMoney(BET_SIZE)} on "${shortQ}"...`
 
     toast.promise(betPromise(), {
@@ -280,8 +304,8 @@ function BinaryQuickBetButton(props: {
             shouldFocus
               ? 'animate-bounce-left text-indigo-600'
               : hasInvestment
-              ? 'text-indigo-800'
-              : 'text-indigo-400'
+              ? 'text-indigo-500'
+              : 'text-indigo-300'
           )}
         />
       )}
@@ -292,8 +316,8 @@ function BinaryQuickBetButton(props: {
             shouldFocus
               ? 'sm:animate-bounce-right text-indigo-600'
               : hasInvestment
-              ? 'text-indigo-800'
-              : 'text-indigo-400'
+              ? 'text-indigo-500'
+              : 'text-indigo-300'
           )}
         />
       )}
@@ -301,7 +325,7 @@ function BinaryQuickBetButton(props: {
         <span
           className={clsx(
             'text-sm font-light',
-            shouldFocus ? 'text-indigo-600' : 'text-indigo-800'
+            shouldFocus ? 'text-indigo-600' : 'text-greyscale-4'
           )}
         >
           {shouldFocus
@@ -344,8 +368,9 @@ function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
 export function QuickOutcomeView(props: {
   contract: Contract
   previewProb?: number
+  numAnswersFR?: number
 }) {
-  const { contract, previewProb } = props
+  const { contract, previewProb, numAnswersFR } = props
   const { outcomeType } = contract
   const prob = previewProb ?? getProb(contract)
 
@@ -365,7 +390,7 @@ export function QuickOutcomeView(props: {
           aria-hidden
         />
         <div
-          className={`absolute inset-0 flex items-center justify-center gap-1 text-xl font-semibold ${textColor}`}
+          className={`absolute inset-0 flex items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
         >
           {cardText(contract, previewProb)}
         </div>
@@ -373,7 +398,7 @@ export function QuickOutcomeView(props: {
     )
   }
 
-  return <ContractCardAnswers contract={contract} />
+  return <ContractCardAnswers contract={contract} numAnswersFR={numAnswersFR} />
 }
 
 function cardText(contract: Contract, previewProb?: number) {
@@ -384,7 +409,7 @@ function cardText(contract: Contract, previewProb?: number) {
       return (
         <>
           <span className="my-auto text-sm font-normal">resolved as</span>
-          {formatPercent(resolutionProbability)}
+          {getFormattedMappedValue(contract)(resolutionProbability)}
         </>
       )
     }
@@ -400,9 +425,7 @@ function cardText(contract: Contract, previewProb?: number) {
   }
 
   if (previewProb) {
-    return outcomeType === 'PSEUDO_NUMERIC'
-      ? formatNumericProbability(previewProb, contract)
-      : formatPercent(previewProb)
+    return getFormattedMappedValue(contract)(previewProb)
   }
 
   switch (outcomeType) {
@@ -425,9 +448,10 @@ function cardText(contract: Contract, previewProb?: number) {
 
 export function ContractCardAnswers(props: {
   contract: FreeResponseContract | MultipleChoiceContract
+  numAnswersFR?: number
 }) {
-  const { contract } = props
-  const answers = getTopNSortedAnswers(contract, 3)
+  const { contract, numAnswersFR } = props
+  const answers = getTopNSortedAnswers(contract, numAnswersFR ?? 3)
   const answersArray = useChartAnswers(contract).map(
     (answer, _index) => answer.text
   )
@@ -558,14 +582,14 @@ export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-200'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-50'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return 'bg-slate-300'
+    return 'bg-slate-200'
   }
 
-  return 'bg-indigo-200'
+  return 'bg-indigo-50'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
@@ -580,8 +604,7 @@ export function getBgColor(contract: Contract) {
 
   if (resolution) {
     return (
-      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ??
-      'bg-greyscale-1.5'
+      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-greyscale-1'
     )
   }
 
@@ -589,7 +612,7 @@ export function getBgColor(contract: Contract) {
   //   return 'bg-greyscale-1.5'
   // }
 
-  return 'bg-greyscale-1.5'
+  return 'bg-greyscale-1'
 }
 
 const OUTCOME_TO_COLOR_TEXT = {

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": "../",
+    "lib": ["ES2022"], // ES2020 in earlier versions
+    "module": "ES2022", //ESNext
+    "moduleResolution": "Node",
+    "target": "ES2022", // ES2020 in earlier versions
+    "esModuleInterop": true,
+    "outDir": "dist"
+  },
+  "include": ["src/**/*", "../common/**/*"]
+}

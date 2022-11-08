@@ -5,7 +5,7 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { ContractCardProbChange } from './contract-card'
+import { ContractCardWithPosition } from './contract-card'
 import { User } from 'common/user'
 
 export function ProfitChangeTable(props: {
@@ -46,20 +46,18 @@ export function ProfitChangeTable(props: {
     <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
       <Col className="flex-1">
         {positive.map((contract) => (
-          <ContractCardProbChange
+          <ContractCardWithPosition
             key={contract.id}
             contract={contract}
-            showPosition
             showDailyProfit
           />
         ))}
       </Col>
       <Col className="flex-1">
         {negative.map((contract) => (
-          <ContractCardProbChange
+          <ContractCardWithPosition
             key={contract.id}
             contract={contract}
-            showPosition
             showDailyProfit
           />
         ))}
@@ -101,20 +99,18 @@ export function ProbChangeTable(props: {
     <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
       <Col className="flex-1">
         {filteredPositiveChanges.map((contract) => (
-          <ContractCardProbChange
+          <ContractCardWithPosition
             key={contract.id}
             contract={contract}
-            showPosition
             showDailyProfit
           />
         ))}
       </Col>
       <Col className="flex-1">
         {filteredNegativeChanges.map((contract) => (
-          <ContractCardProbChange
+          <ContractCardWithPosition
             key={contract.id}
             contract={contract}
-            showPosition
             showDailyProfit
           />
         ))}
@@ -133,14 +129,11 @@ export function ProbOrNumericChange(props: {
   // Some contract without a probChanges.day was crashing the site, so I added the conditional
   const change = contract.probChanges?.day ?? 0
 
-  const color = change >= 0 ? 'text-teal-600' : 'text-scarlet-600'
   if (Math.abs(change * 100) > 5) {
     return (
       <div
         className={clsx(
-          'mr-1 flex  items-center justify-center rounded-full bg-teal-100 px-2 py-1 text-xs font-semibold ',
-          change >= 0 ? 'bg-teal-100' : 'bg-scarlet-100',
-          color
+          'mr-1 flex  items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold '
         )}
       >
         {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}

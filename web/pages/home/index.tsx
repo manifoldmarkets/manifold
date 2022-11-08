@@ -24,10 +24,15 @@ import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
-import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import {
+  getGroup,
+  groupPath,
+  joinGroup,
+  leaveGroup,
+} from 'web/lib/firebase/groups'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -68,6 +73,7 @@ import { LatestPosts } from '../latestposts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
+import { GroupCard } from '../groups'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -81,7 +87,11 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser)
+  const groups = useMemberGroupsSubscription(user)
+  const shouldFilterDestiny = !groups?.find((g) => g.slug === 'destinygg')
+  const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser).concat(
+    shouldFilterDestiny ? ['groupSlugs:-destinygg'] : []
+  )
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
   useRedirectIfSignedOut()
@@ -110,7 +120,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     user?.id ?? '_'
   )
 
-  const groups = useMemberGroupsSubscription(user)
   const trendingGroups = useTrendingGroups()
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug),
@@ -138,11 +147,15 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
       privateUser?.blockedByUserIds.includes(userId)
     if (pinnedItems) {
       const itemComponents = pinnedItems.map((element) => {
-        if (element.type === 'post') {
+        if (element?.type === 'post') {
           const post = element.item as Post
           if (!userIsBlocked(post.creatorId))
             return <PostCard post={post} pinned={true} />
-        } else if (element.type === 'contract') {
+        } else if (element?.type == 'group') {
+          const group = element.item as Group
+          if (!userIsBlocked(group.creatorId))
+            return <GroupCard group={group} pinned={true} />
+        } else if (element?.type === 'contract') {
           const contract = element.item as Contract
           if (
             !userIsBlocked(contract.creatorId) &&
@@ -335,7 +348,6 @@ export function renderSections(
               label={label}
               contracts={contracts}
               sort="daily-score"
-              showProbChange
               icon={icon}
             />
           )
@@ -430,10 +442,9 @@ export const SearchSection = memo(function SearchSection(props: {
   contracts: CPMMBinaryContract[]
   sort: Sort
   pill?: string
-  showProbChange?: boolean
   icon?: string
 }) {
-  const { label, contracts, sort, pill, showProbChange, icon } = props
+  const { label, contracts, sort, pill, icon } = props
 
   return (
     <Col>
@@ -442,11 +453,7 @@ export const SearchSection = memo(function SearchSection(props: {
         href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
         icon={icon}
       />
-      <ContractsGrid
-        contracts={contracts}
-        cardUIOptions={{ showProbChange }}
-        showImageOnTopContract={true}
-      />
+      <ContractsGrid contracts={contracts} showImageOnTopContract={true} />
     </Col>
   )
 })
@@ -489,6 +496,7 @@ export function FeaturedSection(props: {
 }) {
   const { globalConfig, pinned, isAdmin } = props
   const posts = useAllPosts()
+  const groups = useTrendingGroups()
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
     if (globalConfig == null) return
@@ -505,6 +513,10 @@ export function FeaturedSection(props: {
             if (contract == null) return null
 
             return { item: contract, type: 'contract' }
+          } else if (item.type === 'group') {
+            const group = await getGroup(item.itemId)
+            if (group == null) return null
+            return { item: group, type: 'group' }
           }
         })
         .filter((item) => item != null)
@@ -513,8 +525,8 @@ export function FeaturedSection(props: {
       pinnedItems: [
         ...(globalConfig?.pinnedItems ?? []),
         ...(pinnedItems as {
-          item: Contract | Post
-          type: 'contract' | 'post'
+          item: Contract | Post | Group
+          type: 'contract' | 'post' | 'group'
         }[]),
       ],
     })
@@ -529,7 +541,7 @@ export function FeaturedSection(props: {
   }
 
   return (
-    <Col>
+    <Col className="relative">
       <HomeSectionHeader label={'Featured'} icon={'⭐'} />
       <PinnedItems
         posts={posts}
@@ -538,6 +550,7 @@ export function FeaturedSection(props: {
         onDeleteClicked={onDeleteClicked}
         onSubmit={onSubmit}
         modalMessage={'Pin posts or markets to the overview of this group.'}
+        groups={groups}
       />
     </Col>
   )
@@ -573,7 +586,6 @@ function GroupSection(props: {
       </HomeSectionHeader>
       <ContractsGrid
         contracts={contracts.slice(0, 4)}
-        cardUIOptions={{ showProbChange: true }}
         showImageOnTopContract={true}
       />
     </Col>
@@ -697,13 +709,13 @@ function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
       )}
       href="/home/edit"
     >
-      <IconButton size="xs">
+      <Button size="xs" color="gray-white">
         <HomeSettingsIcon
-          className={clsx('h-7 w-7 text-gray-500')}
+          className={clsx('h-7 w-7 text-gray-400')}
           aria-hidden="true"
         />
         {!justIcon && 'Customize'}
-      </IconButton>
+      </Button>
     </SiteLink>
   )
 }

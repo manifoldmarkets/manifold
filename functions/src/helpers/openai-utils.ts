@@ -15,15 +15,24 @@ export const getGroupForMarket = async (question: string) => {
 
   const groupsList = groups.map((g) => g.name).join('\n')
 
-  const response = await openai.createCompletion({
-    model: 'text-davinci-002',
-    prompt: `Categories:\n\n${groupsList}\n\nQuestion: ${question}\nSelected category:`,
-    temperature: 0.4,
-    max_tokens: 3,
-    top_p: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
-  })
+  let response
+  try {
+    response = await openai.createCompletion({
+      model: 'text-davinci-002',
+      prompt: `Categories:\n\n${groupsList}\n\nQuestion: ${question}\nSelected category:`,
+      temperature: 0.4,
+      max_tokens: 3,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+    })
+  } catch (e: any) {
+    console.error(
+      'Error generating group for market. Do you have an OpenAI API key?',
+      e.message
+    )
+    return undefined
+  }
 
   if (response.status !== 200) return undefined
 
@@ -40,15 +49,24 @@ export const getGroupForMarket = async (question: string) => {
 export const getCloseDate = async (question: string) => {
   const now = dayjs().format('M/D/YYYY h:mm a')
 
-  const response = await openai.createCompletion({
-    model: 'text-davinci-002',
-    prompt: `Question: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2025 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
-    temperature: 0.4,
-    max_tokens: 15,
-    top_p: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
-  })
+  let response
+  try {
+    response = await openai.createCompletion({
+      model: 'text-davinci-002',
+      prompt: `Question: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2025 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
+      temperature: 0.4,
+      max_tokens: 15,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+    })
+  } catch (e: any) {
+    console.error(
+      'Error generating close date. Do you have an OpenAI API key?',
+      e.message
+    )
+    return undefined
+  }
 
   if (response.status !== 200) return undefined
 

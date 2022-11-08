@@ -99,7 +99,12 @@ export function ContractInfoDialog(props: {
             <Row className={'justify-between'}>
               <Title className="!mt-0 !mb-0" text="This Market" />
               {user && (
-                <ReportButton userId={contract.creatorId} label={'market'} />
+                <ReportButton
+                  contentType={'contract'}
+                  contentOwnerId={contract.creatorId}
+                  contentId={contract.id}
+                  contentName={'market'}
+                />
               )}
               {privateUser && <BlockMarketButton contractId={contract.id} />}
             </Row>

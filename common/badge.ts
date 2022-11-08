@@ -17,6 +17,7 @@ export type ProvenCorrectBadgeData = {
     contractTitle: string
     commentId: string
     betAmount: number
+    profit?: number
   }
 }
 

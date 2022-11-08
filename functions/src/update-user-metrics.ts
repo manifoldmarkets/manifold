@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, isEqual, mapValues, sortBy } from 'lodash'
 
 import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
@@ -13,6 +13,7 @@ import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateMetricsByContract,
+  calculateCreatorTraders,
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
@@ -65,6 +66,8 @@ export async function updateUserMetrics() {
       const betsByContractId = groupBy(currentBets, (b) => b.contractId)
       const portfolioHistory = await loadPortfolioHistory(user.id, now)
       const newCreatorVolume = calculateCreatorVolume(userContracts)
+      const newCreatorTraders = calculateCreatorTraders(userContracts)
+
       const newPortfolio = calculateNewPortfolioMetrics(
         user,
         contractsById,
@@ -125,6 +128,7 @@ export async function updateUserMetrics() {
         user: user,
         fields: {
           creatorVolumeCached: newCreatorVolume,
+          creatorTraders: newCreatorTraders,
           profitCached: newProfit,
           nextLoanCached: nextLoanPayout ?? 0,
           fractionResolvedCorrectly: newFractionResolvedCorrectly,
@@ -151,8 +155,17 @@ export async function updateUserMetrics() {
         return [period, periodRanksByUserId[i][user.id]]
       })
     )
-    const userDoc = firestore.collection('users').doc(user.id)
-    writer.update(userDoc, { profitRankCached, ...fields })
+    const update = { profitRankCached, ...fields }
+    const currValues = mapValues(
+      update,
+      (_, key: keyof typeof update) => user[key]
+    )
+
+    // Skip writing if nothing changed.
+    if (!isEqual(currValues, update)) {
+      const userDoc = firestore.collection('users').doc(user.id)
+      writer.update(userDoc, update)
+    }
   }
 
   log('Committing writes...')
