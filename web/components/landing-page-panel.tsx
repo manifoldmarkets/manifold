@@ -271,9 +271,11 @@ export function LandingPage1(props: { isMobile: boolean }) {
   const startPredictMs = 2200
   const text = 'Predict with play money'
   const [shouldPercentChange, setShouldPercentChange] = useState(false)
+  const [shouldButtonHighlight, setShouldButtonHighlight] = useState(false)
   const [coinVisible0, setCoinVisibile0] = useState(true)
   const [coinVisible1, setCoinVisibile1] = useState(true)
   const [coinVisible2, setCoinVisibile2] = useState(true)
+  setTimeout(() => setShouldButtonHighlight(true), startPredictMs - 300)
   setTimeout(() => setShouldPercentChange(true), startPredictMs)
   setTimeout(() => setCoinVisibile0(false), startPredictMs + 800)
   setTimeout(() => setCoinVisibile1(false), startPredictMs + 850)
@@ -330,12 +332,12 @@ export function LandingPage1(props: { isMobile: boolean }) {
         />
         <EquilateralLeftTriangle
           className={clsx(
-            'absolute left-[8px] top-[7px] z-10 h-6 w-6 text-indigo-700'
+            'absolute left-[8px] top-[7px] z-10 h-6 w-6 text-indigo-400'
           )}
         />
         <EquilateralLeftTriangle
           className={clsx(
-            'text-greyscale-5 absolute left-[11px] top-[11px] z-0 h-6 w-6'
+            'text-greyscale-7 absolute left-[11px] top-[11px] z-0 h-6 w-6 opacity-20'
           )}
         />
         <div className="absolute top-[6px] left-[100px] z-30 text-xl font-semibold">
@@ -346,12 +348,13 @@ export function LandingPage1(props: { isMobile: boolean }) {
         </div>
         <EquilateralRightTriangle
           className={clsx(
-            'animate-press-3x absolute right-[8px] top-[7px] z-10 h-6 w-6 text-indigo-700'
+            'animate-press-3x absolute right-[8px] top-[7px] z-10 h-6 w-6 transition-colors',
+            shouldButtonHighlight ? 'text-indigo-600' : 'text-indigo-400'
           )}
         />
         <EquilateralRightTriangle
           className={clsx(
-            'text-greyscale-5 absolute right-[6px] top-[11px] z-0 h-6 w-6'
+            'text-greyscale-7 absolute right-[6px] top-[11px] z-0 h-6 w-6 opacity-20'
           )}
         />
       </div>

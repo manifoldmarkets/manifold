@@ -28,6 +28,7 @@ import { PostCard } from 'web/components/posts/post-card'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { trendingIndex } from 'web/lib/service/algolia'
 import { CPMMBinaryContract, Contract } from 'common/contract'
+import { sortBy } from 'lodash'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const trending = await trendingIndex.search<CPMMBinaryContract>('', {
@@ -49,7 +50,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
 
   return {
     props: {
-      hotContracts: (trending.hits, (c) => -(c.popularityScore ?? 0)),
+      hotContracts: sortBy(trending.hits, (c) => -(c.popularityScore ?? 0)),
     },
   }
 })
