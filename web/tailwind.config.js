@@ -86,6 +86,12 @@ module.exports = {
           },
         },
       },
+      screens: {
+        // is not a touch device
+        mouse: {
+          raw: '((hover:hover) and (pointer:fine))',
+        },
+      },
     },
   },
   plugins: [
