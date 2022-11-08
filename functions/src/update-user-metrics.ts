@@ -184,9 +184,10 @@ const loadUserContractBets = async (userId: string, contractIds: string[]) => {
   const betDocs = await batchedWaitAll(
     contractIds.map((c) => async () => {
       return await firestore
-        .collectionGroup('bets')
+        .collection('contracts')
+        .doc(c)
+        .collection('bets')
         .where('userId', '==', userId)
-        .where('contractId', '==', c)
         .get()
     }),
     100
