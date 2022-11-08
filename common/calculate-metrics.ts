@@ -52,11 +52,14 @@ export const computeElasticity = (
   contract: Contract,
   betAmount = 50
 ) => {
-  const { mechanism, outcomeType } = contract
-  return mechanism === 'cpmm-1' &&
-    (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC')
-    ? computeBinaryCpmmElasticity(unfilledBets, contract, betAmount)
-    : computeDpmElasticity(contract, betAmount)
+  switch (contract.mechanism) {
+    case 'cpmm-1':
+      return computeBinaryCpmmElasticity(unfilledBets, contract, betAmount)
+    case 'dpm-2':
+      return computeDpmElasticity(contract, betAmount)
+    default: // there are some contracts on the dev DB with crazy mechanisms
+      return 0
+  }
 }
 
 export const computeBinaryCpmmElasticity = (
