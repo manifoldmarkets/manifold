@@ -1,4 +1,4 @@
-import { CloudIcon } from '@heroicons/react/outline'
+import { CloudIcon, EmojiHappyIcon } from '@heroicons/react/outline'
 import {
   CodeIcon,
   PhotographIcon,
@@ -44,6 +44,9 @@ export function StickyFormatMenu(props: {
           setOpen={setMarketOpen}
         />
         <PresentationChartLineIcon className="h-5 w-5" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton label="Add emoji" onClick={() => insertEmoji(editor)}>
+        <EmojiHappyIcon className="h-5 w-5" />
       </ToolbarButton>
 
       <div className="grow" />
@@ -91,4 +94,19 @@ function ToolbarButton(props: {
       </button>
     </Tooltip>
   )
+}
+
+/** insert a colon, and a space if necessary, to bring up emoji selctor */
+const insertEmoji = (editor: Editor | null) => {
+  if (!editor) return
+
+  const textBefore = editor.view.state.selection.$from.nodeBefore?.text
+  const addSpace = textBefore && !textBefore.endsWith(' ')
+
+  editor
+    .chain()
+    .focus()
+    .createParagraphNear()
+    .insertContent(addSpace ? ' :' : ':')
+    .run()
 }
