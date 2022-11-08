@@ -30,15 +30,12 @@ import { placeBet } from 'web/lib/firebase/api'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api'
-import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { track, withTracking } from 'web/lib/service/analytics'
-import { formatNumericProbability } from 'common/pseudo-numeric'
 import {
   calculateCpmmSale,
   getCpmmProbability,
   getCpmmProbabilityAfterSale,
 } from 'common/calculate-cpmm'
-import { track } from 'web/lib/service/analytics'
 import {
   formatNumericProbability,
   getFormattedMappedValue,
@@ -163,40 +160,6 @@ function SignedInQuickBet(props: {
   let sharesSold: number | undefined
   let sellOutcome: 'YES' | 'NO' | undefined
   let saleAmount: number | undefined
-  if (isCpmm && ((upHover && hasNoShares) || (downHover && hasYesShares))) {
-    const oppositeShares = upHover ? noShares : yesShares
-    if (oppositeShares) {
-      sellOutcome = upHover ? 'NO' : 'YES'
-
-      const prob = getProb(contract)
-      const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
-      sharesSold = Math.min(oppositeShares, maxSharesSold)
-      const probAfterSale = getCpmmProbabilityAfterSale(
-        contract,
-        sharesSold,
-        sellOutcome,
-        unfilledBets,
-        balanceByUserId
-      )
-
-      // Recompute max shares sold using prob after selling.
-      // This lower price for your shares means the max is more generous.
-      // Which fixes the issue where you sell 99% of your shares instead of all.
-      const maxSharesSold2 =
-        BET_SIZE / (sellOutcome === 'YES' ? probAfterSale : 1 - probAfterSale)
-      sharesSold = Math.min(oppositeShares, maxSharesSold2)
-
-      const { cpmmState, saleValue } = calculateCpmmSale(
-        contract,
-        sharesSold,
-        sellOutcome,
-        unfilledBets,
-        balanceByUserId
-      )
-      saleAmount = saleValue
-      previewProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
-    }
-  }
 
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
     const betPromise = async () => {
@@ -239,6 +202,41 @@ function SignedInQuickBet(props: {
     hasYesShares === true && invested != undefined && floor(invested) > 0
   const hasNoInvestment =
     hasNoShares === true && invested != undefined && floor(invested) > 0
+
+  if (isCpmm && ((upHover && hasNoShares) || (downHover && hasYesShares))) {
+    const oppositeShares = upHover ? noShares : yesShares
+    if (oppositeShares) {
+      sellOutcome = upHover ? 'NO' : 'YES'
+
+      const prob = getProb(contract)
+      const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
+      sharesSold = Math.min(oppositeShares, maxSharesSold)
+      const probAfterSale = getCpmmProbabilityAfterSale(
+        contract,
+        sharesSold,
+        sellOutcome,
+        unfilledBets,
+        balanceByUserId
+      )
+
+      // Recompute max shares sold using prob after selling.
+      // This lower price for your shares means the max is more generous.
+      // Which fixes the issue where you sell 99% of your shares instead of all.
+      const maxSharesSold2 =
+        BET_SIZE / (sellOutcome === 'YES' ? probAfterSale : 1 - probAfterSale)
+      sharesSold = Math.min(oppositeShares, maxSharesSold2)
+
+      const { cpmmState, saleValue } = calculateCpmmSale(
+        contract,
+        sharesSold,
+        sellOutcome,
+        unfilledBets,
+        balanceByUserId
+      )
+      saleAmount = saleValue
+      previewProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+    }
+  }
 
   return (
     <div className="relative">
