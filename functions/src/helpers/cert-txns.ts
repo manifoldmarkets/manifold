@@ -79,6 +79,7 @@ export async function mintAndPoolCert(
 export function buyFromPool(
   userId: string,
   certId: string,
+  // Positive if we're removing shares from pool; negative if adding
   shares: number,
   mana: number,
   transaction: admin.firestore.Transaction

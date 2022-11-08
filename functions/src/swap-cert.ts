@@ -5,6 +5,8 @@ import { User } from 'common/user'
 import { afterSwap } from 'common/calculate/uniswap2'
 import { Cert, Uniswap2CertContract } from 'common/contract'
 import { buyFromPool } from './helpers/cert-txns'
+import { CertTxn } from 'common/txn'
+import { getCertOwnershipUsers } from 'common/calculate/cert'
 
 const bodySchema = z.object({
   certId: z.string(),
@@ -47,10 +49,30 @@ export const swapcert = newEndpoint({}, async (req, auth) => {
       lastBetTime: Date.now(),
     } as Partial<Cert>)
 
-    const sharesSold = cert.pool['SHARE'] - newPool['SHARE']
+    const sharesFromPool = cert.pool['SHARE'] - newPool['SHARE']
+
+    // Right now, we support negative values in the amount to sell shares
+    // TODO: Not sure if we should support negative balances in CertTxn...
+    const txnsSnap = await firestore
+      .collection('txns')
+      .where('certId', '==', certId)
+      .orderBy('createdTime', 'desc')
+      .get()
+    const txns = txnsSnap.docs.map((doc) => doc.data()) as CertTxn[]
+    const owners = getCertOwnershipUsers(cert.creatorId, txns)
+    // If negative sharesSold (aka adding shares to pool), make sure the user has enough
+    const sharesOwned = owners[user.id] ?? 0
+    if (sharesFromPool < 0 && sharesOwned < -sharesFromPool) {
+      throw new APIError(
+        500,
+        `Insufficient shares: needed ${-sharesFromPool} but had ${
+          owners[user.id]
+        }`
+      )
+    }
 
     // Create the two txns for this swap
-    buyFromPool(user.id, cert.id, sharesSold, amount, transaction)
+    buyFromPool(user.id, cert.id, sharesFromPool, amount, transaction)
 
     return {
       newPool: newPool,
