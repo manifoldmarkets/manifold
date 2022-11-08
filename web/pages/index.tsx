@@ -9,12 +9,6 @@ import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
-import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { keyBy } from 'lodash'
-import { filterDefined } from 'common/util/array'
-import { getGlobalConfig } from 'web/lib/firebase/globalConfig'
-import { useNewContracts, useTrendingContracts } from 'web/hooks/use-contracts'
-import { useTrendingGroups } from 'web/hooks/use-group'
 import { useAllPosts } from 'web/hooks/use-post'
 import {
   inMemoryStore,
@@ -22,38 +16,23 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { useGlobalConfig } from 'web/hooks/use-global-config'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { CPMMBinaryContract } from 'common/contract'
-import { GlobalConfig } from 'common/globalConfig'
-import { ContractMetrics } from 'common/calculate-metrics'
 import { Post } from 'common/post'
 import {
   ActivitySection,
-  DailyMoversSection,
   FeaturedSection,
   LatestPostsSection,
   SearchSection,
-  TrendingGroupsSection,
 } from './home'
-import { renderSections } from './home'
-import dailyMovers from './daily-movers'
 import { Sort } from 'web/components/contract-search'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { PostCard } from 'web/components/posts/post-card'
-
-const LANDING_PAGE_SECTIONS = [
-  { label: 'Trending', id: 'score', icon: '🔥' },
-  // { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
-  { label: 'Live feed', id: 'live-feed', icon: '🔴' },
-  { label: 'Featured', id: 'featured', icon: '⭐' },
-  { label: 'Latest posts', id: 'latest-posts', icon: '📝' },
-]
-
+import { useTrendingContracts } from 'web/hooks/use-contracts'
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const hotContracts = await getTrendingContracts()
   return { props: { hotContracts } }
 })
 
-export default function Home(props: { hotContracts: Contract[] }) {
+export default function Home() {
   useSaveReferral()
   useRedirectAfterLogin()
 

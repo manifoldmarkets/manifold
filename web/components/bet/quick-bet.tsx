@@ -45,7 +45,6 @@ import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
 import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import { floor } from 'lodash'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Bet } from 'common/bet'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
 const BET_SIZE = 10
@@ -53,6 +52,69 @@ const BET_SIZE = 10
 export function QuickBet(props: {
   contract: BinaryContract | PseudoNumericContract
   user?: User | null
+  className?: string
+}) {
+  const { contract, user, className } = props
+  if (!user) {
+    return <SignedOutQuickBet contract={contract} className={className} />
+  }
+  return (
+    <SignedInQuickBet contract={contract} user={user} className={className} />
+  )
+}
+
+export function SignedOutQuickBet(props: {
+  contract: BinaryContract | PseudoNumericContract
+  className?: string
+}) {
+  const { contract, className } = props
+  const [upHover, setUpHover] = useState(false)
+  const [downHover, setDownHover] = useState(false)
+  let previewProb = undefined
+  try {
+    previewProb = upHover
+      ? getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'UP') || '',
+          BET_SIZE
+        )
+      : downHover
+      ? 1 -
+        getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'DOWN') || '',
+          BET_SIZE
+        )
+      : undefined
+  } catch (e) {
+    // Catch any errors from hovering on an invalid option
+  }
+  return (
+    <div className="relative">
+      <Row className={clsx(className, 'absolute inset-0')}>
+        <BinaryQuickBetButton
+          onClick={withTracking(firebaseLogin, 'landing page button click')}
+          direction="DOWN"
+          hover={downHover}
+          onMouseEnter={() => setDownHover(true)}
+          onMouseLeave={() => setDownHover(false)}
+        />
+        <BinaryQuickBetButton
+          onClick={withTracking(firebaseLogin, 'landing page button click')}
+          direction="UP"
+          hover={upHover}
+          onMouseEnter={() => setUpHover(true)}
+          onMouseLeave={() => setUpHover(false)}
+        />
+      </Row>
+      <QuickOutcomeView contract={contract} previewProb={previewProb} />
+    </div>
+  )
+}
+
+function SignedInQuickBet(props: {
+  contract: BinaryContract | PseudoNumericContract
+  user: User
   className?: string
 }) {
   const { contract, user, className } = props
@@ -76,32 +138,6 @@ export function QuickBet(props: {
       : undefined
   } catch (e) {
     // Catch any errors from hovering on an invalid option
-  }
-
-  if (!user) {
-    return (
-      <div className="relative">
-        <Row className={clsx(className, 'absolute inset-0')}>
-          <BinaryQuickBetButton
-            onClick={withTracking(firebaseLogin, 'landing page button click')}
-            direction="DOWN"
-            contract={contract}
-            hover={downHover}
-            onMouseEnter={() => setDownHover(true)}
-            onMouseLeave={() => setDownHover(false)}
-          />
-          <BinaryQuickBetButton
-            onClick={withTracking(firebaseLogin, 'landing page button click')}
-            direction="UP"
-            contract={contract}
-            hover={upHover}
-            onMouseEnter={() => setUpHover(true)}
-            onMouseLeave={() => setUpHover(false)}
-          />
-        </Row>
-        <QuickOutcomeView contract={contract} previewProb={previewProb} />
-      </div>
-    )
   }
   const userBets = useUserContractBets(user.id, contract.id) || []
 
@@ -173,6 +209,12 @@ export function QuickBet(props: {
       contractId: contract.id,
     })
   }
+  const { invested } = getContractBetMetrics(contract, userBets)
+  const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
+  const hasYesInvestment =
+    hasYesShares === true && invested != undefined && floor(invested) > 0
+  const hasNoInvestment =
+    hasNoShares === true && invested != undefined && floor(invested) > 0
 
   return (
     <div className="relative">
@@ -180,20 +222,20 @@ export function QuickBet(props: {
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('DOWN')}
           direction="DOWN"
-          contract={contract}
           hover={downHover}
           onMouseEnter={() => setDownHover(true)}
           onMouseLeave={() => setDownHover(false)}
-          userBets={userBets}
+          hasInvestment={hasNoInvestment}
+          invested={invested}
         />
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('UP')}
           direction="UP"
-          contract={contract}
           hover={upHover}
           onMouseEnter={() => setUpHover(true)}
           onMouseLeave={() => setUpHover(false)}
-          userBets={userBets}
+          hasInvestment={hasYesInvestment}
+          invested={invested}
         />
       </Row>
       <QuickOutcomeView contract={contract} previewProb={previewProb} />
@@ -204,76 +246,23 @@ export function QuickBet(props: {
 function BinaryQuickBetButton(props: {
   onClick: () => void
   direction: 'UP' | 'DOWN'
-  contract: BinaryContract | PseudoNumericContract
   hover: boolean
   onMouseEnter: () => void
   onMouseLeave: () => void
-  userBets?: Bet[]
+  hasInvestment?: boolean
+  invested?: number
 }) {
   const {
     onClick,
     direction,
-    contract,
     hover,
     onMouseEnter,
     onMouseLeave,
-    userBets,
+    hasInvestment,
+    invested,
   } = props
   const isMobile = useIsMobile()
   const shouldFocus = hover && !isMobile
-  if (!userBets) {
-    return (
-      <Row
-        className={clsx(
-          'w-[50%] items-center gap-2',
-          direction === 'UP' && 'flex-row-reverse'
-        )}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onClick={onClick}
-      >
-        {direction === 'DOWN' && (
-          <EquilateralLeftTriangle
-            className={clsx(
-              'mx-2 h-6 w-6 drop-shadow-md transition-all',
-              shouldFocus
-                ? 'animate-bounce-left text-indigo-600'
-                : 'text-indigo-400'
-            )}
-          />
-        )}
-        {direction === 'UP' && (
-          <EquilateralRightTriangle
-            className={clsx(
-              'mx-2 h-6 w-6 drop-shadow-md transition-all',
-              shouldFocus
-                ? 'sm:animate-bounce-right text-indigo-600'
-                : 'text-indigo-400'
-            )}
-          />
-        )}
-        <span
-          className={clsx(
-            'my-auto text-sm font-light text-indigo-600 transition-opacity',
-            shouldFocus ? 'opacity-100' : 'opacity-0'
-          )}
-        >
-          {formatMoney(BET_SIZE)}
-        </span>
-      </Row>
-    )
-  }
-
-  const { invested } = getContractBetMetrics(contract, userBets)
-  const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
-  let hasInvestment = false
-  if (direction === 'UP') {
-    hasInvestment =
-      hasYesShares === true && invested != undefined && floor(invested) > 0
-  } else {
-    hasInvestment =
-      hasNoShares === true && invested != undefined && floor(invested) > 0
-  }
   return (
     <Row
       className={clsx(

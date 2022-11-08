@@ -1,11 +1,5 @@
-import Image from 'next/image'
-import { SparklesIcon, UserCircleIcon } from '@heroicons/react/solid'
-
-import { Contract } from 'common/contract'
-
-import { Spacer } from './layout/spacer'
+import { UserCircleIcon } from '@heroicons/react/solid'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { ContractsGrid } from './contract/contracts-grid'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { withTracking } from 'web/lib/service/analytics'
@@ -14,14 +8,12 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import SquiggleVerticalIcon from 'web/lib/icons/squiggle_vertical'
 import clsx from 'clsx'
 import { Button } from './buttons/button'
-import { ManifoldLogo } from './nav/manifold-logo'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import SquiggleHorizontalIcon from 'web/lib/icons/squiggle_horizontal'
 import TypewriterComponent from 'typewriter-effect'
 import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
 import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import CountUp from 'react-countup'
-import { useCallback } from 'preact/hooks'
 
 export type PageNumber = 0 | 1 | 2
 
@@ -61,7 +53,7 @@ export function LandingPagePanel() {
 
   const [isButtonHover, setIsButtonHovered] = useState(false)
   const [pageNumber, setPageNumber] = useState<PageNumber>(1)
-  const [currTimeoutId, setTimeoutId] = useState<
+  const [currTimeoutId, setCurrTimeoutId] = useState<
     NodeJS.Timeout | undefined | null
   >(null)
 
@@ -73,7 +65,8 @@ export function LandingPagePanel() {
       () => setPageNumber(getNextPageNumber(pageNumber)),
       5500
     )
-    setTimeoutId(newTimeoutId)
+    setCurrTimeoutId(newTimeoutId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageNumber])
 
   return (

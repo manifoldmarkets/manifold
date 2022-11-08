@@ -144,7 +144,14 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
             return <PostCard post={post} pinned={true} />
         } else if (element.type === 'contract') {
           const contract = element.item as Contract
-          return <ContractCard contract={contract} pinned={true} />
+          if (
+            !userIsBlocked(contract.creatorId) &&
+            !privateUser?.blockedContractIds.includes(contract.id) &&
+            !privateUser?.blockedGroupSlugs.some((slug) =>
+              contract.groupSlugs?.includes(slug)
+            )
+          )
+            return <ContractCard contract={contract} pinned={true} />
         }
       })
       setPinned(
