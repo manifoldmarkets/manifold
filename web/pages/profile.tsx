@@ -19,11 +19,14 @@ import { changeUserInfo } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
 import {
+  auth,
   getUserAndPrivateUser,
   updatePrivateUser,
   updateUser,
 } from 'web/lib/firebase/users'
 import { deleteField } from 'firebase/firestore'
+import { toast } from 'react-hot-toast'
+import router from 'next/router'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -123,6 +126,7 @@ export default function ProfilePage(props: {
         opt_out_all: ['email', 'mobile', 'browser'],
       },
     })
+    await auth.signOut()
   }
 
   const fileHandler = async (event: any) => {
@@ -276,8 +280,23 @@ export default function ProfilePage(props: {
                 }}
                 onSubmitWithSuccess={async () => {
                   if (deleteAccountConfirmation == 'delete my account') {
-                    deleteAccount()
-                    return true
+                    toast
+                      .promise(deleteAccount(), {
+                        loading: 'Deleting account...',
+                        success: () => {
+                          router.push('/')
+                          return 'Account deleted'
+                        },
+                        error: () => {
+                          return 'Failed to delete account'
+                        },
+                      })
+                      .then(() => {
+                        return true
+                      })
+                      .catch(() => {
+                        return false
+                      })
                   }
                   return false
                 }}
