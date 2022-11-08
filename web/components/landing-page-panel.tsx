@@ -38,7 +38,7 @@ export function PaginationCircle(props: {
     <div
       onClick={() => onClick()}
       className={clsx(
-        'h-2 w-2 cursor-pointer rounded-full',
+        'h-2 w-2 cursor-pointer rounded-full transition-colors',
         currentPageNumber === pageNumber ? 'bg-white' : 'bg-indigo-400'
       )}
     />
