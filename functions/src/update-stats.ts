@@ -15,6 +15,7 @@ import { User } from '../../common/user'
 import { Stats } from '../../common/stats'
 import { DAY_MS } from '../../common/util/time'
 import { average } from '../../common/util/math'
+import { batchedWaitAll } from 'common/util/promise'
 
 const firestore = admin.firestore()
 
@@ -28,15 +29,14 @@ const getBetsQuery = (startTime: number, endTime: number) =>
     .orderBy('createdTime', 'asc')
 
 export async function getDailyBets(startTime: number, numberOfDays: number) {
-  const query = getBetsQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const bets = await getValues<Bet>(query)
+  const queries = range(0, numberOfDays).map((days) => {
+    const begin = startTime + days * DAY_MS
+    return getBetsQuery(begin, begin + DAY_MS)
+  })
 
-  const betsByDay = range(0, numberOfDays).map(() => [] as Bet[])
-  for (const bet of bets) {
-    const dayIndex = Math.floor((bet.createdTime - startTime) / DAY_MS)
-    betsByDay[dayIndex].push(bet)
-  }
-
+  const betsByDay = await batchedWaitAll(
+    queries.map((q) => () => getValues<Bet>(q), 50)
+  )
   return betsByDay
 }
 
