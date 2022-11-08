@@ -2,11 +2,11 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { getValues, invokeFunction, log } from './utils'
-import { Bet } from '../../common/bet'
+import { Bet, LimitBet } from '../../common/bet'
 import { Contract, CPMM } from '../../common/contract'
 import { DAY_MS } from '../../common/util/time'
 import {
-  calculateProbChanges,
+  calculateProbChange,
   computeElasticity,
   computeVolume,
 } from '../../common/calculate-metrics'
@@ -40,6 +40,10 @@ export async function updateContractMetrics() {
 
   log('Computing metric updates...')
   const now = Date.now()
+  const yesterday = now - DAY_MS
+  const weekAgo = now - 7 * DAY_MS
+  const monthAgo = now - 30 * DAY_MS
+
   const writer = firestore.bulkWriter({ throttling: false })
   await batchedWaitAll(
     contracts.map((contract) => async () => {
@@ -49,6 +53,16 @@ export async function updateContractMetrics() {
           .doc(contract.id)
           .collection('bets')
           .orderBy('createdTime', 'desc')
+          .where('createdTime', '>=', monthAgo)
+      )
+      const unfilledBets = await getValues<LimitBet>(
+        firestore
+          .collection('contracts')
+          .doc(contract.id)
+          .collection('bets')
+          .where('limitProb', '>', 0)
+          .where('isFilled', '==', false)
+          .where('isCancelled', '==', false)
       )
 
       let cpmmFields: Partial<CPMM> = {}
@@ -63,26 +77,28 @@ export async function updateContractMetrics() {
         else if (resolution === 'MKT' && resolutionProbability)
           prob = resolutionProbability
 
-        cpmmFields = {
-          prob,
-          probChanges: calculateProbChanges(prob, descendingBets),
+        const probChanges = {
+          day: calculateProbChange(prob, descendingBets, yesterday),
+          week: calculateProbChange(prob, descendingBets, weekAgo),
+          month: calculateProbChange(prob, descendingBets, monthAgo),
         }
+        cpmmFields = { prob, probChanges }
       }
 
       const uniqueBettors24Hours = getUniqueBettors(
-        descendingBets.filter((bet) => now - bet.createdTime < DAY_MS)
+        descendingBets.filter((bet) => bet.createdTime > yesterday)
       )
       const uniqueBettors7Days = getUniqueBettors(
-        descendingBets.filter((bet) => now - bet.createdTime < 7 * DAY_MS)
+        descendingBets.filter((bet) => bet.createdTime > weekAgo)
       )
       const uniqueBettors30Days = getUniqueBettors(
-        descendingBets.filter((bet) => now - bet.createdTime < 30 * DAY_MS)
+        descendingBets.filter((bet) => bet.createdTime > monthAgo)
       )
 
       writer.update(firestore.collection('contracts').doc(contract.id), {
         volume24Hours: computeVolume(descendingBets, now - DAY_MS),
         volume7Days: computeVolume(descendingBets, now - DAY_MS * 7),
-        elasticity: computeElasticity(descendingBets, contract),
+        elasticity: computeElasticity(unfilledBets, contract),
         uniqueBettors24Hours,
         uniqueBettors7Days,
         uniqueBettors30Days,
