@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy, sumBy, mapValues, uniq } from 'lodash'
 
-import { log, writeAsync } from './utils'
+import { log } from './utils'
 import { Contract } from '../../common/contract'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
@@ -55,7 +55,8 @@ export async function updateGroupMetrics() {
   log(`Loaded ${contractIds.length} contracts.`)
 
   log('Computing metric updates...')
-  const groupUpdates = await batchedWaitAll(
+  const writer = firestore.bulkWriter({ throttling: false })
+  await batchedWaitAll(
     groups.docs.map((doc) => async () => {
       const contractIds = contractIdsByGroupId[doc.id] ?? []
       const contracts = contractIds.map((c) => contractsById[c])
@@ -63,20 +64,19 @@ export async function updateGroupMetrics() {
       const traderScores = await scoreTraders(contractIds)
       const topTraderScores = topUserScores(traderScores)
       const topCreatorScores = topUserScores(creatorScores)
-      return {
-        doc: doc.ref,
-        fields: {
-          cachedLeaderboard: {
-            topTraders: topTraderScores,
-            topCreators: topCreatorScores,
-          },
+      writer.update(doc.ref, {
+        cachedLeaderboard: {
+          topTraders: topTraderScores,
+          topCreators: topCreatorScores,
         },
-      }
+      })
     }),
     100
   )
-  log('Writing metric updates...')
-  await writeAsync(firestore, groupUpdates)
+
+  log('Committing writes...')
+  await writer.close()
+  log('Done.')
 }
 
 function scoreCreators(contracts: Contract[]) {
