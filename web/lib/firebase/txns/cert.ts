@@ -1,5 +1,5 @@
 import { CertTxn, Txn } from 'common/txn'
-import { orderBy, query, where, doc } from 'firebase/firestore'
+import { orderBy, query, where } from 'firebase/firestore'
 import { coll, listenForValues } from '../utils'
 
 export const txns = coll<Txn>('txns')
