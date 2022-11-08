@@ -17,7 +17,6 @@ import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
 import { formatMoney } from 'common/util/format'
 import { STARTING_BALANCE } from 'common/economy'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { Button } from 'web/components/buttons/button'
 
 export default function Welcome() {
@@ -28,9 +27,13 @@ export default function Welcome() {
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
   const isTwitch = useIsTwitch(user)
   const TOTAL_PAGES = 4
-  const { isNative, platform } = getNativePlatform()
+  // Just making new users created after 11/09/2022 go through this for now
   const shouldSeeEula =
-    privateUser && !privateUser?.hasSignedEula && isNative && platform === 'ios'
+    user &&
+    privateUser &&
+    !privateUser?.hasSignedEula &&
+    user.createdTime > 1667977200000
+
   function increasePage() {
     if (page < TOTAL_PAGES - 1) {
       setPage(page + 1)
