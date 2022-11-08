@@ -10,10 +10,10 @@ import {
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
-  MultipleChoiceContract,
   NumericContract,
   OUTCOME_TYPES,
   VISIBILITIES,
+  CPMMMultipleChoiceContract,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
@@ -26,7 +26,7 @@ import {
   getMultipleChoiceAntes,
   getNumericAnte,
 } from '../../common/antes'
-import { Answer, getNoneAnswer } from '../../common/answer'
+import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
@@ -297,25 +297,16 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     const betCol = firestore.collection(`contracts/${contract.id}/bets`)
     const betDocs = (answers ?? []).map(() => betCol.doc())
 
-    const answerCol = firestore.collection(`contracts/${contract.id}/answers`)
-    const answerDocs = (answers ?? []).map((_, i) =>
-      answerCol.doc(i.toString())
-    )
-
     const { bets, answerObjects } = getMultipleChoiceAntes(
       user,
-      contract as MultipleChoiceContract,
+      contract as CPMMMultipleChoiceContract,
       answers ?? [],
-      betDocs.map((bd) => bd.id)
+      betDocs.map((bd) => bd.id),
+      ante
     )
 
     await Promise.all(
       zip(bets, betDocs).map(([bet, doc]) => doc?.create(bet as Bet))
-    )
-    await Promise.all(
-      zip(answerObjects, answerDocs).map(([answer, doc]) =>
-        doc?.create(answer as Answer)
-      )
     )
     await contractRef.update({ answers: answerObjects })
   } else if (outcomeType === 'FREE_RESPONSE') {

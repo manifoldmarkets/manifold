@@ -5,8 +5,8 @@ import {
   CPMMBinaryContract,
   DPMBinaryContract,
   FreeResponseContract,
-  MultipleChoiceContract,
   NumericContract,
+  CPMMMultipleChoiceContract,
 } from './contract'
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
@@ -118,18 +118,18 @@ export function getFreeAnswerAnte(
 
 export function getMultipleChoiceAntes(
   creator: User,
-  contract: MultipleChoiceContract,
+  contract: CPMMMultipleChoiceContract,
   answers: string[],
-  betDocIds: string[]
+  betDocIds: string[],
+  ante: number
 ) {
-  const { totalBets, totalShares } = contract
-  const amount = totalBets['0']
-  const shares = totalShares['0']
+  const amount = ante
+  const shares = ante
   const p = 1 / answers.length
 
   const { createdTime } = contract
 
-  const bets: NormalizedBet[] = answers.map((answer, i) => ({
+  const bets: NormalizedBet[] = answers.map((_answer, i) => ({
     id: betDocIds[i],
     userId: creator.id,
     contractId: contract.id,

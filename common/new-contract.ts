@@ -3,6 +3,7 @@ import {
   Binary,
   Contract,
   CPMM,
+  CPMM2,
   DPM,
   FreeResponse,
   MultipleChoice,
@@ -160,19 +161,15 @@ const getFreeAnswerProps = (ante: number) => {
 
 const getMultipleChoiceProps = (ante: number, answers: string[]) => {
   const numAnswers = answers.length
-  const betAnte = ante / numAnswers
-  const betShares = Math.sqrt(ante ** 2 / numAnswers)
 
-  const defaultValues = (x: any) =>
-    Object.fromEntries(range(0, numAnswers).map((k) => [k, x]))
+  const pool = Object.fromEntries(range(0, numAnswers).map((k) => [k, ante]))
 
-  const system: DPM & MultipleChoice = {
-    mechanism: 'dpm-2',
+  const system: CPMM2 & MultipleChoice = {
+    mechanism: 'cpmm-2',
     outcomeType: 'MULTIPLE_CHOICE',
-    pool: defaultValues(betAnte),
-    totalShares: defaultValues(betShares),
-    totalBets: defaultValues(betAnte),
+    pool,
     answers: [],
+    subsidyPool: 0,
   }
 
   return system
