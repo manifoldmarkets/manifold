@@ -31,6 +31,7 @@ import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 import { AuthModal } from 'components/auth-modal'
 import { Feather, AntDesign } from '@expo/vector-icons'
+import { IAP } from './components/iap'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -56,9 +57,11 @@ export const auth = getAuth(app)
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const homeUri =
-  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+  ENV === 'DEV'
+    ? 'https://ddb7-181-41-206-237.ngrok.io'
+    : 'https://manifold.markets/'
 
-export default function App() {
+const App = () => {
   // Init
   const [hasWebViewLoaded, setHasWebViewLoaded] = useState(true)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
@@ -94,6 +97,9 @@ export default function App() {
     Platform.OS === 'ios' ? LinkingManager.default : null
   )
 
+  const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
+
+  // Initialize listeners
   useEffect(() => {
     try {
       BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
@@ -229,8 +235,9 @@ export default function App() {
     const { type, data: payload } = JSON.parse(data)
     console.log('Received nativeEvent: ', type)
     setHasSetNativeFlag(true)
-    // Time to log in to firebase
-    if (type === 'googleLoginClicked') {
+    if (type === 'checkout') {
+      setCheckoutAmount(payload.amount)
+    } else if (type === 'loginClicked') {
       setShowAuthModal(true)
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
@@ -365,6 +372,10 @@ export default function App() {
 
   return (
     <>
+      <IAP
+        checkoutAmount={checkoutAmount}
+        setCheckoutAmount={setCheckoutAmount}
+      />
       {hasWebViewLoaded && (
         <>
           <Image style={styles.image} source={require('./assets/splash.png')} />
@@ -489,3 +500,4 @@ export default function App() {
     </>
   )
 }
+export default App

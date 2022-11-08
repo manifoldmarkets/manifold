@@ -129,6 +129,8 @@ PODS:
     - ReactCommon/turbomodule/core (= 0.69.6)
   - fmt (6.2.1)
   - glog (0.3.5)
+  - PurchasesHybridCommon (4.3.6):
+    - RevenueCat (= 4.13.4)
   - RCT-Folly (2021.06.28.00-v2):
     - boost
     - DoubleConversion
@@ -406,7 +408,11 @@ PODS:
     - React-jsi (= 0.69.6)
     - React-logger (= 0.69.6)
     - React-perflogger (= 0.69.6)
+  - RevenueCat (4.13.4)
   - RNCClipboard (1.11.1):
+    - React-Core
+  - RNPurchases (5.1.2):
+    - PurchasesHybridCommon (= 4.3.6)
     - React-Core
   - RNSentry (4.2.2):
     - React-Core
@@ -475,6 +481,7 @@ DEPENDENCIES:
   - React-runtimeexecutor (from `../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
+  - RNPurchases (from `../node_modules/react-native-purchases`)
   - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -482,6 +489,8 @@ SPEC REPOS:
   trunk:
     - ASN1Decoder
     - fmt
+    - PurchasesHybridCommon
+    - RevenueCat
     - Sentry
 
 EXTERNAL SOURCES:
@@ -599,6 +608,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNCClipboard:
     :path: "../node_modules/@react-native-clipboard/clipboard"
+  RNPurchases:
+    :path: "../node_modules/react-native-purchases"
   RNSentry:
     :path: "../node_modules/@sentry/react-native"
   Yoga:
@@ -636,6 +647,7 @@ SPEC CHECKSUMS:
   FBReactNativeSpec: 957de82f66e31f2f14bbec34e37242282fdd26de
   fmt: ff9d55029c625d3757ed641535fd4a75fedc7ce9
   glog: 3d02b25ca00c2d456734d0bcff864cbc62f6ae1a
+  PurchasesHybridCommon: d774e438e9aa1693f4e67d5874dfdd899cf87fc6
   RCT-Folly: b9d9fe1fc70114b751c076104e52f3b1b5e5a95a
   RCTRequired: c8c080849a3670601d5c7056023a2176067a69d8
   RCTTypeSafety: 710aef40f5ae246bc5fff7e873855b17ed11c180
@@ -663,11 +675,13 @@ SPEC CHECKSUMS:
   React-RCTVibration: 285f8538386c660e6b9497e204636acd93bf7fcc
   React-runtimeexecutor: 0af71c94f968fa10015bf0119951bccd2e4d8865
   ReactCommon: fe7580b9d10f00249facf25659e0ec051320cc8a
+  RevenueCat: afa482ccddf042ac00f138efd1fa57bca3e805af
   RNCClipboard: 2834e1c4af68697089cdd455ee4a4cdd198fa7dd
+  RNPurchases: e65715fcf14c0b3b40efdf7412d451920c644299
   RNSentry: f03937a2cf86c7029ba31fbbf5618c55d223cd62
   Sentry: 30b51086ca9aac23337880152e95538f7e177f7f
   Yoga: 75bf4b0131cfb46a659cd0c13309b79a6fcff66d
 
-PODFILE CHECKSUM: 31f57af6ba301465a7ede9bf59fc7ba6b1956b23
+PODFILE CHECKSUM: 81fdeb970bee766b51a7265fc2c3f02a30d1b5fe
 
 COCOAPODS: 1.11.3

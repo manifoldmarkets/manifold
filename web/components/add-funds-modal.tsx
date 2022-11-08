@@ -9,6 +9,7 @@ import { getNativePlatform } from 'web/lib/native/is-native'
 import { Title } from './widgets/title'
 import { OtherWaysToGetMana } from './native/add-funds-ios'
 import { Tabs } from './layout/tabs'
+import { PRICES_LIST } from 'web/pages/add-funds'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -56,9 +57,7 @@ function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
 
-  const [amountSelected, setAmountSelected] = useState<1000 | 2500 | 10000>(
-    2500
-  )
+  const [amountSelected, setAmountSelected] = useState<number>(2500)
   return (
     <>
       <div className="mt-6 mb-4">
@@ -67,7 +66,11 @@ function BuyManaTab(props: { onClose: () => void }) {
       </div>
 
       <div className="mb-2 text-sm text-gray-500">Amount</div>
-      <FundsSelector selected={amountSelected} onSelect={setAmountSelected} />
+      <FundsSelector
+        fundAmounts={PRICES_LIST}
+        selected={amountSelected}
+        onSelect={setAmountSelected}
+      />
 
       <div className="mt-6">
         <div className="mb-1 text-sm text-gray-500">Price USD</div>

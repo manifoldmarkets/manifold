@@ -1,151 +1,74 @@
-import {
-  initConnection,
-  purchaseErrorListener,
-  purchaseUpdatedListener,
-  type ProductPurchase,
-  type PurchaseError,
-  flushFailedPurchasesCachedAsPendingAndroid,
-  endConnection,
-  getProducts,
-  requestPurchase,
-  Product,
-  useIAP,
-  getAvailablePurchases,
-} from 'react-native-iap'
 import { useEffect, useState } from 'react'
 import * as Sentry from 'sentry-expo'
-import { EmitterSubscription, Pressable, Text, View } from 'react-native'
+import { Platform, Pressable, Text, View } from 'react-native'
+import Purchases, { PurchasesPackage } from 'react-native-purchases'
 
-export const IAP = () => {
-  const {
-    connected,
-    products,
-    subscriptions,
-    getProducts,
-    getSubscriptions,
-    currentPurchase,
-    currentPurchaseError,
-  } = useIAP()
+export const IAP = (props: {
+  checkoutAmount: number | null
+  setCheckoutAmount: (amount: number | null) => void
+}) => {
+  const { checkoutAmount, setCheckoutAmount } = props
+  const [purchasePackages, setPurchasePackages] = useState<PurchasesPackage[]>(
+    []
+  )
+  const [error, setError] = useState<string | null>(null)
 
-  // let purchaseUpdateSubscription: EmitterSubscription | null = null
-  // let purchaseErrorSubscription: EmitterSubscription | null = null
-  const init = async () => {
-    console.log('init')
-    // try {
-    //   const availablePurchases = await getAvailablePurchases()
-    //   console.log('availablePurchases', availablePurchases)
-    // } catch (e) {
-    //   console.log('availablePurchases error', e)
-    // }
+  const makePurchase = async (purchasePackage: PurchasesPackage) => {
     try {
-      await getProducts({
-        skus: ['6444268147'],
-      })
-    } catch (e) {
-      console.log('getProducts error', e)
+      const { customerInfo, productIdentifier } =
+        await Purchases.purchasePackage(purchasePackage)
+      console.log(
+        'customerInfo',
+        customerInfo,
+        'productIdentifier',
+        productIdentifier
+      )
+    } catch (e: any) {
+      if (!e.userCancelled) {
+        setError(e)
+      }
     }
   }
 
   useEffect(() => {
-    console.log(products)
-  }, [products])
-  useEffect(() => {
-    console.log('connected', connected)
-    if (connected) init()
-  }, [connected])
+    if (!checkoutAmount) return
+    console.log('checkoutAmount', checkoutAmount)
+    // find matching price in purchase packages
+    const purchasePackage = purchasePackages.find(
+      (p) => p.product.price === checkoutAmount
+    )
+    if (purchasePackage) {
+      makePurchase(purchasePackage)
+      // purchase package found, make purchase
+    } else {
+      setCheckoutAmount(null)
+    }
+  }, [checkoutAmount])
+
+  const initPurchases = async () => {
+    Purchases.setDebugLogsEnabled(true)
+
+    if (Platform.OS === 'ios') {
+      await Purchases.configure({ apiKey: 'appl_QuwcHjyniEBXcrOjwdckgjqAjUA' })
+    }
+    try {
+      const offerings = await Purchases.getOfferings()
+      if (
+        offerings.current !== null &&
+        offerings.current.availablePackages.length !== 0
+      ) {
+        // Display packages for sale
+        console.log(offerings.current.availablePackages)
+        setPurchasePackages(offerings.current.availablePackages)
+      }
+    } catch (e) {
+      console.log(e)
+    }
+  }
 
   useEffect(() => {
-    // try {
-    //   initConnection().then(() => {
-    //     // we make sure that "ghost" pending payment are removed
-    //     // (ghost = failed pending payment that are still marked as pending in Google's native Vending module cache)
-    //     flushFailedPurchasesCachedAsPendingAndroid()
-    //       .catch(() => {
-    //         // exception can happen here if:
-    //         // - there are pending purchases that are still pending (we can't consume a pending purchase)
-    //         // in any case, you might not want to do anything special with the error
-    //       })
-    //       .then(() => {
-    //         purchaseUpdateSubscription = purchaseUpdatedListener(
-    //           (purchase: ProductPurchase) => {
-    //             console.log('purchaseUpdatedListener', purchase)
-    //             const receipt = purchase.transactionReceipt
-    //             if (receipt) {
-    //               // yourAPI
-    //               //   .deliverOrDownloadFancyInAppPurchase(
-    //               //     purchase.transactionReceipt,
-    //               //   )
-    //               //   .then(async (deliveryResult) => {
-    //               //     if (isSuccess(deliveryResult)) {
-    //               //       // Tell the store that you have delivered what has been paid for.
-    //               //       // Failure to do this will result in the purchase being refunded on Android and
-    //               //       // the purchase event will reappear on every relaunch of the app until you succeed
-    //               //       // in doing the below. It will also be impossible for the user to purchase consumables
-    //               //       // again until you do this.
-    //               //
-    //               //       // If consumable (can be purchased again)
-    //               //       await finishTransaction({purchase, isConsumable: true});
-    //               //       // If not consumable
-    //               //       await finishTransaction({purchase, isConsumable: false});
-    //               //     } else {
-    //               //       // Retry / conclude the purchase is fraudulent, etc...
-    //               //     }
-    //               //   });
-    //             }
-    //           }
-    //         )
-    //
-    //         purchaseErrorSubscription = purchaseErrorListener(
-    //           (error: PurchaseError) => {
-    //             console.warn('purchaseErrorListener', error)
-    //           }
-    //         )
-    //       })
-    //   })
-    // } catch (err) {
-    //   console.log('error initializing iap', err)
-    //   Sentry.Native.captureException(err, {
-    //     extra: { message: 'iap connection' },
-    //   })
-    // }
-    // return () => {
-    //   endConnection()
-    //   if (purchaseUpdateSubscription) {
-    //     purchaseUpdateSubscription.remove()
-    //     purchaseUpdateSubscription = null
-    //   }
-    //
-    //   if (purchaseErrorSubscription) {
-    //     purchaseErrorSubscription.remove()
-    //     purchaseErrorSubscription = null
-    //   }
-    // }
+    initPurchases()
   }, [])
 
-  const requestPurchaseTrigger = async () => {
-    console.log('product', products)
-    const product = products[0].productId
-    try {
-      await requestPurchase({
-        sku: product,
-        andDangerouslyFinishTransactionAutomaticallyIOS: false,
-      })
-    } catch (err: any) {
-      console.warn(err.code, err.message)
-    }
-  }
-  return (
-    <View
-      style={{
-        height: 100,
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <Pressable onPress={() => requestPurchaseTrigger()}>
-        <Text>BUY ME</Text>
-      </Pressable>
-    </View>
-  )
+  return <View />
 }

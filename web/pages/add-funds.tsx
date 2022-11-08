@@ -79,7 +79,7 @@ export default function AddFundsPage() {
           <div className="mb-6 mt-12 text-gray-500">
             Short on USD?. Here are some other ways to get mana: <br />{' '}
           </div>
-          {OtherWaysToGetMana(false)}
+          {<OtherWaysToGetMana includeBuyNote={true} />}
         </Col>
       </Col>
     </Page>
