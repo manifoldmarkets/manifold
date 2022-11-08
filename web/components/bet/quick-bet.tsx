@@ -31,7 +31,7 @@ import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
-import { track } from 'web/lib/service/analytics'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getBinaryProb } from 'common/contract-details'
@@ -46,29 +46,18 @@ import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import { floor } from 'lodash'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Bet } from 'common/bet'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 const BET_SIZE = 10
 
 export function QuickBet(props: {
   contract: BinaryContract | PseudoNumericContract
-  user: User
+  user?: User | null
   className?: string
 }) {
   const { contract, user, className } = props
-  const userBets = useUserContractBets(user.id, contract.id) || []
-
-  const { mechanism } = contract
-  const isCpmm = mechanism === 'cpmm-1'
-  // TODO: Below hook fetches a decent amount of data. Maybe not worth it to show prob change on hover?
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
-  )
-
-  const { yesShares, noShares } = useSaveBinaryShares(contract, userBets)
-
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
-
   let previewProb = undefined
   try {
     previewProb = upHover
@@ -88,6 +77,42 @@ export function QuickBet(props: {
   } catch (e) {
     // Catch any errors from hovering on an invalid option
   }
+
+  if (!user) {
+    return (
+      <div className="relative">
+        <Row className={clsx(className, 'absolute inset-0')}>
+          <BinaryQuickBetButton
+            onClick={withTracking(firebaseLogin, 'landing page button click')}
+            direction="DOWN"
+            contract={contract}
+            hover={downHover}
+            onMouseEnter={() => setDownHover(true)}
+            onMouseLeave={() => setDownHover(false)}
+          />
+          <BinaryQuickBetButton
+            onClick={withTracking(firebaseLogin, 'landing page button click')}
+            direction="UP"
+            contract={contract}
+            hover={upHover}
+            onMouseEnter={() => setUpHover(true)}
+            onMouseLeave={() => setUpHover(false)}
+          />
+        </Row>
+        <QuickOutcomeView contract={contract} previewProb={previewProb} />
+      </div>
+    )
+  }
+  const userBets = useUserContractBets(user.id, contract.id) || []
+
+  const { mechanism } = contract
+  const isCpmm = mechanism === 'cpmm-1'
+  // TODO: Below hook fetches a decent amount of data. Maybe not worth it to show prob change on hover?
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
+
+  const { yesShares, noShares } = useSaveBinaryShares(contract, userBets)
 
   let sharesSold: number | undefined
   let sellOutcome: 'YES' | 'NO' | undefined
@@ -183,7 +208,7 @@ function BinaryQuickBetButton(props: {
   hover: boolean
   onMouseEnter: () => void
   onMouseLeave: () => void
-  userBets: Bet[]
+  userBets?: Bet[]
 }) {
   const {
     onClick,
@@ -194,6 +219,51 @@ function BinaryQuickBetButton(props: {
     onMouseLeave,
     userBets,
   } = props
+  const isMobile = useIsMobile()
+  const shouldFocus = hover && !isMobile
+  if (!userBets) {
+    return (
+      <Row
+        className={clsx(
+          'w-[50%] items-center gap-2',
+          direction === 'UP' && 'flex-row-reverse'
+        )}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
+      >
+        {direction === 'DOWN' && (
+          <EquilateralLeftTriangle
+            className={clsx(
+              'mx-2 h-6 w-6 drop-shadow-md transition-all',
+              shouldFocus
+                ? 'animate-bounce-left text-indigo-600'
+                : 'text-indigo-400'
+            )}
+          />
+        )}
+        {direction === 'UP' && (
+          <EquilateralRightTriangle
+            className={clsx(
+              'mx-2 h-6 w-6 drop-shadow-md transition-all',
+              shouldFocus
+                ? 'sm:animate-bounce-right text-indigo-600'
+                : 'text-indigo-400'
+            )}
+          />
+        )}
+        <span
+          className={clsx(
+            'my-auto text-sm font-light text-indigo-600 transition-opacity',
+            shouldFocus ? 'opacity-100' : 'opacity-0'
+          )}
+        >
+          {formatMoney(BET_SIZE)}
+        </span>
+      </Row>
+    )
+  }
+
   const { invested } = getContractBetMetrics(contract, userBets)
   const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
   let hasInvestment = false
@@ -204,8 +274,6 @@ function BinaryQuickBetButton(props: {
     hasInvestment =
       hasNoShares === true && invested != undefined && floor(invested) > 0
   }
-  const isMobile = useIsMobile()
-  const shouldFocus = hover && !isMobile
   return (
     <Row
       className={clsx(

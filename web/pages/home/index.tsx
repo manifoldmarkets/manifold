@@ -144,14 +144,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
             return <PostCard post={post} pinned={true} />
         } else if (element.type === 'contract') {
           const contract = element.item as Contract
-          if (
-            !userIsBlocked(contract.creatorId) &&
-            !privateUser?.blockedContractIds.includes(contract.id) &&
-            !privateUser?.blockedGroupSlugs.some((slug) =>
-              contract.groupSlugs?.includes(slug)
-            )
-          )
-            return <ContractCard contract={contract} pinned={true} />
+          return <ContractCard contract={contract} pinned={true} />
         }
       })
       setPinned(
@@ -278,7 +271,7 @@ export const getHomeItems = (sections: string[]) => {
   }
 }
 
-function renderSections(
+export function renderSections(
   sections: { id: string; label: string; icon?: string }[],
   sectionContracts: {
     'daily-trending': CPMMBinaryContract[]
@@ -425,7 +418,7 @@ function HomeSectionHeader(props: {
   )
 }
 
-const SearchSection = memo(function SearchSection(props: {
+export const SearchSection = memo(function SearchSection(props: {
   label: string
   contracts: CPMMBinaryContract[]
   sort: Sort
@@ -451,7 +444,7 @@ const SearchSection = memo(function SearchSection(props: {
   )
 })
 
-function LatestPostsSection(props: { latestPosts: Post[] }) {
+export function LatestPostsSection(props: { latestPosts: Post[] }) {
   const { latestPosts } = props
   const user = useUser()
 
@@ -580,7 +573,7 @@ function GroupSection(props: {
   )
 }
 
-const DailyMoversSection = memo(function DailyMoversSection(props: {
+export const DailyMoversSection = memo(function DailyMoversSection(props: {
   data:
     | {
         contracts: CPMMBinaryContract[]
@@ -611,7 +604,7 @@ const DailyMoversSection = memo(function DailyMoversSection(props: {
   )
 })
 
-const ActivitySection = memo(function ActivitySection() {
+export const ActivitySection = memo(function ActivitySection() {
   return (
     <Col>
       <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />

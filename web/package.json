@@ -69,13 +69,10 @@
     "react-masonry-css": "1.0.16",
     "react-query": "3.39.0",
     "react-tinder-card": "1.5.4",
-    "react-tsparticles": "2.5.1",
     "react-twitter-embed": "4.0.4",
     "stability-client": "1.6.1",
     "string-similarity": "^4.0.4",
     "tippy.js": "6.3.7",
-    "tsparticles-engine": "2.5.0",
-    "tsparticles-slim": "2.5.1",
     "typewriter-effect": "2.19.0"
   },
   "devDependencies": {

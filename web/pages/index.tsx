@@ -13,7 +13,7 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { keyBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { getGlobalConfig } from 'web/lib/firebase/globalConfig'
-import { useTrendingContracts } from 'web/hooks/use-contracts'
+import { useNewContracts, useTrendingContracts } from 'web/hooks/use-contracts'
 import { useTrendingGroups } from 'web/hooks/use-group'
 import { useAllPosts } from 'web/hooks/use-post'
 import {
@@ -26,29 +26,27 @@ import { CPMMBinaryContract } from 'common/contract'
 import { GlobalConfig } from 'common/globalConfig'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Post } from 'common/post'
-import { TrendingGroupsSection } from './home'
+import {
+  ActivitySection,
+  DailyMoversSection,
+  FeaturedSection,
+  LatestPostsSection,
+  SearchSection,
+  TrendingGroupsSection,
+} from './home'
+import { renderSections } from './home'
+import dailyMovers from './daily-movers'
+import { Sort } from 'web/components/contract-search'
+import { ContractCard } from 'web/components/contract/contract-card'
+import { PostCard } from 'web/components/posts/post-card'
 
 const LANDING_PAGE_SECTIONS = [
   { label: 'Trending', id: 'score', icon: '🔥' },
-  { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
+  // { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   { label: 'Live feed', id: 'live-feed', icon: '🔴' },
   { label: 'Featured', id: 'featured', icon: '⭐' },
   { label: 'Latest posts', id: 'latest-posts', icon: '📝' },
-] as const
-
-export const getLandingPageItems = (sections: string[]) => {
-  const itemsById = keyBy(LANDING_PAGE_SECTIONS, 'id')
-  const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
-
-  // Add unmentioned items to the end.
-  sectionItems.push(
-    ...LANDING_PAGE_SECTIONS.filter((item) => !sectionItems.includes(item))
-  )
-  return {
-    sections: sectionItems,
-    itemsById,
-  }
-}
+]
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const hotContracts = await getTrendingContracts()
@@ -56,14 +54,11 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
 })
 
 export default function Home(props: { hotContracts: Contract[] }) {
-  const { hotContracts } = props
-
   useSaveReferral()
   useRedirectAfterLogin()
 
   const globalConfig = useGlobalConfig()
   const trendingContracts = useTrendingContracts(6)
-  const trendingGroups = useTrendingGroups()
   const latestPosts = useAllPosts(true)
     // Remove "test" posts.
     .filter((p) => !p.title.toLocaleLowerCase().split(' ').includes('test'))
@@ -74,8 +69,27 @@ export default function Home(props: { hotContracts: Contract[] }) {
     key: 'home-pinned',
   })
 
-  const isLoading = !trendingContracts || !globalConfig || !pinned
-
+  useEffect(() => {
+    const pinnedItems = globalConfig?.pinnedItems
+    if (pinnedItems) {
+      const itemComponents = pinnedItems.map((element) => {
+        if (element.type === 'post') {
+          const post = element.item as Post
+          return <PostCard post={post} pinned={true} />
+        } else if (element.type === 'contract') {
+          const contract = element.item as Contract
+          return <ContractCard contract={contract} pinned={true} />
+        }
+      })
+      setPinned(
+        itemComponents.filter(
+          (element) => element != undefined
+        ) as JSX.Element[]
+      )
+    }
+  }, [globalConfig, setPinned])
+  const isLoading =
+    !trendingContracts || !latestPosts || !globalConfig || !pinned
   return (
     <Page>
       <SEO
@@ -90,38 +104,24 @@ export default function Home(props: { hotContracts: Contract[] }) {
             <LoadingIndicator />
           ) : (
             <>
-              {/* {renderSections(
-              sections,
-              {
-                score: trendingContracts,
-                newest: newContracts,
-                'daily-trending': dailyTrendingContracts,
-              },
-              isAdmin,
-              globalConfig,
-              pinned,
-              contractMetricsByProfit,
-              latestPosts
-            )} */}
-
-              {/* {groups && groupContracts && trendingGroups.length > 0 ? (
-              <>
-                <TrendingGroupsSection
-                  className="mb-4"
-                  user={user}
-                  myGroups={groups}
-                  trendingGroups={trendingGroups}
-                />
-                <GroupSections
-                  user={user}
-                  groups={groups}
-                  groupContracts={groupContracts}
-                />
-              </>
-            ) : (
-              <LoadingIndicator />
-            )} */}
-              <ContractsGrid contracts={hotContracts} />
+              <SearchSection
+                key={'score'}
+                label={'Trending'}
+                contracts={trendingContracts}
+                sort={'score' as Sort}
+                icon={'🔥'}
+              />
+              <ActivitySection key={'live-feed'} />
+              <FeaturedSection
+                key={'featured'}
+                globalConfig={globalConfig}
+                pinned={pinned}
+                isAdmin={false}
+              />
+              <LatestPostsSection
+                key={'latest-posts'}
+                latestPosts={latestPosts}
+              />
             </>
           )}
         </Col>

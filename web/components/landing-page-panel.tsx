@@ -21,10 +21,7 @@ import TypewriterComponent from 'typewriter-effect'
 import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
 import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import CountUp from 'react-countup'
-import Particles from 'react-tsparticles'
 import { useCallback } from 'preact/hooks'
-import { Container, Engine } from 'tsparticles-engine'
-import { loadSlim } from 'tsparticles-slim'
 
 export type PageNumber = 0 | 1 | 2
 
@@ -64,7 +61,6 @@ export function LandingPagePanel() {
 
   const [isButtonHover, setIsButtonHovered] = useState(false)
   const [pageNumber, setPageNumber] = useState<PageNumber>(1)
-  // const [timeoutEnabled, setTimeoutEnabled] = useState(true)
   const [currTimeoutId, setTimeoutId] = useState<
     NodeJS.Timeout | undefined | null
   >(null)
@@ -110,7 +106,7 @@ export function LandingPagePanel() {
           >
             <div
               className={clsx(
-                'gap-2',
+                'z-50 gap-2',
                 isMobile ? 'mt-40 ml-3 flex flex-col' : 'ml-40 flex flex-row'
               )}
             >
@@ -227,7 +223,7 @@ export function LandingPage0(props: { isMobile: boolean }) {
           onInit={(typeWriter) => {
             typeWriter
               .pauseFor(1400)
-              .typeString('How many babies will I have in 2 years?')
+              .typeString('Will Michelle Obama be president in 2024?')
               .start()
           }}
         />
@@ -282,7 +278,13 @@ export function LandingPage1(props: { isMobile: boolean }) {
   const startPredictMs = 2200
   const text = 'Predict with play money'
   const [shouldPercentChange, setShouldPercentChange] = useState(false)
+  const [coinVisible0, setCoinVisibile0] = useState(true)
+  const [coinVisible1, setCoinVisibile1] = useState(true)
+  const [coinVisible2, setCoinVisibile2] = useState(true)
   setTimeout(() => setShouldPercentChange(true), startPredictMs)
+  setTimeout(() => setCoinVisibile0(false), startPredictMs + 800)
+  setTimeout(() => setCoinVisibile1(false), startPredictMs + 850)
+  setTimeout(() => setCoinVisibile2(false), startPredictMs + 900)
   return (
     <>
       <div
@@ -317,7 +319,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
           <UserCircleIcon className="h-5 w-5 text-blue-300" />
           <div className="text-greyscale-4 text-sm">Your friend</div>
         </Row>
-        <div>Will Stacy ask me out tomorrow?</div>
+        <div>Will I get a date to prom?</div>
       </Col>
       <div
         className={clsx(
@@ -330,12 +332,12 @@ export function LandingPage1(props: { isMobile: boolean }) {
         <div
           className={clsx(
             'h-full rounded-l-md bg-indigo-200 transition-all duration-1000 ease-out',
-            shouldPercentChange ? 'w-[120px]' : 'w-48'
+            shouldPercentChange ? 'w-48' : 'w-[120px]'
           )}
         />
         <EquilateralLeftTriangle
           className={clsx(
-            'animate-press-3x absolute left-[8px] top-[7px] z-10 h-6 w-6 text-indigo-700'
+            'absolute left-[8px] top-[7px] z-10 h-6 w-6 text-indigo-700'
           )}
         />
         <EquilateralLeftTriangle
@@ -345,18 +347,18 @@ export function LandingPage1(props: { isMobile: boolean }) {
         />
         <div className="absolute top-[6px] left-[100px] z-30 text-xl font-semibold">
           {shouldPercentChange && (
-            <CountUp start={75} end={50} duration={0.8} suffix="%" />
+            <CountUp start={50} end={75} duration={0.8} suffix="%" />
           )}
-          {!shouldPercentChange && <div>75%</div>}
+          {!shouldPercentChange && <div>50%</div>}
         </div>
         <EquilateralRightTriangle
           className={clsx(
-            'absolute right-[8px] top-[7px] z-10 h-6 w-6 text-indigo-700'
+            'animate-press-3x absolute right-[8px] top-[7px] z-10 h-6 w-6 text-indigo-700'
           )}
         />
         <EquilateralRightTriangle
           className={clsx(
-            'text-greyscale-5 absolute right-[7px] top-[11px] z-0 h-6 w-6'
+            'text-greyscale-5 absolute right-[6px] top-[11px] z-0 h-6 w-6'
           )}
         />
       </div>
@@ -368,7 +370,30 @@ export function LandingPage1(props: { isMobile: boolean }) {
             : 'animate-slide-in-3 left-[56px] top-[122px]'
         )}
       />
-      {/* <SpendManaParticles /> */}
+      <img
+        src="landing/mana.png"
+        className={clsx(
+          'animate-coin-in-0 absolute z-20 h-5 transition-opacity',
+          isMobile ? 'top-[150px] left-[240px]' : 'top-[130px] left-[250px]',
+          coinVisible0 ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+      <img
+        src="landing/mana.png"
+        className={clsx(
+          'animate-coin-in-1 absolute z-20 h-5 rotate-45 transition-opacity',
+          isMobile ? 'top-[150px] left-[240px]' : 'top-[130px] left-[250px]',
+          coinVisible1 ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+      <img
+        src="landing/mana.png"
+        className={clsx(
+          'animate-coin-in-2 absolute z-20 h-5 transition-opacity',
+          isMobile ? 'top-[150px] left-[240px]' : 'top-[130px] left-[250px]',
+          coinVisible2 ? 'opacity-100' : 'opacity-0'
+        )}
+      />
     </>
   )
 }
@@ -398,101 +423,33 @@ export function LandingPage2(props: { isMobile: boolean }) {
       >
         {text}
       </div>
+      <img
+        src="landing/white_foldy.png"
+        className={clsx(
+          'absolute z-20',
+          isMobile
+            ? 'animate-slide-up-4 top-20 left-4 h-40'
+            : 'animate-slide-in-3 top-12 left-8 h-32'
+        )}
+      />
+      <img
+        src="landing/stonks_arrow.png"
+        className={clsx(
+          'rotate-30 absolute z-10',
+          isMobile
+            ? 'animate-slide-up-3-grow left-32 top-12 h-48'
+            : 'animate-slide-in-4-grow left-44 top-12 h-32 '
+        )}
+      />
+      <img
+        src="landing/stonks.png"
+        className={clsx(
+          'absolute',
+          isMobile
+            ? 'animate-slide-up-3 top-4 h-80'
+            : 'animate-slide-in-4 top-4 left-8 h-48 w-80 '
+        )}
+      />
     </>
-  )
-}
-
-export function SpendManaParticles() {
-  const particlesInit = useCallback(async (engine: Engine) => {
-    // you can initialize the tsParticles instance (engine) here, adding custom shapes or presets
-    // this loads the tsparticles package bundle, it's the easiest method for getting everything ready
-    // starting from v2 you can add only the features you need reducing the bundle size
-    await loadSlim(engine)
-  }, [])
-
-  const particlesLoaded = useCallback(
-    async (container: Container | undefined) => {
-      await console.log(container)
-    },
-    []
-  )
-  return (
-    <Particles
-      id="tsparticles"
-      init={particlesInit}
-      loaded={particlesLoaded}
-      options={{
-        background: {
-          color: {
-            value: '#0d47a1',
-          },
-        },
-        fpsLimit: 120,
-        interactivity: {
-          events: {
-            onClick: {
-              enable: true,
-              mode: 'push',
-            },
-            onHover: {
-              enable: true,
-              mode: 'repulse',
-            },
-            resize: true,
-          },
-          modes: {
-            push: {
-              quantity: 4,
-            },
-            repulse: {
-              distance: 200,
-              duration: 0.4,
-            },
-          },
-        },
-        particles: {
-          color: {
-            value: '#ffffff',
-          },
-          links: {
-            color: '#ffffff',
-            distance: 150,
-            enable: true,
-            opacity: 0.5,
-            width: 1,
-          },
-          collisions: {
-            enable: true,
-          },
-          move: {
-            direction: 'none',
-            enable: true,
-            outModes: {
-              default: 'bounce',
-            },
-            random: false,
-            speed: 6,
-            straight: false,
-          },
-          number: {
-            density: {
-              enable: true,
-              area: 800,
-            },
-            value: 80,
-          },
-          opacity: {
-            value: 0.5,
-          },
-          shape: {
-            type: 'circle',
-          },
-          size: {
-            value: { min: 1, max: 5 },
-          },
-        },
-        detectRetina: true,
-      }}
-    />
   )
 }
