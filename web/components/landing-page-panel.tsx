@@ -38,7 +38,7 @@ export function PaginationCircle(props: {
     <div
       onClick={() => onClick()}
       className={clsx(
-        'h-1.5 w-1.5 rounded-full',
+        'h-2 w-2 cursor-pointer rounded-full',
         currentPageNumber === pageNumber ? 'bg-white' : 'bg-indigo-400'
       )}
     />
@@ -94,12 +94,12 @@ export function LandingPagePanel() {
           <div
             className={clsx(
               'absolute',
-              isMobile ? 'right-0 h-full w-8' : 'bottom-0 h-8 w-full'
+              isMobile ? 'right-0 h-full w-8' : 'bottom-0 h-6 w-full'
             )}
           >
             <div
               className={clsx(
-                'z-50 gap-2',
+                'z-50 gap-3',
                 isMobile ? 'mt-40 ml-3 flex flex-col' : 'ml-40 flex flex-row'
               )}
             >

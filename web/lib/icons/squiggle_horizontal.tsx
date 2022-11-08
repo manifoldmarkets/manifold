@@ -1,4 +1,3 @@
-// Icon from Bootstrap: https://icons.getbootstrap.com/
 export default function SquiggleHorizontalIcon(props: { className?: string }) {
   return (
     <svg
