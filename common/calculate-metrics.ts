@@ -155,7 +155,9 @@ const computeTotalPool = (userContracts: Contract[], startTime = 0) => {
 
 export const computeVolume = (contractBets: Bet[], since: number) => {
   return sumBy(contractBets, (b) =>
-    b.createdTime > since && !b.isRedemption ? Math.abs(b.amount) : 0
+    b.createdTime > since && !b.isRedemption && !b.isAnte
+      ? Math.abs(b.amount)
+      : 0
   )
 }
 
