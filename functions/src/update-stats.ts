@@ -15,7 +15,7 @@ import { User } from '../../common/user'
 import { Stats } from '../../common/stats'
 import { DAY_MS } from '../../common/util/time'
 import { average } from '../../common/util/math'
-import { batchedWaitAll } from 'common/util/promise'
+import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
