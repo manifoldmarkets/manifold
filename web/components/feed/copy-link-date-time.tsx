@@ -34,7 +34,7 @@ export function CopyLinkDateTimeComponent(props: {
       <Link
         href={`/${prefix}/${slug}#${elementId}`}
         passHref={true}
-        onClick={() => copyLinkToComment(elementId, prefix, slug)}
+        onClick={() => copyLinkToComment(prefix, slug, elementId)}
         className={
           'text-greyscale-4 hover:bg-greyscale-1.5 mx-1 whitespace-nowrap rounded-sm px-1 text-xs transition-colors'
         }
