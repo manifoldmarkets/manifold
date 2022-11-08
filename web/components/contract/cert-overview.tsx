@@ -9,6 +9,7 @@ import { CertContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CertTxn } from 'common/txn'
 import { sortBy } from 'lodash'
+import Image from 'next/image'
 import { useState } from 'react'
 import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
 import { swapCert } from 'web/lib/firebase/api'
@@ -76,9 +77,10 @@ function BuyCertWidget(props: { contract: CertContract }) {
 
   return (
     // Make it look like a nice card
-    <Col className="max-w-md gap-2 rounded-lg bg-gray-100 p-4">
-      <Title>Buy "{contract.question}"</Title>
-      <Row className="gap-2">
+    <Row className="flex-1 justify-between gap-2 rounded-lg bg-gray-100 p-4">
+      <Col>
+        <Title>Buy "{contract.question}"</Title>
+
         <Col>
           <label htmlFor="amount">{ENV_CONFIG.moneyMoniker} Amount</label>
           <input
@@ -96,23 +98,33 @@ function BuyCertWidget(props: { contract: CertContract }) {
             readOnly
           />
         </Col>
-      </Row>
-      <Row>
-        <br /> Average price per share: {formatPrice(pricePerShare)}
-        <br /> Cert price: {formatPrice(calculatePrice(contract.pool))} {' => '}
-        {formatPrice(calculatePriceAfterBuy(contract.pool, amount))}
-      </Row>
-      <Button
-        onClick={async () => {
-          console.log('buying', amount, 'shares')
-          await swapCert({
-            certId: contract.id,
-            amount,
-          })
-        }}
-      >
-        Buy
-      </Button>
-    </Col>
+        <Button
+          onClick={async () => {
+            console.log('buying', amount, 'shares')
+            await swapCert({
+              certId: contract.id,
+              amount,
+            })
+          }}
+        >
+          Buy
+        </Button>
+        <Row>
+          <br /> Average price per share: {formatPrice(pricePerShare)}
+          <br /> Cert price: {formatPrice(calculatePrice(contract.pool))}{' '}
+          {' => '}
+          {formatPrice(calculatePriceAfterBuy(contract.pool, amount))}
+        </Row>
+      </Col>
+      <Image
+        alt=""
+        width={300}
+        height={300}
+        src={
+          contract.coverImageUrl ??
+          `https://picsum.photos/seed/${contract.id}/300/300`
+        }
+      />
+    </Row>
   )
 }
