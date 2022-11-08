@@ -2,15 +2,11 @@ import * as admin from 'firebase-admin'
 import { APIError, newEndpoint, validate } from './api'
 import { z } from 'zod'
 import { User } from 'common/user'
-import {
-  getCertOwnershipUsers,
-  getDividendPayouts,
-} from 'common/calculate/cert'
+import { getDividendPayouts } from 'common/calculate/cert'
 import { Uniswap2CertContract } from 'common/contract'
 import { dividendTxns } from './helpers/cert-txns'
 import { CertTxn } from 'common/txn'
 import { payUsers } from './utils'
-import { sum } from 'lodash'
 
 // Split "amount" of mana between all holders of the cert.
 const bodySchema = z.object({
