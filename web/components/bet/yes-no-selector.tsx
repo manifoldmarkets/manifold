@@ -157,15 +157,14 @@ export function ChooseCancelSelector(props: {
   )
 }
 
-const fundAmounts = [1000, 2500, 10000]
-
 export function FundsSelector(props: {
-  selected: 1000 | 2500 | 10000
-  onSelect: (selected: 1000 | 2500 | 10000) => void
+  fundAmounts: number[]
+  selected: number
+  onSelect: (selected: number) => void
   className?: string
   btnClassName?: string
 }) {
-  const { selected, onSelect, className } = props
+  const { selected, onSelect, className, fundAmounts } = props
   const btnClassName = clsx('!px-2 whitespace-nowrap', props.btnClassName)
 
   return (

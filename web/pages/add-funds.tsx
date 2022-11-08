@@ -10,26 +10,17 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Button } from 'web/components/buttons/button'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import {
-  AddFundsIOS,
-  OtherWaysToGetMana,
-} from 'web/components/native/add-funds-ios'
+import { OtherWaysToGetMana } from 'web/components/native/add-funds-ios'
+
+export const PRICES_LIST = [1000, 2500, 10000]
 
 export default function AddFundsPage() {
   const user = useUser()
 
-  const [amountSelected, setAmountSelected] = useState<1000 | 2500 | 10000>(
-    2500
-  )
+  const [amountSelected, setAmountSelected] = useState<number>(2500)
 
   useRedirectIfSignedOut()
   useTracking('view add funds')
-
-  const { isNative, platform } = getNativePlatform() ?? {}
-  if (isNative && platform === 'ios') {
-    return <AddFundsIOS />
-  }
 
   return (
     <Page>
@@ -56,6 +47,7 @@ export default function AddFundsPage() {
 
           <div className="mb-2 text-sm text-gray-500">Amount</div>
           <FundsSelector
+            fundAmounts={PRICES_LIST}
             className="max-w-md"
             selected={amountSelected}
             onSelect={setAmountSelected}

@@ -5,6 +5,9 @@ import { checkoutURL } from 'web/lib/service/stripe'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
 import { FundsSelector } from './bet/yes-no-selector'
+import { PRICES_LIST } from 'web/pages/add-funds'
+import { AddFundsIOS } from 'web/components/native/add-funds-ios'
+import { getNativePlatform } from 'web/lib/native/is-native'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -14,9 +17,11 @@ export function AddFundsModal(props: {
 
   const user = useUser()
 
-  const [amountSelected, setAmountSelected] = useState<1000 | 2500 | 10000>(
-    2500
-  )
+  const [amountSelected, setAmountSelected] = useState<number>(2500)
+  const { isNative, platform } = getNativePlatform() ?? {}
+  if (isNative && platform === 'ios') {
+    return <AddFundsIOS open={open} setOpen={setOpen} />
+  }
 
   return (
     <Modal open={open} setOpen={setOpen} className="rounded-md bg-white p-8">
@@ -28,7 +33,11 @@ export function AddFundsModal(props: {
       </div>
 
       <div className="mb-2 text-sm text-gray-500">Amount</div>
-      <FundsSelector selected={amountSelected} onSelect={setAmountSelected} />
+      <FundsSelector
+        fundAmounts={PRICES_LIST}
+        selected={amountSelected}
+        onSelect={setAmountSelected}
+      />
 
       <div className="mt-6">
         <div className="mb-1 text-sm text-gray-500">Price USD</div>

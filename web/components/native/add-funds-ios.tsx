@@ -1,10 +1,8 @@
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useTracking } from 'web/hooks/use-tracking'
-import { Page } from 'web/components/layout/page'
-import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
-import React from 'react'
+import React, { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { PAST_BET } from 'common/user'
 import {
@@ -14,35 +12,75 @@ import {
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Card } from 'web/components/widgets/card'
+import { FundsSelector } from 'web/components/bet/yes-no-selector'
+import { checkoutURL } from 'web/lib/service/stripe'
+import { Button } from 'web/components/buttons/button'
+import { trackCallback } from 'web/lib/service/analytics'
+import { useUser } from 'web/hooks/use-user'
+import { PRICES_LIST } from 'web/pages/add-funds'
+import { Modal } from 'web/components/layout/modal'
 
-export function AddFundsIOS() {
+export function AddFundsIOS(props: {
+  open: boolean
+  setOpen(open: boolean): void
+}) {
+  const { open, setOpen } = props
+
   useRedirectIfSignedOut()
   useTracking('view add funds')
+  const user = useUser()
+
+  const [amountSelected, setAmountSelected] = useState<number>(2999)
 
   return (
-    <Page>
-      <SEO
-        title="Get Mana"
-        description="Buy mana to trade in your favorite markets on Manifold"
-        url="/add-funds"
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      className="max-h-[34rem] overflow-y-scroll rounded-md bg-white p-8"
+    >
+      <Title className="!mt-0" text="Get Mana" />
+      <div className="mb-6 text-gray-500">
+        Buy mana (M$) to trade in your favorite markets. <br />{' '}
+      </div>
+
+      <div className="mb-2 text-sm text-gray-500">Amount</div>
+      <FundsSelector
+        fundAmounts={PRICES_LIST}
+        className="flex-wrap justify-center gap-y-2"
+        btnClassName={'max-w-[100px]'}
+        selected={amountSelected}
+        onSelect={(amount) => {
+          const newAmount = Math.round((amount * 0.2 + amount) / 100) - 0.01
+          setAmountSelected(newAmount)
+        }}
       />
 
-      <Col className="items-center">
-        <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
-          <Title className="!mt-0" text="Get Mana" />
-          <img
-            className="mb-6 block self-center"
-            src="/welcome/manipurple.png"
-            width={200}
-            height={158}
-          />
-          <div className="mb-6 text-indigo-700">
-            These are the best ways to get mana (M$): <br />
-          </div>
-          {OtherWaysToGetMana(true)}
-        </Col>
-      </Col>
-    </Page>
+      <div className="mt-6">
+        <div className="mb-1 text-sm text-gray-500">Price USD</div>
+        <div className="text-xl">${Math.round(amountSelected / 100)}</div>
+      </div>
+
+      <form
+        action={checkoutURL(user?.id || '', amountSelected)}
+        method="POST"
+        className="mt-8"
+      >
+        <Button
+          type="submit"
+          color="gradient"
+          size="xl"
+          className="w-full"
+          onClick={trackCallback('checkout', { amount: amountSelected })}
+        >
+          Checkout
+        </Button>
+      </form>
+
+      <div className="mb-6 mt-6 text-gray-500">
+        Short on USD?. Here are some other ways to get mana: <br />{' '}
+      </div>
+      {OtherWaysToGetMana(false)}
+    </Modal>
   )
 }
 
