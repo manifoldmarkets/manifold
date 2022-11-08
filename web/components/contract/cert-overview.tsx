@@ -16,6 +16,7 @@ import { swapCert } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Title } from '../widgets/title'
 
@@ -77,54 +78,50 @@ function BuyCertWidget(props: { contract: CertContract }) {
 
   return (
     // Make it look like a nice card
-    <Row className="flex-1 justify-between gap-2 rounded-lg bg-gray-100 p-4">
-      <Col>
-        <Title>Buy "{contract.question}"</Title>
-
-        <Col>
-          <label htmlFor="amount">{ENV_CONFIG.moneyMoniker} Amount</label>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(parseInt(e.target.value))}
-          />
+    <Col className="gap-2 rounded-lg bg-gray-100 p-4">
+      <Title>Buy "{contract.question}"</Title>
+      <Row className="justify-between gap-4">
+        <Col className="flex-1">
+          <Col>
+            <label htmlFor="amount">{ENV_CONFIG.moneyMoniker} Amount</label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(parseInt(e.target.value))}
+            />
+          </Col>
+          <Col>
+            <label htmlFor="shares">Shares purchased</label>
+            <input
+              className="border-none bg-gray-100"
+              type="number"
+              value={shares}
+              readOnly
+            />
+          </Col>
+          <Spacer h={8} />
+          <Button
+            onClick={async () => {
+              console.log('buying', amount, 'shares')
+              await swapCert({
+                certId: contract.id,
+                amount,
+              })
+            }}
+          >
+            Buy
+          </Button>
+          <Row>
+            <br /> Average price per share: {formatPrice(pricePerShare)}
+            <br /> Cert price: {formatPrice(calculatePrice(contract.pool))}{' '}
+            {' => '}
+            {formatPrice(calculatePriceAfterBuy(contract.pool, amount))}
+          </Row>
         </Col>
-        <Col>
-          <label htmlFor="shares">Shares purchased</label>
-          <input
-            className="border-none bg-gray-100"
-            type="number"
-            value={shares}
-            readOnly
-          />
-        </Col>
-        <Button
-          onClick={async () => {
-            console.log('buying', amount, 'shares')
-            await swapCert({
-              certId: contract.id,
-              amount,
-            })
-          }}
-        >
-          Buy
-        </Button>
-        <Row>
-          <br /> Average price per share: {formatPrice(pricePerShare)}
-          <br /> Cert price: {formatPrice(calculatePrice(contract.pool))}{' '}
-          {' => '}
-          {formatPrice(calculatePriceAfterBuy(contract.pool, amount))}
-        </Row>
-      </Col>
-      <Image
-        alt=""
-        width={300}
-        height={300}
-        src={
-          contract.coverImageUrl ??
-          `https://picsum.photos/seed/${contract.id}/300/300`
-        }
-      />
-    </Row>
+        {contract.coverImageUrl && (
+          <Image alt="" width={300} height={300} src={contract.coverImageUrl} />
+        )}
+      </Row>
+    </Col>
   )
 }
