@@ -36,7 +36,7 @@ import { Bet } from '../../common/bet'
 import { getCloseDate, getGroupForMarket } from './helpers/openai-utils'
 import { htmlToRichText } from '../../common/util/parse'
 import { marked } from 'marked'
-import { mintAndPoolCert } from './helpers/cert'
+import { mintAndPoolCert } from './helpers/cert-txns'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(

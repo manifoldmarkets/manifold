@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { User } from 'common/user'
 import { afterSwap } from 'common/calculate/uniswap2'
 import { Cert, Uniswap2CertContract } from 'common/contract'
-import { buyFromPool } from './helpers/cert'
+import { buyFromPool } from './helpers/cert-txns'
 
 const bodySchema = z.object({
   certId: z.string(),
