@@ -1,9 +1,11 @@
 import * as functions from 'firebase-functions'
+import { groupBy } from 'lodash'
 import { getUser, getValues } from './utils'
 import {
   createBadgeAwardedNotification,
   createCommentOrAnswerOrUpdatedContractNotification,
 } from './create-notification'
+import { getContractBetMetrics } from '../../common/calculate'
 import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import * as admin from 'firebase-admin'
@@ -53,6 +55,20 @@ async function handleResolvedContract(contract: Contract) {
   // get comments on this contract
   const comments = await getValues<ContractComment>(
     firestore.collection(`contracts/${contract.id}/comments`)
+  )
+
+  // update user metrics for this contract for the final time
+  const betsByUser = groupBy(bets, (b) => b.userId)
+  await Promise.all(
+    Object.entries(betsByUser).map(([userId, userBets]) => {
+      const metrics = getContractBetMetrics(contract, userBets)
+      return firestore
+        .collection('users')
+        .doc(userId)
+        .collection('contract-metrics')
+        .doc(contract.id)
+        .set(metrics)
+    })
   )
 
   const { topCommentId, profitById, commentsById, betsById, topCommentBetId } =
