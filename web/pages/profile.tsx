@@ -19,11 +19,11 @@ import { changeUserInfo } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
 import {
-  deletePrivateUser,
   getUserAndPrivateUser,
   updatePrivateUser,
   updateUser,
 } from 'web/lib/firebase/users'
+import { deleteField } from 'firebase/firestore'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -110,8 +110,19 @@ export default function ProfilePage(props: {
   }
 
   const deleteAccount = async () => {
-    await changeUserInfo({ userDeleted: true })
-    await deletePrivateUser(privateUser.id)
+    await updateUser(user.id, { userDeleted: true })
+    await updatePrivateUser(privateUser.id, {
+      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      email: deleteField(),
+      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      twitchInfo: deleteField(),
+      notificationPreferences: {
+        ...privateUser.notificationPreferences,
+        opt_out_all: ['email', 'mobile', 'browser'],
+      },
+    })
   }
 
   const fileHandler = async (event: any) => {
