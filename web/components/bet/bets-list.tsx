@@ -27,18 +27,15 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { SiteLink } from '../widgets/site-link'
 import {
   calculatePayout,
-  calculateSaleAmount,
   getOutcomeProbability,
-  getProbabilityAfterSale,
   getContractBetMetrics,
   resolvedPayout,
   getContractBetNullMetrics,
 } from 'common/calculate'
-import { NumericContract } from 'common/contract'
+import { DPMContract, NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { useUserBets } from 'web/hooks/use-user-bets'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
 import { Pagination } from '../widgets/pagination'
 import { LimitOrderTable } from './limit-bets'
@@ -55,6 +52,10 @@ import { ExclamationIcon } from '@heroicons/react/outline'
 import { Select } from '../widgets/select'
 import { Table } from '../widgets/table'
 import { SellRow } from './sell-row'
+import {
+  calculateDpmSaleAmount,
+  getDpmProbabilityAfterSale,
+} from 'common/calculate-dpm'
 
 type BetSort = 'newest' | 'profit' | 'loss' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -444,12 +445,9 @@ export function ContractBetsTable(props: {
 
   const { isResolved, mechanism, outcomeType } = contract
   const isCPMM = mechanism === 'cpmm-1'
+  const isDPM = mechanism === 'dpm-2'
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
-  )
 
   return (
     <div className="overflow-x-auto">
@@ -480,10 +478,10 @@ export function ContractBetsTable(props: {
             {isCPMM && <th>Type</th>}
             <th>Outcome</th>
             <th>Amount</th>
-            {!isCPMM && !isNumeric && (
+            {isDPM && !isNumeric && (
               <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             )}
-            {!isCPMM && !isResolved && <th>Payout if chosen</th>}
+            {isDPM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
             {!isPseudoNumeric && <th>Probability</th>}
             <th>Date</th>
@@ -497,8 +495,6 @@ export function ContractBetsTable(props: {
               saleBet={salesDict[bet.id]}
               contract={contract}
               isYourBet={isYourBets}
-              unfilledBets={unfilledBets}
-              balanceByUserId={balanceByUserId}
             />
           ))}
         </tbody>
@@ -512,11 +508,8 @@ function BetRow(props: {
   contract: Contract
   saleBet?: Bet
   isYourBet: boolean
-  unfilledBets: LimitBet[]
-  balanceByUserId: { [userId: string]: number }
 }) {
-  const { bet, saleBet, contract, isYourBet, unfilledBets, balanceByUserId } =
-    props
+  const { bet, saleBet, contract, isYourBet } = props
   const {
     amount,
     outcome,
@@ -535,25 +528,29 @@ function BetRow(props: {
   const isCPMM = mechanism === 'cpmm-1'
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isDPM = mechanism === 'dpm-2'
 
-  // calculateSaleAmount is very slow right now so that's why we memoized this
-  const payout = useMemo(() => {
+  const dpmPayout = (() => {
+    if (!isDPM) return 0
+
     const saleBetAmount = saleBet?.sale?.amount
     if (saleBetAmount) {
       return saleBetAmount
     } else if (contract.isResolved) {
       return resolvedPayout(contract, bet)
     } else {
-      return calculateSaleAmount(contract, bet, unfilledBets, balanceByUserId)
+      return calculateDpmSaleAmount(contract, bet)
     }
-  }, [contract, bet, saleBet, unfilledBets, balanceByUserId])
+  })()
 
-  const saleDisplay = isAnte ? (
+  const saleDisplay = !isDPM ? (
+    ''
+  ) : isAnte ? (
     'ANTE'
   ) : saleBet ? (
-    <>{formatMoney(payout)} (sold)</>
+    <>{formatMoney(dpmPayout)} (sold)</>
   ) : (
-    formatMoney(payout)
+    formatMoney(dpmPayout)
   )
 
   const payoutIfChosenDisplay =
@@ -575,19 +572,12 @@ function BetRow(props: {
     <tr>
       <td className="text-gray-700">
         {isYourBet &&
-          !isCPMM &&
+          isDPM &&
+          !isNumeric &&
           !isResolved &&
           !isClosed &&
           !isSold &&
-          !isAnte &&
-          !isNumeric && (
-            <SellButton
-              contract={contract}
-              bet={bet}
-              unfilledBets={unfilledBets}
-              balanceByUserId={balanceByUserId}
-            />
-          )}
+          !isAnte && <DpmSellButton contract={contract} bet={bet} />}
       </td>
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
@@ -608,8 +598,8 @@ function BetRow(props: {
         {formatMoney(Math.abs(amount))}
         {ofTotalAmount}
       </td>
-      {!isCPMM && !isNumeric && <td>{saleDisplay}</td>}
-      {!isCPMM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
+      {isDPM && !isNumeric && <td>{saleDisplay}</td>}
+      {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>{formatWithCommas(Math.abs(shares))}</td>
       {!isPseudoNumeric && (
         <td>
@@ -627,13 +617,8 @@ function BetRow(props: {
   )
 }
 
-function SellButton(props: {
-  contract: Contract
-  bet: Bet
-  unfilledBets: LimitBet[]
-  balanceByUserId: { [userId: string]: number }
-}) {
-  const { contract, bet, unfilledBets, balanceByUserId } = props
+function DpmSellButton(props: { contract: DPMContract; bet: Bet }) {
+  const { contract, bet } = props
   const { outcome, shares, loanAmount } = bet
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -643,20 +628,13 @@ function SellButton(props: {
     outcome === 'NO' ? 'YES' : outcome
   )
 
-  const outcomeProb = getProbabilityAfterSale(
-    contract,
+  const outcomeProb = getDpmProbabilityAfterSale(
+    contract.totalShares,
     outcome,
-    shares,
-    unfilledBets,
-    balanceByUserId
+    shares
   )
 
-  const saleAmount = calculateSaleAmount(
-    contract,
-    bet,
-    unfilledBets,
-    balanceByUserId
-  )
+  const saleAmount = calculateDpmSaleAmount(contract, bet)
   const profit = saleAmount - bet.amount
 
   return (

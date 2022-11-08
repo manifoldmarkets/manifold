@@ -1,7 +1,6 @@
 import { maxBy, partition, sortBy, sum, sumBy } from 'lodash'
 import { Bet, LimitBet } from './bet'
 import {
-  calculateCpmmSale,
   getCpmmProbability,
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbabilityAfterSale,
@@ -10,7 +9,6 @@ import {
 import {
   calculateDpmPayout,
   calculateDpmPayoutAfterCorrectBet,
-  calculateDpmSaleAmount,
   calculateDpmShares,
   getDpmOutcomeProbability,
   getDpmProbability,
@@ -73,25 +71,6 @@ export function calculateShares(
   return contract.mechanism === 'cpmm-1'
     ? calculateCpmmSharesAfterFee(contract, bet, betChoice)
     : calculateDpmShares(contract.totalShares, bet, betChoice)
-}
-
-export function calculateSaleAmount(
-  contract: Contract,
-  bet: Bet,
-  unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
-) {
-  return contract.mechanism === 'cpmm-1' &&
-    (contract.outcomeType === 'BINARY' ||
-      contract.outcomeType === 'PSEUDO_NUMERIC')
-    ? calculateCpmmSale(
-        contract,
-        Math.abs(bet.shares),
-        bet.outcome as 'YES' | 'NO',
-        unfilledBets,
-        balanceByUserId
-      ).saleValue
-    : calculateDpmSaleAmount(contract, bet)
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
