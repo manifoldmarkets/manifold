@@ -44,7 +44,11 @@ export const validateiap = newEndpoint({}, async (req, auth) => {
     throw new APIError(400, 'iap receipt validation failed')
   })
 
-  log('validated data')
+  log('validated data, sandbox:', validatedData.sandbox)
+  if (isProd() && validatedData.sandbox) {
+    throw new APIError(400, 'iap sandbox receipt used in production')
+  }
+
   const options = {
     ignoreCanceled: true, // Apple ONLY (for now...): purchaseData will NOT contain cancceled items
     ignoreExpired: true, // purchaseData will NOT contain exipired subscription items
