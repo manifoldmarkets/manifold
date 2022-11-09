@@ -168,7 +168,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
 
   const { xAxis, yAxis } = useMemo(() => {
     const xAxis = axisBottom<number>(xScale).ticks(w / 100)
-    const yAxis = axisLeft<number>(yScale).tickFormat((n) => formatPct(n, 2))
+    const yAxis = axisRight<number>(yScale).tickFormat((n) => formatPct(n, 2))
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
 
@@ -255,14 +255,14 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis =
       yKind === 'percent'
-        ? axisLeft<number>(yScale)
+        ? axisRight<number>(yScale)
             .tickValues(pctTickValues)
             .tickFormat((n) => formatPct(n))
         : yKind === 'm$'
-        ? axisLeft<number>(yScale)
+        ? axisRight<number>(yScale)
             .ticks(nTicks)
             .tickFormat((n) => formatMoney(n))
-        : axisLeft<number>(yScale).ticks(nTicks)
+        : axisRight<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
