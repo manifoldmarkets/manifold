@@ -1,30 +1,18 @@
 import { app } from 'web/lib/firebase/init'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
-import { useEffect } from 'react'
 import { Notification } from 'common/notification'
 import {
   getSourceUrl,
   handlePushNotificationPermissionStatus,
   setPushToken,
 } from 'web/lib/firebase/notifications'
-import { NextRouter, useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import { getIsNative, setIsNative } from 'web/lib/native/is-native'
-import { validateIapReceipt } from 'web/lib/firebase/api'
-import { useUser } from 'web/hooks/use-user'
+import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
-  const user = useUser()
-
-  const handleNativeMessage = async (e: any) => {
-    let event
-    try {
-      event = JSON.parse(e.data)
-    } catch (e) {
-      return
-    }
-    const { type, data } = event
-    console.log('Received native event: ', event)
+  const handleNativeMessage = async (type: string, data: any) => {
     if (type === 'setIsNative') {
       setIsNative(true, data.platform)
     } else if (type === 'nativeFbUser') {
@@ -52,21 +40,19 @@ export const NativeMessageListener = () => {
       } catch (e) {
         console.log(`Error navigating to link route ${newRoute}`, e)
       }
-    } else if (type === 'iapReceipt') {
-      console.log('iapReceipt', data)
-      handleIapReceipt(data.receipt, router, user?.username ?? '')
     }
   }
-
-  useEffect(() => {
-    document.addEventListener('message', handleNativeMessage)
-    window.addEventListener('message', handleNativeMessage)
-    return () => {
-      document.removeEventListener('message', handleNativeMessage)
-      window.removeEventListener('message', handleNativeMessage)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  useNativeMessages(
+    [
+      'setIsNative',
+      'nativeFbUser',
+      'pushNotificationPermissionStatus',
+      'pushToken',
+      'notification',
+      'link',
+    ],
+    handleNativeMessage
+  )
 
   return <div />
 }
@@ -81,18 +67,4 @@ export const postMessageToNative = (type: string, data: any) => {
       data,
     })
   )
-}
-
-const handleIapReceipt = async (
-  receipt: string,
-  router: NextRouter,
-  username: string
-) => {
-  const result = await validateIapReceipt({ receipt: receipt })
-  if (result.success) {
-    console.log('iap receipt validated')
-    router.push(`/${username}?iapSuccess=true`)
-  } else {
-    console.log('iap receipt validation failed')
-  }
 }

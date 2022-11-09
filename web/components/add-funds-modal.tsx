@@ -17,12 +17,28 @@ import {
 } from 'common/economy'
 import Link from 'next/link'
 import { Card } from 'web/components/widgets/card'
+import { validateIapReceipt } from 'web/lib/firebase/api'
+import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 export function AddFundsModal(props: {
   open: boolean
   setOpen(open: boolean): void
 }) {
   const { open, setOpen } = props
+
+  const handleIapReceipt = async (type: string, data: any) => {
+    const { receipt } = data
+    const result = await validateIapReceipt({ receipt: receipt })
+    if (result.success) {
+      console.log('iap receipt validated')
+      alert('iap receipt validated, thanks!')
+    } else {
+      alert('iap receipt validation failed')
+      console.log('iap receipt validation failed')
+    }
+  }
+
+  useNativeMessages(['iapReceipt'], handleIapReceipt)
 
   return (
     <Modal open={open} setOpen={setOpen} className="rounded-md bg-white p-8">
