@@ -226,7 +226,6 @@ const Peek = (props: { contract: BinaryContract; onClose: () => void }) => {
       <div className="grow overflow-auto bg-white px-4">
         <h1 className="mb-8 text-lg font-semibold">{question}</h1>
         <Content size="sm" content={description} />
-        
         <SiteLink
           href={contractPath(contract)}
           className="flex justify-center gap-2 text-indigo-700"
