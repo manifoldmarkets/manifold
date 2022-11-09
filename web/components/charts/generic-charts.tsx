@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react'
 import { bisector, extent } from 'd3-array'
-import { axisBottom, axisLeft, axisRight } from 'd3-axis'
+import { axisBottom, axisRight } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 import {
