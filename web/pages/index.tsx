@@ -25,7 +25,10 @@ import {
 import { Sort } from 'web/components/contract-search'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { PostCard } from 'web/components/posts/post-card'
-import { useTrendingContracts } from 'web/hooks/use-contracts'
+import {
+  useContractsByDailyScoreNotBetOn,
+  useTrendingContracts,
+} from 'web/hooks/use-contracts'
 import { trendingIndex } from 'web/lib/service/algolia'
 import { CPMMBinaryContract, Contract } from 'common/contract'
 import { sortBy } from 'lodash'
@@ -61,11 +64,7 @@ export default function Home() {
 
   const globalConfig = useGlobalConfig()
   const trendingContracts = useTrendingContracts(6)
-  const latestPosts = useAllPosts(true)
-    // Remove "test" posts.
-    .filter((p) => !p.title.toLocaleLowerCase().split(' ').includes('test'))
-    .slice(0, 2)
-
+  const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(6)
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
     key: 'home-pinned',
@@ -91,7 +90,7 @@ export default function Home() {
     }
   }, [globalConfig, setPinned])
   const isLoading =
-    !trendingContracts || !latestPosts || !globalConfig || !pinned
+    !trendingContracts || !globalConfig || !pinned || !dailyTrendingContracts
   return (
     <Page>
       <SEO
@@ -113,16 +112,19 @@ export default function Home() {
                 sort={'score' as Sort}
                 icon={'🔥'}
               />
+              <SearchSection
+                key={'daily-trending'}
+                label={'Daily changed'}
+                contracts={dailyTrendingContracts}
+                sort={'daily-score'}
+                icon={'📈'}
+              />
               <ActivitySection key={'live-feed'} />
               <FeaturedSection
                 key={'featured'}
                 globalConfig={globalConfig}
                 pinned={pinned}
                 isAdmin={false}
-              />
-              <LatestPostsSection
-                key={'latest-posts'}
-                latestPosts={latestPosts}
               />
             </>
           )}

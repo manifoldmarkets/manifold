@@ -112,7 +112,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const trendingContracts = useTrendingContracts(6, userBlockFacetFilters)
   const newContracts = useNewContracts(6, userBlockFacetFilters)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
-    user?.id,
     6,
     userBlockFacetFilters
   )

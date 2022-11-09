@@ -66,21 +66,18 @@ export const useNewContracts = (
 }
 
 export const useContractsByDailyScoreNotBetOn = (
-  userId: string | null | undefined,
   maxContracts: number,
   additionalFilters?: string[]
 ) => {
-  const { data } = useQuery(['daily-score', userId, maxContracts], () =>
+  const { data } = useQuery(['daily-score', maxContracts], () =>
     dailyScoreIndex.search<CPMMBinaryContract>('', {
-      facetFilters: [
-        'isResolved:false',
-        'visibility:public',
-        `uniqueBettors:-${userId}`,
-      ].concat(additionalFilters ?? []),
+      facetFilters: ['isResolved:false', 'visibility:public'].concat(
+        additionalFilters ?? []
+      ),
       hitsPerPage: maxContracts,
     })
   )
-  if (!userId || !data) return undefined
+  if (!data) return undefined
   return data.hits.filter((c) => c.dailyScore)
 }
 

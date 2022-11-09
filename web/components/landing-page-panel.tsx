@@ -35,13 +35,14 @@ export function PaginationCircle(props: {
 }) {
   const { currentPageNumber, pageNumber, onClick } = props
   return (
-    <div
-      onClick={() => onClick()}
-      className={clsx(
-        'h-2 w-2 cursor-pointer rounded-full transition-colors',
-        currentPageNumber === pageNumber ? 'bg-white' : 'bg-indigo-400'
-      )}
-    />
+    <div onClick={() => onClick()} className="cursor-pointer p-1.5">
+      <div
+        className={clsx(
+          'h-2 w-2 rounded-full transition-colors',
+          currentPageNumber === pageNumber ? 'bg-white' : 'bg-indigo-400'
+        )}
+      />
+    </div>
   )
 }
 
@@ -50,23 +51,14 @@ export function LandingPagePanel() {
   const isMobile = useIsMobile()
   const desktop_height = 'h-60' //240px
   const mobile_height = 'h-96'
-
-  const [isButtonHover, setIsButtonHovered] = useState(false)
   const [pageNumber, setPageNumber] = useState<PageNumber>(1)
-  const [currTimeoutId, setCurrTimeoutId] = useState<
-    NodeJS.Timeout | undefined | null
-  >(null)
 
   useEffect(() => {
-    if (currTimeoutId) {
-      clearTimeout(currTimeoutId)
-    }
     const newTimeoutId = setTimeout(
       () => setPageNumber(getNextPageNumber(pageNumber)),
-      5500
+      6000
     )
-    setCurrTimeoutId(newTimeoutId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => clearTimeout(newTimeoutId)
   }, [pageNumber])
 
   return (
@@ -99,8 +91,8 @@ export function LandingPagePanel() {
           >
             <div
               className={clsx(
-                'z-50 gap-3',
-                isMobile ? 'mt-40 ml-3 flex flex-col' : 'ml-40 flex flex-row'
+                'z-50 ',
+                isMobile ? 'mt-40 ml-1 flex flex-col' : 'ml-40 flex flex-row'
               )}
             >
               <PaginationCircle
@@ -130,16 +122,9 @@ export function LandingPagePanel() {
           )}
         >
           <LandingPageManifoldMarketsLogo isMobile={isMobile} />
-          <div
-            className="absolute bottom-16 right-8 z-30 md:right-12"
-            onMouseEnter={() => setIsButtonHovered(true)}
-            onMouseLeave={() => setIsButtonHovered(false)}
-          >
+          <div className="group absolute bottom-16 right-8 z-30 md:right-12">
             <Button
-              className={clsx(
-                'absolute z-10 transition-all ease-in-out focus:bottom-0.5 focus:-left-0.5',
-                isButtonHover ? 'bottom-2 -left-2' : 'bottom-1.5 -left-1.5'
-              )}
+              className="absolute bottom-1.5 -left-1.5 z-10 transition-all ease-in-out focus:bottom-0.5 focus:-left-0.5 group-hover:bottom-2 group-hover:-left-2 focus:group-hover:bottom-0.5 focus:group-hover:-left-0.5"
               onClick={withTracking(firebaseLogin, 'landing page button click')}
               color="gradient-pink"
               size={isMobile ? 'xl' : '2xl'}
@@ -191,7 +176,7 @@ export function LandingPage0(props: { isMobile: boolean }) {
       </div>
       <div
         className={clsx(
-          'sm: absolute text-xl text-indigo-300',
+          'absolute text-xl text-indigo-300',
           isMobile
             ? 'animate-slide-up-2 left-[21px] top-[33px]'
             : 'animate-slide-in-1 left-[33px] top-[17px]'
@@ -215,7 +200,7 @@ export function LandingPage0(props: { isMobile: boolean }) {
           options={{ delay: 30 }}
           onInit={(typeWriter) => {
             typeWriter
-              .pauseFor(1400)
+              .pauseFor(2500)
               .typeString('Will Michelle Obama be president in 2024?')
               .start()
           }}
@@ -268,18 +253,14 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
 
 export function LandingPage1(props: { isMobile: boolean }) {
   const { isMobile } = props
-  const startPredictMs = 2200
+  const startPredictMs = 3000
   const text = 'Predict with play money'
   const [shouldPercentChange, setShouldPercentChange] = useState(false)
   const [shouldButtonHighlight, setShouldButtonHighlight] = useState(false)
-  const [coinVisible0, setCoinVisibile0] = useState(true)
-  const [coinVisible1, setCoinVisibile1] = useState(true)
-  const [coinVisible2, setCoinVisibile2] = useState(true)
-  setTimeout(() => setShouldButtonHighlight(true), startPredictMs - 300)
+  const [isMVisible, setIsMVisible] = useState(true)
+  setTimeout(() => setShouldButtonHighlight(true), startPredictMs - 100)
   setTimeout(() => setShouldPercentChange(true), startPredictMs)
-  setTimeout(() => setCoinVisibile0(false), startPredictMs + 800)
-  setTimeout(() => setCoinVisibile1(false), startPredictMs + 850)
-  setTimeout(() => setCoinVisibile2(false), startPredictMs + 900)
+  setTimeout(() => setIsMVisible(false), startPredictMs + 400)
   return (
     <>
       <div
@@ -326,7 +307,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
       >
         <div
           className={clsx(
-            'h-full rounded-l-md bg-indigo-200 transition-all duration-1000 ease-out',
+            'h-full rounded-l-md bg-indigo-200 transition-all duration-[1500ms] ease-out',
             shouldPercentChange ? 'w-48' : 'w-[120px]'
           )}
         />
@@ -342,7 +323,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         />
         <div className="absolute top-[6px] left-[100px] z-30 text-xl font-semibold">
           {shouldPercentChange && (
-            <CountUp start={50} end={75} duration={0.8} suffix="%" />
+            <CountUp start={50} end={75} duration={1.3} suffix="%" />
           )}
           {!shouldPercentChange && <div>50%</div>}
         </div>
@@ -357,6 +338,30 @@ export function LandingPage1(props: { isMobile: boolean }) {
             'text-greyscale-7 absolute right-[6px] top-[11px] z-0 h-6 w-6 opacity-20'
           )}
         />
+        <div
+          className={clsx(
+            'animate-float-and-fade-1 absolute right-[6px] top-[2px] z-40 text-indigo-600',
+            !isMVisible ? 'opacity-0' : ''
+          )}
+        >
+          M$
+        </div>
+        <div
+          className={clsx(
+            'animate-float-and-fade-2 absolute right-[6px] top-[2px] z-40 text-indigo-600',
+            !isMVisible ? 'opacity-0' : ''
+          )}
+        >
+          M$
+        </div>
+        <div
+          className={clsx(
+            'animate-float-and-fade-3 absolute right-[6px] top-[2px] z-40 text-indigo-600',
+            !isMVisible ? 'opacity-0' : ''
+          )}
+        >
+          M$
+        </div>
       </div>
       <div
         className={clsx(
@@ -364,30 +369,6 @@ export function LandingPage1(props: { isMobile: boolean }) {
           isMobile
             ? 'animate-slide-up-4-big left-[44px] top-[138px]'
             : 'animate-slide-in-3 left-[56px] top-[122px]'
-        )}
-      />
-      <img
-        src="landing/mana.png"
-        className={clsx(
-          'animate-coin-in-0 absolute z-20 h-5 transition-opacity',
-          isMobile ? 'top-[150px] left-[240px]' : 'top-[130px] left-[250px]',
-          coinVisible0 ? 'opacity-100' : 'opacity-0'
-        )}
-      />
-      <img
-        src="landing/mana.png"
-        className={clsx(
-          'animate-coin-in-1 absolute z-20 h-5 rotate-45 transition-opacity',
-          isMobile ? 'top-[150px] left-[240px]' : 'top-[130px] left-[250px]',
-          coinVisible1 ? 'opacity-100' : 'opacity-0'
-        )}
-      />
-      <img
-        src="landing/mana.png"
-        className={clsx(
-          'animate-coin-in-2 absolute z-20 h-5 transition-opacity',
-          isMobile ? 'top-[150px] left-[240px]' : 'top-[130px] left-[250px]',
-          coinVisible2 ? 'opacity-100' : 'opacity-0'
         )}
       />
     </>
