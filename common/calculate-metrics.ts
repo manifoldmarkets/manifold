@@ -35,7 +35,7 @@ export const computeInvestmentValueCustomProb = (
   p: number
 ) => {
   return sumBy(bets, (bet) => {
-    if (!contract || contract.isResolved) return 0
+    if (!contract) return 0
     if (bet.sale || bet.isSold) return 0
     const { outcome, shares } = bet
 
@@ -315,10 +315,8 @@ const calculatePeriodProfit = (
     (b) => b.createdTime < fromTime
   )
 
-  const prevProb = contract.prob - contract.probChanges[period]
-  const prob = contract.resolutionProbability
-    ? contract.resolutionProbability
-    : contract.prob
+  const { prob, probChanges } = contract
+  const prevProb = prob - probChanges[period]
 
   const previousBetsValue = computeInvestmentValueCustomProb(
     previousBets,
