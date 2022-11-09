@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { getNumericBetsInfo } from 'common/new-bet'
 import { Bet } from 'common/bet'
 import {
-  calculatePayoutAfterCorrectBet,
   getOutcomeProbability,
 } from 'common/calculate'
 import { NumericContract } from 'common/contract'
@@ -21,6 +20,7 @@ import { Spacer } from '../layout/spacer'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
+import { calculateDpmPayoutAfterCorrectBet } from 'common/calculate-dpm'
 
 export function NumericBetPanel(props: {
   contract: NumericContract
@@ -126,7 +126,7 @@ function NumericBuyPanel(props: {
 
   const currentPayout =
     betAmount && bucketChoice
-      ? calculatePayoutAfterCorrectBet(
+      ? calculateDpmPayoutAfterCorrectBet(
           {
             ...contract,
             pool: newPool,

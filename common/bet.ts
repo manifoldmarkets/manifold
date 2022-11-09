@@ -23,7 +23,6 @@ export type Bet = {
   fees: Fees
 
   isAnte?: boolean
-  isLiquidityProvision?: boolean
   isRedemption?: boolean
   challengeSlug?: string
 
