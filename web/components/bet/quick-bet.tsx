@@ -323,7 +323,7 @@ function BinaryQuickBetButton(props: {
         <span
           className={clsx(
             'text-sm font-light',
-            shouldFocus ? 'text-indigo-600' : 'text-greyscale-4'
+            shouldFocus ? 'text-indigo-600' : 'text-gray-400'
           )}
         >
           {shouldFocus
@@ -526,7 +526,7 @@ function ContractCardAnswer(props: {
         <AnswerLabel
           className={clsx(
             'text-md',
-            type === 'loser' ? 'text-greyscale-5' : 'text-greyscale-7'
+            type === 'loser' ? 'text-gray-500' : 'text-gray-900'
           )}
           answer={answer}
           truncate="medium"
@@ -534,7 +534,7 @@ function ContractCardAnswer(props: {
         <div
           className={clsx(
             'text-md font-semibold',
-            type === 'loser' ? 'text-greyscale-5' : 'text-greyscale-7'
+            type === 'loser' ? 'text-gray-500' : 'text-gray-900'
           )}
         >
           {display}
@@ -572,7 +572,7 @@ function getNumericScale(contract: NumericContract) {
 const OUTCOME_TO_COLOR_BAR = {
   YES: 'bg-teal-200',
   NO: 'bg-scarlet-200',
-  CANCEL: 'bg-greyscale-1.5',
+  CANCEL: 'bg-gray-100',
   MKT: 'bg-sky-200',
 }
 
@@ -593,7 +593,7 @@ export function getBarColor(contract: Contract) {
 const OUTCOME_TO_COLOR_BACKGROUND = {
   YES: 'bg-teal-100',
   NO: 'bg-scarlet-100',
-  CANCEL: 'bg-greyscale-1.5',
+  CANCEL: 'bg-gray-100',
   MKT: 'bg-sky-100',
 }
 
@@ -601,22 +601,20 @@ export function getBgColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return (
-      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-greyscale-1'
-    )
+    return OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-gray-50'
   }
 
   // if ((contract.closeTime ?? Infinity) < Date.now()) {
-  //   return 'bg-greyscale-1.5'
+  //   return 'bg-gray-100'
   // }
 
-  return 'bg-greyscale-1'
+  return 'bg-gray-50'
 }
 
 const OUTCOME_TO_COLOR_TEXT = {
   YES: 'text-teal-600',
   NO: 'text-scarlet-600',
-  CANCEL: 'text-greyscale-4',
+  CANCEL: 'text-gray-400',
   MKT: 'text-sky-600',
 }
 
@@ -628,8 +626,8 @@ export function getTextColor(contract: Contract) {
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return 'text-greyscale-6'
+    return 'text-gray-600'
   }
 
-  return 'text-greyscale-7'
+  return 'text-gray-900'
 }

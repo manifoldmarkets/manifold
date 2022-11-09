@@ -128,7 +128,7 @@ export function AnswerCommentInput(props: {
           />
           <button onClick={onCancelAnswerResponse}>
             <div className="absolute -top-1 -right-2 h-4 w-4 rounded-full bg-white" />
-            <XCircleIcon className="text-greyscale-5 hover:text-greyscale-6 absolute -top-1 -right-2 h-5 w-5" />
+            <XCircleIcon className="absolute -top-1 -right-2 h-5 w-5 text-gray-500 hover:text-gray-600" />
           </button>
         </div>
       </Col>
@@ -190,7 +190,7 @@ export function CommentInputTextArea(props: {
     <TextEditor editor={editor}>
       {user && !isSubmitting && (
         <button
-          className="hover:text-greyscale-6 active:bg-greyscale-3 px-4 text-gray-400 transition-colors disabled:text-gray-300"
+          className="px-4 text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300 disabled:text-gray-300"
           disabled={!editor || editor.isEmpty}
           onClick={submit}
         >

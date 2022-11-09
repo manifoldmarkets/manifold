@@ -417,7 +417,7 @@ function HomeSectionHeader(props: {
   const { label, href, children, icon } = props
 
   return (
-    <Row className="bg-greyscale-1 text-greyscale-7 sticky top-0 z-20 my-1 items-center justify-between pb-2">
+    <Row className="sticky top-0 z-20 my-1 items-center justify-between bg-gray-50 pb-2 text-gray-900">
       {icon != null && <div className="mr-2 inline">{icon}</div>}
       {href ? (
         <SiteLink
@@ -426,7 +426,7 @@ function HomeSectionHeader(props: {
           onClick={() => track('home click section header', { section: href })}
         >
           {label}
-          <GoToIcon className="text-greyscale-4 mb-1 ml-2 inline h-5 w-5" />
+          <GoToIcon className="mb-1 ml-2 inline h-5 w-5 text-gray-400" />
         </SiteLink>
       ) : (
         <div className="flex-1 text-lg md:text-xl">{label}</div>

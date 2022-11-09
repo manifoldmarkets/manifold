@@ -195,7 +195,7 @@ function Page2() {
         the play money you bet with. You can also turn it into a real donation
         to charity, at a 100:1 ratio.
       </p>
-      <Row className="bg-greyscale-1 border-greyscale-2 mt-4 gap-2 rounded border py-2 pl-2 pr-4 text-sm text-indigo-700">
+      <Row className="mt-4 gap-2 rounded border border-gray-200 bg-gray-50 py-2 pl-2 pr-4 text-sm text-indigo-700">
         <ExclamationCircleIcon className="h-5 w-5" />
         Mana can not be traded in for real money.
       </Row>

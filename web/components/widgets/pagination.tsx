@@ -102,8 +102,8 @@ export function PaginationArrow(props: {
       className={clsx(
         'select-none rounded-lg transition-colors',
         disabled
-          ? 'text-greyscale-2 pointer-events-none'
-          : 'hover:bg-greyscale-1.5 cursor-pointer text-indigo-700'
+          ? 'pointer-events-none text-gray-200'
+          : 'cursor-pointer text-indigo-700 hover:bg-gray-100'
       )}
     >
       {nextOrPrev === 'prev' && (
@@ -123,7 +123,7 @@ export function PageNumbers(props: {
 }) {
   const { pageNumber, setPage, page } = props
   if (pageNumber === PAGE_ELLIPSES || typeof pageNumber === 'string') {
-    return <div className="text-greyscale-4 select-none">{PAGE_ELLIPSES}</div>
+    return <div className="select-none text-gray-400">{PAGE_ELLIPSES}</div>
   }
   return (
     <button
@@ -132,7 +132,7 @@ export function PageNumbers(props: {
         'select-none rounded-lg px-2',
         page === pageNumber
           ? 'bg-indigo-100 text-indigo-700'
-          : 'text-greyscale-4 hover:bg-greyscale-1.5'
+          : 'text-gray-400 hover:bg-gray-100'
       )}
     >
       {pageNumber + 1}

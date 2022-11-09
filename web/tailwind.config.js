@@ -259,17 +259,21 @@ module.exports = {
         'slide-up-3-grow': 'slide-up-3-grow 4s',
       },
       colors: {
+        gray: {
+          50: '#FBFBFF',
+          100: '#F4F4FB',
+          200: '#E7E7F4',
+          300: '#D8D8EB',
+          400: '#B1B1C7',
+          500: '#9191A7',
+          600: '#66667C',
+          700: '#4a4a68',
+          800: '#2d2d54',
+          900: '#111140',
+        },
         warning: '#F59E0B', // amber-500 TODO: change color
         error: '#FF5033', // TODO: change color
         'red-25': '#FDF7F6',
-        'greyscale-1': '#FBFBFF',
-        'greyscale-1.5': '#F4F4FB',
-        'greyscale-2': '#E7E7F4',
-        'greyscale-3': '#D8D8EB',
-        'greyscale-4': '#B1B1C7',
-        'greyscale-5': '#9191A7',
-        'greyscale-6': '#66667C',
-        'greyscale-7': '#111140',
         'highlight-blue': '#5BCEFF',
         'hover-blue': '#90DEFF',
         scarlet: {

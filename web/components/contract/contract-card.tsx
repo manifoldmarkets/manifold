@@ -143,7 +143,7 @@ export const ContractCard = memo(function ContractCard(props: {
           {!hasImage && !hideQuestion && (
             <div
               className={clsx(
-                'break-anywhere text-greyscale-7 text-md pb-2 font-medium',
+                'break-anywhere text-md pb-2 font-medium text-gray-900',
                 questionClass
               )}
             >
@@ -261,7 +261,7 @@ export function FreeResponseTopAnswer(props: {
 
   return topAnswer ? (
     <AnswerLabel
-      className="!text-greyscale-7 text-md"
+      className="text-md !text-gray-900"
       answer={topAnswer}
       truncate="medium"
     />
@@ -461,12 +461,12 @@ function MetricsFooter(props: {
   return (
     <Row
       className={clsx(
-        'bg-greyscale-1.5 items-center gap-4 pl-4 pr-4 pt-1 pb-2 text-sm'
+        'items-center gap-4 bg-gray-100 pl-4 pr-4 pt-1 pb-2 text-sm'
       )}
     >
       <Col className="w-1/2">
-        <span className="text-greyscale-4 text-xs"> Your position </span>
-        <div className="text-greyscale-6 text-sm">
+        <span className="text-xs text-gray-400"> Your position </span>
+        <div className="text-sm text-gray-600">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
               ? formatWithCommas(yesShares)
@@ -477,13 +477,13 @@ function MetricsFooter(props: {
         </div>
       </Col>
       <Col className="w-1/2">
-        <div className="text-greyscale-4 text-xs">
+        <div className="text-xs text-gray-400">
           {' '}
           Your {showDailyProfit ? 'daily' : 'total'} profit{' '}
         </div>
         <div
           className={clsx(
-            'text-greyscale-6 text-sm font-semibold'
+            'text-sm font-semibold text-gray-600'
             // : profit > 0
             // ? 'text-teal-500'
             // : 'text-red-600'
