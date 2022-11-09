@@ -7,10 +7,10 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { formatPercent } from 'common/util/format'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Linkify } from '../widgets/linkify'
 import { Input } from '../widgets/input'
+import { getOutcomeProbability } from 'common/calculate'
 
 export function AnswerItem(props: {
   answer: Answer
@@ -30,11 +30,11 @@ export function AnswerItem(props: {
     onChoose,
     onDeselect,
   } = props
-  const { resolution, resolutions, totalShares } = contract
+  const { resolution, resolutions } = contract
   const { username, avatarUrl, name, number, text } = answer
   const isChosen = chosenProb !== undefined
 
-  const prob = getDpmOutcomeProbability(totalShares, answer.id)
+  const prob = getOutcomeProbability(contract, answer.id)
   const roundedProb = Math.round(prob * 100)
   const probPercent = formatPercent(prob)
   const wasResolvedTo =

@@ -3,6 +3,7 @@ import { Bet } from './bet'
 import {
   getCpmmProbability,
   getCpmmOutcomeProbabilityAfterBet,
+  calculateCpmmPurchase,
 } from './calculate-cpmm'
 import { buy, getProb } from './calculate-cpmm-multi'
 import {
@@ -10,6 +11,7 @@ import {
   getDpmOutcomeProbability,
   getDpmProbability,
   getDpmOutcomeProbabilityAfterBet,
+  calculateDpmShares,
 } from './calculate-dpm'
 import { calculateFixedPayout } from './calculate-fixed-payouts'
 import {
@@ -45,7 +47,9 @@ export function getInitialProbability(
 
 export function getOutcomeProbability(contract: Contract, outcome: string) {
   return contract.mechanism === 'cpmm-1'
-    ? getCpmmProbability(contract.pool, contract.p)
+    ? outcome === 'YES'
+      ? getCpmmProbability(contract.pool, contract.p)
+      : 1 - getCpmmProbability(contract.pool, contract.p)
     : contract.mechanism === 'cpmm-2'
     ? getProb(contract.pool, outcome)
     : getDpmOutcomeProbability(contract.totalShares, outcome)
@@ -62,6 +66,19 @@ export function getOutcomeProbabilityAfterBet(
     : mechanism === 'cpmm-2'
     ? getProb(buy(pool, outcome, bet).newPool, outcome)
     : getDpmOutcomeProbabilityAfterBet(contract.totalShares, outcome, bet)
+}
+
+export function calculateSharesBought(
+  contract: Contract,
+  outcome: string,
+  amount: number
+) {
+  const { mechanism, pool } = contract
+  return mechanism === 'cpmm-1'
+    ? calculateCpmmPurchase(contract, amount, outcome).shares
+    : mechanism === 'cpmm-2'
+    ? buy(pool, outcome, amount).shares
+    : calculateDpmShares(contract.totalShares, amount, outcome)
 }
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {

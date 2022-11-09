@@ -16,16 +16,16 @@ import {
 } from 'common/util/format'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
-import {
-  getDpmOutcomeProbability,
-  calculateDpmShares,
-  calculateDpmPayoutAfterCorrectBet,
-  getDpmOutcomeProbabilityAfterBet,
-} from 'common/calculate-dpm'
+import { calculateDpmPayoutAfterCorrectBet } from 'common/calculate-dpm'
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
+import {
+  calculateSharesBought,
+  getOutcomeProbability,
+  getOutcomeProbabilityAfterBet,
+} from 'common/calculate'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -82,26 +82,24 @@ export function AnswerBetPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getDpmOutcomeProbability(contract.totalShares, answer.id)
+  const initialProb = getOutcomeProbability(contract, answer.id)
 
-  const resultProb = getDpmOutcomeProbabilityAfterBet(
-    contract.totalShares,
+  const resultProb = getOutcomeProbabilityAfterBet(
+    contract,
     answerId,
     betAmount ?? 0
   )
 
-  const shares = calculateDpmShares(
-    contract.totalShares,
-    betAmount ?? 0,
-    answerId
-  )
+  const shares = calculateSharesBought(contract, answerId, betAmount ?? 0)
 
   const currentPayout = betAmount
-    ? calculateDpmPayoutAfterCorrectBet(contract, {
-        outcome: answerId,
-        amount: betAmount,
-        shares,
-      } as Bet)
+    ? contract.mechanism === 'dpm-2'
+      ? calculateDpmPayoutAfterCorrectBet(contract, {
+          outcome: answerId,
+          amount: betAmount,
+          shares,
+        } as Bet)
+      : shares
     : 0
 
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
@@ -164,16 +162,24 @@ export function AnswerBetPanel(props: {
 
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-            <div>
-              Estimated <br /> payout if chosen
-            </div>
-            <InfoTooltip
-              text={`Current payout for ${formatWithCommas(
-                shares
-              )} / ${formatWithCommas(
-                shares + contract.totalShares[answerId]
-              )} shares`}
-            />
+            {contract.mechanism === 'dpm-2' ? (
+              <>
+                <div>
+                  Estimated <br /> payout if chosen
+                </div>
+                <InfoTooltip
+                  text={`Current payout for ${formatWithCommas(
+                    shares
+                  )} / ${formatWithCommas(
+                    shares + contract.totalShares[answerId]
+                  )} shares`}
+                />
+              </>
+            ) : (
+              <>
+                <div>Payout if chosen</div>
+              </>
+            )}
           </Row>
           <Row className="flex-wrap items-end justify-end gap-2">
             <span className="whitespace-nowrap">

@@ -5,8 +5,6 @@ import { ChatIcon } from '@heroicons/react/outline'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
-import { useAnswers } from 'web/hooks/use-answers'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
@@ -39,18 +37,21 @@ export function AnswersPanel(props: {
 }) {
   const isAdmin = useAdmin()
   const { contract, onAnswerCommentClick } = props
-  const { creatorId, resolution, resolutions, totalBets, outcomeType } =
-    contract
+  const { creatorId, resolution, resolutions, outcomeType } = contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
-  const answers = (useAnswers(contract.id) ?? contract.answers).filter(
+  const answers = contract.answers.filter(
     (a) => a.number != 0 || contract.outcomeType === 'MULTIPLE_CHOICE'
   )
 
-  const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] < 1)
+  const answersToHide = answers.filter(
+    (answer) => getOutcomeProbability(contract, answer.id) < 0.01
+  )
 
   const [winningAnswers, losingAnswers] = partition(
-    answers.filter((a) => (showAllAnswers ? true : totalBets[a.id] > 0)),
+    answers.filter((answer) =>
+      showAllAnswers ? true : !answersToHide.find((a) => answer.id === a.id)
+    ),
     (answer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
@@ -60,7 +61,7 @@ export function AnswersPanel(props: {
     ),
     ...sortBy(
       resolution ? [] : losingAnswers,
-      (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
+      (answer) => -1 * getOutcomeProbability(contract, answer.id)
     ),
   ]
 
@@ -150,7 +151,7 @@ export function AnswersPanel(props: {
               color={getAnswerColor(item, answersArray)}
             />
           ))}
-          {hasZeroBetAnswers && !showAllAnswers && (
+          {answersToHide.length > 0 && !showAllAnswers && (
             <Button
               className="self-end"
               color="gray-white"
@@ -198,7 +199,7 @@ function OpenAnswer(props: {
 }) {
   const { answer, contract, onAnswerCommentClick, color } = props
   const { username, avatarUrl, text } = answer
-  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
+  const prob = getOutcomeProbability(contract, answer.id)
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
   const colorWidth = 100 * Math.max(prob, 0.01)
