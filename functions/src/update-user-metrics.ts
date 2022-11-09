@@ -90,13 +90,13 @@ export async function updateUserMetrics() {
 
       const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
-      const unresolvedBetsByContractId = groupBy(
+      const metricRelevantBetsByContract = groupBy(
         metricRelevantBets,
         (b) => b.contractId
       )
 
       const metricsByContract = calculateMetricsByContract(
-        unresolvedBetsByContractId,
+        metricRelevantBetsByContract,
         contractsById
       )
 
@@ -125,7 +125,7 @@ export async function updateUserMetrics() {
       }
 
       const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
-        ? getUserLoanUpdates(unresolvedBetsByContractId, contractsById).payout
+        ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
         : undefined
 
       const userDoc = firestore.collection('users').doc(user.id)
