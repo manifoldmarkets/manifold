@@ -315,13 +315,13 @@ export default () => {
       />
       {initialized && (
         <div className="flex justify-center">
-          <div className="relative flex h-screen max-w-xl grow flex-col overflow-hidden">
+          <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
             <div className="p-2">
               <div className="flex flex-row justify-center">
                 <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} refreshSignal={refreshSignal} APIBase={APIBase} />
                 <AdditionalControlsDropdown socket={socket} />
               </div>
-              <div className="flex w-full justify-center">
+              <div className="w-full flex justify-center">
                 <ConfirmationButton
                   openModalBtn={{
                     label: `Create and feature a question`,
@@ -342,7 +342,7 @@ export default () => {
                     getUserBalance(manifoldUserID).then((b) => setBalance(b));
                   }}
                 >
-                  <Title className="xs:text-2xl !my-0 text-lg" text={`Create a new question ${selectedGroup ? `in '${selectedGroup.name}'` : ''}`} />
+                  <Title className="!my-0 text-lg xs:text-2xl" text={`Create a new question ${selectedGroup ? `in '${selectedGroup.name}'` : ''}`} />
 
                   <form>
                     <div className="form-control w-full">
@@ -364,12 +364,12 @@ export default () => {
                   </form>
 
                   <Row className="form-control items-start">
-                    <Row className="flex grow items-center justify-items-start gap-2">
+                    <Row className="gap-2 grow items-center justify-items-start flex">
                       <span>Cost:</span>
                       <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} />
                     </Row>
 
-                    <div className="label-text text-neutral self-center justify-self-end pl-1">{`M$${ante}`} </div>
+                    <div className="label-text text-neutral pl-1 justify-self-end self-center">{`M$${ante}`} </div>
                   </Row>
                   {ante > balance && (
                     <div className="-mt-4 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
@@ -385,10 +385,10 @@ export default () => {
               </div>
             </div>
 
-            <div className="relative flex grow flex-col overflow-y-auto p-2">
+            <div className="p-2 overflow-y-auto relative grow flex flex-col">
               {loadingContracts ? (
-                <div className="animate-fade flex grow justify-center">
-                  <div style={{ borderTopColor: 'transparent' }} className="border-primary h-10 w-10 animate-spin rounded-full border-4 border-solid" />
+                <div className="flex justify-center grow animate-fade">
+                  <div style={{ borderTopColor: 'transparent' }} className="w-10 h-10 border-4 border-primary border-solid rounded-full animate-spin" />
                 </div>
               ) : contracts.length > 0 ? (
                 contracts.map((contract, index) => (
@@ -399,7 +399,7 @@ export default () => {
                   </Transition>
                 ))
               ) : (
-                selectedGroup && <p className="w-full select-none text-center text-gray-400">No applicable markets in this group</p>
+                selectedGroup && <p className="w-full text-center text-gray-400 select-none">No applicable markets in this group</p>
               )}
             </div>
             <Transition
@@ -425,7 +425,7 @@ export default () => {
                 }}
               >
                 <Transition appear unmount={false} show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
-                  <div className="flex w-full max-w-xl grow flex-col justify-end">
+                  <div className="w-full max-w-xl grow flex flex-col justify-end">
                     <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureMarket={onContractUnfeature} ping={ping} />
                   </div>
                 </Transition>
@@ -467,15 +467,15 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
   const canResolveMarket = controlUserID === contract.creatorId;
 
   return (
-    <Col className={'xs:px-8 xs:py-6 flex cursor-default justify-end rounded-md bg-white px-4 py-4 shadow-md'} onClick={(e) => e.stopPropagation()}>
-      <Row className="items-center justify-center">
-        <div className="xs:whitespace-nowrap xs:text-2xl xs:text-left text-center text-lg">Resolve market</div>
+    <Col className={'bg-white rounded-md shadow-md px-4 py-4 xs:px-8 xs:py-6 cursor-default flex justify-end'} onClick={(e) => e.stopPropagation()}>
+      <Row className="justify-center items-center">
+        <div className="xs:whitespace-nowrap text-lg xs:text-2xl text-center xs:text-left">Resolve market</div>
         <div className="grow" />
-        <div className="min-h-10 xs:block hidden">{ping}ms</div>
+        <div className="min-h-10 hidden xs:block">{ping}ms</div>
       </Row>
 
       <p
-        className="my-3 break-words font-semibold text-indigo-700"
+        className="break-words font-semibold text-indigo-700 my-3"
         style={{
           wordBreak: 'break-word' /* For iOS safari */,
         }}

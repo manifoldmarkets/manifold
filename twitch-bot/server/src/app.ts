@@ -46,7 +46,7 @@ export default class App {
       displayName = user.data.twitchLogin;
     } catch {
       try {
-        const user = this.manifoldFirestore.getManifoldUserByManifoldID(userID);
+        const user = await this.manifoldFirestore.getManifoldUserByManifoldID(userID);
         displayName = user.name;
       } catch (e) {
         log.warn(e);
@@ -86,7 +86,7 @@ export default class App {
   public async launch() {
     await this.bot.connect();
     await this.manifoldFirestore.validateConnection();
-    await this.manifoldFirestore.loadAllUsers();
+    await this.manifoldFirestore.initialLoadAllUsers();
 
     try {
       await fetch('http://localhost:5000/online');
