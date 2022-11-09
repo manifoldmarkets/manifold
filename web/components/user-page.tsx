@@ -108,7 +108,7 @@ export function UserPage(props: { user: User }) {
                   {BOT_USERNAMES.includes(user.username) && <BotBadge />}
                 </span>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
-                  <span className={' text-greyscale-4'}>@{user.username}</span>
+                  <span className={' text-gray-400'}>@{user.username}</span>
                   <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
@@ -123,7 +123,7 @@ export function UserPage(props: { user: User }) {
               </Row>
             </div>
             <ProfilePublicStats
-              className="sm:text-md text-greyscale-6 hidden text-sm md:inline"
+              className="sm:text-md hidden text-sm text-gray-600 md:inline"
               user={user}
             />
           </Col>
@@ -131,7 +131,7 @@ export function UserPage(props: { user: User }) {
         <Col className="mx-4 mt-2">
           <Spacer h={1} />
           <ProfilePublicStats
-            className="text-greyscale-6 text-sm md:hidden"
+            className="text-sm text-gray-600 md:hidden"
             user={user}
           />
           <Spacer h={1} />
@@ -154,7 +154,7 @@ export function UserPage(props: { user: User }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    <span className="text-greyscale-4 text-sm">
+                    <span className="text-sm text-gray-400">
                       {user.website}
                     </span>
                   </Row>
@@ -175,7 +175,7 @@ export function UserPage(props: { user: User }) {
                       className="h-4 w-4"
                       alt="Twitter"
                     />
-                    <span className="text-greyscale-4 text-sm">
+                    <span className="text-sm text-gray-400">
                       {user.twitterHandle}
                     </span>
                   </Row>
@@ -190,7 +190,7 @@ export function UserPage(props: { user: User }) {
                       className="h-4 w-4"
                       alt="Discord"
                     />
-                    <span className="text-greyscale-4 text-sm">
+                    <span className="text-sm text-gray-400">
                       {user.discordHandle}
                     </span>
                   </Row>
@@ -201,7 +201,7 @@ export function UserPage(props: { user: User }) {
                 <div
                   className={clsx(
                     linkClass,
-                    'text-greyscale-4 cursor-pointer text-sm'
+                    'cursor-pointer text-sm text-gray-400'
                   )}
                   onClick={(e) => {
                     e.preventDefault()
@@ -279,12 +279,12 @@ export function UserPage(props: { user: User }) {
                         userPosts.length > 0 ? (
                           <PostCardList posts={userPosts} limit={6} />
                         ) : (
-                          <div className="text-greyscale-4 text-center">
+                          <div className="text-center text-gray-400">
                             No posts yet
                           </div>
                         )
                       ) : (
-                        <div className="text-greyscale-4 text-center">
+                        <div className="text-center text-gray-400">
                           <LoadingIndicator />
                         </div>
                       )}

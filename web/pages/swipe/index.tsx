@@ -6,9 +6,11 @@ import { useMemo, useState } from 'react'
 import TinderCard from 'react-tinder-card'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
-
+import { useUser } from 'web/hooks/use-user'
+import { useUserSwipes } from 'web/hooks/use-user-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
+import { logSwipe } from 'web/lib/firebase/views'
 import {
   getBinaryProbPercent,
   getTrendingContracts,
@@ -29,10 +31,17 @@ export async function getStaticProps() {
 export default function Swipe(props: { contracts: BinaryContract[] }) {
   const { contracts } = props
 
+  const old = useUserSwipes()
+  console.log(old)
+  const newToMe = useMemo(
+    () => contracts.filter((c) => !old.includes(c.id)),
+    [contracts, old]
+  )
+
   const [index, setIndex] = useState(0)
   const cards = useMemo(
-    () => contracts.slice(index, index + 4).reverse(),
-    [contracts, index]
+    () => newToMe.slice(index, index + 4).reverse(),
+    [newToMe, index]
   )
 
   // resize height manually for iOS
@@ -40,9 +49,11 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
 
   if (!contracts) return <></>
 
+  //TODO: log in prompt if !user
+
   return (
     <main
-      className="bg-greyscale-1 h-screen overflow-hidden overscroll-none lg:py-6"
+      className="h-screen overflow-hidden overscroll-none bg-gray-50 lg:py-6"
       style={{ height }}
     >
       <div className="relative mx-auto h-full max-w-lg">
@@ -65,6 +76,8 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
   const { contract, onLeave } = props
   const { question, description, coverImageUrl, id: contractId } = contract
 
+  const userId = useUser()?.id
+
   const [amount, setAmount] = useState(10)
   const onClickMoney = () => setAmount?.((amount) => amount + betTapAdd)
 
@@ -82,18 +95,20 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
           if (direction === 'left' || direction === 'right') {
             const outcome = direction === 'left' ? 'NO' : 'YES'
             await placeBet({ amount, outcome, contractId })
-            track('bet', {
-              location: 'swipe',
-              outcomeType: 'BINARY',
+            userId && logSwipe({ amount, outcome, contractId, userId })
+            track('swipe bet', {
               slug: contract.slug,
               contractId,
               amount,
               outcome,
-              isLimitOrder: false,
             })
           }
           if (direction === 'down') {
             setPeek(true)
+          }
+          if (direction === 'up') {
+            track('swipe skip', { slug: contract.slug, contractId })
+            userId && logSwipe({ outcome: 'SKIP', contractId, userId })
           }
         }}
         onCardLeftScreen={onLeave}
@@ -116,7 +131,7 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
             </div>
             <Percents contract={contract} amount={amount} />
             {/* TODO: use editor excluding widgets */}
-            <div className="prose prose-invert prose-sm text-greyscale-1 line-clamp-3 mx-8">
+            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 text-gray-50">
               {typeof description === 'string'
                 ? description
                 : richTextToString(description)}
@@ -148,7 +163,7 @@ const CornerDetails = (props: { contract: Contract }) => {
       <div className="text-xs">
         <div className="text-white">{creatorName} </div>
         {closeTime != undefined && (
-          <div className="text-greyscale-1 ">
+          <div className="text-gray-50 ">
             trading closes {fromNow(closeTime)}
           </div>
         )}

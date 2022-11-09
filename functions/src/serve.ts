@@ -31,6 +31,7 @@ import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { testscheduledfunction } from './test-scheduled-function'
 import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
+import { validateiap } from 'functions/src/validate-iap'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -76,6 +77,7 @@ addJsonEndpointRoute('/savetwitchcredentials', savetwitchcredentials)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 addEndpointRoute('/createpost', createpost)
 addEndpointRoute('/testscheduledfunction', testscheduledfunction)
+addJsonEndpointRoute('/validateIap', validateiap)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)

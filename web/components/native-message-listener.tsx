@@ -1,6 +1,5 @@
 import { app } from 'web/lib/firebase/init'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
-import { useEffect } from 'react'
 import { Notification } from 'common/notification'
 import {
   getSourceUrl,
@@ -9,19 +8,11 @@ import {
 } from 'web/lib/firebase/notifications'
 import { useRouter } from 'next/router'
 import { getIsNative, setIsNative } from 'web/lib/native/is-native'
+import { useNativeMessages } from 'web/hooks/use-native-messages'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
-
-  const handleNativeMessage = async (e: any) => {
-    let event
-    try {
-      event = JSON.parse(e.data)
-    } catch (e) {
-      return
-    }
-    const { type, data } = event
-    console.log('Received native event: ', event)
+  const handleNativeMessage = async (type: string, data: any) => {
     if (type === 'setIsNative') {
       setIsNative(true, data.platform)
     } else if (type === 'nativeFbUser') {
@@ -51,23 +42,23 @@ export const NativeMessageListener = () => {
       }
     }
   }
-
-  useEffect(() => {
-    document.addEventListener('message', handleNativeMessage)
-    window.addEventListener('message', handleNativeMessage)
-    return () => {
-      document.removeEventListener('message', handleNativeMessage)
-      window.removeEventListener('message', handleNativeMessage)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  useNativeMessages(
+    [
+      'setIsNative',
+      'nativeFbUser',
+      'pushNotificationPermissionStatus',
+      'pushToken',
+      'notification',
+      'link',
+    ],
+    handleNativeMessage
+  )
 
   return <div />
 }
 
 export const postMessageToNative = (type: string, data: any) => {
   const isNative = getIsNative()
-  console.log('posting message to native, is native?', isNative)
   if (!isNative) return
   ;(window as any).ReactNativeWebView.postMessage(
     JSON.stringify({

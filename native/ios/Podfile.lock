@@ -21,7 +21,7 @@ PODS:
     - EXJSONUtils
   - EXNotifications (0.16.1):
     - ExpoModulesCore
-  - Expo (46.0.16):
+  - Expo (46.0.17):
     - ExpoModulesCore
   - expo-dev-client (1.3.1):
     - EXManifests
@@ -99,7 +99,7 @@ PODS:
     - ExpoModulesCore
   - ExpoKeepAwake (10.2.0):
     - ExpoModulesCore
-  - ExpoModulesCore (0.11.8):
+  - ExpoModulesCore (0.11.9):
     - React-Core
     - ReactCommon/turbomodule/core
   - ExpoRandom (12.3.0):
@@ -408,6 +408,8 @@ PODS:
     - React-perflogger (= 0.69.6)
   - RNCClipboard (1.11.1):
     - React-Core
+  - RNIap (12.4.2):
+    - React-Core
   - RNSentry (4.2.2):
     - React-Core
     - Sentry (= 7.22.0)
@@ -475,6 +477,7 @@ DEPENDENCIES:
   - React-runtimeexecutor (from `../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
+  - RNIap (from `../node_modules/react-native-iap`)
   - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -599,6 +602,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNCClipboard:
     :path: "../node_modules/@react-native-clipboard/clipboard"
+  RNIap:
+    :path: "../node_modules/react-native-iap"
   RNSentry:
     :path: "../node_modules/@sentry/react-native"
   Yoga:
@@ -618,14 +623,14 @@ SPEC CHECKSUMS:
   EXJSONUtils: 2a74b8f40f1523cc3f92af99c91aa78201737a77
   EXManifests: b38dc61303f5eede990b4c8ecbfac32f82160e65
   EXNotifications: 9a2aa201deb19dfe1dbe0e370eeb2922de0d2422
-  Expo: 7ac824960a6059d6c68e73f432c8e6bf6d92a0ef
+  Expo: 4de8a31146bb0480353b3ed1850e015c4862625f
   expo-dev-client: 381f39773b9fd83008fd58bf493d3a7be748752d
   expo-dev-launcher: 5a2a86276911631997b8821d278a964252bfbbf7
   expo-dev-menu: 5c8f08081eedb470fc8384195c044feba5055cec
   expo-dev-menu-interface: 27047461614aee1dc082cacc0e0f5b4c7b8edd1b
   ExpoCrypto: e534314db0e1a17ae12b5140d529bd0c5efcbc6a
   ExpoKeepAwake: 0e8f18142e71bbf2c7f6aa66ebed249ba1420320
-  ExpoModulesCore: 39ec590ce622289c060183aba57f77b1e73b4e11
+  ExpoModulesCore: f9d1730cc2dde38e46b0becb97628b3ebbd29f21
   ExpoRandom: f9f1faa299a40733867f344d6b7bfa2d1f4ab04d
   ExpoWebBrowser: 5804ac42a8269d0e534bc4461993005f72535649
   EXSplashScreen: 799bece80089219b2c989c1082d70f3b00995cda
@@ -664,10 +669,11 @@ SPEC CHECKSUMS:
   React-runtimeexecutor: 0af71c94f968fa10015bf0119951bccd2e4d8865
   ReactCommon: fe7580b9d10f00249facf25659e0ec051320cc8a
   RNCClipboard: 2834e1c4af68697089cdd455ee4a4cdd198fa7dd
+  RNIap: e17233fe11083a71e0420682b0b09d497861faa1
   RNSentry: f03937a2cf86c7029ba31fbbf5618c55d223cd62
   Sentry: 30b51086ca9aac23337880152e95538f7e177f7f
   Yoga: 75bf4b0131cfb46a659cd0c13309b79a6fcff66d
 
-PODFILE CHECKSUM: 31f57af6ba301465a7ede9bf59fc7ba6b1956b23
+PODFILE CHECKSUM: 81fdeb970bee766b51a7265fc2c3f02a30d1b5fe
 
 COCOAPODS: 1.11.3

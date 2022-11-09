@@ -71,16 +71,16 @@ export async function updateContractMetrics() {
           ? descendingBets[0].probAfter
           : getProbability(contract)
 
-        const { resolution, resolutionProbability } = contract
+        const { resolution, resolutionProbability, resolutionTime } = contract
         if (resolution === 'YES') prob = 1
         else if (resolution === 'NO') prob = 0
         else if (resolution === 'MKT' && resolutionProbability)
           prob = resolutionProbability
 
         const probChanges = {
-          day: calculateProbChange(prob, descendingBets, yesterday),
-          week: calculateProbChange(prob, descendingBets, weekAgo),
-          month: calculateProbChange(prob, descendingBets, monthAgo),
+          day: calculateProbChange(prob, descendingBets, yesterday, resolutionTime),
+          week: calculateProbChange(prob, descendingBets, weekAgo, resolutionTime),
+          month: calculateProbChange(prob, descendingBets, monthAgo, resolutionTime),
         }
         cpmmFields = { prob, probChanges }
       }

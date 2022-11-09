@@ -9,7 +9,11 @@ import {
 
 import { PrivateUser, User } from 'common/user'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { updatePrivateUser, updateUser } from 'web/lib/firebase/users'
+import {
+  firebaseLogout,
+  updatePrivateUser,
+  updateUser,
+} from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -17,7 +21,6 @@ import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
 import { formatMoney } from 'common/util/format'
 import { STARTING_BALANCE } from 'common/economy'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { Button } from 'web/components/buttons/button'
 
 export default function Welcome() {
@@ -28,9 +31,13 @@ export default function Welcome() {
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
   const isTwitch = useIsTwitch(user)
   const TOTAL_PAGES = 4
-  const { isNative, platform } = getNativePlatform() ?? {}
+  // Just making new users created after 11/09/2022 go through this for now
   const shouldSeeEula =
-    privateUser && !privateUser?.hasSignedEula && isNative && platform === 'ios'
+    user &&
+    privateUser &&
+    !privateUser?.hasSignedEula &&
+    user.createdTime > 1667977200000
+
   function increasePage() {
     if (page < TOTAL_PAGES - 1) {
       setPage(page + 1)
@@ -195,7 +202,7 @@ function Page2() {
         the play money you bet with. You can also turn it into a real donation
         to charity, at a 100:1 ratio.
       </p>
-      <Row className="bg-greyscale-1 border-greyscale-2 mt-4 gap-2 rounded border py-2 pl-2 pr-4 text-sm text-indigo-700">
+      <Row className="mt-4 gap-2 rounded border border-gray-200 bg-gray-50 py-2 pl-2 pr-4 text-sm text-indigo-700">
         <ExclamationCircleIcon className="h-5 w-5" />
         Mana can not be traded in for real money.
       </Row>
@@ -272,7 +279,10 @@ function Eula(props: { privateUser: PrivateUser }) {
           />
         )}
       </Row>
-      <Row className={'justify-end'}>
+      <Row className={'justify-between'}>
+        <Button color={'gray'} onClick={() => firebaseLogout()}>
+          Cancel
+        </Button>
         <Button
           color={'blue'}
           onClick={() =>

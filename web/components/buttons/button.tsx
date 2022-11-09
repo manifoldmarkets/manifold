@@ -12,6 +12,7 @@ export type ColorType =
   | 'gray'
   | 'gray-outline'
   | 'gradient'
+  | 'gradient-pink'
   | 'gray-white'
 
 const sizeClasses = {
@@ -29,23 +30,25 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed',
     sizeClasses[size],
     color === 'green' &&
-      'disabled:bg-greyscale-2 bg-teal-500 text-white hover:bg-teal-500',
+      'disabled:bg-gray-200 bg-teal-500 text-white hover:bg-teal-500',
     color === 'red' &&
-      'disabled:bg-greyscale-2 bg-scarlet-300 text-white hover:bg-scarlet-400',
+      'disabled:bg-gray-200 bg-scarlet-300 text-white hover:bg-scarlet-400',
     color === 'yellow' &&
-      'disabled:bg-greyscale-2 bg-yellow-400 text-white hover:bg-yellow-500',
+      'disabled:bg-gray-200 bg-yellow-400 text-white hover:bg-yellow-500',
     color === 'blue' &&
-      'disabled:bg-greyscale-2 bg-blue-400 text-white hover:bg-blue-500',
+      'disabled:bg-gray-200 bg-blue-400 text-white hover:bg-blue-500',
     color === 'indigo' &&
-      'disabled:bg-greyscale-2 bg-indigo-500 text-white hover:bg-indigo-600',
+      'disabled:bg-gray-200 bg-indigo-500 text-white hover:bg-indigo-600',
     color === 'gray' &&
-      'bg-greyscale-1 text-greyscale-6 hover:bg-greyscale-2 disabled:opacity-50',
+      'bg-gray-50 text-gray-600 hover:bg-gray-200 disabled:opacity-50',
     color === 'gray-outline' &&
-      'ring-2 ring-greyscale-5 text-greyscale-5 enabled:hover:bg-greyscale-5 enabled:hover:text-white disabled:opacity-50',
+      'ring-2 ring-gray-500 text-gray-500 enabled:hover:bg-gray-500 enabled:hover:text-white disabled:opacity-50',
     color === 'gradient' &&
-      'disabled:bg-greyscale-2 enabled:bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
+      'disabled:bg-gray-200 enabled:bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
+    color === 'gradient-pink' &&
+      'disabled:bg-gray-200 enabled:bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white',
     color === 'gray-white' &&
-      'text-greyscale-6 hover:bg-greyscale-2 shadow-none disabled:opacity-50'
+      'text-gray-600 hover:bg-gray-200 shadow-none disabled:opacity-50'
   )
 }
 
@@ -113,7 +116,7 @@ export function IconButton(props: {
       className={clsx(
         'inline-flex items-center justify-center transition-colors disabled:cursor-not-allowed',
         sizeClasses[size],
-        'disabled:text-greyscale-2 text-greyscale-5 hover:text-greyscale-6',
+        'text-gray-500 hover:text-gray-600 disabled:text-gray-200',
         className
       )}
       disabled={disabled || loading}

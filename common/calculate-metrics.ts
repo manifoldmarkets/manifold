@@ -35,7 +35,7 @@ export const computeInvestmentValueCustomProb = (
   p: number
 ) => {
   return sumBy(bets, (bet) => {
-    if (!contract || contract.isResolved) return 0
+    if (!contract) return 0
     if (bet.sale || bet.isSold) return 0
     const { outcome, shares } = bet
 
@@ -164,8 +164,11 @@ export const computeVolume = (contractBets: Bet[], since: number) => {
 export const calculateProbChange = (
   prob: number,
   descendingBets: Bet[],
-  since: number
+  since: number,
+  resolutionTime: number | undefined
 ) => {
+  if (resolutionTime && since >= resolutionTime) return 0
+
   const newestBet = descendingBets[0]
   if (!newestBet) return 0
 
@@ -227,9 +230,9 @@ export const calculateCreatorTraders = (userContracts: Contract[]) => {
 export const calculateNewPortfolioMetrics = (
   user: User,
   contractsById: { [k: string]: Contract },
-  currentBets: Bet[]
+  unresolvedBets: Bet[]
 ) => {
-  const investmentValue = computeInvestmentValue(currentBets, contractsById)
+  const investmentValue = computeInvestmentValue(unresolvedBets, contractsById)
   const newPortfolio = {
     investmentValue: investmentValue,
     balance: user.balance,
@@ -315,10 +318,8 @@ const calculatePeriodProfit = (
     (b) => b.createdTime < fromTime
   )
 
-  const prevProb = contract.prob - contract.probChanges[period]
-  const prob = contract.resolutionProbability
-    ? contract.resolutionProbability
-    : contract.prob
+  const { prob, probChanges } = contract
+  const prevProb = prob - probChanges[period]
 
   const previousBetsValue = computeInvestmentValueCustomProb(
     previousBets,

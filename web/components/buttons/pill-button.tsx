@@ -17,8 +17,8 @@ export function PillButton(props: {
         'cursor-pointer select-none whitespace-nowrap rounded-full px-3 py-1.5 text-sm',
         xs ? 'text-xs' : '',
         selected
-          ? ['text-white', color ?? 'bg-greyscale-6']
-          : 'bg-greyscale-2 hover:bg-greyscale-3',
+          ? ['text-white', color ?? 'bg-gray-600']
+          : 'bg-gray-200 hover:bg-gray-300',
         className
       )}
       onClick={onSelect}

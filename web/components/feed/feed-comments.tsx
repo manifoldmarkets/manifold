@@ -11,7 +11,10 @@ import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { OutcomeLabel } from 'web/components/outcome-label'
-import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
+import {
+  CopyLinkDateTimeComponent,
+  copyLinkToComment,
+} from 'web/components/feed/copy-link-date-time'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { createCommentOnContract } from 'web/lib/firebase/comments'
 import { Col } from 'web/components/layout/col'
@@ -28,6 +31,9 @@ import { IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
 import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { toast } from 'react-hot-toast'
+import LinkIcon from 'web/lib/icons/link-icon'
+import { FlagIcon } from '@heroicons/react/outline'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -145,7 +151,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       className={clsx(
         commentKind,
         'relative ml-3 gap-2',
-        highlighted ? 'bg-indigo-50' : 'hover:bg-greyscale-1'
+        highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
       )}
     >
       <Col className="-ml-3.5">
@@ -184,6 +190,7 @@ export function CommentActions(props: {
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const user = useUser()
   return (
     <Row className="grow items-center justify-end">
       {onReplyClick && (
@@ -212,9 +219,22 @@ export function CommentActions(props: {
       <DropdownMenu
         Items={[
           {
-            name: 'Report',
+            name: 'Copy Link',
+            icon: <LinkIcon className="h-5 w-5" />,
             onClick: () => {
-              setIsModalOpen(true)
+              copyLinkToComment(
+                contract.creatorUsername,
+                contract.slug,
+                comment.id
+              )
+            },
+          },
+          {
+            name: 'Report',
+            icon: <FlagIcon className="h-5 w-5" />,
+            onClick: () => {
+              if (user?.id !== comment.userId) setIsModalOpen(true)
+              else toast.error(`You can't report your own comment`)
             },
           },
         ]}
@@ -256,7 +276,7 @@ export const FeedComment = memo(function FeedComment(props: {
       id={comment.id}
       className={clsx(
         'relative ml-12 gap-2 ',
-        highlighted ? 'bg-indigo-50' : 'hover:bg-greyscale-1'
+        highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
       )}
     >
       <Col className="-ml-3">
@@ -359,9 +379,9 @@ export function FeedCommentHeader(props: {
   const totalAwarded = bountiesAwarded ?? 0
   return (
     <Row>
-      <div className="text-greyscale-6 mt-0.5 text-sm">
+      <div className="mt-0.5 text-sm text-gray-600">
         <UserLink username={userUsername} name={userName} />{' '}
-        <span className="text-greyscale-4">
+        <span className="text-gray-400">
           {comment.betId == null &&
             commenterPositionProb != null &&
             commenterPositionOutcome != null &&

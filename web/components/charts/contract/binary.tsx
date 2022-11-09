@@ -39,7 +39,7 @@ const BinaryChartTooltip = (props: TooltipProps<Date, HistoryPoint<Bet>>) => {
     <Row className="items-center gap-2">
       {prev.obj && <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-greyscale-6">{formatPct(prev.y)}</span>
+      <span className="text-gray-600">{formatPct(prev.y)}</span>
     </Row>
   )
 }
@@ -49,9 +49,10 @@ export const BinaryContractChart = (props: {
   bets: Bet[]
   width: number
   height: number
+  color?: string
   onMouseOver?: (p: HistoryPoint<Bet> | undefined) => void
 }) => {
-  const { contract, bets, width, height, onMouseOver } = props
+  const { contract, bets, width, height, onMouseOver, color } = props
   const [start, end] = getDateRange(contract)
   const startP = getInitialProbability(contract)
   const endP = getProbability(contract)
@@ -81,7 +82,7 @@ export const BinaryContractChart = (props: {
       yScale={yScale}
       yKind="percent"
       data={data}
-      color="#11b981"
+      color={color ?? '#11b981'}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}

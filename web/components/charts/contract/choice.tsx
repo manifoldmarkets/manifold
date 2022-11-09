@@ -90,7 +90,7 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
               {item.label}
             </span>
           </Row>
-          <span className="text-greyscale-6">{item.value}</span>
+          <span className="text-gray-600">{item.value}</span>
         </li>
       ))}
     </ol>

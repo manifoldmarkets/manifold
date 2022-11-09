@@ -18,11 +18,14 @@ import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 
+const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie']
+
 export function ActivityLog(props: { count: number; showPills: boolean }) {
   const { count, showPills } = props
   const bets = (useLiveBets(count * 2 + 10) ?? []).filter(
     (bet) =>
       !BOT_USERNAMES.includes(bet.userUsername) &&
+      !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername) &&
       !bet.isRedemption &&
       !bet.isAnte
   )

@@ -283,8 +283,8 @@ export function SortRow(props: {
     <Row className="mb-4 items-center justify-end gap-4">
       <BountiedContractSmallBadge contract={contract} showAmount />
       <Row className="items-center gap-1">
-        <div className="text-greyscale-4 text-sm">Sort by:</div>
-        <button className="text-greyscale-6 w-20 text-sm" onClick={onSortClick}>
+        <div className="text-sm text-gray-400">Sort by:</div>
+        <button className="w-20 text-sm text-gray-600" onClick={onSortClick}>
           <Tooltip
             text={sort === 'Best' ? 'Highest tips + bounties first.' : ''}
           >
