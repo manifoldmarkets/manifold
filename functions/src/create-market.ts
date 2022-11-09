@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { FieldValue } from 'firebase-admin/firestore'
 import { JSONContent } from '@tiptap/core'
-import { uniq, zip } from 'lodash'
+import { uniq } from 'lodash'
 
 import {
   Contract,
@@ -13,7 +13,7 @@ import {
   NumericContract,
   OUTCOME_TYPES,
   VISIBILITIES,
-  CPMMMultipleChoiceContract,
+  CPMM2Contract,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
@@ -21,9 +21,9 @@ import { getContract } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
 import { FIXED_ANTE } from '../../common/economy'
 import {
+  getCpmm2InitialLiquidity,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
-  getMultipleChoiceAntes,
   getNumericAnte,
 } from '../../common/antes'
 import { getNoneAnswer } from '../../common/answer'
@@ -294,21 +294,18 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
     await liquidityDoc.set(lp)
   } else if (outcomeType === 'MULTIPLE_CHOICE') {
-    const betCol = firestore.collection(`contracts/${contract.id}/bets`)
-    const betDocs = (answers ?? []).map(() => betCol.doc())
+    const liquidityDoc = firestore
+      .collection(`contracts/${contract.id}/liquidity`)
+      .doc()
 
-    const { bets, answerObjects } = getMultipleChoiceAntes(
-      user,
-      contract as CPMMMultipleChoiceContract,
-      answers ?? [],
-      betDocs.map((bd) => bd.id),
+    const lp = getCpmm2InitialLiquidity(
+      providerId,
+      contract as CPMM2Contract,
+      liquidityDoc.id,
       ante
     )
 
-    await Promise.all(
-      zip(bets, betDocs).map(([bet, doc]) => doc?.create(bet as Bet))
-    )
-    await contractRef.update({ answers: answerObjects })
+    await liquidityDoc.set(lp)
   } else if (outcomeType === 'FREE_RESPONSE') {
     const noneAnswerDoc = firestore
       .collection(`contracts/${contract.id}/answers`)
