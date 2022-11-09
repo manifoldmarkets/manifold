@@ -116,6 +116,11 @@ service cloud.firestore {
       allow read: if userId == request.auth.uid || isAdmin();
     }
 
+    match /private-users/{userId}/seenMarkets/{marketId} {
+      allow create: if userId == request.auth.uid;
+      allow read: if userId == request.auth.uid
+    }
+
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()

@@ -3,11 +3,14 @@ import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { useEffect, useState } from 'react'
 import {
   Bet,
+  getSwipes,
   getUserBets,
   getUserBetsQuery,
   listenForBets,
 } from 'web/lib/firebase/bets'
 import { MINUTE_MS, sleep } from 'common/util/time'
+import { useUser } from './use-user'
+import { inMemoryStore, usePersistentState } from './use-persistent-state'
 
 export const usePrefetchUserBets = (userId: string) => {
   const queryClient = useQueryClient()
@@ -58,4 +61,17 @@ export const useGetUserBetContractIds = (userId: string | undefined) => {
   }, [userId])
 
   return contractIds
+}
+
+export const useUserSwipes = () => {
+  const user = useUser()
+  const [swipes, setSwipes] = usePersistentState<string[]>([], {
+    store: inMemoryStore(),
+    key: 'user-swipes',
+  })
+  useEffect(() => {
+    if (user)
+      getSwipes(user.id).then((s) => setSwipes(s.map((swipe: any) => swipe.id)))
+  }, [user, setSwipes])
+  return swipes
 }

@@ -6,9 +6,11 @@ import { useMemo, useState } from 'react'
 import TinderCard from 'react-tinder-card'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
-
+import { useUser } from 'web/hooks/use-user'
+import { useUserSwipes } from 'web/hooks/use-user-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
+import { logSwipe } from 'web/lib/firebase/views'
 import {
   getBinaryProbPercent,
   getTrendingContracts,
@@ -29,16 +31,25 @@ export async function getStaticProps() {
 export default function Swipe(props: { contracts: BinaryContract[] }) {
   const { contracts } = props
 
+  const old = useUserSwipes()
+  console.log(old)
+  const newToMe = useMemo(
+    () => contracts.filter((c) => !old.includes(c.id)),
+    [contracts, old]
+  )
+
   const [index, setIndex] = useState(0)
   const cards = useMemo(
-    () => contracts.slice(index, index + 4).reverse(),
-    [contracts, index]
+    () => newToMe.slice(index, index + 4).reverse(),
+    [newToMe, index]
   )
 
   // resize height manually for iOS
   const { height } = useWindowSize()
 
   if (!contracts) return <></>
+
+  //TODO: log in prompt if !user
 
   return (
     <main
@@ -65,6 +76,8 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
   const { contract, onLeave } = props
   const { question, description, coverImageUrl, id: contractId } = contract
 
+  const userId = useUser()?.id
+
   const [amount, setAmount] = useState(10)
   const onClickMoney = () => setAmount?.((amount) => amount + betTapAdd)
 
@@ -82,18 +95,20 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
           if (direction === 'left' || direction === 'right') {
             const outcome = direction === 'left' ? 'NO' : 'YES'
             await placeBet({ amount, outcome, contractId })
-            track('bet', {
-              location: 'swipe',
-              outcomeType: 'BINARY',
+            userId && logSwipe({ amount, outcome, contractId, userId })
+            track('swipe bet', {
               slug: contract.slug,
               contractId,
               amount,
               outcome,
-              isLimitOrder: false,
             })
           }
           if (direction === 'down') {
             setPeek(true)
+          }
+          if (direction === 'up') {
+            track('swipe skip', { slug: contract.slug, contractId })
+            userId && logSwipe({ outcome: 'SKIP', contractId, userId })
           }
         }}
         onCardLeftScreen={onLeave}
