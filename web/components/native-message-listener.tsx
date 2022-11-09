@@ -67,7 +67,6 @@ export const NativeMessageListener = () => {
 
 export const postMessageToNative = (type: string, data: any) => {
   const isNative = getIsNative()
-  console.log('posting message to native, is native?', isNative)
   if (!isNative) return
   ;(window as any).ReactNativeWebView.postMessage(
     JSON.stringify({
