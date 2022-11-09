@@ -73,7 +73,7 @@ addJsonEndpointRoute('/savetwitchcredentials', savetwitchcredentials)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 addEndpointRoute('/createpost', createpost)
 addEndpointRoute('/testscheduledfunction', testscheduledfunction)
-addEndpointRoute('/validateIap', validateiap)
+addJsonEndpointRoute('/validateIap', validateiap)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)

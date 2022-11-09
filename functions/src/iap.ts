@@ -1,49 +1,146 @@
-import { newEndpoint } from 'functions/src/api'
+import { APIError, newEndpoint, validate } from 'functions/src/api'
+import { z } from 'zod'
+import { getPrivateUser, getUser, isProd, log } from './utils'
+import { sendThankYouEmail } from 'functions/src/emails'
+import { track } from 'functions/src/analytics'
+import * as admin from 'firebase-admin'
+import { IapTransaction, PurchaseData } from 'common/iap'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
+import { ManaPurchaseTxn } from 'common/txn'
+import { runTxn } from 'functions/src/transact'
+
+const bodySchema = z.object({
+  receipt: z.string(),
+  userId: z.string(),
+})
+
+const PRODUCTS_TO_AMOUNTS: { [key: string]: number } = {
+  mana_1000: 1000,
+  mana_2500: 2500,
+  mana_10000: 10000,
+}
+
+const IAP_TYPES_PROCESSED = 'apple'
 
 export const validateiap = newEndpoint({}, async (req, auth) => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const iap = require('@flat/in-app-purchase')
-  const receipt =
-    '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'
+  const { receipt, userId } = validate(bodySchema, req.body)
+
+  if (auth.uid !== userId)
+    throw new APIError(400, 'auth id and user id do not match')
+
   iap.config({
-    /* Configurations for HTTP request */
-    // requestDefaults: {
-    //   /* Please refer to the request module documentation here: https://www.npmjs.com/package/request#requestoptions-callback */
-    // },
-    //
     /* Configurations for Apple */
     // appleExcludeOldTransactions: true, // if you want to exclude old transaction, set this to true. Default is false
     // applePassword: 'abcd.....', // this comes from iTunes Connect (You need this to valiate subscriptions)
     /* Configurations all platforms */
-    test: true, // For Apple and Googl Play to force Sandbox validation only
+    test: !isProd(), // For Apple and Googl Play to force Sandbox validation only
     verbose: true, // Output debug logs to stdout stream
   })
-  iap
-    .setup()
-    .then(() => {
-      // iap.validate(...) automatically detects what type of receipt you are trying to validate
-      iap.validate(receipt).then(onSuccess).catch(onError)
-    })
-    .catch((error: any) => {
-      // error...
-      console.log('setup error', error)
-    })
+  await iap.setup().catch((error: any) => {
+    log('Error setting up iap', error)
+    throw new APIError(400, 'iap setup failed')
+  })
 
-  function onSuccess(validatedData: any) {
-    console.log('valid data:', validatedData)
-    // validatedData: the actual content of the validated receipt
-    // validatedData also contains the original receipt
-    const options = {
-      ignoreCanceled: true, // Apple ONLY (for now...): purchaseData will NOT contain cancceled items
-      ignoreExpired: true, // purchaseData will NOT contain exipired subscription items
+  const validatedData = await iap.validate(receipt).catch((error: any) => {
+    log('error on validate data:', error)
+    throw new APIError(400, 'iap receipt validation failed')
+  })
+
+  log('validated data')
+  // validatedData: the actual content of the validated receipt
+  // validatedData also contains the original receipt
+  const options = {
+    ignoreCanceled: true, // Apple ONLY (for now...): purchaseData will NOT contain cancceled items
+    ignoreExpired: true, // purchaseData will NOT contain exipired subscription items
+  }
+  // validatedData contains sandbox: true/false for Apple and Amazon
+  const purchaseData = iap.getPurchaseData(
+    validatedData,
+    options
+  ) as PurchaseData[]
+  log('purchase data:', purchaseData)
+
+  const { transactionId, productId, purchaseDateMs, quantity } = purchaseData[0]
+
+  const query = await firestore
+    .collection('iaps')
+    .where('transactionId', '==', transactionId)
+    .get()
+
+  if (!query.empty) {
+    log('transactionId', transactionId, 'already processed')
+    throw new APIError(400, 'iap transaction already processed')
+  }
+
+  const payout = PRODUCTS_TO_AMOUNTS[productId] * quantity
+  const revenue = (payout / 100) * 0.2 + payout / 100 - 0.01
+
+  log('payout', payout)
+
+  const iapTransRef = await firestore.collection('iaps').doc()
+  const iapTransaction: IapTransaction = {
+    userId,
+    manaQuantity: payout, // save as number
+    createdTime: Date.now(),
+    purchaseTime: purchaseDateMs,
+    transactionId,
+    quantity,
+    receipt,
+    productId,
+    type: IAP_TYPES_PROCESSED,
+    revenue,
+    id: iapTransRef.id,
+  }
+  log('iap transaction:', iapTransaction)
+  await firestore.collection('iaps').doc(iapTransRef.id).set(iapTransaction)
+
+  const manaPurchaseTxn = {
+    fromId: isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+    fromType: 'BANK',
+    toId: userId,
+    toType: 'USER',
+    amount: payout,
+    token: 'M$',
+    category: 'MANA_PURCHASE',
+    data: {
+      iapTransactionId: iapTransRef.id,
+      type: IAP_TYPES_PROCESSED,
+    },
+    description: `Deposit M$${payout} from BANK for mana purchase`,
+  } as Omit<ManaPurchaseTxn, 'id' | 'createdTime'>
+
+  await firestore.runTransaction(async (transaction) => {
+    const result = await runTxn(transaction, manaPurchaseTxn)
+    if (result.status == 'error') {
+      throw new APIError(500, result.message ?? 'An unknown error occurred.')
     }
-    // validatedData contains sandbox: true/false for Apple and Amazon
-    const purchaseData = iap.getPurchaseData(validatedData, options)
-  }
+    return result
+  })
 
-  function onError(error: any) {
-    // failed to validate the receipt...
-    console.log('error on validate data:', error)
-  }
+  log('user', userId, 'paid M$', payout)
+
+  const user = await getUser(userId)
+  if (!user) throw new APIError(400, 'user not found')
+
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) throw new APIError(400, 'private user not found')
+
+  await sendThankYouEmail(user, privateUser)
+  log('iap revenue', revenue)
+  await track(
+    userId,
+    'M$ purchase',
+    { amount: payout, transactionId },
+    { revenue }
+  )
   return { success: true }
 })
+
+const firestore = admin.firestore()
