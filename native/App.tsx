@@ -33,6 +33,7 @@ import { AuthModal } from 'components/auth-modal'
 import { Feather, AntDesign } from '@expo/vector-icons'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
+import { getSourceUrl, Notification } from 'common/notification'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -62,12 +63,11 @@ const homeUri =
 
 const App = () => {
   // Init
-  const [hasWebViewLoaded, setHasWebViewLoaded] = useState(true)
+  const hasWebViewLoaded = useRef(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const isIOS = Platform.OS === 'ios'
   const webview = useRef<WebView | undefined>()
-  const notificationListener = useRef<Subscription | undefined>()
-  const responseListener = useRef<Subscription | undefined>()
+  const notificationResponseListener = useRef<Subscription | undefined>()
 
   // Auth
   const [fbUser, setFbUser] = useState<string | null>()
@@ -99,29 +99,32 @@ const App = () => {
   // IAP
   const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
 
+  const handlePushNotification = async (
+    response: Notifications.NotificationResponse
+  ) => {
+    if (hasWebViewLoaded.current) {
+      communicateWithWebview(
+        'notification',
+        response.notification.request.content.data
+      )
+    } else {
+      const notification = response.notification.request.content
+        .data as Notification
+      const sourceUrl = getSourceUrl(notification)
+      setUrlToLoad(homeUri + sourceUrl)
+    }
+  }
+
   // Initialize listeners
   useEffect(() => {
-    Linking.getInitialURL().then((url) => {
-      if (url) setUrlToLoad(url)
-      console.log('initial url', url)
-    })
     try {
       BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
-      // This listener is fired whenever a notification is received while the app is foregrounded
-      notificationListener.current =
-        Notifications.addNotificationReceivedListener((notification) => {
-          console.log('notification received', notification)
-        })
 
       // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
-      responseListener.current =
-        Notifications.addNotificationResponseReceivedListener((response) => {
-          console.log('notification response', response)
-          communicateWithWebview(
-            'notification',
-            response.notification.request.content.data
-          )
-        })
+      notificationResponseListener.current =
+        Notifications.addNotificationResponseReceivedListener(
+          handlePushNotification
+        )
     } catch (err) {
       Sentry.Native.captureException(err, {
         extra: { message: 'notification & back listener' },
@@ -131,12 +134,10 @@ const App = () => {
 
     return () => {
       console.log('removing notification & back listeners')
-      notificationListener.current &&
+      notificationResponseListener.current &&
         Notifications.removeNotificationSubscription(
-          notificationListener.current
+          notificationResponseListener.current
         )
-      responseListener.current &&
-        Notifications.removeNotificationSubscription(responseListener.current)
       BackHandler.removeEventListener(
         'hardwareBackPress',
         handleBackButtonPress
@@ -314,7 +315,7 @@ const App = () => {
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
-      display: hasWebViewLoaded ? 'none' : 'flex',
+      display: !hasWebViewLoaded.current ? 'none' : 'flex',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
@@ -325,7 +326,7 @@ const App = () => {
       padding: 10,
     },
     webView: {
-      display: hasWebViewLoaded ? 'none' : 'flex',
+      display: !hasWebViewLoaded.current ? 'none' : 'flex',
       overflow: 'hidden',
       marginTop:
         (!isIOS ? RNStatusBar.currentHeight ?? 0 : 0) +
@@ -383,7 +384,7 @@ const App = () => {
           communicateWithWebview={communicateWithWebview}
         />
       )}
-      {hasWebViewLoaded && (
+      {!hasWebViewLoaded.current && (
         <>
           <Image style={styles.image} source={require('./assets/splash.png')} />
           <ActivityIndicator
@@ -462,7 +463,7 @@ const App = () => {
           allowsBackForwardNavigationGestures={true}
           onLoadEnd={() => {
             console.log('onLoadEnd')
-            if (hasWebViewLoaded) setHasWebViewLoaded(false)
+            hasWebViewLoaded.current = true
             setCurrentHostStatus({ ...currentHostStatus, loading: false })
           }}
           sharedCookiesEnabled={true}

@@ -1,4 +1,5 @@
 import { notification_preference } from './user-notification-preferences'
+import { groupPath } from 'common/group'
 
 export type Notification = {
   id: string
@@ -267,4 +268,57 @@ export type ContractResolutionData = {
   outcome: string
   userPayout: number
   userInvestment: number
+}
+
+export function getSourceIdForLinkComponent(
+  sourceId: string,
+  sourceType?: notification_source_types
+) {
+  switch (sourceType) {
+    case 'answer':
+      return `answer-${sourceId}`
+    case 'comment':
+      return sourceId
+    case 'contract':
+      return ''
+    case 'bet':
+      return ''
+    default:
+      return sourceId
+  }
+}
+
+export function getSourceUrl(notification: Notification) {
+  const {
+    sourceType,
+    sourceId,
+    sourceUserUsername,
+    sourceContractCreatorUsername,
+    sourceContractSlug,
+    sourceSlug,
+  } = notification
+  if (sourceType === 'follow') return `/${sourceUserUsername}`
+  if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
+  // User referral via contract:
+  if (
+    sourceContractCreatorUsername &&
+    sourceContractSlug &&
+    sourceType === 'user'
+  )
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
+  // User referral:
+  if (sourceType === 'user' && !sourceContractSlug)
+    return `/${sourceUserUsername}`
+  if (sourceType === 'challenge') return `${sourceSlug}`
+  if (sourceContractCreatorUsername && sourceContractSlug)
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
+      sourceId ?? '',
+      sourceType
+    )}`
+  else if (sourceSlug)
+    return `${
+      sourceSlug.startsWith('/') ? sourceSlug : '/' + sourceSlug
+    }#${getSourceIdForLinkComponent(sourceId ?? '', sourceType)}`
+
+  return ''
 }

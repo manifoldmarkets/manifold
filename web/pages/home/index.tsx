@@ -13,7 +13,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
-import { Group } from 'common/group'
+import { Group, groupPath } from 'common/group'
 import { SiteLink } from 'web/components/widgets/site-link'
 import {
   usePrivateUser,
@@ -27,12 +27,7 @@ import {
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
-import {
-  getGroup,
-  groupPath,
-  joinGroup,
-  leaveGroup,
-} from 'web/lib/firebase/groups'
+import { getGroup, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'

@@ -1,8 +1,7 @@
 import { app } from 'web/lib/firebase/init'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
-import { Notification } from 'common/notification'
+import { getSourceUrl, Notification } from 'common/notification'
 import {
-  getSourceUrl,
   handlePushNotificationPermissionStatus,
   setPushToken,
 } from 'web/lib/firebase/notifications'

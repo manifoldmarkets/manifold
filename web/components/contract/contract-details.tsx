@@ -25,14 +25,13 @@ import { linkClass } from 'web/components/widgets/site-link'
 import {
   getGroupLinksToDisplay,
   getGroupLinkToDisplay,
-  groupPath,
 } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import { contractMetrics } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
-import { GroupLink } from 'common/group'
+import { GroupLink, groupPath } from 'common/group'
 import { Subtitle } from '../widgets/subtitle'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'

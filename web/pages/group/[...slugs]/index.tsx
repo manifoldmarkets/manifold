@@ -5,12 +5,11 @@ import Router from 'next/router'
 
 import { toast } from 'react-hot-toast'
 
-import { Group } from 'common/group'
+import { Group, groupPath } from 'common/group'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
   addContractToGroup,
   getGroupBySlug,
-  groupPath,
   joinGroup,
   listMemberIds,
 } from 'web/lib/firebase/groups'
