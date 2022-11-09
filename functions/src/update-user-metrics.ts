@@ -51,7 +51,6 @@ export async function updateUserMetrics() {
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
   log(`Loaded ${contracts.length} contracts.`)
 
-  log('Computing metric updates...')
   const now = Date.now()
   const monthAgo = now - DAY_MS * 30
   const writer = firestore.bulkWriter({ throttling: false })
@@ -61,7 +60,9 @@ export async function updateUserMetrics() {
   const metricEligibleContracts = contracts.filter(
     (c) => c.resolutionTime == null || c.resolutionTime > monthAgo
   )
+  log(`${metricEligibleContracts.length} contracts need metrics updates.`)
 
+  log('Computing metric updates...')
   const userUpdates = await batchedWaitAll(
     users.map((user) => async () => {
       const userContracts = contractsByCreator[user.id] ?? []
