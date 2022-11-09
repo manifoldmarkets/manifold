@@ -115,9 +115,6 @@ export type Uniswap2 = {
   mechanism: 'uniswap-2'
   // outcome can be e.g. 'M$' or a 'SHARE'
   pool: { [outcome: string]: number }
-  // Unused; just for making Typescript happy, because code paths
-  // assume this thing falls under DPM-2
-  totalShares: { [outcome: string]: number }
   // The price of the token in terms of M$. Similar to prob.
   price: number
 }

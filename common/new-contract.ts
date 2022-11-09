@@ -157,7 +157,7 @@ const getCertProps = (ante: number) => {
       SHARE: ante,
       M$: ante,
     },
-    totalShares: {},
+    // TODO: Update price in the cert when trades happen
     price: 1,
   }
   return system

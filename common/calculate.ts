@@ -48,6 +48,8 @@ export function getInitialProbability(
 }
 
 export function getOutcomeProbability(contract: Contract, outcome: string) {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('getOutcomeProbability not implemented')
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbability(contract.pool, contract.p)
     : getDpmOutcomeProbability(contract.totalShares, outcome)
@@ -58,6 +60,8 @@ export function getOutcomeProbabilityAfterBet(
   outcome: string,
   bet: number
 ) {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('getOutcomeProbabilityAfterBet not implemented')
   return contract.mechanism === 'cpmm-1'
     ? getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
     : getDpmOutcomeProbabilityAfterBet(contract.totalShares, outcome, bet)
@@ -68,13 +72,16 @@ export function calculateShares(
   bet: number,
   betChoice: string
 ) {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('calculateShares not implemented')
   return contract.mechanism === 'cpmm-1'
     ? calculateCpmmSharesAfterFee(contract, bet, betChoice)
     : calculateDpmShares(contract.totalShares, bet, betChoice)
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
-  if (contract.mechanism === 'uniswap-2') return -1
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('calculatePayoutAfterCorrectBet not implemented')
   return contract.mechanism === 'cpmm-1'
     ? bet.shares
     : calculateDpmPayoutAfterCorrectBet(contract, bet)
@@ -87,6 +94,8 @@ export function getProbabilityAfterSale(
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
 ) {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('getProbabilityAfterSale not implemented')
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbabilityAfterSale(
         contract,
