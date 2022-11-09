@@ -1,22 +1,8 @@
 import * as functions from 'firebase-functions'
-import {
-  createClient,
-  SupabaseClient,
-  PostgrestError,
-} from '@supabase/supabase-js'
+import { SupabaseClient } from '@supabase/supabase-js'
 
-import { DEV_CONFIG } from '../../common/envs/dev'
-import { PROD_CONFIG } from '../../common/envs/prod'
 import { Bet } from '../../common/bet'
-import { isProd } from './utils'
-
-function getSupabaseUrl() {
-  return isProd() ? PROD_CONFIG.supabaseUrl : DEV_CONFIG.supabaseUrl
-}
-
-function formatPostgrestError(err: PostgrestError) {
-  return `${err.code} ${err.message} - ${err.details} - ${err.hint}`
-}
+import { createSupabaseClient, formatPostgrestError } from './utils'
 
 async function recordBetDeletion(client: SupabaseClient, betId: string) {
   const { error } = await client.from('bets').delete().eq('id', betId)
@@ -45,10 +31,8 @@ export const onWriteBet = functions
   .runWith({ secrets: ['SUPABASE_ANON_KEY'] })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onWrite(async (change, _context) => {
-    const supabaseUrl = getSupabaseUrl()
-    if (supabaseUrl != null) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const dbClient = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY!)
+    const dbClient = createSupabaseClient()
+    if (dbClient != null) {
       if (!change.after.exists) {
         await recordBetDeletion(dbClient, change.before.id)
       } else {
