@@ -340,7 +340,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         />
         <div
           className={clsx(
-            'animate-float-and-fade-1 absolute right-[6px] top-[2px] z-40 text-indigo-600',
+            'animate-float-and-fade-1 absolute right-[6px] top-[2px] z-40 font-thin text-indigo-600',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
@@ -348,7 +348,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         </div>
         <div
           className={clsx(
-            'animate-float-and-fade-2 absolute right-[6px] top-[2px] z-40 text-indigo-600',
+            'animate-float-and-fade-2 absolute right-[6px] top-[2px] z-40 font-thin text-indigo-600',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
@@ -356,7 +356,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         </div>
         <div
           className={clsx(
-            'animate-float-and-fade-3 absolute right-[6px] top-[2px] z-40 text-indigo-600',
+            'animate-float-and-fade-3 absolute right-[6px] top-[2px] z-40 font-thin text-indigo-600',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
