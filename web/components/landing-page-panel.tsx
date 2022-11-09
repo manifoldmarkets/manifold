@@ -70,11 +70,12 @@ export function LandingPagePanel() {
         )}
       >
         <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
+          {isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}
           {pageNumber === 0 && <LandingPage0 isMobile={isMobile} />}
           {pageNumber === 1 && <LandingPage1 isMobile={isMobile} />}
           {pageNumber === 2 && <LandingPage2 isMobile={isMobile} />}
           {!isMobile && (
-            <div className="absolute right-0 bottom-0 z-20 h-full">
+            <div className="absolute -right-0.5 bottom-0 z-20 h-full">
               <SquiggleVerticalIcon className={clsx('text-indigo-200')} />
             </div>
           )}
@@ -117,11 +118,11 @@ export function LandingPagePanel() {
         </div>
         <div
           className={clsx(
-            'z-30 w-full bg-indigo-200 sm:w-2/5',
+            'relative z-30 w-full bg-indigo-200 sm:w-2/5',
             isMobile ? 'h-1/5 rounded-b-xl' : `${desktop_height} rounded-r-xl`
           )}
         >
-          <LandingPageManifoldMarketsLogo isMobile={isMobile} />
+          {!isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}
           <div className="group absolute bottom-16 right-8 z-30 md:right-12">
             <Button
               className="absolute bottom-1.5 -left-1.5 z-10 transition-all ease-in-out focus:bottom-0.5 focus:-left-0.5 group-hover:bottom-2 group-hover:-left-2 focus:group-hover:bottom-0.5 focus:group-hover:-left-0.5"
