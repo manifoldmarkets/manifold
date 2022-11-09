@@ -53,16 +53,23 @@ export async function updateUserMetrics() {
 
   log('Computing metric updates...')
   const now = Date.now()
+  const monthAgo = now - DAY_MS * 30
   const writer = firestore.bulkWriter({ throttling: false })
+
+  // we need to update metrics for contracts that resolved up through a month ago,
+  // for the purposes of computing the daily/weekly/monthly profit on them
+  const metricEligibleContracts = contracts.filter(
+    (c) => c.resolutionTime == null || c.resolutionTime > monthAgo
+  )
+
   const userUpdates = await batchedWaitAll(
     users.map((user) => async () => {
       const userContracts = contractsByCreator[user.id] ?? []
-      const unresolvedBetContracts = contracts.filter(
-        (c) => !c.isResolved && c.uniqueBettorIds?.includes(user.id)
-      )
-      const unresolvedBets = await loadUserContractBets(
+      const metricRelevantBets = await loadUserContractBets(
         user.id,
-        unresolvedBetContracts.map((c) => c.id)
+        metricEligibleContracts
+          .filter((c) => c.uniqueBettorIds?.includes(user.id))
+          .map((c) => c.id)
       )
       const portfolioHistory = await loadPortfolioHistory(user.id, now)
       const newCreatorVolume = calculateCreatorVolume(userContracts)
@@ -71,7 +78,7 @@ export async function updateUserMetrics() {
       const newPortfolio = calculateNewPortfolioMetrics(
         user,
         contractsById,
-        unresolvedBets
+        metricRelevantBets
       )
       const currPortfolio = portfolioHistory.current
       const didPortfolioChange =
@@ -83,7 +90,7 @@ export async function updateUserMetrics() {
       const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
       const unresolvedBetsByContractId = groupBy(
-        unresolvedBets,
+        metricRelevantBets,
         (b) => b.contractId
       )
 
