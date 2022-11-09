@@ -164,8 +164,11 @@ export const computeVolume = (contractBets: Bet[], since: number) => {
 export const calculateProbChange = (
   prob: number,
   descendingBets: Bet[],
-  since: number
+  since: number,
+  resolutionTime: number | undefined
 ) => {
+  if (resolutionTime && since >= resolutionTime) return 0
+
   const newestBet = descendingBets[0]
   if (!newestBet) return 0
 
