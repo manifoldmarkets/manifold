@@ -12,6 +12,7 @@ import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
 import { logSwipe } from 'web/lib/firebase/views'
 import {
+  contractPath,
   getBinaryProbPercent,
   getTrendingContracts,
 } from 'web/lib/firebase/contracts'
@@ -20,6 +21,7 @@ import { fromNow } from 'web/lib/util/time'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { SiteLink } from 'web/components/widgets/site-link'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(
@@ -222,10 +224,15 @@ const Peek = (props: { contract: BinaryContract; onClose: () => void }) => {
       <button className="h-40 shrink-0" onClick={onClose} />
       <div className="h-6 shrink-0 rounded-t-3xl bg-white" />
       <div className="grow overflow-auto bg-white px-4">
-        <h1 className="mb-8 text-lg font-semibold text-indigo-700">
-          {question}
-        </h1>
+        <h1 className="mb-8 text-lg font-semibold">{question}</h1>
         <Content size="sm" content={description} />
+        
+        <SiteLink
+          href={contractPath(contract)}
+          className="flex justify-center gap-2 text-indigo-700"
+        >
+          More details <ExternalLinkIcon className="my-px h-5 w-5" />
+        </SiteLink>
       </div>
     </section>
   )
