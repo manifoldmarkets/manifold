@@ -34,7 +34,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   const old = useUserSwipes()
   console.log(old)
   const newToMe = useMemo(
-    () => contracts.filter((c) => !(old ?? []).includes(c.id)),
+    () => contracts.filter((c) => !old.includes(c.id)),
     [contracts, old]
   )
 

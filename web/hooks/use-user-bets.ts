@@ -10,6 +10,7 @@ import {
 } from 'web/lib/firebase/bets'
 import { MINUTE_MS, sleep } from 'common/util/time'
 import { useUser } from './use-user'
+import { inMemoryStore, usePersistentState } from './use-persistent-state'
 
 export const usePrefetchUserBets = (userId: string) => {
   const queryClient = useQueryClient()
@@ -64,10 +65,13 @@ export const useGetUserBetContractIds = (userId: string | undefined) => {
 
 export const useUserSwipes = () => {
   const user = useUser()
-  const [swipes, setSwipes] = useState<string[]>()
+  const [swipes, setSwipes] = usePersistentState<string[]>([], {
+    store: inMemoryStore(),
+    key: 'user-swipes',
+  })
   useEffect(() => {
     if (user)
       getSwipes(user.id).then((s) => setSwipes(s.map((swipe: any) => swipe.id)))
-  }, [user])
+  }, [user, setSwipes])
   return swipes
 }
