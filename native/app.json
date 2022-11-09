@@ -8,7 +8,13 @@
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
-    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround", "sentry-expo"],
+    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround", "sentry-expo",
+    [
+      "expo-notifications",
+      {
+        "icon":"./assets/logo-96.png"
+      }
+    ]],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",

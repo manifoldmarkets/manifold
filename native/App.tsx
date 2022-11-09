@@ -101,6 +101,10 @@ const App = () => {
 
   // Initialize listeners
   useEffect(() => {
+    Linking.getInitialURL().then((url) => {
+      if (url) setUrlToLoad(url)
+      console.log('initial url', url)
+    })
     try {
       BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
       // This listener is fired whenever a notification is received while the app is foregrounded
