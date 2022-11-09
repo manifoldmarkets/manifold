@@ -12,6 +12,7 @@ export type ColorType =
   | 'gray'
   | 'gray-outline'
   | 'gradient'
+  | 'gradient-pink'
   | 'gray-white'
 
 const sizeClasses = {
@@ -44,6 +45,8 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
       'ring-2 ring-greyscale-5 text-greyscale-5 enabled:hover:bg-greyscale-5 enabled:hover:text-white disabled:opacity-50',
     color === 'gradient' &&
       'disabled:bg-greyscale-2 enabled:bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
+    color === 'gradient-pink' &&
+      'disabled:bg-greyscale-2 enabled:bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white',
     color === 'gray-white' &&
       'text-greyscale-6 hover:bg-greyscale-2 shadow-none disabled:opacity-50'
   )

@@ -94,7 +94,6 @@ export const ContractCard = memo(function ContractCard(props: {
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
   const showBinaryQuickBet =
-    user &&
     !marketClosed &&
     (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
     !hideQuickBet

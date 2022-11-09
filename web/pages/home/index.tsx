@@ -112,7 +112,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const trendingContracts = useTrendingContracts(6, userBlockFacetFilters)
   const newContracts = useNewContracts(6, userBlockFacetFilters)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
-    user?.id,
     6,
     userBlockFacetFilters
   )
@@ -291,7 +290,7 @@ export const getHomeItems = (sections: string[]) => {
   }
 }
 
-function renderSections(
+export function renderSections(
   sections: { id: string; label: string; icon?: string }[],
   sectionContracts: {
     'daily-trending': CPMMBinaryContract[]
@@ -437,7 +436,7 @@ function HomeSectionHeader(props: {
   )
 }
 
-const SearchSection = memo(function SearchSection(props: {
+export const SearchSection = memo(function SearchSection(props: {
   label: string
   contracts: CPMMBinaryContract[]
   sort: Sort
@@ -458,7 +457,7 @@ const SearchSection = memo(function SearchSection(props: {
   )
 })
 
-function LatestPostsSection(props: { latestPosts: Post[] }) {
+export function LatestPostsSection(props: { latestPosts: Post[] }) {
   const { latestPosts } = props
   const user = useUser()
 
@@ -489,7 +488,7 @@ function LatestPostsSection(props: { latestPosts: Post[] }) {
   )
 }
 
-function FeaturedSection(props: {
+export function FeaturedSection(props: {
   globalConfig: GlobalConfig
   pinned: JSX.Element[]
   isAdmin: boolean
@@ -592,7 +591,7 @@ function GroupSection(props: {
   )
 }
 
-const DailyMoversSection = memo(function DailyMoversSection(props: {
+export const DailyMoversSection = memo(function DailyMoversSection(props: {
   data:
     | {
         contracts: CPMMBinaryContract[]
@@ -623,7 +622,7 @@ const DailyMoversSection = memo(function DailyMoversSection(props: {
   )
 })
 
-const ActivitySection = memo(function ActivitySection() {
+export const ActivitySection = memo(function ActivitySection() {
   return (
     <Col>
       <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
