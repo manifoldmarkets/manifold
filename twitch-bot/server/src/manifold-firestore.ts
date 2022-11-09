@@ -3,14 +3,7 @@ import { initializeApp, onLog } from 'firebase/app';
 import { collection, CollectionReference, doc, DocumentReference, getDoc, getDocs, getFirestore } from 'firebase/firestore';
 import { MANIFOLD_FIREBASE_CONFIG } from './envs';
 import log from './logger';
-
-const timers: { [k: string]: number } = {};
-const ts = function (name: string) {
-  timers[name] = Date.now();
-};
-const te = function (name: string) {
-  return ((Date.now() - timers[name]) * 0.001).toFixed(1) + 's';
-};
+import { te, ts } from './utils';
 
 export default class ManifoldFirestore {
   private readonly contracts: CollectionReference<Contract>;
