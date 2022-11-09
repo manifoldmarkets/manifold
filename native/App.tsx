@@ -59,7 +59,7 @@ export const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV'
-    ? 'https://104b-181-41-206-75.ngrok.io'
+    ? 'https://dev-git-iap-mantic.vercel.app/'
     : 'https://manifold.markets/'
 
 const App = () => {
