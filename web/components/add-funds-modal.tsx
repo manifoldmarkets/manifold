@@ -67,8 +67,9 @@ function BuyManaTab(props: { onClose: () => void }) {
     if (type === 'iapReceipt') {
       const { receipt } = data
       try {
-        const result = await validateIapReceipt({ receipt: receipt })
-        if (result.success) console.log('iap receipt validated')
+        await validateIapReceipt({ receipt: receipt })
+        console.log('iap receipt validated')
+        onClose()
       } catch (e) {
         console.log('iap receipt validation error', e)
         setError('Error validating receipt')

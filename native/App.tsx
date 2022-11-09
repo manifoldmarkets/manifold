@@ -31,7 +31,7 @@ import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 import { AuthModal } from 'components/auth-modal'
 import { Feather, AntDesign } from '@expo/vector-icons'
-import { IAP } from './components/iap'
+import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 
 console.log('using', ENV, 'env')
@@ -374,11 +374,13 @@ const App = () => {
 
   return (
     <>
-      <IAP
-        checkoutAmount={checkoutAmount}
-        setCheckoutAmount={setCheckoutAmount}
-        communicateWithWebview={communicateWithWebview}
-      />
+      {Platform.OS === 'ios' && (
+        <IosIapListener
+          checkoutAmount={checkoutAmount}
+          setCheckoutAmount={setCheckoutAmount}
+          communicateWithWebview={communicateWithWebview}
+        />
+      )}
       {hasWebViewLoaded && (
         <>
           <Image style={styles.image} source={require('./assets/splash.png')} />
