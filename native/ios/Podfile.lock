@@ -408,6 +408,8 @@ PODS:
     - React-perflogger (= 0.69.6)
   - RNCClipboard (1.11.1):
     - React-Core
+  - RNIap (12.4.2):
+    - React-Core
   - RNSentry (4.2.2):
     - React-Core
     - Sentry (= 7.22.0)
@@ -475,6 +477,7 @@ DEPENDENCIES:
   - React-runtimeexecutor (from `../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
+  - RNIap (from `../node_modules/react-native-iap`)
   - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -599,6 +602,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNCClipboard:
     :path: "../node_modules/@react-native-clipboard/clipboard"
+  RNIap:
+    :path: "../node_modules/react-native-iap"
   RNSentry:
     :path: "../node_modules/@sentry/react-native"
   Yoga:
@@ -664,10 +669,11 @@ SPEC CHECKSUMS:
   React-runtimeexecutor: 0af71c94f968fa10015bf0119951bccd2e4d8865
   ReactCommon: fe7580b9d10f00249facf25659e0ec051320cc8a
   RNCClipboard: 2834e1c4af68697089cdd455ee4a4cdd198fa7dd
+  RNIap: e17233fe11083a71e0420682b0b09d497861faa1
   RNSentry: f03937a2cf86c7029ba31fbbf5618c55d223cd62
   Sentry: 30b51086ca9aac23337880152e95538f7e177f7f
   Yoga: 75bf4b0131cfb46a659cd0c13309b79a6fcff66d
 
-PODFILE CHECKSUM: 31f57af6ba301465a7ede9bf59fc7ba6b1956b23
+PODFILE CHECKSUM: 81fdeb970bee766b51a7265fc2c3f02a30d1b5fe
 
 COCOAPODS: 1.11.3

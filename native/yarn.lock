@@ -6774,6 +6774,11 @@ react-native-gradle-plugin@^0.0.7:
   resolved "https://registry.yarnpkg.com/react-native-gradle-plugin/-/react-native-gradle-plugin-0.0.7.tgz#96602f909745239deab7b589443f14fce5da2056"
   integrity sha512-+4JpbIx42zGTONhBTIXSyfyHICHC29VTvhkkoUOJAh/XHPEixpuBduYgf6Y4y9wsN1ARlQhBBoptTvXvAFQf5g==
 
+react-native-iap@^12.4.2:
+  version "12.4.2"
+  resolved "https://registry.yarnpkg.com/react-native-iap/-/react-native-iap-12.4.2.tgz#98f4a4f653f8beb7324cab5bb333308cc46d63a1"
+  integrity sha512-pl4mgkYQOf5uQPt5NX5ySW6+JhOhalvbqw+fGJ5lJ+ZxnDF/UMNEw6SWWjNF7XrU8X7yGkWamOHmco4RDPlFYg==
+
 react-native-web@~0.18.7:
   version "0.18.9"
   resolved "https://registry.yarnpkg.com/react-native-web/-/react-native-web-0.18.9.tgz#f5032e0b32ebe99c0ab22d13dbd8ca2944b08f12"

@@ -197,7 +197,7 @@ export async function setCachedReferralInfoForUser(user: User | null) {
 export async function firebaseLogin() {
   if (getIsNative()) {
     // Post the message back to expo
-    postMessageToNative('googleLoginClicked', {})
+    postMessageToNative('loginClicked', {})
     return
   }
   const provider = new GoogleAuthProvider()
