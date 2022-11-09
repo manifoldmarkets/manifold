@@ -10,7 +10,7 @@ export function formatMoney(amount: number) {
 }
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
-export const CONTRACT_ANTE = 100;
+export const CONTRACT_ANTE = 50;
 export const DPM_CREATOR_FEE = 0.04;
 
 export type Resolution = 'YES' | 'NO' | 'CANCEL' | 'MKT';
