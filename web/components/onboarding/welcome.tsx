@@ -9,7 +9,11 @@ import {
 
 import { PrivateUser, User } from 'common/user'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { updatePrivateUser, updateUser } from 'web/lib/firebase/users'
+import {
+  firebaseLogout,
+  updatePrivateUser,
+  updateUser,
+} from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -275,7 +279,10 @@ function Eula(props: { privateUser: PrivateUser }) {
           />
         )}
       </Row>
-      <Row className={'justify-end'}>
+      <Row className={'justify-between'}>
+        <Button color={'gray'} onClick={() => firebaseLogout()}>
+          Cancel
+        </Button>
         <Button
           color={'blue'}
           onClick={() =>
