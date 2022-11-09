@@ -10,6 +10,7 @@ export type UserData = {
   controlToken: string;
   botEnabled?: boolean;
   selectedMarket?: string;
+  admin?: boolean;
 };
 
 export default class User {
