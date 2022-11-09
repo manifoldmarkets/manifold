@@ -92,7 +92,7 @@ export function LandingPagePanel() {
             <div
               className={clsx(
                 'z-50 ',
-                isMobile ? 'mt-40 ml-1 flex flex-col' : 'ml-40 flex flex-row'
+                isMobile ? 'mt-32 ml-1 flex flex-col' : 'ml-40 flex flex-row'
               )}
             >
               <PaginationCircle
@@ -226,8 +226,8 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
         <img
           className="transition-all group-hover:rotate-12"
           src={'/logo-white.svg'}
-          width={24}
-          height={24}
+          width={20}
+          height={20}
           alt=""
         />
       )}
@@ -242,7 +242,7 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
       )}
       <div
         className={clsx(
-          'font-major-mono sm:text-greyscale-7 text-sm lowercase text-white sm:whitespace-nowrap'
+          'font-major-mono sm:text-greyscale-7 text-xs lowercase text-white sm:whitespace-nowrap sm:text-sm'
         )}
       >
         Manifold Markets

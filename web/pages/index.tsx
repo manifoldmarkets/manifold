@@ -8,7 +8,6 @@ import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
-import { useAllPosts } from 'web/hooks/use-post'
 import {
   inMemoryStore,
   usePersistentState,
@@ -16,12 +15,7 @@ import {
 import { useGlobalConfig } from 'web/hooks/use-global-config'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Post } from 'common/post'
-import {
-  ActivitySection,
-  FeaturedSection,
-  LatestPostsSection,
-  SearchSection,
-} from './home'
+import { ActivitySection, FeaturedSection, SearchSection } from './home'
 import { Sort } from 'web/components/contract-search'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { PostCard } from 'web/components/posts/post-card'
