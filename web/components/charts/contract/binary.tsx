@@ -49,9 +49,10 @@ export const BinaryContractChart = (props: {
   bets: Bet[]
   width: number
   height: number
+  color?: string
   onMouseOver?: (p: HistoryPoint<Bet> | undefined) => void
 }) => {
-  const { contract, bets, width, height, onMouseOver } = props
+  const { contract, bets, width, height, onMouseOver, color } = props
   const [start, end] = getDateRange(contract)
   const startP = getInitialProbability(contract)
   const endP = getProbability(contract)
@@ -81,7 +82,7 @@ export const BinaryContractChart = (props: {
       yScale={yScale}
       yKind="percent"
       data={data}
-      color="#11b981"
+      color={color ?? '#11b981'}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}

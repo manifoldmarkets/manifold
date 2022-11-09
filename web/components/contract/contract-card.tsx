@@ -354,7 +354,7 @@ export function PseudoNumericResolutionOrExpectation(props: {
 }) {
   const { contract, className } = props
   const { resolution, resolutionValue, resolutionProbability } = contract
-  const textColor = `text-blue-400`
+  const textColor = `text-gray-900`
 
   const value = resolution
     ? resolutionValue

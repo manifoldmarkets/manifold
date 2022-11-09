@@ -63,9 +63,10 @@ export const PseudoNumericContractChart = (props: {
   bets: Bet[]
   width: number
   height: number
+  color?: string
   onMouseOver?: (p: HistoryPoint<Bet> | undefined) => void
 }) => {
-  const { contract, bets, width, height, onMouseOver } = props
+  const { contract, bets, width, height, color, onMouseOver } = props
   const { min, max, isLogScale } = contract
   const [start, end] = getDateRange(contract)
   const scaleP = useMemo(
@@ -105,7 +106,7 @@ export const PseudoNumericContractChart = (props: {
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={PseudoNumericChartTooltip}
-      color={NUMERIC_GRAPH_COLOR}
+      color={color ?? NUMERIC_GRAPH_COLOR}
     />
   )
 }
