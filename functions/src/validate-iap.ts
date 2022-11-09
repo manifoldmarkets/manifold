@@ -31,11 +31,7 @@ export const validateiap = newEndpoint({}, async (req, auth) => {
   const userId = auth.uid
 
   iap.config({
-    /* Configurations for Apple */
-    // appleExcludeOldTransactions: true, // if you want to exclude old transaction, set this to true. Default is false
-    // applePassword: 'abcd.....', // this comes from iTunes Connect (You need this to valiate subscriptions)
-    /* Configurations all platforms */
-    test: !isProd(), // For Apple and Googl Play to force Sandbox validation only
+    test: !isProd(), // For Apple and Google Play to force Sandbox validation only
     verbose: true, // Output debug logs to stdout stream
   })
   await iap.setup().catch((error: any) => {
@@ -49,8 +45,6 @@ export const validateiap = newEndpoint({}, async (req, auth) => {
   })
 
   log('validated data')
-  // validatedData: the actual content of the validated receipt
-  // validatedData also contains the original receipt
   const options = {
     ignoreCanceled: true, // Apple ONLY (for now...): purchaseData will NOT contain cancceled items
     ignoreExpired: true, // purchaseData will NOT contain exipired subscription items
