@@ -4,7 +4,6 @@ import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
-import { FundsSelector } from './bet/yes-no-selector'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { Tabs } from './layout/tabs'
 import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
@@ -20,6 +19,7 @@ import { Card } from 'web/components/widgets/card'
 import { validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
+import clsx from 'clsx'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -193,5 +193,31 @@ const Item = (props: { children: React.ReactNode; url?: string }) => {
         <Card className="pointer-events-none cursor-auto p-2">{children}</Card>
       )}
     </li>
+  )
+}
+
+export function FundsSelector(props: {
+  fundAmounts: { [key: string]: number }
+  selected: number
+  onSelect: (selected: number) => void
+  className?: string
+  btnClassName?: string
+}) {
+  const { selected, onSelect, className, fundAmounts } = props
+  const btnClassName = clsx('!px-2 whitespace-nowrap', props.btnClassName)
+
+  return (
+    <Row className={clsx('flex-wrap justify-center gap-3', className)}>
+      {Object.entries(fundAmounts).map(([key, amount]) => (
+        <Button
+          key={amount}
+          color={selected === amount ? 'indigo' : 'gray'}
+          onClick={() => onSelect(amount as any)}
+          className={btnClassName}
+        >
+          {key}
+        </Button>
+      ))}
+    </Row>
   )
 }

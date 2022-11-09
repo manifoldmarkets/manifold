@@ -156,32 +156,6 @@ export function ChooseCancelSelector(props: {
   )
 }
 
-export function FundsSelector(props: {
-  fundAmounts: { [key: string]: number }
-  selected: number
-  onSelect: (selected: number) => void
-  className?: string
-  btnClassName?: string
-}) {
-  const { selected, onSelect, className, fundAmounts } = props
-  const btnClassName = clsx('!px-2 whitespace-nowrap', props.btnClassName)
-
-  return (
-    <Row className={clsx('flex-wrap justify-center gap-3', className)}>
-      {Object.entries(fundAmounts).map(([key, amount]) => (
-        <Button
-          key={amount}
-          color={selected === amount ? 'indigo' : 'gray'}
-          onClick={() => onSelect(amount as any)}
-          className={btnClassName}
-        >
-          {key}
-        </Button>
-      ))}
-    </Row>
-  )
-}
-
 export function BuyButton(props: { className?: string; onClick?: () => void }) {
   const { className, onClick } = props
   // Note: styles coppied from YesNoSelector

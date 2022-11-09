@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { FundsSelector } from 'web/components/bet/yes-no-selector'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Page } from 'web/components/layout/page'
@@ -11,7 +10,10 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { Button } from 'web/components/buttons/button'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { formatMoney } from 'common/util/format'
-import { OtherWaysToGetMana } from 'web/components/add-funds-modal'
+import {
+  FundsSelector,
+  OtherWaysToGetMana,
+} from 'web/components/add-funds-modal'
 
 export const WEB_PRICES = {
   [formatMoney(1000)]: 1000,
