@@ -7,11 +7,14 @@ import {
   handlePushNotificationPermissionStatus,
   setPushToken,
 } from 'web/lib/firebase/notifications'
-import { useRouter } from 'next/router'
+import { NextRouter, useRouter } from 'next/router'
 import { getIsNative, setIsNative } from 'web/lib/native/is-native'
+import { validateIapReceipt } from 'web/lib/firebase/api'
+import { useUser } from 'web/hooks/use-user'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
+  const user = useUser()
 
   const handleNativeMessage = async (e: any) => {
     let event
@@ -49,6 +52,9 @@ export const NativeMessageListener = () => {
       } catch (e) {
         console.log(`Error navigating to link route ${newRoute}`, e)
       }
+    } else if (type === 'iapReceipt') {
+      console.log('iapReceipt', data)
+      handleIapReceipt(data.receipt, router, user?.username ?? '')
     }
   }
 
@@ -75,4 +81,18 @@ export const postMessageToNative = (type: string, data: any) => {
       data,
     })
   )
+}
+
+const handleIapReceipt = async (
+  receipt: string,
+  router: NextRouter,
+  username: string
+) => {
+  const result = await validateIapReceipt(receipt)
+  if (result.success) {
+    console.log('iap receipt validated')
+    router.push(`/${username}?iapSuccess=true`)
+  } else {
+    console.log('iap receipt validation failed')
+  }
 }

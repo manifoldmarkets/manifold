@@ -1,20 +1,19 @@
-import { APIError, newEndpoint, validate } from 'functions/src/api'
+import { APIError, newEndpoint, validate } from './api'
 import { z } from 'zod'
 import { getPrivateUser, getUser, isProd, log } from './utils'
-import { sendThankYouEmail } from 'functions/src/emails'
-import { track } from 'functions/src/analytics'
+import { sendThankYouEmail } from './emails'
+import { track } from './analytics'
 import * as admin from 'firebase-admin'
-import { IapTransaction, PurchaseData } from 'common/iap'
+import { IapTransaction, PurchaseData } from '../../common/iap'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
-import { ManaPurchaseTxn } from 'common/txn'
-import { runTxn } from 'functions/src/transact'
+} from '../../common/antes'
+import { ManaPurchaseTxn } from '../../common/txn'
+import { runTxn } from './transact'
 
 const bodySchema = z.object({
   receipt: z.string(),
-  userId: z.string(),
 })
 
 const PRODUCTS_TO_AMOUNTS: { [key: string]: number } = {
@@ -28,10 +27,8 @@ const IAP_TYPES_PROCESSED = 'apple'
 export const validateiap = newEndpoint({}, async (req, auth) => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const iap = require('@flat/in-app-purchase')
-  const { receipt, userId } = validate(bodySchema, req.body)
-
-  if (auth.uid !== userId)
-    throw new APIError(400, 'auth id and user id do not match')
+  const { receipt } = validate(bodySchema, req.body)
+  const userId = auth.uid
 
   iap.config({
     /* Configurations for Apple */
@@ -81,7 +78,6 @@ export const validateiap = newEndpoint({}, async (req, auth) => {
   const revenue = (payout / 100) * 0.2 + payout / 100 - 0.01
 
   log('payout', payout)
-
   const iapTransRef = await firestore.collection('iaps').doc()
   const iapTransaction: IapTransaction = {
     userId,

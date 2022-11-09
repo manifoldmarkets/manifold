@@ -58,7 +58,7 @@ export * from './close-market'
 export * from './update-comment-bounty'
 export * from './add-subsidy'
 export * from './test-scheduled-function'
-export * from './iap'
+export * from './validate-iap'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -88,7 +88,7 @@ import { updategroupmetrics } from './update-group-metrics'
 import { updateloans } from './update-loans'
 import { addsubsidy } from './add-subsidy'
 import { testscheduledfunction } from './test-scheduled-function'
-import { validateiap } from './iap'
+import { validateiap } from './validate-iap'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)

@@ -59,7 +59,7 @@ export const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV'
-    ? 'https://ddb7-181-41-206-237.ngrok.io'
+    ? 'https://104b-181-41-206-75.ngrok.io'
     : 'https://manifold.markets/'
 
 const App = () => {
@@ -377,6 +377,7 @@ const App = () => {
       <IAP
         checkoutAmount={checkoutAmount}
         setCheckoutAmount={setCheckoutAmount}
+        communicateWithWebview={communicateWithWebview}
       />
       {hasWebViewLoaded && (
         <>

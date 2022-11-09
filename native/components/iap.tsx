@@ -12,8 +12,9 @@ const SKUS = ['mana_1000', 'mana_2500', 'mana_10000']
 export const IAP = (props: {
   checkoutAmount: number | null
   setCheckoutAmount: (amount: number | null) => void
+  communicateWithWebview: (type: string, data: object | string) => void
 }) => {
-  const { checkoutAmount, setCheckoutAmount } = props
+  const { checkoutAmount, setCheckoutAmount, communicateWithWebview } = props
 
   const {
     connected,
@@ -56,11 +57,10 @@ export const IAP = (props: {
             purchase: currentPurchase,
             isConsumable: true,
           })
-          console.log(
-            'finishTransaction receipt',
-            currentPurchase.transactionReceipt
-          )
+          const receipt = currentPurchase.transactionReceipt
+          console.log('finishTransaction receipt', receipt)
 
+          communicateWithWebview('iapReceipt', { receipt })
           setSuccess(true)
         }
       } catch (error) {
@@ -104,7 +104,6 @@ export const IAP = (props: {
     const sku = products.find((p) => p.price === usdAmount)
     if (sku) {
       handleBuyProduct(sku.productId)
-      // purchase package found, make purchase
     }
     setCheckoutAmount(null)
   }, [checkoutAmount])

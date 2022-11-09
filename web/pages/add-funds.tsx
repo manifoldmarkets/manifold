@@ -10,8 +10,8 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Button } from 'web/components/buttons/button'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { OtherWaysToGetMana } from 'web/components/native/add-funds-ios'
 import { formatMoney } from 'common/util/format'
+import { OtherWaysToGetMana } from 'web/components/add-funds-modal'
 
 export const WEB_PRICES = {
   [formatMoney(1000)]: 1000,
