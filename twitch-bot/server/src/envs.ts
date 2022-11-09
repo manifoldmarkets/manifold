@@ -43,14 +43,14 @@ export const MANIFOLD_FIREBASE_CONFIG =
         measurementId: 'G-SSFK1Q138D',
       }
     : {
-        // apiKey: 'AIzaSyBoq3rzUa8Ekyo3ZaTnlycQYPRCA26VpOw',
-        // authDomain: 'dev-mantic-markets.firebaseapp.com',
+        apiKey: 'AIzaSyBoq3rzUa8Ekyo3ZaTnlycQYPRCA26VpOw',
+        authDomain: 'dev-mantic-markets.firebaseapp.com',
         projectId: 'dev-mantic-markets',
-        // region: 'us-central1',
-        // storageBucket: 'dev-mantic-markets.appspot.com',
-        // messagingSenderId: '134303100058',
-        // appId: '1:134303100058:web:27f9ea8b83347251f80323',
-        // measurementId: 'G-YJC9E37P37',
+        region: 'us-central1',
+        storageBucket: 'dev-mantic-markets.appspot.com',
+        messagingSenderId: '134303100058',
+        appId: '1:134303100058:web:27f9ea8b83347251f80323',
+        measurementId: 'G-YJC9E37P37',
       };
 
 export const GOOGLE_PROJECT_ID = 'mantic-markets';

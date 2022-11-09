@@ -1,8 +1,7 @@
 import { UserNotRegisteredException } from 'common/exceptions';
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { collection, CollectionReference, deleteField, doc, Firestore, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, CollectionReference, deleteField, doc, Firestore, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { MANIFOLD_DB_LOCATION, TWITCH_BOT_FIREBASE_KEY } from './envs';
-import log from './logger';
 import User, { UserData } from './user';
 
 /* cSpell:disable */
@@ -17,62 +16,71 @@ const firebaseConfig = {
 /* cSpell:enable */
 
 export default class AppFirestore {
-  readonly app: FirebaseApp;
-  readonly db: Firestore;
-  readonly dbCollection: CollectionReference;
-  readonly userCollection: CollectionReference;
+  private readonly app: FirebaseApp;
+  private readonly db: Firestore;
+  private readonly dbCollection: CollectionReference;
+  private readonly userCollection: CollectionReference<UserData>;
+  private readonly localUserCache: { [manifoldID: string]: User } = {};
 
   constructor() {
     this.app = initializeApp(firebaseConfig);
     this.db = getFirestore(this.app);
     this.dbCollection = collection(this.db, 'manifold-db');
-    this.userCollection = collection(this.dbCollection, MANIFOLD_DB_LOCATION, 'users');
+    this.userCollection = <CollectionReference<UserData>>collection(this.dbCollection, MANIFOLD_DB_LOCATION, 'users');
   }
 
-  onDevBotActiveUpdated(callback: (d: { devBotLastActive: number }) => void) {
-    onSnapshot(this.dbCollection, (doc) => {
-      doc.docs.forEach((d) => {
-        const data = <{ devBotLastActive: number }>d.data();
-        callback(data);
-      });
-    });
+  public async loadUsers() {
+    return new Promise<void>((r) =>
+      onSnapshot(this.userCollection, (snapshot) => {
+        for (const change of snapshot.docChanges()) {
+          if (change.type === 'removed') {
+            delete this.localUserCache[change.doc.id];
+          } else {
+            this.localUserCache[change.doc.id] = new User(change.doc.data());
+          }
+        }
+        r();
+      })
+    );
   }
 
   async updateSelectedMarketForUser(twitchName: string, selectedMarket: string) {
-    const docs = await getDocs(query(this.userCollection, where('twitchLogin', '==', twitchName)));
-    const data = { selectedMarket: selectedMarket ? selectedMarket : deleteField() };
-    updateDoc(doc(this.db, this.userCollection.path, (<UserData>docs.docs[0].data()).manifoldID), data);
+    const user = this.getUserForTwitchUsername(twitchName);
+    if (!user) throw new UserNotRegisteredException(`No user record for Twitch username ${twitchName}`);
+    const data = { selectedMarket: selectedMarket || deleteField() };
+    return updateDoc(doc(this.db, this.userCollection.path, user.data.manifoldID), data);
   }
 
-  async getUserForTwitchUsername(twitchUsername: string): Promise<User> {
+  getUserForTwitchUsername(twitchUsername: string): User {
     twitchUsername = twitchUsername.toLocaleLowerCase();
-    const docs = await getDocs(query(this.userCollection, where('twitchLogin', '==', twitchUsername)));
-    if (docs.size < 1) throw new UserNotRegisteredException(`No user record for Twitch username ${twitchUsername}`);
-    if (docs.size > 1) log.warn('More than one user found with Twitch username ' + twitchUsername);
-    const data = <UserData>docs.docs[0].data();
-    return new User(data);
+    for (const manifoldID in this.localUserCache) {
+      const user = this.localUserCache[manifoldID];
+      if (user.data.twitchLogin === twitchUsername) return user;
+    }
+    throw new UserNotRegisteredException(`No user record for Twitch username ${twitchUsername}`); //!!! Handle multiple users with the same username
   }
 
-  async getUserForManifoldID(manifoldID: string): Promise<User> {
-    const d = await getDoc(doc(this.db, this.userCollection.path, manifoldID));
-    if (!d.exists()) throw new UserNotRegisteredException(`No user record for Manifold ID ${manifoldID}`);
-    const data = <UserData>d.data();
-    return new User(data);
+  getUserForManifoldID(manifoldID: string): User {
+    const user = this.localUserCache[manifoldID];
+    if (!user) throw new UserNotRegisteredException(`No user record for Manifold ID ${manifoldID}`);
+    return user;
   }
 
-  async getUserForManifoldAPIKey(apiKey: string): Promise<User> {
-    const d = await getDocs(query(this.userCollection, where('APIKey', '==', apiKey)));
-    if (d.empty) throw new UserNotRegisteredException(`No user record for API key ${apiKey}`);
-    const data = <UserData>d.docs[0].data();
-    return new User(data);
+  getUserForManifoldAPIKey(apiKey: string): User {
+    for (const manifoldID in this.localUserCache) {
+      const user = this.localUserCache[manifoldID];
+      if (user.data.APIKey === apiKey) return user;
+    }
+    throw new UserNotRegisteredException(`No user record for API key ${apiKey}`);
   }
 
-  async getUserForControlToken(controlToken: string): Promise<User> {
-    if (!controlToken) return null;
-    const docs = await getDocs(query(this.userCollection, where('controlToken', '==', controlToken)));
-    if (docs.size < 1) return null;
-    const data = <UserData>docs.docs[0].data();
-    return new User(data);
+  getUserForControlToken(controlToken: string): User {
+    for (const manifoldID in this.localUserCache) {
+      const user = this.localUserCache[manifoldID];
+      if (user.data.controlToken === controlToken) return user;
+    }
+    return null; //!!! Inconsistent response
+    // throw new UserNotRegisteredException(`No user record for API key ${apiKey}`);
   }
 
   async addNewUser(user: User) {
@@ -83,12 +91,14 @@ export default class AppFirestore {
     await updateDoc(doc(this.db, this.userCollection.path, user.data.manifoldID), props);
   }
 
-  async getRegisteredTwitchChannels(): Promise<string[]> {
-    const docs = await getDocs(query(this.userCollection, where('botEnabled', '==', true)));
+  getRegisteredTwitchChannels(): string[] {
     const channelNames = [];
-    docs.forEach((doc) => {
-      channelNames.push(doc.data().twitchLogin);
-    });
+    for (const manifoldID in this.localUserCache) {
+      const user = this.localUserCache[manifoldID];
+      if (user.data.botEnabled) {
+        channelNames.push(user.data.twitchLogin);
+      }
+    }
     return channelNames;
   }
 

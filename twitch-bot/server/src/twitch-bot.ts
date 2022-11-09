@@ -389,7 +389,7 @@ export default class TwitchBot {
       }
     } else {
       // this.client.getOptions().channels = await this.app.firestore.getRegisteredTwitchChannels();
-      channelsToJoin.push(...(await this.app.firestore.getRegisteredTwitchChannels()));
+      channelsToJoin.push(...this.app.firestore.getRegisteredTwitchChannels());
     }
 
     try {

@@ -30,10 +30,4 @@ process.on('unhandledRejection', async (e) => {
 });
 
 log.info('Starting application...');
-log.init().then(() => {
-  const app = new App();
-  app.launch().catch((e) => {
-    log.trace(e);
-    exit(1);
-  });
-});
+log.init().then(() => new App().launch());

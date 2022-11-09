@@ -42,7 +42,7 @@ export default class App {
     }
     let displayName: string;
     try {
-      const user = await this.firestore.getUserForManifoldID(userID);
+      const user = this.firestore.getUserForManifoldID(userID);
       displayName = user.data.twitchLogin;
     } catch {
       try {
@@ -84,6 +84,7 @@ export default class App {
   }
 
   public async launch() {
+    await this.firestore.loadUsers();
     await this.bot.connect();
     await this.manifoldFirestore.validateConnection();
     await this.manifoldFirestore.initialLoadAllUsers();
@@ -113,7 +114,7 @@ export default class App {
         next(new Error('Invalid connection type'));
         return;
       }
-      const connectedUser = await this.firestore.getUserForControlToken(<string>controlToken);
+      const connectedUser = this.firestore.getUserForControlToken(<string>controlToken);
       if (!connectedUser) {
         log.warn('Socket connection failed: No account associated with this control token');
         next(new Error('No account associated with this control token'));
