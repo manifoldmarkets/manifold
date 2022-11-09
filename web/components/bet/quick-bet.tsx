@@ -30,13 +30,16 @@ import { placeBet } from 'web/lib/firebase/api'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api'
+import { track, withTracking } from 'web/lib/service/analytics'
 import {
   calculateCpmmSale,
   getCpmmProbability,
   getCpmmProbabilityAfterSale,
 } from 'common/calculate-cpmm'
-import { track } from 'web/lib/service/analytics'
-import { formatNumericProbability } from 'common/pseudo-numeric'
+import {
+  formatNumericProbability,
+  getFormattedMappedValue,
+} from 'common/pseudo-numeric'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getBinaryProb } from 'common/contract-details'
 import { Row } from '../layout/row'
@@ -49,32 +52,32 @@ import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
 import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import { floor } from 'lodash'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Bet } from 'common/bet'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 const BET_SIZE = 10
 
 export function QuickBet(props: {
   contract: BinaryContract | PseudoNumericContract
-  user: User
+  user?: User | null
   className?: string
 }) {
   const { contract, user, className } = props
-  const userBets = useUserContractBets(user.id, contract.id) || []
-
-  const { mechanism } = contract
-  const isCpmm = mechanism === 'cpmm-1'
-  // TODO: Below hook fetches a decent amount of data. Maybe not worth it to show prob change on hover?
-  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
+  if (!user) {
+    return <SignedOutQuickBet contract={contract} className={className} />
+  }
+  return (
+    <SignedInQuickBet contract={contract} user={user} className={className} />
   )
+}
 
-  const { yesShares, noShares, hasNoShares, hasYesShares } =
-    useSaveBinaryShares(contract, userBets)
-
+export function SignedOutQuickBet(props: {
+  contract: BinaryContract | PseudoNumericContract
+  className?: string
+}) {
+  const { contract, className } = props
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
-
-  let previewProb: number | undefined = undefined
+  let previewProb = undefined
   try {
     previewProb = upHover
       ? getOutcomeProbabilityAfterBet(
@@ -93,44 +96,70 @@ export function QuickBet(props: {
   } catch (e) {
     // Catch any errors from hovering on an invalid option
   }
+  return (
+    <div className="relative">
+      <Row className={clsx(className, 'absolute inset-0')}>
+        <BinaryQuickBetButton
+          onClick={withTracking(firebaseLogin, 'landing page button click')}
+          direction="DOWN"
+          hover={downHover}
+          onMouseEnter={() => setDownHover(true)}
+          onMouseLeave={() => setDownHover(false)}
+        />
+        <BinaryQuickBetButton
+          onClick={withTracking(firebaseLogin, 'landing page button click')}
+          direction="UP"
+          hover={upHover}
+          onMouseEnter={() => setUpHover(true)}
+          onMouseLeave={() => setUpHover(false)}
+        />
+      </Row>
+      <QuickOutcomeView contract={contract} previewProb={previewProb} />
+    </div>
+  )
+}
+
+function SignedInQuickBet(props: {
+  contract: BinaryContract | PseudoNumericContract
+  user: User
+  className?: string
+}) {
+  const { contract, user, className } = props
+  const [upHover, setUpHover] = useState(false)
+  const [downHover, setDownHover] = useState(false)
+  let previewProb = undefined
+  try {
+    previewProb = upHover
+      ? getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'UP') || '',
+          BET_SIZE
+        )
+      : downHover
+      ? 1 -
+        getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'DOWN') || '',
+          BET_SIZE
+        )
+      : undefined
+  } catch (e) {
+    // Catch any errors from hovering on an invalid option
+  }
+  const userBets = useUserContractBets(user.id, contract.id) || []
+
+  const { mechanism } = contract
+  const isCpmm = mechanism === 'cpmm-1'
+  // TODO: Below hook fetches a decent amount of data. Maybe not worth it to show prob change on hover?
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
+
+  const { yesShares, noShares } = useSaveBinaryShares(contract, userBets)
 
   let sharesSold: number | undefined
   let sellOutcome: 'YES' | 'NO' | undefined
   let saleAmount: number | undefined
-  if (isCpmm && ((upHover && hasNoShares) || (downHover && hasYesShares))) {
-    const oppositeShares = upHover ? noShares : yesShares
-    if (oppositeShares) {
-      sellOutcome = upHover ? 'NO' : 'YES'
-
-      const prob = getProb(contract)
-      const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
-      sharesSold = Math.min(oppositeShares, maxSharesSold)
-      const probAfterSale = getCpmmProbabilityAfterSale(
-        contract,
-        sharesSold,
-        sellOutcome,
-        unfilledBets,
-        balanceByUserId
-      )
-
-      // Recompute max shares sold using prob after selling.
-      // This lower price for your shares means the max is more generous.
-      // Which fixes the issue where you sell 99% of your shares instead of all.
-      const maxSharesSold2 =
-        BET_SIZE / (sellOutcome === 'YES' ? probAfterSale : 1 - probAfterSale)
-      sharesSold = Math.min(oppositeShares, maxSharesSold2)
-
-      const { cpmmState, saleValue } = calculateCpmmSale(
-        contract,
-        sharesSold,
-        sellOutcome,
-        unfilledBets,
-        balanceByUserId
-      )
-      saleAmount = saleValue
-      previewProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
-    }
-  }
 
   async function placeQuickBet(direction: 'UP' | 'DOWN') {
     const betPromise = async () => {
@@ -167,6 +196,47 @@ export function QuickBet(props: {
       contractId: contract.id,
     })
   }
+  const { invested } = getContractBetMetrics(contract, userBets)
+  const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
+  const hasYesInvestment =
+    hasYesShares === true && invested != undefined && floor(invested) > 0
+  const hasNoInvestment =
+    hasNoShares === true && invested != undefined && floor(invested) > 0
+
+  if (isCpmm && ((upHover && hasNoShares) || (downHover && hasYesShares))) {
+    const oppositeShares = upHover ? noShares : yesShares
+    if (oppositeShares) {
+      sellOutcome = upHover ? 'NO' : 'YES'
+
+      const prob = getProb(contract)
+      const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
+      sharesSold = Math.min(oppositeShares, maxSharesSold)
+      const probAfterSale = getCpmmProbabilityAfterSale(
+        contract,
+        sharesSold,
+        sellOutcome,
+        unfilledBets,
+        balanceByUserId
+      )
+
+      // Recompute max shares sold using prob after selling.
+      // This lower price for your shares means the max is more generous.
+      // Which fixes the issue where you sell 99% of your shares instead of all.
+      const maxSharesSold2 =
+        BET_SIZE / (sellOutcome === 'YES' ? probAfterSale : 1 - probAfterSale)
+      sharesSold = Math.min(oppositeShares, maxSharesSold2)
+
+      const { cpmmState, saleValue } = calculateCpmmSale(
+        contract,
+        sharesSold,
+        sellOutcome,
+        unfilledBets,
+        balanceByUserId
+      )
+      saleAmount = saleValue
+      previewProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+    }
+  }
 
   return (
     <div className="relative">
@@ -174,20 +244,20 @@ export function QuickBet(props: {
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('DOWN')}
           direction="DOWN"
-          contract={contract}
           hover={downHover}
           onMouseEnter={() => setDownHover(true)}
           onMouseLeave={() => setDownHover(false)}
-          userBets={userBets}
+          hasInvestment={hasNoInvestment}
+          invested={invested}
         />
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('UP')}
           direction="UP"
-          contract={contract}
           hover={upHover}
           onMouseEnter={() => setUpHover(true)}
           onMouseLeave={() => setUpHover(false)}
-          userBets={userBets}
+          hasInvestment={hasYesInvestment}
+          invested={invested}
         />
       </Row>
       <QuickOutcomeView contract={contract} previewProb={previewProb} />
@@ -198,31 +268,21 @@ export function QuickBet(props: {
 function BinaryQuickBetButton(props: {
   onClick: () => void
   direction: 'UP' | 'DOWN'
-  contract: BinaryContract | PseudoNumericContract
   hover: boolean
   onMouseEnter: () => void
   onMouseLeave: () => void
-  userBets: Bet[]
+  hasInvestment?: boolean
+  invested?: number
 }) {
   const {
     onClick,
     direction,
-    contract,
     hover,
     onMouseEnter,
     onMouseLeave,
-    userBets,
+    hasInvestment,
+    invested,
   } = props
-  const { invested } = getContractBetMetrics(contract, userBets)
-  const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
-  let hasInvestment = false
-  if (direction === 'UP') {
-    hasInvestment =
-      hasYesShares === true && invested != undefined && floor(invested) > 0
-  } else {
-    hasInvestment =
-      hasNoShares === true && invested != undefined && floor(invested) > 0
-  }
   const isMobile = useIsMobile()
   const shouldFocus = hover && !isMobile
   return (
@@ -263,7 +323,7 @@ function BinaryQuickBetButton(props: {
         <span
           className={clsx(
             'text-sm font-light',
-            shouldFocus ? 'text-indigo-600' : 'text-greyscale-4'
+            shouldFocus ? 'text-indigo-600' : 'text-gray-400'
           )}
         >
           {shouldFocus
@@ -347,7 +407,7 @@ function cardText(contract: Contract, previewProb?: number) {
       return (
         <>
           <span className="my-auto text-sm font-normal">resolved as</span>
-          {formatPercent(resolutionProbability)}
+          {getFormattedMappedValue(contract)(resolutionProbability)}
         </>
       )
     }
@@ -363,9 +423,7 @@ function cardText(contract: Contract, previewProb?: number) {
   }
 
   if (previewProb) {
-    return outcomeType === 'PSEUDO_NUMERIC'
-      ? formatNumericProbability(previewProb, contract)
-      : formatPercent(previewProb)
+    return getFormattedMappedValue(contract)(previewProb)
   }
 
   switch (outcomeType) {
@@ -468,7 +526,7 @@ function ContractCardAnswer(props: {
         <AnswerLabel
           className={clsx(
             'text-md',
-            type === 'loser' ? 'text-greyscale-5' : 'text-greyscale-7'
+            type === 'loser' ? 'text-gray-500' : 'text-gray-900'
           )}
           answer={answer}
           truncate="medium"
@@ -476,7 +534,7 @@ function ContractCardAnswer(props: {
         <div
           className={clsx(
             'text-md font-semibold',
-            type === 'loser' ? 'text-greyscale-5' : 'text-greyscale-7'
+            type === 'loser' ? 'text-gray-500' : 'text-gray-900'
           )}
         >
           {display}
@@ -514,7 +572,7 @@ function getNumericScale(contract: NumericContract) {
 const OUTCOME_TO_COLOR_BAR = {
   YES: 'bg-teal-200',
   NO: 'bg-scarlet-200',
-  CANCEL: 'bg-greyscale-1.5',
+  CANCEL: 'bg-gray-100',
   MKT: 'bg-sky-200',
 }
 
@@ -535,7 +593,7 @@ export function getBarColor(contract: Contract) {
 const OUTCOME_TO_COLOR_BACKGROUND = {
   YES: 'bg-teal-100',
   NO: 'bg-scarlet-100',
-  CANCEL: 'bg-greyscale-1.5',
+  CANCEL: 'bg-gray-100',
   MKT: 'bg-sky-100',
 }
 
@@ -543,22 +601,20 @@ export function getBgColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return (
-      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-greyscale-1'
-    )
+    return OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-gray-50'
   }
 
   // if ((contract.closeTime ?? Infinity) < Date.now()) {
-  //   return 'bg-greyscale-1.5'
+  //   return 'bg-gray-100'
   // }
 
-  return 'bg-greyscale-1'
+  return 'bg-gray-50'
 }
 
 const OUTCOME_TO_COLOR_TEXT = {
   YES: 'text-teal-600',
   NO: 'text-scarlet-600',
-  CANCEL: 'text-greyscale-4',
+  CANCEL: 'text-gray-400',
   MKT: 'text-sky-600',
 }
 
@@ -570,8 +626,8 @@ export function getTextColor(contract: Contract) {
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return 'text-greyscale-6'
+    return 'text-gray-600'
   }
 
-  return 'text-greyscale-7'
+  return 'text-gray-900'
 }

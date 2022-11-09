@@ -127,7 +127,7 @@ export function AnswerBetPanel(props: {
 
         {!isModal && (
           <button
-            className="hover:bg-greyscale-2 rounded-full"
+            className="rounded-full hover:bg-gray-200"
             onClick={closePanel}
           >
             <XIcon

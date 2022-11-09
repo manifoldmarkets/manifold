@@ -41,13 +41,11 @@ export function AmountInput(props: {
     onChange(isInvalid ? undefined : amount)
   }
 
-  const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
-
   return (
     <>
       <Col className={clsx('relative', error && 'mb-3', className)}>
         <label className="font-sm md:font-lg relative">
-          <span className="text-greyscale-4 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
+          <span className="absolute top-1/2 my-auto ml-2 -translate-y-1/2 text-gray-400">
             {label}
           </span>
           <Input
@@ -74,23 +72,7 @@ export function AmountInput(props: {
 
         {error && (
           <div className="text-scarlet-500 absolute -bottom-5 whitespace-nowrap text-xs font-medium tracking-wide">
-            {error === 'Insufficient balance' ? (
-              <>
-                Not enough funds.
-                <button
-                  className="ml-1 text-indigo-500 hover:underline hover:decoration-indigo-400"
-                  onClick={() => setAddFundsModalOpen(true)}
-                >
-                  Buy more?
-                </button>
-                <AddFundsModal
-                  open={addFundsModalOpen}
-                  setOpen={setAddFundsModalOpen}
-                />
-              </>
-            ) : (
-              error
-            )}
+            {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
         )}
       </Col>
@@ -149,47 +131,75 @@ export function BuyAmountInput(props: {
 
   return (
     <>
-      <Row className="items-center gap-4 xl:flex-wrap">
-        {!hideInput && (
-          <AmountInput
-            amount={amount}
-            onChange={onAmountChange}
-            label={ENV_CONFIG.moneyMoniker}
-            error={error}
-            disabled={disabled}
-            className={className}
-            inputClassName={inputClassName}
-            inputRef={inputRef}
-          />
+      <Col>
+        <Row
+          className={clsx(
+            'items-center gap-4 xl:flex-wrap',
+            hideInput ? 'mb-4' : ''
+          )}
+        >
+          {!hideInput && (
+            <AmountInput
+              amount={amount}
+              onChange={onAmountChange}
+              label={ENV_CONFIG.moneyMoniker}
+              error={error}
+              disabled={disabled}
+              className={className}
+              inputClassName={inputClassName}
+              inputRef={inputRef}
+            />
+          )}
+          {showSlider && (
+            <Slider
+              min={0}
+              max={100}
+              value={amount ?? 0}
+              onChange={(value) => onAmountChange(value as number)}
+              className={clsx(
+                ' my-auto mx-2 !h-1 xl:mx-auto xl:mt-3 xl:ml-4  [&>.rc-slider-rail]:bg-gray-200',
+                binaryOutcome === 'YES'
+                  ? '[&>.rc-slider-track]:bg-teal-600 [&>.rc-slider-handle]:bg-teal-500'
+                  : binaryOutcome === 'NO'
+                  ? '[&>.rc-slider-track]:bg-scarlet-600 [&>.rc-slider-handle]:bg-scarlet-300'
+                  : '[&>.rc-slider-track]:bg-indigo-700 [&>.rc-slider-handle]:bg-indigo-500'
+              )}
+              railStyle={{ height: 4, top: 4, left: 0 }}
+              trackStyle={{ height: 4, top: 4 }}
+              handleStyle={{
+                height: 24,
+                width: 24,
+                opacity: 1,
+                border: 'none',
+                boxShadow: 'none',
+                top: -0.5,
+              }}
+              step={5}
+            />
+          )}
+        </Row>
+        {hideInput && error && (
+          <div className="text-scarlet-500 whitespace-nowrap text-xs font-medium tracking-wide">
+            {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
+          </div>
         )}
-        {showSlider && (
-          <Slider
-            min={0}
-            max={100}
-            value={amount ?? 0}
-            onChange={(value) => onAmountChange(value as number)}
-            className={clsx(
-              ' my-auto mx-2 !h-1 xl:mx-auto xl:mt-3 xl:ml-4  [&>.rc-slider-rail]:bg-gray-200',
-              binaryOutcome === 'YES'
-                ? '[&>.rc-slider-track]:bg-teal-600 [&>.rc-slider-handle]:bg-teal-500'
-                : binaryOutcome === 'NO'
-                ? '[&>.rc-slider-track]:bg-scarlet-600 [&>.rc-slider-handle]:bg-scarlet-300'
-                : '[&>.rc-slider-track]:bg-indigo-700 [&>.rc-slider-handle]:bg-indigo-500'
-            )}
-            railStyle={{ height: 4, top: 4, left: 0 }}
-            trackStyle={{ height: 4, top: 4 }}
-            handleStyle={{
-              height: 24,
-              width: 24,
-              opacity: 1,
-              border: 'none',
-              boxShadow: 'none',
-              top: -0.5,
-            }}
-            step={5}
-          />
-        )}
-      </Row>
+      </Col>
+    </>
+  )
+}
+
+const BuyMoreFunds = () => {
+  const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
+  return (
+    <>
+      Not enough funds.
+      <button
+        className="ml-1 text-indigo-500 hover:underline hover:decoration-indigo-400"
+        onClick={() => setAddFundsModalOpen(true)}
+      >
+        Buy more?
+      </button>
+      <AddFundsModal open={addFundsModalOpen} setOpen={setAddFundsModalOpen} />
     </>
   )
 }

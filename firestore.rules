@@ -33,7 +33,7 @@ service cloud.firestore {
       allow read;
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['bio', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
+                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -91,7 +91,7 @@ service cloud.firestore {
       allow read: if userId == request.auth.uid || isAdmin();
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['apiKey', 'notificationPreferences', 'twitchInfo', 'pushToken', 'rejectedPushNotificationsOn', 'blockedUserIds', 'blockedContractIds', 'blockedGroupSlugs','interestedInPushNotifications', 'hasSignedEula']);
+                         .hasOnly(['email',''apiKey', 'notificationPreferences', 'twitchInfo', 'pushToken', 'rejectedPushNotificationsOn', 'blockedUserIds', 'blockedContractIds', 'blockedGroupSlugs','interestedInPushNotifications', 'hasSignedEula']);
       allow update: if (request.auth != null || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['blockedByUserIds'])

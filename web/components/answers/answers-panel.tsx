@@ -163,7 +163,7 @@ export function AnswersPanel(props: {
         </Col>
       )}
 
-      {answers.length <= 1 && (
+      {answers.length === 0 && (
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
@@ -218,7 +218,7 @@ function OpenAnswer(props: {
       <Col
         className={clsx(
           'relative w-full rounded-lg transition-all',
-          tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-5'
+          tradingAllowed(contract) ? 'text-gray-900' : 'text-gray-500'
         )}
         style={{
           background: `linear-gradient(to right, ${color}90 ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
@@ -250,7 +250,7 @@ function OpenAnswer(props: {
                 className="p-1"
                 onClick={() => onAnswerCommentClick(answer)}
               >
-                <ChatIcon className="text-greyscale-4 hover:text-greyscale-6 h-5 w-5 transition-colors" />
+                <ChatIcon className="h-5 w-5 text-gray-400 transition-colors hover:text-gray-600" />
               </button>
             }
           </Row>

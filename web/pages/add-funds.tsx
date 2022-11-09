@@ -43,16 +43,10 @@ export default function AddFundsPage() {
       <Col className="items-center">
         <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
           <Title className="!mt-0" text="Get Mana" />
-          <img
-            className="mb-6 block self-center"
-            src="/welcome/manipurple.png"
-            width={200}
-            height={158}
-          />
 
-          <div className="mb-6 text-gray-500">
-            Buy mana (M$) to trade in your favorite markets. <br />{' '}
-            <i>Not redeemable for cash.</i>
+          <div className="mb-6">
+            Buy mana (M$) to trade in your favorite markets.
+            <div className="italic">Not redeemable for cash.</div>
           </div>
 
           <div className="mb-2 text-sm text-gray-500">Amount</div>
@@ -86,10 +80,10 @@ export default function AddFundsPage() {
             </Button>
           </form>
 
-          <div className="mb-6 mt-12 text-gray-500">
-            Short on USD?. Here are some other ways to get mana: <br />{' '}
+          <div className="mb-4 mt-12">
+            Short on cash? Here are some other ways to get mana:
           </div>
-          {<OtherWaysToGetMana includeBuyNote={true} />}
+          <OtherWaysToGetMana />
         </Col>
       </Col>
     </Page>

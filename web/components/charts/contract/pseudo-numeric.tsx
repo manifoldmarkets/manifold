@@ -53,7 +53,7 @@ const PseudoNumericChartTooltip = (
     <Row className="items-center gap-2">
       {prev.obj && <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-greyscale-6">{formatLargeNumber(prev.y)}</span>
+      <span className="text-gray-600">{formatLargeNumber(prev.y)}</span>
     </Row>
   )
 }
@@ -63,9 +63,10 @@ export const PseudoNumericContractChart = (props: {
   bets: Bet[]
   width: number
   height: number
+  color?: string
   onMouseOver?: (p: HistoryPoint<Bet> | undefined) => void
 }) => {
-  const { contract, bets, width, height, onMouseOver } = props
+  const { contract, bets, width, height, color, onMouseOver } = props
   const { min, max, isLogScale } = contract
   const [start, end] = getDateRange(contract)
   const scaleP = useMemo(
@@ -105,7 +106,7 @@ export const PseudoNumericContractChart = (props: {
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={PseudoNumericChartTooltip}
-      color={NUMERIC_GRAPH_COLOR}
+      color={color ?? NUMERIC_GRAPH_COLOR}
     />
   )
 }

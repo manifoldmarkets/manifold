@@ -10,6 +10,7 @@ export const ContractChart = (props: {
   bets: Bet[]
   width: number
   height: number
+  color?: string
 }) => {
   const { contract } = props
   switch (contract.outcomeType) {

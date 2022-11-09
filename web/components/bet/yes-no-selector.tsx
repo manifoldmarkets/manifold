@@ -37,7 +37,7 @@ export function YesNoSelector(props: {
             selected == 'YES'
               ? 'border-teal-500 bg-teal-500 text-white'
               : selected == 'NO'
-              ? 'border-greyscale-3 text-greyscale-3 bg-white hover:border-teal-500 hover:text-teal-500'
+              ? 'border-gray-300 bg-white text-gray-300 hover:border-teal-500 hover:text-teal-500'
               : 'border-teal-500 bg-white text-teal-500 hover:bg-teal-50',
             btnClassName
           )}
@@ -56,7 +56,7 @@ export function YesNoSelector(props: {
             selected == 'NO'
               ? 'border-scarlet-300 bg-scarlet-300 text-white'
               : selected == 'YES'
-              ? 'border-greyscale-3 text-greyscale-3 hover:border-scarlet-300 hover:text-scarlet-300 bg-white'
+              ? 'hover:border-scarlet-300 hover:text-scarlet-300 border-gray-300 bg-white text-gray-300'
               : 'border-scarlet-300 text-scarlet-300 bg-white hover:bg-red-50',
             btnClassName
           )}
