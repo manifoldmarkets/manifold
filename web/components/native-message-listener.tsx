@@ -88,7 +88,7 @@ const handleIapReceipt = async (
   router: NextRouter,
   username: string
 ) => {
-  const result = await validateIapReceipt({ receipt })
+  const result = await validateIapReceipt({ receipt: receipt })
   if (result.success) {
     console.log('iap receipt validated')
     router.push(`/${username}?iapSuccess=true`)
