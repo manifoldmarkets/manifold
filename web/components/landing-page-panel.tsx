@@ -143,7 +143,7 @@ export function LandingPagePanel() {
               Get started
             </div>
           </div>
-          <div className="absolute right-8 bottom-8 md:right-12">
+          <div className="absolute top-6 right-8 sm:top-48 md:right-12">
             <div className="text-right text-sm text-gray-900">
               and get{'   '}
               <span className="relative z-10 bg-teal-200 px-1 font-semibold">
