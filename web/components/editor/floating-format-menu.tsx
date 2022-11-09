@@ -117,4 +117,4 @@ const IconButton = (props: {
   )
 }
 
-const Divider = () => <div className="bg-greyscale-4 mx-0.5 w-[1px]" />
+const Divider = () => <div className="mx-0.5 w-[1px] bg-gray-400" />

@@ -133,7 +133,7 @@ export function LandingPagePanel() {
             </Button>
             <div
               className={clsx(
-                'bg-greyscale-7 text-greyscale-7 rounded-md',
+                'rounded-md bg-gray-900 text-gray-900',
                 isMobile
                   ? 'px-6 py-2.5 text-base font-semibold'
                   : 'px-6 py-3 text-xl font-semibold'
@@ -143,7 +143,7 @@ export function LandingPagePanel() {
             </div>
           </div>
           <div className="absolute right-8 bottom-8 md:right-12">
-            <div className="text-greyscale-7 text-right text-sm">
+            <div className="text-right text-sm text-gray-900">
               and get{'   '}
               <span className="relative z-10 bg-teal-200 px-1 font-semibold">
                 M$500
@@ -194,7 +194,7 @@ export function LandingPage0(props: { isMobile: boolean }) {
       >
         <Row className="items-center gap-2">
           <UserCircleIcon className="h-5 w-5 text-red-300" />
-          <div className="text-greyscale-4">You</div>
+          <div className="text-gray-400">You</div>
         </Row>
         <TypewriterComponent
           options={{ delay: 30 }}
@@ -242,7 +242,7 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
       )}
       <div
         className={clsx(
-          'font-major-mono sm:text-greyscale-7 text-xs lowercase text-white sm:whitespace-nowrap sm:text-sm'
+          'font-major-mono text-xs lowercase text-white sm:whitespace-nowrap sm:text-sm sm:text-gray-900'
         )}
       >
         Manifold Markets
@@ -293,13 +293,13 @@ export function LandingPage1(props: { isMobile: boolean }) {
       >
         <Row className="items-center gap-1">
           <UserCircleIcon className="h-5 w-5 text-blue-300" />
-          <div className="text-greyscale-4 text-sm">Your friend</div>
+          <div className="text-sm text-gray-400">Your friend</div>
         </Row>
         <div>Will I get a date to prom?</div>
       </Col>
       <div
         className={clsx(
-          'bg-greyscale-1.5 absolute z-20 mt-2 h-10 w-60 rounded-md drop-shadow',
+          'absolute z-20 mt-2 h-10 w-60 rounded-md bg-gray-100 drop-shadow',
           isMobile
             ? 'animate-slide-up-3-big left-[36px] top-[130px]'
             : 'animate-slide-in-4 left-[48px] top-[114px]'
@@ -318,7 +318,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         />
         <EquilateralLeftTriangle
           className={clsx(
-            'text-greyscale-7 absolute left-[11px] top-[11px] z-0 h-6 w-6 opacity-20'
+            'absolute left-[11px] top-[11px] z-0 h-6 w-6 text-gray-900 opacity-20'
           )}
         />
         <div className="absolute top-[6px] left-[100px] z-30 text-xl font-semibold">
@@ -335,7 +335,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         />
         <EquilateralRightTriangle
           className={clsx(
-            'text-greyscale-7 absolute right-[6px] top-[11px] z-0 h-6 w-6 opacity-20'
+            'absolute right-[6px] top-[11px] z-0 h-6 w-6 text-gray-900 opacity-20'
           )}
         />
         <div

@@ -62,7 +62,7 @@ function UploadButton(props: { upload: UploadMutation }) {
     <Tooltip text="Upload image" noTap noFade>
       <FileUploadButton
         onFiles={(files) => upload?.mutate(files)}
-        className="active:bg-greyscale-3 hover:text-greyscale-6 relative flex h-full w-12 items-center justify-center text-gray-400 transition-colors"
+        className="relative flex h-full w-12 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300"
       >
         <PhotographIcon className="h-5 w-5" aria-hidden="true" />
         {upload?.isLoading && (
@@ -88,7 +88,7 @@ function ToolbarButton(props: {
       <button
         type="button"
         onClick={onClick}
-        className="active:bg-greyscale-3 hover:text-greyscale-6 flex h-full w-12 items-center justify-center text-gray-400 transition-colors"
+        className="flex h-full w-12 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300"
       >
         {children}
       </button>

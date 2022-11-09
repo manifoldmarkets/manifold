@@ -23,7 +23,7 @@ export default function Document() {
           crossOrigin="anonymous"
         />
       </Head>
-      <body className="font-readex-pro bg-greyscale-1">
+      <body className="font-readex-pro bg-gray-50">
         <Main />
         <NextScript />
       </body>

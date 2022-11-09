@@ -194,7 +194,7 @@ export function BetsList(props: { user: User }) {
       <Col className="justify-between gap-4 sm:flex-row">
         <Row className="gap-4">
           <Col>
-            <div className="text-greyscale-6 text-xs sm:text-sm">
+            <div className="text-xs text-gray-600 sm:text-sm">
               Investment value
             </div>
             <div className="text-lg">
@@ -203,9 +203,7 @@ export function BetsList(props: { user: User }) {
             </div>
           </Col>
           <Col>
-            <div className="text-greyscale-6 text-xs sm:text-sm">
-              Total loans
-            </div>
+            <div className="text-xs text-gray-600 sm:text-sm">Total loans</div>
             <div className="text-lg">{formatMoney(currentLoan)}</div>
           </Col>
         </Row>

@@ -55,7 +55,7 @@ export function ContractGroupsList(props: {
       )}
       <Col className="h-96 overflow-auto">
         {groupLinks.length === 0 && (
-          <Col className="text-greyscale-4">No groups yet...</Col>
+          <Col className="text-gray-400">No groups yet...</Col>
         )}
         {groupLinks.map((groupLink) => {
           const group = groups.find((g) => g.id === groupLink.groupId)
@@ -73,7 +73,7 @@ export function ContractGroupsList(props: {
                   size={'xs'}
                   onClick={() => removeContractFromGroup(group, contract)}
                 >
-                  <XIcon className="text-greyscale-4 h-4 w-4" />
+                  <XIcon className="h-4 w-4 text-gray-400" />
                 </Button>
               )}
             </Row>

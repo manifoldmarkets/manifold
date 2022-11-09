@@ -53,7 +53,7 @@ const PseudoNumericChartTooltip = (
     <Row className="items-center gap-2">
       {prev.obj && <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-greyscale-6">{formatLargeNumber(prev.y)}</span>
+      <span className="text-gray-600">{formatLargeNumber(prev.y)}</span>
     </Row>
   )
 }

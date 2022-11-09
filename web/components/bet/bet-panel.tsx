@@ -67,7 +67,7 @@ export function BetPanel(props: {
       <SellRow
         contract={contract}
         user={user}
-        className={'bg-greyscale-1.5 rounded-t-md px-4 py-5'}
+        className={'rounded-t-md bg-gray-100 px-4 py-5'}
       />
       <Col
         className={clsx(
@@ -130,7 +130,7 @@ export function SimpleBetPanel(props: {
       <SellRow
         contract={contract}
         user={user}
-        className={'bg-greyscale-1.5 rounded-t-md px-4 py-5'}
+        className={'rounded-t-md bg-gray-100 px-4 py-5'}
       />
       <Col
         className={clsx(
@@ -348,7 +348,7 @@ export function BuyPanel(props: {
       >
         <Row className="mt-3 w-full gap-3">
           <Col className="w-1/2 text-sm">
-            <Col className="text-greyscale-4 flex-nowrap whitespace-nowrap text-xs">
+            <Col className="flex-nowrap whitespace-nowrap text-xs text-gray-400">
               <div>
                 {isPseudoNumeric ? (
                   'Max payout'
@@ -361,14 +361,14 @@ export function BuyPanel(props: {
               <span className="whitespace-nowrap text-xl">
                 {formatMoney(currentPayout)}
               </span>
-              <span className="text-greyscale-4 text-xs">
+              <span className="text-xs text-gray-400">
                 {' '}
                 +{currentReturnPercent}
               </span>
             </div>
           </Col>
           <Col className="w-1/2 text-sm">
-            <div className="text-greyscale-4 text-xs">
+            <div className="text-xs text-gray-400">
               {isPseudoNumeric ? 'Estimated value' : 'New Probability'}
             </div>
             {probStayedSame ? (
@@ -376,7 +376,7 @@ export function BuyPanel(props: {
             ) : (
               <div className="text-xl">
                 {format(resultProb)}
-                <span className={clsx('text-greyscale-4 text-xs')}>
+                <span className={clsx('text-xs text-gray-400')}>
                   {isPseudoNumeric ? (
                     <></>
                   ) : (
@@ -391,7 +391,7 @@ export function BuyPanel(props: {
             )}
           </Col>
         </Row>
-        <Row className="text-greyscale-4 mt-4 mb-1 justify-between text-left text-xs">
+        <Row className="mt-4 mb-1 justify-between text-left text-xs text-gray-400">
           Amount
         </Row>
 
@@ -424,7 +424,7 @@ export function BuyPanel(props: {
           />
         )}
         <button
-          className="text-greyscale-6 mx-auto mt-3 select-none text-sm underline xl:hidden"
+          className="mx-auto mt-3 select-none text-sm text-gray-600 underline xl:hidden"
           onClick={() => setSeeLimit(true)}
         >
           Advanced

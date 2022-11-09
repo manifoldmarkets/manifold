@@ -42,7 +42,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
 
   return (
     <main
-      className="bg-greyscale-1 h-screen overflow-hidden overscroll-none lg:py-6"
+      className="h-screen overflow-hidden overscroll-none bg-gray-50 lg:py-6"
       style={{ height }}
     >
       <div className="relative mx-auto h-full max-w-lg">
@@ -116,7 +116,7 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
             </div>
             <Percents contract={contract} amount={amount} />
             {/* TODO: use editor excluding widgets */}
-            <div className="prose prose-invert prose-sm text-greyscale-1 line-clamp-3 mx-8">
+            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 text-gray-50">
               {typeof description === 'string'
                 ? description
                 : richTextToString(description)}
@@ -148,7 +148,7 @@ const CornerDetails = (props: { contract: Contract }) => {
       <div className="text-xs">
         <div className="text-white">{creatorName} </div>
         {closeTime != undefined && (
-          <div className="text-greyscale-1 ">
+          <div className="text-gray-50 ">
             trading closes {fromNow(closeTime)}
           </div>
         )}

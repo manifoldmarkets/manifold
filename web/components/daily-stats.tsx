@@ -18,7 +18,7 @@ import {
 } from 'web/components/profile/betting-streak-modal'
 import { LoansModal } from 'web/components/profile/loans-modal'
 
-const dailyStatsHeaderClass = 'text-greyscale-5 text-xs sm:text-sm'
+const dailyStatsHeaderClass = 'text-gray-500 text-xs sm:text-sm'
 const dailyStatsClass = 'items-center text-lg'
 
 export function DailyStats(props: {
