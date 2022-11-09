@@ -17,6 +17,9 @@ import {
 } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { fromNow } from 'web/lib/util/time'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { Button } from 'web/components/buttons/button'
+import { SiteLink } from 'web/components/widgets/site-link'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(
@@ -32,7 +35,6 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   const { contracts } = props
 
   const old = useUserSwipes()
-  console.log(old)
   const newToMe = useMemo(
     () => contracts.filter((c) => !old.includes(c.id)),
     [contracts, old]
@@ -47,9 +49,26 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   // resize height manually for iOS
   const { height } = useWindowSize()
 
-  if (!contracts) return <></>
+  //show log in prompt if user not logged in
+  const user = useUser()
+  if (!user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Button onClick={firebaseLogin} color="gradient" size="2xl">
+          Log in to use Manifold Swipe
+        </Button>
+      </div>
+    )
+  }
 
-  //TODO: log in prompt if !user
+  // TODO: users should never run out of cards
+  if (!cards)
+    return (
+      <div className="w-svreen flex h-screen flex-col items-center justify-center">
+        No more cards!
+        <SiteLink href="/home">Return home</SiteLink>
+      </div>
+    )
 
   return (
     <main
@@ -70,7 +89,6 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
 }
 
 const betTapAdd = 10
-// const betHoldAdd = 100
 
 const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
   const { contract, onLeave } = props
