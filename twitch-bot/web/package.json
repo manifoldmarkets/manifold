@@ -6,7 +6,7 @@
   "scripts": {
     "serve": "next dev -p 1000",
     "ts-watch": "tsc --watch --noEmit --incremental --preserveWatchOutput --pretty",
-    "rdev": "concurrently -n NEXT,TS -c magenta,cyan \"yarn serve\" \"yarn ts-watch\"",
+    "dev": "concurrently -n NEXT,TS -c magenta,cyan \"yarn serve\" \"yarn ts-watch\"",
     "build": "next build && next export"
   },
   "dependencies": {

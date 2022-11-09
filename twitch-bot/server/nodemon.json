@@ -2,5 +2,5 @@
   "watch": ["src", "../common"],
   "ext": "ts",
   "ignore": ["src/public"],
-  "exec": "node --experimental-specifier-resolution=node --loader ts-node/esm ./src/index.ts"
+  "exec": "node --inspect --experimental-specifier-resolution=node --loader ts-node/esm ./src/index.ts"
 }
