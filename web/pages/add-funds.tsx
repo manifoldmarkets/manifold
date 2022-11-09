@@ -11,8 +11,18 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { Button } from 'web/components/buttons/button'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { OtherWaysToGetMana } from 'web/components/native/add-funds-ios'
+import { formatMoney } from 'common/lib/util/format'
 
-export const PRICES_LIST = [1000, 2500, 10000]
+export const WEB_PRICES = {
+  [formatMoney(1000)]: 1000,
+  [formatMoney(2500)]: 2500,
+  [formatMoney(10000)]: 10000,
+}
+export const IOS_PRICES = {
+  [formatMoney(1000)]: 1199,
+  [formatMoney(2500)]: 2999,
+  [formatMoney(10000)]: 11999,
+}
 
 export default function AddFundsPage() {
   const user = useUser()
@@ -47,7 +57,7 @@ export default function AddFundsPage() {
 
           <div className="mb-2 text-sm text-gray-500">Amount</div>
           <FundsSelector
-            fundAmounts={PRICES_LIST}
+            fundAmounts={WEB_PRICES}
             className="max-w-md"
             selected={amountSelected}
             onSelect={setAmountSelected}

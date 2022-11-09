@@ -6774,10 +6774,10 @@ react-native-gradle-plugin@^0.0.7:
   resolved "https://registry.yarnpkg.com/react-native-gradle-plugin/-/react-native-gradle-plugin-0.0.7.tgz#96602f909745239deab7b589443f14fce5da2056"
   integrity sha512-+4JpbIx42zGTONhBTIXSyfyHICHC29VTvhkkoUOJAh/XHPEixpuBduYgf6Y4y9wsN1ARlQhBBoptTvXvAFQf5g==
 
-react-native-purchases@^5.1.2:
-  version "5.1.2"
-  resolved "https://registry.yarnpkg.com/react-native-purchases/-/react-native-purchases-5.1.2.tgz#462dcc179d3f950cc3493694832f37ece53fb9ca"
-  integrity sha512-XfJRrnVHU+wGVfR9yprGWgO4YsNaCt0CLPmvCy4qLJCmpx6Ivo1jgW7PFlOxvwoXVs5lNgnDYOKq3udWrQeR0A==
+react-native-iap@^12.4.2:
+  version "12.4.2"
+  resolved "https://registry.yarnpkg.com/react-native-iap/-/react-native-iap-12.4.2.tgz#98f4a4f653f8beb7324cab5bb333308cc46d63a1"
+  integrity sha512-pl4mgkYQOf5uQPt5NX5ySW6+JhOhalvbqw+fGJ5lJ+ZxnDF/UMNEw6SWWjNF7XrU8X7yGkWamOHmco4RDPlFYg==
 
 react-native-web@~0.18.7:
   version "0.18.9"

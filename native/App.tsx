@@ -32,6 +32,7 @@ import { StatusBar } from 'expo-status-bar'
 import { AuthModal } from 'components/auth-modal'
 import { Feather, AntDesign } from '@expo/vector-icons'
 import { IAP } from './components/iap'
+import { withIAPContext } from 'react-native-iap'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -97,6 +98,7 @@ const App = () => {
     Platform.OS === 'ios' ? LinkingManager.default : null
   )
 
+  // IAP
   const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
 
   // Initialize listeners
@@ -500,4 +502,4 @@ const App = () => {
     </>
   )
 }
-export default App
+export default withIAPContext(App)

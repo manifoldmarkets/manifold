@@ -6,10 +6,10 @@ import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
 import { FundsSelector } from './bet/yes-no-selector'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { Title } from './widgets/title'
 import { OtherWaysToGetMana } from './native/add-funds-ios'
 import { Tabs } from './layout/tabs'
-import { PRICES_LIST } from 'web/pages/add-funds'
+import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
+import { postMessageToNative } from 'web/components/native-message-listener'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -17,38 +17,28 @@ export function AddFundsModal(props: {
 }) {
   const { open, setOpen } = props
 
-  const { isNative, platform } = getNativePlatform() ?? {}
-  const hidePayment = isNative && platform === 'ios'
-
   return (
     <Modal open={open} setOpen={setOpen} className="rounded-md bg-white p-8">
-      {hidePayment ? (
-        <>
-          <Title text="Get Mana" />
-          <OtherWaysToGetMana includeBuyNote />
-        </>
-      ) : (
-        <Tabs
-          currentPageForAnalytics="buy modal"
-          tabs={[
-            {
-              title: 'Buy Mana',
-              content: <BuyManaTab onClose={() => setOpen(false)} />,
-            },
-            {
-              title: "I'm Broke",
-              content: (
-                <>
-                  <div className="mt-6 mb-4">
-                    Here are some other ways to get mana:
-                  </div>
-                  <OtherWaysToGetMana />
-                </>
-              ),
-            },
-          ]}
-        />
-      )}
+      <Tabs
+        currentPageForAnalytics="buy modal"
+        tabs={[
+          {
+            title: 'Buy Mana',
+            content: <BuyManaTab onClose={() => setOpen(false)} />,
+          },
+          {
+            title: "I'm Broke",
+            content: (
+              <>
+                <div className="mt-6 mb-4">
+                  Here are some other ways to get mana:
+                </div>
+                <OtherWaysToGetMana />
+              </>
+            ),
+          },
+        ]}
+      />
     </Modal>
   )
 }
@@ -56,6 +46,7 @@ export function AddFundsModal(props: {
 function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
+  const { isNative, platform } = getNativePlatform() ?? {}
 
   const [amountSelected, setAmountSelected] = useState<number>(2500)
   return (
@@ -67,9 +58,10 @@ function BuyManaTab(props: { onClose: () => void }) {
 
       <div className="mb-2 text-sm text-gray-500">Amount</div>
       <FundsSelector
-        fundAmounts={PRICES_LIST}
+        fundAmounts={isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES}
         selected={amountSelected}
         onSelect={setAmountSelected}
+        btnClassName={'max-w-[7rem]'}
       />
 
       <div className="mt-6">
@@ -82,18 +74,29 @@ function BuyManaTab(props: { onClose: () => void }) {
           Back
         </Button>
 
-        <form
-          action={checkoutURL(
-            user?.id || '',
-            amountSelected,
-            window.location.href
-          )}
-          method="POST"
-        >
-          <Button type="submit" color="gradient">
+        {isNative && platform === 'ios' ? (
+          <Button
+            color={'gradient'}
+            onClick={() =>
+              postMessageToNative('checkout', { amount: amountSelected })
+            }
+          >
             Checkout
           </Button>
-        </form>
+        ) : (
+          <form
+            action={checkoutURL(
+              user?.id || '',
+              amountSelected,
+              window.location.href
+            )}
+            method="POST"
+          >
+            <Button type="submit" color="gradient">
+              Checkout
+            </Button>
+          </form>
+        )}
       </div>
     </>
   )

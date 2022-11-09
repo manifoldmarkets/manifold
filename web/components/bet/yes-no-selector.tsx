@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import React, { ReactNode } from 'react'
-import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { resolution } from 'common/contract'
@@ -158,7 +157,7 @@ export function ChooseCancelSelector(props: {
 }
 
 export function FundsSelector(props: {
-  fundAmounts: number[]
+  fundAmounts: { [key: string]: number }
   selected: number
   onSelect: (selected: number) => void
   className?: string
@@ -168,15 +167,15 @@ export function FundsSelector(props: {
   const btnClassName = clsx('!px-2 whitespace-nowrap', props.btnClassName)
 
   return (
-    <Row className={clsx('space-x-3', className)}>
-      {fundAmounts.map((amount) => (
+    <Row className={clsx('flex-wrap justify-center gap-3', className)}>
+      {Object.entries(fundAmounts).map(([key, amount]) => (
         <Button
           key={amount}
           color={selected === amount ? 'indigo' : 'gray'}
           onClick={() => onSelect(amount as any)}
           className={btnClassName}
         >
-          {formatMoney(amount)}
+          {key}
         </Button>
       ))}
     </Row>
