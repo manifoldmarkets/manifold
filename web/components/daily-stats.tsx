@@ -35,6 +35,8 @@ export function DailyStats(props: {
   useEffect(() => {
     const showLoansModel = Router.query['show'] === 'loans'
     setShowLoansModal(showLoansModel)
+    const showStreaksModal = Router.query['show'] === 'betting-streak'
+    setShowStreakModal(showStreaksModal)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
