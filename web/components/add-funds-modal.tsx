@@ -19,26 +19,13 @@ import Link from 'next/link'
 import { Card } from 'web/components/widgets/card'
 import { validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
+import { Row } from 'web/components/layout/row'
 
 export function AddFundsModal(props: {
   open: boolean
   setOpen(open: boolean): void
 }) {
   const { open, setOpen } = props
-
-  const handleIapReceipt = async (type: string, data: any) => {
-    const { receipt } = data
-    const result = await validateIapReceipt({ receipt: receipt })
-    if (result.success) {
-      console.log('iap receipt validated')
-      alert('iap receipt validated, thanks!')
-    } else {
-      alert('iap receipt validation failed')
-      console.log('iap receipt validation failed')
-    }
-  }
-
-  useNativeMessages(['iapReceipt'], handleIapReceipt)
 
   return (
     <Modal open={open} setOpen={setOpen} className="rounded-md bg-white p-8">
@@ -70,8 +57,29 @@ function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
+  const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
+  const [amountSelected, setAmountSelected] = useState<number>(
+    prices[formatMoney(2500)]
+  )
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const handleIapReceipt = async (type: string, data: any) => {
+    if (type === 'iapReceipt') {
+      const { receipt } = data
+      try {
+        const result = await validateIapReceipt({ receipt: receipt })
+        if (result.success) console.log('iap receipt validated')
+      } catch (e) {
+        console.log('iap receipt validation error', e)
+        setError('Error validating receipt')
+      }
+    } else if (type === 'iapError') {
+      setError('Error during purchase! Try again.')
+    }
+    setLoading(false)
+  }
+  useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
 
-  const [amountSelected, setAmountSelected] = useState<number>(2500)
   return (
     <>
       <div className="mt-6 mb-4">
@@ -81,7 +89,7 @@ function BuyManaTab(props: { onClose: () => void }) {
 
       <div className="mb-2 text-sm text-gray-500">Amount</div>
       <FundsSelector
-        fundAmounts={isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES}
+        fundAmounts={prices}
         selected={amountSelected}
         onSelect={setAmountSelected}
         btnClassName={'max-w-[7rem]'}
@@ -100,9 +108,12 @@ function BuyManaTab(props: { onClose: () => void }) {
         {isNative && platform === 'ios' ? (
           <Button
             color={'gradient'}
-            onClick={() =>
+            loading={loading}
+            onClick={() => {
+              setError(null)
+              setLoading(true)
               postMessageToNative('checkout', { amount: amountSelected })
-            }
+            }}
           >
             Checkout
           </Button>
@@ -121,6 +132,7 @@ function BuyManaTab(props: { onClose: () => void }) {
           </form>
         )}
       </div>
+      <Row className="mt-2 text-sm text-red-500">{error}</Row>
     </>
   )
 }

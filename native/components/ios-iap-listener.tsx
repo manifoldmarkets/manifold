@@ -7,9 +7,10 @@ import {
   Sku,
   useIAP,
 } from 'react-native-iap'
+import * as Sentry from 'sentry-expo'
 
 const SKUS = ['mana_1000', 'mana_2500', 'mana_10000']
-export const IAP = (props: {
+export const IosIapListener = (props: {
   checkoutAmount: number | null
   setCheckoutAmount: (amount: number | null) => void
   communicateWithWebview: (type: string, data: object | string) => void
@@ -25,25 +26,15 @@ export const IAP = (props: {
     finishTransaction,
     getProducts,
   } = useIAP()
-  const [error, setError] = useState<boolean>(false)
-  const [success, setSuccess] = useState(false)
-  const init = async () => {
-    console.log('init')
-    try {
-      await getProducts({
-        skus: SKUS,
-      })
-    } catch (e) {
-      console.log('getProducts error', e)
-    }
-  }
 
   useEffect(() => {
     if (currentPurchaseError || initConnectionError) {
-      setError(true)
-      console.log('currentPurchaseError', currentPurchaseError)
+      Sentry.Native.captureException(currentPurchaseError, {
+        extra: { message: 'currentPurchaseError' },
+      })
       console.log('initConnectionError', initConnectionError)
-    } else setError(false)
+      communicateWithWebview('iapError', {})
+    }
   }, [currentPurchaseError, initConnectionError])
 
   useEffect(() => {
@@ -61,9 +52,11 @@ export const IAP = (props: {
           console.log('finishTransaction receipt', receipt)
 
           communicateWithWebview('iapReceipt', { receipt })
-          setSuccess(true)
         }
       } catch (error) {
+        Sentry.Native.captureException(error, {
+          extra: { message: 'error during purchase' },
+        })
         if (error instanceof PurchaseError) {
           console.log({ message: `[${error.code}]: ${error.message}`, error })
         } else {
@@ -93,7 +86,16 @@ export const IAP = (props: {
 
   useEffect(() => {
     console.log('connected', connected)
-    if (connected) init()
+    if (connected) {
+      getProducts({
+        skus: SKUS,
+      }).catch((e) => {
+        console.log('getProducts error', e)
+        Sentry.Native.captureException(e, {
+          extra: { message: 'error getting products' },
+        })
+      })
+    }
   }, [connected])
 
   useEffect(() => {
@@ -108,51 +110,5 @@ export const IAP = (props: {
     setCheckoutAmount(null)
   }, [checkoutAmount])
 
-  return (
-    <View>
-      {/*<Modal*/}
-      {/*  visible={!!initConnectionError}*/}
-      {/*  onRequestClose={() => setError(false)}*/}
-      {/*>*/}
-      {/*  <Text style={styles.errorMessage}>*/}
-      {/*    An error happened while initiating the connection.*/}
-      {/*  </Text>*/}
-      {/*</Modal>*/}
-
-      {/*{currentPurchaseError && (*/}
-      {/*  <Modal*/}
-      {/*    visible={!!currentPurchaseError && error}*/}
-      {/*    animationType="slide"*/}
-      {/*    transparent={true}*/}
-      {/*    onRequestClose={() => setError(false)}*/}
-      {/*  >*/}
-      {/*    <Text style={styles.errorMessage}>*/}
-      {/*      code: {currentPurchaseError.code}, message:{' '}*/}
-      {/*      {currentPurchaseError.message}*/}
-      {/*    </Text>*/}
-      {/*  </Modal>*/}
-      {/*)}*/}
-
-      {/*{success && (*/}
-      {/*  <Modal visible={success}>*/}
-      {/*    <Text style={styles.successMessage}>*/}
-      {/*      A product purchase has been processed successfully.*/}
-      {/*    </Text>*/}
-      {/*  </Modal>*/}
-      {/*)}*/}
-    </View>
-  )
+  return <View />
 }
-const styles = StyleSheet.create({
-  errorMessage: {
-    color: 'red',
-  },
-
-  successMessage: {
-    color: 'green',
-  },
-
-  container: {
-    marginBottom: 20,
-  },
-})
