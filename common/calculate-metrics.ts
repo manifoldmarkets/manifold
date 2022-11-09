@@ -230,9 +230,9 @@ export const calculateCreatorTraders = (userContracts: Contract[]) => {
 export const calculateNewPortfolioMetrics = (
   user: User,
   contractsById: { [k: string]: Contract },
-  currentBets: Bet[]
+  unresolvedBets: Bet[]
 ) => {
-  const investmentValue = computeInvestmentValue(currentBets, contractsById)
+  const investmentValue = computeInvestmentValue(unresolvedBets, contractsById)
   const newPortfolio = {
     investmentValue: investmentValue,
     balance: user.balance,
