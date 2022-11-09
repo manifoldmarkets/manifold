@@ -58,9 +58,7 @@ export const auth = getAuth(app)
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const homeUri =
-  ENV === 'DEV'
-    ? 'https://dev-git-iap-mantic.vercel.app/'
-    : 'https://manifold.markets/'
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 
 const App = () => {
   // Init
