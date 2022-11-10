@@ -16,6 +16,7 @@ import {
   BetInfo,
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
+  getNewMultiCpmmBetInfo,
   getNumericBetsInfo,
 } from '../../common/new-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
@@ -23,7 +24,6 @@ import { LimitBet } from '../../common/bet'
 import { floatingEqual } from '../../common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from './utils'
-import { addUserToContractFollowers } from './follow-market'
 import { filterDefined } from '../../common/util/array'
 
 const bodySchema = z.object({
@@ -114,6 +114,11 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           unfilledBets,
           balanceByUserId
         )
+      } else if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-2') {
+        const { outcome } = validate(freeResponseSchema, req.body)
+        if (isNaN(+outcome) || !contract.answers[+outcome])
+          throw new APIError(400, 'Invalid answer')
+        return getNewMultiCpmmBetInfo(outcome, amount, contract)
       } else if (
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'
@@ -191,8 +196,6 @@ export const placebet = newEndpoint({}, async (req, auth) => {
 
     return { betId: betDoc.id, makers, newBet }
   })
-
-  await addUserToContractFollowers(contractId, auth.uid)
 
   log('Main transaction finished.')
 

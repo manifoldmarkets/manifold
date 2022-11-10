@@ -4,13 +4,13 @@ import { binarySearch } from './util/algos'
 export function getProb(pool: { [outcome: string]: number }, outcome: string) {
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
-  const basis = pool[outcome]
-  const ratioSum = sumBy(Object.values(pool), (value) => basis / value)
-  return 1 / ratioSum
+  const inverseShareSum = sumBy(Object.values(pool), (value) => 1 / value)
+  return 1 / (pool[outcome] * inverseShareSum)
 }
 
 export function poolToProbs(pool: { [outcome: string]: number }) {
-  return mapValues(pool, (_, outcome) => getProb(pool, outcome))
+  const inverseShareSum = sumBy(Object.values(pool), (value) => 1 / value)
+  return mapValues(pool, (s) => 1 / (s * inverseShareSum))
 }
 
 const getK = (pool: { [outcome: string]: number }) => {
@@ -25,7 +25,7 @@ export function buy(
   outcome: string,
   amount: number
 ) {
-  if (amount <= 0) throw new Error('Amount must be positive')
+  if (amount < 0) throw new Error('Amount must be positive')
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
   const k = getK(pool)

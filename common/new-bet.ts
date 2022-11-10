@@ -16,6 +16,7 @@ import {
 } from './calculate-cpmm'
 import {
   CPMMBinaryContract,
+  CPMMMultipleChoiceContract,
   DPMBinaryContract,
   DPMContract,
   NumericContract,
@@ -29,6 +30,7 @@ import {
   floatingGreaterEqual,
   floatingLesserEqual,
 } from './util/math'
+import { buy, getProb } from './calculate-cpmm-multi'
 
 export type CandidateBet<T extends Bet = Bet> = Omit<
   T,
@@ -374,6 +376,33 @@ export const getNewMultiBetInfo = (
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
+}
+
+export const getNewMultiCpmmBetInfo = (
+  outcome: string,
+  amount: number,
+  contract: CPMMMultipleChoiceContract
+) => {
+  const { pool } = contract
+
+  const { newPool, shares } = buy(pool, outcome, amount)
+
+  const probBefore = getProb(pool, outcome)
+  const probAfter = getProb(newPool, outcome)
+
+  const newBet: CandidateBet = {
+    contractId: contract.id,
+    amount,
+    loanAmount: 0,
+    shares,
+    outcome,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+    fees: noFees,
+  }
+
+  return { newBet, newPool }
 }
 
 export const getNumericBetsInfo = (
