@@ -28,7 +28,6 @@ import { CHALLENGES_ENABLED } from 'common/challenge'
 import { withTracking } from 'web/lib/service/analytics'
 import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
-import { usePrivateUser } from 'web/hooks/use-user'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { formatTime } from 'web/lib/util/time'
 import { ReportButton } from 'web/components/buttons/report-button'
@@ -39,7 +38,6 @@ export function ContractInfoDialog(props: {
   className?: string
 }) {
   const { contract, className, user } = props
-  const privateUser = usePrivateUser()
   const [open, setOpen] = useState(false)
   const isDev = useDev()
   const isAdmin = useAdmin()
@@ -107,7 +105,7 @@ export function ContractInfoDialog(props: {
                   }}
                 />
               )}
-              {privateUser && <BlockMarketButton contractId={contract.id} />}
+              <BlockMarketButton contract={contract} />
             </Row>
 
             <Table>

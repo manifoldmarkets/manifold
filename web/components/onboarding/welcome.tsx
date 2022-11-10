@@ -31,7 +31,7 @@ export default function Welcome() {
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
   const isTwitch = useIsTwitch(user)
   const TOTAL_PAGES = 4
-  // Just making new users created after 11/09/2022 go through this for now
+  // Just making new users created after 10/31/2022 go through this for now
   const shouldSeeEula =
     user &&
     privateUser &&
