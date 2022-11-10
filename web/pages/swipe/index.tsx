@@ -22,6 +22,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
+import HorizontalArrows from 'web/lib/icons/horizontal-arrows'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(
@@ -157,7 +158,9 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
                 : richTextToString(description)}
             </div>
             <div className="mb-4 flex flex-col items-center gap-2 self-center text-yellow-100">
-              Swipe ⭤ to bet
+              <div className="flex gap-1">
+                Swipe <HorizontalArrows /> to bet
+              </div>
               <button
                 onClick={onClickMoney}
                 onTouchStart={onClickMoney}
