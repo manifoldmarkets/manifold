@@ -19,7 +19,7 @@ import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 import { getContract } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
-import { FIXED_ANTE } from '../../common/economy'
+import { ANTES, FIXED_ANTE } from '../../common/economy'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
@@ -196,12 +196,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     descriptionJson = htmlToRichText('<p> </p>')
   }
 
-  const ante =
-    outcomeType === 'BINARY'
-      ? FIXED_ANTE
-      : outcomeType === 'PSEUDO_NUMERIC'
-      ? FIXED_ANTE * 5
-      : FIXED_ANTE * 2
+  const ante = ANTES[outcomeType]
 
   const user = await firestore.runTransaction(async (trans) => {
     const userDoc = await trans.get(firestore.collection('users').doc(userId))

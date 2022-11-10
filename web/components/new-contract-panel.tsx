@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import { Spacer } from 'web/components/layout/spacer'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
-import { FIXED_ANTE, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { ANTES, FIXED_ANTE, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Row } from 'web/components/layout/row'
 import {
@@ -86,12 +86,7 @@ export function NewContractPanel(props: {
       })
   }, [creator.id, groupId])
 
-  const ante =
-    outcomeType === 'BINARY'
-      ? FIXED_ANTE
-      : outcomeType === 'PSEUDO_NUMERIC'
-      ? FIXED_ANTE * 5
-      : FIXED_ANTE * 2
+  const ante = ANTES[outcomeType]
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the market a week from today
@@ -259,11 +254,13 @@ export function NewContractPanel(props: {
             <ChoicesToggleGroup
               currentChoice={outcomeType}
               setChoice={(choice) => {
-                if (choice === 'FREE_RESPONSE')
-                  setMarketInfoText(
-                    'Users can submit their own answers to this market.'
-                  )
-                else setMarketInfoText('')
+                const text =
+                  {
+                    FREE_RESPONSE:
+                      'Users can submit their own answers to this market.',
+                    CERT: 'Tradeable shares of a stock. WARNING: EXPERIMENTAL.',
+                  }[choice] ?? ''
+                setMarketInfoText(text)
                 setOutcomeType(choice as outcomeType)
               }}
               choicesMap={{
