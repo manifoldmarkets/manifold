@@ -1,5 +1,5 @@
 import { notification_preference } from './user-notification-preferences'
-import { groupPath } from 'common/group'
+import { groupPath } from './group'
 
 export type Notification = {
   id: string
@@ -48,6 +48,7 @@ export type notification_source_types =
   | 'like'
   | 'tip_and_like'
   | 'badge'
+  | 'signup_bonus'
 
 export type notification_source_update_types =
   | 'created'

@@ -738,6 +738,15 @@ function NotificationItem(props: {
         justSummary={justSummary}
       />
     )
+  } else if (sourceType === 'signup_bonus') {
+    return (
+      <SignupBonusNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        justSummary={justSummary}
+      />
+    )
   }
   // TODO Add new notification components here
 
@@ -1029,6 +1038,45 @@ function BadgeNotification(props: {
       <Row>
         <span>{sourceText} 🎉</span>
       </Row>
+    </NotificationFrame>
+  )
+}
+function SignupBonusNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  justSummary: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, justSummary } = props
+  const subtitle = 'You got a signup bonus!'
+  const { sourceText } = notification
+  const text = (
+    <span>
+      Thanks for using Manifold! We sent you{' '}
+      <span className={'text-teal-500'}>
+        {formatMoney(parseInt(sourceText ?? ''))}
+      </span>{' '}
+      for being a valuable new predictor.
+    </span>
+  )
+  if (justSummary) {
+    return (
+      <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
+        <Row className={'line-clamp-1'}>{text}</Row>
+      </NotificationSummaryFrame>
+    )
+  }
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      subtitle={subtitle}
+      hideUserName={true}
+      hideLinkToGroupOrQuestion={true}
+    >
+      <Row>{text}</Row>
     </NotificationFrame>
   )
 }
