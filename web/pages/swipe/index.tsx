@@ -64,15 +64,6 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
     )
   }
 
-  // TODO: users should never run out of cards
-  if (!cards)
-    return (
-      <div className="w-svreen flex h-screen flex-col items-center justify-center">
-        No more cards!
-        <SiteLink href="/home">Return home</SiteLink>
-      </div>
-    )
-
   return (
     <main
       className="h-screen overflow-hidden overscroll-none bg-gray-50 lg:py-6"
@@ -86,6 +77,15 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
             key={c.id}
           />
         ))}
+        {/* TODO: users should never run out of cards */}
+        {!cards.length && (
+          <div className="flex h-full w-full flex-col items-center justify-center">
+            No more cards!
+            <SiteLink href="/home" className="text-indigo-700">
+              Return home
+            </SiteLink>
+          </div>
+        )}
       </div>
     </main>
   )
