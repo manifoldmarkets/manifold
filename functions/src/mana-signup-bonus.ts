@@ -18,7 +18,7 @@ import {
 } from '../../common/antes'
 import { runTxn, TxnData } from './transact'
 import { APIError } from '../../common/api'
-import { userOptedOutOfBrowserNotifications } from 'common/user-notification-preferences'
+import { userOptedOutOfBrowserNotifications } from '../../common/user-notification-preferences'
 
 // TODO: delete email mana signup bonus
 export const manasignupbonus = functions
