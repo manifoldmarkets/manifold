@@ -72,7 +72,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
           <Card
             contract={c}
             onLeave={() => setIndex((i) => i + 1)}
-            threshold={width * 0.25}
+            threshold={Math.min(128, width * 0.25)}
             key={c.id}
           />
         ))}
