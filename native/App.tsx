@@ -117,6 +117,11 @@ const App = () => {
 
   // Initialize listeners
   useEffect(() => {
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        setUrlToLoad(url)
+      }
+    })
     try {
       BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
 
@@ -133,7 +138,6 @@ const App = () => {
     }
 
     return () => {
-      console.log('removing notification & back listeners')
       notificationResponseListener.current &&
         Notifications.removeNotificationSubscription(
           notificationResponseListener.current
@@ -189,14 +193,12 @@ const App = () => {
     }
 
     const { status } = await Notifications.getPermissionsAsync()
-    console.log('getExistingPushNotificationStatus', status)
     return status
   }
 
   const getPushToken = async () => {
     const appConfig = require('./app.json')
     const projectId = appConfig.expo.extra.eas.projectId
-    console.log('project id', projectId)
     const token = (
       await Notifications.getExpoPushTokenAsync({
         projectId,
@@ -212,9 +214,7 @@ const App = () => {
     try {
       const existingStatus = await getExistingPushNotificationStatus()
       let finalStatus = existingStatus
-      console.log('existing status of push notifications', existingStatus)
       if (existingStatus !== 'granted') {
-        console.log('requesting permission')
         const { status } = await Notifications.requestPermissionsAsync()
         finalStatus = status
       }
@@ -265,7 +265,6 @@ const App = () => {
         if (token) communicateWithWebview('pushToken', { token, userId })
       })
     } else if (type === 'signOut' && (fbUser || auth.currentUser)) {
-      console.log('signOut called')
       auth.signOut()
       setFbUser(null)
       setUserId(null)
@@ -290,7 +289,6 @@ const App = () => {
         Sentry.Native.captureException(e, {
           extra: { message: 'error parsing nativeEvent.data' },
         })
-        console.log('error parsing nativeEvent.data', e)
       }
     } else {
       console.log('Unhandled nativeEvent.data: ', data)
@@ -412,7 +410,6 @@ const App = () => {
                 const back = !previousHomeUrl.includes('?')
                   ? `${previousHomeUrl}?ignoreThisQuery=true`
                   : `${previousHomeUrl}&ignoreThisQuery=true`
-                console.log('back to', back)
                 setUrlToLoad(back)
               }}
             >
@@ -462,7 +459,6 @@ const App = () => {
           decelerationRate={'normal'}
           allowsBackForwardNavigationGestures={true}
           onLoadEnd={() => {
-            console.log('onLoadEnd')
             hasWebViewLoaded.current = true
             setCurrentHostStatus({ ...currentHostStatus, loading: false })
           }}
@@ -484,7 +480,6 @@ const App = () => {
           }}
           onNavigationStateChange={(navState) => {
             const { url, loading } = navState
-            console.log('setting new nav url', url)
             setCurrentHostStatus({
               loading,
               url,
