@@ -160,8 +160,6 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
 
   const [page, setPage] = useState(0)
-  const [showPushNotificationsModal, setShowPushNotificationsModal] =
-    useState(false)
 
   const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
@@ -197,10 +195,8 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
         </div>
       )}
       <PushNotificationsModal
-        isOpen={showPushNotificationsModal}
-        setOpen={setShowPushNotificationsModal}
         privateUser={privateUser}
-        notifications={
+        totalNotifications={
           allGroupedNotifications.map((ng) => ng.notifications).flat().length
         }
       />
