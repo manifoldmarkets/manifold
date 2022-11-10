@@ -227,15 +227,24 @@ function Percent(props: {
   return (
     <div
       className={clsx(
-        'self-center text-7xl transition-all',
-        !outcome && 'text-white [text-shadow:#4337c9_0_6px]',
-        outcome === 'YES' &&
-          'text-teal-100 [text-shadow:#14b8a6_-6px_3px,#0f766e_-12px_6px]',
-        outcome === 'NO' &&
-          'text-scarlet-100 [text-shadow:#FF2400_6px_3px,#991600_12px_6px]'
+        'transition-color flex items-center self-center font-bold',
+        !outcome && 'text-white',
+        outcome === 'YES' && 'text-teal-100',
+        outcome === 'NO' && 'text-scarlet-100'
       )}
     >
-      {formatPercent(percent)}
+      <span
+        className={clsx(
+          'text-8xl transition-all',
+          !outcome && '[text-shadow:#4337c9_0_8px]',
+          outcome === 'YES' &&
+            '[text-shadow:#14b8a6_-6px_4px,#0f766e_-12px_8px]',
+          outcome === 'NO' && '[text-shadow:#FF2400_6px_4px,#991600_12px_8px]'
+        )}
+      >
+        {formatPercent(percent).slice(0, -1)}
+      </span>
+      <span className="pt-2 text-2xl">%</span>
     </div>
   )
 }
