@@ -31,6 +31,9 @@ import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 import { AuthModal } from 'components/auth-modal'
 import { Feather, AntDesign } from '@expo/vector-icons'
+import { IosIapListener } from 'components/ios-iap-listener'
+import { withIAPContext } from 'react-native-iap'
+import { getSourceUrl, Notification } from 'common/notification'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -58,14 +61,13 @@ export const auth = getAuth(app)
 const homeUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 
-export default function App() {
+const App = () => {
   // Init
-  const [hasWebViewLoaded, setHasWebViewLoaded] = useState(true)
+  const hasWebViewLoaded = useRef(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const isIOS = Platform.OS === 'ios'
   const webview = useRef<WebView | undefined>()
-  const notificationListener = useRef<Subscription | undefined>()
-  const responseListener = useRef<Subscription | undefined>()
+  const notificationResponseListener = useRef<Subscription | undefined>()
 
   // Auth
   const [fbUser, setFbUser] = useState<string | null>()
@@ -94,24 +96,35 @@ export default function App() {
     Platform.OS === 'ios' ? LinkingManager.default : null
   )
 
+  // IAP
+  const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
+
+  const handlePushNotification = async (
+    response: Notifications.NotificationResponse
+  ) => {
+    if (hasWebViewLoaded.current) {
+      communicateWithWebview(
+        'notification',
+        response.notification.request.content.data
+      )
+    } else {
+      const notification = response.notification.request.content
+        .data as Notification
+      const sourceUrl = getSourceUrl(notification)
+      setUrlToLoad(homeUri + sourceUrl)
+    }
+  }
+
+  // Initialize listeners
   useEffect(() => {
     try {
       BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
-      // This listener is fired whenever a notification is received while the app is foregrounded
-      notificationListener.current =
-        Notifications.addNotificationReceivedListener((notification) => {
-          console.log('notification received', notification)
-        })
 
       // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
-      responseListener.current =
-        Notifications.addNotificationResponseReceivedListener((response) => {
-          console.log('notification response', response)
-          communicateWithWebview(
-            'notification',
-            response.notification.request.content.data
-          )
-        })
+      notificationResponseListener.current =
+        Notifications.addNotificationResponseReceivedListener(
+          handlePushNotification
+        )
     } catch (err) {
       Sentry.Native.captureException(err, {
         extra: { message: 'notification & back listener' },
@@ -121,12 +134,10 @@ export default function App() {
 
     return () => {
       console.log('removing notification & back listeners')
-      notificationListener.current &&
+      notificationResponseListener.current &&
         Notifications.removeNotificationSubscription(
-          notificationListener.current
+          notificationResponseListener.current
         )
-      responseListener.current &&
-        Notifications.removeNotificationSubscription(responseListener.current)
       BackHandler.removeEventListener(
         'hardwareBackPress',
         handleBackButtonPress
@@ -229,8 +240,9 @@ export default function App() {
     const { type, data: payload } = JSON.parse(data)
     console.log('Received nativeEvent: ', type)
     setHasSetNativeFlag(true)
-    // Time to log in to firebase
-    if (type === 'googleLoginClicked') {
+    if (type === 'checkout') {
+      setCheckoutAmount(payload.amount)
+    } else if (type === 'loginClicked') {
       setShowAuthModal(true)
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
@@ -303,7 +315,7 @@ export default function App() {
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
-      display: hasWebViewLoaded ? 'none' : 'flex',
+      display: !hasWebViewLoaded.current ? 'none' : 'flex',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
@@ -314,7 +326,7 @@ export default function App() {
       padding: 10,
     },
     webView: {
-      display: hasWebViewLoaded ? 'none' : 'flex',
+      display: !hasWebViewLoaded.current ? 'none' : 'flex',
       overflow: 'hidden',
       marginTop:
         (!isIOS ? RNStatusBar.currentHeight ?? 0 : 0) +
@@ -365,7 +377,14 @@ export default function App() {
 
   return (
     <>
-      {hasWebViewLoaded && (
+      {Platform.OS === 'ios' && (
+        <IosIapListener
+          checkoutAmount={checkoutAmount}
+          setCheckoutAmount={setCheckoutAmount}
+          communicateWithWebview={communicateWithWebview}
+        />
+      )}
+      {!hasWebViewLoaded.current && (
         <>
           <Image style={styles.image} source={require('./assets/splash.png')} />
           <ActivityIndicator
@@ -444,7 +463,7 @@ export default function App() {
           allowsBackForwardNavigationGestures={true}
           onLoadEnd={() => {
             console.log('onLoadEnd')
-            if (hasWebViewLoaded) setHasWebViewLoaded(false)
+            hasWebViewLoaded.current = true
             setCurrentHostStatus({ ...currentHostStatus, loading: false })
           }}
           sharedCookiesEnabled={true}
@@ -505,3 +524,4 @@ export default function App() {
     </>
   )
 }
+export default withIAPContext(App)

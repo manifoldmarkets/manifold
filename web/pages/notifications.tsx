@@ -4,6 +4,8 @@ import { useRouter } from 'next/router'
 import {
   BetFillData,
   ContractResolutionData,
+  getSourceIdForLinkComponent,
+  getSourceUrl,
   Notification,
 } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
@@ -29,7 +31,6 @@ import {
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
-import { groupPath } from 'web/lib/firebase/groups'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
@@ -51,12 +52,9 @@ import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
-import {
-  getSourceIdForLinkComponent,
-  getSourceUrl,
-} from 'web/lib/firebase/notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { groupPath } from 'common/group'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -178,14 +176,14 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 
   // Mark all notifications as seen.
   useEffect(() => {
-    if (isPageVisible && paginatedGroupedNotifications) {
-      const notifications = paginatedGroupedNotifications
+    if (isPageVisible && allGroupedNotifications) {
+      const notifications = allGroupedNotifications
         .flat()
         .flatMap((g) => g.notifications)
 
       markNotificationsAsSeen(notifications)
     }
-  }, [isPageVisible, paginatedGroupedNotifications])
+  }, [isPageVisible, allGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />

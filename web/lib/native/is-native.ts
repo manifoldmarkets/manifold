@@ -11,7 +11,7 @@ export const getIsNative = () => {
 }
 
 export const getNativePlatform = () => {
-  if (typeof window === 'undefined') return null
+  if (typeof window === 'undefined') return { isNative: false, platform: '' }
   const local = safeLocalStorage()
   const isNative = local?.getItem(IS_NATIVE_KEY)
   const platform = local?.getItem(PLATFORM_KEY)

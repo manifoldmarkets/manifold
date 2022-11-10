@@ -22,8 +22,8 @@ import { User } from 'common/user'
 import { Col } from '../layout/col'
 
 const itemClass =
-  'sm:hover:bg-greyscale-2 block w-full py-1 px-3 text-center sm:hover:text-indigo-700'
-const selectedItemClass = 'bg-greyscale-1.5 text-indigo-700'
+  'sm:hover:bg-gray-200 block w-full py-1 px-3 text-center sm:hover:text-indigo-700'
+const selectedItemClass = 'bg-gray-100 text-indigo-700'
 
 function getNavigation(user: User) {
   return [

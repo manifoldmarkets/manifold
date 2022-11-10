@@ -25,14 +25,13 @@ import { linkClass } from 'web/components/widgets/site-link'
 import {
   getGroupLinksToDisplay,
   getGroupLinkToDisplay,
-  groupPath,
 } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import { contractMetrics } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
-import { GroupLink } from 'common/group'
+import { GroupLink, groupPath } from 'common/group'
 import { Subtitle } from '../widgets/subtitle'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
@@ -54,7 +53,7 @@ export function MiscDetails(props: {
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
-    <Row className="text-greyscale-4 w-full items-center gap-3 text-sm">
+    <Row className="w-full items-center gap-3 text-sm text-gray-400">
       {isClient && showTime === 'close-date' ? (
         <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
@@ -81,7 +80,7 @@ export function MiscDetails(props: {
         <Link
           prefetch={false}
           href={groupPath(groupToDisplay.slug)}
-          className={clsx(linkClass, 'text-greyscale-4 w-32 truncate text-sm')}
+          className={clsx(linkClass, 'w-32 truncate text-sm text-gray-400')}
         >
           {groupToDisplay.name}
         </Link>
@@ -101,7 +100,7 @@ export function AvatarDetails(props: {
 
   return (
     <Row
-      className={clsx('text-greyscale-4 items-center gap-2 text-sm', className)}
+      className={clsx('items-center gap-2 text-sm text-gray-400', className)}
     >
       <Avatar
         username={creatorUsername}
@@ -160,7 +159,7 @@ export function MarketSubheader(props: {
           <MiniUserFollowButton userId={creatorId} />
         </div>
       )}
-      <Col className="text-greyscale-6 ml-2 flex-1 text-sm">
+      <Col className="ml-2 flex-1 text-sm text-gray-600">
         <Row className="gap-1">
           {disabled ? (
             creatorName
@@ -183,7 +182,7 @@ export function MarketSubheader(props: {
               </Tooltip>
             )}
         </Row>
-        <div className="text-2xs text-greyscale-4 sm:text-xs">
+        <div className="text-2xs text-gray-400 sm:text-xs">
           <CloseOrResolveTime
             contract={contract}
             resolvedDate={resolvedDate}
@@ -255,7 +254,7 @@ function MarketGroups(props: { contract: Contract; disabled?: boolean }) {
 
         {!disabled && user && (
           <button
-            className="text-greyscale-4 hover:text-greyscale-3"
+            className="text-gray-400 hover:text-gray-300"
             onClick={() => setOpen(true)}
           >
             <PlusCircleIcon className="h-[20px]" />
@@ -347,8 +346,8 @@ export function GroupDisplay(props: {
     const groupSection = (
       <a
         className={clsx(
-          'bg-greyscale-4 max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
-          !disabled && 'hover:bg-greyscale-3 cursor-pointer'
+          'max-w-[200px] truncate whitespace-nowrap rounded-full bg-gray-400 py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
+          !disabled && 'cursor-pointer hover:bg-gray-300'
         )}
       >
         {groupToDisplay.name}
@@ -368,7 +367,7 @@ export function GroupDisplay(props: {
     )
   } else
     return (
-      <div className="bg-greyscale-4 truncate rounded-full py-0.5 px-2 text-xs text-white">
+      <div className="truncate rounded-full bg-gray-400 py-0.5 px-2 text-xs text-white">
         No Group
       </div>
     )

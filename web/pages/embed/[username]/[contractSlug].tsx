@@ -22,6 +22,7 @@ import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 import { useContract } from 'web/hooks/use-contracts'
+import { useRouter } from 'next/router'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -52,6 +53,7 @@ export default function ContractEmbedPage(props: {
   bets: Bet[]
 }) {
   props = usePropz(props, getStaticPropz) ?? { contract: null, bets: [] }
+  const router = useRouter()
 
   const contract = useContract(props.contract?.id) ?? props.contract
   const { bets } = props
@@ -60,12 +62,19 @@ export default function ContractEmbedPage(props: {
     return <Custom404 />
   }
 
-  return <ContractEmbed contract={contract} bets={bets} />
+  // Check ?graphColor=hex&textColor=hex from router
+  const graphColor = router.query.graphColor as string
+  const textColor = router.query.textColor as string
+  const embedProps = { contract, bets, graphColor, textColor }
+
+  return <ContractEmbed {...embedProps} />
 }
 
 interface EmbedProps {
   contract: Contract
   bets: Bet[]
+  graphColor?: string
+  textColor?: string
 }
 
 export function ContractEmbed(props: EmbedProps) {
@@ -97,7 +106,12 @@ export function ContractEmbed(props: EmbedProps) {
   )
 }
 
-function ContractSmolView({ contract, bets }: EmbedProps) {
+function ContractSmolView({
+  contract,
+  bets,
+  graphColor,
+  textColor,
+}: EmbedProps) {
   const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
@@ -106,11 +120,12 @@ function ContractSmolView({ contract, bets }: EmbedProps) {
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
   const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
+  const questionColor = textColor ?? 'rgb(67, 56, 202)' // text-indigo-700
 
   return (
     <Col className="h-[100vh] w-full bg-white p-4">
       <Row className="justify-between gap-4 px-2">
-        <div className="text-xl text-indigo-700 md:text-2xl">
+        <div className="text-xl md:text-2xl" style={{ color: questionColor }}>
           <SiteLink href={href}>{question}</SiteLink>
         </div>
         {isBinary && <BinaryResolutionOrChance contract={contract} />}
@@ -141,6 +156,7 @@ function ContractSmolView({ contract, bets }: EmbedProps) {
             bets={bets}
             width={graphWidth}
             height={graphHeight}
+            color={graphColor}
           />
         )}
       </div>

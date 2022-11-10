@@ -46,6 +46,12 @@ const embedPatterns: EmbedPattern[] = [
     rewrite: (id) =>
       `<iframe src="https://www.metaculus.com/questions/embed/${id}"></iframe>`,
   },
+  // Metaforecast: https://metaforecast.org/questions/kalshi-1ca58f9a-a299-4d69-9984-c11001b130c8
+  {
+    regex: /^https?:\/\/metaforecast\.org\/questions\/([^\/]+)/,
+    rewrite: (id) =>
+      `<iframe src="https://metaforecast.org/questions/embed/${id}"></iframe>`,
+  },
   {
     regex: /^(https?:\/\/www\.figma\.com\/(?:file|proto)\/[^\/]+\/[^\/]+)/,
     rewrite: (url) =>

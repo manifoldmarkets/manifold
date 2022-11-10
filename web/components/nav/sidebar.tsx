@@ -10,6 +10,7 @@ import {
   LogoutIcon,
   BeakerIcon,
   GiftIcon,
+  FireIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -142,6 +143,7 @@ const getMobileNav = (loggedIn: boolean) => {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
   return buildArray(
+    loggedIn && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Midterms', href: '/midterms', icon: FlagIcon },
     { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },

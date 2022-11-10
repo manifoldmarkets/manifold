@@ -67,7 +67,7 @@ export const editorExtensions = (simple = false): Extensions => [
   Iframe,
   TiptapTweet,
   TiptapSpoiler.configure({
-    spoilerOpenClass: 'rounded-sm bg-greyscale-2',
+    spoilerOpenClass: 'rounded-sm bg-gray-200',
   }),
   Upload,
 ]
@@ -78,7 +78,7 @@ export const proseClass = (size: 'sm' | 'md' | 'lg') =>
     'prose-a:text-indigo-700 prose-a:no-underline',
     size === 'sm' ? 'prose-sm' : 'text-md',
     size !== 'lg' && 'prose-p:my-0',
-    'text-greyscale-7 prose-blockquote:text-greyscale-6',
+    'text-gray-900 prose-blockquote:text-gray-600',
     'prose-a:font-light prose-blockquote:font-light font-light'
   )
 
@@ -207,9 +207,9 @@ export function RichContent(props: {
       Iframe,
       TiptapTweet,
       TiptapSpoiler.configure({
-        spoilerOpenClass: 'rounded-sm bg-greyscale-2 cursor-text',
+        spoilerOpenClass: 'rounded-sm bg-gray-200 cursor-text',
         spoilerCloseClass:
-          'rounded-sm bg-greyscale-6 text-transparent [&_*]:invisible cursor-pointer select-none',
+          'rounded-sm bg-gray-600 text-transparent [&_*]:invisible cursor-pointer select-none',
       }),
     ],
     content,

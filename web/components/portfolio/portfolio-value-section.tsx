@@ -60,12 +60,12 @@ export const PortfolioValueSection = memo(
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
           profitElement={
-            <div className="text-greyscale-5 animate-pulse text-lg sm:text-xl">
+            <div className="animate-pulse text-lg text-gray-500 sm:text-xl">
               ---
             </div>
           }
           valueElement={
-            <div className="text-greyscale-5 animate-pulse text-lg sm:text-xl">
+            <div className="animate-pulse text-lg text-gray-500 sm:text-xl">
               ---
             </div>
           }
@@ -76,7 +76,7 @@ export const PortfolioValueSection = memo(
                 margin: '20px 70px 20px 10px',
               }}
             >
-              <PlaceholderGraph className="text-greyscale-4 h-full w-full animate-pulse" />
+              <PlaceholderGraph className="h-full w-full animate-pulse text-gray-400" />
             </div>
           )}
           disabled={true}
@@ -178,7 +178,7 @@ export function PortfolioValueSkeleton(props: {
             onClickNumber('profit')
           }}
         >
-          <div className="text-greyscale-6 text-xs sm:text-sm">Profit</div>
+          <div className="text-xs text-gray-600 sm:text-sm">Profit</div>
           {profitElement}
         </Col>
 
@@ -191,7 +191,7 @@ export function PortfolioValueSkeleton(props: {
             onClickNumber('value')
           }}
         >
-          <div className="text-greyscale-6 text-xs sm:text-sm">
+          <div className="text-xs text-gray-600 sm:text-sm">
             Portfolio value
           </div>
           {valueElement}
@@ -221,7 +221,7 @@ export function PortfolioTimeSelection(props: {
     <>
       <Row
         className={clsx(
-          'text-greyscale-4 z-10 mt-1 gap-3',
+          'z-10 mt-1 gap-3 text-gray-400',
           disabled ? 'pointer-events-none' : ''
         )}
       >

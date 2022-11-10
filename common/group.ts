@@ -81,3 +81,16 @@ export function filterTopGroups(
     )
     .slice(0, n)
 }
+
+export function groupPath(
+  groupSlug: string,
+  subpath?:
+    | 'edit'
+    | 'markets'
+    | 'about'
+    | typeof GROUP_CHAT_SLUG
+    | 'leaderboards'
+    | 'posts'
+) {
+  return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
+}
