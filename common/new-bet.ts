@@ -405,6 +405,8 @@ export const getNewMultiCpmmBetInfo = (
     fees: noFees,
   }
 
+  console.log('newBet', newBet, 'newPool', newPool)
+
   return { newBet, newPool }
 }
 
