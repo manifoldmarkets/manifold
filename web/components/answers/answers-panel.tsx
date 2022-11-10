@@ -201,19 +201,28 @@ function OpenAnswer(props: {
   const { username, avatarUrl, text } = answer
   const prob = getOutcomeProbability(contract, answer.id)
   const probPercent = formatPercent(prob)
-  const [open, setOpen] = useState(false)
+  const [betMode, setBetMode] = useState<'buy' | 'short-sell' | undefined>(
+    undefined
+  )
   const colorWidth = 100 * Math.max(prob, 0.01)
 
   return (
     <Col className="my-1 px-2">
-      <Modal open={open} setOpen={setOpen} position="center">
-        <AnswerBetPanel
-          answer={answer}
-          contract={contract}
-          closePanel={() => setOpen(false)}
-          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
-          isModal={true}
-        />
+      <Modal
+        open={!!betMode}
+        setOpen={(open) => setBetMode(open ? 'buy' : undefined)}
+        position="center"
+      >
+        {betMode && (
+          <AnswerBetPanel
+            answer={answer}
+            contract={contract}
+            mode={betMode}
+            closePanel={() => setBetMode(undefined)}
+            className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
+            isModal={true}
+          />
+        )}
       </Modal>
 
       <Col
@@ -237,14 +246,24 @@ function OpenAnswer(props: {
           <Row className="gap-2">
             <div className="my-auto text-xl">{probPercent}</div>
             {tradingAllowed(contract) && (
-              <Button
-                size="2xs"
-                color="gray-outline"
-                onClick={() => setOpen(true)}
-                className="my-auto"
-              >
-                BUY
-              </Button>
+              <Row className="gap-2">
+                <Button
+                  size="2xs"
+                  color="green"
+                  onClick={() => setBetMode('buy')}
+                  className="my-auto"
+                >
+                  YES
+                </Button>
+                <Button
+                  size="2xs"
+                  color="red"
+                  onClick={() => setBetMode('short-sell')}
+                  className="my-auto"
+                >
+                  NO
+                </Button>
+              </Row>
             )}
             {
               <button

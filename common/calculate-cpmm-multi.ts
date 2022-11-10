@@ -25,7 +25,7 @@ export function buy(
   outcome: string,
   amount: number
 ) {
-  if (amount < 0) throw new Error('Amount must be positive')
+  if (amount < 0) throw new Error('Amount must be non-negative')
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
   const k = getK(pool)
@@ -49,7 +49,7 @@ export function sell(
   outcome: string,
   shares: number
 ) {
-  if (shares <= 0) throw new Error('Shares must be positive')
+  if (shares < 0) throw new Error('Shares must be non-negative')
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
   const k = getK(pool)
@@ -73,7 +73,7 @@ export function shortSell(
   outcome: string,
   amount: number
 ) {
-  if (amount <= 0) throw new Error('Amount must be positive')
+  if (amount < 0) throw new Error('Amount must be non-negative')
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
   const k = getK(pool)
@@ -91,9 +91,8 @@ export function shortSell(
   const newPool = mapValues(poolWithAmount, (s, o) =>
     o === outcome ? s : s - shares
   )
-  const gainedShares = mapValues(newPool, (s, o) => poolWithAmount[o] - s)
 
-  return { newPool, gainedShares }
+  return { newPool, shares: -shares }
 }
 
 export function test() {
@@ -116,14 +115,14 @@ export function test() {
     poolToProbs(poolAfterSale)
   )
 
-  const { newPool: poolAfterShortSell, gainedShares } = shortSell(
+  const { newPool: poolAfterShortSell, shares: soldShares } = shortSell(
     poolAfterSale,
     'C',
     1000000000
   )
   console.log(
     'after short sell',
-    gainedShares,
+    soldShares,
     poolAfterShortSell,
     poolToProbs(poolAfterShortSell)
   )

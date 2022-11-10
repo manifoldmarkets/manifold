@@ -30,7 +30,7 @@ import {
   floatingGreaterEqual,
   floatingLesserEqual,
 } from './util/math'
-import { buy, getProb } from './calculate-cpmm-multi'
+import { buy, getProb, shortSell } from './calculate-cpmm-multi'
 
 export type CandidateBet<T extends Bet = Bet> = Omit<
   T,
@@ -379,13 +379,16 @@ export const getNewMultiBetInfo = (
 }
 
 export const getNewMultiCpmmBetInfo = (
+  contract: CPMMMultipleChoiceContract,
   outcome: string,
   amount: number,
-  contract: CPMMMultipleChoiceContract
+  shouldShortSell: boolean
 ) => {
   const { pool } = contract
 
-  const { newPool, shares } = buy(pool, outcome, amount)
+  const { newPool, shares } = shouldShortSell
+    ? shortSell(pool, outcome, amount)
+    : buy(pool, outcome, amount)
 
   const probBefore = getProb(pool, outcome)
   const probAfter = getProb(newPool, outcome)

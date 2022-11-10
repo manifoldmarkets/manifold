@@ -38,6 +38,7 @@ const binarySchema = z.object({
 
 const freeResponseSchema = z.object({
   outcome: z.string(),
+  shortSell: z.boolean().optional(),
 })
 
 const numericSchema = z.object({
@@ -115,10 +116,10 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           balanceByUserId
         )
       } else if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-2') {
-        const { outcome } = validate(freeResponseSchema, req.body)
+        const { outcome, shortSell } = validate(freeResponseSchema, req.body)
         if (isNaN(+outcome) || !contract.answers[+outcome])
           throw new APIError(400, 'Invalid answer')
-        return getNewMultiCpmmBetInfo(outcome, amount, contract)
+        return getNewMultiCpmmBetInfo(contract, outcome, amount, !!shortSell)
       } else if (
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'

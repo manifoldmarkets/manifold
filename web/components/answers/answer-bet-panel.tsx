@@ -26,15 +26,18 @@ import {
   getOutcomeProbability,
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
+import { getProb, shortSell } from 'common/calculate-cpmm-multi'
+import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerBetPanel(props: {
   answer: Answer
   contract: FreeResponseContract | MultipleChoiceContract
+  mode: 'buy' | 'short-sell'
   closePanel: () => void
   className?: string
   isModal?: boolean
 }) {
-  const { answer, contract, closePanel, className, isModal } = props
+  const { answer, contract, closePanel, className, isModal, mode } = props
   const { id: answerId } = answer
 
   const user = useUser()
@@ -49,11 +52,14 @@ export function AnswerBetPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    placeBet({
-      amount: betAmount,
-      outcome: answerId,
-      contractId: contract.id,
-    })
+    placeBet(
+      removeUndefinedProps({
+        amount: betAmount,
+        outcome: answerId,
+        contractId: contract.id,
+        shortSell: mode === 'short-sell' ? true : undefined,
+      })
+    )
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
@@ -84,26 +90,15 @@ export function AnswerBetPanel(props: {
 
   const initialProb = getOutcomeProbability(contract, answer.id)
 
-  const resultProb = getOutcomeProbabilityAfterBet(
-    contract,
+  const { resultProb, shares, maxPayout } = getSimulatedBetInfo(
+    betAmount ?? 0,
     answerId,
-    betAmount ?? 0
+    mode,
+    contract
   )
 
-  const shares = calculateSharesBought(contract, answerId, betAmount ?? 0)
-
-  const currentPayout = betAmount
-    ? contract.mechanism === 'dpm-2'
-      ? calculateDpmPayoutAfterCorrectBet(contract, {
-          outcome: answerId,
-          amount: betAmount,
-          shares,
-        } as Bet)
-      : shares
-    : 0
-
-  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
-  const currentReturnPercent = formatPercent(currentReturn)
+  const maxReturn = betAmount ? (maxPayout - betAmount) / betAmount : 0
+  const maxReturnPercent = formatPercent(maxReturn)
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
@@ -120,7 +115,8 @@ export function AnswerBetPanel(props: {
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="items-center justify-between self-stretch">
         <div className="text-xl">
-          Buy answer: {isModal ? `"${answer.text}"` : 'this answer'}
+          Buy {mode === 'buy' ? 'YES' : 'NO'} on:{' '}
+          {isModal ? `"${answer.text}"` : 'this answer'}
         </div>
 
         {!isModal && (
@@ -162,7 +158,7 @@ export function AnswerBetPanel(props: {
 
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-            {contract.mechanism === 'dpm-2' ? (
+            {contract.mechanism === 'dpm-2' && shares !== undefined ? (
               <>
                 <div>
                   Estimated <br /> payout if chosen
@@ -182,10 +178,8 @@ export function AnswerBetPanel(props: {
             )}
           </Row>
           <Row className="flex-wrap items-end justify-end gap-2">
-            <span className="whitespace-nowrap">
-              {formatMoney(currentPayout)}
-            </span>
-            <span>(+{currentReturnPercent})</span>
+            <span className="whitespace-nowrap">{formatMoney(maxPayout)}</span>
+            <span>(+{maxReturnPercent})</span>
           </Row>
         </Row>
       </Col>
@@ -208,4 +202,42 @@ export function AnswerBetPanel(props: {
       )}
     </Col>
   )
+}
+
+const getSimulatedBetInfo = (
+  betAmount: number,
+  answerId: string,
+  mode: 'buy' | 'short-sell',
+  contract: FreeResponseContract | MultipleChoiceContract
+) => {
+  if (mode === 'short-sell') {
+    const { newPool, shares } = shortSell(
+      contract.pool,
+      answerId,
+      betAmount
+    )
+    const resultProb = getProb(newPool, answerId)
+    const maxPayout = Math.abs(shares)
+    return { resultProb, maxPayout, shares }
+  }
+
+  const resultProb = getOutcomeProbabilityAfterBet(
+    contract,
+    answerId,
+    betAmount
+  )
+
+  const shares = calculateSharesBought(contract, answerId, betAmount)
+
+  const maxPayout = betAmount
+    ? contract.mechanism === 'dpm-2'
+      ? calculateDpmPayoutAfterCorrectBet(contract, {
+          outcome: answerId,
+          amount: betAmount,
+          shares,
+        } as Bet)
+      : shares
+    : 0
+
+  return { resultProb, maxPayout, shares }
 }
