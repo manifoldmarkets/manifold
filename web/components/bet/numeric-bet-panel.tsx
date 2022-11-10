@@ -3,9 +3,7 @@ import { useState } from 'react'
 
 import { getNumericBetsInfo } from 'common/new-bet'
 import { Bet } from 'common/bet'
-import {
-  getOutcomeProbability,
-} from 'common/calculate'
+import { getOutcomeProbability } from 'common/calculate'
 import { NumericContract } from 'common/contract'
 import { formatPercent, formatMoney } from 'common/util/format'
 
