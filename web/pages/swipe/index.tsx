@@ -112,6 +112,8 @@ const Card = (props: {
   const [dir, setDir] = useState<'middle' | 'up' | 'right' | 'down' | 'left'>(
     'middle'
   )
+  const [swiping, setSwiping] = useState(false)
+
   const [peek, setPeek] = useState(false)
 
   return (
@@ -119,6 +121,13 @@ const Card = (props: {
       {peek && <Peek contract={contract} onClose={() => setPeek(false)} />}
       <TinderCard
         onSwipe={async (direction) => {
+          if (direction === 'down') {
+            setPeek(true)
+            return
+          }
+
+          setSwiping(true)
+
           if (direction === 'left' || direction === 'right') {
             const outcome = direction === 'left' ? 'NO' : 'YES'
             await placeBet({ amount, outcome, contractId })
@@ -129,9 +138,6 @@ const Card = (props: {
               amount,
               outcome,
             })
-          }
-          if (direction === 'down') {
-            setPeek(true)
           }
           if (direction === 'up') {
             track('swipe skip', { slug: contract.slug, contractId })
@@ -144,7 +150,10 @@ const Card = (props: {
         swipeThreshold={threshold}
         onSwipeRequirementFulfilled={setDir}
         onSwipeRequirementUnfulfilled={() => setDir('middle')}
-        className={'absolute inset-2 cursor-grab [&>*]:last:scale-100'}
+        className={clsx(
+          'absolute inset-2 cursor-grab [&>*]:last:scale-100',
+          swiping && 'pointer-events-none'
+        )}
       >
         <div className="h-full scale-95 overflow-hidden rounded-2xl transition-transform">
           {/* background */}
