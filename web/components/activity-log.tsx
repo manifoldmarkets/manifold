@@ -1,13 +1,14 @@
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { filterDefined } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 import { keyBy, range, groupBy, sortBy } from 'lodash'
 import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
 import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
-import { usePrivateUser } from 'web/hooks/use-user'
+import { useMemberGroupIds } from 'web/hooks/use-group'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getGroupBySlug, getGroupContractIds } from 'web/lib/firebase/groups'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
@@ -21,15 +22,28 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie']
+const destinyGroupId = 'W2ES30fRo6CCbPNwMTTj'
 
 export function ActivityLog(props: { count: number; showPills: boolean }) {
   const privateUser = usePrivateUser()
+  const user = useUser()
+
+  const memberGroupIds = useMemberGroupIds(user)
+  const shouldBlockDestiny =
+    // If signed out, or you don't follow destiny group, block it!
+    !(memberGroupIds && memberGroupIds.includes(destinyGroupId))
+
   const [blockedGroupContractIds, setBlockedGroupContractIds] = useState<
     string[]
   >([])
 
   useEffect(() => {
-    Promise.all((privateUser?.blockedGroupSlugs ?? []).map(getGroupBySlug))
+    const blockedGroupSlugs = buildArray(
+      privateUser?.blockedGroupSlugs ?? [],
+      shouldBlockDestiny && 'destinygg'
+    )
+
+    Promise.all(blockedGroupSlugs.map(getGroupBySlug))
       .then((groups) =>
         Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
       )
