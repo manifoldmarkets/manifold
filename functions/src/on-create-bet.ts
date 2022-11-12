@@ -221,7 +221,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   // exclude bots from bonuses
   if (BOT_USERNAMES.includes(bettor.username)) return
 
-  if (oldContract.mechanism === 'cpmm-1') {
+  if (oldContract.mechanism === 'cpmm-1' && newUniqueBettorIds.length < 100) {
     await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
   }
 
