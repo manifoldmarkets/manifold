@@ -73,6 +73,12 @@ export default function LabsPage() {
           />
 
           <LabCard
+            title="🇺🇸 2022 US Midterm Elections"
+            description="Manifold's midterm forecast"
+            href="/midterms"
+          />
+
+          <LabCard
             title="🎲 Magic the Guessering"
             description="Match MTG card names to their art"
             href={`https://${DOMAIN}/mtg/index.html`}
