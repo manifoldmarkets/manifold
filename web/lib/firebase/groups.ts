@@ -62,6 +62,11 @@ export function listenForGroups(setGroups: (groups: Group[]) => void) {
   return listenForValues(groups, setGroups)
 }
 
+export async function getGroupContractIds(groupId: string) {
+  const docs = await getValues<GroupContractDoc>(groupContracts(groupId))
+  return docs.map((d) => d.contractId)
+}
+
 export function listenForGroupContractDocs(
   groupId: string,
   setContractDocs: (docs: GroupContractDoc[]) => void

@@ -3,10 +3,12 @@ import { Contract } from 'common/contract'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
 import { keyBy, range, groupBy, sortBy } from 'lodash'
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
 import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { getGroupBySlug, getGroupContractIds } from 'web/lib/firebase/groups'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -21,20 +23,47 @@ import { UserLink } from './widgets/user-link'
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie']
 
 export function ActivityLog(props: { count: number; showPills: boolean }) {
+  const privateUser = usePrivateUser()
+  const [blockedGroupContractIds, setBlockedGroupContractIds] = useState<
+    string[]
+  >([])
+
+  useEffect(() => {
+    Promise.all((privateUser?.blockedGroupSlugs ?? []).map(getGroupBySlug))
+      .then((groups) =>
+        Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
+      )
+      .then((cids) => setBlockedGroupContractIds(cids.flat()))
+  })
+  const blockedContractIds = [
+    ...blockedGroupContractIds,
+    ...(privateUser?.blockedContractIds ?? []),
+  ]
+  const blockedUserIds = privateUser?.blockedUserIds ?? []
+
   const { count, showPills } = props
-  const bets = (useLiveBets(count * 2 + 10) ?? []).filter(
+  const bets = (useLiveBets(count * 3 + 20) ?? []).filter(
     (bet) =>
+      !blockedContractIds.includes(bet.contractId) &&
+      !blockedUserIds.includes(bet.userId) &&
       !BOT_USERNAMES.includes(bet.userUsername) &&
       !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername) &&
       !bet.isRedemption &&
       !bet.isAnte
   )
-  const comments = (useLiveComments(count * 2) ?? []).filter(
+  const comments = (useLiveComments(count * 3) ?? []).filter(
     (c) =>
-      c.commentType === 'contract' && !BOT_USERNAMES.includes(c.userUsername)
+      c.commentType === 'contract' &&
+      !blockedContractIds.includes(c.contractId) &&
+      !blockedUserIds.includes(c.userId) &&
+      !BOT_USERNAMES.includes(c.userUsername)
   ) as ContractComment[]
 
-  const newContracts = useLiveContracts(count)
+  const newContracts = (useLiveContracts(count) ?? []).filter(
+    (c) =>
+      !blockedContractIds.includes(c.id) &&
+      !blockedUserIds.includes(c.creatorId)
+  )
 
   const [pill, setPill] = useState<'all' | 'markets' | 'comments' | 'trades'>(
     'all'
