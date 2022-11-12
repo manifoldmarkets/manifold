@@ -60,7 +60,10 @@ export default function Home() {
 
   const globalConfig = useGlobalConfig()
   const trendingContracts = useTrendingContracts(6, blockedFacetFilters)
-  const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(6, blockedFacetFilters)
+  const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
+    6,
+    blockedFacetFilters
+  )
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
     key: 'home-pinned',
