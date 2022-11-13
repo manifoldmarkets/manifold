@@ -48,7 +48,8 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
         Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
       )
       .then((cids) => setBlockedGroupContractIds(cids.flat()))
-  })
+  }, [privateUser, shouldBlockDestiny])
+
   const blockedContractIds = [
     ...blockedGroupContractIds,
     ...(privateUser?.blockedContractIds ?? []),
