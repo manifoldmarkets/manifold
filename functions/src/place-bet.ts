@@ -23,7 +23,6 @@ import { LimitBet } from '../../common/bet'
 import { floatingEqual } from '../../common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from './utils'
-import { addUserToContractFollowers } from './follow-market'
 import { filterDefined } from '../../common/util/array'
 
 const bodySchema = z.object({
@@ -191,8 +190,6 @@ export const placebet = newEndpoint({}, async (req, auth) => {
 
     return { betId: betDoc.id, makers, newBet }
   })
-
-  await addUserToContractFollowers(contractId, auth.uid)
 
   log('Main transaction finished.')
 
