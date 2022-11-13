@@ -74,7 +74,6 @@ export async function getStaticPropz(props: {
       bets,
       comments,
     },
-    revalidate: 60, // Regenerate after 60 seconds
   }
 }
 
