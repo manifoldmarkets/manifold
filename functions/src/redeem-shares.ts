@@ -1,31 +1,29 @@
 import * as admin from 'firebase-admin'
+import { maxBy } from 'lodash'
 
 import { Bet } from '../../common/bet'
 import { getRedeemableAmount, getRedemptionBets } from '../../common/redeem'
 
-import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { floatingEqual } from '../../common/util/math'
 
+// Note: Assumes contract is of mechanism cpmm-1.
 export const redeemShares = async (userId: string, contractId: string) => {
   return await firestore.runTransaction(async (trans) => {
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await trans.get(contractDoc)
-    if (!contractSnap.exists)
-      return { status: 'error', message: 'Invalid contract' }
-
-    const contract = contractSnap.data() as Contract
-    const { mechanism } = contract
-    if (mechanism !== 'cpmm-1') return { status: 'success' }
-
-    const betsColl = firestore.collection(`contracts/${contract.id}/bets`)
+    const betsColl = firestore.collection(`contracts/${contractId}/bets`)
     const betsSnap = await trans.get(betsColl.where('userId', '==', userId))
     const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
     const { shares, loanPayment, netAmount } = getRedeemableAmount(bets)
     if (floatingEqual(netAmount, 0)) {
       return { status: 'success' }
     }
-    const [yesBet, noBet] = getRedemptionBets(shares, loanPayment, contract)
+    const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
+    const [yesBet, noBet] = getRedemptionBets(
+      contractId,
+      shares,
+      loanPayment,
+      lastProb
+    )
 
     const userDoc = firestore.doc(`users/${userId}`)
     const userSnap = await trans.get(userDoc)

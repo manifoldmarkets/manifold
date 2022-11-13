@@ -188,15 +188,17 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       log('Updated contract properties.')
     }
 
-    return { betId: betDoc.id, makers, newBet }
+    return { contract, betId: betDoc.id, makers, newBet }
   })
 
   log('Main transaction finished.')
 
-  if (result.newBet.amount !== 0) {
+  const { contract, newBet, makers } = result
+
+  if (contract.mechanism === 'cpmm-1' && newBet.amount !== 0) {
     const userIds = uniq([
       auth.uid,
-      ...(result.makers ?? []).map((maker) => maker.bet.userId),
+      ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
     await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
     log('Share redemption transaction finished.')

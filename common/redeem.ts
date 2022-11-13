@@ -1,8 +1,6 @@
 import { partition, sumBy } from 'lodash'
 
 import { Bet } from './bet'
-import { getProbability } from './calculate'
-import { CPMMContract } from './contract'
 import { noFees } from './fees'
 import { CandidateBet } from './new-bet'
 
@@ -24,32 +22,32 @@ export const getRedeemableAmount = (bets: RedeemableBet[]) => {
 }
 
 export const getRedemptionBets = (
+  contractId: string,
   shares: number,
   loanPayment: number,
-  contract: CPMMContract
+  prob: number
 ) => {
-  const p = getProbability(contract)
   const createdTime = Date.now()
   const yesBet: CandidateBet = {
-    contractId: contract.id,
-    amount: p * -shares,
+    contractId: contractId,
+    amount: prob * -shares,
     shares: -shares,
     loanAmount: loanPayment ? -loanPayment / 2 : 0,
     outcome: 'YES',
-    probBefore: p,
-    probAfter: p,
+    probBefore: prob,
+    probAfter: prob,
     createdTime,
     isRedemption: true,
     fees: noFees,
   }
   const noBet: CandidateBet = {
-    contractId: contract.id,
-    amount: (1 - p) * -shares,
+    contractId: contractId,
+    amount: (1 - prob) * -shares,
     shares: -shares,
     loanAmount: loanPayment ? -loanPayment / 2 : 0,
     outcome: 'NO',
-    probBefore: p,
-    probAfter: p,
+    probBefore: prob,
+    probAfter: prob,
     createdTime,
     isRedemption: true,
     fees: noFees,
