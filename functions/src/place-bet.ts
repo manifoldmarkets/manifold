@@ -52,7 +52,14 @@ export const placebet = newEndpoint({}, async (req, auth) => {
     log('Inside main transaction.')
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
-    const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
+    const [[contractSnap, userSnap], { unfilledBets, balanceByUserId }] =
+      await Promise.all([
+        trans.getAll(contractDoc, userDoc),
+
+        // Note: Used only for cpmm-1 markets, but harmless to get for all markets.
+        getUnfilledBetsAndUserBalances(trans, contractDoc),
+      ])
+
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     log('Loaded user and contract snapshots.')
@@ -101,9 +108,6 @@ export const placebet = newEndpoint({}, async (req, auth) => {
 
           limitProb = Math.round(limitProb * 100) / 100
         }
-
-        const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc)
 
         return getBinaryCpmmBetInfo(
           outcome,
