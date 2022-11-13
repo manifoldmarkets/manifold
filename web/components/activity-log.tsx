@@ -57,7 +57,8 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
   const { count, showPills } = props
-  const bets = (useLiveBets(count * 3 + 20) ?? []).filter(
+  const rawBets = useLiveBets(count * 3 + 20)
+  const bets = (rawBets ?? []).filter(
     (bet) =>
       !blockedContractIds.includes(bet.contractId) &&
       !blockedUserIds.includes(bet.userId) &&
@@ -66,7 +67,8 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
       !bet.isRedemption &&
       !bet.isAnte
   )
-  const comments = (useLiveComments(count * 3) ?? []).filter(
+  const rawComments = useLiveComments(count * 3)
+  const comments = (rawComments ?? []).filter(
     (c) =>
       c.commentType === 'contract' &&
       !blockedContractIds.includes(c.contractId) &&
@@ -74,7 +76,8 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
       !BOT_USERNAMES.includes(c.userUsername)
   ) as ContractComment[]
 
-  const newContracts = (useLiveContracts(count) ?? []).filter(
+  const rawContracts = useLiveContracts(count * 3)
+  const newContracts = (rawContracts ?? []).filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&
       !blockedUserIds.includes(c.creatorId)
@@ -114,8 +117,9 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
   const itemsSubset = items.slice(startIndex, startIndex + count)
 
   const allLoaded =
-    bets.length > 0 &&
-    comments.length > 0 &&
+    rawBets &&
+    rawComments &&
+    rawContracts &&
     itemsSubset.every((item) =>
       'contractId' in item ? contractsById[item.contractId] : true
     )
