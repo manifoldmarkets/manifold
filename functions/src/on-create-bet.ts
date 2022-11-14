@@ -24,6 +24,7 @@ import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
   BETTING_STREAK_RESET_HOUR,
+  MAX_TRADERS_FOR_BONUS,
   UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_LIQUIDITY,
 } from '../../common/economy'
@@ -218,12 +219,13 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     }
   )
 
-  if (!newUniqueBettorIds) return
+  if (!newUniqueBettorIds || newUniqueBettorIds.length > MAX_TRADERS_FOR_BONUS)
+    return
 
   // exclude bots from bonuses
   if (BOT_USERNAMES.includes(bettor.username)) return
 
-  if (oldContract.mechanism === 'cpmm-1' && newUniqueBettorIds.length < 100) {
+  if (oldContract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
   }
 
