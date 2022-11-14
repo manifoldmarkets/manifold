@@ -17,6 +17,7 @@ import {
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
+import { HOUSE_BOT_USERNAME } from '../../common/envs/constants'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
 
@@ -150,11 +151,13 @@ export async function updateUserMetrics() {
     }),
     100
   )
-
+  const userUpdatesMinusBot = userUpdates.filter(
+    (update) => HOUSE_BOT_USERNAME !== update.user.username
+  )
   const periods = ['daily', 'weekly', 'monthly', 'allTime'] as const
   const periodRanksByUserId = periods.map((period) => {
     const rankedUpdates = sortBy(
-      userUpdates,
+      userUpdatesMinusBot,
       ({ fields }) => -fields.profitCached[period]
     )
     return Object.fromEntries(
@@ -162,7 +165,7 @@ export async function updateUserMetrics() {
     )
   })
 
-  for (const { user, fields } of userUpdates) {
+  for (const { user, fields } of userUpdatesMinusBot) {
     const profitRankCached = Object.fromEntries(
       periods.map((period, i) => {
         return [period, periodRanksByUserId[i][user.id]]
