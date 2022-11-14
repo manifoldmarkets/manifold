@@ -701,6 +701,17 @@ Parameters:
 - `html`: The comment to post, formatted as an HTML string, OR
 - `markdown`: The comment to post, formatted as a markdown string.
 
+### `GET /v0/comments`
+
+Gets a list of comments for a contract, ordered by creation date descending.
+
+Parameters:
+
+- `contractId`: Optional. Which contract to read comments for. Either an ID or slug must be specified.
+- `contractSlug`: Optional.
+
+Requires no authorization.
+
 ### `GET /v0/bets`
 
 Gets a list of bets, ordered by creation date descending.
