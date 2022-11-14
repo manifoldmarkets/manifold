@@ -44,6 +44,7 @@ import {
 } from '../../common/badge'
 import { BOT_USERNAMES } from '../../common/envs/constants'
 import { addUserToContractFollowers } from './follow-market'
+import { handleReferral } from './helpers/handle-referral'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -88,10 +89,23 @@ export const onCreateBet = functions
     await addUserToContractFollowers(contractId, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
+    await processReferralBonus(bettor, eventId)
     await updateBettingStreak(bettor, bet, contract, eventId)
 
     await revalidateStaticProps(getContractPath(contract))
   })
+
+const processReferralBonus = async (user: User, eventId: string) => {
+  if (user.lastBetTime || user.createdTime < Date.now() - DAY_MS) return
+
+  if (
+    user.referredByUserId ||
+    user.referredByContractId ||
+    user.referredByGroupId
+  ) {
+    await handleReferral(user, eventId)
+  }
+}
 
 const updateBettingStreak = async (
   user: User,
