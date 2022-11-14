@@ -443,10 +443,12 @@ function ContractSearchControls(props: {
           autoFocus={autoFocus}
         />
         {query ? (
-          <SimpleLinkButton
-            getUrl={() => window.location.href}
-            tooltip="Copy link to search results"
-          />
+          !additionalFilter && (
+            <SimpleLinkButton
+              getUrl={() => window.location.href}
+              tooltip="Copy link to search results"
+            />
+          )
         ) : (
           <ModalOnMobile>
             <SearchFilters
