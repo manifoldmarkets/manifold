@@ -233,6 +233,7 @@ export function ContractSearch(props: {
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
         autoFocus={autoFocus}
+        isWholePage={isWholePage}
       />
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
@@ -268,6 +269,7 @@ function ContractSearchControls(props: {
   user?: User | null
   noControls?: boolean
   autoFocus?: boolean
+  isWholePage?: boolean
 }) {
   const {
     className,
@@ -283,6 +285,7 @@ function ContractSearchControls(props: {
     noControls,
     autoFocus,
     includeProbSorts,
+    isWholePage,
   } = props
 
   const router = useRouter()
@@ -443,7 +446,7 @@ function ContractSearchControls(props: {
           autoFocus={autoFocus}
         />
         {query ? (
-          !additionalFilter && (
+          isWholePage && (
             <SimpleLinkButton
               getUrl={() => window.location.href}
               tooltip="Copy link to search results"
