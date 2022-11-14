@@ -17,7 +17,10 @@ export default async function handler(
   // mqp: testing hypothesis that this app is driving most of our costs
   // by spamming market API but not using bets and comments
 
-  if (req.headers.referer === 'https://ogxt.github.io/') {
+  if (
+    req.headers.referer === 'https://ogxt.github.io/' ||
+    req.headers.referer === 'https://www.dgg.exchange/'
+  ) {
     const contract = await getContractFromId(contractId)
     if (!contract) {
       res.status(404).json({ error: 'Contract not found' })
