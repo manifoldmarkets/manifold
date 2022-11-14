@@ -179,8 +179,10 @@ export default function GroupPage(props: {
   const maxLeaderboardSize = 50
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
+  const chatEmbed = <ChatEmbed group={group} />
+
   return (
-    <Page logoSubheading={group.name}>
+    <Page logoSubheading={group.name} rightSidebar={chatEmbed}>
       <SEO
         title={group.name}
         description={`Created by ${creator.name}. ${group.about}`}
@@ -311,6 +313,27 @@ export function TopGroupNavBar(props: {
       </Row>
     </header>
   )
+}
+
+// For now, just embed the DestinyGG chat embed on their group page
+function ChatEmbed(props: { group: Group }) {
+  const { group } = props
+  const destinyGroupId = 'W2ES30fRo6CCbPNwMTTj'
+  if (group.id === destinyGroupId) {
+    return (
+      <div className="h-[90vh]">
+        <iframe
+          src="https://www.destiny.gg/embed/chat"
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          scrolling="no"
+          allowFullScreen
+        />
+      </div>
+    )
+  }
+  return null
 }
 
 function JoinOrAddQuestionsButtons(props: {
