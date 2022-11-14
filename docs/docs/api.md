@@ -558,7 +558,7 @@ Creates a new market on behalf of the authorized user.
 Note: this costs mana. If you have insufficient mana, this call will return an error. The cost to create each type of market is:
 
 | Market Type     | Creation Cost |
-|-----------------|---------------|
+| --------------- | ------------- |
 | BINARY          | M$50          |
 | PSEUDO_NUMERIC  | M$250         |
 | FREE_RESPONSE   | M$100         |
@@ -707,8 +707,10 @@ Gets a list of bets, ordered by creation date descending.
 
 Parameters:
 
+- `userId`: Optional. If set, the response will include only bets created by this user.
 - `username`: Optional. If set, the response will include only bets created by this user.
-- `market`: Optional. The slug of a market. If set, the response will only include bets on this market.
+- `contractId`: Optional. If set, the response will only include bets on this contract.
+- `contractSlug`: Optional. If set, the response will only include bets on this contract.
 - `limit`: Optional. How many bets to return. The maximum and the default is 1000.
 - `before`: Optional. The ID of the bet before which the list will start. For
   example, if you ask for the most recent 10 bets, and then perform a second
@@ -719,7 +721,7 @@ Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&market=will-i-be-able-to-place-a-limit-ord
+  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&contractSlug=will-i-be-able-to-place-a-limit-ord
   ```
 - Response type: A `Bet[]`.
 
