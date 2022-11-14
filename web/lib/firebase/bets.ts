@@ -50,14 +50,18 @@ const getContractBetsQuery = (contractId: string, options?: BetFilter) => {
   return q
 }
 
-export async function listAllBets(
-  contractId: string,
-  options?: BetFilter,
-  maxCount?: number
-) {
+export async function listFirstNBets(contractId: string, n: number) {
+  const q = query(
+    getBetsCollection(contractId),
+    orderBy('createdTime'),
+    limit(n)
+  )
+  return await getValues<Bet>(q)
+}
+
+export async function listAllBets(contractId: string, options?: BetFilter) {
   const q = getContractBetsQuery(contractId, options)
-  const limitedQ = maxCount ? query(q, limit(maxCount)) : q
-  const bets = await getValues<Bet>(limitedQ)
+  const bets = await getValues<Bet>(q)
   const filteredBets = bets.filter(
     (b) =>
       (!options?.filterChallenges || !b.challengeSlug) &&
