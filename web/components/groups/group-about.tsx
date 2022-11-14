@@ -57,7 +57,13 @@ export function GroupAbout(props: {
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
       <Row className={'justify-between'}>
         <HideGroupButton groupSlug={group.slug} />
-        <JoinOrLeaveGroupButton group={group} isMember={isMember} user={user} />
+        {isMember && (
+          <JoinOrLeaveGroupButton
+            group={group}
+            isMember={isMember}
+            user={user}
+          />
+        )}
       </Row>
       <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
       {(group.aboutPostId != null || isEditable) && (

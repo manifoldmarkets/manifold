@@ -50,7 +50,8 @@ import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { GroupAbout } from 'web/components/groups/group-about'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
-import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -176,6 +177,7 @@ export default function GroupPage(props: {
   }
   const isCreator = user && group && user.id === group.creatorId
   const maxLeaderboardSize = 50
+  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
   return (
     <Page logoSubheading={group.name}>
@@ -190,14 +192,19 @@ export default function GroupPage(props: {
         isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
       />
       <div className="relative hidden justify-self-end md:flex">
-        <div className="absolute right-0 top-0 z-10">
+        <Row className="absolute right-0 top-0 z-50 items-center gap-4">
+          <SimpleLinkButton
+            getUrl={() => groupUrl}
+            tooltip={`Copy link to ${group.name}`}
+          />
+
           <JoinOrAddQuestionsButtons
             group={group}
             user={user}
             isMember={!!isMember}
             isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
           />
-        </div>
+        </Row>
       </div>
       <div className={'relative p-1 pt-0'}>
         <ControlledTabs
