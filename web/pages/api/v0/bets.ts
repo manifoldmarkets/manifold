@@ -9,8 +9,11 @@ import { validate } from './_validate'
 
 const queryParams = z
   .object({
+    userId: z.string().optional(),
     username: z.string().optional(),
-    market: z.string().optional(),
+    contractId: z.string().optional(),
+    contractSlug: z.string().optional(),
+    market: z.string().optional(), // deprecated, synonym for `contractSlug`
     limit: z
       .number()
       .default(1000)
@@ -19,6 +22,35 @@ const queryParams = z
     before: z.string().optional(),
   })
   .strict()
+
+const getContractId = async (params: z.infer<typeof queryParams>) => {
+  if (params.contractId) {
+    return params.contractId
+  }
+  const slug = params.contractSlug ?? params.market
+  if (slug) {
+    const contract = await getContractFromSlug(slug)
+    if (contract) {
+      return contract.id
+    } else {
+      throw new Error('Contract not found.')
+    }
+  }
+}
+
+const getUserId = async (params: z.infer<typeof queryParams>) => {
+  if (params.userId) {
+    return params.userId
+  }
+  if (params.username) {
+    const user = await getUserByUsername(params.username)
+    if (user) {
+      return user.id
+    } else {
+      throw new Error('User not found.')
+    }
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -37,28 +69,11 @@ export default async function handler(
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
 
-  const { username, market, limit, before } = params
-
-  let userId: string | undefined
-  if (username) {
-    const user = await getUserByUsername(username)
-    if (!user) {
-      res.status(404).json({ error: 'User not found' })
-      return
-    }
-    userId = user.id
-  }
-
-  let contractId: string | undefined
-  if (market) {
-    const contract = await getContractFromSlug(market)
-    if (!contract) {
-      res.status(404).json({ error: 'Contract not found' })
-      return
-    }
-    contractId = contract.id
-  }
-
+  const { limit, before } = params
+  const [userId, contractId] = await Promise.all([
+    getUserId(params),
+    getContractId(params),
+  ])
   const bets = await getBets({ userId, contractId, limit, before })
 
   res.setHeader('Cache-Control', 'max-age=15, public')
