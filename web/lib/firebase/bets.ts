@@ -29,6 +29,7 @@ export type BetFilter = {
   filterRedemptions?: boolean
   filterZeroes?: boolean
   filterAntes?: boolean
+  afterTime?: number
 }
 
 function getBetsCollection(contractId: string) {
@@ -39,6 +40,9 @@ const getContractBetsQuery = (contractId: string, options?: BetFilter) => {
   let q = query(getBetsCollection(contractId))
   if (options?.userId) {
     q = query(q, where('userId', '==', options.userId))
+  }
+  if (options?.afterTime) {
+    q = query(q, where('createdTime', '>', options.afterTime))
   }
   if (options?.filterZeroes) {
     q = query(q, where('amount', '!=', 0))

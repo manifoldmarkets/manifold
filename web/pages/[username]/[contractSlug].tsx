@@ -49,11 +49,12 @@ import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
 import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { buildArray } from 'common/util/array'
+import { last, uniqBy } from 'lodash'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
   filterChallenges: true,
-  filterZeroes: true,
 }
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -139,7 +140,18 @@ export function ContractPageContent(
     [props.comments.length, blockedUserIds]
   )
 
-  const bets = useBets(contract.id, CONTRACT_BET_LOADING_OPTS) ?? props.bets
+  const lastStaticPropBet = last(props.bets)
+  const bets = uniqBy(
+    buildArray(
+      props.bets,
+      useBets(contract.id, {
+        ...CONTRACT_BET_LOADING_OPTS,
+        afterTime: lastStaticPropBet?.createdTime,
+      })
+    ),
+    'id'
+  )
+
   const creator = useUserById(contract.creatorId) ?? null
 
   const userBets = useBets(contract.id, {
