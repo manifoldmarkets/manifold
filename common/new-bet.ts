@@ -253,6 +253,9 @@ export const getBinaryCpmmBetInfo = (
     loanAmount: 0,
     createdTime: Date.now(),
     fees: totalFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   })
 
   const { liquidityFee } = totalFees
@@ -337,6 +340,9 @@ export const getNewBinaryDpmBetInfo = (
     probAfter,
     createdTime: Date.now(),
     fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
@@ -373,6 +379,9 @@ export const getNewMultiBetInfo = (
     probAfter,
     createdTime: Date.now(),
     fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
@@ -410,6 +419,9 @@ export const getNewMultiCpmmBetInfo = (
     probAfter,
     createdTime: Date.now(),
     fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   })
 
   return { newBet, newPool }
@@ -453,6 +465,9 @@ export const getNumericBetsInfo = (
     probAfter,
     createdTime: Date.now(),
     fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }

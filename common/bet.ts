@@ -25,8 +25,9 @@ export type Bet = {
 
   fees: Fees
 
-  isAnte?: boolean
-  isRedemption?: boolean
+  isAnte: boolean
+  isRedemption: boolean
+  isChallenge: boolean
   challengeSlug?: string
 
   // Props for bets in DPM contract below.

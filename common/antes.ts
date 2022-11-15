@@ -88,8 +88,10 @@ export function getAnteBets(
     probBefore: p,
     probAfter: p,
     createdTime,
-    isAnte: true,
     fees: noFees,
+    isAnte: true,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   const noBet: NormalizedBet = {
@@ -102,8 +104,10 @@ export function getAnteBets(
     probBefore: p,
     probAfter: p,
     createdTime,
-    isAnte: true,
     fees: noFees,
+    isAnte: true,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return { yesBet, noBet }
@@ -130,8 +134,10 @@ export function getFreeAnswerAnte(
     probBefore: 0,
     probAfter: 1,
     createdTime,
-    isAnte: true,
     fees: noFees,
+    isAnte: true,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return anteBet
@@ -169,8 +175,10 @@ export function getNumericAnte(
     probBefore: 0,
     probAfter: 1 / bucketCount,
     createdTime,
-    isAnte: true,
     fees: noFees,
+    isAnte: true,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return anteBet

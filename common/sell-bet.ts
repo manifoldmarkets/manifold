@@ -68,6 +68,9 @@ export const getSellBetInfo = (bet: Bet, contract: DPMContract) => {
     },
     fees,
     loanAmount: -(loanAmount ?? 0),
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return {
@@ -122,6 +125,9 @@ export const getCpmmSellBetInfo = (
     isFilled: true,
     isCancelled: false,
     orderAmount: takerAmount,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return {
