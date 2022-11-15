@@ -14,13 +14,14 @@ export default async function handler(
   const { id } = req.query
   const contractId = id as string
 
-  // mqp: testing hypothesis that this app is driving most of our costs
-  // by spamming market API but not using bets and comments
-
-  if (
-    req.headers.referer === 'https://ogxt.github.io/' ||
-    req.headers.referer === 'https://www.dgg.exchange/'
-  ) {
+  // mqp: temporary fix to make the most intensive apps not get bets and comments
+  // through this API while we wait for other people to migrate to /bets etc.
+  const DGG_REFERERS = [
+    'https://ogxt.github.io/',
+    'https://www.dgg.exchange/',
+    'https://dggexchange.miaz.xyz/',
+  ]
+  if (req.headers.referer && DGG_REFERERS.includes(req.headers.referer)) {
     const contract = await getContractFromId(contractId)
     if (!contract) {
       res.status(404).json({ error: 'Contract not found' })
