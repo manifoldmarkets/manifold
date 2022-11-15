@@ -22,6 +22,9 @@ module.exports = {
       }
     ),
     extend: {
+      fontFamily: {
+        mana: ['icomoon'],
+      },
       transitionTimingFunction: {
         bouncy: 'cubic-bezier(0.8, 0, 1, 1)',
       },

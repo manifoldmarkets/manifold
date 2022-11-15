@@ -15,8 +15,8 @@ export default function ContractCard(props: { controlUserID: string; contract: L
   const isFeatureable = !isClosed && contract.outcomeType === 'BINARY';
   const canResolveMarket = controlUserID === contract.creatorId;
   return (
-    <Col className={clsx('group relative gap-3 rounded-lg bg-white py-4 p-4 xs:pl-6 pr-5 shadow-md', !isFeatureable && 'bg-gray-100')}>
-      <div className="flex flex-col xs:flex-row">
+    <Col className={clsx('xs:pl-6 group relative gap-3 rounded-lg bg-white p-4 py-4 pr-5 shadow-md', !isFeatureable && 'bg-gray-100')}>
+      <div className="xs:flex-row flex flex-col">
         <Col className="relative flex-1 gap-3 pr-1">
           {/* <div className={clsx('absolute -left-6 -top-4 -bottom-4 right-0')}></div> */}
           <AvatarDetails contract={contract} />
@@ -46,10 +46,10 @@ export default function ContractCard(props: { controlUserID: string; contract: L
             )} */}
             <ProbBar previewProb={contract.probability} />
           </Col>
-          <Row className="items-center mt-2">
+          <Row className="mt-2 items-center">
             {(isResolved || contract.outcomeType !== 'BINARY' || isClosed) && (
               <div
-                className="tooltip tooltip-right xs:tooltip pr-1 before:content-[attr(data-tip)] xs:before:max-w-[15em] before:max-w-[calc(100vw-5rem)] before:z-50 before:!transition-[opacity] before:duration-200"
+                className="tooltip tooltip-right xs:tooltip xs:before:max-w-[15em] pr-1 before:z-50 before:max-w-[calc(100vw-5rem)] before:!transition-[opacity] before:duration-200 before:content-[attr(data-tip)]"
                 data-tip={isResolved ? 'This market has been resolved' : contract.outcomeType !== 'BINARY' ? 'This type of market is not currently supported' : 'This market is currently closed'}
               >
                 <InformationCircleIcon className="h-5 w-5 text-gray-500" />
@@ -88,7 +88,7 @@ function MiscDetails(props: { contract: LiteMarket; showHotVolume?: boolean; sho
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved;
 
   return (
-    <Row className="items-center gap-3 text-sm text-gray-400 w-full">
+    <Row className="w-full items-center gap-3 text-sm text-gray-400">
       {showHotVolume ? (
         <Row className="gap-0.5">
           <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
@@ -149,18 +149,18 @@ function BinaryResolutionOrChance(props: { contract: LiteMarket; className?: str
   const textColor = 'text-primary'; //!!!
 
   return (
-    <div className={clsx('text-xl xs:text-3xl', className)}>
+    <div className={clsx('xs:text-3xl text-xl', className)}>
       {resolution ? (
         <div className="xs:flex flex-col items-center">
-          <div className={clsx('text-gray-500 text-base inline')}>Resolved</div>
+          <div className={clsx('inline text-base text-gray-500')}>Resolved</div>
           <div className="xs:hidden inline"> </div>
           <BinaryContractOutcomeLabel contract={contract} resolution={resolution} />
         </div>
       ) : (
         <div className="xs:flex flex-col items-center">
-          <div className={clsx('inline text-lg xs:text-[length:unset] font-bold xs:font-normal', textColor)}>{(contract.probability * 100).toFixed(0)}%</div>
+          <div className={clsx('xs:text-[length:unset] xs:font-normal inline text-lg font-bold', textColor)}>{(contract.probability * 100).toFixed(0)}%</div>
           <div className="xs:hidden inline"> </div>
-          <div className={clsx('inline -my-1', textColor, 'text-base')}>chance</div>
+          <div className={clsx('-my-1 inline', textColor, 'text-base')}>chance</div>
         </div>
       )}
     </div>
