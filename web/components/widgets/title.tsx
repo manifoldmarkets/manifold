@@ -1,7 +1,8 @@
 import clsx from 'clsx'
+import { ReactNode } from 'react'
 
 export function Title(props: {
-  text?: string
+  text?: string | ReactNode
   className?: string
   children?: any
 }) {

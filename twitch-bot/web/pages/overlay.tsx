@@ -21,6 +21,7 @@ import { AbstractMarket, NamedBet } from 'common/types/manifold-abstract-types';
 import { DisconnectDescription } from 'socket.io-client/build/esm/socket';
 import { LoadingOverlay } from 'web/components/loading-overlay';
 import { ConnectionState } from 'web/lib/connection-state';
+import { ManaSymbol } from 'web/components/mana';
 
 class BetElement {
   bet: NamedBet;
@@ -344,7 +345,7 @@ export default () => {
                   <div id="transaction-template" className={clsx(styles.bet, 'text-[1em]')}>
                     <div id="name" className="inline-block max-w-[65%] truncate align-bottom font-bold"></div>{' '}
                     <div className="color inline">
-                      <p className="boughtSold"></p> M$ <p className="amount"></p>
+                      <p className="boughtSold"></p> <ManaSymbol /> <p className="amount"></p>
                     </div>
                   </div>
                 </Col>
@@ -431,7 +432,9 @@ export default () => {
                     <div className="font-normal">
                       {resolvedData.topWinners.map((winner, index) => (
                         <div className="inline" key={index}>
-                          {winner.displayName} (+M${Math.round(winner.profit)}){index < resolvedData.topWinners.length - 1 ? ', ' : ''}
+                          {winner.displayName} (+
+                          <ManaSymbol />
+                          {Math.round(winner.profit)}){index < resolvedData.topWinners.length - 1 ? ', ' : ''}
                         </div>
                       ))}
                     </div>
@@ -441,7 +444,9 @@ export default () => {
                     <div className="font-normal">
                       {resolvedData.topLosers.map((loser, index) => (
                         <div className="inline" key={index}>
-                          {loser.displayName} (-M${Math.round(Math.abs(loser.profit))}){index < resolvedData.topLosers.length - 1 ? ', ' : ''}
+                          {loser.displayName} (-
+                          <ManaSymbol />
+                          {Math.round(Math.abs(loser.profit))}){index < resolvedData.topLosers.length - 1 ? ', ' : ''}
                         </div>
                       ))}
                     </div>

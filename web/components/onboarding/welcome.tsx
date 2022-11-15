@@ -21,7 +21,7 @@ import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
 import { STARTING_BALANCE } from 'common/economy'
 import { Button } from 'web/components/buttons/button'
-import { FormattedMana } from '../mana'
+import { FormattedMana, ManaSymbol } from '../mana'
 
 export default function Welcome() {
   const user = useUser()
@@ -179,7 +179,10 @@ function Page1() {
     <>
       <p>
         Your question becomes a prediction market that people can bet{' '}
-        <span className="font-normal text-indigo-700">mana (M$)</span> on.
+        <span className="font-normal text-indigo-700">
+          mana (<ManaSymbol />)
+        </span>{' '}
+        on.
       </p>
       <div className="mt-8 font-semibold">The core idea</div>
       <div className="mt-2">
@@ -198,9 +201,11 @@ function Page2() {
   return (
     <>
       <p>
-        <span className="mt-4 font-normal text-indigo-700">Mana (M$)</span> is
-        the play money you bet with. You can also turn it into a real donation
-        to charity, at a 100:1 ratio.
+        <span className="mt-4 font-normal text-indigo-700">
+          Mana (<ManaSymbol />)
+        </span>{' '}
+        is the play money you bet with. You can also turn it into a real
+        donation to charity, at a 100:1 ratio.
       </p>
       <Row className="mt-4 gap-2 rounded border border-gray-200 bg-gray-50 py-2 pl-2 pr-4 text-sm text-indigo-700">
         <ExclamationCircleIcon className="h-5 w-5" />

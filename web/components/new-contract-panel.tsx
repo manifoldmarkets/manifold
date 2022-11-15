@@ -33,7 +33,7 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Input } from 'web/components/widgets/input'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import { FormattedMana } from './mana'
+import { FormattedMana, ManaSymbol } from './mana'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -478,7 +478,7 @@ export function NewContractPanel(props: {
                 color="green"
                 onClick={() => setFundsModalOpen(true)}
               >
-                Get M$
+                Get <ManaSymbol />
               </Button>
               <AddFundsModal
                 open={fundsModalOpen}

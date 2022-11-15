@@ -15,6 +15,7 @@ import { QRCode } from '../widgets/qr-code'
 import { Input } from '../widgets/input'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Select } from '../widgets/select'
+import { ManaSymbol } from '../mana'
 
 export function CreateLinksButton(props: {
   user: User
@@ -120,7 +121,7 @@ function CreateManalinkForm(props: {
               <label className="px-1 py-2">Amount</label>
               <div className="relative">
                 <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
-                  M$
+                  <ManaSymbol />
                 </span>
                 <Input
                   className="w-full pl-10"

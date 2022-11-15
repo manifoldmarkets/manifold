@@ -2,13 +2,14 @@ import clsx from 'clsx'
 import { InformationCircleIcon } from '@heroicons/react/solid'
 
 import { Linkify } from './linkify'
+import { ReactNode } from 'react'
 
 export function InfoBox(props: {
   title: string
-  text: string
+  content: string | ReactNode
   className?: string
 }) {
-  const { title, text, className } = props
+  const { title, content, className } = props
   return (
     <div className={clsx('rounded-md bg-gray-50 p-4', className)}>
       <div className="flex">
@@ -20,9 +21,7 @@ export function InfoBox(props: {
         </div>
         <div className="ml-3">
           <h3 className="text-sm font-medium text-black">{title}</h3>
-          <div className="mt-2 text-sm text-gray-600">
-            <Linkify text={text} />
-          </div>
+          <div className="mt-2 text-sm text-gray-600">{content}</div>
         </div>
       </div>
     </div>

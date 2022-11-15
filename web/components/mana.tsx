@@ -4,7 +4,9 @@ import { Row } from './layout/row'
 
 export function ManaSymbol(props: { className?: string }) {
   const { className } = props
-  return <div className="font-mana text-inherit">M$</div>
+  return (
+    <div className="font-mana inline-flex align-bottom text-inherit">M$</div>
+  )
 }
 
 export function FormattedMana(props: {

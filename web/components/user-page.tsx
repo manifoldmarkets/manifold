@@ -42,6 +42,7 @@ import { SectionHeader } from './groups/group-about'
 import { Button } from './buttons/button'
 import { BotBadge } from './widgets/user-link'
 import { BlockUserButton } from 'web/components/buttons/block-user-button'
+import { ManaSymbol } from './mana'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -214,7 +215,8 @@ export function UserPage(props: { user: User }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    Earn M$250 per friend referred
+                    Earn <ManaSymbol />
+                    250 per friend referred
                   </Row>
                 </div>
               )}

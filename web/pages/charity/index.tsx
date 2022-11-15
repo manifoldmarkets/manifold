@@ -25,6 +25,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
+import { ManaSymbol } from 'web/components/mana'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -150,7 +151,8 @@ export default function Charity(props: {
             !
           </span> */}
           <span className="text-gray-600">
-            Convert your M$ earnings into real charitable donations.
+            Convert your mana (<ManaSymbol />) earnings into real charitable
+            donations.
           </span>
           <DonatedStats
             stats={[

@@ -31,7 +31,7 @@ import { getShareUrl } from 'common/util/share'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { formatTime } from 'web/lib/util/time'
 import { ReportButton } from 'web/components/buttons/report-button'
-import { FormattedMana } from '../mana'
+import { FormattedMana, ManaSymbol } from '../mana'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -122,7 +122,14 @@ export function ContractInfoDialog(props: {
                     {mechanism === 'cpmm-1' ? (
                       <>
                         Fixed{' '}
-                        <InfoTooltip text="Each YES share is worth M$1 if YES wins." />
+                        <InfoTooltip
+                          text={
+                            <>
+                              Each YES share is worth <ManaSymbol />
+                              $1 if YES wins.
+                            </>
+                          }
+                        />
                       </>
                     ) : (
                       <>
@@ -183,9 +190,17 @@ export function ContractInfoDialog(props: {
                       <span className="mr-1">Elasticity</span>
                       <InfoTooltip
                         text={
-                          mechanism === 'cpmm-1'
-                            ? 'Probability change between a M$50 bet on YES and NO'
-                            : 'Probability change from a M$100 bet'
+                          mechanism === 'cpmm-1' ? (
+                            <>
+                              Probability change between a <ManaSymbol />
+                              50 bet on YES and NO
+                            </>
+                          ) : (
+                            <>
+                              Probability change from a <ManaSymbol />
+                              100 bet
+                            </>
+                          )
                         }
                       />
                     </Row>

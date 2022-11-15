@@ -20,7 +20,7 @@ import { validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
-import { FormattedMana } from 'web/components/mana'
+import { FormattedMana, ManaSymbol } from 'web/components/mana'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -83,7 +83,7 @@ function BuyManaTab(props: { onClose: () => void }) {
   return (
     <>
       <div className="mt-6 mb-4">
-        Buy mana (M$) to trade in your favorite markets.
+        Buy mana (<ManaSymbol />) to trade in your favorite markets.
         <div className="italic">Not redeemable for cash.</div>
       </div>
 

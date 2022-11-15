@@ -13,6 +13,7 @@ import {
   FundsSelector,
   OtherWaysToGetMana,
 } from 'web/components/add-funds-modal'
+import { ManaSymbol } from 'web/components/mana'
 
 export const WEB_PRICES = {
   1000: 1000,
@@ -47,7 +48,7 @@ export default function AddFundsPage() {
           <Title className="!mt-0" text="Get Mana" />
 
           <div className="mb-6">
-            Buy mana (M$) to trade in your favorite markets.
+            Buy mana (<ManaSymbol />) to trade in your favorite markets.
             <div className="italic">Not redeemable for cash.</div>
           </div>
 

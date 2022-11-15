@@ -11,7 +11,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
-import { FormattedMana } from '../mana'
+import { FormattedMana, ManaSymbol } from '../mana'
 
 export function LiquidityModal(props: {
   contract: CPMMContract
@@ -82,8 +82,8 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
   return (
     <>
       <div className="mb-4 text-gray-500">
-        Contribute your M$ to make this market more accurate by subsidizing
-        trading.{' '}
+        Contribute your mana (<ManaSymbol />) to make this market more accurate
+        by subsidizing trading.{' '}
         <InfoTooltip text="Liquidity is how much money traders can make if they're right. The more traders can earn, the greater the incentive to find the correct probability." />
       </div>
 
@@ -91,7 +91,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
         <AmountInput
           amount={amount}
           onChange={onAmountChange}
-          label="M$"
+          label={<ManaSymbol />}
           error={error}
           disabled={isLoading}
           inputClassName="w-28 mr-4"

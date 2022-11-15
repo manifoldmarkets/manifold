@@ -23,7 +23,8 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
 import { CopyLinkButton } from '../buttons/copy-link-button'
 import { ExpandingInput } from '../widgets/expanding-input'
-import { FormattedMana } from '../mana'
+import { FormattedMana, ManaSymbol } from '../mana'
+import ManaIcon from 'web/lib/icons/mana-icon'
 
 type challengeInfo = {
   amount: number
@@ -188,7 +189,7 @@ function CreateChallengeForm(props: {
                     })
                   }
                   error={undefined}
-                  label={'M$'}
+                  label={<ManaSymbol />}
                   inputClassName="w-24"
                 />
                 <span className={''}>on</span>
@@ -227,7 +228,7 @@ function CreateChallengeForm(props: {
                       })
                     }}
                     error={undefined}
-                    label={'M$'}
+                    label={<ManaSymbol />}
                     inputClassName="w-24"
                   />
                 </div>

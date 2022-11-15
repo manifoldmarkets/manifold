@@ -31,7 +31,7 @@ import { Title } from 'web/components/widgets/title'
 import { getOpenGraphProps } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contracts'
-import { FormattedMana } from 'web/components/mana'
+import { FormattedMana, ManaSymbol } from 'web/components/mana'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string; challengeSlug: string }
@@ -154,14 +154,17 @@ function FAQ() {
           onClick={() => setToggleWhatIsMana(!toggleWhatIsMana)}
         >
           {toggleWhatIsMana ? '-' : '+'}
-          What is M$?
+          What is mana (<ManaSymbol />
+          )?
         </span>
       </Row>
       {toggleWhatIsMana && (
         <Row className={'mx-4'}>
-          Mana (M$) is the play-money used by our platform to keep track of your
-          bets. It's completely free to get started, and you can donate your
-          winnings to charity!
+          <span>
+            Mana (<ManaSymbol />) is the play-money used by our platform to keep
+            track of your bets. It's completely free to get started, and you can
+            donate your winnings to charity!
+          </span>
         </Row>
       )}
     </Col>

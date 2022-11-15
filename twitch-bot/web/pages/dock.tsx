@@ -15,7 +15,7 @@ import { InfoTooltip } from 'web/components/info-tooltip';
 import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
 import { LoadingOverlay } from 'web/components/loading-overlay';
-import { FormattedMana } from 'web/components/mana';
+import { FormattedMana, ManaSymbol } from 'web/components/mana';
 import { Title } from 'web/components/title';
 import { ConnectionState } from 'web/lib/connection-state';
 import { SelectedGroup } from 'web/lib/selected-group';
@@ -370,7 +370,10 @@ export default () => {
                       <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} />
                     </Row>
 
-                    <div className="label-text text-neutral self-center justify-self-end pl-1">{`M$${ante}`} </div>
+                    <div className="label-text text-neutral self-center justify-self-end pl-1">
+                      <ManaSymbol />
+                      {ante}{' '}
+                    </div>
                   </Row>
                   {ante > balance && (
                     <div className="-mt-4 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">

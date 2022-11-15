@@ -184,7 +184,7 @@ function DonationBox(props: {
       toType: 'CHARITY',
       token: 'M$',
       category: 'CHARITY',
-      description: `${user.name} donated M$ ${amount} to ${charity.name}`,
+      description: `${user.name} donated ${amount} mana to ${charity.name}`,
     }).catch((err) => console.log('Error', err))
 
     setIsSubmitting(false)

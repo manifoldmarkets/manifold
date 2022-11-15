@@ -42,6 +42,7 @@ import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
 import { Spacer } from '../layout/spacer'
+import { ManaSymbol } from '../mana'
 
 export function GroupAbout(props: {
   group: Group
@@ -409,8 +410,8 @@ export function GroupAboutDetails(props: {
           <Col className="my-4 px-2">
             <div className="text-lg">Invite</div>
             <div className={'mb-2 text-gray-500'}>
-              Invite a friend to this group and get M${REFERRAL_AMOUNT} if they
-              sign up!
+              Invite a friend to this group and get <ManaSymbol />
+              {REFERRAL_AMOUNT} if they sign up!
             </div>
 
             <CopyLinkButton

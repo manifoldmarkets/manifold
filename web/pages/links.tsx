@@ -26,7 +26,7 @@ import { Manalink } from 'common/manalink'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { UserLink } from 'web/components/widgets/user-link'
-import { FormattedMana } from 'web/components/mana'
+import { FormattedMana, ManaSymbol } from 'web/components/mana'
 
 const LINKS_PER_PAGE = 24
 
@@ -53,7 +53,7 @@ export default function LinkPage(props: { auth: { user: User } }) {
     <Page>
       <SEO
         title="Manalinks"
-        description="Send M$ to others with a link, even if they don't have a Manifold account yet!"
+        description="Send mana to others with a link, even if they don't have a Manifold account yet!"
         url="/send"
       />
       <Col className="w-full px-8">
@@ -68,8 +68,8 @@ export default function LinkPage(props: { auth: { user: User } }) {
           )}
         </Row>
         <p>
-          You can use manalinks to send mana (M$) to other people, even if they
-          don&apos;t yet have a Manifold account.{' '}
+          You can use manalinks to send mana (<ManaSymbol />) to other people,
+          even if they don&apos;t yet have a Manifold account.{' '}
           <SiteLink href="/referrals">
             Eligible for <FormattedMana amount={REFERRAL_AMOUNT} /> referral
             bonus if a new user signs up!
