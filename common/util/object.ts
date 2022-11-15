@@ -1,4 +1,4 @@
-import { union } from 'lodash'
+import { isEqual, mapValues, union } from 'lodash'
 
 export const removeUndefinedProps = <T extends object>(obj: T): T => {
   const newObj: any = {}
@@ -36,4 +36,9 @@ export const subtractObjects = <T extends { [key: string]: number }>(
   }
 
   return newObj as T
+}
+
+export const hasChanges = <T extends object>(obj: T, partial: Partial<T>) => {
+  const currValues = mapValues(partial, (_, key: keyof T) => obj[key])
+  return !isEqual(currValues, partial)
 }
