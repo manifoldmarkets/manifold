@@ -13,6 +13,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  startAfter,
 } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { app, db } from './init'
@@ -223,9 +224,18 @@ export async function listUsers(userIds: string[]) {
   return docs.map((doc) => doc.data())
 }
 
-export async function listAllUsers() {
-  const docs = (await getDocs(users)).docs
-  return docs.map((doc) => doc.data())
+export async function listAllUsers(
+  n: number,
+  before?: string,
+  sortDescBy = 'createdTime'
+): Promise<User[]> {
+  let q = query(users, orderBy(sortDescBy, 'desc'), limit(n))
+  if (before != null) {
+    const snap = await getDoc(doc(users, before))
+    q = query(q, startAfter(snap))
+  }
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((doc) => doc.data())
 }
 
 export function getTopTraders(period: Period) {
