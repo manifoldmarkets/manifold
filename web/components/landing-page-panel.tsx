@@ -49,8 +49,6 @@ export function PaginationCircle(props: {
 export function LandingPagePanel() {
   useTracking('view landing page')
   const isMobile = useIsMobile()
-  const desktop_height = 'h-60' //240px
-  const mobile_height = 'h-96'
   const [pageNumber, setPageNumber] = useState<PageNumber>(1)
 
   useEffect(() => {
@@ -65,8 +63,7 @@ export function LandingPagePanel() {
     <>
       <div
         className={clsx(
-          'mt-4 flex w-full flex-col overflow-hidden drop-shadow-sm sm:flex-row',
-          isMobile ? mobile_height : desktop_height
+          'mt-8 flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-60 sm:flex-row'
         )}
       >
         <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
@@ -118,8 +115,7 @@ export function LandingPagePanel() {
         </div>
         <div
           className={clsx(
-            'relative z-30 w-full bg-indigo-200 sm:w-2/5',
-            isMobile ? 'h-1/5 rounded-b-xl' : `${desktop_height} rounded-r-xl`
+            'relative z-30 h-1/5 w-full rounded-b-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-r-xl sm:rounded-l-none'
           )}
         >
           {!isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}

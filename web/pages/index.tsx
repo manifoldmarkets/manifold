@@ -97,37 +97,35 @@ export default function Home() {
         description="Create a play-money prediction market on any topic you care about
             and bet with your friends on what will happen!"
       />
-      <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
-        <Col className="max-w-3xl gap-8">
-          <LandingPagePanel />
-          {isLoading ? (
-            <LoadingIndicator />
-          ) : (
-            <>
-              <SearchSection
-                key={'score'}
-                label={'Trending'}
-                contracts={trendingContracts}
-                sort={'score' as Sort}
-                icon={'🔥'}
-              />
-              <SearchSection
-                key={'daily-trending'}
-                label={'Daily changed'}
-                contracts={dailyTrendingContracts}
-                sort={'daily-score'}
-                icon={'📈'}
-              />
-              <ActivitySection key={'live-feed'} />
-              <FeaturedSection
-                key={'featured'}
-                globalConfig={globalConfig}
-                pinned={pinned}
-                isAdmin={false}
-              />
-            </>
-          )}
-        </Col>
+      <Col className="mx-auto mb-8 max-w-3xl gap-8 px-4">
+        <LandingPagePanel />
+        {isLoading ? (
+          <LoadingIndicator />
+        ) : (
+          <>
+            <SearchSection
+              key={'score'}
+              label={'Trending'}
+              contracts={trendingContracts}
+              sort={'score' as Sort}
+              icon={'🔥'}
+            />
+            <SearchSection
+              key={'daily-trending'}
+              label={'Daily changed'}
+              contracts={dailyTrendingContracts}
+              sort={'daily-score'}
+              icon={'📈'}
+            />
+            <ActivitySection key={'live-feed'} />
+            <FeaturedSection
+              key={'featured'}
+              globalConfig={globalConfig}
+              pinned={pinned}
+              isAdmin={false}
+            />
+          </>
+        )}
       </Col>
     </Page>
   )
