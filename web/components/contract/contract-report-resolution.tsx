@@ -13,8 +13,8 @@ export function ContractReportResolution(props: { contract: Contract }) {
   const { contract } = props
   const user = useUser()
   const [reporting, setReporting] = useState(false)
-  if (!user) {
-    return <></>
+  if (!user || !contract.resolution) {
+    return <div />
   }
   const userReported = contract.flaggedByUsernames?.includes(user.id)
 

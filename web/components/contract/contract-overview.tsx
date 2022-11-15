@@ -100,15 +100,13 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         <ContractDetails contract={contract} />
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />
-          <Row>
+          <Row className={'items-center'}>
             <BinaryResolutionOrChance
               className="flex items-end"
               contract={contract}
               large
             />
-            {contract.isResolved && (
-              <ContractReportResolution contract={contract} />
-            )}
+            <ContractReportResolution contract={contract} />
           </Row>
         </Row>
       </Col>
@@ -167,15 +165,21 @@ const PseudoNumericOverview = (props: {
     <Col className="gap-1 md:gap-2">
       <Col className="gap-3 px-2 sm:gap-4">
         <ContractDetails contract={contract} />
-        <Row className="justify-between gap-4">
+        <Row className="items-center justify-between gap-4">
           <OverviewQuestion text={contract.question} />
           <PseudoNumericResolutionOrExpectation
             contract={contract}
             className="hidden items-end xl:flex"
           />
+          <div className="hidden items-end xl:flex">
+            <ContractReportResolution contract={contract} />
+          </div>
         </Row>
         <Row className="items-center justify-between gap-4 xl:hidden">
-          <PseudoNumericResolutionOrExpectation contract={contract} />
+          <Row className={'items-center gap-2'}>
+            <PseudoNumericResolutionOrExpectation contract={contract} />
+            <ContractReportResolution contract={contract} />
+          </Row>
           {tradingAllowed(contract) && <BetWidget contract={contract} />}
         </Row>
       </Col>
