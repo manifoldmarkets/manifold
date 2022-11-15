@@ -6,7 +6,7 @@ import { PostComment } from 'common/comment'
 import { Post } from 'common/post'
 import { Dictionary } from 'lodash'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Avatar } from 'web/components/widgets/avatar'
 import { CommentInput } from 'web/components/comments/comment-input'
 import { Content } from 'web/components/widgets/editor'
@@ -113,6 +113,7 @@ export function PostCommentItem(props: {
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
 
+  const commentRef = useRef<HTMLDivElement>(null)
   const me = useUser()
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
@@ -122,8 +123,15 @@ export function PostCommentItem(props: {
     }
   }, [comment.id, router.asPath])
 
+  useEffect(() => {
+    if (highlighted && commentRef.current) {
+      commentRef.current.scrollIntoView(true)
+    }
+  }, [highlighted, commentRef.current?.id])
+
   return (
     <Row
+      ref={commentRef}
       id={comment.id}
       className={clsx(
         'relative',
