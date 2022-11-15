@@ -10,11 +10,9 @@ import {
   useTextEditor,
 } from 'web/components/widgets/editor'
 import { getUser, User } from 'web/lib/firebase/users'
-import { PencilIcon, ShareIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
+import { PencilIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
-import { SharePostModal } from 'web/components/share-post-modal'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -34,6 +32,7 @@ import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { LikeItemButton } from 'web/components/contract/like-item-button'
+import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -58,23 +57,23 @@ export async function getStaticPaths() {
 }
 
 export default function PostPage(props: {
-  post: Post
+  post: Post | null
   creator: User
   comments: PostComment[]
 }) {
-  const [isShareOpen, setShareOpen] = useState(false)
   const { creator } = props
-  const post = usePost(props.post.id) ?? props.post
+  const postId = props.post?.id ?? '_'
+  const post = usePost(postId) ?? props.post
 
-  const tips = useTipTxns({ postId: post.id })
-  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(post.slug)}`
-  const updatedComments = useCommentsOnPost(post.id)
+  const tips = useTipTxns({ postId })
+  const updatedComments = useCommentsOnPost(postId)
   const comments = updatedComments ?? props.comments
   const user = useUser()
 
-  if (post == null) {
+  if (!post) {
     return <Custom404 />
   }
+  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(post.slug)}`
 
   return (
     <Page>
@@ -100,30 +99,13 @@ export default function PostPage(props: {
               />
             </div>
           </Col>
-          <Row className="items-center">
+          <Row className="items-center gap-2 sm:pr-2">
             <LikeItemButton item={post} user={user} itemType={'post'} />
 
-            <Col className="px-2">
-              <Button
-                size="lg"
-                color="gray-white"
-                className={'flex'}
-                onClick={() => {
-                  setShareOpen(true)
-                }}
-              >
-                <ShareIcon
-                  className={clsx('mr-2 h-[24px] w-5')}
-                  aria-hidden="true"
-                />
-                Share
-                <SharePostModal
-                  isOpen={isShareOpen}
-                  setOpen={setShareOpen}
-                  shareUrl={shareUrl}
-                />
-              </Button>
-            </Col>
+            <SimpleLinkButton
+              getUrl={() => shareUrl}
+              tooltip={'Copy link to post'}
+            />
           </Row>
         </Row>
 
