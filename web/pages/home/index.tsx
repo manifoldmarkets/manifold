@@ -69,6 +69,7 @@ import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { GroupCard } from '../groups'
+import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -82,10 +83,14 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const groups = useMemberGroupsSubscription(user)
-  const shouldFilterDestiny = !groups?.find((g) => g.slug === 'destinygg')
+  const followedGroups = useMemberGroupsSubscription(user)
+  const shouldFilterDestiny = !followedGroups?.find((g) =>
+    DESTINY_GROUP_SLUGS.includes(g.slug)
+  )
   const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser).concat(
-    shouldFilterDestiny ? ['groupSlugs:-destinygg'] : []
+    shouldFilterDestiny
+      ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
+      : []
   )
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
@@ -116,7 +121,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
   const trendingGroups = useTrendingGroups()
   const groupContracts = useContractsByDailyScoreGroups(
-    groups?.map((g) => g.slug),
+    followedGroups?.map((g) => g.slug),
     userBlockFacetFilters
   )
   const latestPosts = useAllPosts(true)
@@ -222,17 +227,17 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               latestPosts
             )}
 
-            {groups && groupContracts && trendingGroups.length > 0 ? (
+            {followedGroups && groupContracts && trendingGroups.length > 0 ? (
               <>
                 <TrendingGroupsSection
                   className="mb-4"
                   user={user}
-                  myGroups={groups}
+                  myGroups={followedGroups}
                   trendingGroups={trendingGroups}
                 />
                 <GroupSections
                   user={user}
-                  groups={groups}
+                  groups={followedGroups}
                   groupContracts={groupContracts}
                 />
               </>

@@ -26,6 +26,7 @@ import {
 import { trendingIndex } from 'web/lib/service/algolia'
 import { CPMMBinaryContract, Contract } from 'common/contract'
 import { sortBy } from 'lodash'
+import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const trending = await trendingIndex.search<CPMMBinaryContract>('', {
@@ -56,7 +57,9 @@ export default function Home() {
   useSaveReferral()
   useRedirectAfterLogin()
 
-  const blockedFacetFilters = ['groupSlugs:-destinygg']
+  const blockedFacetFilters = DESTINY_GROUP_SLUGS.map(
+    (slug) => `groupSlugs:-${slug}`
+  )
 
   const globalConfig = useGlobalConfig()
   const trendingContracts = useTrendingContracts(6, blockedFacetFilters)
