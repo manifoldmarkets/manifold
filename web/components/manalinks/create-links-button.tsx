@@ -15,6 +15,7 @@ import { QRCode } from '../widgets/qr-code'
 import { Input } from '../widgets/input'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Select } from '../widgets/select'
+import { canCreateManalink } from 'common/manalink'
 
 export function CreateLinksButton(props: {
   user: User
@@ -23,6 +24,8 @@ export function CreateLinksButton(props: {
 }) {
   const { user, highlightedSlug, setHighlightedSlug } = props
   const [open, setOpen] = useState(false)
+
+  if (!canCreateManalink(user)) return <></>
 
   return (
     <>

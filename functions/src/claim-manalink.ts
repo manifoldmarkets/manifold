@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { User } from 'common/user'
-import { Manalink } from 'common/manalink'
+import { canCreateManalink, Manalink } from 'common/manalink'
 import { runTxn, TxnData } from './transact'
 import { APIError, newEndpoint, validate } from './api'
 
@@ -37,6 +37,13 @@ export const claimmanalink = newEndpoint({}, async (req, auth) => {
       throw new APIError(500, `User ${fromId} not found`)
     }
     const fromUser = fromSnap.data() as User
+
+    if (!canCreateManalink(fromUser)) {
+      throw new APIError(
+        400,
+        `@${fromUser.username} is not authorized to create manalinks.`
+      )
+    }
 
     // Only permit one redemption per user per link
     if (claimedUserIds.includes(auth.uid)) {

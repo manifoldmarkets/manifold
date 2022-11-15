@@ -23,7 +23,7 @@ import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
 import { ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
-import { Manalink } from 'common/manalink'
+import { canCreateManalink, Manalink } from 'common/manalink'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -48,6 +48,8 @@ export default function LinkPage(props: { auth: { user: User } }) {
       (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
       (l.expiresTime == null || l.expiresTime > Date.now())
   )
+
+  const authorized = canCreateManalink(user)
 
   return (
     <Page>
@@ -76,10 +78,17 @@ export default function LinkPage(props: { auth: { user: User } }) {
           </SiteLink>
         </p>
         <Subtitle text="Your Manalinks" />
-        <ManalinksDisplay
-          unclaimedLinks={unclaimedLinks}
-          highlightedSlug={highlightedSlug}
-        />
+
+        {authorized ? (
+          <ManalinksDisplay
+            unclaimedLinks={unclaimedLinks}
+            highlightedSlug={highlightedSlug}
+          />
+        ) : (
+          <p className="text-gray-500">
+            You are not currently authorized to create manalinks.
+          </p>
+        )}
       </Col>
     </Page>
   )
