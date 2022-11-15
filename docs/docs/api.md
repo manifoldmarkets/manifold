@@ -453,13 +453,21 @@ Requires no authorization.
 
 ### `GET /v0/users`
 
-Lists all users.
+Lists all users, ordered by creation date descending.
+
+Parameters:
+
+- `limit`: Optional. How many users to return. The maximum and the default is 1000.
+- `before`: Optional. The ID of the user before which the list will start. For
+  example, if you ask for the most recent 10 users, and then perform a second
+  query for 10 more users with `before=[the id of the 10th user]`, you will
+  get users 11 through 20.
 
 Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/users
+  https://manifold.markets/api/v0/users?limit=1
   ```
 - Example response
   ```json
