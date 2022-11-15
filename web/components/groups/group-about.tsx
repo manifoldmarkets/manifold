@@ -7,7 +7,7 @@ import {
 import PencilIcon from '@heroicons/react/solid/PencilIcon'
 
 import { Contract } from 'common/contract'
-import { Group } from 'common/group'
+import { Group, groupPath } from 'common/group'
 import { Post } from 'common/post'
 import React, { useEffect, useState } from 'react'
 import { ReactNode } from 'react'
@@ -21,7 +21,7 @@ import { Row } from '../layout/row'
 import { SiteLink } from '../widgets/site-link'
 import { GroupOverviewPost as GroupAboutPost } from './group-overview-post'
 import { getContractFromId } from 'web/lib/firebase/contracts'
-import { groupPath, updateGroup } from 'web/lib/firebase/groups'
+import { updateGroup } from 'web/lib/firebase/groups'
 import { PinnedSelectModal } from '../pinned-select-modal'
 import { Button } from '../buttons/button'
 import { User } from 'common/user'
@@ -41,6 +41,7 @@ import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
+import { Spacer } from '../layout/spacer'
 
 export function GroupAbout(props: {
   group: Group
@@ -49,14 +50,20 @@ export function GroupAbout(props: {
   aboutPost: Post | null
   creator: User
   user: User | null | undefined
-  memberIds: string[]
+  isMember: boolean
 }) {
-  const { group, isEditable, posts, aboutPost, creator, user, memberIds } =
-    props
+  const { group, isEditable, posts, aboutPost, creator, user, isMember } = props
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
-      <Row className={'justify-end'}>
+      <Row className={'justify-between'}>
         <HideGroupButton groupSlug={group.slug} />
+        {isMember && (
+          <JoinOrLeaveGroupButton
+            group={group}
+            isMember={isMember}
+            user={user}
+          />
+        )}
       </Row>
       <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
       {(group.aboutPostId != null || isEditable) && (
@@ -74,7 +81,7 @@ export function GroupAbout(props: {
         creator={creator}
         isEditable={isEditable}
         user={user}
-        memberIds={memberIds}
+        isMember={isMember}
       />
 
       <GroupPosts group={group} posts={posts} />
@@ -179,15 +186,18 @@ function GroupFeatured(props: {
   if (!group.pinnedItems || group.pinnedItems.length == 0) return <></>
 
   return isEditable || (group.pinnedItems && group?.pinnedItems.length > 0) ? (
-    <PinnedItems
-      posts={posts}
-      group={group}
-      isEditable={isEditable}
-      pinned={pinned}
-      onDeleteClicked={onDeleteClicked}
-      onSubmit={onSubmit}
-      modalMessage={'Pin posts or markets to the overview of this group.'}
-    />
+    <div className="relative">
+      {isEditable && <Spacer h={12} />}
+      <PinnedItems
+        posts={posts}
+        group={group}
+        isEditable={isEditable}
+        pinned={pinned}
+        onDeleteClicked={onDeleteClicked}
+        onSubmit={onSubmit}
+        modalMessage={'Pin posts or markets to the overview of this group.'}
+      />
+    </div>
   ) : (
     <LoadingIndicator />
   )
@@ -200,6 +210,7 @@ export function PinnedItems(props: {
   onDeleteClicked: (index: number) => void
   onSubmit: (selectedItems: { itemId: string; type: string }[]) => void
   group?: Group
+  groups?: Group[]
   modalMessage: string
 }) {
   const {
@@ -209,6 +220,7 @@ export function PinnedItems(props: {
     onSubmit,
     posts,
     group,
+    groups,
     modalMessage,
   } = props
   const [editMode, setEditMode] = useState(false)
@@ -216,7 +228,7 @@ export function PinnedItems(props: {
 
   return pinned.length > 0 || isEditable ? (
     <div>
-      <Row className="items-center justify-end ">
+      <div className="absolute top-0 right-0 z-20 ">
         {isEditable && (
           <Button
             className="my-2"
@@ -236,7 +248,7 @@ export function PinnedItems(props: {
             )}
           </Button>
         )}
-      </Row>
+      </div>
       <div>
         <Masonry
           breakpointCols={{ default: 2, 768: 1 }}
@@ -281,6 +293,7 @@ export function PinnedItems(props: {
           <div className={'text-md my-4 text-gray-600'}>{modalMessage}</div>
         }
         onSubmit={onSubmit}
+        groups={groups}
       />
     </div>
   ) : (
@@ -322,9 +335,9 @@ export function GroupAboutDetails(props: {
   creator: User
   user: User | null | undefined
   isEditable: boolean
-  memberIds: string[]
+  isMember: boolean
 }) {
-  const { group, creator, isEditable, user, memberIds } = props
+  const { group, creator, isEditable, user, isMember } = props
   const anyoneCanJoinChoices: { [key: string]: string } = {
     Closed: 'false',
     Open: 'true',
@@ -343,7 +356,6 @@ export function GroupAboutDetails(props: {
   const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
     group.slug
   )}${postFix}`
-  const isMember = user ? memberIds.includes(user.id) : false
 
   return (
     <>

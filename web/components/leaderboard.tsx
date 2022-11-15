@@ -5,6 +5,8 @@ import { SiteLink } from './widgets/site-link'
 import { Table } from './widgets/table'
 import { Title } from './widgets/title'
 import { sortBy } from 'lodash'
+import { BotBadge } from './widgets/user-link'
+import { BOT_USERNAMES } from 'common/envs/constants'
 
 interface LeaderboardEntry {
   username: string
@@ -61,7 +63,12 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                     <SiteLink className="relative" href={`/${entry.username}`}>
                       <Row className="items-center gap-4">
                         <Avatar avatarUrl={entry.avatarUrl} size={8} />
-                        <div className="truncate">{entry.name}</div>
+                        <div className="truncate">
+                          {entry.name}{' '}
+                          {BOT_USERNAMES.includes(entry.username) && (
+                            <BotBadge />
+                          )}
+                        </div>
                       </Row>
                     </SiteLink>
                   </td>

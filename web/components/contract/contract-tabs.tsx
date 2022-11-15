@@ -36,6 +36,7 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
+import { track } from 'web/lib/service/analytics'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -119,7 +120,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
-    key: `contract-comments-sort`,
+    key: `comments-sort-${contract.id}`,
     store: storageStore(safeLocalStorage()),
   })
   const me = useUser()
@@ -164,7 +165,19 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
         comments={comments}
         contract={contract}
         sort={sort}
-        onSortClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
+        onSortClick={() => {
+          setSort(sort === 'Newest' ? 'Best' : 'Newest')
+          const totalTips = sum(
+            Object.values(tips).map((t) => sum(Object.values(t)))
+          )
+          track('change-comments-sort', {
+            contractSlug: contract.slug,
+            contractName: contract.question,
+            totalComments: comments.length,
+            totalUniqueTraders: contract.uniqueBettorCount,
+            totalTips,
+          })
+        }}
       />
       {contract.outcomeType === 'FREE_RESPONSE' && (
         <FreeResponseComments
@@ -270,8 +283,8 @@ export function SortRow(props: {
     <Row className="mb-4 items-center justify-end gap-4">
       <BountiedContractSmallBadge contract={contract} showAmount />
       <Row className="items-center gap-1">
-        <div className="text-greyscale-4 text-sm">Sort by:</div>
-        <button className="text-greyscale-6 w-20 text-sm" onClick={onSortClick}>
+        <div className="text-sm text-gray-400">Sort by:</div>
+        <button className="w-20 text-sm text-gray-600" onClick={onSortClick}>
           <Tooltip
             text={sort === 'Best' ? 'Highest tips + bounties first.' : ''}
           >

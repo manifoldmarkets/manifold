@@ -8,7 +8,7 @@ this system, but all of those markets have since closed.
 
 Binary markets created after March 15 use a constant-function market maker which holds constant the weighted geometric
 mean, with weights equal to the probabilities chosen by the market creator at creation. This design was inspired by
-Uniswap's CPMM and a suggestion from Manifold user Pepe. The benefit of this approach is that the payout for any bet 
+Uniswap's CPMM and a suggestion from Manifold user Pepe. The benefit of this approach is that the payout for any bet
 is fixed at purchase time - 100 shares of YES will always return M$100 if YES is chosen.
 
 Free response markets (and the depreciated numeric markets) still use the DPM system, as they have discrete "buckets"
@@ -57,10 +57,10 @@ for the pool to be sorted into.
 - The liquidity in a market is the amount of capital available for traders to trade against. The more liquidity, the greater incentive there is for traders to bet, and the more accurate the market should be.
 - When a market is created, the creation fee (also called the ante or subsidy) is used to fill the liquiity pool. This happens whether the creation fee is paid by the user or by Manifold for the daily free market.
 - Behind the scenes, when a bet is placed the CPMM mechanism does [a bunch of math](http://bit.ly/maniswap). The end result is that for each M$1 bet, 1 YES share and 1 NO share is created. Some amount of shares are then given to the user who made the bet, and the rest are stored in the liquidity pool.
- Due to this mechansim, the number of YES shares in the whole market always equals the number of NO shares.
+  Due to this mechansim, the number of YES shares in the whole market always equals the number of NO shares.
 - You can manually add liquidity to any market to increase the incentives for traders to participate. You can think of added liquidity as a subsidy for getting your question answered. You can do this by opening up the market info popup window located in the (...) section of the header on the market page.
-  - Adding liquidity provides you with a number of YES and NO shares, which can be withdrawn from the same interface. These shares resolve to M$ like normal when the market resolves, which will return you some amount of your investment. 
-  - If the market moves significantly in either direction, your liquidity will become significantly less valuable. You are currently very unlikely to make money by investing liquidity in a market, it is a way to subsidize a market and encourage more people to bet, to achieve a more accurate answer. 
+  - Adding liquidity provides you with a number of YES and NO shares, which can be withdrawn from the same interface. These shares resolve to M$ like normal when the market resolves, which will return you some amount of your investment.
+  - If the market moves significantly in either direction, your liquidity will become significantly less valuable. You are currently very unlikely to make money by investing liquidity in a market, it is a way to subsidize a market and encourage more people to bet, to achieve a more accurate answer.
   - Adding liquidity to a market also makes it require more capital to move the market, so if you want to subsidize a market, first make sure the market price is roughly where you think it should be.
 
 # Free-Response Markets
@@ -80,7 +80,7 @@ for the pool to be sorted into.
 
 - Markets are structured around a list of answers, any of which can be bet on.
 - When a Free Response market is created, the market creation fee goes into a hidden answer called the Ante and gets paid to the winner(s), to subsidize the market and create an incentive to bet. This happens whether the creation fee is paid by the user or by Manifold for the daily free market.
-  - This hidden answer is why a market's probabilities will not add up to 100%. 
+  - This hidden answer is why a market's probabilities will not add up to 100%.
   - If you want to further subsidize a market, it's customary to create an ANTE answer and put money in that.
 - Anyone can add answers to a market as long as they stake some amount of M$ on it. Traders can place a bet on any answer and receive shares in the outcome in return.
 - When a user places a bet, their M$ goes into the market's pool and they receive a certain amount of shares of the selected answer.
@@ -91,19 +91,3 @@ for the pool to be sorted into.
     - If the creator resolves to answer #1 only, you will receive `M$500 * (100 / 500) = M$100`.
     - If the creator resolves 50% to answer #1 and 50% to answer #2, you will receive `(M$500 * 50%) * (100 / 500) = M$50`.
     - Note that your payout is dependent on the total number of shares, and thus may decrease if more people buy shares in that answer.
-
-# Fees
-
-- Manifold charges fees on each trade. They are automatically calculated and baked into the number of shares you receive when you place a bet.
-  - Our CPMM fee schedule is currently: `10% * (1 - post-bet probability) * bet amount`
-    - Note that all current binary markets use this fee schedule.
-    - The post-bet probability is what the market probability would be after your bet if there were no fees.
-    - Example:
-      - If you bet M$100 on NO and the resulting probability without fees would be 10%, then you pay `M$100 * 10% * 10% = M$1.0`.
-      - If you bet M$100 on YES and the resulting probability without fees would be 50%, then you pay `M$100 * 10% * 50% = M$5.0`.
-    - 100% of this fee is used to provide a commission to the market creator, which is paid out after the market is resolved.
-  - Our DPM fee schedule is currently: `5% * (1 - post-bet probability) * bet amount`
-    - Note that all free-response markets use this fee schedule. The calculation for this is the same as above.
-    - 4% is used to provide a commission to the market creator, which is paid out after the market is resolved. 1% is "burnt" to prevent inflation.
-  - No fees are levied on sales. If you have existing shares in a binary market and buy shares on the opposite side, that is equivalent to selling your shares and you do not pay fees.
-

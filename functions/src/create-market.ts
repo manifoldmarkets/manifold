@@ -1,5 +1,8 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+import { FieldValue } from 'firebase-admin/firestore'
+import { JSONContent } from '@tiptap/core'
+import { uniq, zip } from 'lodash'
 
 import {
   Contract,
@@ -14,18 +17,14 @@ import {
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
-
-import { chargeUser, getContract, isProd } from './utils'
+import { getContract } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
-
-import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from '../../common/economy'
+import { FIXED_ANTE } from '../../common/economy'
 import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getMultipleChoiceAntes,
   getNumericAnte,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { Answer, getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
@@ -33,10 +32,8 @@ import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
-import { JSONContent } from '@tiptap/core'
-import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
-import { FieldValue } from 'firebase-admin/firestore'
+import { getCloseDate, getGroupForMarket } from './helpers/openai-utils'
 import { htmlToRichText } from '../../common/util/parse'
 import { marked } from 'marked'
 
@@ -98,9 +95,12 @@ const multipleChoiceSchema = z.object({
   answers: z.string().trim().min(1).array().min(2),
 })
 
-export const createmarket = newEndpoint({}, (req, auth) => {
-  return createMarketHelper(req.body, auth)
-})
+export const createmarket = newEndpoint(
+  { secrets: ['OPENAI_API_KEY'] },
+  (req, auth) => {
+    return createMarketHelper(req.body, auth)
+  }
+)
 
 export async function createMarketHelper(body: any, auth: AuthedUser) {
   const {
@@ -109,8 +109,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     descriptionHtml,
     descriptionMarkdown,
     tags,
-    // Default to one week after now, if closeTime not specified
-    closeTime = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
+    closeTime,
     outcomeType,
     groupId,
     visibility = 'public',
@@ -143,21 +142,10 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     ;({ answers } = validate(multipleChoiceSchema, body))
   }
 
-  const userDoc = await firestore.collection('users').doc(auth.uid).get()
-  if (!userDoc.exists) {
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
-  }
-  const user = userDoc.data() as User
-
-  const ante = user.username === 'DavidChee' ? 500 : FIXED_ANTE
-
-  const deservesFreeMarket =
-    (user?.freeMarketsCreated ?? 0) < FREE_MARKETS_PER_USER_MAX
-  // TODO: this is broken because it's not in a transaction
-  if (ante > user.balance && !deservesFreeMarket)
-    throw new APIError(400, `Balance must be at least ${ante}.`)
+  const userId = auth.uid
 
   let group: Group | null = null
+
   if (groupId) {
     const groupDocRef = firestore.collection('groups').doc(groupId)
     const groupDoc = await groupDocRef.get()
@@ -173,27 +161,22 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
       (doc) => doc.data() as { userId: string; createdTime: number }
     )
     if (
-      !groupMemberDocs.map((m) => m.userId).includes(user.id) &&
+      !groupMemberDocs.map((m) => m.userId).includes(userId) &&
       !group.anyoneCanJoin &&
-      group.creatorId !== user.id
+      group.creatorId !== userId
     ) {
       throw new APIError(
         400,
         'User must be a member/creator of the group or group must be open to add markets to it.'
       )
     }
+  } else {
+    // generate group using AI
+    group = (await getGroupForMarket(question)) ?? null
   }
+
   const slug = await getSlug(question)
   const contractRef = firestore.collection('contracts').doc()
-
-  console.log(
-    'creating contract for',
-    user.username,
-    'on',
-    question,
-    'ante:',
-    ante || 0
-  )
 
   // convert string descriptions into JSONContent
   let descriptionJson = null
@@ -212,6 +195,36 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     descriptionJson = htmlToRichText('<p> </p>')
   }
 
+  const ante =
+    outcomeType === 'BINARY'
+      ? FIXED_ANTE
+      : outcomeType === 'PSEUDO_NUMERIC'
+      ? FIXED_ANTE * 5
+      : FIXED_ANTE * 2
+
+  const user = await firestore.runTransaction(async (trans) => {
+    const userDoc = await trans.get(firestore.collection('users').doc(userId))
+    if (!userDoc.exists)
+      throw new APIError(400, 'No user exists with the authenticated user ID.')
+
+    const user = userDoc.data() as User
+
+    if (ante > user.balance)
+      throw new APIError(400, `Balance must be at least ${ante}.`)
+
+    trans.update(userDoc.ref, {
+      balance: FieldValue.increment(-ante),
+      totalDeposits: FieldValue.increment(-ante),
+    })
+
+    return user
+  })
+
+  const closeTimestamp = closeTime
+    ? closeTime.getTime()
+    : // Use AI to get date, default to one week after now if failure
+      (await getCloseDate(question)) ?? Date.now() + 7 * 24 * 60 * 60 * 1000
+
   const contract = getNewContract(
     contractRef.id,
     slug,
@@ -221,7 +234,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     descriptionJson,
     initialProb ?? 0,
     ante,
-    closeTime.getTime(),
+    closeTimestamp,
     tags ?? [],
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
@@ -231,39 +244,41 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     visibility
   )
 
-  const providerId = deservesFreeMarket
-    ? isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-    : user.id
-
-  if (ante) await chargeUser(providerId, ante, true)
-  if (deservesFreeMarket)
-    await firestore
-      .collection('users')
-      .doc(user.id)
-      .update({ freeMarketsCreated: FieldValue.increment(1) })
-
   await contractRef.create(contract)
+
+  console.log(
+    'created contract for',
+    user.username,
+    'on',
+    question,
+    'ante:',
+    ante || 0
+  )
 
   if (group != null) {
     const groupContractsSnap = await firestore
       .collection(`groups/${groupId}/groupContracts`)
       .get()
+
     const groupContracts = groupContractsSnap.docs.map(
       (doc) => doc.data() as { contractId: string; createdTime: number }
     )
+
     if (!groupContracts.map((c) => c.contractId).includes(contractRef.id)) {
       await createGroupLinks(group, [contractRef.id], auth.uid)
+
       const groupContractRef = firestore
         .collection(`groups/${groupId}/groupContracts`)
         .doc(contract.id)
+
       await groupContractRef.set({
         contractId: contract.id,
         createdTime: Date.now(),
       })
     }
   }
+
+  const providerId = userId
 
   if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
     const liquidityDoc = firestore

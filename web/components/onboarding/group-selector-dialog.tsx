@@ -1,4 +1,3 @@
-import { sortBy } from 'lodash'
 import React, { useRef } from 'react'
 
 import { Col } from 'web/components/layout/col'
@@ -9,9 +8,10 @@ import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
-import { Group } from 'common/group'
+import { Group, filterTopGroups } from 'common/group'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { withTracking } from 'web/lib/service/analytics'
+import { Row } from 'web/components/layout/row'
 
 export default function GroupSelectorDialog(props: {
   open: boolean
@@ -28,34 +28,7 @@ export default function GroupSelectorDialog(props: {
     cachedGroups.current = groups
   }
 
-  const excludedGroups = [
-    'features',
-    'personal',
-    'private',
-    'nomic',
-    'proofnik',
-    'free money',
-    'motivation',
-    'sf events',
-    'please resolve',
-    'short-term',
-    'washifold',
-  ]
-
-  const displayedGroups = sortBy(cachedGroups.current ?? [], [
-    (group) => -1 * group.totalMembers,
-    (group) => -1 * group.totalContracts,
-  ])
-    .filter((group) => group.anyoneCanJoin)
-    .filter((group) =>
-      excludedGroups.every((name) => !group.name.toLowerCase().includes(name))
-    )
-    .filter(
-      (group) =>
-        (group.mostRecentContractAddedTime ?? 0) >
-        Date.now() - 1000 * 60 * 60 * 24 * 7
-    )
-    .slice(0, 30)
+  const displayedGroups = filterTopGroups(cachedGroups.current ?? [])
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -89,9 +62,11 @@ export default function GroupSelectorDialog(props: {
             ))
           )}
         </div>
-      </Col>
-      <Col>
-        <Button onClick={() => setOpen(false)}>Done</Button>
+        <Row className={'justify-end'}>
+          <Button size={'lg'} onClick={() => setOpen(false)}>
+            Done
+          </Button>
+        </Row>
       </Col>
     </Modal>
   )

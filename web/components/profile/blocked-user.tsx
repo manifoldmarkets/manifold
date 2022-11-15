@@ -43,7 +43,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
                   {BOT_USERNAMES.includes(user.username) && <BotBadge />}
                 </span>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
-                  <span className={' text-greyscale-4'}>@{user.username}</span>
+                  <span className={' text-gray-400'}>@{user.username}</span>
                   <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>

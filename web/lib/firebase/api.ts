@@ -102,3 +102,7 @@ export function createPost(params: {
 }) {
   return call(getFunctionUrl('createpost'), 'POST', params)
 }
+
+export function validateIapReceipt(params: any) {
+  return call(getFunctionUrl('validateiap'), 'POST', params)
+}

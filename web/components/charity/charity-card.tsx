@@ -19,9 +19,7 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
   return (
     <Link href={`/charity/${slug}`} className="flex-1">
       <Card className="!rounded-2xl">
-        <Row className="mt-6 mb-2">
-          {tags?.includes('Featured') && <FeaturedBadge />}
-        </Row>
+        <Row className="mt-6 mb-2">{tags?.includes('New') && <NewBadge />}</Row>
         <div className="px-8">
           <figure className="relative h-32">
             {photo ? (
@@ -61,10 +59,10 @@ function formatUsd(mana: number) {
   return mana < 100 ? manaToUSD(mana) : '$' + Math.floor(mana / 100)
 }
 
-function FeaturedBadge() {
+function NewBadge() {
   return (
-    <span className="inline-flex items-center gap-1 bg-yellow-100 px-3 py-0.5 text-sm font-medium text-yellow-800">
-      <StarIcon className="h-4 w-4" aria-hidden="true" /> Featured
+    <span className="inline-flex items-center gap-1 bg-blue-100 px-3 py-0.5 text-sm font-medium text-indigo-700">
+      <StarIcon className="h-4 w-4" aria-hidden="true" /> New
     </span>
   )
 }

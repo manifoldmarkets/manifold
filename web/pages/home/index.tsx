@@ -13,7 +13,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
-import { Group } from 'common/group'
+import { Group, groupPath } from 'common/group'
 import { SiteLink } from 'web/components/widgets/site-link'
 import {
   usePrivateUser,
@@ -24,10 +24,10 @@ import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
-import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import { getGroup, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -68,6 +68,8 @@ import { LatestPosts } from '../latestposts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
+import { GroupCard } from '../groups'
+import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -81,7 +83,15 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser)
+  const followedGroups = useMemberGroupsSubscription(user)
+  const shouldFilterDestiny = !followedGroups?.find((g) =>
+    DESTINY_GROUP_SLUGS.includes(g.slug)
+  )
+  const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser).concat(
+    shouldFilterDestiny
+      ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
+      : []
+  )
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
   useRedirectIfSignedOut()
@@ -102,7 +112,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const trendingContracts = useTrendingContracts(6, userBlockFacetFilters)
   const newContracts = useNewContracts(6, userBlockFacetFilters)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
-    user?.id,
     6,
     userBlockFacetFilters
   )
@@ -110,10 +119,9 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     user?.id ?? '_'
   )
 
-  const groups = useMemberGroupsSubscription(user)
   const trendingGroups = useTrendingGroups()
   const groupContracts = useContractsByDailyScoreGroups(
-    groups?.map((g) => g.slug),
+    followedGroups?.map((g) => g.slug),
     userBlockFacetFilters
   )
   const latestPosts = useAllPosts(true)
@@ -138,11 +146,15 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
       privateUser?.blockedByUserIds.includes(userId)
     if (pinnedItems) {
       const itemComponents = pinnedItems.map((element) => {
-        if (element.type === 'post') {
+        if (element?.type === 'post') {
           const post = element.item as Post
           if (!userIsBlocked(post.creatorId))
             return <PostCard post={post} pinned={true} />
-        } else if (element.type === 'contract') {
+        } else if (element?.type == 'group') {
+          const group = element.item as Group
+          if (!userIsBlocked(group.creatorId))
+            return <GroupCard group={group} pinned={true} />
+        } else if (element?.type === 'contract') {
           const contract = element.item as Contract
           if (
             !userIsBlocked(contract.creatorId) &&
@@ -215,17 +227,17 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               latestPosts
             )}
 
-            {groups && groupContracts && trendingGroups.length > 0 ? (
+            {followedGroups && groupContracts && trendingGroups.length > 0 ? (
               <>
                 <TrendingGroupsSection
                   className="mb-4"
                   user={user}
-                  myGroups={groups}
+                  myGroups={followedGroups}
                   trendingGroups={trendingGroups}
                 />
                 <GroupSections
                   user={user}
-                  groups={groups}
+                  groups={followedGroups}
                   groupContracts={groupContracts}
                 />
               </>
@@ -278,7 +290,7 @@ export const getHomeItems = (sections: string[]) => {
   }
 }
 
-function renderSections(
+export function renderSections(
   sections: { id: string; label: string; icon?: string }[],
   sectionContracts: {
     'daily-trending': CPMMBinaryContract[]
@@ -335,7 +347,6 @@ function renderSections(
               label={label}
               contracts={contracts}
               sort="daily-score"
-              showProbChange
               icon={icon}
             />
           )
@@ -406,7 +417,7 @@ function HomeSectionHeader(props: {
   const { label, href, children, icon } = props
 
   return (
-    <Row className="bg-greyscale-1 text-greyscale-7 sticky top-0 z-20 my-1 items-center justify-between pb-2">
+    <Row className="sticky top-0 z-20 my-1 items-center justify-between bg-gray-50 pb-2 text-gray-900">
       {icon != null && <div className="mr-2 inline">{icon}</div>}
       {href ? (
         <SiteLink
@@ -415,7 +426,7 @@ function HomeSectionHeader(props: {
           onClick={() => track('home click section header', { section: href })}
         >
           {label}
-          <GoToIcon className="text-greyscale-4 mb-1 ml-2 inline h-5 w-5" />
+          <GoToIcon className="mb-1 ml-2 inline h-5 w-5 text-gray-400" />
         </SiteLink>
       ) : (
         <div className="flex-1 text-lg md:text-xl">{label}</div>
@@ -425,15 +436,14 @@ function HomeSectionHeader(props: {
   )
 }
 
-const SearchSection = memo(function SearchSection(props: {
+export const SearchSection = memo(function SearchSection(props: {
   label: string
   contracts: CPMMBinaryContract[]
   sort: Sort
   pill?: string
-  showProbChange?: boolean
   icon?: string
 }) {
-  const { label, contracts, sort, pill, showProbChange, icon } = props
+  const { label, contracts, sort, pill, icon } = props
 
   return (
     <Col>
@@ -442,16 +452,12 @@ const SearchSection = memo(function SearchSection(props: {
         href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
         icon={icon}
       />
-      <ContractsGrid
-        contracts={contracts}
-        cardUIOptions={{ showProbChange }}
-        showImageOnTopContract={true}
-      />
+      <ContractsGrid contracts={contracts} showImageOnTopContract={true} />
     </Col>
   )
 })
 
-function LatestPostsSection(props: { latestPosts: Post[] }) {
+export function LatestPostsSection(props: { latestPosts: Post[] }) {
   const { latestPosts } = props
   const user = useUser()
 
@@ -482,13 +488,14 @@ function LatestPostsSection(props: { latestPosts: Post[] }) {
   )
 }
 
-function FeaturedSection(props: {
+export function FeaturedSection(props: {
   globalConfig: GlobalConfig
   pinned: JSX.Element[]
   isAdmin: boolean
 }) {
   const { globalConfig, pinned, isAdmin } = props
   const posts = useAllPosts()
+  const groups = useTrendingGroups()
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
     if (globalConfig == null) return
@@ -505,6 +512,10 @@ function FeaturedSection(props: {
             if (contract == null) return null
 
             return { item: contract, type: 'contract' }
+          } else if (item.type === 'group') {
+            const group = await getGroup(item.itemId)
+            if (group == null) return null
+            return { item: group, type: 'group' }
           }
         })
         .filter((item) => item != null)
@@ -513,8 +524,8 @@ function FeaturedSection(props: {
       pinnedItems: [
         ...(globalConfig?.pinnedItems ?? []),
         ...(pinnedItems as {
-          item: Contract | Post
-          type: 'contract' | 'post'
+          item: Contract | Post | Group
+          type: 'contract' | 'post' | 'group'
         }[]),
       ],
     })
@@ -529,7 +540,7 @@ function FeaturedSection(props: {
   }
 
   return (
-    <Col>
+    <Col className="relative">
       <HomeSectionHeader label={'Featured'} icon={'⭐'} />
       <PinnedItems
         posts={posts}
@@ -538,6 +549,7 @@ function FeaturedSection(props: {
         onDeleteClicked={onDeleteClicked}
         onSubmit={onSubmit}
         modalMessage={'Pin posts or markets to the overview of this group.'}
+        groups={groups}
       />
     </Col>
   )
@@ -573,14 +585,13 @@ function GroupSection(props: {
       </HomeSectionHeader>
       <ContractsGrid
         contracts={contracts.slice(0, 4)}
-        cardUIOptions={{ showProbChange: true }}
         showImageOnTopContract={true}
       />
     </Col>
   )
 }
 
-const DailyMoversSection = memo(function DailyMoversSection(props: {
+export const DailyMoversSection = memo(function DailyMoversSection(props: {
   data:
     | {
         contracts: CPMMBinaryContract[]
@@ -611,7 +622,7 @@ const DailyMoversSection = memo(function DailyMoversSection(props: {
   )
 })
 
-const ActivitySection = memo(function ActivitySection() {
+export const ActivitySection = memo(function ActivitySection() {
   return (
     <Col>
       <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
@@ -697,13 +708,13 @@ function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
       )}
       href="/home/edit"
     >
-      <IconButton size="xs">
+      <Button size="xs" color="gray-white">
         <HomeSettingsIcon
-          className={clsx('h-7 w-7 text-gray-500')}
+          className={clsx('h-7 w-7 text-gray-400')}
           aria-hidden="true"
         />
         {!justIcon && 'Customize'}
-      </IconButton>
+      </Button>
     </SiteLink>
   )
 }

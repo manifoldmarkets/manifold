@@ -38,25 +38,21 @@ export function PostCard(props: {
               size={4}
             />
             <UserLink
-              className="text-greyscale-4 text-sm"
+              className="text-sm text-gray-400"
               name={post.creatorName}
               username={post.creatorUsername}
             />
-            <span className="text-greyscale-4 mx-1">•</span>
-            <span className="text-greyscale-4">
-              {fromNow(post.createdTime)}
-            </span>
+            <span className="mx-1 text-gray-400">•</span>
+            <span className="text-gray-400">{fromNow(post.createdTime)}</span>
           </Row>
           {pinned && <FeaturedPill />}
         </Row>
-        <div className="text-greyscale-7 mb-1 text-lg font-medium transition-all">
+        <div className="text-md mb-1 font-medium text-gray-900 transition-all">
           {post.title}
         </div>
-        <div className="text-greyscale-6 break-words text-sm">
-          {post.subtitle}
-        </div>
+        <div className="break-words text-sm text-gray-600">{post.subtitle}</div>
         <Row className="gap-2 pt-1">
-          <Row className="text-greyscale-4 gap-1 text-sm">
+          <Row className="gap-1 text-sm text-gray-400">
             <div className="font-semibold">{post.commentCount ?? 0}</div>
             <div className="font-normal">comments</div>
           </Row>
@@ -107,6 +103,8 @@ export function PostCardList(props: {
   useEffect(() => {
     if (limit && limit != 0) {
       setShownPosts(posts.slice(0, limit))
+    } else {
+      setShownPosts(posts)
     }
   }, [posts, limit])
 
@@ -122,7 +120,7 @@ export function PostCardList(props: {
           />
         </div>
       ))}
-      {limit && posts.length > limit && (
+      {limit && limit != 0 && posts.length > limit && (
         <div className="flex justify-center">
           <button
             className="text-sm font-semibold text-indigo-700"

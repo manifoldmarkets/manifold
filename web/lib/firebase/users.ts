@@ -197,7 +197,7 @@ export async function setCachedReferralInfoForUser(user: User | null) {
 export async function firebaseLogin() {
   if (getIsNative()) {
     // Post the message back to expo
-    postMessageToNative('googleLoginClicked', {})
+    postMessageToNative('loginClicked', {})
     return
   }
   const provider = new GoogleAuthProvider()
@@ -241,7 +241,7 @@ export function getTopTraders(period: Period) {
 export function getTopCreators(period: Period) {
   const topCreators = query(
     users,
-    orderBy('creatorVolumeCached.' + period, 'desc'),
+    orderBy('creatorTraders.' + period, 'desc'),
     limit(20)
   )
   return getValues<User>(topCreators)

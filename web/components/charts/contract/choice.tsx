@@ -39,7 +39,7 @@ const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const getAnswers = (contract: ChoiceContract) => {
   const { answers, outcomeType } = contract
-  const validAnswers = answers.filter(
+  const validAnswers = (answers ?? []).filter(
     (answer) => answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE'
   )
   return sortBy(
@@ -90,7 +90,7 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
               {item.label}
             </span>
           </Row>
-          <span className="text-greyscale-6">{item.value}</span>
+          <span className="text-gray-600">{item.value}</span>
         </li>
       ))}
     </ol>

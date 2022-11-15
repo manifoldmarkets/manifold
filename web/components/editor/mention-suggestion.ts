@@ -1,6 +1,6 @@
 import type { MentionOptions } from '@tiptap/extension-mention'
 import { ReactRenderer } from '@tiptap/react'
-import { searchInAny } from 'common/util/parse'
+import { beginsWith, searchInAny } from 'common/util/parse'
 import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
 import { getCachedUsers } from 'web/hooks/use-users'
@@ -8,9 +8,6 @@ import { MentionList } from './mention-list'
 type Render = Suggestion['render']
 
 type Suggestion = MentionOptions['suggestion']
-
-const beginsWith = (text: string, query: string) =>
-  text.toLocaleLowerCase().startsWith(query.toLocaleLowerCase())
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
 export const mentionSuggestion: Suggestion = {

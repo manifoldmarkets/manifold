@@ -11,6 +11,10 @@ import { Period } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
+import { AddFundsModal } from '../add-funds-modal'
+import { Button } from '../buttons/button'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { useUser } from 'web/hooks/use-user'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -50,17 +54,18 @@ export const PortfolioValueSection = memo(
     if (!portfolioHistory || !lastPortfolioMetrics) {
       return (
         <PortfolioValueSkeleton
+          userId={userId}
           graphMode={graphMode}
           onClickNumber={onClickNumber}
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
           profitElement={
-            <div className="text-greyscale-5 animate-pulse text-lg sm:text-xl">
+            <div className="animate-pulse text-lg text-gray-500 sm:text-xl">
               ---
             </div>
           }
           valueElement={
-            <div className="text-greyscale-5 animate-pulse text-lg sm:text-xl">
+            <div className="animate-pulse text-lg text-gray-500 sm:text-xl">
               ---
             </div>
           }
@@ -71,7 +76,7 @@ export const PortfolioValueSection = memo(
                 margin: '20px 70px 20px 10px',
               }}
             >
-              <PlaceholderGraph className="text-greyscale-4 h-full w-full animate-pulse" />
+              <PlaceholderGraph className="h-full w-full animate-pulse text-gray-400" />
             </div>
           )}
           disabled={true}
@@ -83,6 +88,7 @@ export const PortfolioValueSection = memo(
     const totalProfit = totalValue - totalDeposits
     return (
       <PortfolioValueSkeleton
+        userId={userId}
         graphMode={graphMode}
         onClickNumber={onClickNumber}
         currentTimePeriod={currentTimePeriod}
@@ -144,6 +150,7 @@ export function PortfolioValueSkeleton(props: {
   profitElement: ReactNode
   valueElement: ReactNode
   graphElement: (width: number, height: number) => ReactNode
+  userId?: string
   disabled?: boolean
 }) {
   const {
@@ -154,42 +161,43 @@ export function PortfolioValueSkeleton(props: {
     profitElement,
     valueElement,
     graphElement,
+    userId,
     disabled,
   } = props
   return (
     <>
-      <Row className="mb-2 justify-between">
-        <Row className="gap-2">
-          <Col
-            className={clsx(
-              'w-24 cursor-pointer sm:w-28 ',
-              graphMode != 'profit'
-                ? 'cursor-pointer opacity-40 hover:opacity-80'
-                : ''
-            )}
-            onClick={() => {
-              onClickNumber('profit')
-            }}
-          >
-            <div className="text-greyscale-6 text-xs sm:text-sm">Profit</div>
-            {profitElement}
-          </Col>
+      <Row className="mb-2 gap-2">
+        <Col
+          className={clsx(
+            'w-24 cursor-pointer sm:w-28 ',
+            graphMode != 'profit'
+              ? 'cursor-pointer opacity-40 hover:opacity-80'
+              : ''
+          )}
+          onClick={() => {
+            onClickNumber('profit')
+          }}
+        >
+          <div className="text-xs text-gray-600 sm:text-sm">Profit</div>
+          {profitElement}
+        </Col>
 
-          <Col
-            className={clsx(
-              'w-24 cursor-pointer sm:w-28',
-              graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-            )}
-            onClick={() => {
-              onClickNumber('value')
-            }}
-          >
-            <div className="text-greyscale-6 text-xs sm:text-sm">
-              Portfolio value
-            </div>
-            {valueElement}
-          </Col>
-        </Row>
+        <Col
+          className={clsx(
+            'w-24 cursor-pointer sm:w-28',
+            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+          )}
+          onClick={() => {
+            onClickNumber('value')
+          }}
+        >
+          <div className="text-xs text-gray-600 sm:text-sm">
+            Portfolio value
+          </div>
+          {valueElement}
+        </Col>
+
+        <AddFundsButton userId={userId} />
       </Row>
       <SizedContainer fullHeight={200} mobileHeight={100}>
         {graphElement}
@@ -213,7 +221,7 @@ export function PortfolioTimeSelection(props: {
     <>
       <Row
         className={clsx(
-          'text-greyscale-4 z-10 mt-1 gap-3',
+          'z-10 mt-1 gap-3 text-gray-400',
           disabled ? 'pointer-events-none' : ''
         )}
       >
@@ -265,5 +273,24 @@ export function TimeSelectionButton(props: {
     >
       {symbol}
     </button>
+  )
+}
+
+function AddFundsButton({ userId }: { userId?: string }) {
+  const [open, setOpen] = useState(false)
+  const user = useUser()
+  if (!userId || user?.id !== userId) return null
+
+  return (
+    <>
+      <Button
+        className="ml-auto self-start"
+        color="gray-outline"
+        onClick={() => setOpen(true)}
+      >
+        Get more {ENV_CONFIG.moneyMoniker}
+      </Button>
+      <AddFundsModal open={open} setOpen={setOpen} />
+    </>
   )
 }

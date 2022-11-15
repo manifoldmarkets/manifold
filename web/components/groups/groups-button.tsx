@@ -1,10 +1,9 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import { useMemberGroups, useMemberIds } from 'web/hooks/use-group'
+import { useMemberGroupsSubscription } from 'web/hooks/use-group'
 import { TextButton } from 'web/components/buttons/text-button'
 import { Group } from 'common/group'
 import { Modal } from 'web/components/layout/modal'
@@ -14,11 +13,12 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { GroupLinkItem } from 'web/pages/groups'
 import toast from 'react-hot-toast'
 import { Button } from '../buttons/button'
+import { useUser } from 'web/hooks/use-user'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
-  const groups = useMemberGroups(user.id)
+  const groups = useMemberGroupsSubscription(user)
 
   return (
     <>
@@ -43,49 +43,37 @@ function GroupsDialog(props: {
   setIsOpen: (isOpen: boolean) => void
 }) {
   const { user, groups, isOpen, setIsOpen } = props
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="rounded bg-white p-6">
         <div className="p-2 pb-1 text-xl">{user.name}</div>
         <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
-        <GroupsList groups={groups} />
+        <Col className="gap-2">
+          {groups.length === 0 && (
+            <div className="text-gray-500">No groups yet...</div>
+          )}
+          {groups
+            .sort((group1, group2) => group2.createdTime - group1.createdTime)
+            .map((group) => (
+              <Row className={clsx('items-center justify-between gap-2 p-2')}>
+                <Row className="line-clamp-1 items-center gap-2">
+                  <GroupLinkItem group={group} />
+                </Row>
+                {isCurrentUser && (
+                  <JoinOrLeaveGroupButton
+                    group={group}
+                    user={user}
+                    isMember={true}
+                  />
+                )}
+              </Row>
+            ))}
+        </Col>{' '}
       </Col>
     </Modal>
-  )
-}
-
-function GroupsList(props: { groups: Group[] }) {
-  const { groups } = props
-  return (
-    <Col className="gap-2">
-      {groups.length === 0 && (
-        <div className="text-gray-500">No groups yet...</div>
-      )}
-      {groups
-        .sort((group1, group2) => group2.createdTime - group1.createdTime)
-        .map((group) => (
-          <GroupItem key={group.id} group={group} />
-        ))}
-    </Col>
-  )
-}
-
-function GroupItem(props: { group: Group; className?: string }) {
-  const { group, className } = props
-  const user = useUser()
-  const memberIds = useMemberIds(group.id)
-  return (
-    <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
-      <Row className="line-clamp-1 items-center gap-2">
-        <GroupLinkItem group={group} />
-      </Row>
-      <JoinOrLeaveGroupButton
-        group={group}
-        user={user}
-        isMember={user && memberIds ? memberIds.includes(user.id) : false}
-      />
-    </Row>
   )
 }
 
@@ -125,7 +113,6 @@ export function JoinOrLeaveGroupButton(props: {
   if (isMember) {
     return (
       <Button
-        size="sm"
         color="gray-outline"
         className={className}
         onClick={withTracking(onLeaveGroup, 'leave group')}
@@ -139,7 +126,6 @@ export function JoinOrLeaveGroupButton(props: {
     return <div className={clsx(className, 'text-gray-500')}>Closed</div>
   return (
     <Button
-      size="sm"
       color="indigo"
       className={className}
       onClick={withTracking(onJoinGroup, 'join group')}

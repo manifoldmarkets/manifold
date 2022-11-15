@@ -3916,10 +3916,10 @@ expo-modules-autolinking@0.10.3:
     find-up "^5.0.0"
     fs-extra "^9.1.0"
 
-expo-modules-core@0.11.8:
-  version "0.11.8"
-  resolved "https://registry.yarnpkg.com/expo-modules-core/-/expo-modules-core-0.11.8.tgz#68de1bc56a148b9a9c03f1268c67e9e264d4d4b9"
-  integrity sha512-goC2ghZFVaV6nXEbk+kz9oKnQmqW8fHVUCSPxC0QXhV0ay1dA9Ki6qqMPagkBJUPAz89NsNqW3bYR6DFXq7lvA==
+expo-modules-core@0.11.9:
+  version "0.11.9"
+  resolved "https://registry.yarnpkg.com/expo-modules-core/-/expo-modules-core-0.11.9.tgz#43763bca72b72f268ad5d7f1f0fc1c7cc75a6e9f"
+  integrity sha512-6AlOE4KHN3/WWbY8hH7W6ceuIFj0qbk1N+UhmMhiCEUas3NvXA6wcH3xjO+8JZ+BRcIB9M4QEeX72j6vDDuExg==
   dependencies:
     compare-versions "^3.4.0"
     invariant "^2.2.4"
@@ -3970,10 +3970,10 @@ expo-updates-interface@~0.7.0:
   resolved "https://registry.yarnpkg.com/expo-updates-interface/-/expo-updates-interface-0.7.0.tgz#f4f03b61dbdd949cac9fb44e250e1162ba177650"
   integrity sha512-saThnbrYDSjKxfMFFguAvh5o5KGabvAOHItkJRwq2L3c0T/3q26Q0kM83880h/+TTtAVsl1+Vhny9d+ImD3yvQ==
 
-expo-updates@~0.14.6:
-  version "0.14.6"
-  resolved "https://registry.yarnpkg.com/expo-updates/-/expo-updates-0.14.6.tgz#bf2318dd58f1c293c0f7e463a6f942e3ca511a79"
-  integrity sha512-JmE3nsbL8cUAV2slhIqqNIG+jEYCJJvPzSYcUBd15s0sg0xxRbasNaEfnSIrYtZMjhl/YNwMgQzUkU6C2NtXyg==
+expo-updates@~0.14.7:
+  version "0.14.7"
+  resolved "https://registry.yarnpkg.com/expo-updates/-/expo-updates-0.14.7.tgz#772dd2255197f84935be2c5a63876cc20e386471"
+  integrity sha512-xzRvsv45TfIYJ4arTMiorAci4LvUQvpBJx0llJcdCFLWGcoj59roi48ldtDTwkgQAGjDP/Oyysd3zTyvpwxjYg==
   dependencies:
     "@expo/code-signing-certificates" "0.0.2"
     "@expo/config" "~7.0.1"
@@ -3995,10 +3995,10 @@ expo-web-browser@~11.0.0:
   dependencies:
     compare-urls "^2.0.0"
 
-expo@~46.0.16:
-  version "46.0.16"
-  resolved "https://registry.yarnpkg.com/expo/-/expo-46.0.16.tgz#8fe6d10207dabda34a684efac2c45c3c1c089f11"
-  integrity sha512-lZETkf3t+gbZjKjSceIpU7I8Rmm5nZ0ZG1WPzNBBbm+k64/+kKV96s6RqS37W1TTDpIbd+AucT9kKpvtv0JB2A==
+expo@~46.0.17:
+  version "46.0.17"
+  resolved "https://registry.yarnpkg.com/expo/-/expo-46.0.17.tgz#d558aa11056007269d2a38481982f1ebbe0852f3"
+  integrity sha512-rB+KMvjU3lFMkec5LcVFFn0Q2iJUEIoyB9TckKMirA15H5mW4yZMao0ilR7239fJ5ytVoDC8SIf7ZAvTmiMuMw==
   dependencies:
     "@babel/runtime" "^7.14.0"
     "@expo/cli" "0.3.2"
@@ -4012,7 +4012,7 @@ expo@~46.0.16:
     expo-font "~10.2.1"
     expo-keep-awake "~10.2.0"
     expo-modules-autolinking "0.10.3"
-    expo-modules-core "0.11.8"
+    expo-modules-core "0.11.9"
     fbemitter "^3.0.0"
     getenv "^1.0.0"
     invariant "^2.2.4"
@@ -6773,6 +6773,11 @@ react-native-gradle-plugin@^0.0.7:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/react-native-gradle-plugin/-/react-native-gradle-plugin-0.0.7.tgz#96602f909745239deab7b589443f14fce5da2056"
   integrity sha512-+4JpbIx42zGTONhBTIXSyfyHICHC29VTvhkkoUOJAh/XHPEixpuBduYgf6Y4y9wsN1ARlQhBBoptTvXvAFQf5g==
+
+react-native-iap@^12.4.2:
+  version "12.4.2"
+  resolved "https://registry.yarnpkg.com/react-native-iap/-/react-native-iap-12.4.2.tgz#98f4a4f653f8beb7324cab5bb333308cc46d63a1"
+  integrity sha512-pl4mgkYQOf5uQPt5NX5ySW6+JhOhalvbqw+fGJ5lJ+ZxnDF/UMNEw6SWWjNF7XrU8X7yGkWamOHmco4RDPlFYg==
 
 react-native-web@~0.18.7:
   version "0.18.9"

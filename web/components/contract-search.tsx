@@ -6,14 +6,7 @@ import { PAST_BETS, User } from 'common/user'
 import { CardHighlightOptions, ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useMemo,
-  ReactNode,
-  useState,
-} from 'react'
+import { useEffect, useRef, useMemo, ReactNode, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
@@ -44,6 +37,7 @@ import { Title } from './widgets/title'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SimpleLinkButton } from './buttons/simple-link-button'
+import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
@@ -92,7 +86,6 @@ export function ContractSearch(props: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
     noLinkAvatar?: boolean
-    showProbChange?: boolean
   }
   headerClassName?: string
   persistPrefix?: string
@@ -135,7 +128,6 @@ export function ContractSearch(props: {
       numPages: 1,
       pages: [] as Contract[][],
       showTime: null as ShowTime | null,
-      showProbChange: false,
     },
     !persistPrefix
       ? undefined
@@ -146,7 +138,7 @@ export function ContractSearch(props: {
   const searchParamsStore = inMemoryStore<SearchParameters>()
   const requestId = useRef(0)
 
-  useLayoutEffect(() => {
+  useSafeLayoutEffect(() => {
     if (persistPrefix) {
       const params = searchParamsStore.get(`${persistPrefix}-params`)
       if (params !== undefined) {
@@ -189,9 +181,8 @@ export function ContractSearch(props: {
         const newPage = results.hits as any as Contract[]
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
-        const showProbChange = sort === 'daily-score'
         const pages = freshQuery ? [newPage] : [...state.pages, newPage]
-        setState({ numPages: results.nbPages, pages, showTime, showProbChange })
+        setState({ numPages: results.nbPages, pages, showTime })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
@@ -215,12 +206,6 @@ export function ContractSearch(props: {
       }
     }, 100)
   ).current
-
-  const updatedCardUIOptions = useMemo(() => {
-    if (cardUIOptions?.showProbChange === undefined && state.showProbChange)
-      return { ...cardUIOptions, showProbChange: true }
-    return cardUIOptions
-  }, [cardUIOptions, state.showProbChange])
 
   const contracts = state.pages
     .flat()
@@ -248,6 +233,7 @@ export function ContractSearch(props: {
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
         autoFocus={autoFocus}
+        isWholePage={isWholePage}
       />
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
@@ -262,7 +248,7 @@ export function ContractSearch(props: {
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
           highlightOptions={highlightOptions}
-          cardUIOptions={updatedCardUIOptions}
+          cardUIOptions={cardUIOptions}
         />
       )}
     </Col>
@@ -283,6 +269,7 @@ function ContractSearchControls(props: {
   user?: User | null
   noControls?: boolean
   autoFocus?: boolean
+  isWholePage?: boolean
 }) {
   const {
     className,
@@ -298,6 +285,7 @@ function ContractSearchControls(props: {
     noControls,
     autoFocus,
     includeProbSorts,
+    isWholePage,
   } = props
 
   const router = useRouter()
@@ -446,7 +434,7 @@ function ContractSearchControls(props: {
   }
 
   return (
-    <Col className={clsx('bg-greyscale-1 top-0 z-20 gap-3 pb-3', className)}>
+    <Col className={clsx('top-0 z-20 gap-3 bg-gray-50 pb-3', className)}>
       <Row className="items-center gap-1 sm:gap-2">
         <Input
           type="text"
@@ -458,10 +446,12 @@ function ContractSearchControls(props: {
           autoFocus={autoFocus}
         />
         {query ? (
-          <SimpleLinkButton
-            getUrl={() => window.location.href}
-            tooltip="Copy link to search results"
-          />
+          isWholePage && (
+            <SimpleLinkButton
+              getUrl={() => window.location.href}
+              tooltip="Copy link to search results"
+            />
+          )
         ) : (
           <ModalOnMobile>
             <SearchFilters

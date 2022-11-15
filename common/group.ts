@@ -1,3 +1,5 @@
+import { sortBy } from 'lodash'
+
 export type Group = {
   id: string
   slug: string
@@ -40,3 +42,55 @@ export type GroupLink = {
   userId?: string
 }
 export type GroupContractDoc = { contractId: string; createdTime: number }
+
+const excludedGroups = [
+  'features',
+  'personal',
+  'private',
+  'nomic',
+  'proofnik',
+  'free money',
+  'motivation',
+  'sf events',
+  'please resolve',
+  'short-term',
+  'washifold',
+]
+
+export function filterTopGroups(
+  groups: Group[],
+  n = 100,
+  excludeGroups = true
+) {
+  return sortBy(
+    groups,
+    (group) =>
+      -(group.totalMembers + group.totalContracts) *
+      ((group.mostRecentContractAddedTime ?? 0) >
+      Date.now() - 1000 * 60 * 60 * 24 * 7
+        ? 2
+        : 1)
+  )
+    .filter((group) => group.anyoneCanJoin)
+    .filter((group) =>
+      excludeGroups
+        ? excludedGroups.every(
+            (name) => !group.name.toLowerCase().includes(name)
+          )
+        : true
+    )
+    .slice(0, n)
+}
+
+export function groupPath(
+  groupSlug: string,
+  subpath?:
+    | 'edit'
+    | 'markets'
+    | 'about'
+    | typeof GROUP_CHAT_SLUG
+    | 'leaderboards'
+    | 'posts'
+) {
+  return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
+}

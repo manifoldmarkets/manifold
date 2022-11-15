@@ -50,8 +50,8 @@ export type ApiAnswer = Answer & {
 }
 
 export type FullMarket = LiteMarket & {
-  bets: Bet[]
-  comments: Comment[]
+  bets?: Bet[]
+  comments?: Comment[]
   answers?: ApiAnswer[]
   description: string | JSONContent
   textDescription: string // string version of description
@@ -142,11 +142,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
   })
 }
 
-export function toFullMarket(
-  contract: Contract,
-  comments: Comment[],
-  bets: Bet[]
-): FullMarket {
+export function toFullMarket(contract: Contract): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const answers =
     contract.outcomeType === 'FREE_RESPONSE' ||
@@ -161,8 +157,6 @@ export function toFullMarket(
   return {
     ...liteMarket,
     answers,
-    comments,
-    bets,
     description,
     textDescription:
       typeof description === 'string'

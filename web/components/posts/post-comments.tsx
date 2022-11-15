@@ -6,7 +6,7 @@ import { PostComment } from 'common/comment'
 import { Post } from 'common/post'
 import { Dictionary } from 'lodash'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Avatar } from 'web/components/widgets/avatar'
 import { CommentInput } from 'web/components/comments/comment-input'
 import { Content } from 'web/components/widgets/editor'
@@ -43,7 +43,7 @@ export function PostCommentThread(props: {
         aria-hidden="true"
       />
       {[parentComment].concat(threadComments).map((comment, commentIdx) => (
-        <PostComment
+        <PostCommentItem
           key={comment.id}
           indent={commentIdx != 0}
           post={post}
@@ -101,7 +101,7 @@ export function PostCommentInput(props: {
   )
 }
 
-export function PostComment(props: {
+export function PostCommentItem(props: {
   post: Post
   comment: PostComment
   tips: CommentTips
@@ -113,6 +113,7 @@ export function PostComment(props: {
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
 
+  const commentRef = useRef<HTMLDivElement>(null)
   const me = useUser()
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
@@ -122,8 +123,15 @@ export function PostComment(props: {
     }
   }, [comment.id, router.asPath])
 
+  useEffect(() => {
+    if (highlighted && commentRef.current) {
+      commentRef.current.scrollIntoView(true)
+    }
+  }, [highlighted, commentRef.current?.id])
+
   return (
     <Row
+      ref={commentRef}
       id={comment.id}
       className={clsx(
         'relative',
@@ -147,7 +155,7 @@ export function PostComment(props: {
             name={userName}
           />{' '}
           <CopyLinkDateTimeComponent
-            prefix={comment.userName}
+            prefix={'post'}
             slug={post.slug}
             createdTime={createdTime}
             elementId={comment.id}

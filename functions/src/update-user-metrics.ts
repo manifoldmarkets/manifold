@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, isEqual, mapValues, sortBy } from 'lodash'
 
 import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
@@ -13,9 +13,11 @@ import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateMetricsByContract,
+  calculateCreatorTraders,
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
+import { HOUSE_BOT_USERNAME } from '../../common/envs/constants'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
 
@@ -50,25 +52,35 @@ export async function updateUserMetrics() {
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
   log(`Loaded ${contracts.length} contracts.`)
 
-  log('Computing metric updates...')
   const now = Date.now()
+  const monthAgo = now - DAY_MS * 30
   const writer = firestore.bulkWriter({ throttling: false })
+
+  // we need to update metrics for contracts that resolved up through a month ago,
+  // for the purposes of computing the daily/weekly/monthly profit on them
+  const metricEligibleContracts = contracts.filter(
+    (c) => c.resolutionTime == null || c.resolutionTime > monthAgo
+  )
+  log(`${metricEligibleContracts.length} contracts need metrics updates.`)
+
+  log('Computing metric updates...')
   const userUpdates = await batchedWaitAll(
     users.map((user) => async () => {
       const userContracts = contractsByCreator[user.id] ?? []
-      const currentBets = (
-        await firestore
-          .collectionGroup('bets')
-          .where('userId', '==', user.id)
-          .get()
-      ).docs.map((d) => d.data() as Bet)
-      const betsByContractId = groupBy(currentBets, (b) => b.contractId)
+      const metricRelevantBets = await loadUserContractBets(
+        user.id,
+        metricEligibleContracts
+          .filter((c) => c.uniqueBettorIds?.includes(user.id))
+          .map((c) => c.id)
+      )
       const portfolioHistory = await loadPortfolioHistory(user.id, now)
       const newCreatorVolume = calculateCreatorVolume(userContracts)
+      const newCreatorTraders = calculateCreatorTraders(userContracts)
+
       const newPortfolio = calculateNewPortfolioMetrics(
         user,
         contractsById,
-        currentBets
+        metricRelevantBets
       )
       const currPortfolio = portfolioHistory.current
       const didPortfolioChange =
@@ -79,8 +91,13 @@ export async function updateUserMetrics() {
 
       const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
+      const metricRelevantBetsByContract = groupBy(
+        metricRelevantBets,
+        (b) => b.contractId
+      )
+
       const metricsByContract = calculateMetricsByContract(
-        betsByContractId,
+        metricRelevantBetsByContract,
         contractsById
       )
 
@@ -109,7 +126,7 @@ export async function updateUserMetrics() {
       }
 
       const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
-        ? getUserLoanUpdates(betsByContractId, contractsById).payout
+        ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
         : undefined
 
       const userDoc = firestore.collection('users').doc(user.id)
@@ -125,6 +142,7 @@ export async function updateUserMetrics() {
         user: user,
         fields: {
           creatorVolumeCached: newCreatorVolume,
+          creatorTraders: newCreatorTraders,
           profitCached: newProfit,
           nextLoanCached: nextLoanPayout ?? 0,
           fractionResolvedCorrectly: newFractionResolvedCorrectly,
@@ -133,11 +151,13 @@ export async function updateUserMetrics() {
     }),
     100
   )
-
+  const userUpdatesMinusBot = userUpdates.filter(
+    (update) => HOUSE_BOT_USERNAME !== update.user.username
+  )
   const periods = ['daily', 'weekly', 'monthly', 'allTime'] as const
   const periodRanksByUserId = periods.map((period) => {
     const rankedUpdates = sortBy(
-      userUpdates,
+      userUpdatesMinusBot,
       ({ fields }) => -fields.profitCached[period]
     )
     return Object.fromEntries(
@@ -145,14 +165,23 @@ export async function updateUserMetrics() {
     )
   })
 
-  for (const { user, fields } of userUpdates) {
+  for (const { user, fields } of userUpdatesMinusBot) {
     const profitRankCached = Object.fromEntries(
       periods.map((period, i) => {
         return [period, periodRanksByUserId[i][user.id]]
       })
     )
-    const userDoc = firestore.collection('users').doc(user.id)
-    writer.update(userDoc, { profitRankCached, ...fields })
+    const update = { profitRankCached, ...fields }
+    const currValues = mapValues(
+      update,
+      (_, key: keyof typeof update) => user[key]
+    )
+
+    // Skip writing if nothing changed.
+    if (!isEqual(currValues, update)) {
+      const userDoc = firestore.collection('users').doc(user.id)
+      writer.update(userDoc, update)
+    }
   }
 
   log('Committing writes...')
@@ -160,6 +189,24 @@ export async function updateUserMetrics() {
 
   await revalidateStaticProps('/leaderboards')
   log('Done.')
+}
+
+const loadUserContractBets = async (userId: string, contractIds: string[]) => {
+  const betDocs = await batchedWaitAll(
+    contractIds.map((c) => async () => {
+      return await firestore
+        .collection('contracts')
+        .doc(c)
+        .collection('bets')
+        .where('userId', '==', userId)
+        .get()
+    }),
+    100
+  )
+  return betDocs
+    .map((d) => d.docs)
+    .flat()
+    .map((d) => d.data() as Bet)
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {

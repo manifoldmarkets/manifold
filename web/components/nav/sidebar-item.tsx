@@ -8,21 +8,16 @@ export type Item = {
   name: string
   trackingEventName?: string
   href?: string
-  key?: string
+  onClick?: () => void
   icon?: React.ComponentType<{ className?: string }>
 }
 
-export function SidebarItem(props: {
-  item: Item
-  currentPage: string
-  onClick?: (key: string) => void
-}) {
-  const { item, currentPage, onClick } = props
-  const isCurrentPage =
-    item.href != null ? item.href === currentPage : item.key === currentPage
+export function SidebarItem(props: { item: Item; currentPage?: string }) {
+  const { item, currentPage } = props
+  const isCurrentPage = item.href != null && item.href === currentPage
 
   const sidebarItem = (
-    <a
+    <div
       onClick={trackCallback('sidebar: ' + item.name)}
       className={clsx(
         isCurrentPage
@@ -44,20 +39,16 @@ export function SidebarItem(props: {
         />
       )}
       <span className="truncate">{item.name}</span>
-    </a>
+    </div>
   )
 
   if (item.href) {
     return (
-      <Link href={item.href} key={item.name} legacyBehavior>
+      <Link href={item.href} key={item.name}>
         {sidebarItem}
       </Link>
     )
   } else {
-    return onClick ? (
-      <button onClick={() => onClick(item.key ?? '#')}>{sidebarItem}</button>
-    ) : (
-      <> </>
-    )
+    return <button onClick={item.onClick}>{sidebarItem}</button>
   }
 }

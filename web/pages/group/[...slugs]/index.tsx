@@ -5,12 +5,11 @@ import Router from 'next/router'
 
 import { toast } from 'react-hot-toast'
 
-import { Group } from 'common/group'
+import { Group, groupPath } from 'common/group'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
   addContractToGroup,
   getGroupBySlug,
-  groupPath,
   joinGroup,
   listMemberIds,
 } from 'web/lib/firebase/groups'
@@ -26,7 +25,7 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   useGroup,
   useGroupContractIds,
-  useMemberIds,
+  useMemberGroupsSubscription,
 } from 'web/hooks/use-group'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
@@ -51,7 +50,8 @@ import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { GroupAbout } from 'web/components/groups/group-about'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
-import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -128,7 +128,14 @@ export default function GroupPage(props: {
     suggestedFilter: 'open',
     posts: [],
   }
-  const { creator, topTraders, topCreators, suggestedFilter, posts } = props
+  const {
+    creator,
+    topTraders,
+    topCreators,
+    suggestedFilter,
+    posts,
+    memberIds,
+  } = props
 
   const router = useRouter()
 
@@ -148,9 +155,13 @@ export default function GroupPage(props: {
   }
 
   const user = useUser()
+  const groupMembers = useMemberGroupsSubscription(user)
   const privateUser = usePrivateUser()
   const isAdmin = useAdmin()
-  const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
+  const isMember =
+    groupMembers?.some((g) => g.id === group?.id) ??
+    memberIds?.includes(user?.id ?? '_') ??
+    false
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
     setActiveIndex(tabIndex)
@@ -165,11 +176,13 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   const isCreator = user && group && user.id === group.creatorId
-  const isMember = user ? memberIds.includes(user.id) : undefined
   const maxLeaderboardSize = 50
+  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
+
+  const chatEmbed = <ChatEmbed group={group} />
 
   return (
-    <Page logoSubheading={group.name}>
+    <Page logoSubheading={group.name} rightSidebar={chatEmbed}>
       <SEO
         title={group.name}
         description={`Created by ${creator.name}. ${group.about}`}
@@ -181,14 +194,19 @@ export default function GroupPage(props: {
         isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
       />
       <div className="relative hidden justify-self-end md:flex">
-        <div className="absolute right-0 top-0 z-10">
+        <Row className="absolute right-0 top-0 z-50 items-center gap-4">
+          <SimpleLinkButton
+            getUrl={() => groupUrl}
+            tooltip={`Copy link to ${group.name}`}
+          />
+
           <JoinOrAddQuestionsButtons
             group={group}
             user={user}
             isMember={!!isMember}
             isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
           />
-        </div>
+        </Row>
       </div>
       <div className={'relative p-1 pt-0'}>
         <ControlledTabs
@@ -230,7 +248,7 @@ export default function GroupPage(props: {
                   aboutPost={aboutPost}
                   creator={creator}
                   user={user}
-                  memberIds={memberIds}
+                  isMember={isMember ?? false}
                 />
               ),
             },
@@ -295,6 +313,27 @@ export function TopGroupNavBar(props: {
       </Row>
     </header>
   )
+}
+
+// For now, just embed the DestinyGG chat embed on their group page
+function ChatEmbed(props: { group: Group }) {
+  const { group } = props
+  const destinyGroupId = 'W2ES30fRo6CCbPNwMTTj'
+  if (group.id === destinyGroupId) {
+    return (
+      <div className="h-[90vh]">
+        <iframe
+          src="https://www.destiny.gg/embed/chat"
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          scrolling="no"
+          allowFullScreen
+        />
+      </div>
+    )
+  }
+  return null
 }
 
 function JoinOrAddQuestionsButtons(props: {
@@ -420,9 +459,7 @@ function JoinGroupButton(props: {
 
   return (
     <div>
-      <Button onClick={follow} color="blue">
-        Follow
-      </Button>
+      <Button onClick={follow}>Follow</Button>
     </div>
   )
 }

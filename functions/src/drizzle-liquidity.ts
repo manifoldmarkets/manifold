@@ -37,9 +37,9 @@ const drizzleMarket = async (contractId: string) => {
     if ((subsidyPool ?? 0) < 1e-7) return
 
     const r = Math.random()
-    const logPopularity = Math.log10((popularityScore ?? 0) + 1)
-    const v = Math.max(1, Math.min(5, logPopularity))
-    const amount = subsidyPool <= 0.5 ? subsidyPool : r * v * 0.01 * subsidyPool
+    const logPopularity = Math.log10((popularityScore ?? 0) + 10)
+    const v = Math.max(1, Math.min(4, logPopularity))
+    const amount = subsidyPool <= 0.5 ? subsidyPool : r * v * 0.02 * subsidyPool
 
     const { newPool, newP } = addCpmmLiquidity(pool, p, amount)
 

@@ -25,6 +25,7 @@
   "main": "functions/src/index.js",
   "dependencies": {
     "@amplitude/node": "1.10.0",
+    "@flat/in-app-purchase": "FlatIO/in-app-purchase#1.13.5",
     "@google-cloud/functions-framework": "3.1.2",
     "@tiptap/core": "2.0.0-beta.199",
     "@tiptap/extension-image": "2.0.0-beta.199",
@@ -44,6 +45,7 @@
     "marked": "4.1.1",
     "module-alias": "2.2.2",
     "node-fetch": "2",
+    "openai": "3.0.1",
     "stripe": "8.194.0",
     "zod": "3.17.2"
   },

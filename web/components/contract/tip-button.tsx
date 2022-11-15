@@ -35,8 +35,8 @@ export function TipButton(props: {
         disabled={disabled}
         className={clsx(
           'px-2 py-1 text-xs', //2xs button
-          'text-greyscale-5 transition-transform disabled:cursor-not-allowed',
-          !disabled ? 'hover:text-greyscale-6' : ''
+          'text-gray-500 transition-transform disabled:cursor-not-allowed',
+          !disabled ? 'hover:text-gray-600' : ''
         )}
         onMouseOver={() => {
           if (!disabled) {

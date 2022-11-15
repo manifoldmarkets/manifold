@@ -1,5 +1,3 @@
-**NOTE: Adapted from One Word's /functions doc. Fix any errors you see!**
-
 # Firestore Cloud Functions
 
 This is code that doesn't make sense on the frontend client, e.g.
@@ -31,21 +29,20 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 2. `$ gcloud auth login` to authenticate the CLI tools to Google Cloud
 3. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
 4. `$ mkdir firestore_export` to create a folder to store the exported database
-5. `$ yarn db:update-local-from-remote` to pull the remote db from Firestore to local 0. TODO: this won't work when open source, we'll have to point to the public db
+5. `$ yarn db:update-local-from-remote` to pull the remote db from Firestore to local OR if you don't have permission, see the next item.
+6. We host db exports [here](https://drive.google.com/drive/folders/1C_EuERO9KlQEH9hg9aCMjcKYvL39kTrU?usp=share_link), after downloading one you'll want to change the name to `firestore_export` and put it in `functions/` directory
+
 
 ## Developing locally
 
-0. `$ ./dev.sh localdb` to start the local emulator and front end
+0. `$ ./dev.sh localdb` (in the root, not here) to start the local emulator and front end. Exiting after ctrl+c takes a few seconds, give it time! Don't run ctrl+c multiple times or you'll have to kill processes manually.
+   1. Or `$ yarn serve` in this dir to start the functions only
 1. If you change db trigger code, you have to start (doesn't have to complete) the deploy of it to dev to cause a hard emulator code refresh `$ firebase deploy --only functions:dbTriggerNameHere`
    - There's surely a better way to cause/react to a db trigger update but just adding this here for now as it works
 2. If you want to test a scheduled function replace your function in `test-scheduled-function.ts` and send a GET to `http://localhost:8088/testscheduledfunction` (Best user experience is via [Postman](https://www.postman.com/downloads/)!)
-
-## Firestore Commands
-
-- `db:update-local-from-remote` - Pull the remote db from Firestore to local, also calls:
-  - `db:backup-remote` - Exports the remote dev db to the backup folder on Google Cloud Storage (called on every `db:update-local-from-remote`)
-  - `db:rename-remote-backup-folder` - Renames the remote backup folder (called on every `db:backup-remote` to preserve the previous db backup)
-- `db:backup-local` - Save the local db changes to the disk (overwrites existing)
+3. If your emulators won't start, try running `export JAVA_TOOL_OPTIONS="-Xmx4g"` to give them more memory (4gb in this example)
+4. It's best to use Google Chrome (both on localhost:3000 and localhost:4000) with either **totally clean** history or history **only** from the emulator to avoid buggy mixing of cached data.
+5. By default, changes made to the local db are not saved. If you start the emulators and add the `--export-on-exit` flag, the emulators will save changes to `./firestore_export` on exit. 
 
 ## Debugging
 

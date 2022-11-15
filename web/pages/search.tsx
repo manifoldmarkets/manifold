@@ -29,6 +29,7 @@ export default function Search() {
           additionalFilter={{
             facetFilters: getUsersBlockFacetFilters(privateUser),
           }}
+          isWholePage
         />
       </Col>
     </Page>

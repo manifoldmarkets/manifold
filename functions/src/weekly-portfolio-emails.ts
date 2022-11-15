@@ -175,11 +175,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
 
             const marketProbabilityAWeekAgo =
               cpmmContract.prob - cpmmContract.probChanges.week
-            const currentMarketProbability = cpmmContract.resolutionProbability
-              ? cpmmContract.resolutionProbability
-              : cpmmContract.prob
+            const currentMarketProbability = cpmmContract.prob
 
-            // TODO: returns 0 for resolved markets - doesn't include them
             const betsMadeAWeekAgoValue = computeInvestmentValueCustomProb(
               previousBets,
               contract,

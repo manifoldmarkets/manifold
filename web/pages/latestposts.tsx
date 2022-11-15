@@ -10,7 +10,7 @@ import { Post } from 'common/post'
 import { PostCard } from 'web/components/posts/post-card'
 import { useUser } from 'web/hooks/use-user'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import { Button } from 'web/components/buttons/button'
 
 export default function LatestPostsPage() {

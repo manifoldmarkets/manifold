@@ -4,6 +4,8 @@ import { useRouter } from 'next/router'
 import {
   BetFillData,
   ContractResolutionData,
+  getSourceIdForLinkComponent,
+  getSourceUrl,
   Notification,
 } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
@@ -29,7 +31,6 @@ import {
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
-import { groupPath } from 'web/lib/firebase/groups'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
@@ -51,12 +52,9 @@ import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
-import {
-  getSourceIdForLinkComponent,
-  getSourceUrl,
-} from 'web/lib/firebase/notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { groupPath } from 'common/group'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -162,8 +160,6 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
 
   const [page, setPage] = useState(0)
-  const [showPushNotificationsModal, setShowPushNotificationsModal] =
-    useState(false)
 
   const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
@@ -178,14 +174,14 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 
   // Mark all notifications as seen.
   useEffect(() => {
-    if (isPageVisible && paginatedGroupedNotifications) {
-      const notifications = paginatedGroupedNotifications
+    if (isPageVisible && allGroupedNotifications) {
+      const notifications = allGroupedNotifications
         .flat()
         .flatMap((g) => g.notifications)
 
       markNotificationsAsSeen(notifications)
     }
-  }, [isPageVisible, paginatedGroupedNotifications])
+  }, [isPageVisible, allGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
@@ -199,10 +195,8 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
         </div>
       )}
       <PushNotificationsModal
-        isOpen={showPushNotificationsModal}
-        setOpen={setShowPushNotificationsModal}
         privateUser={privateUser}
-        notifications={
+        totalNotifications={
           allGroupedNotifications.map((ng) => ng.notifications).flat().length
         }
       />
@@ -740,6 +734,15 @@ function NotificationItem(props: {
         justSummary={justSummary}
       />
     )
+  } else if (sourceType === 'signup_bonus') {
+    return (
+      <SignupBonusNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        justSummary={justSummary}
+      />
+    )
   }
   // TODO Add new notification components here
 
@@ -1031,6 +1034,45 @@ function BadgeNotification(props: {
       <Row>
         <span>{sourceText} 🎉</span>
       </Row>
+    </NotificationFrame>
+  )
+}
+function SignupBonusNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  justSummary: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, justSummary } = props
+  const subtitle = 'You got a signup bonus!'
+  const { sourceText } = notification
+  const text = (
+    <span>
+      Thanks for using Manifold! We sent you{' '}
+      <span className={'text-teal-500'}>
+        {formatMoney(parseInt(sourceText ?? ''))}
+      </span>{' '}
+      for being a valuable new predictor.
+    </span>
+  )
+  if (justSummary) {
+    return (
+      <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
+        <Row className={'line-clamp-1'}>{text}</Row>
+      </NotificationSummaryFrame>
+    )
+  }
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      subtitle={subtitle}
+      hideUserName={true}
+      hideLinkToGroupOrQuestion={true}
+    >
+      <Row>{text}</Row>
     </NotificationFrame>
   )
 }

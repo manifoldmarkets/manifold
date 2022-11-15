@@ -1,27 +1,16 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { User } from '../../common/user'
-import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../common/antes'
-import { createReferralNotification } from './create-notification'
-import { ReferralTxn } from '../../common/txn'
-import { Contract } from '../../common/contract'
-import { Group } from '../../common/group'
-import { REFERRAL_AMOUNT } from '../../common/economy'
+
+import { User } from '../../../common/user'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../../common/antes'
+import { createReferralNotification } from '../create-notification'
+import { ReferralTxn } from '../../../common/txn'
+import { Contract } from '../../../common/contract'
+import { Group } from '../../../common/group'
+import { REFERRAL_AMOUNT } from '../../../common/economy'
+
 const firestore = admin.firestore()
 
-export const onUpdateUser = functions.firestore
-  .document('users/{userId}')
-  .onUpdate(async (change, context) => {
-    const prevUser = change.before.data() as User
-    const user = change.after.data() as User
-    const { eventId } = context
-
-    if (prevUser.referredByUserId !== user.referredByUserId) {
-      await handleUserUpdatedReferral(user, eventId)
-    }
-  })
-
-async function handleUserUpdatedReferral(user: User, eventId: string) {
+export async function handleReferral(user: User, eventId: string) {
   // Only create a referral txn if the user has a referredByUserId
   if (!user.referredByUserId) {
     console.log(`Not set: referredByUserId ${user.referredByUserId}`)
@@ -61,22 +50,15 @@ async function handleUserUpdatedReferral(user: User, eventId: string) {
     }
     console.log(`referredByGroup: ${referredByGroup}`)
 
-    const txns = (
-      await firestore
+    const txns = await transaction.get(
+      firestore
         .collection('txns')
         .where('toId', '==', referredByUserId)
         .where('category', '==', 'REFERRAL')
-        .get()
-    ).docs.map((txn) => txn.ref)
-    if (txns.length > 0) {
-      const referralTxns = await transaction.getAll(...txns).catch((err) => {
-        console.error('error getting txns:', err)
-        throw err
-      })
+    )
+    if (txns.size > 0) {
       // If the referring user already has a referral txn due to referring this user, halt
-      if (
-        referralTxns.map((txn) => txn.data()?.description).includes(user.id)
-      ) {
+      if (txns.docs.map((txn) => txn.data()?.description).includes(user.id)) {
         console.log('found referral txn with the same details, aborting')
         return
       }

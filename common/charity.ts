@@ -7,10 +7,10 @@ export interface Charity {
   photo?: string
   preview: string
   description: string
-  tags?: CharityTag[]
+  tags?: readonly CharityTag[]
 }
 
-type CharityTag = 'Featured' // | 'Health' | 'Poverty' | 'X-Risk' | 'Animal Welfare' | 'Policy'
+type CharityTag = 'Featured' | 'New' // | 'Health' | 'Poverty' | 'X-Risk' | 'Animal Welfare' | 'Policy'
 
 // Warning: 'name' is currently used as the slug and the txn toId for the charity.
 export const charities: Charity[] = [
@@ -44,7 +44,7 @@ Campaigns bleed tons of value all the time, leaving large room for improvement. 
 We need your help - growing the team, engineering new software, analyzing policy space, finding experts, making connections, commissioning academic studies, drafting laws, writing up results, refining messaging, ultimately lobbying and working with campaigns, and of course raising money. 
 
 If you are interested in hearing more please get in touch at hello@balsaresearch.com and start the subject line with the most relevant category: policy (include what area if applicable), tech, media, networking, lobbying, campaigning or money, and then tell us about yourself and what interests you, or fill out this Google Doc.`,
-    tags: ['Featured'] as CharityTag[],
+    tags: ['New'] as const,
   },
   {
     name: '1Day Sooner',
@@ -59,7 +59,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     In a human challenge trial (HCT), willing participants would receive the vaccine candidate or placebo and, after some time for the vaccine to take effect, be deliberately exposed to live coronavirus. Since exposure to the virus is guaranteed in HCTs, it may be possible to judge a vaccine candidate’s efficacy more quickly and with far fewer participants than a standard Phase III trial. While HCT efficacy results do not traditionally provide sufficient basis for licensure on their own, they could allow us to (1) more quickly weed out disappointing vaccine candidates or (2) promote the development of promising candidates in conjunction with traditional Phase III studies.
       
     In addition, by gathering detailed data on the process of infection and vaccine protection in a clinical setting, researchers could learn information that proves extremely useful for broader vaccine and therapeutic development efforts. Altogether, there are scenarios in which the speed of HCTs and the richness of the data they provide accelerate the development of an effective and broadly accessible COVID-19 vaccine, with thousands of lives spared (depending on the pandemic’s long-term trajectory).`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'QURI',
@@ -72,7 +71,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     We emphasize technological solutions that can heavily scale in the next 5 to 30 years.
     
     We believe that humanity’s success in the next few hundred years will lie intensely on its ability to coordinate and make good decisions. If important governmental and philanthropic bodies become significantly more effective, this will make society far more resilient to many kinds of challenges ahead.`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'Long-Term Future Fund',
@@ -88,7 +86,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     - Projects that directly contribute to reducing existential risks through technical research, policy analysis, advocacy, and/or demonstration projects
     - Training for researchers or practitioners who work to mitigate existential risks, or help with relevant recruitment efforts, or infrastructure for people working on longtermist projects
     - Promoting long-term thinking`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'New Science',
@@ -101,7 +98,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     As its second major project, in the fall of 2022, New Science will run an in-person 12-month-long fellowship for young scientists starting to directly attack the biggest structural issues of the established institutions of science. We will double down on things that worked well during the summer fellowship, while extending the fellowship to one year, thus allowing researchers to make much more progress and will strive to provide them as much scientific leverage as possible.
     
     In several years, New Science will start funding entire labs outside of academia and then will be creating an entire network of scientific organizations, while supporting the broader scientific ecosystem that will constitute the 21st century institutions of basic science.`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'Global Health and Development Fund',
@@ -177,7 +173,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     - The Nonlinear Library: Listen to top EA content on your podcast player. We use text-to-speech software to create an automatically updating repository of audio content from the EA Forum, Alignment Forum, and LessWrong. You can find it on all major podcast players here. 
     - EA Hiring Agency: Helping EA orgs scalably hire talent.
     - EA Houses: EA's Airbnb - Connecting EAs who have extra space with EAs who need space here.`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'GiveWell Maximum Impact Fund',
@@ -332,7 +327,6 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Wild Animal Initiative',
     website: 'https://www.wildanimalinitiative.org/',
     ein: '82-2281466',
-    tags: ['Featured'] as CharityTag[],
     photo: 'https://i.imgur.com/bOVUnDm.png',
     preview:
       'Our mission is to understand and improve the lives of wild animals.',
@@ -629,6 +623,7 @@ In addition to housing impact litigation, we provide free legal aid, education a
     preview: 'Donate supplies to soldiers in Ukraine',
     description:
       'Donate supplies to soldiers in Ukraine, including tourniquets and plate carriers.',
+    tags: ['New'] as const,
   },
   {
     name: 'The Society Library',
@@ -646,11 +641,13 @@ In addition to housing impact litigation, we provide free legal aid, education a
     name: 'Kiva Microfunds',
     website: 'https://www.kiva.org/',
     preview:
-      "Kiva Microfunds seeks to provide loans to those in need by crowdsourcing funds.",
-    photo: 'https://logos-download.com/wp-content/uploads/2018/09/Kiva_logo.png',
+      'Kiva Microfunds seeks to provide loans to those in need by crowdsourcing funds.',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2F2OHVOHaTEL.png?alt=media&token=97373c62-3214-4957-99d6-2373163be2d8',
     description: ` More than 1.7 billion people around the world are unbanked and can’t access the financial services they need. Kiva is an international nonprofit, founded in 2005 in San Francisco, with a mission to expand financial access to help underserved communities thrive.
 
 We do this by crowdfunding loans and unlocking capital for the underserved, improving the quality and cost of financial services, and addressing the underlying barriers to financial access around the world. Through Kiva's work, students can pay for tuition, women can start businesses, farmers are able to invest in equipment and families can afford needed emergency care. `,
+    tags: ['New'] as const,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')

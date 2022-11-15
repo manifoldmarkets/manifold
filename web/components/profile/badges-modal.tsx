@@ -125,7 +125,8 @@ function ProvenCorrectBadgeItem(props: {
   rarity: rarities
 }) {
   const { badge, rarity } = props
-  const { betAmount, contractSlug, contractCreatorUsername } = badge.data
+  const { betAmount, contractSlug, contractCreatorUsername, profit } =
+    badge.data
   return (
     <SiteLink
       href={contractPathWithoutContract(contractCreatorUsername, contractSlug)}
@@ -133,9 +134,12 @@ function ProvenCorrectBadgeItem(props: {
       <Col className={'text-center'}>
         <Medal rarity={rarity} />
         <Tooltip
-          text={`Make a comment attached to a winning bet worth ${formatMoney(
-            betAmount
-          )}`}
+          text={
+            `Make a comment attached to a winning bet ` +
+            (profit
+              ? `with ${formatMoney(profit)} profit`
+              : `worth ${formatMoney(betAmount)}`)
+          }
         >
           <span
             className={

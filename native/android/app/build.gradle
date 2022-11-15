@@ -147,8 +147,9 @@ android {
         applicationId 'com.markets.manifold'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 19
-        versionName "2.0.11"
+        versionCode 26
+        versionName "2.0.18"
+        missingDimensionStrategy 'store', 'play'
         buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
 
         if (isNewArchitectureEnabled()) {

@@ -25,5 +25,5 @@ export default async function handler(
   ])
 
   res.setHeader('Cache-Control', 'max-age=0')
-  return res.status(200).json(toFullMarket(contract, comments, bets))
+  return res.status(200).json({ comments, bets, ...toFullMarket(contract) })
 }

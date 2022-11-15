@@ -19,11 +19,15 @@ import { changeUserInfo } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
 import {
-  deletePrivateUser,
+  auth,
   getUserAndPrivateUser,
   updatePrivateUser,
   updateUser,
 } from 'web/lib/firebase/users'
+import { deleteField } from 'firebase/firestore'
+import { toast } from 'react-hot-toast'
+import router from 'next/router'
+import { useUser } from 'web/hooks/use-user'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -68,34 +72,57 @@ function EditUserField(props: {
 export default function ProfilePage(props: {
   auth: { user: User; privateUser: PrivateUser }
 }) {
-  const { user, privateUser } = props.auth
+  const { privateUser } = props.auth
+  const user = useUser() ?? props.auth.user
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
   const [name, setName] = useState(user.name)
   const [username, setUsername] = useState(user.username)
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
   const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState('')
+  const [loadingName, setLoadingName] = useState(false)
+  const [loadingUsername, setLoadingUsername] = useState(false)
+  const [errorName, setErrorName] = useState('')
+  const [errorUsername, setErrorUsername] = useState('')
 
   const updateDisplayName = async () => {
     const newName = cleanDisplayName(name)
-    if (newName) {
-      setName(newName)
-      await changeUserInfo({ name: newName }).catch((_) => setName(user.name))
-    } else {
-      setName(user.name)
-    }
+    if (newName === user.name) return
+    setLoadingName(true)
+    setErrorName('')
+    if (!newName) return setName(user.name)
+
+    setName(newName)
+    await changeUserInfo({ name: newName })
+      .then(() => {
+        setErrorName('')
+        setName(newName)
+      })
+      .catch((reason) => {
+        setErrorName(reason.message)
+        setName(user.name)
+      })
+    setLoadingName(false)
   }
 
   const updateUsername = async () => {
     const newUsername = cleanUsername(username)
-    if (newUsername) {
-      setUsername(newUsername)
-      await changeUserInfo({ username: newUsername }).catch((_) =>
+    if (newUsername === user.username) return
+
+    if (!newUsername) return setUsername(user.username)
+    setLoadingUsername(true)
+    setErrorUsername('')
+    setUsername(newUsername)
+    await changeUserInfo({ username: newUsername })
+      .then(() => {
+        setErrorUsername('')
+        setUsername(newUsername)
+      })
+      .catch((reason) => {
+        setErrorUsername(reason.message)
         setUsername(user.username)
-      )
-    } else {
-      setUsername(user.username)
-    }
+      })
+    setLoadingUsername(false)
   }
 
   const updateApiKey = async (e?: React.MouseEvent) => {
@@ -110,8 +137,20 @@ export default function ProfilePage(props: {
   }
 
   const deleteAccount = async () => {
-    await changeUserInfo({ userDeleted: true })
-    await deletePrivateUser(privateUser.id)
+    await updateUser(user.id, { userDeleted: true })
+    await updatePrivateUser(privateUser.id, {
+      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      email: deleteField(),
+      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      twitchInfo: deleteField(),
+      notificationPreferences: {
+        ...privateUser.notificationPreferences,
+        opt_out_all: ['email', 'mobile', 'browser'],
+      },
+    })
+    await auth.signOut()
   }
 
   const fileHandler = async (event: any) => {
@@ -162,27 +201,55 @@ export default function ProfilePage(props: {
             )}
           </Row>
 
-          <div>
+          <Col>
             <label className="mb-1 block">Display name</label>
-            <Input
-              type="text"
-              placeholder="Display name"
-              value={name}
-              onChange={(e) => setName(e.target.value || '')}
-              onBlur={updateDisplayName}
-            />
-          </div>
+            <Row className={'items-center gap-2'}>
+              <Input
+                disabled={loadingName}
+                type="text"
+                placeholder="Display name"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value || '')
+                }}
+                onBlur={updateDisplayName}
+              />
+            </Row>
+            {loadingName && (
+              <Row className={'mt-2 items-center gap-4'}>
+                <LoadingIndicator />
+                <span>Loading... This may take a while.</span>
+              </Row>
+            )}
+            {errorName && (
+              <span className="text-sm text-red-500">{errorName}</span>
+            )}
+          </Col>
 
-          <div>
+          <Col>
             <label className="mb-1 block">Username</label>
-            <Input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value || '')}
-              onBlur={updateUsername}
-            />
-          </div>
+            <Row>
+              <Input
+                disabled={loadingUsername}
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value || '')
+                }}
+                onBlur={updateUsername}
+              />
+            </Row>
+            {loadingUsername && (
+              <Row className={'mt-2 items-center gap-4'}>
+                <LoadingIndicator />
+                <span>Loading... This may take a while.</span>
+              </Row>
+            )}
+            {errorUsername && (
+              <span className="text-sm text-red-500">{errorUsername}</span>
+            )}
+          </Col>
           {(
             [
               ['bio', 'Bio'],
@@ -265,8 +332,23 @@ export default function ProfilePage(props: {
                 }}
                 onSubmitWithSuccess={async () => {
                   if (deleteAccountConfirmation == 'delete my account') {
-                    deleteAccount()
-                    return true
+                    toast
+                      .promise(deleteAccount(), {
+                        loading: 'Deleting account...',
+                        success: () => {
+                          router.push('/')
+                          return 'Account deleted'
+                        },
+                        error: () => {
+                          return 'Failed to delete account'
+                        },
+                      })
+                      .then(() => {
+                        return true
+                      })
+                      .catch(() => {
+                        return false
+                      })
                   }
                   return false
                 }}

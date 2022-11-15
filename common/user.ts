@@ -40,6 +40,13 @@ export type User = {
     allTime: number
   }
 
+  creatorTraders: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
+  }
+
   fractionResolvedCorrectly: number
 
   nextLoanCached: number
@@ -56,7 +63,6 @@ export type User = {
   lastBetTime?: number
   currentBettingStreak?: number
   hasSeenContractFollowModal?: boolean
-  freeMarketsCreated?: number
   isBannedFromPosting?: boolean
 
   achievements: {
@@ -80,7 +86,7 @@ export type PrivateUser = {
   email?: string
   weeklyTrendingEmailSent?: boolean
   weeklyPortfolioUpdateEmailSent?: boolean
-  manaBonusEmailSent?: boolean
+  manaBonusSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string
   apiKey?: string
@@ -98,6 +104,7 @@ export type PrivateUser = {
   blockedByUserIds: string[]
   blockedContractIds: string[]
   blockedGroupSlugs: string[]
+  hasSignedEula?: boolean
 }
 
 export type PortfolioMetrics = {
