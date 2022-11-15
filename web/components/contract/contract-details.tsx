@@ -218,7 +218,6 @@ export function CloseOrResolveTime(props: {
 
         {!resolvedDate && closeTime && (
           <div className="flex gap-1 whitespace-nowrap">
-            {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}
             <EditableCloseDate
               closeTime={closeTime}
               contract={contract}
@@ -311,7 +310,6 @@ export function ExtraMobileContractDetails(props: {
         !resolvedDate &&
         closeTime && (
           <Col className={'items-center text-sm text-gray-500'}>
-            <Row className={'text-gray-400'}>Closes&nbsp;</Row>
             <EditableCloseDate
               closeTime={closeTime}
               contract={contract}
@@ -438,7 +436,7 @@ function EditableCloseDate(props: {
       >
         <Col className="rounded bg-white px-8 pb-8">
           <Subtitle text="Edit market close time" />
-          <Row className="z-10 mr-2 mt-4 w-full shrink-0 flex-wrap items-center gap-2">
+          <Row className="mt-4 flex-wrap items-center justify-center gap-2">
             <Input
               type="date"
               className="w-full shrink-0 sm:w-fit"
@@ -455,19 +453,23 @@ function EditableCloseDate(props: {
               min="00:00"
               value={closeHoursMinutes}
             />
-            <Button size={'xs'} color={'indigo'} onClick={() => onSave()}>
+            <Button color={'indigo'} onClick={() => onSave()}>
               Set
             </Button>
           </Row>
 
-          <Button
-            className="mt-8"
-            size={'xs'}
-            color="red"
-            onClick={() => onSave(Date.now())}
-          >
-            Close market now
-          </Button>
+          {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
+            <Row className={'justify-center'}>
+              <Button
+                className="mt-6 sm:mt-4"
+                size={'sm'}
+                color="red"
+                onClick={() => onSave(Date.now())}
+              >
+                Close market now
+              </Button>
+            </Row>
+          )}
         </Col>
       </Modal>
       <DateTimeTooltip
@@ -479,9 +481,13 @@ function EditableCloseDate(props: {
         time={closeTime}
       >
         <Row
-          className={clsx(!disabled && isCreator ? 'cursor-pointer' : '')}
+          className={clsx(
+            'items-center gap-1',
+            !disabled && isCreator ? 'cursor-pointer' : ''
+          )}
           onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
         >
+          <span>{dayjs().isBefore(closeTime) ? 'closes' : 'closed'} </span>
           {isSameDay && isClient ? (
             <span className={'capitalize'}> {fromNow(closeTime)}</span>
           ) : isSameYear ? (
@@ -489,7 +495,7 @@ function EditableCloseDate(props: {
           ) : (
             dayJsCloseTime.format('MMM D, YYYY')
           )}
-          {isCreator && !disabled && <PencilIcon className="ml-1 h-4 w-4" />}
+          {isCreator && !disabled && <PencilIcon className="h-4 w-4" />}
         </Row>
       </DateTimeTooltip>
     </>
