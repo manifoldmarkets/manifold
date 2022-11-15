@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useState } from 'react'
+import React, { ReactNode, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
@@ -10,12 +10,13 @@ import { Input } from './input'
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
 import { binaryOutcomes } from '../bet/bet-panel'
+import { ManaSymbol } from '../mana'
 
 export function AmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
   error: string | undefined
-  label: string
+  label: string | ReactNode
   disabled?: boolean
   className?: string
   inputClassName?: string
@@ -142,7 +143,7 @@ export function BuyAmountInput(props: {
             <AmountInput
               amount={amount}
               onChange={onAmountChange}
-              label={ENV_CONFIG.moneyMoniker}
+              label={<ManaSymbol />}
               error={error}
               disabled={disabled}
               className={className}

@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { ManaSymbol } from './mana'
 
 export function ProfitBadge(props: {
   profitPercent: number
@@ -40,8 +41,7 @@ export function ProfitBadgeMana(props: {
     ? 'bg-gray-100 text-teal-700'
     : 'bg-gray-100 text-scarlet-600'
 
-  const formatted =
-    ENV_CONFIG.moneyMoniker + (amount > 0 ? '+' : '') + amount.toFixed(0)
+  const formatted = (amount > 0 ? '+' : '') + amount.toFixed(0)
 
   return (
     <span
@@ -51,6 +51,7 @@ export function ProfitBadgeMana(props: {
         className
       )}
     >
+      <ManaSymbol />
       {formatted}
     </span>
   )

@@ -14,7 +14,7 @@ import { AddFundsModal } from '../add-funds-modal'
 import { Button } from '../buttons/button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
-import { FormattedMana } from '../mana'
+import { FormattedMana, ManaSymbol } from '../mana'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -295,7 +295,9 @@ function AddFundsButton({ userId }: { userId?: string }) {
         color="gray-outline"
         onClick={() => setOpen(true)}
       >
-        Get more {ENV_CONFIG.moneyMoniker}
+        <span>
+          Get more <ManaSymbol />
+        </span>
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />
     </>
