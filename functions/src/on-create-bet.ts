@@ -32,7 +32,6 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
-import { APIError } from '../../common/api'
 import { User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
@@ -193,11 +192,10 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       const contractDoc = firestore.collection(`contracts`).doc(oldContract.id)
       const contract = (await trans.get(contractDoc)).data() as Contract
       let previousUniqueBettorIds = contract.uniqueBettorIds
-
-      const betsSnap = await trans.get(
-        firestore.collection(`contracts/${contract.id}/bets`)
-      )
       if (!previousUniqueBettorIds) {
+        const betsSnap = await trans.get(
+          firestore.collection(`contracts/${contract.id}/bets`)
+        )
         const contractBets = betsSnap.docs.map((doc) => doc.data() as Bet)
 
         if (contractBets.length === 0) {
@@ -250,14 +248,10 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-  const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
-  if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
-
-  const fromUser = fromSnap.data() as User
 
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
-      fromId: fromUser.id,
+      fromId: fromUserId,
       fromType: 'BANK',
       toId: oldContract.creatorId,
       toType: 'USER',
