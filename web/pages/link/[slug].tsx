@@ -37,7 +37,7 @@ export default function ClaimPage() {
       />
       <div className="mx-auto max-w-xl px-2">
         <Row className="items-center justify-between">
-          <Title text={`Claim M$${manalink.amount} mana`} />
+          <Title text={`Claim Ṁ${manalink.amount} mana`} />
           <div className="my-auto"></div>
         </Row>
 
@@ -76,7 +76,7 @@ export default function ClaimPage() {
             disabled={claiming}
             size="lg"
           >
-            {user ? `Claim M$${manalink.amount}` : 'Login to claim'}
+            {user ? `Claim Ṁ${manalink.amount}` : 'Login to claim'}
           </Button>
         </Row>
       </div>

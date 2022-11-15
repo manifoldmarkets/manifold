@@ -84,7 +84,7 @@ function BuyManaTab(props: { onClose: () => void }) {
   return (
     <>
       <div className="mt-6 mb-4">
-        Buy mana (M$) to trade in your favorite markets.
+        Buy mana (Ṁ) to trade in your favorite markets.
         <div className="italic">Not redeemable for cash.</div>
       </div>
 

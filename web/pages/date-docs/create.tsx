@@ -131,7 +131,7 @@ export default function CreateDateDocPage() {
                   onChange={(e) => setQuestion(e.target.value || '')}
                   disabled={!createMarket}
                 />
-                <div className="ml-2 text-gray-500">Cost: M$100</div>
+                <div className="ml-2 text-gray-500">Cost: Ṁ100</div>
               </Col>
             </Col>
           </Col>

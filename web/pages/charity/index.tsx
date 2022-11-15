@@ -150,7 +150,7 @@ export default function Charity(props: {
             !
           </span> */}
           <span className="text-gray-600">
-            Convert your M$ earnings into real charitable donations.
+            Convert your Ṁ earnings into real charitable donations.
           </span>
           <DonatedStats
             stats={[

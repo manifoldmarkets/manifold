@@ -29,7 +29,7 @@ export default function LabsPage() {
             (isNative && platform !== 'ios' && (
               <LabCard
                 title="🫀 Charity"
-                description="Turn your M$ earnings into real donations to causes you care about"
+                description="Turn your Ṁ earnings into real donations to causes you care about"
                 href="/charity"
               />
             ))}
@@ -44,7 +44,7 @@ export default function LabsPage() {
 
           <LabCard
             title="💸 Manalinks"
-            description="Send M$ to anyone"
+            description="Send Ṁ to anyone"
             href="/links"
           />
 

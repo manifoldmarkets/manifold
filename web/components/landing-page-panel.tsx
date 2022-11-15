@@ -143,7 +143,7 @@ export function LandingPagePanel() {
             <div className="text-right text-sm text-gray-900">
               and get{'   '}
               <span className="relative z-10 bg-teal-200 px-1 font-semibold">
-                M$500
+                Ṁ500
                 <div className="absolute left-0 -bottom-0.5 -z-10 h-full w-full bg-teal-200" />
               </span>
               {'   '}
@@ -341,7 +341,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
             !isMVisible ? 'opacity-0' : ''
           )}
         >
-          M$
+          Ṁ
         </div>
         <div
           className={clsx(
@@ -349,7 +349,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
             !isMVisible ? 'opacity-0' : ''
           )}
         >
-          M$
+          Ṁ
         </div>
         <div
           className={clsx(
@@ -357,7 +357,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
             !isMVisible ? 'opacity-0' : ''
           )}
         >
-          M$
+          Ṁ
         </div>
       </div>
       <div

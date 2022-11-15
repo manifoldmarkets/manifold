@@ -369,7 +369,7 @@ export default () => {
                       <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} />
                     </Row>
 
-                    <div className="label-text text-neutral self-center justify-self-end pl-1">{`M$${ante}`} </div>
+                    <div className="label-text text-neutral self-center justify-self-end pl-1">{`Ṁ${ante}`} </div>
                   </Row>
                   {ante > balance && (
                     <div className="-mt-4 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">

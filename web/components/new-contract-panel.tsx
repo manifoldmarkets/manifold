@@ -473,7 +473,7 @@ export function NewContractPanel(props: {
                 color="green"
                 onClick={() => setFundsModalOpen(true)}
               >
-                Get M$
+                Get Ṁ
               </Button>
               <AddFundsModal
                 open={fundsModalOpen}
