@@ -4,6 +4,7 @@ import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { FormattedMana } from '../mana'
 
 export function Page(props: {
   rightSidebar?: ReactNode
@@ -36,6 +37,7 @@ export function Page(props: {
           className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex"
         />
         {/* put right sidebar below main content on small or medium screens */}
+        <FormattedMana amount={5} />
         <div className="lg:col-span-8 xl:contents">
           <main
             className={clsx(

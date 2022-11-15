@@ -19,15 +19,17 @@ export function formatMoney(amount: number) {
   if (newAmount < 0) {
     return (
       '-' +
-      ENV_CONFIG.moneyMoniker +
+      // ENV_CONFIG.moneyMoniker +
       formatter.format(Math.abs(newAmount)).replace('$', '')
     )
   }
-  return ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
+  // return ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
+  return formatter.format(newAmount).replace('$', '')
 }
 
 export function formatMoneyWithDecimals(amount: number) {
-  return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
+  // return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
+  return amount.toFixed(2)
 }
 
 export function formatWithCommas(amount: number) {

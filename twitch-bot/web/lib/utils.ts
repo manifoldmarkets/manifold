@@ -4,9 +4,13 @@ const formatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
   minimumFractionDigits: 0,
 });
+// export function formatMoney(amount: number) {
+//   const newAmount = Math.round(amount) === 0 ? 0 : Math.floor(amount); // handle -0 case
+//   return 'M$' + formatter.format(newAmount).replace('$', '');
+// }
 export function formatMoney(amount: number) {
   const newAmount = Math.round(amount) === 0 ? 0 : Math.floor(amount); // handle -0 case
-  return 'M$' + formatter.format(newAmount).replace('$', '');
+  return formatter.format(newAmount).replace('$', '');
 }
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
