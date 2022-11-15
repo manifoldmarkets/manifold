@@ -193,11 +193,10 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       const contractDoc = firestore.collection(`contracts`).doc(oldContract.id)
       const contract = (await trans.get(contractDoc)).data() as Contract
       let previousUniqueBettorIds = contract.uniqueBettorIds
-
-      const betsSnap = await trans.get(
-        firestore.collection(`contracts/${contract.id}/bets`)
-      )
       if (!previousUniqueBettorIds) {
+        const betsSnap = await trans.get(
+          firestore.collection(`contracts/${contract.id}/bets`)
+        )
         const contractBets = betsSnap.docs.map((doc) => doc.data() as Bet)
 
         if (contractBets.length === 0) {
