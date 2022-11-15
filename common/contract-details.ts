@@ -155,6 +155,7 @@ export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
 
   // URL encode each of the props, then add them as query params
   return (
+    // NOTE: Change from DOMAIN to localhost:3000 when testing opengraph locally
     `${DOMAIN}/api/og/market` +
     `?question=${encodeURIComponent(question)}` +
     probabilityParam +
