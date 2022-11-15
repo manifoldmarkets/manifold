@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { getUser } from './utils'
+import { getUser, getUserByUsername } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { Comment } from '../../common/comment'
@@ -25,9 +25,25 @@ export const changeuserinfo = newEndpoint({}, async (req, auth) => {
 
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(400, 'User not found')
+  const cleanedUsername = username ? cleanUsername(username) : undefined
 
-  await changeUser(user, { username, name, avatarUrl })
-  return { message: 'Successfully changed user info.' }
+  if (username) {
+    if (!cleanedUsername) throw new APIError(400, 'Invalid username')
+    const otherUserExists = await getUserByUsername(cleanedUsername)
+    if (otherUserExists) throw new APIError(400, 'Username already taken')
+  }
+
+  // TODO not sure about denying duplicate display names
+  try {
+    await changeUser(user, {
+      username: cleanedUsername,
+      name,
+      avatarUrl,
+    })
+    return { message: 'Successfully changed user info.' }
+  } catch (e) {
+    throw new APIError(400, 'update failed, please revert changes')
+  }
 })
 
 export const changeUser = async (
@@ -89,23 +105,9 @@ export const changeUser = async (
 
   // Update the username inside a transaction
   return await firestore.runTransaction(async (transaction) => {
-    if (update.username) {
-      update.username = cleanUsername(update.username)
-      if (!update.username) {
-        throw new APIError(400, 'Invalid username')
-      }
+    if (update.username) update.username = cleanUsername(update.username)
 
-      const sameNameUser = await transaction.get(
-        firestore.collection('users').where('username', '==', update.username)
-      )
-      if (!sameNameUser.empty) {
-        throw new APIError(400, 'Username already exists')
-      }
-    }
-
-    if (update.name) {
-      update.name = cleanDisplayName(update.name)
-    }
+    if (update.name) update.name = cleanDisplayName(update.name)
 
     const userRef = firestore.collection('users').doc(user.id)
     const userUpdate: Partial<User> = removeUndefinedProps(update)
