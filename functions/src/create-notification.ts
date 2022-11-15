@@ -19,7 +19,6 @@ import { Comment } from '../../common/comment'
 import { groupBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from '../../common/bet'
 import { Answer } from '../../common/answer'
-import { getContractBetMetrics } from '../../common/calculate'
 import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
 import { Group } from '../../common/group'
@@ -167,8 +166,10 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   const contractFollowersSnap = await firestore
     .collection(`contracts/${sourceContract.id}/follows`)
     .get()
-  const contractFollowersIds = contractFollowersSnap.docs.map(
-    (doc) => doc.data().id
+
+  const contractFollowersIds: { [key: string]: boolean } = {}
+  contractFollowersSnap.docs.map(
+    (doc) => (contractFollowersIds[(doc.data() as ContractFollow).id] = true)
   )
 
   const createBrowserNotification = async (
@@ -203,7 +204,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 
   const needNotFollowContractReasons = ['tagged_user']
   const stillFollowingContract = (userId: string) => {
-    return contractFollowersIds.includes(userId)
+    // Should be better performance than includes
+    return contractFollowersIds[userId] !== undefined
   }
 
   const sendNotificationsIfSettingsPermit = async (
@@ -262,18 +264,20 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyContractFollowers = async () => {
-    for (const userId of contractFollowersIds) {
-      await sendNotificationsIfSettingsPermit(
-        userId,
-        sourceType === 'answer'
-          ? 'answer_on_contract_you_follow'
-          : sourceType === 'comment'
-          ? 'comment_on_contract_you_follow'
-          : sourceUpdateType === 'updated'
-          ? 'update_on_contract_you_follow'
-          : 'resolution_on_contract_you_follow'
+    await Promise.all(
+      Object.keys(contractFollowersIds).map((userId) =>
+        sendNotificationsIfSettingsPermit(
+          userId,
+          sourceType === 'answer'
+            ? 'answer_on_contract_you_follow'
+            : sourceType === 'comment'
+            ? 'comment_on_contract_you_follow'
+            : sourceUpdateType === 'updated'
+            ? 'update_on_contract_you_follow'
+            : 'resolution_on_contract_you_follow'
+        )
       )
-    }
+    )
   }
 
   const notifyContractCreator = async () => {
@@ -338,17 +342,10 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       .collection(`contracts/${sourceContract.id}/bets`)
       .get()
     const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-    // filter bets for only users that have an amount invested still
-    const recipientUserIds = uniq(bets.map((bet) => bet.userId)).filter(
-      (userId) => {
-        return (
-          getContractBetMetrics(
-            sourceContract,
-            bets.filter((bet) => bet.userId === userId)
-          ).invested > 0
-        )
-      }
-    )
+    // We don't need to filter by shares in bc they auto unfollow a market upon selling out of it
+    // Unhandled case sacrificed for performance: they bet in a market, sold out,
+    // then re-followed it - their notification reason should not include 'with_shares_in'
+    const recipientUserIds = uniq(bets.map((bet) => bet.userId))
     await Promise.all(
       recipientUserIds.map((userId) =>
         sendNotificationsIfSettingsPermit(

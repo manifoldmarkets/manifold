@@ -78,7 +78,9 @@ export const onCreateBet = functions
       userUsername: bettor.username,
     })
 
-    await addUserToContractFollowers(contractId, bettor.id)
+    // They may be selling out of a position completely, so only add them if they're buying
+    if (bet.amount > 0 && !bet.isSold)
+      await addUserToContractFollowers(contractId, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
     await processReferralBonus(bettor, eventId)
