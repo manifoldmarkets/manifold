@@ -6,6 +6,7 @@ import { richTextToString } from './util/parse'
 import { getCpmmProbability } from './calculate-cpmm'
 import { getDpmProbability } from './calculate-dpm'
 import { formatMoney, formatPercent } from './util/format'
+import { DOMAIN } from './envs/constants'
 
 export function contractMetrics(contract: Contract) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -154,7 +155,7 @@ export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
 
   // URL encode each of the props, then add them as query params
   return (
-    `https://manifold-og-image.vercel.app/m.png` +
+    `${DOMAIN}/api/og/market` +
     `?question=${encodeURIComponent(question)}` +
     probabilityParam +
     numericValueParam +
