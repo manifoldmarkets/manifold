@@ -249,14 +249,10 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-  const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
-  if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
-
-  const fromUser = fromSnap.data() as User
 
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
-      fromId: fromUser.id,
+      fromId: fromUserId,
       fromType: 'BANK',
       toId: oldContract.creatorId,
       toType: 'USER',
