@@ -4,7 +4,6 @@ import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { FormattedMana } from '../mana'
 
 export function Page(props: {
   rightSidebar?: ReactNode

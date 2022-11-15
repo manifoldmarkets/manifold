@@ -24,7 +24,6 @@ import { track } from 'web/lib/service/analytics'
 import { CopyLinkButton } from '../buttons/copy-link-button'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { FormattedMana, ManaSymbol } from '../mana'
-import ManaIcon from 'web/lib/icons/mana-icon'
 
 type challengeInfo = {
   amount: number

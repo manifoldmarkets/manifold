@@ -1,6 +1,6 @@
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
 import type { BinaryContract, Contract } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import { useMemo, useState } from 'react'
 import TinderCard from 'react-tinder-card'

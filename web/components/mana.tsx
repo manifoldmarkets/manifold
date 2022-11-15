@@ -5,7 +5,14 @@ import { Row } from './layout/row'
 export function ManaSymbol(props: { className?: string }) {
   const { className } = props
   return (
-    <div className="font-mana inline-flex align-bottom text-inherit">M$</div>
+    <div
+      className={clsx(
+        'font-mana inline-flex align-bottom text-inherit',
+        className
+      )}
+    >
+      M$
+    </div>
   )
 }
 
