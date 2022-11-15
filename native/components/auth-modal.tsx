@@ -36,10 +36,8 @@ export const AuthModal = (props: {
   showModal: boolean
   setShowModal: (shouldShowAuth: boolean) => void
   webview: React.RefObject<WebView | undefined>
-  setFbUser: (user: string) => void
-  setUserId: (userId: string) => void
 }) => {
-  const { showModal, setShowModal, webview, setFbUser, setUserId } = props
+  const { showModal, setShowModal, webview } = props
   const [loading, setLoading] = useState(false)
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     // @ts-ignore
@@ -68,8 +66,6 @@ export const AuthModal = (props: {
         const credential = GoogleAuthProvider.credential(id_token)
         signInWithCredential(auth, credential).then((result) => {
           const fbUser = result.user.toJSON()
-          setFbUser(JSON.stringify(fbUser))
-          setUserId(result.user.uid)
           if (webview.current) {
             webview.current.postMessage(
               JSON.stringify({ type: 'nativeFbUser', data: fbUser })
@@ -102,12 +98,9 @@ export const AuthModal = (props: {
         await updateProfile(user, { displayName: data.displayName })
       }
       const fbUser = user.toJSON()
-      console.log('fbUser', JSON.stringify(fbUser))
       webview.current?.postMessage(
         JSON.stringify({ type: 'nativeFbUser', data: fbUser })
       )
-      setFbUser(JSON.stringify(fbUser))
-      setUserId(user.uid)
     } catch (error: any) {
       console.error(error)
     }
@@ -204,7 +197,6 @@ export const AuthModal = (props: {
         )}
         <TouchableWithoutFeedback
           onPress={() => {
-            console.log('tapped')
             setShowModal(false)
           }}
         >
@@ -223,7 +215,6 @@ function useAppleAuthentication() {
     async function checkAvailability() {
       try {
         const available = await isAvailableAsync()
-        console.log('Apple authentication available:', available)
         setAuthenticationLoaded(available)
       } catch (error: any) {
         Alert.alert('Error', error?.message)
