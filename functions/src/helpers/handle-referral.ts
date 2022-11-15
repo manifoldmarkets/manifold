@@ -50,22 +50,15 @@ export async function handleReferral(user: User, eventId: string) {
     }
     console.log(`referredByGroup: ${referredByGroup}`)
 
-    const txns = (
-      await firestore
+    const txns = await transaction.get(
+      firestore
         .collection('txns')
         .where('toId', '==', referredByUserId)
         .where('category', '==', 'REFERRAL')
-        .get()
-    ).docs.map((txn) => txn.ref)
-    if (txns.length > 0) {
-      const referralTxns = await transaction.getAll(...txns).catch((err) => {
-        console.error('error getting txns:', err)
-        throw err
-      })
+    )
+    if (txns.size > 0) {
       // If the referring user already has a referral txn due to referring this user, halt
-      if (
-        referralTxns.map((txn) => txn.data()?.description).includes(user.id)
-      ) {
+      if (txns.docs.map((txn) => txn.data()?.description).includes(user.id)) {
         console.log('found referral txn with the same details, aborting')
         return
       }
