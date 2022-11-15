@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { sortBy, last } from 'lodash'
+import { last } from 'lodash'
 
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
@@ -64,12 +64,7 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? sortBy(
-        (await listFirstNBets(contractId, 2500)).filter(
-          (b) => !b.isRedemption && !b.challengeSlug
-        ),
-        (b) => b.createdTime
-      )
+    ? await listFirstNBets(contractId, 2500, CONTRACT_BET_LOADING_OPTS)
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
