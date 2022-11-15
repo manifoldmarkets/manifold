@@ -3,14 +3,7 @@ import * as admin from 'firebase-admin'
 import { keyBy, uniq } from 'lodash'
 
 import { Bet, LimitBet } from '../../common/bet'
-import {
-  getContractPath,
-  getUser,
-  getValues,
-  isProd,
-  log,
-  revalidateStaticProps,
-} from './utils'
+import { getUser, getValues, isProd, log } from './utils'
 import {
   createBadgeAwardedNotification,
   createBetFillNotification,
@@ -90,8 +83,6 @@ export const onCreateBet = functions
     await notifyFills(bet, contract, eventId, bettor)
     await processReferralBonus(bettor, eventId)
     await updateBettingStreak(bettor, bet, contract, eventId)
-
-    await revalidateStaticProps(getContractPath(contract))
   })
 
 const processReferralBonus = async (user: User, eventId: string) => {
