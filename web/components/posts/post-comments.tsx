@@ -43,7 +43,7 @@ export function PostCommentThread(props: {
         aria-hidden="true"
       />
       {[parentComment].concat(threadComments).map((comment, commentIdx) => (
-        <PostComment
+        <PostCommentItem
           key={comment.id}
           indent={commentIdx != 0}
           post={post}
@@ -101,7 +101,7 @@ export function PostCommentInput(props: {
   )
 }
 
-export function PostComment(props: {
+export function PostCommentItem(props: {
   post: Post
   comment: PostComment
   tips: CommentTips
@@ -147,7 +147,7 @@ export function PostComment(props: {
             name={userName}
           />{' '}
           <CopyLinkDateTimeComponent
-            prefix={comment.userName}
+            prefix={'post'}
             slug={post.slug}
             createdTime={createdTime}
             elementId={comment.id}
