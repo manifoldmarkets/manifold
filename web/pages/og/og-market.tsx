@@ -43,20 +43,18 @@ export function OgMarket(props: OgMarketProps) {
 
       {/* <!-- Manifold logo --> */}
       <div className="absolute right-24 top-8 flex">
-        <a className="flex flex-row" href="/">
-          <img
-            className="mr-3 h-12 w-12"
-            src="https:&#x2F;&#x2F;manifold.markets&#x2F;logo.svg"
-            width="40"
-            height="40"
-          />
-          <div
-            className="mt-3 flex text-3xl lowercase"
-            style={{ fontFamily: 'Major Mono Display' }}
-          >
-            Manifold Markets
-          </div>
-        </a>
+        <img
+          className="mr-3 h-12 w-12"
+          src="https:&#x2F;&#x2F;manifold.markets&#x2F;logo.svg"
+          width="40"
+          height="40"
+        />
+        <div
+          className="mt-3 flex text-3xl lowercase"
+          style={{ fontFamily: 'Major Mono Display' }}
+        >
+          Manifold Markets
+        </div>
       </div>
 
       <div className="flex max-h-40 w-full flex-row justify-between pt-36">
