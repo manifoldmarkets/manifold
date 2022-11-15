@@ -46,7 +46,9 @@ export const validateiap = newEndpoint({}, async (req, auth) => {
 
   log('validated data, sandbox:', validatedData.sandbox)
   if (isProd() && validatedData.sandbox) {
-    throw new APIError(400, 'iap sandbox receipt used in production')
+    // Apple wants a successful response even if the receipt is from the sandbox,
+    // so we just return success here and don't transfer any mana.
+    return { success: true }
   }
 
   const options = {
