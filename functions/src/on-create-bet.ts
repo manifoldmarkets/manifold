@@ -32,7 +32,6 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
-import { APIError } from '../../common/api'
 import { User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
