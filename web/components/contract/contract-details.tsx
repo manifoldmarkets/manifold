@@ -9,7 +9,6 @@ import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import { formatMoney } from 'common/util/format'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
@@ -37,6 +36,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Input } from '../widgets/input'
 import { editorExtensions } from '../widgets/editor'
+import { FormattedMana } from '../mana'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -323,9 +323,12 @@ export function ExtraMobileContractDetails(props: {
       {(user || forceShowVolume) && (
         <Col className={'items-center text-sm text-gray-500'}>
           <Tooltip
-            text={`${formatMoney(
-              volume
-            )} bet - ${uniqueBettors} unique traders`}
+            text={
+              <>
+                <FormattedMana amount={volume} /> bet - ${uniqueBettors} unique
+                traders
+              </>
+            }
           >
             {volumeTranslation}
           </Tooltip>

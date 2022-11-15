@@ -1,4 +1,4 @@
-import { formatMoney, manaToUSD } from 'common/util/format'
+import { manaToUSD } from 'common/util/format'
 import React, { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
@@ -20,6 +20,7 @@ import { validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
+import { FormattedMana } from 'web/components/mana'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -58,9 +59,7 @@ function BuyManaTab(props: { onClose: () => void }) {
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
-  const [amountSelected, setAmountSelected] = useState<number>(
-    prices[formatMoney(2500)]
-  )
+  const [amountSelected, setAmountSelected] = useState<number>(prices[2500])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const handleIapReceipt = async (type: string, data: any) => {
@@ -148,19 +147,21 @@ export const OtherWaysToGetMana = (props: { includeBuyNote?: boolean }) => {
       <Item>
         Place your first {PAST_BET} of the day to get your streak bonus (up to
         <span className={'mx-1 font-bold'}>
-          {formatMoney(BETTING_STREAK_BONUS_MAX)}
+          <FormattedMana amount={BETTING_STREAK_BONUS_MAX} />
         </span>
         per day!)
       </Item>
       <Item url="/referrals">
         Refer a friend and get
-        <span className={'mx-1 font-bold'}>{formatMoney(REFERRAL_AMOUNT)}</span>
+        <span className={'mx-1 font-bold'}>
+          <FormattedMana amount={REFERRAL_AMOUNT} />
+        </span>
         per signup
       </Item>
       <Item url="/create">
         Make a market and get
         <span className={'mx-1 font-bold'}>
-          {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)}
+          <FormattedMana amount={UNIQUE_BETTOR_BONUS_AMOUNT} />
         </span>
         per unique trader
       </Item>
@@ -197,7 +198,7 @@ const Item = (props: { children: React.ReactNode; url?: string }) => {
 }
 
 export function FundsSelector(props: {
-  fundAmounts: { [key: string]: number }
+  fundAmounts: { [key: number]: number }
   selected: number
   onSelect: (selected: number) => void
   className?: string
@@ -215,7 +216,7 @@ export function FundsSelector(props: {
           onClick={() => onSelect(amount as any)}
           className={btnClassName}
         >
-          {key}
+          <FormattedMana amount={key} />
         </Button>
       ))}
     </Row>

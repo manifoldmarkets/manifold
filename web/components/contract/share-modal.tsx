@@ -10,7 +10,6 @@ import { withTracking } from 'web/lib/service/analytics'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
 import { SiteLink } from '../widgets/site-link'
-import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 import { useState } from 'react'
@@ -19,6 +18,7 @@ import ChallengeIcon from 'web/lib/icons/challenge-icon'
 import { QRCode } from '../widgets/qr-code'
 import { CopyLinkButton } from '../buttons/copy-link-button'
 import { Button } from '../buttons/button'
+import { FormattedMana } from '../mana'
 
 export function ShareModal(props: {
   contract: Contract
@@ -47,7 +47,7 @@ export function ShareModal(props: {
         <p>
           Earn{' '}
           <SiteLink href="/referrals">
-            {formatMoney(REFERRAL_AMOUNT)} referral bonus
+            <FormattedMana amount={REFERRAL_AMOUNT} /> referral bonus
           </SiteLink>{' '}
           if a new user signs up using the link!
         </p>

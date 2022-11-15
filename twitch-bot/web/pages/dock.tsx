@@ -15,6 +15,7 @@ import { InfoTooltip } from 'web/components/info-tooltip';
 import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
 import { LoadingOverlay } from 'web/components/loading-overlay';
+import { FormattedMana } from 'web/components/mana';
 import { Title } from 'web/components/title';
 import { ConnectionState } from 'web/lib/connection-state';
 import { SelectedGroup } from 'web/lib/selected-group';
@@ -373,7 +374,9 @@ export default () => {
                   </Row>
                   {ante > balance && (
                     <div className="-mt-4 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-                      <span className="mr-2 text-red-500">Insufficient balance ({formatMoney(balance)})</span>
+                      <span className="mr-2 text-red-500">
+                        Insufficient balance <FormattedMana amount={balance} />
+                      </span>
                     </div>
                   )}
                   {questionCreateError && (

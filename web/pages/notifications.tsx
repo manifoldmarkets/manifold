@@ -30,7 +30,6 @@ import {
   useGroupedNotifications,
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
-import { formatMoney } from 'common/util/format'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
@@ -55,6 +54,7 @@ import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { groupPath } from 'common/group'
+import { FormattedMana } from 'web/components/mana'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -343,7 +343,7 @@ function IncomeNotificationGroupItem(props: {
             <div>
               {'Daily Income Summary: '}
               <span className={'text-teal-500'}>
-                {'+' + formatMoney(totalIncome)}
+                + <FormattedMana amount={totalIncome} />
               </span>
             </div>
             <div className={'inline-block'}>
@@ -486,7 +486,7 @@ function IncomeNotificationItem(props: {
   const incomeNotificationLabel = () => {
     return sourceText ? (
       <span className="text-teal-500">
-        {'+' + formatMoney(parseInt(sourceText))}
+        + <FormattedMana amount={parseInt(sourceText)} />
       </span>
     ) : (
       <div />
@@ -923,11 +923,12 @@ function BetFillNotification(props: {
   const { creatorOutcome, probability, limitOrderTotal, limitOrderRemaining } =
     (data as BetFillData) ?? {}
   const subtitle = 'bet against you'
-  const amount = formatMoney(parseInt(sourceText ?? '0'))
+  const amount = <FormattedMana amount={parseInt(sourceText ?? '0')} />
   const description =
     creatorOutcome && probability ? (
       <span>
-        of your {limitOrderTotal ? formatMoney(limitOrderTotal) : ''}
+        of your{' '}
+        {limitOrderTotal ? <FormattedMana amount={limitOrderTotal} /> : ''}
         <span
           className={clsx(
             'mx-1',
@@ -941,9 +942,13 @@ function BetFillNotification(props: {
           {creatorOutcome}
         </span>
         limit order at {Math.round(probability * 100)}% was filled{' '}
-        {limitOrderRemaining
-          ? `(${formatMoney(limitOrderRemaining)} remaining)`
-          : ''}
+        {limitOrderRemaining ? (
+          <>
+            <FormattedMana amount={limitOrderRemaining} /> remaining
+          </>
+        ) : (
+          ''
+        )}
       </span>
     ) : (
       <span>of your limit order was filled</span>
@@ -1050,7 +1055,7 @@ function SignupBonusNotification(props: {
     <span>
       Thanks for using Manifold! We sent you{' '}
       <span className={'text-teal-500'}>
-        {formatMoney(parseInt(sourceText ?? ''))}
+        <FormattedMana amount={parseInt(sourceText ?? '')} />
       </span>{' '}
       for being a valuable new predictor.
     </span>
@@ -1127,7 +1132,9 @@ function ContractResolvedNotification(props: {
     userInvestment && userPayout !== undefined ? (
       <>
         Resolved: {resolutionDescription()} Invested:
-        <span className={'text-teal-500'}>{formatMoney(userInvestment)} </span>
+        <span className={'text-teal-500'}>
+          <FormattedMana amount={userInvestment} />{' '}
+        </span>
         Payout:
         <span
           className={clsx(
@@ -1135,7 +1142,7 @@ function ContractResolvedNotification(props: {
             'truncate text-ellipsis'
           )}
         >
-          {formatMoney(userPayout)}
+          <FormattedMana amount={userPayout} />
           {userPayout > 0 &&
             ` (${profitable ? '+' : ''}${Math.round(ROI * 100)}%)`}
         </span>
@@ -1255,21 +1262,23 @@ function NotificationTextLabel(props: {
       <span>
         As a thank you, we sent you{' '}
         <span className="text-teal-500">
-          {formatMoney(parseInt(sourceText))}
+          <FormattedMana amount={parseInt(sourceText)} />
         </span>
         !
       </span>
     )
   } else if (sourceType === 'liquidity' && sourceText) {
     return (
-      <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
+      <span className="text-blue-400">
+        <FormattedMana amount={parseInt(sourceText)} />
+      </span>
     )
   } else if (sourceType === 'challenge' && sourceText) {
     return (
       <>
         <span> for </span>
         <span className="text-teal-500">
-          {formatMoney(parseInt(sourceText))}
+          <FormattedMana amount={parseInt(sourceText)} />
         </span>
       </>
     )

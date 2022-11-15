@@ -120,7 +120,7 @@ export function BuyAmountInput(props: {
       if (user && user.balance < amount) {
         setError('Insufficient balance')
       } else if (minimumAmount && amount < minimumAmount) {
-        setError('Minimum amount: ' + formatMoney(minimumAmount))
+        setError('Minimum amount: ' + formatMoney(minimumAmount) + ' mana')
       } else {
         setError(undefined)
       }

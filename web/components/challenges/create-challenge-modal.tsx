@@ -12,7 +12,6 @@ import { Button } from '../buttons/button'
 import { createChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { BinaryContract, MAX_QUESTION_LENGTH } from 'common/contract'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { formatMoney } from 'common/util/format'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { QRCode } from '../widgets/qr-code'
 import { AmountInput } from '../widgets/amount-input'
@@ -24,6 +23,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
 import { CopyLinkButton } from '../buttons/copy-link-button'
 import { ExpandingInput } from '../widgets/expanding-input'
+import { FormattedMana } from '../mana'
 
 type challengeInfo = {
   amount: number
@@ -132,9 +132,9 @@ function CreateChallengeForm(props: {
             }
             if (!contract && user.balance < FIXED_ANTE + challengeInfo.amount) {
               setError(
-                `You don't have enough mana to create this challenge and market. You need ${formatMoney(
+                `You don't have enough mana to create this challenge and market. You need ${
                   FIXED_ANTE + challengeInfo.amount
-                )}`
+                } mana`
               )
               return
             }
@@ -256,9 +256,11 @@ function CreateChallengeForm(props: {
           <div className="mt-8">
             If the challenge is accepted, whoever is right will earn{' '}
             <span className="font-semibold">
-              {formatMoney(
-                challengeInfo.acceptorAmount + challengeInfo.amount || 0
-              )}
+              <FormattedMana
+                amount={
+                  challengeInfo.acceptorAmount + challengeInfo.amount || 0
+                }
+              />
             </span>{' '}
             in total.{' '}
             <span>
@@ -266,7 +268,7 @@ function CreateChallengeForm(props: {
                 <span>
                   Because there's no market yet, you'll be charged
                   <span className={'mx-1 font-semibold'}>
-                    {formatMoney(FIXED_ANTE)}
+                    <FormattedMana amount={FIXED_ANTE} />
                   </span>
                   to create it.
                 </span>

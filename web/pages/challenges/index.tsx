@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import React from 'react'
-import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
@@ -30,6 +29,7 @@ import { Modal } from 'web/components/layout/modal'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 import { UserLink } from 'web/components/widgets/user-link'
+import { FormattedMana } from 'web/components/mana'
 
 dayjs.extend(customParseFormat)
 const columnClass = 'sm:px-5 px-2 py-3.5 max-w-[100px] truncate'
@@ -154,7 +154,7 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
       <tr id={challenge.slug} key={challenge.slug} className={className}>
         <td className={amountClass}>
           <SiteLink href={getChallengeUrl(challenge)}>
-            {formatMoney(challenge.creatorAmount)}
+            <FormattedMana amount={challenge.creatorAmount} />
           </SiteLink>
         </td>
         <td
@@ -269,7 +269,7 @@ function PublicLinkSummaryRow(props: { challenge: Challenge }) {
     >
       <td className={amountClass}>
         <SiteLink href={getChallengeUrl(challenge)}>
-          {formatMoney(challenge.creatorAmount)}
+          <FormattedMana amount={challenge.creatorAmount} />
         </SiteLink>
       </td>
 

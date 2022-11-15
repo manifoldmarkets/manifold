@@ -9,7 +9,7 @@ import { track } from 'web/lib/service/analytics'
 import { TipButton } from '../contract/tip-button'
 import { Row } from '../layout/row'
 import { LIKE_TIP_AMOUNT } from 'common/like'
-import { formatMoney } from 'common/util/format'
+import { FormattedMana } from '../mana'
 
 export function Tipper(prop: {
   comment: Comment
@@ -64,7 +64,12 @@ export function Tipper(prop: {
           setTempTip((tempTip) => tempTip - delta)
         })
         .catch((e) => console.error(e))
-    toast(`Tipped ${comment.userName} ${formatMoney(LIKE_TIP_AMOUNT)}`)
+    toast(
+      <>
+        Tipped {comment.userName}{' '}
+        <FormattedMana className="ml-1" amount={LIKE_TIP_AMOUNT} />
+      </>
+    )
   }
 
   const canUp =

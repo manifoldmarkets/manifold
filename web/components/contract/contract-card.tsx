@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { Row } from '../layout/row'
 import {
   formatLargeNumber,
-  formatMoney,
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
@@ -47,6 +46,7 @@ import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
 import { ContractMetrics } from 'common/calculate-metrics'
+import { FormattedMana } from '../mana'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -481,15 +481,8 @@ function MetricsFooter(props: {
           {' '}
           Your {showDailyProfit ? 'daily' : 'total'} profit{' '}
         </div>
-        <div
-          className={clsx(
-            'text-sm font-semibold text-gray-600'
-            // : profit > 0
-            // ? 'text-teal-500'
-            // : 'text-red-600'
-          )}
-        >
-          {profit ? formatMoney(profit) : '--'}
+        <div className={clsx('text-sm font-semibold text-gray-600')}>
+          {profit ? <FormattedMana amount={profit} /> : '--'}
         </div>
       </Col>
     </Row>

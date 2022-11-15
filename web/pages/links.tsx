@@ -4,7 +4,6 @@ import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 dayjs.extend(customParseFormat)
 
-import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
@@ -27,6 +26,7 @@ import { Manalink } from 'common/manalink'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { UserLink } from 'web/components/widgets/user-link'
+import { FormattedMana } from 'web/components/mana'
 
 const LINKS_PER_PAGE = 24
 
@@ -71,8 +71,8 @@ export default function LinkPage(props: { auth: { user: User } }) {
           You can use manalinks to send mana (M$) to other people, even if they
           don&apos;t yet have a Manifold account.{' '}
           <SiteLink href="/referrals">
-            Eligible for {formatMoney(REFERRAL_AMOUNT)} referral bonus if a new
-            user signs up!
+            Eligible for <FormattedMana amount={REFERRAL_AMOUNT} /> referral
+            bonus if a new user signs up!
           </SiteLink>
         </p>
         <Subtitle text="Your Manalinks" />
@@ -162,7 +162,7 @@ export function ClaimDescription(props: { txn: ManalinkTxn }) {
               username={to.username}
               name={to.name}
             />{' '}
-            claimed {formatMoney(txn.amount)} from{' '}
+            claimed <FormattedMana amount={txn.amount} /> from{' '}
             <UserLink
               className="text-gray-500"
               username={from.username}

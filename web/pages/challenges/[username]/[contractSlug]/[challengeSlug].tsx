@@ -20,7 +20,6 @@ import { useUser, useUserById } from 'web/hooks/use-user'
 import { AcceptChallengeButton } from 'web/components/challenges/accept-challenge-button'
 import { Avatar } from 'web/components/widgets/avatar'
 import { BinaryOutcomeLabel } from 'web/components/outcome-label'
-import { formatMoney } from 'common/util/format'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
@@ -32,6 +31,7 @@ import { Title } from 'web/components/widgets/title'
 import { getOpenGraphProps } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contracts'
+import { FormattedMana } from 'web/components/mana'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string; challengeSlug: string }
@@ -313,13 +313,12 @@ function OpenChallengeContent(props: {
         <Spacer h={3} />
         <Row className={'my-4 text-center text-gray-500'}>
           <span>
-            {`${creator.name} will bet ${formatMoney(
-              creatorAmount
-            )} on ${creatorOutcome} if you bet ${formatMoney(
-              acceptorAmount
-            )} on ${acceptorOutcome}. Whoever is right will get `}
+            {creator.name} will bet <FormattedMana amount={creatorAmount} /> on{' '}
+            {creatorOutcome} if you bet{' '}
+            <FormattedMana amount={acceptorAmount} /> on {acceptorOutcome}.
+            Whoever is right will get{' '}
             <span className="mr-1 font-bold ">
-              {formatMoney(creatorAmount + acceptorAmount)}
+              <FormattedMana amount={creatorAmount + acceptorAmount} />
             </span>
             total.
           </span>
@@ -381,7 +380,9 @@ function UserBetColumn(props: {
       </Row>
       <Row className={'w-full items-center justify-center'}>
         <span className={'text-lg'}>
-          <span className="bold text-2xl">{formatMoney(amount)}</span>
+          <span className="bold text-2xl">
+            <FormattedMana amount={amount} />
+          </span>
           {' on '}
           <span className="bold text-2xl">
             <BinaryOutcomeLabel outcome={outcome as any} />

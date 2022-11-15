@@ -4,11 +4,11 @@ import { BETTOR, User } from 'common/user'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
-import { formatMoney } from 'common/util/format'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React from 'react'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { UserLink } from 'web/components/widgets/user-link'
+import { FormattedMana } from '../mana'
 
 export function FeedLiquidity(props: {
   className?: string
@@ -56,7 +56,7 @@ export function LiquidityStatusText(props: {
 
   // TODO: Withdrawn liquidity will never be shown, since liquidity amounts currently are zeroed out upon withdrawal.
   const bought = amount >= 0 ? 'added' : 'withdrew'
-  const money = formatMoney(Math.abs(amount))
+  const money = <FormattedMana amount={Math.abs(amount)} />
 
   return (
     <div className={clsx(className, 'text-sm text-gray-500')}>

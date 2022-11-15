@@ -8,9 +8,9 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
-import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import clsx from 'clsx'
+import { FormattedMana } from '../mana'
 
 export function AcceptChallengeButton(props: {
   user: User | null | undefined
@@ -70,7 +70,7 @@ export function AcceptChallengeButton(props: {
               <Row className={'w-full justify-start gap-20'}>
                 <span className={'min-w-[4rem] font-bold'}>Cost to you:</span>{' '}
                 <span className={'text-scarlet-500'}>
-                  {formatMoney(acceptorAmount)}
+                  <FormattedMana amount={acceptorAmount} />
                 </span>
               </Row>
               <Col className={'w-full items-center justify-start'}>
@@ -80,7 +80,7 @@ export function AcceptChallengeButton(props: {
                   </span>{' '}
                   <Row className={'items-center justify-center'}>
                     <span className={'text-teal-500'}>
-                      {formatMoney(creatorAmount + acceptorAmount)}
+                      <FormattedMana amount={creatorAmount + acceptorAmount} />
                     </span>
                   </Row>
                 </Row>

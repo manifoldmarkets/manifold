@@ -1,9 +1,10 @@
 import clsx from 'clsx'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { shortFormatNumber } from 'common/util/format'
 import { Tooltip } from '../widgets/tooltip'
 import TipJar from 'web/public/custom-components/tipJar'
 import { useState } from 'react'
 import Coin from 'web/public/custom-components/coin'
+import { FormattedMana } from '../mana'
 
 export function TipButton(props: {
   tipAmount: number
@@ -22,9 +23,15 @@ export function TipButton(props: {
   return (
     <Tooltip
       text={
-        disabled
-          ? `Total tips ${formatMoney(totalTipped)}`
-          : `Tip ${formatMoney(tipAmount)}`
+        disabled ? (
+          <>
+            Total tips <FormattedMana amount={totalTipped} />
+          </>
+        ) : (
+          <>
+            Tip <FormattedMana amount={tipAmount} />
+          </>
+        )
       }
       placement="bottom"
       noTap

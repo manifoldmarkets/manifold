@@ -6,7 +6,7 @@ import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { Contract } from 'common/contract'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
-import { formatMoney } from 'common/util/format'
+import { FormattedMana } from '../mana'
 
 export function AwardBountyButton(prop: {
   comment: ContractComment
@@ -45,7 +45,7 @@ export function AwardBountyButton(prop: {
         }
         onClick={submit}
       >
-        Award {formatMoney(COMMENT_BOUNTY_AMOUNT)}
+        Award <FormattedMana amount={COMMENT_BOUNTY_AMOUNT} />
       </button>
     </Row>
   )

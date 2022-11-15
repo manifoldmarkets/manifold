@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { formatMoney } from 'common/lib/util/format'
 import { Row } from './layout/row'
 
@@ -6,12 +7,20 @@ export function ManaSymbol(props: { className?: string }) {
   return <div className="font-mana text-inherit">M$</div>
 }
 
-export function FormattedMana(props: { amount: number }) {
-  const { amount } = props
+export function FormattedMana(props: {
+  amount: number
+  absolute?: boolean
+  className?: string
+}) {
+  const { amount, absolute, className } = props
+  let manaAmount = amount
+  if (absolute) {
+    manaAmount = Math.abs(amount)
+  }
   return (
-    <Row className="inline-flex gap-0.5">
+    <Row className={clsx('inline-flex align-bottom', className)}>
       <ManaSymbol />
-      {formatMoney(amount)}
+      {formatMoney(manaAmount)}
     </Row>
   )
 }

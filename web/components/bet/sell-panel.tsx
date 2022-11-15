@@ -13,7 +13,6 @@ import {
   formatLargeNumber,
   formatPercent,
   formatWithCommas,
-  formatMoney,
 } from 'common/util/format'
 import { sumBy } from 'lodash'
 import { useState } from 'react'
@@ -24,6 +23,7 @@ import { WarningConfirmationButton } from '../buttons/warning-confirmation-butto
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
+import { FormattedMana } from '../mana'
 import { AmountInput } from '../widgets/amount-input'
 
 export function SellPanel(props: {
@@ -169,11 +169,15 @@ export function SellPanel(props: {
       <Col className="mt-3 w-full gap-3 text-sm">
         <Row className="items-center justify-between gap-2 text-gray-500">
           Sale amount
-          <span className="text-gray-700">{formatMoney(saleValue)}</span>
+          <span className="text-gray-700">
+            <FormattedMana amount={saleValue} />
+          </span>
         </Row>
         <Row className="items-center justify-between gap-2 text-gray-500">
           Profit
-          <span className="text-gray-700">{formatMoney(profit)}</span>
+          <span className="text-gray-700">
+            <FormattedMana amount={profit} />
+          </span>
         </Row>
         <Row className="items-center justify-between">
           <div className="text-gray-500">
@@ -189,11 +193,15 @@ export function SellPanel(props: {
           <>
             <Row className="mt-6 items-center justify-between gap-2 text-gray-500">
               Loan repayment
-              <span className="text-gray-700">{formatMoney(-loanPaid)}</span>
+              <span className="text-gray-700">
+                <FormattedMana amount={-loanPaid} />
+              </span>
             </Row>
             <Row className="items-center justify-between gap-2 text-gray-500">
               Net proceeds
-              <span className="text-gray-700">{formatMoney(netProceeds)}</span>
+              <span className="text-gray-700">
+                <FormattedMana amount={netProceeds} />
+              </span>
             </Row>
           </>
         )}

@@ -10,7 +10,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { REFERRAL_AMOUNT } from 'common/economy'
-import { formatMoney } from 'common/util/format'
+import { FormattedMana } from 'web/components/mana'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -25,9 +25,7 @@ export default function ReferralsPage() {
     <Page>
       <SEO
         title="Refer a friend"
-        description={`Invite new users to Manifold and get ${formatMoney(
-          REFERRAL_AMOUNT
-        )} if they
+        description={`Invite new users to Manifold and get ${REFERRAL_AMOUNT} mana if they
             sign up!`}
         url="/referrals"
       />
@@ -43,8 +41,8 @@ export default function ReferralsPage() {
           />
 
           <div className={'mb-4'}>
-            Invite new users to Manifold and get {formatMoney(REFERRAL_AMOUNT)}{' '}
-            if they sign up!
+            Invite new users to Manifold and get{' '}
+            <FormattedMana amount={REFERRAL_AMOUNT} /> if they sign up!
           </div>
 
           <CopyLinkButton

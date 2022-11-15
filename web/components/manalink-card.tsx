@@ -2,7 +2,6 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { QrcodeIcon } from '@heroicons/react/outline'
 import { DotsHorizontalIcon } from '@heroicons/react/solid'
-import { formatMoney } from 'common/util/format'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -10,6 +9,7 @@ import { Claim, Manalink } from 'common/manalink'
 import { ShareIconButton } from './buttons/share-icon-button'
 import { useUserById } from 'web/hooks/use-user'
 import { IconButton } from './buttons/button'
+import { FormattedMana } from './mana'
 
 export type ManalinkInfo = {
   expiresTime: number | null
@@ -62,7 +62,7 @@ export function ManalinkCard(props: {
               getManalinkAmountColor(amount)
             )}
           >
-            {formatMoney(amount)}
+            <FormattedMana amount={amount} />
           </div>
         </Row>
       </Col>
@@ -128,7 +128,7 @@ export function ManalinkCardFromView(props: {
               getManalinkAmountColor(amount)
             )}
           >
-            {formatMoney(amount)}
+            <FormattedMana amount={amount} />
           </div>
 
           <IconButton size="2xs" onClick={() => (window.location.href = qrUrl)}>

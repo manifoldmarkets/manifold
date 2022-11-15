@@ -1,16 +1,16 @@
 import clsx from 'clsx'
-import React from 'react'
+import React, { ReactNode } from 'react'
 import { ExclamationIcon } from '@heroicons/react/solid'
 
 import { Row } from '../layout/row'
 import { ConfirmationButton } from './confirmation-button'
-import { formatMoney } from 'common/util/format'
 import { Button, ColorType, SizeType } from './button'
+import { FormattedMana } from '../mana'
 
 export function WarningConfirmationButton(props: {
   amount: number | undefined
   marketType: 'freeResponse' | 'binary'
-  warning?: string
+  warning?: string | ReactNode
   onSubmit?: () => void
   disabled: boolean
   isSubmitting: boolean
@@ -31,11 +31,15 @@ export function WarningConfirmationButton(props: {
     actionLabel,
   } = props
 
-  const buttonText = isSubmitting
-    ? 'Submitting...'
-    : amount
-    ? `${actionLabel} ${formatMoney(amount)}`
-    : actionLabel
+  const buttonText = isSubmitting ? (
+    'Submitting...'
+  ) : amount ? (
+    <span>
+      {actionLabel} <FormattedMana amount={amount} />
+    </span>
+  ) : (
+    actionLabel
+  )
 
   if (!warning) {
     return (

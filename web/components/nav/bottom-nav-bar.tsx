@@ -11,7 +11,6 @@ import { useState, Fragment } from 'react'
 import Sidebar from './sidebar'
 import { Item } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
 import { Avatar } from '../widgets/avatar'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
@@ -20,6 +19,7 @@ import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
+import { FormattedMana } from '../mana'
 
 const itemClass =
   'sm:hover:bg-gray-200 block w-full py-1 px-3 text-center sm:hover:text-indigo-700'
@@ -116,7 +116,9 @@ function NavBarItem(props: {
               noLink
             />
           </div>
-          {formatMoney(user.balance)}
+          <div className="mx-auto">
+            <FormattedMana amount={user.balance} />
+          </div>
         </Col>
       </Link>
     )

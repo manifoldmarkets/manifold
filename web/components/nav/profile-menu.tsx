@@ -1,9 +1,9 @@
 import Link from 'next/link'
 
 import { User } from 'web/lib/firebase/users'
-import { formatMoney } from 'common/util/format'
 import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
+import { FormattedMana } from '../mana'
 
 export function ProfileSummary(props: { user: User }) {
   const { user } = props
@@ -16,7 +16,9 @@ export function ProfileSummary(props: { user: User }) {
       <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
       <div className="truncate">
         <div>{user.name}</div>
-        <div className="text-sm">{formatMoney(Math.floor(user.balance))}</div>
+        <div className="text-sm">
+          <FormattedMana amount={Math.floor(user.balance)} />
+        </div>
       </div>
     </Link>
   )

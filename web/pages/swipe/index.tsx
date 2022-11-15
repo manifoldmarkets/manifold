@@ -21,6 +21,7 @@ import { ExternalLinkIcon } from '@heroicons/react/outline'
 import HorizontalArrows from 'web/lib/icons/horizontal-arrows'
 import clsx from 'clsx'
 import { getBinaryProb } from 'common/contract-details'
+import { FormattedMana } from 'web/components/mana'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(
@@ -191,7 +192,7 @@ const Card = (props: {
                 onTouchStart={onClickMoney}
                 className="rounded-full border border-yellow-400 px-12 py-4 font-bold text-yellow-300 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
               >
-                {formatMoney(amount)}
+                <FormattedMana amount={amount} />
               </button>
             </div>
           </div>

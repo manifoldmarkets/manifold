@@ -7,11 +7,7 @@ import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, createAnswer } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
-import {
-  formatMoney,
-  formatPercent,
-  formatWithCommas,
-} from 'common/util/format'
+import { formatPercent, formatWithCommas } from 'common/util/format'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
 import {
@@ -26,6 +22,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { lowerCase } from 'lodash'
 import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
+import { FormattedMana } from '../mana'
 
 export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props
@@ -152,7 +149,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
                 <Row className="my-3 justify-between text-left text-sm text-gray-500">
                   Bet Amount
                   <span className={'sm:hidden'}>
-                    Balance: {formatMoney(user?.balance ?? 0)}
+                    Balance: <FormattedMana amount={user?.balance ?? 0} />
                   </span>
                 </Row>{' '}
                 <BuyAmountInput
@@ -188,7 +185,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
                   </Row>
                   <Row className="flex-wrap items-end justify-end gap-2">
                     <span className="whitespace-nowrap">
-                      {formatMoney(currentPayout)}
+                      <FormattedMana amount={currentPayout} />
                     </span>
                     <span>(+{currentReturnPercent})</span>
                   </Row>

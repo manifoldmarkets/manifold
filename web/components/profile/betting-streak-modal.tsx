@@ -5,10 +5,10 @@ import {
   BETTING_STREAK_BONUS_MAX,
   BETTING_STREAK_RESET_HOUR,
 } from 'common/economy'
-import { formatMoney } from 'common/util/format'
 import { User } from 'common/user'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
+import { FormattedMana } from '../mana'
 
 export function BettingStreakModal(props: {
   isOpen: boolean
@@ -45,10 +45,10 @@ export function BettingStreakModal(props: {
         <Col className={'gap-2'}>
           <span className={'text-indigo-700'}>• What are they?</span>
           <span className={'ml-2'}>
-            You get {formatMoney(BETTING_STREAK_BONUS_AMOUNT)} more for each day
-            of consecutive predicting up to{' '}
-            {formatMoney(BETTING_STREAK_BONUS_MAX)}. The more days you predict
-            in a row, the more you earn!
+            You get <FormattedMana amount={BETTING_STREAK_BONUS_AMOUNT} /> more
+            for each day of consecutive predicting up to{' '}
+            <FormattedMana amount={BETTING_STREAK_BONUS_MAX} />. The more days
+            you predict in a row, the more you earn!
           </span>
           <span className={'text-indigo-700'}>
             • Where can I check my streak?

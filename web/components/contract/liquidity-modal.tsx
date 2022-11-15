@@ -11,6 +11,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
+import { FormattedMana } from '../mana'
 
 export function LiquidityModal(props: {
   contract: CPMMContract
@@ -25,7 +26,9 @@ export function LiquidityModal(props: {
       <Col className="gap-2.5 rounded  bg-white p-4 pb-8 sm:gap-4">
         <Title className="!mt-0 !mb-2" text="💧 Add liquidity" />
 
-        <div>Total liquidity subsidies: {formatMoney(totalLiquidity)}</div>
+        <div>
+          Total liquidity subsidies: <FormattedMana amount={totalLiquidity} />
+        </div>
         <AddLiquidityPanel contract={contract as CPMMContract} />
       </Col>
     </Modal>
@@ -52,7 +55,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
       if (user && user.balance < amount) {
         setError('Insufficient balance')
       } else if (amount < 1) {
-        setError('Minimum amount: ' + formatMoney(1))
+        setError('Minimum amount: ' + formatMoney(1) + ' mana')
       } else {
         setError(undefined)
       }
@@ -99,7 +102,9 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
       </Row>
 
       {isSuccess && amount && (
-        <div>Success! Added {formatMoney(amount)} in liquidity.</div>
+        <div>
+          Success! Added <FormattedMana amount={amount} /> in liquidity.
+        </div>
       )}
 
       {isLoading && <div>Processing...</div>}

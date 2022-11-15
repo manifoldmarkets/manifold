@@ -1,12 +1,12 @@
 import clsx from 'clsx'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 
 import { CurrencyDollarIcon } from '@heroicons/react/outline'
 import { Contract } from 'common/contract'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
-import { formatMoney } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { CommentBountyDialog } from './comment-bounty-dialog'
+import { FormattedMana } from '../mana'
 
 export function BountiedContractBadge() {
   return (
@@ -45,25 +45,34 @@ export function BountiedContractSmallBadge(props: {
     )
   }
 
-  const tooltip = `${contract.creatorName} may award ${formatMoney(
-    COMMENT_BOUNTY_AMOUNT
-  )} for good comments. ${formatMoney(
-    openCommentBounties
-  )} currently available.`
+  const tooltip = (
+    <div>
+      {contract.creatorName} may award{' '}
+      <FormattedMana amount={COMMENT_BOUNTY_AMOUNT} /> for good comments.{' '}
+      <FormattedMana amount={openCommentBounties} /> currently available.
+    </div>
+  )
 
   return (
     <Tooltip className="inline-flex" text={tooltip} placement="bottom">
       {modal}
       <SmallBadge
-        text={`${formatMoney(openCommentBounties)} bounty`}
+        content={
+          <div>
+            <FormattedMana amount={openCommentBounties} /> bounty
+          </div>
+        }
         onClick={bountiesClosed ? undefined : () => setOpen(true)}
       />
     </Tooltip>
   )
 }
 
-function SmallBadge(props: { text: string; onClick?: () => void }) {
-  const { text, onClick } = props
+function SmallBadge(props: {
+  content: string | ReactNode
+  onClick?: () => void
+}) {
+  const { content, onClick } = props
 
   return (
     <button
@@ -74,7 +83,7 @@ function SmallBadge(props: { text: string; onClick?: () => void }) {
       )}
     >
       <CurrencyDollarIcon className={'h4 w-4'} />
-      {text}
+      {content}
     </button>
   )
 }

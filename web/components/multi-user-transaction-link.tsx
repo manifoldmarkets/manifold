@@ -6,6 +6,7 @@ import { formatMoney } from 'common/util/format'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from 'web/components/buttons/button'
+import { FormattedMana } from './mana'
 
 export type MultiUserLinkInfo = {
   name: string
@@ -59,7 +60,7 @@ export function MultiUserTransactionLink(props: {
               className="w-full items-center gap-2"
             >
               <span className="min-w-[3.5rem] text-teal-500">
-                +{formatMoney(userInfo.amount)}
+                +<FormattedMana amount={userInfo.amount} />
               </span>
               <Avatar
                 username={userInfo.username}

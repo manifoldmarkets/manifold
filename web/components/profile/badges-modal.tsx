@@ -20,7 +20,7 @@ import {
   goldClassName,
   silverClassName,
 } from 'web/components/badge-display'
-import { formatMoney } from 'common/util/format'
+import { FormattedMana } from '../mana'
 
 export function BadgesModal(props: {
   isOpen: boolean
@@ -136,9 +136,15 @@ function ProvenCorrectBadgeItem(props: {
         <Tooltip
           text={
             `Make a comment attached to a winning bet ` +
-            (profit
-              ? `with ${formatMoney(profit)} profit`
-              : `worth ${formatMoney(betAmount)}`)
+            (profit ? (
+              <>
+                with <FormattedMana amount={profit} /> profit
+              </>
+            ) : (
+              <>
+                worth <FormattedMana amount={betAmount} />
+              </>
+            ))
           }
         >
           <span

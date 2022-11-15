@@ -16,7 +16,6 @@ import {
   outcomeType,
   visibility,
 } from 'common/contract'
-import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { getGroup } from 'web/lib/firebase/groups'
@@ -34,6 +33,7 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Input } from 'web/components/widgets/input'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { FormattedMana } from './mana'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -453,12 +453,17 @@ export function NewContractPanel(props: {
           </label>
 
           <div className="pl-1 text-sm text-gray-700">
-            {formatMoney(ante)} or <span className=" text-teal-500">FREE </span>
+            <FormattedMana amount={ante} /> or{' '}
+            <span className=" text-teal-500">FREE </span>
             if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
             <InfoTooltip
-              text={`You'll earn a bonus of ${formatMoney(
-                UNIQUE_BETTOR_BONUS_AMOUNT
-              )} for each unique trader you get on your market.`}
+              text={
+                <div>
+                  You'll earn a bonus of{' '}
+                  <FormattedMana amount={UNIQUE_BETTOR_BONUS_AMOUNT} /> mana for
+                  each unique trader you get on your market.
+                </div>
+              }
             />
           </div>
           <div className="pl-1 text-gray-500"></div>

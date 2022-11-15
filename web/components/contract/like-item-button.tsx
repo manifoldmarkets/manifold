@@ -10,7 +10,7 @@ import { sum } from 'lodash'
 import { TipButton } from './tip-button'
 import { Contract } from 'common/contract'
 import { Post } from 'common/post'
-import { formatMoney } from 'common/util/format'
+import { FormattedMana } from '../mana'
 
 export function LikeItemButton(props: {
   item: Contract | Post
@@ -46,7 +46,11 @@ export function LikeItemButton(props: {
       .catch(() => {
         setIsLiking(false)
       })
-    toast(`Tipped ${item.creatorUsername} ${formatMoney(LIKE_TIP_AMOUNT)}`)
+    toast(
+      <span>
+        Tipped {item.creatorUsername} <FormattedMana amount={LIKE_TIP_AMOUNT} />
+      </span>
+    )
   }
 
   return (

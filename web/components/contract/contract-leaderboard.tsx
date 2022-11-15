@@ -1,7 +1,6 @@
 import { Bet } from 'common/bet'
 import { resolvedPayout } from 'common/calculate'
 import { Contract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
 
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { FeedBet } from '../feed/feed-bets'
@@ -14,6 +13,7 @@ import { scoreCommentorsAndBettors } from 'common/scoring'
 import { ContractComment } from 'common/comment'
 import { memo } from 'react'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { FormattedMana } from '../mana'
 
 export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   contract: Contract
@@ -46,7 +46,7 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
       columns={[
         {
           header: 'Total profit',
-          renderCell: (entry) => formatMoney(entry.total),
+          renderCell: (entry) => <FormattedMana amount={entry.total} />,
         },
       ]}
       className="mt-12 max-w-sm"
@@ -92,7 +92,8 @@ export function ContractTopTrades(props: {
             <FeedBet contract={contract} bet={betsById[topBetId]} />
           </div>
           <div className="mt-2 ml-2 text-sm text-gray-500">
-            {topBettor} made {formatMoney(profitById[topBetId] || 0)}!
+            {topBettor} made{' '}
+            <FormattedMana amount={profitById[topBetId] || 0} />!
           </div>
         </>
       )}

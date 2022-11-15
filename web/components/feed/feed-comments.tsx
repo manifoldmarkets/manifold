@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef, useState } from 'react'
+import React, { memo, ReactNode, useEffect, useRef, useState } from 'react'
 import { Editor } from '@tiptap/react'
 import { useRouter } from 'next/router'
 import { sum } from 'lodash'
@@ -7,7 +7,6 @@ import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { OutcomeLabel } from 'web/components/outcome-label'
@@ -34,6 +33,7 @@ import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { toast } from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { FlagIcon } from '@heroicons/react/outline'
+import { FormattedMana } from '../mana'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -371,10 +371,10 @@ export function FeedCommentHeader(props: {
   } = comment
   const betOutcome = comment.betOutcome
   let bought: string | undefined
-  let money: string | undefined
+  let money: string | undefined | ReactNode
   if (comment.betAmount != null) {
     bought = comment.betAmount >= 0 ? 'bought' : 'sold'
-    money = formatMoney(Math.abs(comment.betAmount))
+    money = <FormattedMana amount={Math.abs(comment.betAmount)} />
   }
   const totalAwarded = bountiesAwarded ?? 0
   return (
@@ -418,7 +418,7 @@ export function FeedCommentHeader(props: {
         />
         {totalAwarded > 0 && (
           <span className=" ml-2 text-sm text-teal-500">
-            +{formatMoney(totalAwarded)}
+            +<FormattedMana amount={totalAwarded} />
           </span>
         )}
       </div>

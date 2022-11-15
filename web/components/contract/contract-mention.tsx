@@ -51,5 +51,5 @@ function tooltipLabel(contract: Contract) {
     ? `Resolved ${fromNow(resolutionTime)}`
     : `${closeTime < Date.now() ? 'Closed' : 'Closes'} ${fromNow(closeTime)}`
 
-  return `By ${creatorName}. ${formatMoney(volume)} bet. ${dateFormat}`
+  return `By ${creatorName}. ${formatMoney(volume)} mana bet. ${dateFormat}`
 }

@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 
 import { Bet } from 'web/lib/firebase/bets'
-import { formatMoney, formatWithCommas } from 'common/util/format'
+import { formatWithCommas } from 'common/util/format'
 import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
@@ -10,6 +10,7 @@ import { getProbability } from 'common/calculate'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { FormattedMana } from '../mana'
 
 export function BetsSummary(props: {
   contract: Contract
@@ -45,7 +46,7 @@ export function BetsSummary(props: {
           <Col>
             <div className="text-sm text-gray-500">Payout</div>
             <div className="whitespace-nowrap">
-              {formatMoney(payout)}{' '}
+              <FormattedMana amount={payout} />{' '}
               <ProfitBadge profitPercent={profitPercent} />
             </div>
           </Col>
@@ -77,7 +78,9 @@ export function BetsSummary(props: {
               Expectation{''}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />
             </div>
-            <div className="whitespace-nowrap">{formatMoney(payout)}</div>
+            <div className="whitespace-nowrap">
+              <FormattedMana amount={payout} />
+            </div>
           </Col>
         )}
 
@@ -86,7 +89,9 @@ export function BetsSummary(props: {
             Invested{' '}
             <InfoTooltip text="Cash currently invested in this market." />
           </div>
-          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
+          <div className="whitespace-nowrap">
+            <FormattedMana amount={invested} />
+          </div>
         </Col>
 
         {isBinary && !resolution && (
@@ -95,7 +100,9 @@ export function BetsSummary(props: {
               Expectation{' '}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />
             </div>
-            <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
+            <div className="whitespace-nowrap">
+              <FormattedMana amount={expectation} />
+            </div>
           </Col>
         )}
 
@@ -105,7 +112,7 @@ export function BetsSummary(props: {
             <InfoTooltip text="Includes both realized & unrealized gains/losses." />
           </div>
           <div className="whitespace-nowrap">
-            {formatMoney(profit)}
+            <FormattedMana amount={profit} />
             <ProfitBadge profitPercent={profitPercent} />
           </div>
         </Col>

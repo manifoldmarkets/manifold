@@ -18,11 +18,7 @@ import {
   PseudoNumericContract,
   resolution,
 } from 'common/contract'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatPercent,
-} from 'common/util/format'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -53,6 +49,7 @@ import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import { floor } from 'lodash'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { FormattedMana } from '../mana'
 
 const BET_SIZE = 10
 
@@ -179,11 +176,18 @@ function SignedInQuickBet(props: {
       })
     }
     const shortQ = contract.question.slice(0, 20)
-    const message =
-      sellOutcome && saleAmount
-        ? `${formatMoney(Math.round(saleAmount))} sold of "${shortQ}"...`
-        : `${formatMoney(BET_SIZE)} on "${shortQ}"...`
 
+    const message =
+      sellOutcome && saleAmount ? (
+        <div>
+          <FormattedMana amount={Math.round(saleAmount)} /> sold of "{shortQ}
+          "...
+        </div>
+      ) : (
+        <div>
+          <FormattedMana amount={BET_SIZE} /> on "{shortQ}"...
+        </div>
+      )
     toast.promise(betPromise(), {
       loading: message,
       success: message,
@@ -326,9 +330,11 @@ function BinaryQuickBetButton(props: {
             shouldFocus ? 'text-indigo-600' : 'text-gray-400'
           )}
         >
-          {shouldFocus
-            ? formatMoney(invested + BET_SIZE)
-            : formatMoney(invested)}
+          {shouldFocus ? (
+            <FormattedMana amount={invested + BET_SIZE} />
+          ) : (
+            <FormattedMana amount={invested} />
+          )}
         </span>
       ) : (
         <span
@@ -337,7 +343,7 @@ function BinaryQuickBetButton(props: {
             shouldFocus ? 'opacity-100' : 'opacity-0'
           )}
         >
-          {formatMoney(BET_SIZE)}
+          <FormattedMana amount={BET_SIZE} />
         </span>
       )}
     </Row>

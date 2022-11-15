@@ -5,7 +5,7 @@ import { capitalize } from 'lodash'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 import { Contract } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 import { contractPool, updateContract } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -31,6 +31,7 @@ import { getShareUrl } from 'common/util/share'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { formatTime } from 'web/lib/util/time'
 import { ReportButton } from 'web/components/buttons/report-button'
+import { FormattedMana } from '../mana'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -156,7 +157,9 @@ export function ContractInfoDialog(props: {
                     <span className="mr-1">24 hour volume</span>
                     <InfoTooltip text="The amount bought or sold in the last 24 hours" />
                   </td>
-                  <td>{formatMoney(contract.volume24Hours)}</td>
+                  <td>
+                    <FormattedMana amount={contract.volume24Hours} />
+                  </td>
                 </tr>
 
                 <tr>
@@ -164,7 +167,9 @@ export function ContractInfoDialog(props: {
                     <span className="mr-1">Total volume</span>
                     <InfoTooltip text="Total amount bought or sold" />
                   </td>
-                  <td>{formatMoney(contract.volume)}</td>
+                  <td>
+                    <FormattedMana amount={contract.volume} />
+                  </td>
                 </tr>
 
                 <tr>
@@ -191,11 +196,18 @@ export function ContractInfoDialog(props: {
                 <tr>
                   <td>Liquidity subsidies</td>
                   <td>
-                    {mechanism === 'cpmm-1'
-                      ? `${formatMoney(
-                          contract.totalLiquidity - contract.subsidyPool
-                        )} / ${formatMoney(contract.totalLiquidity)}`
-                      : formatMoney(100)}
+                    {mechanism === 'cpmm-1' ? (
+                      <>
+                        <FormattedMana
+                          amount={
+                            contract.totalLiquidity - contract.subsidyPool
+                          }
+                        />
+                        / <FormattedMana amount={contract.totalLiquidity} />
+                      </>
+                    ) : (
+                      <FormattedMana amount={100} />
+                    )}
                   </td>
                 </tr>
 

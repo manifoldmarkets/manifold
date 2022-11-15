@@ -4,12 +4,12 @@ import { useState } from 'react'
 import { addCommentBounty } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import { formatMoney } from 'common/util/format'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
 import { Button } from 'web/components/buttons/button'
 import { Title } from '../widgets/title'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
+import { FormattedMana } from '../mana'
 
 export function CommentBountyDialog(props: {
   contract: Contract
@@ -56,9 +56,13 @@ export function CommentBountyDialog(props: {
         <Title className="!mt-0 !mb-0" text="Comment bounty" />
 
         <div className="mb-4 text-gray-500">
-          Add a {formatMoney(amount)} bounty for good comments that the creator
-          can award.{' '}
-          {totalAdded > 0 && `(${formatMoney(totalAdded)} currently added)`}
+          Add a <FormattedMana amount={amount} /> bounty for good comments that
+          the creator can award.{' '}
+          {totalAdded > 0 && (
+            <span>
+              <FormattedMana amount={totalAdded} /> currently added
+            </span>
+          )}
         </div>
 
         <Row className={'items-center gap-2'}>
@@ -68,13 +72,17 @@ export function CommentBountyDialog(props: {
             disabled={isLoading}
             color={'blue'}
           >
-            Add {formatMoney(amount)} bounty
+            <Row className="gap-1.5">
+              Add <FormattedMana amount={amount} /> bounty
+            </Row>
           </Button>
           <span className={'text-error'}>{error}</span>
         </Row>
 
         {isSuccess && amount && (
-          <div>Success! Added {formatMoney(amount)} in bounties.</div>
+          <div>
+            Success! Added <FormattedMana amount={amount} /> in bounties.
+          </div>
         )}
 
         {isLoading && <div>Processing...</div>}

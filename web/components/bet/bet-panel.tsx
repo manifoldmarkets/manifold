@@ -7,11 +7,7 @@ import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatPercent,
-} from 'common/util/format'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
 import { LimitBet } from 'common/bet'
@@ -47,6 +43,7 @@ import { Title } from '../widgets/title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
+import { FormattedMana } from '../mana'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -303,15 +300,18 @@ export function BuyPanel(props: {
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
   const warning =
-    (betAmount ?? 0) >= 100 && bankrollFraction >= 0.5 && bankrollFraction <= 1
-      ? `You might not want to spend ${formatPercent(
-          bankrollFraction
-        )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
-          user?.balance ?? 0
-        )}`
-      : (betAmount ?? 0) > 10 && probChange >= 0.3 && bankrollFraction <= 1
-      ? `Are you sure you want to move the market by ${displayedDifference}?`
-      : undefined
+    (betAmount ?? 0) >= 100 &&
+    bankrollFraction >= 0.5 &&
+    bankrollFraction <= 1 ? (
+      <div>
+        You might not want to spend {formatPercent(bankrollFraction)} of your
+        balance on a single bet.
+        <Spacer h={1} />
+        Current balance: <FormattedMana amount={user?.balance ?? 0} />
+      </div>
+    ) : (betAmount ?? 0) > 10 && probChange >= 0.3 && bankrollFraction <= 1 ? (
+      `Are you sure you want to move the market by ${displayedDifference}?`
+    ) : undefined
 
   // hide input on mobile for new users for first week
   const hideInput =
@@ -359,7 +359,7 @@ export function BuyPanel(props: {
             </Col>
             <div>
               <span className="whitespace-nowrap text-xl">
-                {formatMoney(currentPayout)}
+                <FormattedMana amount={currentPayout} />
               </span>
               <span className="text-xs text-gray-400">
                 {' '}
@@ -683,7 +683,7 @@ function LimitOrderPanel(props: {
           Max amount<span className="text-scarlet-500 ml-1">*</span>
         </span>
         <span className={'xl:hidden'}>
-          Balance: {formatMoney(user?.balance ?? 0)}
+          Balance: <FormattedMana amount={user?.balance ?? 0} />
         </span>
       </Row>
 
@@ -709,8 +709,8 @@ function LimitOrderPanel(props: {
               filled now
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(yesBet.amount)} of{' '}
-              {formatMoney(yesBet.orderAmount ?? 0)}
+              <FormattedMana amount={yesBet.amount} /> of{' '}
+              <FormattedMana amount={yesBet.orderAmount ?? 0} />
             </div>
           </Row>
         )}
@@ -725,8 +725,8 @@ function LimitOrderPanel(props: {
               filled now
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(noBet.amount)} of{' '}
-              {formatMoney(noBet.orderAmount ?? 0)}
+              <FormattedMana amount={noBet.amount} /> of{' '}
+              <FormattedMana amount={noBet.orderAmount ?? 0} />
             </div>
           </Row>
         )}
@@ -736,7 +736,7 @@ function LimitOrderPanel(props: {
               Profit if both orders filled
             </div>
             <div className="mr-2 whitespace-nowrap">
-              {formatMoney(profitIfBothFilled)}
+              <FormattedMana amount={profitIfBothFilled} />
             </div>
           </Row>
         )}
@@ -752,13 +752,10 @@ function LimitOrderPanel(props: {
                   </>
                 )}
               </div>
-              {/* <InfoTooltip
-                text={`Includes ${formatMoneyWithDecimals(yesFees)} in fees`}
-              /> */}
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
-                {formatMoney(yesPayout)}
+                <FormattedMana amount={yesPayout} />
               </span>
               (+{yesReturnPercent})
             </div>
@@ -776,13 +773,10 @@ function LimitOrderPanel(props: {
                   </>
                 )}
               </div>
-              {/* <InfoTooltip
-                text={`Includes ${formatMoneyWithDecimals(noFees)} in fees`}
-              /> */}
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
-                {formatMoney(noPayout)}
+                <FormattedMana amount={noPayout} />
               </span>
               (+{noReturnPercent})
             </div>

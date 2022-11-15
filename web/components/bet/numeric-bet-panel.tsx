@@ -8,7 +8,7 @@ import {
   getOutcomeProbability,
 } from 'common/calculate'
 import { NumericContract } from 'common/contract'
-import { formatPercent, formatMoney } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 
 import { useUser } from 'web/hooks/use-user'
 import { APIError, placeBet } from 'web/lib/firebase/api'
@@ -21,6 +21,7 @@ import { Spacer } from '../layout/spacer'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
+import { FormattedMana } from '../mana'
 
 export function NumericBetPanel(props: {
   contract: NumericContract
@@ -186,7 +187,7 @@ function NumericBuyPanel(props: {
           </Row>
           <Row className="flex-wrap items-end justify-end gap-2">
             <span className="whitespace-nowrap">
-              {formatMoney(currentPayout)}
+              <FormattedMana amount={currentPayout} />
             </span>
             <span>(+{currentReturnPercent})</span>
           </Row>

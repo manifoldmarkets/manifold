@@ -11,12 +11,12 @@ import {
   useUserContractMetricsByProfit,
 } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { formatMoney } from 'common/util/format'
 import {
   BettingStreakModal,
   hasCompletedStreakToday,
 } from 'web/components/profile/betting-streak-modal'
 import { LoansModal } from 'web/components/profile/loans-modal'
+import { FormattedMana } from './mana'
 
 const dailyStatsHeaderClass = 'text-gray-500 text-xs sm:text-sm'
 const dailyStatsClass = 'items-center text-lg'
@@ -75,7 +75,7 @@ export function DailyStats(props: {
             )}
           >
             <span className="text-teal-500">
-              🏦 {formatMoney(user?.nextLoanCached ?? 0)}
+              🏦 <FormattedMana amount={user?.nextLoanCached ?? 0} />
             </span>
           </Row>
         </Col>
@@ -109,7 +109,9 @@ export function DailyProfit(props: { user: User | null | undefined }) {
     <SiteLink className="flex flex-col hover:no-underline" href="/daily-movers">
       <div className={dailyStatsHeaderClass}>Daily profit</div>
       <Row className={dailyStatsClass}>
-        <span>{formatMoney(profit)}</span>{' '}
+        <span>
+          <FormattedMana amount={profit} />
+        </span>{' '}
       </Row>
     </SiteLink>
   )

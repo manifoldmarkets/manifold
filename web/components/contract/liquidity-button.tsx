@@ -2,13 +2,14 @@ import { useState } from 'react'
 import clsx from 'clsx'
 
 import { Button } from 'web/components/buttons/button'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Tooltip } from '../widgets/tooltip'
 import { CPMMContract } from 'common/contract'
 import { User } from 'common/user'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { LiquidityModal } from './liquidity-modal'
+import { FormattedMana } from '../mana'
 
 export function LiquidityButton(props: {
   contract: CPMMContract
@@ -27,7 +28,11 @@ export function LiquidityButton(props: {
 
   return (
     <Tooltip
-      text={`${formatMoney(total)} in liquidity subsidies`}
+      text={
+        <span>
+          <FormattedMana amount={total} /> in liquidity subsidies
+        </span>
+      }
       placement="bottom"
       noTap
       noFade

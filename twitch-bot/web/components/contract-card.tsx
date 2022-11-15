@@ -2,11 +2,12 @@ import { InformationCircleIcon, TrendingUpIcon } from '@heroicons/react/outline'
 import { SparklesIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
 import { LiteMarket } from 'common/types/manifold-api-types';
-import { DAY_MS, formatMoney } from 'web/lib/utils';
+import { DAY_MS } from 'web/lib/utils';
 import { Avatar } from './avatar';
 import { ConfirmationButton } from './confirmation-button';
 import { Col } from './layout/col';
 import { Row } from './layout/row';
+import { FormattedMana } from 'web/components/mana';
 
 export default function ContractCard(props: { controlUserID: string; contract: LiteMarket; onFeature: () => void }) {
   const { controlUserID, contract, onFeature } = props;
@@ -91,10 +92,12 @@ function MiscDetails(props: { contract: LiteMarket; showHotVolume?: boolean; sho
     <Row className="w-full items-center gap-3 text-sm text-gray-400">
       {showHotVolume ? (
         <Row className="gap-0.5">
-          <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
+          <TrendingUpIcon className="h-5 w-5" /> <FormattedMana amount={volume24Hours} />
         </Row>
       ) : volume > 0 || !isNew ? (
-        <Row className={'shrink-0'}>{formatMoney(contract.volume)} bet</Row>
+        <Row className={'shrink-0'}>
+          <FormattedMana amount={contract.volume} /> bet
+        </Row>
       ) : (
         <NewContractBadge />
       )}

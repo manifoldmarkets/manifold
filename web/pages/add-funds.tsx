@@ -9,21 +9,21 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Button } from 'web/components/buttons/button'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { formatMoney } from 'common/util/format'
 import {
   FundsSelector,
   OtherWaysToGetMana,
 } from 'web/components/add-funds-modal'
 
 export const WEB_PRICES = {
-  [formatMoney(1000)]: 1000,
-  [formatMoney(2500)]: 2500,
-  [formatMoney(10000)]: 10000,
+  1000: 1000,
+  2500: 2500,
+  10000: 10000,
 }
+
 export const IOS_PRICES = {
-  [formatMoney(1000)]: 1199,
-  [formatMoney(2500)]: 2999,
-  [formatMoney(10000)]: 11999,
+  1000: 1199,
+  2500: 2999,
+  10000: 11999,
 }
 
 export default function AddFundsPage() {

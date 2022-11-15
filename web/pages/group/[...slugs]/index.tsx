@@ -28,7 +28,6 @@ import {
   useMemberGroupsSubscription,
 } from 'web/hooks/use-group'
 import { Leaderboard } from 'web/components/leaderboard'
-import { formatMoney } from 'common/util/format'
 import Custom404 from '../../404'
 import { SEO } from 'web/components/SEO'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -52,6 +51,7 @@ import { GroupAbout } from 'web/components/groups/group-about'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
+import { FormattedMana } from 'web/components/mana'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -383,9 +383,11 @@ function GroupLeaderboard(props: {
         {
           header,
           renderCell: (user) =>
-            noFormatting
-              ? scoresByUser[user.id]
-              : formatMoney(scoresByUser[user.id]),
+            noFormatting ? (
+              scoresByUser[user.id]
+            ) : (
+              <FormattedMana amount={scoresByUser[user.id]} />
+            ),
         },
       ]}
       maxToShow={maxToShow}

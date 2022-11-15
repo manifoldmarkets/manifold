@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
 import { memo, ReactNode, useState } from 'react'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
@@ -15,6 +14,7 @@ import { AddFundsModal } from '../add-funds-modal'
 import { Button } from '../buttons/button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
+import { FormattedMana } from '../mana'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -22,11 +22,10 @@ export const PortfolioValueSection = memo(
     const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('weekly')
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
     const [graphMode, setGraphMode] = useState<GraphMode>('profit')
-    const [graphDisplayNumber, setGraphDisplayNumber] = useState<
-      number | string | null
-    >(null)
+    const [graphDisplayNumber, setGraphDisplayNumber] =
+      useState<ReactNode | null>(null)
     const handleGraphDisplayChange = (p: { y: number } | undefined) => {
-      setGraphDisplayNumber(p != null ? formatMoney(p.y) : null)
+      setGraphDisplayNumber(p != null ? <FormattedMana amount={p.y} /> : null)
     }
     const lastPortfolioMetrics = last(portfolioHistory)
     const onClickNumber = useEvent((mode: GraphMode) => {
@@ -110,20 +109,28 @@ export const PortfolioValueSection = memo(
               'text-lg sm:text-xl'
             )}
           >
-            {graphMode === 'profit'
-              ? graphDisplayNumber
-                ? graphDisplayNumber
-                : formatMoney(totalProfit)
-              : formatMoney(totalProfit)}
+            {graphMode === 'profit' ? (
+              graphDisplayNumber ? (
+                graphDisplayNumber
+              ) : (
+                <FormattedMana amount={totalProfit} />
+              )
+            ) : (
+              <FormattedMana amount={totalProfit} />
+            )}
           </div>
         }
         valueElement={
           <div className={clsx('text-lg text-indigo-600 sm:text-xl')}>
-            {graphMode === 'value'
-              ? graphDisplayNumber
-                ? graphDisplayNumber
-                : formatMoney(totalValue)
-              : formatMoney(totalValue)}
+            {graphMode === 'value' ? (
+              graphDisplayNumber ? (
+                graphDisplayNumber
+              ) : (
+                <FormattedMana amount={totalValue} />
+              )
+            ) : (
+              <FormattedMana amount={totalValue} />
+            )}
           </div>
         }
         graphElement={(width, height) => (

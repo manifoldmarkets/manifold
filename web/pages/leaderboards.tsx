@@ -8,7 +8,6 @@ import {
   Period,
   User,
 } from 'web/lib/firebase/users'
-import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
 import { Tabs } from 'web/components/layout/tabs'
@@ -17,6 +16,7 @@ import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { FormattedMana } from 'web/components/mana'
 
 export async function getStaticProps() {
   const props = await fetchProps()
@@ -121,7 +121,9 @@ export default function Leaderboards(_props: {
             columns={[
               {
                 header: 'Total profit',
-                renderCell: (user) => formatMoney(user.profitCached[period]),
+                renderCell: (user) => (
+                  <FormattedMana amount={user.profitCached[period]} />
+                ),
               },
             ]}
             highlightUsername={user?.username}

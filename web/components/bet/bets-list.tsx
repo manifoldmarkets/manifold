@@ -6,11 +6,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet, MAX_USER_BETS_LOADED } from 'web/lib/firebase/bets'
 import { User } from 'web/lib/firebase/users'
-import {
-  formatMoney,
-  formatPercent,
-  formatWithCommas,
-} from 'common/util/format'
+import { formatPercent, formatWithCommas } from 'common/util/format'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import {
@@ -56,6 +52,7 @@ import {
   calculateDpmSaleAmount,
   getDpmProbabilityAfterSale,
 } from 'common/calculate-dpm'
+import { FormattedMana } from '../mana'
 
 type BetSort = 'newest' | 'profit' | 'loss' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -198,13 +195,15 @@ export function BetsList(props: { user: User }) {
               Investment value
             </div>
             <div className="text-lg">
-              {formatMoney(currentBetsValue)}{' '}
+              <FormattedMana amount={currentBetsValue} />
               <ProfitBadge profitPercent={investedProfitPercent} />
             </div>
           </Col>
           <Col>
             <div className="text-xs text-gray-600 sm:text-sm">Total loans</div>
-            <div className="text-lg">{formatMoney(currentLoan)}</div>
+            <div className="text-lg">
+              <FormattedMana amount={currentLoan} />
+            </div>
           </Col>
         </Row>
 
@@ -364,7 +363,7 @@ function ContractBets(props: {
 
         <Col className="mr-5 sm:mr-8">
           <div className="whitespace-nowrap text-right text-lg">
-            {formatMoney(metric === 'profit' ? profit : payout)}
+            <FormattedMana amount={metric === 'profit' ? profit : payout} />
           </div>
           <ProfitBadge className="text-right" profitPercent={profitPercent} />
         </Col>
@@ -454,7 +453,8 @@ export function ContractBetsTable(props: {
           <div className="pl-2 text-sm text-gray-500">
             {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
             {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
-            automatically redeemed for {formatMoney(amountRedeemed)}.
+            automatically redeemed for <FormattedMana amount={amountRedeemed} />
+            .
           </div>
           <Spacer h={4} />
         </>
@@ -463,7 +463,8 @@ export function ContractBetsTable(props: {
       {!isResolved && amountLoaned > 0 && (
         <>
           <div className="pl-2 text-sm text-gray-500">
-            You currently have a loan of {formatMoney(amountLoaned)}.
+            You currently have a loan of <FormattedMana amount={amountLoaned} />
+            .
           </div>
           <Spacer h={4} />
         </>
@@ -546,15 +547,19 @@ function BetRow(props: {
   ) : isAnte ? (
     'ANTE'
   ) : saleBet ? (
-    <>{formatMoney(dpmPayout)} (sold)</>
+    <>
+      <FormattedMana amount={dpmPayout} /> sold
+    </>
   ) : (
-    formatMoney(dpmPayout)
+    <FormattedMana amount={dpmPayout} />
   )
 
   const payoutIfChosenDisplay =
-    bet.isAnte && outcomeType === 'FREE_RESPONSE' && bet.outcome === '0'
-      ? 'N/A'
-      : formatMoney(calculatePayout(contract, bet, bet.outcome))
+    bet.isAnte && outcomeType === 'FREE_RESPONSE' && bet.outcome === '0' ? (
+      'N/A'
+    ) : (
+      <FormattedMana amount={calculatePayout(contract, bet, bet.outcome)} />
+    )
 
   const hadPoolMatch =
     (bet.limitProb === undefined ||
@@ -562,9 +567,14 @@ function BetRow(props: {
     false
 
   const ofTotalAmount =
-    bet.limitProb === undefined || bet.orderAmount === undefined
-      ? ''
-      : ` / ${formatMoney(bet.orderAmount)}`
+    bet.limitProb === undefined || bet.orderAmount === undefined ? (
+      ''
+    ) : (
+      <>
+        {' '}
+        / <FormattedMana amount={bet.orderAmount} />
+      </>
+    )
 
   return (
     <tr>
@@ -593,7 +603,7 @@ function BetRow(props: {
           ' than ' + formatNumericProbability(bet.probAfter, contract)}
       </td>
       <td>
-        {formatMoney(Math.abs(amount))}
+        <FormattedMana amount={Math.abs(amount)} />
         {ofTotalAmount}
       </td>
       {isDPM && !isNumeric && <td>{saleDisplay}</td>}
@@ -651,17 +661,18 @@ function DpmSellButton(props: { contract: DPMContract; bet: Bet }) {
       <div className="mb-4 text-xl">
         Sell {formatWithCommas(shares)} shares of{' '}
         <OutcomeLabel outcome={outcome} contract={contract} truncate="long" />{' '}
-        for {formatMoney(saleAmount)}?
+        for <FormattedMana amount={saleAmount} />?
       </div>
       {!!loanAmount && (
         <div className="mt-2">
-          You will also pay back {formatMoney(loanAmount)} of your loan, for a
-          net of {formatMoney(saleAmount - loanAmount)}.
+          You will also pay back <FormattedMana amount={loanAmount} /> of your
+          loan, for a net of <FormattedMana amount={saleAmount - loanAmount} />.
         </div>
       )}
 
       <div className="mt-2 mb-1 text-sm">
-        {profit > 0 ? 'Profit' : 'Loss'}: {formatMoney(profit).replace('-', '')}
+        {profit > 0 ? 'Profit' : 'Loss'}:{' '}
+        <FormattedMana amount={profit} absolute={true} />
         <br />
         Market probability: {formatPercent(initialProb)} →{' '}
         {formatPercent(outcomeProb)}

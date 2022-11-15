@@ -6,7 +6,6 @@ import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import clsx from 'clsx'
-import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
@@ -16,6 +15,7 @@ import { Challenge } from 'common/challenge'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BETTOR } from 'common/user'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
+import { FormattedMana } from '../mana'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -69,11 +69,13 @@ export function BetStatusText(props: {
   }, [challengeSlug, contract.id])
 
   const bought = amount >= 0 ? 'bought' : 'sold'
-  const money = formatMoney(Math.abs(amount))
+  const money = <FormattedMana amount={Math.abs(amount)} />
   const orderAmount =
-    bet.limitProb !== undefined && bet.orderAmount !== undefined
-      ? formatMoney(bet.orderAmount)
-      : ''
+    bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
+      <FormattedMana amount={bet.orderAmount} />
+    ) : (
+      ''
+    )
   const anyFilled = !floatingLesserEqual(amount, 0)
   const allFilled = floatingEqual(amount, bet.orderAmount ?? amount)
 

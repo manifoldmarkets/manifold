@@ -1,7 +1,7 @@
 import { LimitBet } from 'common/bet'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -16,6 +16,7 @@ import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
+import { FormattedMana } from '../mana'
 
 export function LimitBets(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -141,7 +142,9 @@ function LimitBet(props: {
           ? getFormattedMappedValue(contract)(limitProb)
           : formatPercent(limitProb)}
       </td>
-      <td>{formatMoney(orderAmount - amount)}</td>
+      <td>
+        <FormattedMana amount={orderAmount - amount} />
+      </td>
       {isYou && (
         <td>
           {isCancelling ? (

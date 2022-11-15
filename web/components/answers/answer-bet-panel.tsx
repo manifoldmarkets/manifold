@@ -9,11 +9,7 @@ import { Col } from '../layout/col'
 import { APIError, placeBet } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import {
-  formatMoney,
-  formatPercent,
-  formatWithCommas,
-} from 'common/util/format'
+import { formatPercent, formatWithCommas } from 'common/util/format'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
 import {
@@ -26,6 +22,7 @@ import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
+import { FormattedMana } from '../mana'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -110,13 +107,16 @@ export function AnswerBetPanel(props: {
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
   const warning =
-    (betAmount ?? 0) >= 100 && bankrollFraction >= 0.5 && bankrollFraction <= 1
-      ? `You might not want to spend ${formatPercent(
-          bankrollFraction
-        )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
-          user?.balance ?? 0
-        )}`
-      : undefined
+    (betAmount ?? 0) >= 100 &&
+    bankrollFraction >= 0.5 &&
+    bankrollFraction <= 1 ? (
+      <div>
+        You might not want to spend {formatPercent(bankrollFraction)} of your
+        balance on a single bet.
+        <Spacer h={1} />
+        Current balance: <FormattedMana amount={user?.balance ?? 0} />
+      </div>
+    ) : undefined
 
   return (
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
@@ -139,7 +139,9 @@ export function AnswerBetPanel(props: {
       </Row>
       <Row className="my-3 justify-between text-left text-sm text-gray-500">
         Amount
-        <span>Balance: {formatMoney(user?.balance ?? 0)}</span>
+        <span>
+          Balance: <FormattedMana amount={user?.balance ?? 0} />
+        </span>
       </Row>
 
       <BuyAmountInput
@@ -177,7 +179,7 @@ export function AnswerBetPanel(props: {
           </Row>
           <Row className="flex-wrap items-end justify-end gap-2">
             <span className="whitespace-nowrap">
-              {formatMoney(currentPayout)}
+              <FormattedMana amount={currentPayout} />
             </span>
             <span>(+{currentReturnPercent})</span>
           </Row>
