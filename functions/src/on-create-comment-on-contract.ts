@@ -12,7 +12,6 @@ import { ContractComment } from '../../common/comment'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { getLargestPosition } from '../../common/calculate'
-import { maxBy } from 'lodash'
 import {
   createCommentOrAnswerOrUpdatedContractNotification,
   replied_users_info,
@@ -69,12 +68,17 @@ async function getPriorUserComments(
   return priorCommentsQuery.docs.map((d) => d.data() as ContractComment)
 }
 
-async function getPriorContractBets(contractId: string, before: number) {
+async function getPriorContractBets(
+  contractId: string,
+  userId: string,
+  before: number
+) {
   const priorBetsQuery = await firestore
     .collection('contracts')
     .doc(contractId)
     .collection('bets')
     .where('createdTime', '<', before)
+    .where('userId', '==', userId)
     .get()
   return priorBetsQuery.docs.map((d) => d.data() as Bet)
 }
@@ -113,12 +117,10 @@ export const onCreateCommentOnContract = functions
       .doc(contract.id)
       .update({ lastCommentTime, lastUpdatedTime: Date.now() })
 
-    const priorBets = await getPriorContractBets(
+    const priorUserBets = await getPriorContractBets(
       contractId,
+      comment.userId,
       comment.createdTime
-    )
-    const priorUserBets = priorBets.filter(
-      (b) => b.userId === comment.userId && !b.isAnte
     )
     const priorUserComments = await getPriorUserComments(
       contractId,
@@ -127,7 +129,7 @@ export const onCreateCommentOnContract = functions
     )
     const bet = getMostRecentCommentableBet(
       comment.createdTime,
-      priorUserBets,
+      priorUserBets.filter((b) => !b.isAnte),
       priorUserComments,
       comment.answerOutcome
     )
@@ -145,12 +147,8 @@ export const onCreateCommentOnContract = functions
         commenterPositionShares: position.shares,
         commenterPositionOutcome: position.outcome,
       }
-      const previousProb =
-        contract.outcomeType === 'BINARY'
-          ? maxBy(priorBets, (bet) => bet.createdTime)?.probAfter
-          : undefined
-      if (previousProb != null) {
-        fields.commenterPositionProb = previousProb
+      if (contract.mechanism === 'cpmm-1') {
+        fields.commenterPositionProb = contract.prob
       }
       await change.ref.update(fields)
     }
