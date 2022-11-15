@@ -26,6 +26,21 @@ export function formatMoney(amount: number) {
   return ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
 }
 
+export function formatMoneyNumber(amount: number) {
+  const newAmount =
+    // handle -0 case
+    Math.round(amount) === 0
+      ? 0
+      : // Handle 499.9999999999999 case
+        (amount > 0 ? Math.floor : Math.ceil)(
+          amount + 0.00000000001 * Math.sign(amount)
+        )
+  if (newAmount < 0) {
+    return '-' + formatter.format(Math.abs(newAmount)).replace('$', '')
+  }
+  return formatter.format(newAmount).replace('$', '')
+}
+
 export function formatMoneyWithDecimals(amount: number) {
   return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
 }

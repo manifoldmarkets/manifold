@@ -179,7 +179,7 @@ function Page1() {
     <>
       <p>
         Your question becomes a prediction market that people can bet{' '}
-        <span className="font-normal text-indigo-700">mana (M$)</span> on.
+        <span className="font-normal text-indigo-700">mana (Ṁ)</span> on.
       </p>
       <div className="mt-8 font-semibold">The core idea</div>
       <div className="mt-2">
@@ -198,7 +198,7 @@ function Page2() {
   return (
     <>
       <p>
-        <span className="mt-4 font-normal text-indigo-700">Mana (M$)</span> is
+        <span className="mt-4 font-normal text-indigo-700">Mana (Ṁ)</span> is
         the play money you bet with. You can also turn it into a real donation
         to charity, at a 100:1 ratio.
       </p>

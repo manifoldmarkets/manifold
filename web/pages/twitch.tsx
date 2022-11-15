@@ -146,7 +146,7 @@ function TwitchPlaysManifoldMarkets(props: {
           receive their profit.
         </div>
         <div>
-          Instead of Twitch channel points we use our own play money, mana (M$).
+          Instead of Twitch channel points we use our own play money, mana (Ṁ).
           All viewers start with {formatMoney(STARTING_BALANCE)} and can earn
           more for free by betting well. Just like channel points, mana cannot
           be converted to real money.
@@ -180,11 +180,11 @@ function TwitchChatCommands() {
         <Subtitle text="For Chat" />
         <Command
           command="y#"
-          desc="Bets # amount of M$ on yes, for example !y20 would bet M$20 on yes."
+          desc="Bets # amount of Ṁ on yes, for example !y20 would bet Ṁ20 on yes."
         />
         <Command
           command="n#"
-          desc="Bets # amount of M$ on no, for example !n30 would bet M$30 on no."
+          desc="Bets # amount of Ṁ on no, for example !n30 would bet Ṁ30 on no."
         />
         <Command
           command="sell"
@@ -196,7 +196,7 @@ function TwitchChatCommands() {
           command="position"
           desc="Shows how many shares you own in the current market and what your fixed payout is."
         />
-        <Command command="balance" desc="Shows how much M$ your account has." />
+        <Command command="balance" desc="Shows how much Ṁ your account has." />
 
         <div className="mb-4" />
 

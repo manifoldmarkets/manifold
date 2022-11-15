@@ -35,12 +35,12 @@ export function LoansModal(props: {
           </span>
           <span className={'text-indigo-700'}>• What is an example?</span>
           <span className={'ml-2'}>
-            For example, if you bet M$1000 on "Will I become a millionare?", you
-            will get M$20 back tomorrow.
+            For example, if you bet Ṁ1000 on "Will I become a millionare?", you
+            will get Ṁ20 back tomorrow.
           </span>
           <span className={'ml-2'}>
             Previous loans count against your total bet amount. So on the next
-            day, you would get back 2% of M$(1000 - 20) = M$19.6.
+            day, you would get back 2% of Ṁ(1000 - 20) = Ṁ19.6.
           </span>
         </Col>
       </Col>

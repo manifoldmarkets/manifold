@@ -54,7 +54,7 @@ export function BetsSummary(props: {
             <div className="whitespace-nowrap text-sm text-gray-500">
               Position{' '}
               <InfoTooltip
-                text={`Number of shares you own on net. 1 ${exampleOutcome} share = M$1 if the market resolves ${exampleOutcome}.`}
+                text={`Number of shares you own on net. 1 ${exampleOutcome} share = Ṁ1 if the market resolves ${exampleOutcome}.`}
               />
             </div>
             <div className="whitespace-nowrap">

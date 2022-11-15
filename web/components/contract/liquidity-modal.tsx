@@ -79,7 +79,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
   return (
     <>
       <div className="mb-4 text-gray-500">
-        Contribute your M$ to make this market more accurate by subsidizing
+        Contribute your Ṁ to make this market more accurate by subsidizing
         trading.{' '}
         <InfoTooltip text="Liquidity is how much money traders can make if they're right. The more traders can earn, the greater the incentive to find the correct probability." />
       </div>
@@ -88,7 +88,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
         <AmountInput
           amount={amount}
           onChange={onAmountChange}
-          label="M$"
+          label="Ṁ"
           error={error}
           disabled={isLoading}
           inputClassName="w-28 mr-4"

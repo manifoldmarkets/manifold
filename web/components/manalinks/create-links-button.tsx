@@ -123,7 +123,7 @@ function CreateManalinkForm(props: {
               <label className="px-1 py-2">Amount</label>
               <div className="relative">
                 <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
-                  M$
+                  Ṁ
                 </span>
                 <Input
                   className="w-full pl-10"

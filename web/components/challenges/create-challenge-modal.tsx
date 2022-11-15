@@ -188,7 +188,7 @@ function CreateChallengeForm(props: {
                     })
                   }
                   error={undefined}
-                  label={'M$'}
+                  label={'Ṁ'}
                   inputClassName="w-24"
                 />
                 <span className={''}>on</span>
@@ -227,7 +227,7 @@ function CreateChallengeForm(props: {
                       })
                     }}
                     error={undefined}
-                    label={'M$'}
+                    label={'Ṁ'}
                     inputClassName="w-24"
                   />
                 </div>

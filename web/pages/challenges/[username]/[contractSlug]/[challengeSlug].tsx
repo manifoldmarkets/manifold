@@ -154,12 +154,12 @@ function FAQ() {
           onClick={() => setToggleWhatIsMana(!toggleWhatIsMana)}
         >
           {toggleWhatIsMana ? '-' : '+'}
-          What is M$?
+          What is Ṁ?
         </span>
       </Row>
       {toggleWhatIsMana && (
         <Row className={'mx-4'}>
-          Mana (M$) is the play-money used by our platform to keep track of your
+          Mana (Ṁ) is the play-money used by our platform to keep track of your
           bets. It's completely free to get started, and you can donate your
           winnings to charity!
         </Row>

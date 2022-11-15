@@ -121,7 +121,7 @@ export function ContractInfoDialog(props: {
                     {mechanism === 'cpmm-1' ? (
                       <>
                         Fixed{' '}
-                        <InfoTooltip text="Each YES share is worth M$1 if YES wins." />
+                        <InfoTooltip text="Each YES share is worth Ṁ1 if YES wins." />
                       </>
                     ) : (
                       <>
@@ -179,8 +179,8 @@ export function ContractInfoDialog(props: {
                       <InfoTooltip
                         text={
                           mechanism === 'cpmm-1'
-                            ? 'Probability change between a M$50 bet on YES and NO'
-                            : 'Probability change from a M$100 bet'
+                            ? 'Probability change between a Ṁ50 bet on YES and NO'
+                            : 'Probability change from a Ṁ100 bet'
                         }
                       />
                     </Row>

@@ -113,7 +113,7 @@ const tourneys: Tourney[] = [
     title: 'Cause Exploration Prizes',
     blurb:
       'Which new charity ideas will Open Philanthropy find most promising?',
-    award: 'M$100k',
+    award: 'Ṁ100k',
     endTime: toDate('Sep 9, 2022'),
     groupId: 'cMcpBQ2p452jEcJD2SFw',
   },

@@ -55,7 +55,7 @@ export default function LinkPage(props: { auth: { user: User } }) {
     <Page>
       <SEO
         title="Manalinks"
-        description="Send M$ to others with a link, even if they don't have a Manifold account yet!"
+        description="Send Ṁ to others with a link, even if they don't have a Manifold account yet!"
         url="/send"
       />
       <Col className="w-full px-8">
@@ -70,7 +70,7 @@ export default function LinkPage(props: { auth: { user: User } }) {
           )}
         </Row>
         <p>
-          You can use manalinks to send mana (M$) to other people, even if they
+          You can use manalinks to send mana (Ṁ) to other people, even if they
           don&apos;t yet have a Manifold account.{' '}
           <SiteLink href="/referrals">
             Eligible for {formatMoney(REFERRAL_AMOUNT)} referral bonus if a new
