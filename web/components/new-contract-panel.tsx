@@ -34,6 +34,7 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Input } from 'web/components/widgets/input'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export type NewQuestionParams = {
   groupId?: string
