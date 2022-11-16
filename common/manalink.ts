@@ -1,3 +1,5 @@
+import { User } from './user'
+
 export type Manalink = {
   // The link to send: https://manifold.markets/send/{slug}
   // Also functions as the unique id for the link.
@@ -32,4 +34,13 @@ export type Claim = {
   txnId: string
 
   claimedTime: number
+}
+
+export function canCreateManalink(user: User) {
+  const oneWeekAgo = Date.now() - 1000 * 60 * 60 * 24 * 7
+
+  return (
+    user.createdTime < oneWeekAgo &&
+    (user.balance > 1000 || user.profitCached.allTime > 500)
+  )
 }

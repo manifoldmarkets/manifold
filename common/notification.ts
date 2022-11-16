@@ -1,5 +1,6 @@
 import { notification_preference } from './user-notification-preferences'
 import { groupPath } from './group'
+import { PAST_BET } from './user'
 
 export type Notification = {
   id: string
@@ -146,9 +147,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'All market updates made by the creator',
   },
   market_updates_on_watched_markets_with_shares_in: {
-    simple: "Only creator updates on markets that you're invested in",
-    detailed:
-      "Only updates made by the creator on markets that you're invested in",
+    simple: `Only creator updates on markets that you've ${PAST_BET}`,
+    detailed: `Only updates made by the creator on markets that you've ${PAST_BET}`,
   },
   on_new_follow: {
     simple: 'A user followed you',
@@ -175,9 +175,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: "All resolutions on markets that you're watching",
   },
   resolutions_on_watched_markets_with_shares_in: {
-    simple: "Only market resolutions that you're invested in",
-    detailed:
-      "Only resolutions of markets you're watching and that you're invested in",
+    simple: `Only market resolutions that you've ${PAST_BET}`,
+    detailed: `Only resolutions of markets you're watching and that you've ${PAST_BET}`,
   },
   subsidized_your_market: {
     simple: 'Your market was subsidized',
@@ -221,8 +220,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'All new comments on markets you follow',
   },
   all_comments_on_contracts_with_shares_in_on_watched_markets: {
-    simple: `Only on markets you're invested in`,
-    detailed: `Comments on markets that you're watching and you're invested in`,
+    simple: `Only on markets you've ${PAST_BET}`,
+    detailed: `Comments on markets that you're watching and you've ${PAST_BET}`,
   },
   all_replies_to_my_comments_on_watched_markets: {
     simple: 'Only replies to your comments',
@@ -237,8 +236,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: "All new answers on markets you're watching",
   },
   all_answers_on_contracts_with_shares_in_on_watched_markets: {
-    simple: `Only on markets you're invested in`,
-    detailed: `Answers on markets that you're watching and that you're invested in`,
+    simple: `Only on markets you've ${PAST_BET}`,
+    detailed: `Answers on markets that you're watching and that you've ${PAST_BET}`,
   },
   badges_awarded: {
     simple: 'New badges awarded',

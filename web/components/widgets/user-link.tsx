@@ -42,8 +42,16 @@ export function UserLink(props: {
 
 export function BotBadge() {
   return (
-    <span className="ml-1.5 inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+    <span className="ml-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
       Bot
+    </span>
+  )
+}
+
+export function PostBanBadge() {
+  return (
+    <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+      Banned from posting
     </span>
   )
 }

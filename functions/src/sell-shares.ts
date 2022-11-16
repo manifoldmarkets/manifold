@@ -143,7 +143,7 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     return { newBet, makers, maxShares, soldShares }
   })
 
-  if (result.maxShares === result.soldShares) {
+  if (floatingEqual(result.maxShares, result.soldShares)) {
     await removeUserFromContractFollowers(contractId, auth.uid)
   }
   const userIds = uniq(result.makers.map((maker) => maker.bet.userId))

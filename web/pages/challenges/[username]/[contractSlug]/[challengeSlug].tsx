@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Confetti from 'react-confetti'
 
 import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
-import { DOMAIN } from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Spacer } from 'web/components/layout/spacer'
@@ -154,14 +154,14 @@ function FAQ() {
           onClick={() => setToggleWhatIsMana(!toggleWhatIsMana)}
         >
           {toggleWhatIsMana ? '-' : '+'}
-          What is M$?
+          What is {ENV_CONFIG.moneyMoniker}?
         </span>
       </Row>
       {toggleWhatIsMana && (
         <Row className={'mx-4'}>
-          Mana (M$) is the play-money used by our platform to keep track of your
-          bets. It's completely free to get started, and you can donate your
-          winnings to charity!
+          Mana ({ENV_CONFIG.moneyMoniker}) is the play-money used by our
+          platform to keep track of your bets. It's completely free to get
+          started, and you can donate your winnings to charity!
         </Row>
       )}
     </Col>

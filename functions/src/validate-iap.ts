@@ -1,7 +1,6 @@
 import { APIError, newEndpoint, validate } from './api'
 import { z } from 'zod'
 import { getPrivateUser, getUser, isProd, log } from './utils'
-import { sendThankYouEmail } from './emails'
 import { track } from './analytics'
 import * as admin from 'firebase-admin'
 import { IapTransaction, PurchaseData } from '../../common/iap'
@@ -11,6 +10,7 @@ import {
 } from '../../common/antes'
 import { ManaPurchaseTxn } from '../../common/txn'
 import { runTxn } from './transact'
+import { sendThankYouEmail } from './emails'
 
 const bodySchema = z.object({
   receipt: z.string(),
@@ -23,8 +23,9 @@ const PRODUCTS_TO_AMOUNTS: { [key: string]: number } = {
 }
 
 const IAP_TYPES_PROCESSED = 'apple'
+const opts = { secrets: ['MAILGUN_KEY'] }
 
-export const validateiap = newEndpoint({}, async (req, auth) => {
+export const validateiap = newEndpoint(opts, async (req, auth) => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const iap = require('@flat/in-app-purchase')
   const { receipt } = validate(bodySchema, req.body)
@@ -44,12 +45,13 @@ export const validateiap = newEndpoint({}, async (req, auth) => {
     throw new APIError(400, 'iap receipt validation failed')
   })
 
+  // TODO uncomment this after app is accepted by Apple.
   log('validated data, sandbox:', validatedData.sandbox)
-  if (isProd() && validatedData.sandbox) {
-    // Apple wants a successful response even if the receipt is from the sandbox,
-    // so we just return success here and don't transfer any mana.
-    return { success: true }
-  }
+  // if (isProd() && validatedData.sandbox) {
+  // Apple wants a successful response even if the receipt is from the sandbox,
+  // so we just return success here and don't transfer any mana.
+  // return { success: true }
+  // }
 
   const options = {
     ignoreCanceled: true, // Apple ONLY (for now...): purchaseData will NOT contain cancceled items
