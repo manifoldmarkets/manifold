@@ -1,6 +1,6 @@
 import { notification_preference } from './user-notification-preferences'
 import { groupPath } from './group'
-import { PAST_BET } from 'common/user'
+import { PAST_BET } from './user'
 
 export type Notification = {
   id: string
