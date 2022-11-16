@@ -461,7 +461,7 @@ function EditableCloseDate(props: {
           {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
             <Row className={'justify-center'}>
               <Button
-                className="mt-6 sm:mt-4"
+                className="mt-8"
                 size={'sm'}
                 color="red"
                 onClick={() => onSave(Date.now())}
