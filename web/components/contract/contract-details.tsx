@@ -212,7 +212,7 @@ export function CloseOrResolveTime(props: {
             text="Market resolved:"
             time={resolutionTime}
           >
-            resolved&nbsp;{resolvedDate}
+            resolved {resolvedDate}
           </DateTimeTooltip>
         ) : null}
 
@@ -479,6 +479,7 @@ function EditableCloseDate(props: {
             : 'Trading ends:'
         }
         time={closeTime}
+        placement="bottom-start"
       >
         <Row
           className={clsx(
