@@ -12,14 +12,7 @@ module.exports = {
       { ...defaultTheme.fontFamily },
       {
         'major-mono': ['Major Mono Display', 'monospace'],
-        'readex-pro': [
-          'Readex Pro',
-          'icomoon',
-          'AppleColorEmoji',
-          'Segoe UI Emoji',
-          'Noto Color Emoji',
-          'sans-serif',
-        ],
+        'readex-pro': ['Readex Pro', 'icomoon', 'emoji', 'sans-serif'],
       }
     ),
     extend: {
