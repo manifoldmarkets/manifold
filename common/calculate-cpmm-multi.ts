@@ -91,8 +91,9 @@ export function shortSell(
   const newPool = mapValues(poolWithAmount, (s, o) =>
     o === outcome ? s : s - shares
   )
+  const gainedShares = mapValues(newPool, (s, o) => poolWithAmount[o] - s)
 
-  return { newPool, shares: -shares }
+  return { newPool, gainedShares }
 }
 
 export function test() {
@@ -115,14 +116,14 @@ export function test() {
     poolToProbs(poolAfterSale)
   )
 
-  const { newPool: poolAfterShortSell, shares: soldShares } = shortSell(
+  const { newPool: poolAfterShortSell, gainedShares } = shortSell(
     poolAfterSale,
     'C',
-    1000000000
+    100
   )
   console.log(
     'after short sell',
-    soldShares,
+    gainedShares,
     poolAfterShortSell,
     poolToProbs(poolAfterShortSell)
   )

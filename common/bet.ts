@@ -17,6 +17,9 @@ export type Bet = {
   outcome: string
   shares: number // dynamic parimutuel pool weight or fixed ; negative if SELL bet
 
+  // Gain shares in multiple outcomes.
+  sharesByOutcome?: { [outcome: string]: number }
+
   probBefore: number
   probAfter: number
 

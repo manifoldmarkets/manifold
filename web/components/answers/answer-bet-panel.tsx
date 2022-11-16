@@ -211,10 +211,14 @@ const getSimulatedBetInfo = (
   contract: FreeResponseContract | MultipleChoiceContract
 ) => {
   if (mode === 'short-sell') {
-    const { newPool, shares } = shortSell(contract.pool, answerId, betAmount)
+    const { newPool, gainedShares } = shortSell(
+      contract.pool,
+      answerId,
+      betAmount
+    )
     const resultProb = getProb(newPool, answerId)
-    const maxPayout = Math.abs(shares)
-    return { resultProb, maxPayout, shares }
+    const maxPayout = Math.max(...Object.values(gainedShares))
+    return { resultProb, maxPayout, gainedShares }
   }
 
   const resultProb = getOutcomeProbabilityAfterBet(

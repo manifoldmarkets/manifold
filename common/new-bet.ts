@@ -386,26 +386,31 @@ export const getNewMultiCpmmBetInfo = (
 ) => {
   const { pool } = contract
 
-  const { newPool, shares } = shouldShortSell
-    ? shortSell(pool, outcome, amount)
-    : buy(pool, outcome, amount)
+  let newPool: { [outcome: string]: number }
+  let gainedShares: { [outcome: string]: number } | undefined = undefined
+  let shares: number | undefined
+
+  if (shouldShortSell)
+    ({ newPool, gainedShares } = shortSell(pool, outcome, amount))
+  else ({ newPool, shares } = buy(pool, outcome, amount))
+
+  shares = gainedShares ? gainedShares[outcome] ?? 0 : shares
 
   const probBefore = getProb(pool, outcome)
   const probAfter = getProb(newPool, outcome)
 
-  const newBet: CandidateBet = {
+  const newBet: CandidateBet = removeUndefinedProps({
     contractId: contract.id,
     amount,
     loanAmount: 0,
-    shares,
+    shares: shares as number,
+    sharesByOutcome: gainedShares,
     outcome,
     probBefore,
     probAfter,
     createdTime: Date.now(),
     fees: noFees,
-  }
-
-  console.log('newBet', newBet, 'newPool', newPool)
+  })
 
   return { newBet, newPool }
 }

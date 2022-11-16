@@ -82,9 +82,9 @@ const getCpmmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
 
   const points: MultiPoint<Bet>[] = []
   for (const bet of sortedBets) {
-    const { outcome, amount, shares } = bet
+    const { outcome, amount, sharesByOutcome } = bet
     const { newPool } =
-      shares < 0 ? shortSell(pool, outcome, amount) : buy(pool, outcome, amount)
+      sharesByOutcome ? shortSell(pool, outcome, amount) : buy(pool, outcome, amount)
     pool = newPool
     const probs = answers.map((a) => poolToProbs(newPool)[a.id])
 
