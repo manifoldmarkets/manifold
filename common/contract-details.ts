@@ -155,7 +155,7 @@ export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
 
   // URL encode each of the props, then add them as query params
   return (
-    `${DOMAIN}/api/og/market` +
+    `https://${DOMAIN}/api/og/market` +
     `?question=${encodeURIComponent(question)}` +
     probabilityParam +
     numericValueParam +
