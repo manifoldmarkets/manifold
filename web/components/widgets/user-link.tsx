@@ -1,6 +1,7 @@
 import { SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
 import { BOT_USERNAMES } from 'common/envs/constants'
+import { Tooltip } from './tooltip'
 
 export function shortenName(name: string) {
   const firstName = name.split(' ')[0]
@@ -50,8 +51,10 @@ export function BotBadge() {
 
 export function PostBanBadge() {
   return (
-    <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-      Banned from posting
-    </span>
+    <Tooltip text="Can't create comments, posts, or markets" placement="bottom">
+      <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+        Banned
+      </span>
+    </Tooltip>
   )
 }
