@@ -1,24 +1,26 @@
 import { usePrivateUser } from 'web/hooks/use-user'
-import { privateUsers } from 'web/lib/firebase/users'
+import { privateUsers, updateUser } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import { toast } from 'react-hot-toast'
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import { ReportButton } from 'web/components/buttons/report-button'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export function BlockUserButton(props: { user: User }) {
   const { user } = props
   const { id: userId, name } = user
   const currentUser = usePrivateUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const isAdmin = useAdmin()
   if (!currentUser || currentUser.id === userId) return null
   const isBlocked = currentUser.blockedUserIds?.includes(userId)
   const blockUser = async () => {
@@ -57,6 +59,18 @@ export function BlockUserButton(props: { user: User }) {
       </Button>
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
         <Col className={'rounded-md bg-white p-4'}>
+          {isAdmin && (
+            <Row className={'justify-end'}>
+              <Button
+                color={'red'}
+                onClick={() => {
+                  updateUser(userId, { isBannedFromPosting: true })
+                }}
+              >
+                {user.isBannedFromPosting ? 'Banned' : 'Ban'}
+              </Button>
+            </Row>
+          )}
           <Title>
             {isBlocked ? `Unblock` : `Block`} {name}
           </Title>

@@ -14,7 +14,6 @@ service cloud.firestore {
         'manticmarkets@gmail.com',
         'iansphilips@gmail.com',
         'd4vidchee@gmail.com',
-        'federicoruizcassarino@gmail.com',
         'ingawei@gmail.com'
       ]
     }
@@ -31,6 +30,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read;
+      allow update: if isAdmin();
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
                                                                     .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
