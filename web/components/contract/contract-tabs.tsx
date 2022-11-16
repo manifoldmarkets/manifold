@@ -7,7 +7,6 @@ import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
 import { AnyContractType, Contract } from 'common/contract'
-import { PAST_BETS } from 'common/user'
 import { ContractBetsTable } from '../bet/bets-list'
 import { Spacer } from '../layout/spacer'
 import { ControlledTabs } from '../layout/tabs'
@@ -16,7 +15,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
-import { capitalize } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -61,46 +59,61 @@ export function ContractTabs(props: {
     setActiveIndex,
   } = props
 
-  const yourTrades = (
-    <div>
-      <Spacer h={6} />
-      <ContractBetsTable contract={contract} bets={userBets} isYourBets />
-      <Spacer h={12} />
-    </div>
-  )
+  const commentTitle =
+    comments.length === 0 ? 'Comments' : `${comments.length} Comments`
 
-  const tabs = buildArray(
-    {
-      title: 'Comments',
-      content: (
-        <CommentsTabContent
-          contract={contract}
-          comments={comments}
-          answerResponse={answerResponse}
-          onCancelAnswerResponse={onCancelAnswerResponse}
-          blockedUserIds={blockedUserIds}
-        />
-      ),
-    },
-    bets.length > 0 && {
-      title: capitalize(PAST_BETS),
-      content: <BetsTabContent contract={contract} bets={bets} />,
-    },
-    userBets.length > 0 && {
-      title: 'Your trades',
-      content: yourTrades,
-    }
-  )
+  const nonZeroBets = bets.filter((bet) => bet.amount !== 0)
+  const betsTitle =
+    nonZeroBets.length === 0 ? 'Trades' : `${nonZeroBets.length} Trades`
+
+  const nonZeroUserBets = userBets.filter((bet) => bet.amount !== 0)
+  const yourBetsTitle =
+    nonZeroUserBets.length === 0
+      ? 'Trades by you'
+      : nonZeroUserBets.length === 1
+      ? '1 Trade by you'
+      : `${nonZeroUserBets.length} Trades by you`
 
   return (
     <ControlledTabs
       className="mb-4"
       currentPageForAnalytics={'contract'}
-      tabs={tabs}
       activeIndex={activeIndex}
-      onClick={(title, i) => {
+      onClick={(_title, i) => {
         setActiveIndex(i)
       }}
+      tabs={buildArray(
+        {
+          title: commentTitle,
+          content: (
+            <CommentsTabContent
+              contract={contract}
+              comments={comments}
+              answerResponse={answerResponse}
+              onCancelAnswerResponse={onCancelAnswerResponse}
+              blockedUserIds={blockedUserIds}
+            />
+          ),
+        },
+        bets.length > 0 && {
+          title: betsTitle,
+          content: <BetsTabContent contract={contract} bets={bets} />,
+        },
+        userBets.length > 0 && {
+          title: yourBetsTitle,
+          content: (
+            <div>
+              <Spacer h={6} />
+              <ContractBetsTable
+                contract={contract}
+                bets={userBets}
+                isYourBets
+              />
+              <Spacer h={12} />
+            </div>
+          ),
+        }
+      )}
     />
   )
 }
