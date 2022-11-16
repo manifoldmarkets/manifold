@@ -44,12 +44,13 @@ export const validateiap = newEndpoint({}, async (req, auth) => {
     throw new APIError(400, 'iap receipt validation failed')
   })
 
+  // TODO uncomment this after app is accepted by Apple.
   log('validated data, sandbox:', validatedData.sandbox)
-  if (isProd() && validatedData.sandbox) {
-    // Apple wants a successful response even if the receipt is from the sandbox,
-    // so we just return success here and don't transfer any mana.
-    return { success: true }
-  }
+  // if (isProd() && validatedData.sandbox) {
+  // Apple wants a successful response even if the receipt is from the sandbox,
+  // so we just return success here and don't transfer any mana.
+  // return { success: true }
+  // }
 
   const options = {
     ignoreCanceled: true, // Apple ONLY (for now...): purchaseData will NOT contain cancceled items
