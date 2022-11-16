@@ -85,7 +85,7 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
 
     const ante = 100
     const newPool = { YES: ante, NO: ante }
-    console.log('creating liquidity pool at p=', prob, 'for M$', ante)
+    console.log('creating liquidity pool at p=', prob, 'for Ṁ', ante)
 
     const contractUpdate: Partial<Contract> = {
       pool: newPool,

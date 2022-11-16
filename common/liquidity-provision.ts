@@ -5,7 +5,7 @@ export type LiquidityProvision = {
   createdTime: number
   isAnte?: boolean
 
-  amount: number // M$ quantity
+  amount: number // Ṁ quantity
 
   pool: { [outcome: string]: number } // pool shares before provision
   liquidity: number // change in constant k after provision

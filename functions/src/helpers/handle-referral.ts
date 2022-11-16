@@ -83,7 +83,7 @@ export async function handleReferral(user: User, eventId: string) {
     const txnDoc = firestore.collection(`txns/`).doc(txn.id)
     transaction.set(txnDoc, txn)
     console.log('created referral with txn id:', txn.id)
-    // We're currently not subtracting M$ from the house, not sure if we want to for accounting purposes.
+    // We're currently not subtracting Ṁ from the house, not sure if we want to for accounting purposes.
     transaction.update(referredByUserDoc, {
       balance: referredByUser.balance + REFERRAL_AMOUNT,
       totalDeposits: referredByUser.totalDeposits + REFERRAL_AMOUNT,

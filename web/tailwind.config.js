@@ -14,6 +14,7 @@ module.exports = {
         'major-mono': ['Major Mono Display', 'monospace'],
         'readex-pro': [
           'Readex Pro',
+          'icomoon',
           'AppleColorEmoji',
           'Segoe UI Emoji',
           'Noto Color Emoji',
@@ -22,6 +23,9 @@ module.exports = {
       }
     ),
     extend: {
+      fontFamily: {
+        mana: ['icomoon'],
+      },
       transitionTimingFunction: {
         bouncy: 'cubic-bezier(0.8, 0, 1, 1)',
       },

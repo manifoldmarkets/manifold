@@ -83,7 +83,7 @@ function Dream(props: {
           loading={isDreaming}
         >
           Dream
-          {/* TODO: Charge M$5 with ({formatMoney(5)}) */}
+          {/* TODO: Charge Ṁ5 with ({formatMoney(5)}) */}
         </Button>
       </Row>
       {isDreaming && (

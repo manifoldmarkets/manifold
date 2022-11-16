@@ -13,7 +13,7 @@ import { Title } from '../widgets/title'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { useAdmin, useDev } from 'web/hooks/use-admin'
 import { SiteLink } from '../widgets/site-link'
-import { firestoreConsolePath } from 'common/envs/constants'
+import { ENV_CONFIG, firestoreConsolePath } from 'common/envs/constants'
 import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { Row } from '../layout/row'
@@ -121,7 +121,9 @@ export function ContractInfoDialog(props: {
                     {mechanism === 'cpmm-1' ? (
                       <>
                         Fixed{' '}
-                        <InfoTooltip text="Each YES share is worth M$1 if YES wins." />
+                        <InfoTooltip
+                          text={`Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins.`}
+                        />
                       </>
                     ) : (
                       <>
@@ -179,8 +181,8 @@ export function ContractInfoDialog(props: {
                       <InfoTooltip
                         text={
                           mechanism === 'cpmm-1'
-                            ? 'Probability change between a M$50 bet on YES and NO'
-                            : 'Probability change from a M$100 bet'
+                            ? 'Probability change between a Ṁ50 bet on YES and NO'
+                            : 'Probability change from a Ṁ100 bet'
                         }
                       />
                     </Row>

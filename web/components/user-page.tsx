@@ -32,7 +32,7 @@ import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
-import { BOT_USERNAMES, DOMAIN } from 'common/envs/constants'
+import { BOT_USERNAMES, DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { BadgeDisplay } from 'web/components/badge-display'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
@@ -214,7 +214,7 @@ export function UserPage(props: { user: User }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    Earn M$250 per friend referred
+                    Earn {ENV_CONFIG.moneyMoniker}250 per friend referred
                   </Row>
                 </div>
               )}
