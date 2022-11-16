@@ -80,7 +80,7 @@ async function getPriorContractBets(contractId: string, before: number) {
 }
 
 export const onCreateCommentOnContract = functions
-  .runWith({ memory: '4GB', timeoutSeconds: 600 })
+  .runWith({ memory: '4GB', timeoutSeconds: 540 })
   .runWith({ secrets: ['MAILGUN_KEY'] })
   .firestore.document('contracts/{contractId}/comments/{commentId}')
   .onCreate(async (change, context) => {
