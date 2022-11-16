@@ -16,7 +16,7 @@ export type EnvConfig = {
   visibility: 'PRIVATE' | 'PUBLIC'
 
   // Branding
-  moneyMoniker: string // e.g. 'M$'
+  moneyMoniker: string // e.g. 'Ṁ'
   bettor?: string // e.g. 'bettor' or 'predictor'
   presentBet?: string // e.g. 'bet' or 'predict'
   pastBet?: string // e.g. 'bet' or 'prediction'

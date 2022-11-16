@@ -515,7 +515,7 @@ Places a new bet on behalf of the authorized user.
 
 Parameters:
 
-- `amount`: Required. The amount to bet, in M$, before fees.
+- `amount`: Required. The amount to bet, in mana, before fees.
 - `contractId`: Required. The ID of the contract (market) to bet on.
 - `outcome`: Required. The outcome to bet on. For binary markets, this is `YES`
   or `NO`. For free response markets, this is the ID of the free response
