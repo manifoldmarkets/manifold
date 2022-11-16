@@ -1,5 +1,5 @@
 import { CHALLENGES_ENABLED } from 'common/challenge'
-import { DOMAIN } from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import Masonry from 'react-masonry-css'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -29,7 +29,7 @@ export default function LabsPage() {
             (isNative && platform !== 'ios' && (
               <LabCard
                 title="🫀 Charity"
-                description="Turn your Ṁ earnings into real donations to causes you care about"
+                description={`Turn your ${ENV_CONFIG.moneyMoniker} earnings into real donations to causes you care about`}
                 href="/charity"
               />
             ))}
@@ -44,7 +44,7 @@ export default function LabsPage() {
 
           <LabCard
             title="💸 Manalinks"
-            description="Send Ṁ to anyone"
+            description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
             href="/links"
           />
 

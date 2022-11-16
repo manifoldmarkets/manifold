@@ -12,6 +12,7 @@ import { Button } from 'web/components/buttons/button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
 import { Manalink } from 'common/manalink'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export default function ClaimPage() {
   const user = useUser()
@@ -37,7 +38,9 @@ export default function ClaimPage() {
       />
       <div className="mx-auto max-w-xl px-2">
         <Row className="items-center justify-between">
-          <Title text={`Claim Ṁ${manalink.amount} mana`} />
+          <Title
+            text={`Claim ${ENV_CONFIG.moneyMoniker}${manalink.amount} mana`}
+          />
           <div className="my-auto"></div>
         </Row>
 
@@ -76,7 +79,9 @@ export default function ClaimPage() {
             disabled={claiming}
             size="lg"
           >
-            {user ? `Claim Ṁ${manalink.amount}` : 'Login to claim'}
+            {user
+              ? `Claim ${ENV_CONFIG.moneyMoniker}${manalink.amount}`
+              : 'Login to claim'}
           </Button>
         </Row>
       </div>

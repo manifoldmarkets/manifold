@@ -473,7 +473,7 @@ export function NewContractPanel(props: {
                 color="green"
                 onClick={() => setFundsModalOpen(true)}
               >
-                Get Ṁ
+                Get {ENV_CONFIG.moneyMoniker}
               </Button>
               <AddFundsModal
                 open={fundsModalOpen}

@@ -21,6 +21,7 @@ import { SelectedGroup } from 'web/lib/selected-group';
 import { CONTRACT_ANTE, formatMoney, Resolution } from 'web/lib/utils';
 import { ConfirmationButton } from '../components/confirmation-button';
 import { GroupSelector } from '../components/group-selector';
+import { ENV_CONFIG } from '../../../common/envs/constants';
 
 let socket: Socket;
 let APIBase = undefined;
@@ -369,7 +370,7 @@ export default () => {
                       <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} />
                     </Row>
 
-                    <div className="label-text text-neutral self-center justify-self-end pl-1">{`Ṁ${ante}`} </div>
+                    <div className="label-text text-neutral self-center justify-self-end pl-1">{`${ENV_CONFIG.moneyMoniker}${ante}`} </div>
                   </Row>
                   {ante > balance && (
                     <div className="-mt-4 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">

@@ -14,6 +14,7 @@ import TypewriterComponent from 'typewriter-effect'
 import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
 import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import CountUp from 'react-countup'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export type PageNumber = 0 | 1 | 2
 
@@ -143,7 +144,7 @@ export function LandingPagePanel() {
             <div className="text-right text-sm text-gray-900">
               and get{'   '}
               <span className="relative z-10 bg-teal-200 px-1 font-semibold">
-                Ṁ500
+                {ENV_CONFIG.moneyMoniker}500
                 <div className="absolute left-0 -bottom-0.5 -z-10 h-full w-full bg-teal-200" />
               </span>
               {'   '}
@@ -341,7 +342,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
             !isMVisible ? 'opacity-0' : ''
           )}
         >
-          Ṁ
+          {ENV_CONFIG.moneyMoniker}
         </div>
         <div
           className={clsx(
@@ -349,7 +350,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
             !isMVisible ? 'opacity-0' : ''
           )}
         >
-          Ṁ
+          {ENV_CONFIG.moneyMoniker}
         </div>
         <div
           className={clsx(
@@ -357,7 +358,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
             !isMVisible ? 'opacity-0' : ''
           )}
         >
-          Ṁ
+          {ENV_CONFIG.moneyMoniker}
         </div>
       </div>
       <div

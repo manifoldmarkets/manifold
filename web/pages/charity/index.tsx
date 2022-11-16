@@ -25,6 +25,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -150,7 +151,8 @@ export default function Charity(props: {
             !
           </span> */}
           <span className="text-gray-600">
-            Convert your Ṁ earnings into real charitable donations.
+            Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
+            donations.
           </span>
           <DonatedStats
             stats={[

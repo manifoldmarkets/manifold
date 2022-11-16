@@ -409,8 +409,8 @@ export function GroupAboutDetails(props: {
           <Col className="my-4 px-2">
             <div className="text-lg">Invite</div>
             <div className={'mb-2 text-gray-500'}>
-              Invite a friend to this group and get Ṁ{REFERRAL_AMOUNT} if they
-              sign up!
+              Invite a friend to this group and get {ENV_CONFIG.moneyMoniker}
+              {REFERRAL_AMOUNT} if they sign up!
             </div>
 
             <CopyLinkButton
