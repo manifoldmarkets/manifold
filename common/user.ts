@@ -84,6 +84,7 @@ export type PrivateUser = {
   username: string // denormalized from User
 
   email?: string
+  // TODO: move these to non-optional in a couple weeks so we can include them in a fb query
   weeklyTrendingEmailSent?: boolean
   weeklyPortfolioUpdateEmailSent?: boolean
   manaBonusSent?: boolean
