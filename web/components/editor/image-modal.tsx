@@ -14,29 +14,64 @@ export function DreamModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  const { open, setOpen } = props
+  const { open, setOpen, editor } = props
+  const [prompt, setPrompt] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const onDream = ({ prompt, url }: DreamResults) => {
+    setPrompt(prompt)
+    setImageUrl(url)
+  }
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Dream {...props} />
+      <Col className="rounded bg-white">
+        <DreamCard {...props} onDream={onDream} />
+        {imageUrl && (
+          <>
+            <img src={imageUrl} alt="Image" />
+            <Row className="gap-2 p-6">
+              <Button
+                onClick={() => {
+                  const imageCode = `<img src="${imageUrl}" alt="${prompt}" />`
+                  if (editor) {
+                    editor.chain().insertContent(imageCode).run()
+                    setOpen(false)
+                  }
+                }}
+              >
+                Add image
+              </Button>
+              <Button
+                color="gray"
+                onClick={() => {
+                  setOpen(false)
+                }}
+              >
+                Cancel
+              </Button>
+            </Row>
+          </>
+        )}
+      </Col>
     </Modal>
   )
+}
+
+type DreamResults = {
+  prompt: string
+  url: string
 }
 
 // Note: this is currently tied to a DreamStudio API key tied to akrolsmir@gmail.com,
 // and injected on Vercel.
 const API_KEY = process.env.NEXT_PUBLIC_DREAM_KEY
 
-function Dream(props: {
-  editor: Editor | null
-  open: boolean
-  setOpen: (open: boolean) => void
+export function DreamCard(props: {
+  onDream: (dreamResults: DreamResults) => void
 }) {
-  const { editor, setOpen } = props
+  const { onDream } = props
   const [input, setInput] = useState('')
   const [isDreaming, setIsDreaming] = useState(false)
-  const [imageUrl, setImageUrl] = useState('')
-  const imageCode = `<img src="${imageUrl}" alt="${input}" />`
 
   if (!API_KEY) {
     return (
@@ -47,7 +82,7 @@ function Dream(props: {
     )
   }
 
-  async function dream() {
+  async function requestDream() {
     setIsDreaming(true)
     const data = {
       prompt: input + ', ' + MODIFIERS,
@@ -59,12 +94,12 @@ function Dream(props: {
       body: JSON.stringify(data),
     })
     const json = await response.json()
-    setImageUrl(json.url)
+    onDream({ prompt: input, url: json.url })
     setIsDreaming(false)
   }
 
   return (
-    <Col className="gap-2 rounded bg-white p-6">
+    <Col className="gap-2 p-6">
       <Row className="gap-2">
         <input
           autoFocus
@@ -79,7 +114,7 @@ function Dream(props: {
         />
         <Button
           className="whitespace-nowrap"
-          onClick={dream}
+          onClick={requestDream}
           loading={isDreaming}
         >
           Dream
@@ -97,34 +132,6 @@ function Dream(props: {
 
       {/* Show the current imageUrl */}
       {/* TODO: Keep the other generated images, so the user can play with different attempts. */}
-      {imageUrl && (
-        <>
-          <img src={imageUrl} alt="Image" />
-          <Row className="gap-2">
-            <Button
-              disabled={isDreaming}
-              onClick={() => {
-                if (editor) {
-                  editor.chain().insertContent(imageCode).run()
-                  setInput('')
-                  setOpen(false)
-                }
-              }}
-            >
-              Add image
-            </Button>
-            <Button
-              color="gray"
-              onClick={() => {
-                setInput('')
-                setOpen(false)
-              }}
-            >
-              Cancel
-            </Button>
-          </Row>
-        </>
-      )}
     </Col>
   )
 }
