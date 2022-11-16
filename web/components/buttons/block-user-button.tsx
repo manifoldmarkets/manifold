@@ -64,7 +64,9 @@ export function BlockUserButton(props: { user: User }) {
               <Button
                 color={'red'}
                 onClick={() => {
-                  updateUser(userId, { isBannedFromPosting: true })
+                  updateUser(userId, {
+                    isBannedFromPosting: !(user.isBannedFromPosting ?? false),
+                  })
                 }}
               >
                 {user.isBannedFromPosting ? 'Banned' : 'Ban'}
