@@ -58,7 +58,9 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                     entry.username === highlightUsername ? '!bg-amber-100' : ''
                   }
                 >
-                  <td>{entry.rank ? entry.rank : index + 1}</td>
+                  <td className={'w-[4.5rem] min-w-[4.5rem] '}>
+                    {entry.rank ? entry.rank : index + 1}
+                  </td>
                   <td className="max-w-[190px]">
                     <SiteLink className="relative" href={`/${entry.username}`}>
                       <Row className="items-center gap-4">

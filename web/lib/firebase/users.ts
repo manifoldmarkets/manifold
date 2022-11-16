@@ -241,7 +241,8 @@ export async function listAllUsers(
 export function getTopTraders(period: Period) {
   const topTraders = query(
     users,
-    orderBy('profitCached.' + period, 'desc'),
+    orderBy('profitRankCached.' + period, 'asc'),
+    where('profitRankCached.' + period, '>', 0),
     limit(20)
   )
 
