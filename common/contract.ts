@@ -70,6 +70,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   flaggedByUsernames?: string[]
   openCommentBounties?: number
   unlistedById?: string
+  featuredLabel?: string
 
   coverImageUrl?: string
 } & T

@@ -45,7 +45,7 @@ export function PostCard(props: {
             <span className="mx-1 text-gray-400">•</span>
             <span className="text-gray-400">{fromNow(post.createdTime)}</span>
           </Row>
-          {pinned && <FeaturedPill />}
+          {pinned && <FeaturedPill label={post.featuredLabel} />}
         </Row>
         <div className="text-md mb-1 font-medium text-gray-900 transition-all">
           {post.title}
