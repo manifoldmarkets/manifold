@@ -71,6 +71,7 @@ type AdditionalFilter = {
   excludeContractIds?: string[]
   groupSlug?: string
   facetFilters?: string[]
+  nonQueryFacetFilters?: string[]
 }
 
 export function ContractSearch(props: {
@@ -380,6 +381,7 @@ function ContractSearchControls(props: {
     ? additionalFilters
     : [
         ...additionalFilters,
+        ...(additionalFilter?.nonQueryFacetFilters ?? []),
         additionalFilter ? '' : 'visibility:public',
 
         filter === 'open' ? 'isResolved:false' : '',
