@@ -14,7 +14,7 @@ import {
   User,
 } from '../../common/user'
 import { Contract } from '../../common/contract'
-import { getPrivateUser, getValues } from './utils'
+import { getPrivateUser, getValues, log } from './utils'
 import { Comment } from '../../common/comment'
 import { groupBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from '../../common/bet'
@@ -338,14 +338,10 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyBettorsOnContract = async () => {
-    const betsSnap = await firestore
-      .collection(`contracts/${sourceContract.id}/bets`)
-      .get()
-    const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
     // We don't need to filter by shares in bc they auto unfollow a market upon selling out of it
     // Unhandled case sacrificed for performance: they bet in a market, sold out,
     // then re-followed it - their notification reason should not include 'with_shares_in'
-    const recipientUserIds = uniq(bets.map((bet) => bet.userId))
+    const recipientUserIds = sourceContract.uniqueBettorIds ?? []
     await Promise.all(
       recipientUserIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
@@ -411,14 +407,22 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   //TODO: store all possible reasons why the user might be getting the notification
   // and choose the most lenient that they have enabled so they will unsubscribe
   // from the least important notifications
+  log('notifying replies')
   await notifyRepliedUser()
+  log('notifying tagged users')
   await notifyTaggedUsers()
+  log('notifying creator')
   await notifyContractCreator()
+  log('notifying answerers')
   await notifyOtherAnswerersOnContract()
+  log('notifying lps')
   await notifyLiquidityProviders()
+  log('notifying bettors')
   await notifyBettorsOnContract()
+  log('notifying commenters')
   await notifyOtherCommentersOnContract()
   // if they weren't notified previously, notify them now
+  log('notifying followers')
   await notifyContractFollowers()
 }
 
