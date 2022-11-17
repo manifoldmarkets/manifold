@@ -77,24 +77,21 @@ export function SignedOutQuickBet(props: {
   const { contract, className } = props
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
-  const isMobile = useIsMobile()
   let previewProb = undefined
   try {
-    previewProb = !isMobile
-      ? upHover
-        ? getOutcomeProbabilityAfterBet(
-            contract,
-            quickOutcome(contract, 'UP') || '',
-            BET_SIZE
-          )
-        : downHover
-        ? 1 -
-          getOutcomeProbabilityAfterBet(
-            contract,
-            quickOutcome(contract, 'DOWN') || '',
-            BET_SIZE
-          )
-        : undefined
+    previewProb = upHover
+      ? getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'UP') || '',
+          BET_SIZE
+        )
+      : downHover
+      ? 1 -
+        getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'DOWN') || '',
+          BET_SIZE
+        )
       : undefined
   } catch (e) {
     // Catch any errors from hovering on an invalid option
@@ -133,21 +130,19 @@ function SignedInQuickBet(props: {
   const isMobile = useIsMobile()
   let previewProb = undefined
   try {
-    previewProb = !isMobile
-      ? upHover
-        ? getOutcomeProbabilityAfterBet(
-            contract,
-            quickOutcome(contract, 'UP') || '',
-            BET_SIZE
-          )
-        : downHover
-        ? 1 -
-          getOutcomeProbabilityAfterBet(
-            contract,
-            quickOutcome(contract, 'DOWN') || '',
-            BET_SIZE
-          )
-        : undefined
+    previewProb = upHover
+      ? getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'UP') || '',
+          BET_SIZE
+        )
+      : downHover
+      ? 1 -
+        getOutcomeProbabilityAfterBet(
+          contract,
+          quickOutcome(contract, 'DOWN') || '',
+          BET_SIZE
+        )
       : undefined
   } catch (e) {
     // Catch any errors from hovering on an invalid option
@@ -301,7 +296,7 @@ function BinaryQuickBetButton(props: {
     >
       <Row
         className={clsx(
-          'items-center gap-2 sm:w-[50%]',
+          'items-center gap-2 sm:w-full',
           direction === 'UP' && 'flex-row-reverse'
         )}
         onMouseEnter={onMouseEnter}
@@ -407,7 +402,9 @@ export function QuickOutcomeView(props: {
 }) {
   const { contract, previewProb, numAnswersFR } = props
   const { outcomeType } = contract
-  const prob = previewProb ?? getProb(contract)
+  const isMobile = useIsMobile()
+  const prob = isMobile ? getProb(contract) : previewProb ?? getProb(contract)
+  console.log('prob:', prob, 'previewProb:', previewProb)
 
   const textColor = getTextColor(contract)
 
@@ -427,7 +424,7 @@ export function QuickOutcomeView(props: {
         <div
           className={`absolute inset-0 flex items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
         >
-          {cardText(contract, previewProb)}
+          {cardText(contract, prob)}
         </div>
       </div>
     )
