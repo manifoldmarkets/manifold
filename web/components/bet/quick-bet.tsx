@@ -404,8 +404,6 @@ export function QuickOutcomeView(props: {
   const { outcomeType } = contract
   const isMobile = useIsMobile()
   const prob = isMobile ? getProb(contract) : previewProb ?? getProb(contract)
-  console.log('prob:', prob, 'previewProb:', previewProb)
-
   const textColor = getTextColor(contract)
 
   if (outcomeType != 'FREE_RESPONSE' && outcomeType != 'MULTIPLE_CHOICE') {
