@@ -71,6 +71,9 @@ import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { GroupCard } from '../groups'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 
+export const MAX_HOME_SECTION_CONTRACTS = 8
+export const MAX_GROUP_SECTION_CONTRACTS = 6
+
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
 
@@ -109,10 +112,16 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     }
   }, [user, sections])
 
-  const trendingContracts = useTrendingContracts(7, userBlockFacetFilters)
-  const newContracts = useNewContracts(7, userBlockFacetFilters)
+  const trendingContracts = useTrendingContracts(
+    MAX_HOME_SECTION_CONTRACTS,
+    userBlockFacetFilters
+  )
+  const newContracts = useNewContracts(
+    MAX_HOME_SECTION_CONTRACTS,
+    userBlockFacetFilters
+  )
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
-    7,
+    MAX_HOME_SECTION_CONTRACTS,
     userBlockFacetFilters
   )
   const contractMetricsByProfit = useUserContractMetricsByProfit(
@@ -584,7 +593,7 @@ function GroupSection(props: {
         </Button>
       </HomeSectionHeader>
       <ContractsGrid
-        contracts={contracts.slice(0, 7)}
+        contracts={contracts.slice(0, MAX_GROUP_SECTION_CONTRACTS)}
         showImageOnTopContract={true}
       />
     </Col>

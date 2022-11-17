@@ -27,6 +27,7 @@ import { trendingIndex } from 'web/lib/service/algolia'
 import { CPMMBinaryContract, Contract } from 'common/contract'
 import { sortBy } from 'lodash'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { MAX_HOME_SECTION_CONTRACTS } from 'web/pages/home/index'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const trending = await trendingIndex.search<CPMMBinaryContract>('', {
@@ -62,9 +63,12 @@ export default function Home() {
   )
 
   const globalConfig = useGlobalConfig()
-  const trendingContracts = useTrendingContracts(6, blockedFacetFilters)
+  const trendingContracts = useTrendingContracts(
+    MAX_HOME_SECTION_CONTRACTS,
+    blockedFacetFilters
+  )
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
-    6,
+    MAX_HOME_SECTION_CONTRACTS,
     blockedFacetFilters
   )
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
