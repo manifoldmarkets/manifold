@@ -6,7 +6,6 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 import { DateDoc } from 'common/post'
-import { Content } from 'web/components/widgets/editor'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/widgets/site-link'
@@ -87,7 +86,7 @@ export function DateDocPost(props: {
   link?: boolean
 }) {
   const { dateDoc, creator, link } = props
-  const { content, birthday, contractSlug } = dateDoc
+  const { birthday, contractSlug } = dateDoc
   const { name, username } = creator
 
   const user = useUser()
