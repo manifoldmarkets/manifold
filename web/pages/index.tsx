@@ -30,7 +30,7 @@ import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import Link from 'next/link'
 import { ChartBarIcon } from '@heroicons/react/solid'
-import { TestimonialsPanel } from './testimonials-panel'
+import TestimonialsPanel from './testimonials-panel'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const trending = await trendingIndex.search<CPMMBinaryContract>('', {
