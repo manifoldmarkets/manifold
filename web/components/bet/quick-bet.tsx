@@ -421,7 +421,7 @@ export function QuickOutcomeView(props: {
         <div
           className={`absolute inset-0 flex items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
         >
-          {cardText(contract, prob)}
+          {cardText(contract, isMobile ? undefined : previewProb)}
         </div>
       </div>
     )
