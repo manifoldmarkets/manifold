@@ -68,26 +68,34 @@ export function ContractsGrid(props: {
     )
   }
 
+  let adjustedContractsLength: number = contracts.length
   let lastIndex: number | undefined = undefined
   let pushToSecondColumn: boolean = false
 
-  if (
-    !!contracts[0].coverImageUrl &&
-    contracts.length >= 6 &&
-    contracts.length % 2 == 0
-  ) {
-    if (!!contracts[contracts.length - 3].coverImageUrl) {
-      contracts.splice(contracts.length - 2, 2)
-      lastIndex = contracts.length - 1
+  if (contracts.length >= 6) {
+    if (contracts.length % 2 == 0) {
+      if (!!contracts[0].coverImageUrl) {
+        if (!!contracts[contracts.length - 3].coverImageUrl) {
+          adjustedContractsLength = contracts.length - 2
+          lastIndex = adjustedContractsLength - 1
+        } else {
+          pushToSecondColumn = true
+          adjustedContractsLength = contracts.length - 1
+        }
+      }
     } else {
-      contracts.splice(contracts.length - 1, 1)
-      pushToSecondColumn = true
+      if (!!contracts[0].coverImageUrl) {
+        pushToSecondColumn = true
+      } else {
+        adjustedContractsLength = contracts.length - 1
+      }
     }
   }
 
-  const homogenizeHeights = (contractList: JSX.Element[]) => {
+  const adjustHeights = (contractList: JSX.Element[]) => {
+    contractList = contractList.slice(0, adjustedContractsLength)
     if (pushToSecondColumn) {
-      contractList.splice(2, 0, <div />)
+      contractList.splice(2, 0, <div key={contractList.length} />)
     }
     return contractList
   }
@@ -100,7 +108,7 @@ export function ContractsGrid(props: {
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
-        {homogenizeHeights(
+        {adjustHeights(
           contracts.map((contract, index) =>
             contract.mechanism === 'cpmm-1' ? (
               <ContractCardWithPosition
