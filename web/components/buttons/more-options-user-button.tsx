@@ -33,7 +33,7 @@ export function MoreOptionsUserButton(props: { user: User }) {
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
         <Col className={'rounded-md bg-white p-4 pt-1'}>
           {isAdmin && (
-            <Row className={'justify-end'}>
+            <Row className={'mt-3 justify-end'}>
               <Button
                 color={'red'}
                 onClick={() => {
@@ -42,7 +42,7 @@ export function MoreOptionsUserButton(props: { user: User }) {
                   })
                 }}
               >
-                {user.isBannedFromPosting ? 'Banned' : 'Ban'}
+                {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
               </Button>
             </Row>
           )}
