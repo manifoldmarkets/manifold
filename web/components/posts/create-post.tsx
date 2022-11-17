@@ -26,10 +26,7 @@ export function CreatePostForm(props: { group?: Group }) {
   })
 
   const isValid =
-    editor &&
-    title.length > 0 &&
-    subtitle.length > 0 &&
-    editor.isEmpty === false
+    editor && title.length > 0 && subtitle.length > 0 && !editor.isEmpty
 
   async function savePost(title: string) {
     if (!editor) return

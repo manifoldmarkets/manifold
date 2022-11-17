@@ -24,7 +24,7 @@ import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
-import { Button } from 'web/components/buttons/button'
+import { Button, buttonClass } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { getGroup, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
@@ -70,6 +70,7 @@ import { DailyStats } from 'web/components/daily-stats'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { GroupCard } from '../groups'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import Link from 'next/link'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -471,15 +472,15 @@ export function LatestPostsSection(props: { latestPosts: Post[] }) {
         />
         <Col>
           {user && (
-            <SiteLink
-              className="mb-3 text-xl"
+            <Link
               href={'/create-post'}
               onClick={() =>
                 track('home click create post', { section: 'create-post' })
               }
+              className={clsx(buttonClass('md', 'indigo'), 'mb-3')}
             >
-              <Button>Create Post</Button>
-            </SiteLink>
+              Create Post
+            </Link>
           )}
         </Col>
       </Row>
