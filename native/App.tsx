@@ -485,6 +485,8 @@ const App = () => {
         </View>
         <WebView
           style={styles.webView}
+          mediaPlaybackRequiresUserAction={true}
+          allowsInlineMediaPlayback={true}
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
           overScrollMode={'never'}

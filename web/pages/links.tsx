@@ -87,7 +87,8 @@ export default function LinkPage(props: { auth: { user: User } }) {
           />
         ) : (
           <p className="text-gray-500">
-            You are not currently authorized to create manalinks.
+            Your account must be older than a week and have a balance or total
+            profits greater than {formatMoney(1000)} to create manalinks.
           </p>
         )}
       </Col>
