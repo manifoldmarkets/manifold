@@ -1,4 +1,4 @@
-import { mapValues, min, sumBy } from 'lodash'
+import { mapValues, minBy, sumBy } from 'lodash'
 import { binarySearch } from './util/algos'
 
 export function getProb(pool: { [outcome: string]: number }, outcome: string) {
@@ -79,7 +79,11 @@ export function shortSell(
   const k = getK(pool)
   const poolWithAmount = mapValues(pool, (s) => s + amount)
 
-  const maxShares = min(Object.values(poolWithAmount)) as number
+  const minOutcome = minBy(Object.keys(poolWithAmount), (o) =>
+    o === outcome ? Infinity : poolWithAmount[o]
+  ) as string
+  const maxShares = poolWithAmount[minOutcome]
+
   const shares = binarySearch(amount, maxShares, (shares) => {
     const poolAfterPurchase = mapValues(poolWithAmount, (s, o) =>
       o === outcome ? s : s - shares
@@ -103,21 +107,11 @@ export function test() {
     C: 100,
   }
 
+  console.log('START')
   console.log('pool', pool, 'k', getK(pool), 'probs', poolToProbs(pool))
 
-  const { newPool, shares } = buy(pool, 'C', 10)
-  console.log('shares', shares, 'newPool', newPool, 'newK', getK(newPool))
-
-  const { newPool: poolAfterSale, saleAmount } = sell(newPool, 'C', shares)
-  console.log(
-    'sale amount',
-    saleAmount,
-    poolAfterSale,
-    poolToProbs(poolAfterSale)
-  )
-
   const { newPool: poolAfterShortSell, gainedShares } = shortSell(
-    poolAfterSale,
+    pool,
     'C',
     100
   )
