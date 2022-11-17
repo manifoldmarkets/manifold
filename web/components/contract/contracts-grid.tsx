@@ -68,24 +68,29 @@ export function ContractsGrid(props: {
     )
   }
 
-  const lastIndex =
-    !!contracts[0].coverImageUrl &&
-      contracts.length >= 4 &&
-      contracts.length % 2 === 0
-      ? contracts.length - 1
-      : undefined
+  let lastIndex: number | undefined = undefined
+  let pushToSecondColumn: boolean = false
 
+  if (
+    !!contracts[0].coverImageUrl &&
+    contracts.length >= 6 &&
+    contracts.length % 2 == 0
+  ) {
+    if (!!contracts[contracts.length - 3].coverImageUrl) {
+      contracts.splice(contracts.length - 2, 2)
+      lastIndex = contracts.length - 1
+    } else {
+      contracts.splice(contracts.length - 1, 1)
+      pushToSecondColumn = true
+    }
+  }
 
   const homogenizeHeights = (contractList: JSX.Element[]) => {
-    if (contracts.length >= 4 &&
-      contracts.length % 2 === 0 &&
-      (!!contracts[0].coverImageUrl) && !(!!contracts[contracts.length - 1].coverImageUrl)) {
-      contractList = contractList.slice(0, contractList.length - 1)
+    if (pushToSecondColumn) {
       contractList.splice(2, 0, <div />)
     }
     return contractList
   }
-
 
   return (
     <Col className="gap-8">
@@ -95,44 +100,46 @@ export function ContractsGrid(props: {
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
-        {homogenizeHeights(contracts.map((contract, index) =>
-          contract.mechanism === 'cpmm-1' ? (
-            <ContractCardWithPosition
-              key={contract.id}
-              onClick={
-                onContractClick ? () => onContractClick(contract) : undefined
-              }
-              contract={contract as CPMMBinaryContract}
-              showTime={showTime}
-              showImage={
-                showImageOnTopContract && (index == 0 || index === lastIndex)
-              }
-              className={clsx(
-                contractIds?.includes(contract.id) && highlightClassName
-              )}
-            />
-          ) : (
-            <ContractCard
-              contract={contract}
-              key={contract.id}
-              showTime={showTime}
-              showImage={
-                showImageOnTopContract && (index == 0 || index === lastIndex)
-              }
-              onClick={
-                onContractClick ? () => onContractClick(contract) : undefined
-              }
-              noLinkAvatar={noLinkAvatar}
-              hideQuickBet={hideQuickBet}
-              hideGroupLink={hideGroupLink}
-              trackingPostfix={trackingPostfix}
-              className={clsx(
-                'mb-4 break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
-                contractIds?.includes(contract.id) && highlightClassName
-              )}
-            />
+        {homogenizeHeights(
+          contracts.map((contract, index) =>
+            contract.mechanism === 'cpmm-1' ? (
+              <ContractCardWithPosition
+                key={contract.id}
+                onClick={
+                  onContractClick ? () => onContractClick(contract) : undefined
+                }
+                contract={contract as CPMMBinaryContract}
+                showTime={showTime}
+                showImage={
+                  showImageOnTopContract && (index == 0 || index === lastIndex)
+                }
+                className={clsx(
+                  contractIds?.includes(contract.id) && highlightClassName
+                )}
+              />
+            ) : (
+              <ContractCard
+                contract={contract}
+                key={contract.id}
+                showTime={showTime}
+                showImage={
+                  showImageOnTopContract && (index == 0 || index === lastIndex)
+                }
+                onClick={
+                  onContractClick ? () => onContractClick(contract) : undefined
+                }
+                noLinkAvatar={noLinkAvatar}
+                hideQuickBet={hideQuickBet}
+                hideGroupLink={hideGroupLink}
+                trackingPostfix={trackingPostfix}
+                className={clsx(
+                  'mb-4 break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
+                  contractIds?.includes(contract.id) && highlightClassName
+                )}
+              />
+            )
           )
-        ))}
+        )}
       </Masonry>
       {loadMore && (
         <VisibilityObserver
