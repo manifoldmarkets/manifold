@@ -20,6 +20,7 @@ type LiteReport = {
   id: string
   text: string
   contentOwnerId: string
+  reasonsDescription: string
 }
 
 export default async function handler(
@@ -44,18 +45,17 @@ export default async function handler(
           parentId,
           userId,
           id,
+          description,
         } = report
 
+        let partialReport: { slug: string; text: string } | null = null
         // Reported contract
         if (contentType === 'contract') {
           const contract = await getContractFromId(contentId)
-          return contract
+          partialReport = contract
             ? {
                 slug: contractUrl(contract),
-                reportedById: userId,
-                id,
                 text: contract.question,
-                contentOwnerId,
               }
             : null
           // Reported comment on a contract
@@ -70,17 +70,15 @@ export default async function handler(
               (comment) => comment.id === contentId
             )
             const comment = comments[0]
-            return comments.length > 0
-              ? {
-                  slug: contractUrl(contract) + '#' + comment.id,
-                  reportedById: userId,
-                  id,
-                  text: comment.text
-                    ? comment.text
-                    : richTextToString(comment.content),
-                  contentOwnerId,
-                }
-              : null
+            partialReport =
+              comments.length > 0
+                ? {
+                    slug: contractUrl(contract) + '#' + comment.id,
+                    text: comment.text
+                      ? comment.text
+                      : richTextToString(comment.content),
+                  }
+                : null
           }
           // Reported comment on a post
         } else if (
@@ -93,30 +91,34 @@ export default async function handler(
             const comments = (await listAllCommentsOnPost(post.id)).filter(
               (comment) => comment.id === contentId
             )
-            return comments.length > 0
-              ? {
-                  slug:
-                    `https://${ENV_CONFIG.domain}${postPath(post.slug)}` +
-                    '#' +
-                    comments[0].id,
-                  reportedById: userId,
-                  id,
-                  text: richTextToString(comments[0].content),
-                  contentOwnerId,
-                }
-              : null
+            partialReport =
+              comments.length > 0
+                ? {
+                    slug:
+                      `https://${ENV_CONFIG.domain}${postPath(post.slug)}` +
+                      '#' +
+                      comments[0].id,
+                    text: richTextToString(comments[0].content),
+                  }
+                : null
           }
           // Reported a user, probably should add a field as to why they were reported
         } else if (contentType === 'user') {
           const reportedUser = await getUser(contentId)
-          return {
+          partialReport = {
             slug: `https://${ENV_CONFIG.domain}/${reportedUser.username}`,
-            reportedById: userId,
-            id,
             text: reportedUser.name,
-            contentOwnerId,
           }
         }
+        return partialReport
+          ? {
+              ...partialReport,
+              reasonsDescription: description ?? '',
+              contentOwnerId,
+              id,
+              reportedById: userId,
+            }
+          : null
       })
     )
   )
