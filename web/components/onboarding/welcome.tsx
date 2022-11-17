@@ -23,6 +23,8 @@ import { formatMoney } from 'common/util/format'
 import { STARTING_BALANCE } from 'common/economy'
 import { Button } from 'web/components/buttons/button'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { buildArray } from 'common/util/array'
+import { getNativePlatform } from 'web/lib/native/is-native'
 
 export default function Welcome() {
   const user = useUser()
@@ -31,7 +33,14 @@ export default function Welcome() {
   const [page, setPage] = useState(0)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
   const isTwitch = useIsTwitch(user)
-  const TOTAL_PAGES = 4
+  const { isNative, platform } = getNativePlatform()
+  const availablePages = buildArray([
+    <Page0 />,
+    <Page1 />,
+    isNative && platform === 'ios' ? null : <Page2 />,
+    <Page3 />,
+  ])
+  const TOTAL_PAGES = availablePages.length
   // Just making new users created after 10/31/2022 go through this for now
   const shouldSeeEula =
     user &&
@@ -90,10 +99,7 @@ export default function Welcome() {
         </Col>
       ) : (
         <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
-          {page === 0 && <Page0 />}
-          {page === 1 && <Page1 />}
-          {page === 2 && <Page2 />}
-          {page === 3 && <Page3 />}
+          {availablePages[page]}
           <Col>
             <Row className="place-content-between">
               <ChevronLeftIcon
