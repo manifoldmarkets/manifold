@@ -29,7 +29,7 @@ export function CreatePostForm(props: { group?: Group }) {
     editor &&
     title.length > 0 &&
     subtitle.length > 0 &&
-    editor.isEmpty === false
+    !editor.isEmpty
 
   async function savePost(title: string) {
     if (!editor) return

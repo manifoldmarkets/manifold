@@ -137,11 +137,7 @@ export function DateDocPost(props: {
           </Row>
         </Col>
       </SiteLink>
-      {user && user.id === creator.id ? (
-        <RichEditPost post={post} />
-      ) : (
-        <Content size="lg" content={content} />
-      )}
+      <RichEditPost post={post} canEdit={!!user && user.id === creator.id} />
       {contractSlug && (
         <div className="mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-3">
           <iframe

@@ -12,7 +12,7 @@ import {
 import { getUser, User } from 'web/lib/firebase/users'
 import { PencilIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -112,11 +112,10 @@ export default function PostPage(props: {
         <Spacer h={2} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
           <div className="flex w-full flex-col py-2">
-            {user && user.id === post.creatorId ? (
-              <RichEditPost post={post} />
-            ) : (
-              <Content size="lg" content={post.content} />
-            )}
+            <RichEditPost
+              post={post}
+              canEdit={!!user && user.id === post.creatorId}
+            />
           </div>
         </div>
 
@@ -162,13 +161,18 @@ export function PostCommentsActivity(props: {
   )
 }
 
-export function RichEditPost(props: { post: Post }) {
-  const { post } = props
+export function RichEditPost(props: {
+  post: Post
+  canEdit: boolean
+  children?: React.ReactNode
+}) {
+  const { post, canEdit, children } = props
   const [editing, setEditing] = useState(false)
 
   const editor = useTextEditor({
     defaultValue: post.content,
     key: `post ${post?.id || ''}`,
+    size: 'lg',
   })
 
   async function savePost() {
@@ -200,18 +204,21 @@ export function RichEditPost(props: { post: Post }) {
   ) : (
     <Col>
       <Content size="lg" content={post.content} />
-      <Row className="place-content-end">
-        <Button
-          color="gray-white"
-          size="xs"
-          onClick={() => {
-            setEditing(true)
-            editor?.commands.focus('end')
-          }}
-        >
-          <PencilIcon className="inline h-4 w-4" />
-        </Button>
-      </Row>
+      {canEdit && (
+        <Row className="place-content-end">
+          <Button
+            color="gray-white"
+            size="xs"
+            onClick={() => {
+              setEditing(true)
+              editor?.commands.focus('end')
+            }}
+          >
+            <PencilIcon className="inline h-4 w-4" />
+          </Button>
+          {children}
+        </Row>
+      )}
     </Col>
   )
 }

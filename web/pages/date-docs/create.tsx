@@ -35,7 +35,7 @@ export default function CreateDateDocPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const editor = useTextEditor({})
+  const editor = useTextEditor({ size: 'lg' })
 
   const birthdayTime = birthday ? dayjs(birthday).valueOf() : undefined
   const isValid =
