@@ -647,7 +647,6 @@ In addition to housing impact litigation, we provide free legal aid, education a
     description: ` More than 1.7 billion people around the world are unbanked and can’t access the financial services they need. Kiva is an international nonprofit, founded in 2005 in San Francisco, with a mission to expand financial access to help underserved communities thrive.
 
 We do this by crowdfunding loans and unlocking capital for the underserved, improving the quality and cost of financial services, and addressing the underlying barriers to financial access around the world. Through Kiva's work, students can pay for tuition, women can start businesses, farmers are able to invest in equipment and families can afford needed emergency care. `,
-    tags: ['New'] as const,
   },
   {
     name: 'Electronic Frontier Foundation',
@@ -657,6 +656,7 @@ We do this by crowdfunding loans and unlocking capital for the underserved, impr
       'The leading nonprofit defending digital privacy, free speech, and innovation.',
     description: `
     The Electronic Frontier Foundation is the leading nonprofit organization defending civil liberties in the digital world. Founded in 1990, EFF champions user privacy, free expression, and innovation through impact litigation, policy analysis, grassroots activism, and technology development. EFF's mission is to ensure that technology supports freedom, justice, and innovation for all people of the world. Today, EFF uses the unique expertise of leading technologists, activists, and attorneys in our efforts to defend free speech online, fight illegal surveillance, advocate for users and innovators, and support freedom-enhancing technologies.`,
+    tags: ['New'] as const,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
