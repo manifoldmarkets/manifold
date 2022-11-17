@@ -109,10 +109,10 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     }
   }, [user, sections])
 
-  const trendingContracts = useTrendingContracts(8, userBlockFacetFilters)
-  const newContracts = useNewContracts(8, userBlockFacetFilters)
+  const trendingContracts = useTrendingContracts(7, userBlockFacetFilters)
+  const newContracts = useNewContracts(7, userBlockFacetFilters)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
-    8,
+    7,
     userBlockFacetFilters
   )
   const contractMetricsByProfit = useUserContractMetricsByProfit(
@@ -584,7 +584,7 @@ function GroupSection(props: {
         </Button>
       </HomeSectionHeader>
       <ContractsGrid
-        contracts={contracts.slice(0, 6)}
+        contracts={contracts.slice(0, 7)}
         showImageOnTopContract={true}
       />
     </Col>

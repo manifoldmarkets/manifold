@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import Masonry from 'react-masonry-css'
-import { AnyContractType, CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract } from 'common/contract'
 
 export type CardHighlightOptions = {
   itemIds?: string[]
@@ -70,32 +70,29 @@ export function ContractsGrid(props: {
 
   let adjustedContractsLength: number = contracts.length
   let lastIndex: number | undefined = undefined
-  let pushToSecondColumn: boolean = false
 
   if (contracts.length >= 6) {
-    if (contracts.length % 2 == 0) {
-      if (!!contracts[0].coverImageUrl) {
-        if (!!contracts[contracts.length - 3].coverImageUrl) {
-          adjustedContractsLength = contracts.length - 2
-          lastIndex = adjustedContractsLength - 1
-        } else {
-          pushToSecondColumn = true
-          adjustedContractsLength = contracts.length - 1
-        }
+    if (!!contracts[0].coverImageUrl) {
+      // Even number of contracts that (with an image) take up the same vertical space as the full list of contracts would without an image
+      const targetLength = Math.floor((contracts.length - 1) / 2) * 2
+      if (!!contracts[targetLength - 1].coverImageUrl) {
+        adjustedContractsLength = targetLength
+        lastIndex = targetLength - 1
+      } else {
+        adjustedContractsLength = targetLength + 1
       }
     } else {
-      if (!!contracts[0].coverImageUrl) {
-        pushToSecondColumn = true
-      } else {
-        adjustedContractsLength = contracts.length - 1
-      }
+      // Maximum even number of contracts
+      adjustedContractsLength = Math.floor(contracts.length / 2) * 2
     }
   }
 
   const adjustHeights = (contractList: JSX.Element[]) => {
     contractList = contractList.slice(0, adjustedContractsLength)
-    if (pushToSecondColumn) {
-      contractList.splice(2, 0, <div key={contractList.length} />)
+    // If there are an odd number of contracts to show (only the first contract has an image), insert an empty div under the image
+    // This pushes the extra contract to the non-image side and places the 3rd highest ranked contract vertically higher than the 4th
+    if (adjustedContractsLength % 2 != 0) {
+      contractList.splice(2, 0, <div key="empty" />)
     }
     return contractList
   }
