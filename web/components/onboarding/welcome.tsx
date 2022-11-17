@@ -182,6 +182,8 @@ function Page0() {
 }
 
 function Page1() {
+  const { isNative, platform } = getNativePlatform()
+  const shouldAutoPlay = !(isNative && platform === 'ios')
   return (
     <>
       <p>
@@ -196,7 +198,12 @@ function Page1() {
         If people have to put their mana where their mouth is, you’ll get a
         pretty accurate answer!
       </div>
-      <video loop autoPlay className="my-4 h-full w-full">
+      <video
+        loop
+        autoPlay={shouldAutoPlay}
+        controls={!shouldAutoPlay}
+        className="my-4 h-full w-full"
+      >
         <source src="/welcome/mana-example.mp4" type="video/mp4" />
         Your browser does not support video
       </video>
