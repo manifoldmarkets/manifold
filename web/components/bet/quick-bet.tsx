@@ -98,7 +98,7 @@ export function SignedOutQuickBet(props: {
   }
   return (
     <div className="relative">
-      <Row className={clsx(className, 'absolute inset-0')}>
+      <Row className={clsx(className, 'absolute inset-0 justify-between')}>
         <BinaryQuickBetButton
           onClick={withTracking(firebaseLogin, 'landing page button click')}
           direction="DOWN"
