@@ -77,21 +77,24 @@ export function SignedOutQuickBet(props: {
   const { contract, className } = props
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
+  const isMobile = useIsMobile()
   let previewProb = undefined
   try {
-    previewProb = upHover
-      ? getOutcomeProbabilityAfterBet(
-          contract,
-          quickOutcome(contract, 'UP') || '',
-          BET_SIZE
-        )
-      : downHover
-      ? 1 -
-        getOutcomeProbabilityAfterBet(
-          contract,
-          quickOutcome(contract, 'DOWN') || '',
-          BET_SIZE
-        )
+    previewProb = !isMobile
+      ? upHover
+        ? getOutcomeProbabilityAfterBet(
+            contract,
+            quickOutcome(contract, 'UP') || '',
+            BET_SIZE
+          )
+        : downHover
+        ? 1 -
+          getOutcomeProbabilityAfterBet(
+            contract,
+            quickOutcome(contract, 'DOWN') || '',
+            BET_SIZE
+          )
+        : undefined
       : undefined
   } catch (e) {
     // Catch any errors from hovering on an invalid option
@@ -127,21 +130,24 @@ function SignedInQuickBet(props: {
   const { contract, user, className } = props
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
+  const isMobile = useIsMobile()
   let previewProb = undefined
   try {
-    previewProb = upHover
-      ? getOutcomeProbabilityAfterBet(
-          contract,
-          quickOutcome(contract, 'UP') || '',
-          BET_SIZE
-        )
-      : downHover
-      ? 1 -
-        getOutcomeProbabilityAfterBet(
-          contract,
-          quickOutcome(contract, 'DOWN') || '',
-          BET_SIZE
-        )
+    previewProb = !isMobile
+      ? upHover
+        ? getOutcomeProbabilityAfterBet(
+            contract,
+            quickOutcome(contract, 'UP') || '',
+            BET_SIZE
+          )
+        : downHover
+        ? 1 -
+          getOutcomeProbabilityAfterBet(
+            contract,
+            quickOutcome(contract, 'DOWN') || '',
+            BET_SIZE
+          )
+        : undefined
       : undefined
   } catch (e) {
     // Catch any errors from hovering on an invalid option
@@ -240,7 +246,7 @@ function SignedInQuickBet(props: {
 
   return (
     <div className="relative">
-      <Row className={clsx(className, 'absolute inset-0')}>
+      <Row className={clsx(className, 'absolute inset-0 justify-between')}>
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('DOWN')}
           direction="DOWN"
@@ -273,6 +279,7 @@ function BinaryQuickBetButton(props: {
   onMouseLeave: () => void
   hasInvestment?: boolean
   invested?: number
+  className?: string
 }) {
   const {
     onClick,
@@ -288,59 +295,89 @@ function BinaryQuickBetButton(props: {
   return (
     <Row
       className={clsx(
-        'w-[50%] items-center gap-2',
+        'items-center gap-2 sm:w-[50%]',
         direction === 'UP' && 'flex-row-reverse'
       )}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={onClick}
     >
-      {direction === 'DOWN' && (
-        <EquilateralLeftTriangle
-          className={clsx(
-            'mx-2 h-6 w-6 drop-shadow-md transition-all',
-            shouldFocus
-              ? 'animate-bounce-left text-indigo-600'
-              : hasInvestment
-              ? 'text-indigo-500'
-              : 'text-indigo-300'
-          )}
+      <Row
+        className={clsx(
+          'items-center gap-2 sm:w-[50%]',
+          direction === 'UP' && 'flex-row-reverse'
+        )}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
+      >
+        {direction === 'DOWN' && (
+          <EquilateralLeftTriangle
+            className={clsx(
+              'mx-2 h-6 w-6 drop-shadow-md transition-all',
+              shouldFocus
+                ? 'animate-bounce-left text-indigo-600'
+                : hasInvestment
+                ? 'text-indigo-500'
+                : 'text-indigo-300'
+            )}
+          />
+        )}
+        {direction === 'UP' && (
+          <EquilateralRightTriangle
+            className={clsx(
+              'mx-2 h-6 w-6 drop-shadow-md transition-all',
+              shouldFocus
+                ? 'sm:animate-bounce-right text-indigo-600'
+                : hasInvestment
+                ? 'text-indigo-500'
+                : 'text-indigo-300'
+            )}
+          />
+        )}
+        {!isMobile && (
+          <QuickBetAmount
+            hasInvestment={hasInvestment}
+            invested={invested}
+            shouldFocus={shouldFocus}
+          />
+        )}
+      </Row>
+      {isMobile && (
+        <QuickBetAmount
+          hasInvestment={hasInvestment}
+          invested={invested}
+          shouldFocus={shouldFocus}
         />
-      )}
-      {direction === 'UP' && (
-        <EquilateralRightTriangle
-          className={clsx(
-            'mx-2 h-6 w-6 drop-shadow-md transition-all',
-            shouldFocus
-              ? 'sm:animate-bounce-right text-indigo-600'
-              : hasInvestment
-              ? 'text-indigo-500'
-              : 'text-indigo-300'
-          )}
-        />
-      )}
-      {hasInvestment && invested != null ? (
-        <span
-          className={clsx(
-            'text-sm font-light',
-            shouldFocus ? 'text-indigo-600' : 'text-gray-400'
-          )}
-        >
-          {shouldFocus
-            ? formatMoney(invested + BET_SIZE)
-            : formatMoney(invested)}
-        </span>
-      ) : (
-        <span
-          className={clsx(
-            'my-auto text-sm font-light text-indigo-600 transition-opacity',
-            shouldFocus ? 'opacity-100' : 'opacity-0'
-          )}
-        >
-          {formatMoney(BET_SIZE)}
-        </span>
       )}
     </Row>
+  )
+}
+
+function QuickBetAmount(props: {
+  hasInvestment: boolean | undefined
+  invested: number | undefined
+  shouldFocus: boolean
+}) {
+  const { hasInvestment, invested, shouldFocus } = props
+  if (hasInvestment && invested != null) {
+    return (
+      <span
+        className={clsx(
+          'text-sm font-light',
+          shouldFocus ? 'text-indigo-600' : 'text-gray-400'
+        )}
+      >
+        {shouldFocus ? formatMoney(invested + BET_SIZE) : formatMoney(invested)}
+      </span>
+    )
+  }
+  return (
+    <span
+      className={clsx(
+        'my-auto text-sm font-light text-indigo-600 transition-opacity',
+        shouldFocus ? 'opacity-100' : 'opacity-0'
+      )}
+    >
+      {formatMoney(BET_SIZE)}
+    </span>
   )
 }
 
