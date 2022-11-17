@@ -157,7 +157,7 @@ export function LandingPagePanel() {
 
 export function LandingPage0(props: { isMobile: boolean }) {
   const { isMobile } = props
-  const text = 'Ask any question'
+  const text = '1. Ask any question'
   return (
     <>
       <div
@@ -250,7 +250,7 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
 export function LandingPage1(props: { isMobile: boolean }) {
   const { isMobile } = props
   const startPredictMs = 3000
-  const text = 'Predict with play money'
+  const text = '2. Predict with play money'
   const [shouldPercentChange, setShouldPercentChange] = useState(false)
   const [shouldButtonHighlight, setShouldButtonHighlight] = useState(false)
   const [isMVisible, setIsMVisible] = useState(true)
@@ -373,7 +373,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
 
 export function LandingPage2(props: { isMobile: boolean }) {
   const { isMobile } = props
-  const text = 'Profit'
+  const text = '3. Profit'
   return (
     <>
       <div

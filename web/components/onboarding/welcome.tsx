@@ -198,7 +198,7 @@ function Page1() {
   )
 }
 
-function Page2() {
+export function Page2() {
   return (
     <>
       <p>

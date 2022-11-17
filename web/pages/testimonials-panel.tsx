@@ -29,7 +29,7 @@ export default function TestimonialsPanel() {
   useEffect(() => {
     const newTimeoutId = setTimeout(
       () => setPageNumber(getNextPageNumber(pageNumber, maxPage)),
-      6000
+      8000
     )
     return () => clearTimeout(newTimeoutId)
   }, [pageNumber, maxPage])
@@ -141,14 +141,14 @@ export function Testimonial(props: {
 }) {
   const { testimonial, name, credit, icon, src } = props
   return (
-    <div className="animate-slide-up-1 sm:animate-slide-in-1 group absolute top-[20%] left-8 z-20 w-4/5 text-white sm:top-2 sm:z-0">
+    <div className="animate-slide-up-1 sm:animate-slide-in-1 absolute top-[20%] left-8 z-20 w-4/5 select-none text-white sm:top-2 sm:z-0">
       <StartQuoteIcon className="h-10 w-10 text-teal-200" />
       <div className="ml-8">{testimonial}</div>
       <Row className="justify-end">
         <EndQuoteIcon className="h-10 w-10 text-teal-200" />
       </Row>
-      <Link href={src}>
-        <Row className="mt-2 justify-end gap-2">
+      <Link href={src} target="_blank">
+        <Row className="group mt-2 justify-end gap-2 ">
           <img src={icon} className="h-10 w-10 rounded-full drop-shadow-sm" />
           <Col className="text-sm">
             <div className="font-semibold transition-colors group-hover:text-teal-200">
