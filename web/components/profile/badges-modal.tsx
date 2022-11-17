@@ -138,7 +138,9 @@ function ProvenCorrectBadgeItem(props: {
             `Make a comment attached to a winning bet ` +
             (profit
               ? `with ${formatMoney(profit)} profit`
-              : `worth ${formatMoney(betAmount)}`)
+              : `worth ${formatMoney(
+                  betAmount < 0 ? betAmount * -1 : betAmount
+                )}`)
           }
         >
           <span
