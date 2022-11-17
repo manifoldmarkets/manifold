@@ -154,7 +154,7 @@ export function Testimonial(props: {
             <div className="font-semibold transition-colors group-hover:text-teal-200">
               {name}
             </div>
-            <div className="font-thin">{credit}</div>
+            <div className="font-thin text-indigo-200">{credit}</div>
           </Col>
         </Row>
       </Link>
