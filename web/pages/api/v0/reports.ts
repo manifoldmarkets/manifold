@@ -33,7 +33,7 @@ export default async function handler(
     .sort((a, b) => b.createdTime - a.createdTime)
     .slice(0, 100)
 
-  const slugsByUserId: LiteReport[] = filterDefined(
+  const liteReports: LiteReport[] = filterDefined(
     await Promise.all(
       mostRecentReports.map(async (report) => {
         const {
@@ -121,5 +121,5 @@ export default async function handler(
     )
   )
 
-  res.status(200).json(slugsByUserId)
+  res.status(200).json(liteReports)
 }

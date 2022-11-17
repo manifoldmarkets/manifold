@@ -41,7 +41,7 @@ import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-about'
 import { Button } from './buttons/button'
 import { BotBadge, PostBanBadge } from './widgets/user-link'
-import { BlockUserButton } from 'web/components/buttons/block-user-button'
+import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -120,7 +120,7 @@ export function UserPage(props: { user: User }) {
               >
                 {isCurrentUser && <DailyStats user={user} showLoans />}
                 {!isCurrentUser && <UserFollowButton userId={user.id} />}
-                {!isCurrentUser && <BlockUserButton user={user} />}
+                {!isCurrentUser && <MoreOptionsUserButton user={user} />}
               </Row>
             </div>
             <ProfilePublicStats
