@@ -127,7 +127,6 @@ function SignedInQuickBet(props: {
   const { contract, user, className } = props
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
-  const isMobile = useIsMobile()
   let previewProb = undefined
   try {
     previewProb = upHover
