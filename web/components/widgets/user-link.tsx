@@ -1,6 +1,8 @@
 import { SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
-import { BOT_USERNAMES } from 'common/envs/constants'
+import { BOT_USERNAMES, CORE_USERNAMES } from 'common/envs/constants'
+import { ShieldCheckIcon } from '@heroicons/react/solid'
+import { Tooltip } from './tooltip'
 
 export function shortenName(name: string) {
   const firstName = name.split(' ')[0]
@@ -34,8 +36,11 @@ export function UserLink(props: {
         noLink && 'pointer-events-none'
       )}
     >
-      {shortName}
-      {BOT_USERNAMES.includes(username) && <BotBadge />}
+      <div className="inline-flex flex-row items-center gap-1">
+        {shortName}
+        {BOT_USERNAMES.includes(username) && <BotBadge />}
+        {CORE_USERNAMES.includes(username) && <CoreBadge />}
+      </div>
     </SiteLink>
   )
 }
@@ -50,8 +55,18 @@ export function BotBadge() {
 
 export function PostBanBadge() {
   return (
-    <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-      Banned from posting
-    </span>
+    <Tooltip text="Can't create comments, posts, or markets" placement="bottom">
+      <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+        Banned
+      </span>
+    </Tooltip>
+  )
+}
+
+// Show a checkmark next to Core team members
+// A tooltip explaining what this is would be nice, but positioning is hard...
+export function CoreBadge() {
+  return (
+    <ShieldCheckIcon className="h-4 w-4 text-indigo-700" aria-hidden="true" />
   )
 }

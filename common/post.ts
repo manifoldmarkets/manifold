@@ -19,6 +19,7 @@ export type Post = {
 
   commentCount?: number
   isGroupAboutPost?: boolean
+  featuredLabel?: string
 }
 
 export type DateDoc = Post & {

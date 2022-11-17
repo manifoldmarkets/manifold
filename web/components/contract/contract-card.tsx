@@ -84,7 +84,7 @@ export const ContractCard = memo(function ContractCard(props: {
     numAnswersFR,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
-  const { isResolved, createdTime } = contract
+  const { isResolved, createdTime, featuredLabel } = contract
   const { question, outcomeType } = contract
   const { resolution } = contract
 
@@ -113,7 +113,7 @@ export const ContractCard = memo(function ContractCard(props: {
           <Row className="justify-between px-4 ">
             <AvatarDetails contract={contract} noLink={noLinkAvatar} />
             <Row className="gap-1">
-              {pinned && <FeaturedPill />}
+              {pinned && <FeaturedPill label={featuredLabel} />}
               {/* {isNew && <NewContractBadge />} */}
             </Row>
           </Row>
@@ -496,10 +496,11 @@ function MetricsFooter(props: {
   )
 }
 
-export function FeaturedPill() {
+export function FeaturedPill(props: { label?: string }) {
+  const label = props.label ?? 'Featured'
   return (
     <div className="rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-xs text-white">
-      Featured
+      {label}
     </div>
   )
 }

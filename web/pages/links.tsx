@@ -75,7 +75,7 @@ export default function LinkPage(props: { auth: { user: User } }) {
           other people, even if they don&apos;t yet have a Manifold account.{' '}
           <SiteLink href="/referrals">
             Eligible for {formatMoney(REFERRAL_AMOUNT)} referral bonus if a new
-            user signs up!
+            user signs up and places a trade!!
           </SiteLink>
         </p>
         <Subtitle text="Your Manalinks" />
