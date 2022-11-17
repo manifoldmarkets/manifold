@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import Masonry from 'react-masonry-css'
-import { CPMMBinaryContract } from 'common/contract'
+import { AnyContractType, CPMMBinaryContract } from 'common/contract'
 
 export type CardHighlightOptions = {
   itemIds?: string[]
@@ -70,10 +70,22 @@ export function ContractsGrid(props: {
 
   const lastIndex =
     !!contracts[0].coverImageUrl &&
-    contracts.length >= 4 &&
-    contracts.length % 2 === 0
+      contracts.length >= 4 &&
+      contracts.length % 2 === 0
       ? contracts.length - 1
       : undefined
+
+
+  const homogenizeHeights = (contractList: JSX.Element[]) => {
+    if (contracts.length >= 4 &&
+      contracts.length % 2 === 0 &&
+      (!!contracts[0].coverImageUrl) && !(!!contracts[contracts.length - 1].coverImageUrl)) {
+      contractList = contractList.slice(0, contractList.length - 1)
+      contractList.splice(2, 0, <div />)
+    }
+    return contractList
+  }
+
 
   return (
     <Col className="gap-8">
@@ -83,7 +95,7 @@ export function ContractsGrid(props: {
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
-        {contracts.map((contract, index) =>
+        {homogenizeHeights(contracts.map((contract, index) =>
           contract.mechanism === 'cpmm-1' ? (
             <ContractCardWithPosition
               key={contract.id}
@@ -120,7 +132,7 @@ export function ContractsGrid(props: {
               )}
             />
           )
-        )}
+        ))}
       </Masonry>
       {loadMore && (
         <VisibilityObserver
