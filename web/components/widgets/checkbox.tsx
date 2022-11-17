@@ -18,7 +18,7 @@ export function Checkbox(props: {
             type="checkbox"
             className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
             checked={checked}
-            onChange={(e) => toggle(!e.target.checked)}
+            onChange={(e) => toggle(e.target.checked)}
             disabled={disabled}
           />
         </div>

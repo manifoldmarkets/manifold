@@ -73,6 +73,18 @@ export const BOT_USERNAMES = [
   'LiquidityBonusBot',
 ]
 
+export const CORE_USERNAMES = [
+  'Austin',
+  'JamesGrugett',
+  'SG',
+  'ian',
+  'Sinclair',
+  'Alice',
+  'DavidChee',
+  'mqp',
+  'IngaWei',
+]
+
 export const HOUSE_BOT_USERNAME = 'acc'
 
 export function firestoreConsolePath(contractId: string) {

@@ -7,8 +7,9 @@ import { DAY_MS } from '../../common/util/time'
 import { BETTING_STREAK_RESET_HOUR } from '../../common/economy'
 const firestore = admin.firestore()
 
-export const resetBettingStreaksForUsers = functions.pubsub
-  .schedule(`0 ${BETTING_STREAK_RESET_HOUR} * * *`)
+export const resetBettingStreaksForUsers = functions
+  .runWith({ timeoutSeconds: 540 })
+  .pubsub.schedule(`0 ${BETTING_STREAK_RESET_HOUR} * * *`)
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await resetBettingStreaksInternal()
@@ -21,14 +22,16 @@ const resetBettingStreaksInternal = async () => {
     .get()
 
   const users = usersSnap.docs.map((doc) => doc.data() as User)
-
-  for (const user of users) {
-    await resetBettingStreakForUser(user)
-  }
+  const betStreakResetTime = Date.now() - DAY_MS
+  await Promise.all(
+    users.map((user) => resetBettingStreakForUser(user, betStreakResetTime))
+  )
 }
 
-const resetBettingStreakForUser = async (user: User) => {
-  const betStreakResetTime = Date.now() - DAY_MS
+const resetBettingStreakForUser = async (
+  user: User,
+  betStreakResetTime: number
+) => {
   // if they made a bet within the last day, don't reset their streak
   if (
     (user?.lastBetTime ?? 0) > betStreakResetTime ||
