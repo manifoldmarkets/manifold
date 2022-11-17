@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { ReactNode, useEffect } from 'react'
 import Router from 'next/router'
 
 import { Page } from 'web/components/layout/page'
@@ -26,7 +26,11 @@ import {
 import { trendingIndex } from 'web/lib/service/algolia'
 import { CPMMBinaryContract, Contract } from 'common/contract'
 import { sortBy } from 'lodash'
-import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
+import { Row } from 'web/components/layout/row'
+import Link from 'next/link'
+import { ChartBarIcon } from '@heroicons/react/solid'
+import { TestimonialsPanel } from './testimonials-panel'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const trending = await trendingIndex.search<CPMMBinaryContract>('', {
@@ -100,8 +104,29 @@ export default function Home() {
         description="Create a play-money prediction market on any topic you care about
             and bet with your friends on what will happen!"
       />
-      <Col className="mx-auto mb-8 max-w-3xl gap-8 px-4">
+      <Col className="mx-auto mb-8 max-w-3xl gap-4 px-4">
         <LandingPagePanel />
+        <Row className="w-full gap-2 sm:gap-4">
+          <InfoCard
+            link="https://help.manifold.markets/"
+            icon={<div className="text-2xl text-indigo-400">?</div>}
+            text="About & Help"
+          />
+          <InfoCard
+            link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
+            icon={
+              <div className="text-2xl text-indigo-400">
+                {ENV_CONFIG.moneyMoniker}
+              </div>
+            }
+            text="What is Mana?"
+          />
+          <InfoCard
+            link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
+            icon={<ChartBarIcon className="mx-auto h-8 w-8 text-indigo-400" />}
+            text="What is a Prediction Market?"
+          />
+        </Row>
         {isLoading ? (
           <LoadingIndicator />
         ) : (
@@ -129,8 +154,26 @@ export default function Home() {
             />
           </>
         )}
+        <TestimonialsPanel />
       </Col>
     </Page>
+  )
+}
+
+export function InfoCard(props: {
+  link: string
+  icon: ReactNode
+  text: string
+}) {
+  const { link, icon, text } = props
+  return (
+    <Link
+      className="flex w-1/3 flex-col items-center gap-1 rounded-xl bg-indigo-700 px-4 py-2 text-center text-sm text-white drop-shadow-sm transition-all hover:drop-shadow-lg"
+      href={link}
+    >
+      {icon}
+      {text}
+    </Link>
   )
 }
 

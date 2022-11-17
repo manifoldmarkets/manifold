@@ -15,23 +15,21 @@ import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
 import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import CountUp from 'react-countup'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { STARTING_BALANCE } from 'common/economy'
 
-export type PageNumber = 0 | 1 | 2
+const MAX_PAGE = 2
 
-export function getNextPageNumber(pageNumber: PageNumber): PageNumber {
-  switch (pageNumber) {
-    case 0:
-      return 1
-    case 1:
-      return 2
-    case 2:
-      return 0
+export function getNextPageNumber(pageNumber: number, maxPage: number) {
+  if (pageNumber + 1 <= maxPage) {
+    return pageNumber + 1
+  } else {
+    return 0
   }
 }
 
 export function PaginationCircle(props: {
-  currentPageNumber: PageNumber
-  pageNumber: PageNumber
+  currentPageNumber: number
+  pageNumber: number
   onClick: () => void
 }) {
   const { currentPageNumber, pageNumber, onClick } = props
@@ -50,11 +48,11 @@ export function PaginationCircle(props: {
 export function LandingPagePanel() {
   useTracking('view landing page')
   const isMobile = useIsMobile()
-  const [pageNumber, setPageNumber] = useState<PageNumber>(1)
+  const [pageNumber, setPageNumber] = useState(0)
 
   useEffect(() => {
     const newTimeoutId = setTimeout(
-      () => setPageNumber(getNextPageNumber(pageNumber)),
+      () => setPageNumber(getNextPageNumber(pageNumber, MAX_PAGE)),
       6000
     )
     return () => clearTimeout(newTimeoutId)
@@ -131,7 +129,7 @@ export function LandingPagePanel() {
             </Button>
             <div
               className={clsx(
-                'rounded-md bg-gray-900 text-gray-900',
+                'rounded-md bg-teal-200 text-gray-900',
                 isMobile
                   ? 'px-6 py-2.5 text-base font-semibold'
                   : 'px-6 py-3 text-xl font-semibold'
@@ -143,9 +141,9 @@ export function LandingPagePanel() {
           <div className="absolute top-6 right-8 sm:top-48 md:right-12">
             <div className="text-right text-sm text-gray-900">
               and get{'   '}
-              <span className="relative z-10 bg-teal-200 px-1 font-semibold">
-                {ENV_CONFIG.moneyMoniker}500
-                <div className="absolute left-0 -bottom-0.5 -z-10 h-full w-full bg-teal-200" />
+              <span className="relative z-10 font-semibold">
+                {ENV_CONFIG.moneyMoniker}
+                {STARTING_BALANCE}
               </span>
               {'   '}
               to start predicting!
@@ -338,7 +336,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         />
         <div
           className={clsx(
-            'animate-float-and-fade-1 absolute right-[6px] top-[2px] z-40 font-thin text-indigo-600',
+            'animate-float-and-fade-1 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
@@ -346,7 +344,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         </div>
         <div
           className={clsx(
-            'animate-float-and-fade-2 absolute right-[6px] top-[2px] z-40 font-thin text-indigo-600',
+            'animate-float-and-fade-2 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
@@ -354,7 +352,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         </div>
         <div
           className={clsx(
-            'animate-float-and-fade-3 absolute right-[6px] top-[2px] z-40 font-thin text-indigo-600',
+            'animate-float-and-fade-3 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
