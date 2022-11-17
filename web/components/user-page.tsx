@@ -32,7 +32,12 @@ import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
-import { BOT_USERNAMES, DOMAIN, ENV_CONFIG } from 'common/envs/constants'
+import {
+  BOT_USERNAMES,
+  CORE_USERNAMES,
+  DOMAIN,
+  ENV_CONFIG,
+} from 'common/envs/constants'
 import { BadgeDisplay } from 'web/components/badge-display'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
@@ -40,8 +45,8 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-about'
 import { Button } from './buttons/button'
-import { BotBadge, PostBanBadge } from './widgets/user-link'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { BotBadge, CoreBadge, PostBanBadge } from './widgets/user-link'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -103,11 +108,14 @@ export function UserPage(props: { user: User }) {
           <Col className="w-full gap-4 pl-5">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
               <Col>
-                <span className="break-anywhere text-lg font-bold sm:text-2xl">
-                  {user.name}{' '}
+                <div className="inline-flex flex-row items-center gap-1">
+                  <span className="break-anywhere text-lg font-bold sm:text-2xl">
+                    {user.name}
+                  </span>
                   {BOT_USERNAMES.includes(user.username) && <BotBadge />}
+                  {CORE_USERNAMES.includes(user.username) && <CoreBadge />}
                   {user.isBannedFromPosting && <PostBanBadge />}
-                </span>
+                </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
                   <BadgeDisplay user={user} query={router.query} />
