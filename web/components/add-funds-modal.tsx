@@ -157,7 +157,7 @@ export const OtherWaysToGetMana = (props: { includeBuyNote?: boolean }) => {
       <Item url="/referrals">
         Refer a friend and get
         <span className={'mx-1 font-bold'}>{formatMoney(REFERRAL_AMOUNT)}</span>
-        per signup
+        per signup after they place their first trade
       </Item>
       <Item url="/create">
         Make a market and get

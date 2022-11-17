@@ -410,7 +410,7 @@ export function GroupAboutDetails(props: {
             <div className="text-lg">Invite</div>
             <div className={'mb-2 text-gray-500'}>
               Invite a friend to this group and get {ENV_CONFIG.moneyMoniker}
-              {REFERRAL_AMOUNT} if they sign up!
+              {REFERRAL_AMOUNT} if they sign up and place a trade!
             </div>
 
             <CopyLinkButton
