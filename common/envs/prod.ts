@@ -93,7 +93,7 @@ export const PROD_CONFIG: EnvConfig = {
 
   moneyMoniker: 'Ṁ',
   bettor: 'trader',
-  pastBet: 'trade',
+  pastBet: 'traded',
   presentBet: 'trade',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
