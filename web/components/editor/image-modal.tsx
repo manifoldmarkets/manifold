@@ -5,7 +5,6 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { CopyLinkButton } from '../buttons/copy-link-button'
 
 const MODIFIERS =
   '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
@@ -25,38 +24,32 @@ export function DreamModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className="gap-2 rounded bg-white">
+      <Col className="rounded bg-white">
         <DreamCard {...props} onDream={onDream} />
         {imageUrl && (
           <>
             <img src={imageUrl} alt="Image" />
-            {/* Show the current imageUrl */}
-            {/* TODO: Keep the other generated images, so the user can play with different attempts. */}
-            <Col className="gap-2 px-6 pb-6">
-              <CopyLinkButton url={imageUrl} />
-
-              <Row className="gap-2">
-                <Button
-                  onClick={() => {
-                    const imageCode = `<img src="${imageUrl}" alt="${prompt}" />`
-                    if (editor) {
-                      editor.chain().insertContent(imageCode).run()
-                      setOpen(false)
-                    }
-                  }}
-                >
-                  Add image
-                </Button>
-                <Button
-                  color="gray"
-                  onClick={() => {
+            <Row className="gap-2 p-6">
+              <Button
+                onClick={() => {
+                  const imageCode = `<img src="${imageUrl}" alt="${prompt}" />`
+                  if (editor) {
+                    editor.chain().insertContent(imageCode).run()
                     setOpen(false)
-                  }}
-                >
-                  Cancel
-                </Button>
-              </Row>
-            </Col>
+                  }
+                }}
+              >
+                Add image
+              </Button>
+              <Button
+                color="gray"
+                onClick={() => {
+                  setOpen(false)
+                }}
+              >
+                Cancel
+              </Button>
+            </Row>
           </>
         )}
       </Col>
@@ -91,29 +84,22 @@ export function DreamCard(props: {
 
   async function requestDream() {
     setIsDreaming(true)
-    // const data = {
-    //   prompt: input + ', ' + MODIFIERS,
-    //   apiKey: API_KEY,
-    // }
-    // const response = await fetch(`/api/v0/dream`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(data),
-    // })
-    // const json = await response.json()
-    // For faster local development, just use this hardcoded image:
-    const json = {
-      url: 'https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/dream%2FtWI0cid8Wr.png?alt=media&token=26745bc7-a9eb-472a-860a-e9de20de5ead',
+    const data = {
+      prompt: input + ', ' + MODIFIERS,
+      apiKey: API_KEY,
     }
+    const response = await fetch(`/api/v0/dream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    const json = await response.json()
     onDream({ prompt: input, url: json.url })
     setIsDreaming(false)
   }
 
   return (
     <Col className="gap-2 p-6">
-      <div className="pt-2 text-sm text-gray-600">
-        Commission a custom image using AI.
-      </div>
       <Row className="gap-2">
         <input
           autoFocus
@@ -139,7 +125,13 @@ export function DreamCard(props: {
         <div className="text-sm">This may take ~10 seconds...</div>
       )}
       {/* TODO: Allow the user to choose their own modifiers */}
-      <div className="pt-2 text-xs text-gray-300">Modifiers: {MODIFIERS}</div>
+      <div className="pt-2 text-sm text-gray-400">
+        Commission a custom image using AI.
+      </div>
+      <div className="pt-2 text-xs text-gray-400">Modifiers: {MODIFIERS}</div>
+
+      {/* Show the current imageUrl */}
+      {/* TODO: Keep the other generated images, so the user can play with different attempts. */}
     </Col>
   )
 }
