@@ -11,6 +11,7 @@ import { getCpmmProbability } from './calculate-cpmm'
 import { getDpmProbability } from './calculate-dpm'
 import { formatMoney, formatPercent } from './util/format'
 import { filterDefined } from 'common/util/array'
+import { DOMAIN } from 'common/envs/constants'
 
 export function contractMetrics(contract: Contract) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -154,8 +155,8 @@ export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
 
   // Change to localhost:3000 for local testing
   const url =
-    // `http://${DOMAIN}/api/og/market?` +
-    `http://localhost:3000/api/og/market?` +
+    `http://${DOMAIN}/api/og/market?` +
+    // `http://localhost:3000/api/og/market?` +
     generateUrlParams(props) +
     challengeUrlParams
 
