@@ -64,9 +64,10 @@ export function PostBanBadge() {
 }
 
 // Show a checkmark next to Core team members
-// A tooltip explaining what this is would be nice, but positioning is hard...
 export function CoreBadge() {
   return (
-    <ShieldCheckIcon className="h-4 w-4 text-indigo-700" aria-hidden="true" />
+    <Tooltip text="Manifold team member" placement="right">
+      <ShieldCheckIcon className="h-4 w-4 text-indigo-700" aria-hidden="true" />
+    </Tooltip>
   )
 }
