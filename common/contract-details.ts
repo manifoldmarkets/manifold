@@ -155,8 +155,8 @@ export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
 
   // Change to localhost:3000 for local testing
   const url =
-    `http://${DOMAIN}/api/og/market?` +
     // `http://localhost:3000/api/og/market?` +
+    `https://${DOMAIN}/api/og/market?` +
     generateUrlParams(props) +
     challengeUrlParams
 
