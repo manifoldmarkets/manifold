@@ -193,7 +193,7 @@ export default function GroupPage(props: {
         isMember={isMember}
         isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
       />
-      <div className="relative hidden justify-self-end md:flex">
+      <div className="relative hidden justify-self-end lg:flex">
         <Row className="absolute right-0 top-0 z-50 items-center gap-4">
           <SimpleLinkButton
             getUrl={() => groupUrl}
@@ -293,23 +293,27 @@ export function TopGroupNavBar(props: {
   const user = useUser()
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 md:hidden lg:col-span-12">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 lg:hidden">
       <Row className="items-center justify-between gap-2 bg-white px-2">
-        <Link
-          href="/"
-          className="py-4 px-2 text-indigo-700 hover:text-gray-500"
-        >
-          <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
-        </Link>
+        <div className="flex flex-1">
+          <Link
+            href="/"
+            className="py-4 px-2 text-indigo-700 hover:text-gray-500"
+          >
+            <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
+          </Link>
+        </div>
         <h1 className="truncate text-lg font-medium text-indigo-700">
           {props.group.name}
         </h1>
-        <JoinOrAddQuestionsButtons
-          group={group}
-          user={user}
-          isMember={isMember}
-          isBlocked={isBlocked}
-        />
+        <div className="flex flex-1 justify-end">
+          <JoinOrAddQuestionsButtons
+            group={group}
+            user={user}
+            isMember={isMember}
+            isBlocked={isBlocked}
+          />
+        </div>
       </Row>
     </header>
   )
