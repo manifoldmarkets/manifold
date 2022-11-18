@@ -6,7 +6,6 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 import { DateDoc } from 'common/post'
-import { Content } from 'web/components/widgets/editor'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/widgets/site-link'
@@ -87,7 +86,7 @@ export function DateDocPost(props: {
   link?: boolean
 }) {
   const { dateDoc, creator, link } = props
-  const { content, birthday, contractSlug } = dateDoc
+  const { birthday, contractSlug } = dateDoc
   const { name, username } = creator
 
   const user = useUser()
@@ -137,11 +136,7 @@ export function DateDocPost(props: {
           </Row>
         </Col>
       </SiteLink>
-      {user && user.id === creator.id ? (
-        <RichEditPost post={post} />
-      ) : (
-        <Content size="lg" content={content} />
-      )}
+      <RichEditPost post={post} canEdit={!!user && user.id === creator.id} />
       {contractSlug && (
         <div className="mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-3">
           <iframe

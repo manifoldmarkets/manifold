@@ -23,25 +23,33 @@ export function Tooltip(props: {
   noTap?: boolean
   noFade?: boolean
 }) {
-  const { text, children, className, placement = 'top', noTap, noFade } = props
+  const { text, children, className, noTap, noFade } = props
 
   const arrowRef = useRef(null)
 
   const [open, setOpen] = useState(false)
 
-  const { x, y, reference, floating, strategy, middlewareData, context } =
-    useFloating({
-      open,
-      onOpenChange: setOpen,
-      whileElementsMounted: autoUpdate,
-      placement,
-      middleware: [
-        offset(8),
-        flip(),
-        shift({ padding: 4 }),
-        arrow({ element: arrowRef }),
-      ],
-    })
+  const {
+    x,
+    y,
+    reference,
+    floating,
+    strategy,
+    middlewareData,
+    context,
+    placement,
+  } = useFloating({
+    open,
+    onOpenChange: setOpen,
+    whileElementsMounted: autoUpdate,
+    placement: props.placement ?? 'top',
+    middleware: [
+      offset(8),
+      flip(),
+      shift({ padding: 4 }),
+      arrow({ element: arrowRef }),
+    ],
+  })
 
   const { x: arrowX, y: arrowY } = middlewareData.arrow ?? {}
 
@@ -54,7 +62,7 @@ export function Tooltip(props: {
     top: 'bottom',
     right: 'left',
     bottom: 'top',
-    left: 'right ',
+    left: 'right',
   }[placement.split('-')[0]] as string
 
   return text ? (
@@ -75,7 +83,7 @@ export function Tooltip(props: {
         role="tooltip"
         ref={floating}
         style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
-        className="z-10 w-max max-w-xs whitespace-normal rounded bg-slate-700 px-2 py-1 text-center text-sm font-medium text-white"
+        className="z-20 w-max max-w-xs whitespace-normal rounded bg-slate-700 px-2 py-1 text-center text-sm font-medium text-white"
         {...getFloatingProps()}
       >
         {text}

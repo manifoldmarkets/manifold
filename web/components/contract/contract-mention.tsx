@@ -40,7 +40,7 @@ export function ContractMention(props: { contract: Contract }) {
           )}
         </span>
       )}
-      {/* TODO: numeric? */}
+      &zwnj;{/* cursor positioning hack */}
     </Link>
   )
 }

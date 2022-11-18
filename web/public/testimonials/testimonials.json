@@ -1,0 +1,18 @@
+{
+  "testimonials": [
+    {
+      "testimonial": "I and many of my friends visit their site daily or at least weekly, and I often link them on Mantic Mondays.",
+      "name": "Scott Alexander",
+      "credit": "Astral Codex Ten",
+      "icon": "testimonials/astralCodexTen.png",
+      "src": "https://astralcodexten.substack.com/"
+    },
+    {
+      "testimonial": "I've now been seriously using manifold.markets for like a couple of weeks and I would slay anybody who tried to stop me",
+      "name": "Eliezer Yudkowsky",
+      "credit": "AI Researcher",
+      "icon": "testimonials/eliezerYudkowsky.jpeg",
+      "src": "https://twitter.com/ESYudkowsky"
+    }
+  ]
+}
