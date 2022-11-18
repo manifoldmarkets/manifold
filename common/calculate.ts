@@ -220,25 +220,6 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     ? maxBy(Object.keys(totalShares), (outcome) => totalShares[outcome])
     : null
 
-  console.log(
-    'totalShares',
-    totalShares,
-    'payout',
-    payout,
-    'saleValue',
-    saleValue,
-    'redeemed',
-    redeemed,
-    'totalInvested',
-    totalInvested,
-    'profit',
-    profit,
-    'profitPercent',
-    profitPercent,
-    'invested',
-    invested
-  )
-
   return {
     invested,
     loan,

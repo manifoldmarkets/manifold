@@ -19,6 +19,7 @@ import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { buy, poolToProbs, shortSell } from 'common/calculate-cpmm-multi'
+import { buildArray } from 'common/util/array'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
@@ -83,8 +84,9 @@ const getCpmmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
   const points: MultiPoint<Bet>[] = []
   for (const bet of sortedBets) {
     const { outcome, amount, sharesByOutcome } = bet
-    const { newPool } =
-      sharesByOutcome ? shortSell(pool, outcome, amount) : buy(pool, outcome, amount)
+    const { newPool } = sharesByOutcome
+      ? shortSell(pool, outcome, amount)
+      : buy(pool, outcome, amount)
     pool = newPool
     const probs = answers.map((a) => poolToProbs(newPool)[a.id])
 
@@ -150,8 +152,10 @@ export const ChoiceContractChart = (props: {
   )
 
   const data = useMemo(() => {
-    const yCount = answers.length > topN ? topN + 1 : topN
-    const startY = range(0, yCount).map(() => 1 / answers.length)
+    const startY = buildArray(
+      range(0, topN).map(() => 1 / answers.length),
+      answers.length > topN ? 1 - topN / answers.length : undefined
+    )
     const endY =
       answers.length > topN
         ? [...endProbs.slice(0, topN), sum(endProbs.slice(topN))]
