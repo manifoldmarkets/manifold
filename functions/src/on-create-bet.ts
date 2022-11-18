@@ -88,15 +88,26 @@ export const onCreateBet = functions
   })
 
 const processReferralBonus = async (user: User, eventId: string) => {
-  if (user.lastBetTime || user.createdTime < Date.now() - DAY_MS) return
+  if (user.createdTime < Date.now() - 30 * DAY_MS || !user.referredByUserId)
+    return
 
-  if (
-    user.referredByUserId ||
-    user.referredByContractId ||
-    user.referredByGroupId
-  ) {
-    await handleReferral(user, eventId)
+  // Check if their referrer has already been awarded the bonus
+  const referralTxns = await firestore
+    .collection('txns')
+    .where('toId', '==', user.referredByUserId)
+    .where('category', '==', 'REFERRAL')
+    .get()
+
+  if (referralTxns.size > 0) {
+    // If the referring user already has a referral txn due to referring this user, halt
+    if (
+      referralTxns.docs.map((txn) => txn.data()?.description).includes(user.id)
+    ) {
+      console.log('found referral txn with the same details, aborting')
+      return
+    }
   }
+  await handleReferral(user, eventId)
 }
 
 const updateBettingStreak = async (

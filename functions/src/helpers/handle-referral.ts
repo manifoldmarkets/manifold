@@ -27,6 +27,7 @@ export async function handleReferral(user: User, eventId: string) {
       return
     }
     const referredByUser = referredByUserSnap.data() as User
+    console.log(`referredByUser: ${referredByUser?.id}`)
 
     let referredByContract: Contract | undefined = undefined
     if (user.referredByContractId) {
@@ -37,7 +38,7 @@ export async function handleReferral(user: User, eventId: string) {
         .get(referredByContractDoc)
         .then((snap) => snap.data() as Contract)
     }
-    console.log(`referredByContract: ${referredByContract}`)
+    console.log(`referredByContract: ${referredByContract?.slug}`)
 
     let referredByGroup: Group | undefined = undefined
     if (user.referredByGroupId) {
@@ -48,21 +49,8 @@ export async function handleReferral(user: User, eventId: string) {
         .get(referredByGroupDoc)
         .then((snap) => snap.data() as Group)
     }
-    console.log(`referredByGroup: ${referredByGroup}`)
+    console.log(`referredByGroup: ${referredByGroup?.slug}`)
 
-    const txns = await transaction.get(
-      firestore
-        .collection('txns')
-        .where('toId', '==', referredByUserId)
-        .where('category', '==', 'REFERRAL')
-    )
-    if (txns.size > 0) {
-      // If the referring user already has a referral txn due to referring this user, halt
-      if (txns.docs.map((txn) => txn.data()?.description).includes(user.id)) {
-        console.log('found referral txn with the same details, aborting')
-        return
-      }
-    }
     console.log('creating referral txns')
     const fromId = HOUSE_LIQUIDITY_PROVIDER_ID
 
