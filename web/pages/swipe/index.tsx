@@ -21,7 +21,13 @@ import { ExternalLinkIcon } from '@heroicons/react/outline'
 import HorizontalArrows from 'web/lib/icons/horizontal-arrows'
 import clsx from 'clsx'
 import { getBinaryProb } from 'common/contract-details'
-import { MinusIcon, PlusIcon } from '@heroicons/react/solid'
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+  MinusIcon,
+  PlusIcon,
+} from '@heroicons/react/solid'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(
@@ -73,7 +79,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
           <Card
             contract={c}
             onLeave={() => setIndex((i) => i + 1)}
-            threshold={Math.min(128, width * 0.25)}
+            threshold={Math.min(128, width * 0.15)}
             key={c.id}
           />
         ))}
@@ -91,6 +97,8 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   )
 }
 
+type Direction = 'middle' | 'up' | 'right' | 'down' | 'left'
+
 const betTapAdd = 10
 
 const Card = (props: {
@@ -105,15 +113,19 @@ const Card = (props: {
 
   const [amount, setAmount] = useState(10)
   const addMoney = () => setAmount?.((amount) => amount + betTapAdd)
-  const subMoney = () => setAmount?.((amount) => amount - betTapAdd)
+  const subMoney = () => {
+    if (amount <= betTapAdd) {
+      setDir('up')
+    } else {
+      setAmount?.((amount) => amount - betTapAdd)
+    }
+  }
 
   const image =
     coverImageUrl ??
     `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
 
-  const [dir, setDir] = useState<'middle' | 'up' | 'right' | 'down' | 'left'>(
-    'middle'
-  )
+  const [dir, setDir] = useState<Direction>('middle')
   const [swiping, setSwiping] = useState(false)
 
   const [peek, setPeek] = useState(false)
@@ -185,15 +197,12 @@ const Card = (props: {
                 : richTextToString(description)}
             </div>
             <div className="mb-4 flex flex-col items-center gap-2 self-center">
-              <div className="flex gap-1 text-yellow-100">
-                Swipe <HorizontalArrows /> to bet
-              </div>
+              <SwipeStatus direction={dir} />
               <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
                 <button
                   onClick={subMoney}
                   onTouchStart={subMoney}
-                  disabled={amount <= betTapAdd}
-                  className="pl-5 pr-4 transition-colors enabled:focus:bg-yellow-200/20 enabled:active:bg-yellow-400 enabled:active:text-white"
+                  className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
                 >
                   <MinusIcon className="h-4" />
                 </button>
@@ -211,6 +220,37 @@ const Card = (props: {
         </div>
       </TinderCard>
     </>
+  )
+}
+
+const SwipeStatus = (props: { direction: Direction }) => {
+  const { direction } = props
+
+  if (direction === 'up') {
+    return (
+      <div className="flex gap-1 text-indigo-100">
+        Swipe <ArrowUpIcon className="h-5" /> to skip
+      </div>
+    )
+  }
+  if (direction === 'left') {
+    return (
+      <div className="text-scarlet-100 flex gap-1">
+        <ArrowLeftIcon className="h-5" /> Bet NO
+      </div>
+    )
+  }
+  if (direction === 'right') {
+    return (
+      <div className="flex gap-1 text-teal-100">
+        Bet YES <ArrowRightIcon className="h-5" />
+      </div>
+    )
+  }
+  return (
+    <div className="flex gap-1 text-yellow-100">
+      Swipe <HorizontalArrows /> to bet
+    </div>
   )
 }
 
