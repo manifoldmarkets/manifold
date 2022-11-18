@@ -10,8 +10,8 @@ import { richTextToString } from './util/parse'
 import { getCpmmProbability } from './calculate-cpmm'
 import { getDpmProbability } from './calculate-dpm'
 import { formatMoney, formatPercent } from './util/format'
-import { filterDefined } from 'common/util/array'
-import { DOMAIN } from 'common/envs/constants'
+import { filterDefined } from './util/array'
+import { DOMAIN } from './envs/constants'
 
 export function contractMetrics(contract: Contract) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
