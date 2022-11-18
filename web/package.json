@@ -16,6 +16,7 @@
     "lint": "next lint",
     "lint-fix": "next lint --fix",
     "format": "npx prettier --write .",
+    "format-changed": "cd .. && git diff $(git merge-base --fork-point main) --name-only --diff-filter=d | xargs npx prettier -w",
     "verify": "(cd .. && yarn verify)",
     "verify:dir": "npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit"
   },
@@ -39,6 +40,7 @@
     "@tiptap/starter-kit": "2.0.0-beta.199",
     "@tiptap/suggestion": "2.0.0-beta.199",
     "@vercel/analytics": "0.1.1",
+    "@vercel/og": "0.0.20",
     "algoliasearch": "4.13.0",
     "browser-image-compression": "2.0.0",
     "clsx": "1.1.1",

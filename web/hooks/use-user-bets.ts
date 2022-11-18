@@ -17,7 +17,7 @@ export const usePrefetchUserBets = (userId: string) => {
   return queryClient.prefetchQuery(
     ['bets', userId],
     () => sleep(1000).then(() => getUserBets(userId)),
-    { staleTime: MINUTE_MS }
+    { staleTime: 15 * MINUTE_MS }
   )
 }
 

@@ -33,7 +33,7 @@ export function CopyLinkDateTimeComponent(props: {
     <DateTimeTooltip className={className} time={createdTime} noTap>
       <Link
         href={`/${prefix}/${slug}#${elementId}`}
-        passHref={true}
+        replace
         onClick={() => copyLinkToComment(prefix, slug, elementId)}
         className={
           'mx-1 whitespace-nowrap rounded-sm px-1 text-xs text-gray-400 transition-colors hover:bg-gray-100'

@@ -1,4 +1,5 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { sortBy, last } from 'lodash'
 
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
@@ -14,7 +15,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { Bet, listFirstNBets } from 'web/lib/firebase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -53,7 +54,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
   filterChallenges: true,
-  filterZeroes: true,
 }
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -64,7 +64,12 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? await listAllBets(contractId, CONTRACT_BET_LOADING_OPTS, 2500)
+    ? sortBy(
+        (await listFirstNBets(contractId, 2500)).filter(
+          (b) => !b.isRedemption && !b.challengeSlug
+        ),
+        (b) => b.createdTime
+      )
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
@@ -74,7 +79,6 @@ export async function getStaticPropz(props: {
       bets,
       comments,
     },
-    revalidate: 60, // Regenerate after 60 seconds
   }
 }
 
@@ -140,7 +144,14 @@ export function ContractPageContent(
     [props.comments.length, blockedUserIds]
   )
 
-  const bets = useBets(contract.id, CONTRACT_BET_LOADING_OPTS) ?? props.bets
+  // static props load bets in ascending order by time
+  const lastBetTime = last(props.bets)?.createdTime
+  const newBets = useBets(contract.id, {
+    ...CONTRACT_BET_LOADING_OPTS,
+    afterTime: lastBetTime,
+  })
+  const bets = props.bets.concat(newBets ?? [])
+
   const creator = useUserById(contract.creatorId) ?? null
 
   const userBets = useBets(contract.id, {

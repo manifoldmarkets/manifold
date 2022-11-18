@@ -453,13 +453,21 @@ Requires no authorization.
 
 ### `GET /v0/users`
 
-Lists all users.
+Lists all users, ordered by creation date descending.
+
+Parameters:
+
+- `limit`: Optional. How many users to return. The maximum and the default is 1000.
+- `before`: Optional. The ID of the user before which the list will start. For
+  example, if you ask for the most recent 10 users, and then perform a second
+  query for 10 more users with `before=[the id of the 10th user]`, you will
+  get users 11 through 20.
 
 Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/users
+  https://manifold.markets/api/v0/users?limit=1
   ```
 - Example response
   ```json
@@ -515,7 +523,7 @@ Places a new bet on behalf of the authorized user.
 
 Parameters:
 
-- `amount`: Required. The amount to bet, in M$, before fees.
+- `amount`: Required. The amount to bet, in mana, before fees.
 - `contractId`: Required. The ID of the contract (market) to bet on.
 - `outcome`: Required. The outcome to bet on. For binary markets, this is `YES`
   or `NO`. For free response markets, this is the ID of the free response
@@ -558,7 +566,7 @@ Creates a new market on behalf of the authorized user.
 Note: this costs mana. If you have insufficient mana, this call will return an error. The cost to create each type of market is:
 
 | Market Type     | Creation Cost |
-|-----------------|---------------|
+| --------------- | ------------- |
 | BINARY          | M$50          |
 | PSEUDO_NUMERIC  | M$250         |
 | FREE_RESPONSE   | M$100         |
@@ -701,14 +709,27 @@ Parameters:
 - `html`: The comment to post, formatted as an HTML string, OR
 - `markdown`: The comment to post, formatted as a markdown string.
 
+### `GET /v0/comments`
+
+Gets a list of comments for a contract, ordered by creation date descending.
+
+Parameters:
+
+- `contractId`: Optional. Which contract to read comments for. Either an ID or slug must be specified.
+- `contractSlug`: Optional.
+
+Requires no authorization.
+
 ### `GET /v0/bets`
 
 Gets a list of bets, ordered by creation date descending.
 
 Parameters:
 
+- `userId`: Optional. If set, the response will include only bets created by this user.
 - `username`: Optional. If set, the response will include only bets created by this user.
-- `market`: Optional. The slug of a market. If set, the response will only include bets on this market.
+- `contractId`: Optional. If set, the response will only include bets on this contract.
+- `contractSlug`: Optional. If set, the response will only include bets on this contract.
 - `limit`: Optional. How many bets to return. The maximum and the default is 1000.
 - `before`: Optional. The ID of the bet before which the list will start. For
   example, if you ask for the most recent 10 bets, and then perform a second
@@ -719,7 +740,7 @@ Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&market=will-i-be-able-to-place-a-limit-ord
+  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&contractSlug=will-i-be-able-to-place-a-limit-ord
   ```
 - Response type: A `Bet[]`.
 

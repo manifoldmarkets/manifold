@@ -18,6 +18,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { Input } from 'web/components/widgets/input'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export default function CreateDateDocPage() {
   const user = useUser()
@@ -34,7 +35,7 @@ export default function CreateDateDocPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const editor = useTextEditor({})
+  const editor = useTextEditor({ size: 'lg' })
 
   const birthdayTime = birthday ? dayjs(birthday).valueOf() : undefined
   const isValid =
@@ -131,7 +132,9 @@ export default function CreateDateDocPage() {
                   onChange={(e) => setQuestion(e.target.value || '')}
                   disabled={!createMarket}
                 />
-                <div className="ml-2 text-gray-500">Cost: M$100</div>
+                <div className="ml-2 text-gray-500">
+                  Cost: {ENV_CONFIG.moneyMoniker}100
+                </div>
               </Col>
             </Col>
           </Col>

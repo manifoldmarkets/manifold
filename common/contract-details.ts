@@ -1,11 +1,17 @@
 import { Challenge } from './challenge'
 import { BinaryContract, Contract } from './contract'
 import { getFormattedMappedValue } from './pseudo-numeric'
-import { getProbability } from './calculate'
+import {
+  getOutcomeProbability,
+  getProbability,
+  getTopAnswer,
+} from './calculate'
 import { richTextToString } from './util/parse'
 import { getCpmmProbability } from './calculate-cpmm'
 import { getDpmProbability } from './calculate-dpm'
 import { formatMoney, formatPercent } from './util/format'
+import { filterDefined } from './util/array'
+import { DOMAIN } from './envs/constants'
 
 export function contractMetrics(contract: Contract) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -55,7 +61,9 @@ export function getBinaryProb(contract: BinaryContract) {
   )
 }
 
-export const getOpenGraphProps = (contract: Contract) => {
+export const getOpenGraphProps = (
+  contract: Contract
+): OgCardProps & { description: string } => {
   const {
     resolution,
     question,
@@ -65,9 +73,19 @@ export const getOpenGraphProps = (contract: Contract) => {
     creatorAvatarUrl,
     description: desc,
   } = contract
+
+  const topAnswer =
+    outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
+      ? resolution
+        ? contract.answers.find((a) => a.id === resolution)
+        : getTopAnswer(contract)
+      : undefined
+
   const probPercent =
     outcomeType === 'BINARY'
       ? formatPercent(getBinaryProb(contract))
+      : topAnswer
+      ? formatPercent(getOutcomeProbability(contract, topAnswer.id))
       : undefined
 
   const numericValue =
@@ -93,6 +111,7 @@ export const getOpenGraphProps = (contract: Contract) => {
     description,
     numericValue,
     resolution,
+    topAnswer: topAnswer?.text,
   }
 }
 
@@ -105,6 +124,7 @@ export type OgCardProps = {
   creatorAvatarUrl?: string
   numericValue?: string
   resolution?: string
+  topAnswer?: string
 }
 
 export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
@@ -115,32 +135,17 @@ export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
     creatorOutcome,
     acceptorOutcome,
   } = challenge || {}
-  const {
-    probability,
-    numericValue,
-    resolution,
-    creatorAvatarUrl,
-    question,
-    metadata,
-    creatorUsername,
-    creatorName,
-  } = props
   const { userName, userAvatarUrl } = acceptances?.[0] ?? {}
 
-  const probabilityParam =
-    probability === undefined
-      ? ''
-      : `&probability=${encodeURIComponent(probability ?? '')}`
-
-  const numericValueParam =
-    numericValue === undefined
-      ? ''
-      : `&numericValue=${encodeURIComponent(numericValue ?? '')}`
-
-  const creatorAvatarUrlParam =
-    creatorAvatarUrl === undefined
-      ? ''
-      : `&creatorAvatarUrl=${encodeURIComponent(creatorAvatarUrl ?? '')}`
+  const ignoredKeys = ['description']
+  const generateUrlParams = (params: Record<string, string | undefined>) =>
+    filterDefined(
+      Object.entries(params).map(([key, value]) =>
+        !ignoredKeys.includes(key) && value
+          ? `${key}=${encodeURIComponent(value)}`
+          : null
+      )
+    ).join('&')
 
   const challengeUrlParams = challenge
     ? `&creatorAmount=${creatorAmount}&creatorOutcome=${creatorOutcome}` +
@@ -148,21 +153,12 @@ export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
       `&acceptedName=${userName ?? ''}&acceptedAvatarUrl=${userAvatarUrl ?? ''}`
     : ''
 
-  const resolutionUrlParam = resolution
-    ? `&resolution=${encodeURIComponent(resolution)}`
-    : ''
+  // Change to localhost:3000 for local testing
+  const url =
+    // `http://localhost:3000/api/og/market?` +
+    `https://${DOMAIN}/api/og/market?` +
+    generateUrlParams(props) +
+    challengeUrlParams
 
-  // URL encode each of the props, then add them as query params
-  return (
-    `https://manifold-og-image.vercel.app/m.png` +
-    `?question=${encodeURIComponent(question)}` +
-    probabilityParam +
-    numericValueParam +
-    `&metadata=${encodeURIComponent(metadata)}` +
-    `&creatorName=${encodeURIComponent(creatorName)}` +
-    creatorAvatarUrlParam +
-    `&creatorUsername=${encodeURIComponent(creatorUsername)}` +
-    challengeUrlParams +
-    resolutionUrlParam
-  )
+  return url
 }

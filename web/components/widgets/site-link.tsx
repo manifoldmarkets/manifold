@@ -3,7 +3,7 @@ import { ReactNode } from 'react'
 import Link from 'next/link'
 
 export const linkClass =
-  'z-10 break-anywhere hover:underline hover:decoration-indigo-400 hover:decoration-2'
+  'break-anywhere hover:underline hover:decoration-indigo-400 hover:decoration-2'
 
 export const SiteLink = (props: {
   href: string | undefined
@@ -16,28 +16,13 @@ export const SiteLink = (props: {
   if (!href) return <>{children}</>
 
   return (
-    <MaybeLink href={href}>
-      <a
-        className={clsx(linkClass, className)}
-        href={href}
-        target={href.startsWith('http') ? '_blank' : undefined}
-        onClick={(e) => {
-          e.stopPropagation()
-          if (onClick) onClick()
-        }}
-      >
-        {children}
-      </a>
-    </MaybeLink>
-  )
-}
-
-function MaybeLink(props: { href: string; children: ReactNode }) {
-  const { href, children } = props
-  return href.startsWith('http') ? (
-    <>{children}</>
-  ) : (
-    <Link href={href} legacyBehavior>
+    <Link
+      href={href}
+      className={clsx(linkClass, className)}
+      target={href.startsWith('http') ? '_blank' : undefined}
+      // onClick={onClick ? (e) => (e.stopPropagation(), onClick()) : undefined}
+      onClick={onClick}
+    >
       {children}
     </Link>
   )

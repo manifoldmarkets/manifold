@@ -25,6 +25,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -35,7 +36,7 @@ export async function getStaticProps() {
   )
   const totalRaised = sum(Object.values(totals))
   const sortedCharities = sortBy(charities, [
-    (charity) => (charity.tags?.includes('Featured') ? 0 : 1),
+    (charity) => (charity.tags?.includes('New') ? 0 : 1),
     (charity) => -totals[charity.id],
   ])
   const matches = quadraticMatches(txns, totalRaised)
@@ -150,7 +151,8 @@ export default function Charity(props: {
             !
           </span> */}
           <span className="text-gray-600">
-            Convert your M$ earnings into real charitable donations.
+            Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
+            donations.
           </span>
           <DonatedStats
             stats={[
@@ -214,15 +216,12 @@ export default function Charity(props: {
               </a>
               !
             </li>
-            <li>
-              Manifold is not affiliated with non-Featured charities; we're just
-              fans of their work.
-            </li>
+            <li>Manifold is not affiliated with any charities.</li>
             <li>
               As Manifold itself is a for-profit entity, your contributions will
               not be tax deductible.
             </li>
-            <li>Donations + matches are wired once each quarter.</li>
+            <li>Donations are wired once each quarter.</li>
           </ul>
         </div>
       </Col>

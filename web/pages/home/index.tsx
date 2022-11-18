@@ -24,7 +24,7 @@ import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
-import { Button } from 'web/components/buttons/button'
+import { Button, buttonClass } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { getGroup, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
@@ -69,6 +69,8 @@ import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { GroupCard } from '../groups'
+import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import Link from 'next/link'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -82,10 +84,14 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const groups = useMemberGroupsSubscription(user)
-  const shouldFilterDestiny = !groups?.find((g) => g.slug === 'destinygg')
+  const followedGroups = useMemberGroupsSubscription(user)
+  const shouldFilterDestiny = !followedGroups?.find((g) =>
+    DESTINY_GROUP_SLUGS.includes(g.slug)
+  )
   const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser).concat(
-    shouldFilterDestiny ? ['groupSlugs:-destinygg'] : []
+    shouldFilterDestiny
+      ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
+      : []
   )
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
@@ -116,7 +122,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
   const trendingGroups = useTrendingGroups()
   const groupContracts = useContractsByDailyScoreGroups(
-    groups?.map((g) => g.slug),
+    followedGroups?.map((g) => g.slug),
     userBlockFacetFilters
   )
   const latestPosts = useAllPosts(true)
@@ -199,7 +205,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               onClick={() => Router.push('/search')}
               onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
             />
-            <CustomizeButton className="ml-1" justIcon />
+            <CustomizeButton className="ml-1" />
           </Row>
           <DailyStats user={user} />
         </Row>
@@ -222,17 +228,17 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               latestPosts
             )}
 
-            {groups && groupContracts && trendingGroups.length > 0 ? (
+            {followedGroups && groupContracts && trendingGroups.length > 0 ? (
               <>
                 <TrendingGroupsSection
                   className="mb-4"
                   user={user}
-                  myGroups={groups}
+                  myGroups={followedGroups}
                   trendingGroups={trendingGroups}
                 />
                 <GroupSections
                   user={user}
-                  groups={groups}
+                  groups={followedGroups}
                   groupContracts={groupContracts}
                 />
               </>
@@ -466,15 +472,15 @@ export function LatestPostsSection(props: { latestPosts: Post[] }) {
         />
         <Col>
           {user && (
-            <SiteLink
-              className="mb-3 text-xl"
+            <Link
               href={'/create-post'}
               onClick={() =>
                 track('home click create post', { section: 'create-post' })
               }
+              className={clsx(buttonClass('md', 'indigo'), 'mb-3')}
             >
-              <Button>Create Post</Button>
-            </SiteLink>
+              Create Post
+            </Link>
           )}
         </Col>
       </Row>
@@ -693,23 +699,14 @@ export const TrendingGroupsSection = memo(
   }
 )
 
-function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
-  const { justIcon, className } = props
+function CustomizeButton(props: { className?: string }) {
+  const { className } = props
   return (
-    <SiteLink
-      className={clsx(
-        className,
-        'flex flex-row items-center text-xl hover:no-underline'
-      )}
+    <Link
+      className={clsx(className, buttonClass('xs', 'gray-white'))}
       href="/home/edit"
     >
-      <Button size="xs" color="gray-white">
-        <HomeSettingsIcon
-          className={clsx('h-7 w-7 text-gray-400')}
-          aria-hidden="true"
-        />
-        {!justIcon && 'Customize'}
-      </Button>
-    </SiteLink>
+      <HomeSettingsIcon className="h-7 w-7 text-gray-400" aria-hidden />
+    </Link>
   )
 }

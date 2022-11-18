@@ -14,23 +14,22 @@ import TypewriterComponent from 'typewriter-effect'
 import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
 import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import CountUp from 'react-countup'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { STARTING_BALANCE } from 'common/economy'
 
-export type PageNumber = 0 | 1 | 2
+const MAX_PAGE = 2
 
-export function getNextPageNumber(pageNumber: PageNumber): PageNumber {
-  switch (pageNumber) {
-    case 0:
-      return 1
-    case 1:
-      return 2
-    case 2:
-      return 0
+export function getNextPageNumber(pageNumber: number, maxPage: number) {
+  if (pageNumber + 1 <= maxPage) {
+    return pageNumber + 1
+  } else {
+    return 0
   }
 }
 
 export function PaginationCircle(props: {
-  currentPageNumber: PageNumber
-  pageNumber: PageNumber
+  currentPageNumber: number
+  pageNumber: number
   onClick: () => void
 }) {
   const { currentPageNumber, pageNumber, onClick } = props
@@ -49,13 +48,11 @@ export function PaginationCircle(props: {
 export function LandingPagePanel() {
   useTracking('view landing page')
   const isMobile = useIsMobile()
-  const desktop_height = 'h-60' //240px
-  const mobile_height = 'h-96'
-  const [pageNumber, setPageNumber] = useState<PageNumber>(1)
+  const [pageNumber, setPageNumber] = useState(0)
 
   useEffect(() => {
     const newTimeoutId = setTimeout(
-      () => setPageNumber(getNextPageNumber(pageNumber)),
+      () => setPageNumber(getNextPageNumber(pageNumber, MAX_PAGE)),
       6000
     )
     return () => clearTimeout(newTimeoutId)
@@ -65,8 +62,7 @@ export function LandingPagePanel() {
     <>
       <div
         className={clsx(
-          'mt-4 flex w-full flex-col overflow-hidden drop-shadow-sm sm:flex-row',
-          isMobile ? mobile_height : desktop_height
+          'mt-8 flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-60 sm:flex-row'
         )}
       >
         <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
@@ -118,8 +114,7 @@ export function LandingPagePanel() {
         </div>
         <div
           className={clsx(
-            'relative z-30 w-full bg-indigo-200 sm:w-2/5',
-            isMobile ? 'h-1/5 rounded-b-xl' : `${desktop_height} rounded-r-xl`
+            'relative z-30 h-1/5 w-full rounded-b-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-r-xl sm:rounded-l-none'
           )}
         >
           {!isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}
@@ -134,7 +129,7 @@ export function LandingPagePanel() {
             </Button>
             <div
               className={clsx(
-                'rounded-md bg-gray-900 text-gray-900',
+                'rounded-md bg-teal-200 text-gray-900',
                 isMobile
                   ? 'px-6 py-2.5 text-base font-semibold'
                   : 'px-6 py-3 text-xl font-semibold'
@@ -146,9 +141,9 @@ export function LandingPagePanel() {
           <div className="absolute top-6 right-8 sm:top-48 md:right-12">
             <div className="text-right text-sm text-gray-900">
               and get{'   '}
-              <span className="relative z-10 bg-teal-200 px-1 font-semibold">
-                M$500
-                <div className="absolute left-0 -bottom-0.5 -z-10 h-full w-full bg-teal-200" />
+              <span className="relative z-10 font-semibold">
+                {ENV_CONFIG.moneyMoniker}
+                {STARTING_BALANCE}
               </span>
               {'   '}
               to start predicting!
@@ -162,7 +157,7 @@ export function LandingPagePanel() {
 
 export function LandingPage0(props: { isMobile: boolean }) {
   const { isMobile } = props
-  const text = 'Ask any question'
+  const text = '1. Ask any question'
   return (
     <>
       <div
@@ -255,7 +250,7 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
 export function LandingPage1(props: { isMobile: boolean }) {
   const { isMobile } = props
   const startPredictMs = 3000
-  const text = 'Predict with play money'
+  const text = '2. Predict with play money'
   const [shouldPercentChange, setShouldPercentChange] = useState(false)
   const [shouldButtonHighlight, setShouldButtonHighlight] = useState(false)
   const [isMVisible, setIsMVisible] = useState(true)
@@ -341,27 +336,27 @@ export function LandingPage1(props: { isMobile: boolean }) {
         />
         <div
           className={clsx(
-            'animate-float-and-fade-1 absolute right-[6px] top-[2px] z-40 font-thin text-indigo-600',
+            'animate-float-and-fade-1 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
-          M$
+          {ENV_CONFIG.moneyMoniker}
         </div>
         <div
           className={clsx(
-            'animate-float-and-fade-2 absolute right-[6px] top-[2px] z-40 font-thin text-indigo-600',
+            'animate-float-and-fade-2 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
-          M$
+          {ENV_CONFIG.moneyMoniker}
         </div>
         <div
           className={clsx(
-            'animate-float-and-fade-3 absolute right-[6px] top-[2px] z-40 font-thin text-indigo-600',
+            'animate-float-and-fade-3 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
-          M$
+          {ENV_CONFIG.moneyMoniker}
         </div>
       </div>
       <div
@@ -378,7 +373,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
 
 export function LandingPage2(props: { isMobile: boolean }) {
   const { isMobile } = props
-  const text = 'Profit'
+  const text = '3. Profit'
   return (
     <>
       <div

@@ -71,6 +71,7 @@ type AdditionalFilter = {
   excludeContractIds?: string[]
   groupSlug?: string
   facetFilters?: string[]
+  nonQueryFacetFilters?: string[]
 }
 
 export function ContractSearch(props: {
@@ -233,6 +234,7 @@ export function ContractSearch(props: {
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
         autoFocus={autoFocus}
+        isWholePage={isWholePage}
       />
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
@@ -268,6 +270,7 @@ function ContractSearchControls(props: {
   user?: User | null
   noControls?: boolean
   autoFocus?: boolean
+  isWholePage?: boolean
 }) {
   const {
     className,
@@ -283,6 +286,7 @@ function ContractSearchControls(props: {
     noControls,
     autoFocus,
     includeProbSorts,
+    isWholePage,
   } = props
 
   const router = useRouter()
@@ -377,6 +381,7 @@ function ContractSearchControls(props: {
     ? additionalFilters
     : [
         ...additionalFilters,
+        ...(additionalFilter?.nonQueryFacetFilters ?? []),
         additionalFilter ? '' : 'visibility:public',
 
         filter === 'open' ? 'isResolved:false' : '',
@@ -432,7 +437,7 @@ function ContractSearchControls(props: {
 
   return (
     <Col className={clsx('top-0 z-20 gap-3 bg-gray-50 pb-3', className)}>
-      <Row className="items-center gap-1 sm:gap-2">
+      <Row className="mt-px items-center gap-1 sm:gap-2">
         <Input
           type="text"
           value={query}
@@ -443,10 +448,12 @@ function ContractSearchControls(props: {
           autoFocus={autoFocus}
         />
         {query ? (
-          <SimpleLinkButton
-            getUrl={() => window.location.href}
-            tooltip="Copy link to search results"
-          />
+          isWholePage && (
+            <SimpleLinkButton
+              getUrl={() => window.location.href}
+              tooltip="Copy link to search results"
+            />
+          )
         ) : (
           <ModalOnMobile>
             <SearchFilters

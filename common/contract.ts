@@ -71,6 +71,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   flaggedByUsernames?: string[]
   openCommentBounties?: number
   unlistedById?: string
+  featuredLabel?: string
 
   coverImageUrl?: string
 } & T
@@ -113,8 +114,8 @@ export type CPMM = {
   mechanism: 'cpmm-1'
   pool: { [outcome: string]: number }
   p: number // probability constant in y^p * n^(1-p) = k
-  totalLiquidity: number // for historical reasons, this the total subsidy amount added in M$
-  subsidyPool: number // current value of subsidy pool in M$
+  totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
+  subsidyPool: number // current value of subsidy pool in Ṁ
   prob: number
   probChanges: {
     day: number

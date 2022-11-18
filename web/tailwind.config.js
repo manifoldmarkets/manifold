@@ -12,16 +12,13 @@ module.exports = {
       { ...defaultTheme.fontFamily },
       {
         'major-mono': ['Major Mono Display', 'monospace'],
-        'readex-pro': [
-          'Readex Pro',
-          'AppleColorEmoji',
-          'Segoe UI Emoji',
-          'Noto Color Emoji',
-          'sans-serif',
-        ],
+        'readex-pro': ['Readex Pro', 'icomoon', 'emoji', 'sans-serif'],
       }
     ),
     extend: {
+      fontFamily: {
+        mana: ['icomoon'],
+      },
       transitionTimingFunction: {
         bouncy: 'cubic-bezier(0.8, 0, 1, 1)',
       },
@@ -290,10 +287,11 @@ module.exports = {
         },
       },
       typography: {
-        quoteless: {
+        DEFAULT: {
           css: {
-            'blockquote p:first-of-type::before': { content: 'none' },
-            'blockquote p:first-of-type::after': { content: 'none' },
+            'blockquote p:first-of-type': false,
+            'code::before': false,
+            'code::after': false,
           },
         },
       },

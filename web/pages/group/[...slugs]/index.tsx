@@ -50,7 +50,8 @@ import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { GroupAbout } from 'web/components/groups/group-about'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
-import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -176,9 +177,12 @@ export default function GroupPage(props: {
   }
   const isCreator = user && group && user.id === group.creatorId
   const maxLeaderboardSize = 50
+  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
+
+  const chatEmbed = <ChatEmbed group={group} />
 
   return (
-    <Page logoSubheading={group.name}>
+    <Page logoSubheading={group.name} rightSidebar={chatEmbed}>
       <SEO
         title={group.name}
         description={`Created by ${creator.name}. ${group.about}`}
@@ -189,15 +193,20 @@ export default function GroupPage(props: {
         isMember={isMember}
         isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
       />
-      <div className="relative hidden justify-self-end md:flex">
-        <div className="absolute right-0 top-0 z-10">
+      <div className="relative hidden justify-self-end lg:flex">
+        <Row className="absolute right-0 top-0 z-50 items-center gap-4">
+          <SimpleLinkButton
+            getUrl={() => groupUrl}
+            tooltip={`Copy link to ${group.name}`}
+          />
+
           <JoinOrAddQuestionsButtons
             group={group}
             user={user}
             isMember={!!isMember}
             isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
           />
-        </div>
+        </Row>
       </div>
       <div className={'relative p-1 pt-0'}>
         <ControlledTabs
@@ -284,26 +293,51 @@ export function TopGroupNavBar(props: {
   const user = useUser()
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 md:hidden lg:col-span-12">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 lg:hidden">
       <Row className="items-center justify-between gap-2 bg-white px-2">
-        <Link
-          href="/"
-          className="py-4 px-2 text-indigo-700 hover:text-gray-500"
-        >
-          <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
-        </Link>
+        <div className="flex flex-1">
+          <Link
+            href="/"
+            className="py-4 px-2 text-indigo-700 hover:text-gray-500"
+          >
+            <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
+          </Link>
+        </div>
         <h1 className="truncate text-lg font-medium text-indigo-700">
           {props.group.name}
         </h1>
-        <JoinOrAddQuestionsButtons
-          group={group}
-          user={user}
-          isMember={isMember}
-          isBlocked={isBlocked}
-        />
+        <div className="flex flex-1 justify-end">
+          <JoinOrAddQuestionsButtons
+            group={group}
+            user={user}
+            isMember={isMember}
+            isBlocked={isBlocked}
+          />
+        </div>
       </Row>
     </header>
   )
+}
+
+// For now, just embed the DestinyGG chat embed on their group page
+function ChatEmbed(props: { group: Group }) {
+  const { group } = props
+  const destinyGroupId = 'W2ES30fRo6CCbPNwMTTj'
+  if (group.id === destinyGroupId) {
+    return (
+      <div className="h-[90vh]">
+        <iframe
+          src="https://www.destiny.gg/embed/chat"
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          scrolling="no"
+          allowFullScreen
+        />
+      </div>
+    )
+  }
+  return null
 }
 
 function JoinOrAddQuestionsButtons(props: {

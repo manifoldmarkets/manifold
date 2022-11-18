@@ -12,16 +12,19 @@ import {
   NewQuestionParams,
 } from 'web/components/new-contract-panel'
 import { SiteLink } from 'web/components/widgets/site-link'
+import { useUserById } from 'web/hooks/use-user'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
 })
 
 export default function Create(props: { auth: { user: User } }) {
+  const { auth } = props
+
   useTracking('view create page')
-  const { user } = props.auth
   const router = useRouter()
   const params = router.query as NewQuestionParams
+  const user = useUserById(auth.user.id) ?? auth.user
 
   if (!router.isReady) return <div />
 

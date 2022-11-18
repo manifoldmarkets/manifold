@@ -29,6 +29,7 @@ export type BetFilter = {
   filterRedemptions?: boolean
   filterZeroes?: boolean
   filterAntes?: boolean
+  afterTime?: number
 }
 
 function getBetsCollection(contractId: string) {
@@ -40,20 +41,27 @@ const getContractBetsQuery = (contractId: string, options?: BetFilter) => {
   if (options?.userId) {
     q = query(q, where('userId', '==', options.userId))
   }
+  if (options?.afterTime) {
+    q = query(q, where('createdTime', '>', options.afterTime))
+  }
   if (options?.filterZeroes) {
     q = query(q, where('amount', '!=', 0))
   }
   return q
 }
 
-export async function listAllBets(
-  contractId: string,
-  options?: BetFilter,
-  maxCount?: number
-) {
+export async function listFirstNBets(contractId: string, n: number) {
+  const q = query(
+    getBetsCollection(contractId),
+    orderBy('createdTime'),
+    limit(n)
+  )
+  return await getValues<Bet>(q)
+}
+
+export async function listAllBets(contractId: string, options?: BetFilter) {
   const q = getContractBetsQuery(contractId, options)
-  const limitedQ = maxCount ? query(q, limit(maxCount)) : q
-  const bets = await getValues<Bet>(limitedQ)
+  const bets = await getValues<Bet>(q)
   const filteredBets = bets.filter(
     (b) =>
       (!options?.filterChallenges || !b.challengeSlug) &&

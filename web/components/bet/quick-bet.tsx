@@ -98,7 +98,7 @@ export function SignedOutQuickBet(props: {
   }
   return (
     <div className="relative">
-      <Row className={clsx(className, 'absolute inset-0')}>
+      <Row className={clsx(className, 'absolute inset-0 justify-between')}>
         <BinaryQuickBetButton
           onClick={withTracking(firebaseLogin, 'landing page button click')}
           direction="DOWN"
@@ -240,7 +240,7 @@ function SignedInQuickBet(props: {
 
   return (
     <div className="relative">
-      <Row className={clsx(className, 'absolute inset-0')}>
+      <Row className={clsx(className, 'absolute inset-0 justify-between')}>
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('DOWN')}
           direction="DOWN"
@@ -273,6 +273,7 @@ function BinaryQuickBetButton(props: {
   onMouseLeave: () => void
   hasInvestment?: boolean
   invested?: number
+  className?: string
 }) {
   const {
     onClick,
@@ -288,59 +289,89 @@ function BinaryQuickBetButton(props: {
   return (
     <Row
       className={clsx(
-        'w-[50%] items-center gap-2',
+        'items-center gap-2 sm:w-[50%]',
         direction === 'UP' && 'flex-row-reverse'
       )}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={onClick}
     >
-      {direction === 'DOWN' && (
-        <EquilateralLeftTriangle
-          className={clsx(
-            'mx-2 h-6 w-6 drop-shadow-md transition-all',
-            shouldFocus
-              ? 'animate-bounce-left text-indigo-600'
-              : hasInvestment
-              ? 'text-indigo-500'
-              : 'text-indigo-300'
-          )}
+      <Row
+        className={clsx(
+          'items-center gap-2 sm:w-full',
+          direction === 'UP' && 'flex-row-reverse'
+        )}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
+      >
+        {direction === 'DOWN' && (
+          <EquilateralLeftTriangle
+            className={clsx(
+              'mx-2 h-6 w-6 drop-shadow-md transition-all',
+              shouldFocus
+                ? 'animate-bounce-left text-indigo-600'
+                : hasInvestment
+                ? 'text-indigo-500'
+                : 'text-indigo-300'
+            )}
+          />
+        )}
+        {direction === 'UP' && (
+          <EquilateralRightTriangle
+            className={clsx(
+              'mx-2 h-6 w-6 drop-shadow-md transition-all',
+              shouldFocus
+                ? 'sm:animate-bounce-right text-indigo-600'
+                : hasInvestment
+                ? 'text-indigo-500'
+                : 'text-indigo-300'
+            )}
+          />
+        )}
+        {!isMobile && (
+          <QuickBetAmount
+            hasInvestment={hasInvestment}
+            invested={invested}
+            shouldFocus={shouldFocus}
+          />
+        )}
+      </Row>
+      {isMobile && (
+        <QuickBetAmount
+          hasInvestment={hasInvestment}
+          invested={invested}
+          shouldFocus={shouldFocus}
         />
-      )}
-      {direction === 'UP' && (
-        <EquilateralRightTriangle
-          className={clsx(
-            'mx-2 h-6 w-6 drop-shadow-md transition-all',
-            shouldFocus
-              ? 'sm:animate-bounce-right text-indigo-600'
-              : hasInvestment
-              ? 'text-indigo-500'
-              : 'text-indigo-300'
-          )}
-        />
-      )}
-      {hasInvestment && invested != null ? (
-        <span
-          className={clsx(
-            'text-sm font-light',
-            shouldFocus ? 'text-indigo-600' : 'text-gray-400'
-          )}
-        >
-          {shouldFocus
-            ? formatMoney(invested + BET_SIZE)
-            : formatMoney(invested)}
-        </span>
-      ) : (
-        <span
-          className={clsx(
-            'my-auto text-sm font-light text-indigo-600 transition-opacity',
-            shouldFocus ? 'opacity-100' : 'opacity-0'
-          )}
-        >
-          {formatMoney(BET_SIZE)}
-        </span>
       )}
     </Row>
+  )
+}
+
+function QuickBetAmount(props: {
+  hasInvestment: boolean | undefined
+  invested: number | undefined
+  shouldFocus: boolean
+}) {
+  const { hasInvestment, invested, shouldFocus } = props
+  if (hasInvestment && invested != null) {
+    return (
+      <span
+        className={clsx(
+          'text-sm font-light',
+          shouldFocus ? 'text-indigo-600' : 'text-gray-400'
+        )}
+      >
+        {shouldFocus ? formatMoney(invested + BET_SIZE) : formatMoney(invested)}
+      </span>
+    )
+  }
+  return (
+    <span
+      className={clsx(
+        'my-auto text-sm font-light text-indigo-600 transition-opacity',
+        shouldFocus ? 'opacity-100' : 'opacity-0'
+      )}
+    >
+      {formatMoney(BET_SIZE)}
+    </span>
   )
 }
 
@@ -370,8 +401,8 @@ export function QuickOutcomeView(props: {
 }) {
   const { contract, previewProb, numAnswersFR } = props
   const { outcomeType } = contract
-  const prob = previewProb ?? getProb(contract)
-
+  const isMobile = useIsMobile()
+  const prob = isMobile ? getProb(contract) : previewProb ?? getProb(contract)
   const textColor = getTextColor(contract)
 
   if (outcomeType != 'FREE_RESPONSE' && outcomeType != 'MULTIPLE_CHOICE') {
@@ -390,7 +421,7 @@ export function QuickOutcomeView(props: {
         <div
           className={`absolute inset-0 flex items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
         >
-          {cardText(contract, previewProb)}
+          {cardText(contract, isMobile ? undefined : previewProb)}
         </div>
       </div>
     )

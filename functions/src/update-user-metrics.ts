@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, isEqual, mapValues, sortBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 
 import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
@@ -16,7 +16,9 @@ import {
   calculateCreatorTraders,
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
+import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
+import { HOUSE_BOT_USERNAME } from '../../common/envs/constants'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
 
@@ -150,11 +152,13 @@ export async function updateUserMetrics() {
     }),
     100
   )
-
+  const userUpdatesMinusBot = userUpdates.filter(
+    (update) => HOUSE_BOT_USERNAME !== update.user.username
+  )
   const periods = ['daily', 'weekly', 'monthly', 'allTime'] as const
   const periodRanksByUserId = periods.map((period) => {
     const rankedUpdates = sortBy(
-      userUpdates,
+      userUpdatesMinusBot,
       ({ fields }) => -fields.profitCached[period]
     )
     return Object.fromEntries(
@@ -162,22 +166,16 @@ export async function updateUserMetrics() {
     )
   })
 
-  for (const { user, fields } of userUpdates) {
+  for (const { user, fields } of userUpdatesMinusBot) {
     const profitRankCached = Object.fromEntries(
       periods.map((period, i) => {
         return [period, periodRanksByUserId[i][user.id]]
       })
-    )
-    const update = { profitRankCached, ...fields }
-    const currValues = mapValues(
-      update,
-      (_, key: keyof typeof update) => user[key]
-    )
+    ) as Record<typeof periods[number], number>
 
-    // Skip writing if nothing changed.
-    if (!isEqual(currValues, update)) {
-      const userDoc = firestore.collection('users').doc(user.id)
-      writer.update(userDoc, update)
+    const update = { profitRankCached, ...fields }
+    if (hasChanges(user, update)) {
+      writer.update(firestore.collection('users').doc(user.id), update)
     }
   }
 

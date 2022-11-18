@@ -57,7 +57,13 @@ export function GroupAbout(props: {
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
       <Row className={'justify-between'}>
         <HideGroupButton groupSlug={group.slug} />
-        <JoinOrLeaveGroupButton group={group} isMember={isMember} user={user} />
+        {isMember && (
+          <JoinOrLeaveGroupButton
+            group={group}
+            isMember={isMember}
+            user={user}
+          />
+        )}
       </Row>
       <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
       {(group.aboutPostId != null || isEditable) && (
@@ -403,8 +409,8 @@ export function GroupAboutDetails(props: {
           <Col className="my-4 px-2">
             <div className="text-lg">Invite</div>
             <div className={'mb-2 text-gray-500'}>
-              Invite a friend to this group and get M${REFERRAL_AMOUNT} if they
-              sign up!
+              Invite a friend to this group and get {ENV_CONFIG.moneyMoniker}
+              {REFERRAL_AMOUNT} if they sign up and place a trade!
             </div>
 
             <CopyLinkButton

@@ -1,7 +1,6 @@
 import { mapValues, max, min, partition, sumBy } from 'lodash'
 
 import { Bet } from './bet'
-import { getProbability } from './calculate'
 import { CPMM2Contract, CPMMContract } from './contract'
 import { noFees } from './fees'
 import { CandidateBet } from './new-bet'
@@ -12,7 +11,7 @@ type RedeemableBet = Pick<
   'outcome' | 'shares' | 'sharesByOutcome' | 'loanAmount'
 >
 
-export const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {
+const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {
   const [yesBets, noBets] = partition(bets, (b) => b.outcome === 'YES')
   const yesShares = sumBy(yesBets, (b) => b.shares)
   const noShares = sumBy(noBets, (b) => b.shares)
@@ -63,32 +62,32 @@ export const getRedeemableAmount = (
 }
 
 export const getRedemptionBets = (
+  contractId: string,
   shares: number,
   loanPayment: number,
-  contract: CPMMContract
+  prob: number
 ) => {
-  const p = getProbability(contract)
   const createdTime = Date.now()
   const yesBet: CandidateBet = {
-    contractId: contract.id,
-    amount: p * -shares,
+    contractId: contractId,
+    amount: prob * -shares,
     shares: -shares,
     loanAmount: loanPayment ? -loanPayment / 2 : 0,
     outcome: 'YES',
-    probBefore: p,
-    probAfter: p,
+    probBefore: prob,
+    probAfter: prob,
     createdTime,
     isRedemption: true,
     fees: noFees,
   }
   const noBet: CandidateBet = {
-    contractId: contract.id,
-    amount: (1 - p) * -shares,
+    contractId: contractId,
+    amount: (1 - prob) * -shares,
     shares: -shares,
     loanAmount: loanPayment ? -loanPayment / 2 : 0,
     outcome: 'NO',
-    probBefore: p,
-    probAfter: p,
+    probBefore: prob,
+    probAfter: prob,
     createdTime,
     isRedemption: true,
     fees: noFees,

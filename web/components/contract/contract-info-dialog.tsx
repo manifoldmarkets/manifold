@@ -13,7 +13,7 @@ import { Title } from '../widgets/title'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { useAdmin, useDev } from 'web/hooks/use-admin'
 import { SiteLink } from '../widgets/site-link'
-import { firestoreConsolePath } from 'common/envs/constants'
+import { ENV_CONFIG, firestoreConsolePath } from 'common/envs/constants'
 import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { Row } from '../layout/row'
@@ -28,7 +28,6 @@ import { CHALLENGES_ENABLED } from 'common/challenge'
 import { withTracking } from 'web/lib/service/analytics'
 import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
-import { usePrivateUser } from 'web/hooks/use-user'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { formatTime } from 'web/lib/util/time'
 import { ReportButton } from 'web/components/buttons/report-button'
@@ -39,7 +38,6 @@ export function ContractInfoDialog(props: {
   className?: string
 }) {
   const { contract, className, user } = props
-  const privateUser = usePrivateUser()
   const [open, setOpen] = useState(false)
   const isDev = useDev()
   const isAdmin = useAdmin()
@@ -107,7 +105,7 @@ export function ContractInfoDialog(props: {
                   }}
                 />
               )}
-              {privateUser && <BlockMarketButton contractId={contract.id} />}
+              <BlockMarketButton contract={contract} />
             </Row>
 
             <Table>
@@ -123,7 +121,9 @@ export function ContractInfoDialog(props: {
                     {mechanism === 'cpmm-1' ? (
                       <>
                         Fixed{' '}
-                        <InfoTooltip text="Each YES share is worth M$1 if YES wins." />
+                        <InfoTooltip
+                          text={`Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins.`}
+                        />
                       </>
                     ) : (
                       <>
@@ -181,8 +181,8 @@ export function ContractInfoDialog(props: {
                       <InfoTooltip
                         text={
                           mechanism === 'cpmm-1'
-                            ? 'Probability change between a M$50 bet on YES and NO'
-                            : 'Probability change from a M$100 bet'
+                            ? 'Probability change between a Ṁ50 bet on YES and NO'
+                            : 'Probability change from a Ṁ100 bet'
                         }
                       />
                     </Row>

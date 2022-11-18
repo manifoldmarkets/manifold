@@ -4,7 +4,6 @@ import {
   SearchIcon,
   BookOpenIcon,
   UsersIcon,
-  FlagIcon,
   ChatIcon,
   ChartBarIcon,
   LogoutIcon,
@@ -108,7 +107,6 @@ const getDesktopNav = (loggedIn: boolean) =>
     },
 
     !IS_PRIVATE_MANIFOLD && [
-      { name: 'Midterms', href: '/midterms', icon: FlagIcon },
       loggedIn && {
         name: 'Leaderboards',
         href: '/leaderboards',
@@ -144,7 +142,6 @@ const getMobileNav = (loggedIn: boolean) => {
   }
   return buildArray(
     loggedIn && { name: 'Swipe', href: '/swipe', icon: FireIcon },
-    { name: 'Midterms', href: '/midterms', icon: FlagIcon },
     { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     loggedIn && { name: 'Groups', href: '/groups', icon: UsersIcon },

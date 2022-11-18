@@ -12,6 +12,7 @@ import {
 } from '../../common/calculate-metrics'
 import { getProbability } from '../../common/calculate'
 import { batchedWaitAll } from '../../common/util/promise'
+import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
 
 const firestore = admin.firestore()
@@ -74,13 +75,28 @@ export async function updateContractMetrics() {
         const { resolution, resolutionProbability, resolutionTime } = contract
         if (resolution === 'YES') prob = 1
         else if (resolution === 'NO') prob = 0
-        else if (resolution === 'MKT' && resolutionProbability)
+        else if (resolution === 'MKT' && resolutionProbability !== undefined)
           prob = resolutionProbability
 
         const probChanges = {
-          day: calculateProbChange(prob, descendingBets, yesterday, resolutionTime),
-          week: calculateProbChange(prob, descendingBets, weekAgo, resolutionTime),
-          month: calculateProbChange(prob, descendingBets, monthAgo, resolutionTime),
+          day: calculateProbChange(
+            prob,
+            descendingBets,
+            yesterday,
+            resolutionTime
+          ),
+          week: calculateProbChange(
+            prob,
+            descendingBets,
+            weekAgo,
+            resolutionTime
+          ),
+          month: calculateProbChange(
+            prob,
+            descendingBets,
+            monthAgo,
+            resolutionTime
+          ),
         }
         cpmmFields = { prob, probChanges }
       }
@@ -95,7 +111,7 @@ export async function updateContractMetrics() {
         descendingBets.filter((bet) => bet.createdTime > monthAgo)
       )
 
-      writer.update(firestore.collection('contracts').doc(contract.id), {
+      const update = {
         volume24Hours: computeVolume(descendingBets, yesterday),
         volume7Days: computeVolume(descendingBets, weekAgo),
         elasticity: computeElasticity(unfilledBets, contract),
@@ -103,7 +119,11 @@ export async function updateContractMetrics() {
         uniqueBettors7Days,
         uniqueBettors30Days,
         ...cpmmFields,
-      })
+      }
+      if (hasChanges(contract, update)) {
+        const contractDoc = firestore.collection('contracts').doc(contract.id)
+        writer.update(contractDoc, update)
+      }
     }),
     100
   )

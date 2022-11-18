@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import { maxBy } from 'lodash'
 
 import { Bet } from '../../common/bet'
 import {
@@ -7,24 +8,19 @@ import {
   getRedemptionBetMulti,
 } from '../../common/redeem'
 
-import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { floatingEqual } from '../../common/util/math'
 import { poolToProbs } from 'common/calculate-cpmm-multi'
+import { CPMM2Contract, CPMMContract } from 'common/contract'
 
-export const redeemShares = async (userId: string, contractId: string) => {
+export const redeemShares = async (
+  userId: string,
+  contract: CPMMContract | CPMM2Contract
+) => {
   return await firestore.runTransaction(async (trans) => {
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const contractSnap = await trans.get(contractDoc)
-    if (!contractSnap.exists)
-      return { status: 'error', message: 'Invalid contract' }
+    const { mechanism, id: contractId } = contract
 
-    const contract = contractSnap.data() as Contract
-    const { mechanism } = contract
-    if (mechanism !== 'cpmm-1' && mechanism !== 'cpmm-2')
-      return { status: 'success' }
-
-    const betsColl = firestore.collection(`contracts/${contract.id}/bets`)
+    const betsColl = firestore.collection(`contracts/${contractId}/bets`)
     const betsSnap = await trans.get(betsColl.where('userId', '==', userId))
     const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
 
@@ -48,7 +44,13 @@ export const redeemShares = async (userId: string, contractId: string) => {
     trans.update(userDoc, { balance: newBalance })
 
     if (mechanism === 'cpmm-1') {
-      const [yesBet, noBet] = getRedemptionBets(shares, loanPayment, contract)
+      const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
+      const [yesBet, noBet] = getRedemptionBets(
+        contractId,
+        shares,
+        loanPayment,
+        lastProb
+      )
       const yesDoc = betsColl.doc()
       const noDoc = betsColl.doc()
 
@@ -56,7 +58,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
       trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
     } else {
       const bet = getRedemptionBetMulti(
-        contract.id,
+        contractId,
         shares,
         loanPayment,
         poolToProbs(contract.pool)

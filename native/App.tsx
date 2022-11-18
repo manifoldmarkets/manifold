@@ -34,6 +34,7 @@ import { Feather, AntDesign } from '@expo/vector-icons'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
+import { WebViewErrorEvent } from 'react-native-webview/lib/WebViewTypes'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -70,8 +71,6 @@ const App = () => {
   const notificationResponseListener = useRef<Subscription | undefined>()
 
   // Auth
-  const [fbUser, setFbUser] = useState<string | null>()
-  const [userId, setUserId] = useState<string | null>()
   const [showAuthModal, setShowAuthModal] = useState(false)
 
   // Url mangement
@@ -117,6 +116,11 @@ const App = () => {
 
   // Initialize listeners
   useEffect(() => {
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        setUrlToLoad(url)
+      }
+    })
     try {
       BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
 
@@ -133,7 +137,6 @@ const App = () => {
     }
 
     return () => {
-      console.log('removing notification & back listeners')
       notificationResponseListener.current &&
         Notifications.removeNotificationSubscription(
           notificationResponseListener.current
@@ -189,14 +192,12 @@ const App = () => {
     }
 
     const { status } = await Notifications.getPermissionsAsync()
-    console.log('getExistingPushNotificationStatus', status)
     return status
   }
 
   const getPushToken = async () => {
     const appConfig = require('./app.json')
     const projectId = appConfig.expo.extra.eas.projectId
-    console.log('project id', projectId)
     const token = (
       await Notifications.getExpoPushTokenAsync({
         projectId,
@@ -212,16 +213,14 @@ const App = () => {
     try {
       const existingStatus = await getExistingPushNotificationStatus()
       let finalStatus = existingStatus
-      console.log('existing status of push notifications', existingStatus)
       if (existingStatus !== 'granted') {
-        console.log('requesting permission')
         const { status } = await Notifications.requestPermissionsAsync()
         finalStatus = status
       }
       if (finalStatus !== 'granted') {
         communicateWithWebview('pushNotificationPermissionStatus', {
           status: finalStatus,
-          userId,
+          userId: auth.currentUser?.uid,
         })
         return null
       }
@@ -243,17 +242,33 @@ const App = () => {
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
     } else if (type === 'loginClicked') {
-      setShowAuthModal(true)
+      if (auth.currentUser) {
+        try {
+          // Let's start from a clean slate if the webview and native auths are out of sync
+          auth.signOut().then(() => {
+            setShowAuthModal(true)
+          })
+        } catch (err) {
+          console.log('[sign out before sign in] Error : ', err)
+          Sentry.Native.captureException(err, {
+            extra: { message: 'sign out before sign in' },
+          })
+        }
+      } else setShowAuthModal(true)
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
           const token = await getPushToken()
           if (!webview.current) return
-          if (token) communicateWithWebview('pushToken', { token, userId })
+          if (token)
+            communicateWithWebview('pushToken', {
+              token,
+              userId: auth.currentUser?.uid,
+            })
         } else
           communicateWithWebview('pushNotificationPermissionStatus', {
             status,
-            userId,
+            userId: auth.currentUser?.uid,
           })
       })
     } else if (type === 'copyToClipboard') {
@@ -262,13 +277,21 @@ const App = () => {
     // User needs to enable push notifications
     else if (type === 'promptEnablePushNotifications') {
       registerForPushNotificationsAsync().then((token) => {
-        if (token) communicateWithWebview('pushToken', { token, userId })
+        if (token)
+          communicateWithWebview('pushToken', {
+            token,
+            userId: auth.currentUser?.uid,
+          })
       })
-    } else if (type === 'signOut' && (fbUser || auth.currentUser)) {
-      console.log('signOut called')
-      auth.signOut()
-      setFbUser(null)
-      setUserId(null)
+    } else if (type === 'signOut') {
+      try {
+        auth.signOut()
+      } catch (err) {
+        console.log('[signOut] Error : ', err)
+        Sentry.Native.captureException(err, {
+          extra: { message: 'sign out' },
+        })
+      }
     }
     // Receiving cached firebase user from webview cache
     else if (type === 'users') {
@@ -277,20 +300,12 @@ const App = () => {
         // Passing us a signed-in user object
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
           console.log('Signing in fb user from webview cache')
-          setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app).then(
-            (userResult) => {
-              if (userResult) {
-                setFbUser(JSON.stringify(userResult.toJSON()))
-                setUserId(userResult.uid)
-              }
-            }
-          )
+          setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app)
         }
       } catch (e) {
         Sentry.Native.captureException(e, {
           extra: { message: 'error parsing nativeEvent.data' },
         })
-        console.log('error parsing nativeEvent.data', e)
       }
     } else {
       console.log('Unhandled nativeEvent.data: ', data)
@@ -311,6 +326,19 @@ const App = () => {
     )
   }
 
+  const handleWebviewError = (e: WebViewErrorEvent) => {
+    const { nativeEvent } = e
+    console.log('error in webview', e)
+    Sentry.Native.captureException(nativeEvent.description, {
+      extra: {
+        message: 'webview error',
+        nativeEvent,
+      },
+    })
+    // fall back to home uri on error
+    setUrlToLoad(homeUri)
+  }
+
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
@@ -329,7 +357,7 @@ const App = () => {
       display: !hasWebViewLoaded.current ? 'none' : 'flex',
       overflow: 'hidden',
       marginTop:
-        (!isIOS ? RNStatusBar.currentHeight ?? 0 : 0) +
+        (isIOS ? 0 : RNStatusBar.currentHeight ?? 0) +
         (isVisitingOtherSite ? 40 : 0),
       marginBottom: !isIOS ? 10 : 0,
     },
@@ -350,7 +378,7 @@ const App = () => {
       top: 0,
       left: 0,
       right: 0,
-      height: 90,
+      height: isIOS ? 90 : 75,
       backgroundColor: 'lightgray',
       zIndex: 100,
       display: isVisitingOtherSite ? 'flex' : 'none',
@@ -375,6 +403,17 @@ const App = () => {
     },
   })
 
+  const SplashLoading = () => (
+    <>
+      <Image style={styles.image} source={require('./assets/splash.png')} />
+      <ActivityIndicator
+        style={styles.activityIndicator}
+        size={'large'}
+        color={'white'}
+      />
+    </>
+  )
+
   return (
     <>
       {Platform.OS === 'ios' && (
@@ -384,16 +423,7 @@ const App = () => {
           communicateWithWebview={communicateWithWebview}
         />
       )}
-      {!hasWebViewLoaded.current && (
-        <>
-          <Image style={styles.image} source={require('./assets/splash.png')} />
-          <ActivityIndicator
-            style={styles.activityIndicator}
-            size={'large'}
-            color={'white'}
-          />
-        </>
-      )}
+      {!hasWebViewLoaded.current && <SplashLoading />}
       <SafeAreaView style={styles.container}>
         <StatusBar
           animated={true}
@@ -412,7 +442,6 @@ const App = () => {
                 const back = !previousHomeUrl.includes('?')
                   ? `${previousHomeUrl}?ignoreThisQuery=true`
                   : `${previousHomeUrl}&ignoreThisQuery=true`
-                console.log('back to', back)
                 setUrlToLoad(back)
               }}
             >
@@ -456,13 +485,14 @@ const App = () => {
         </View>
         <WebView
           style={styles.webView}
+          mediaPlaybackRequiresUserAction={true}
+          allowsInlineMediaPlayback={true}
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
           overScrollMode={'never'}
           decelerationRate={'normal'}
           allowsBackForwardNavigationGestures={true}
           onLoadEnd={() => {
-            console.log('onLoadEnd')
             hasWebViewLoaded.current = true
             setCurrentHostStatus({ ...currentHostStatus, loading: false })
           }}
@@ -470,11 +500,14 @@ const App = () => {
           source={{ uri: urlToLoad }}
           //@ts-ignore
           ref={webview}
-          onError={(e) => {
-            console.log('error in webview', e)
-            Sentry.Native.captureException(e, {
-              extra: { message: 'webview error' },
-            })
+          onError={(e) => handleWebviewError(e)}
+          renderError={(e) => {
+            // Renders this view while we resolve the error
+            return (
+              <View style={{ height, width }}>
+                <SplashLoading />
+              </View>
+            )
           }}
           onTouchStart={() => {
             tellWebviewToSetNativeFlag()
@@ -484,7 +517,6 @@ const App = () => {
           }}
           onNavigationStateChange={(navState) => {
             const { url, loading } = navState
-            console.log('setting new nav url', url)
             setCurrentHostStatus({
               loading,
               url,
@@ -517,8 +549,6 @@ const App = () => {
           showModal={showAuthModal}
           setShowModal={setShowAuthModal}
           webview={webview}
-          setFbUser={setFbUser}
-          setUserId={setUserId}
         />
       </SafeAreaView>
     </>

@@ -1,5 +1,10 @@
 import * as functions from 'firebase-functions'
-import { getUser, getValues } from './utils'
+import {
+  getUser,
+  getValues,
+  getContractPath,
+  revalidateStaticProps,
+} from './utils'
 import {
   createBadgeAwardedNotification,
   createCommentOrAnswerOrUpdatedContractNotification,
@@ -23,16 +28,25 @@ export const onUpdateContract = functions.firestore
     const { eventId } = context
     const { closeTime, question } = contract
 
-    if (!previousContract.isResolved && contract.isResolved) {
-      // No need to notify users of resolution, that's handled in resolve-market
-      return await handleResolvedContract(contract)
-    } else if (previousContract.groupSlugs !== contract.groupSlugs) {
+    if (previousContract.groupSlugs !== contract.groupSlugs) {
       await handleContractGroupUpdated(previousContract, contract)
-    } else if (
+    }
+
+    if (
       previousContract.closeTime !== closeTime ||
       previousContract.question !== question
     ) {
       await handleUpdatedCloseTime(previousContract, contract, eventId)
+    }
+
+    if (!previousContract.isResolved && contract.isResolved) {
+      // No need to notify users of resolution, that's handled in resolve-market
+      await handleResolvedContract(contract)
+    }
+
+    // maybe we should do this more often, but at least if someone bets
+    if (previousContract.volume !== contract.volume) {
+      await revalidateStaticProps(getContractPath(contract))
     }
   })
 

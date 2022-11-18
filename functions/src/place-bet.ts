@@ -54,7 +54,14 @@ export const placebet = newEndpoint({}, async (req, auth) => {
     log('Inside main transaction.')
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
-    const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
+    const [[contractSnap, userSnap], { unfilledBets, balanceByUserId }] =
+      await Promise.all([
+        trans.getAll(contractDoc, userDoc),
+
+        // Note: Used only for cpmm-1 markets, but harmless to get for all markets.
+        getUnfilledBetsAndUserBalances(trans, contractDoc),
+      ])
+
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     log('Loaded user and contract snapshots.')
@@ -103,9 +110,6 @@ export const placebet = newEndpoint({}, async (req, auth) => {
 
           limitProb = Math.round(limitProb * 100) / 100
         }
-
-        const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc)
 
         return getBinaryCpmmBetInfo(
           outcome,
@@ -195,17 +199,23 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       log('Updated contract properties.')
     }
 
-    return { betId: betDoc.id, makers, newBet }
+    return { contract, betId: betDoc.id, makers, newBet }
   })
 
   log('Main transaction finished.')
 
-  if (result.newBet.amount !== 0) {
+  const { contract, newBet, makers } = result
+  const { mechanism } = contract
+
+  if (
+    (mechanism === 'cpmm-1' || mechanism === 'cpmm-2') &&
+    newBet.amount !== 0
+  ) {
     const userIds = uniq([
       auth.uid,
-      ...(result.makers ?? []).map((maker) => maker.bet.userId),
+      ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
-    await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
+    await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
     log('Share redemption transaction finished.')
   }
 

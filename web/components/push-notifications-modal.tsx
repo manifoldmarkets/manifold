@@ -2,21 +2,19 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 
 import { PrivateUser } from 'common/user'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
-import { setPushTokenRequestDenied } from 'web/lib/firebase/notifications'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
 
 export function PushNotificationsModal(props: {
-  isOpen: boolean
-  setOpen: (open: boolean) => void
   privateUser: PrivateUser
-  notifications: number
+  totalNotifications: number
 }) {
-  const { isOpen, setOpen, privateUser, notifications } = props
+  const { privateUser, totalNotifications } = props
+  const [isOpen, setOpen] = useState(false)
 
   const showSystemNotificationsPrompt = () => {
     postMessageToNative('promptEnablePushNotifications', {})
@@ -38,10 +36,10 @@ export function PushNotificationsModal(props: {
     }
 
     // They haven't seen our prompt yet
-    const shouldShowOurNotificationPrompt = notifications >= 10
+    const shouldShowOurNotificationPrompt = totalNotifications >= 10
     const openTimer = setTimeout(() => {
       setOpen(shouldShowOurNotificationPrompt)
-    }, 3000)
+    }, 1000)
     return () => clearTimeout(openTimer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -69,7 +67,9 @@ export function PushNotificationsModal(props: {
               size={'xl'}
               className={'mt-4 font-normal'}
               onClick={() => {
-                setPushTokenRequestDenied(privateUser.id)
+                updatePrivateUser(privateUser.id, {
+                  interestedInPushNotifications: false,
+                })
                 setOpen(false)
               }}
               color={'gray'}

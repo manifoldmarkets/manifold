@@ -10,6 +10,7 @@ type AnyTxnType =
   | CancelUniqueBettorBonus
   | CommentBountyRefund
   | ManaPurchase
+  | SignupBonus
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -36,6 +37,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'COMMENT_BOUNTY'
     | 'REFUND_COMMENT_BOUNTY'
     | 'MANA_PURCHASE'
+    | 'SIGNUP_BONUS'
 
   // Any extra data
   data?: { [key: string]: any }
@@ -142,6 +144,12 @@ type ManaPurchase = {
   }
 }
 
+type SignupBonus = {
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'SIGNUP_BONUS'
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -152,3 +160,4 @@ export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus
 export type CommentBountyDepositTxn = Txn & CommentBountyDeposit
 export type CommentBountyWithdrawalTxn = Txn & CommentBountyWithdrawal
 export type ManaPurchaseTxn = Txn & ManaPurchase
+export type SignupBonusTxn = Txn & SignupBonus

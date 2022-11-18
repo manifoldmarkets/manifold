@@ -55,6 +55,7 @@ import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { groupPath } from 'common/group'
+import Link from 'next/link'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -160,8 +161,6 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
 
   const [page, setPage] = useState(0)
-  const [showPushNotificationsModal, setShowPushNotificationsModal] =
-    useState(false)
 
   const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
@@ -197,10 +196,8 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
         </div>
       )}
       <PushNotificationsModal
-        isOpen={showPushNotificationsModal}
-        setOpen={setShowPushNotificationsModal}
         privateUser={privateUser}
-        notifications={
+        totalNotifications={
           allGroupedNotifications.map((ng) => ng.notifications).flat().length
         }
       />
@@ -542,11 +539,7 @@ function IncomeNotificationItem(props: {
         highlighted && HIGHLIGHT_CLASS
       )}
     >
-      <div className={'relative'}>
-        <SiteLink
-          href={getIncomeSourceUrl() ?? ''}
-          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
-        />
+      <Link href={getIncomeSourceUrl() ?? ''}>
         <Col className={'justify-start text-gray-500'}>
           {(isTip || isUniqueBettorBonus) && (
             <MultiUserTransactionLink
@@ -568,7 +561,7 @@ function IncomeNotificationItem(props: {
           </Row>
         </Col>
         <div className={'border-b border-gray-300 pt-4'} />
-      </div>
+      </Link>
     </div>
   )
 }
@@ -732,6 +725,15 @@ function NotificationItem(props: {
   } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
     return (
       <MarketClosedNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        justSummary={justSummary}
+      />
+    )
+  } else if (sourceType === 'signup_bonus') {
+    return (
+      <SignupBonusNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1029,6 +1031,45 @@ function BadgeNotification(props: {
       <Row>
         <span>{sourceText} 🎉</span>
       </Row>
+    </NotificationFrame>
+  )
+}
+function SignupBonusNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  justSummary: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, justSummary } = props
+  const subtitle = 'You got a signup bonus!'
+  const { sourceText } = notification
+  const text = (
+    <span>
+      Thanks for using Manifold! We sent you{' '}
+      <span className={'text-teal-500'}>
+        {formatMoney(parseInt(sourceText ?? ''))}
+      </span>{' '}
+      for being a valuable new predictor.
+    </span>
+  )
+  if (justSummary) {
+    return (
+      <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
+        <Row className={'line-clamp-1'}>{text}</Row>
+      </NotificationSummaryFrame>
+    )
+  }
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      subtitle={subtitle}
+      hideUserName={true}
+      hideLinkToGroupOrQuestion={true}
+    >
+      <Row>{text}</Row>
     </NotificationFrame>
   )
 }

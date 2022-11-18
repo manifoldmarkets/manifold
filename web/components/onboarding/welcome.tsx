@@ -22,6 +22,9 @@ import GroupSelectorDialog from './group-selector-dialog'
 import { formatMoney } from 'common/util/format'
 import { STARTING_BALANCE } from 'common/economy'
 import { Button } from 'web/components/buttons/button'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { buildArray } from 'common/util/array'
+import { getNativePlatform } from 'web/lib/native/is-native'
 
 export default function Welcome() {
   const user = useUser()
@@ -30,8 +33,15 @@ export default function Welcome() {
   const [page, setPage] = useState(0)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
   const isTwitch = useIsTwitch(user)
-  const TOTAL_PAGES = 4
-  // Just making new users created after 11/09/2022 go through this for now
+  const { isNative, platform } = getNativePlatform()
+  const availablePages = buildArray([
+    <Page0 />,
+    <Page1 />,
+    isNative && platform === 'ios' ? null : <Page2 />,
+    <Page3 />,
+  ])
+  const TOTAL_PAGES = availablePages.length
+  // Just making new users created after 10/31/2022 go through this for now
   const shouldSeeEula =
     user &&
     privateUser &&
@@ -89,10 +99,7 @@ export default function Welcome() {
         </Col>
       ) : (
         <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
-          {page === 0 && <Page0 />}
-          {page === 1 && <Page1 />}
-          {page === 2 && <Page2 />}
-          {page === 3 && <Page3 />}
+          {availablePages[page]}
           <Col>
             <Row className="place-content-between">
               <ChevronLeftIcon
@@ -175,18 +182,28 @@ function Page0() {
 }
 
 function Page1() {
+  const { isNative, platform } = getNativePlatform()
+  const shouldAutoPlay = !(isNative && platform === 'ios')
   return (
     <>
       <p>
         Your question becomes a prediction market that people can bet{' '}
-        <span className="font-normal text-indigo-700">mana (M$)</span> on.
+        <span className="font-normal text-indigo-700">
+          mana ({ENV_CONFIG.moneyMoniker})
+        </span>{' '}
+        on.
       </p>
       <div className="mt-8 font-semibold">The core idea</div>
       <div className="mt-2">
         If people have to put their mana where their mouth is, you’ll get a
         pretty accurate answer!
       </div>
-      <video loop autoPlay className="my-4 h-full w-full">
+      <video
+        loop
+        autoPlay={shouldAutoPlay}
+        controls={!shouldAutoPlay}
+        className="my-4 h-full w-full"
+      >
         <source src="/welcome/mana-example.mp4" type="video/mp4" />
         Your browser does not support video
       </video>
@@ -194,13 +211,15 @@ function Page1() {
   )
 }
 
-function Page2() {
+export function Page2() {
   return (
     <>
       <p>
-        <span className="mt-4 font-normal text-indigo-700">Mana (M$)</span> is
-        the play money you bet with. You can also turn it into a real donation
-        to charity, at a 100:1 ratio.
+        <span className="mt-4 font-normal text-indigo-700">
+          Mana ({ENV_CONFIG.moneyMoniker})
+        </span>{' '}
+        is the play money you bet with. You can also turn it into a real
+        donation to charity, at a 100:1 ratio.
       </p>
       <Row className="mt-4 gap-2 rounded border border-gray-200 bg-gray-50 py-2 pl-2 pr-4 text-sm text-indigo-700">
         <ExclamationCircleIcon className="h-5 w-5" />

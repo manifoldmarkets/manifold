@@ -91,6 +91,8 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     blockedByUserIds: [],
     blockedContractIds: [],
     blockedGroupSlugs: [],
+    weeklyTrendingEmailSent: false,
+    weeklyPortfolioUpdateEmailSent: false,
   }
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)

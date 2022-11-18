@@ -111,7 +111,7 @@ const IconButton = (props: {
 }) => {
   const { icon: Icon, onClick, isActive, className } = props
   return (
-    <button onClick={onClick}>
+    <button onClick={onClick} type="button">
       <Icon className={clsx('h-5', isActive && 'text-indigo-200', className)} />
     </button>
   )

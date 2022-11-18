@@ -3,14 +3,7 @@ import * as admin from 'firebase-admin'
 import { keyBy, uniq } from 'lodash'
 
 import { Bet, LimitBet } from '../../common/bet'
-import {
-  getContractPath,
-  getUser,
-  getValues,
-  isProd,
-  log,
-  revalidateStaticProps,
-} from './utils'
+import { getUser, getValues, isProd, log } from './utils'
 import {
   createBadgeAwardedNotification,
   createBetFillNotification,
@@ -24,6 +17,7 @@ import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
   BETTING_STREAK_RESET_HOUR,
+  MAX_TRADERS_FOR_BONUS,
   UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_LIQUIDITY,
 } from '../../common/economy'
@@ -31,7 +25,6 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
-import { APIError } from '../../common/api'
 import { User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
@@ -43,6 +36,7 @@ import {
 } from '../../common/badge'
 import { BOT_USERNAMES } from '../../common/envs/constants'
 import { addUserToContractFollowers } from './follow-market'
+import { handleReferral } from './helpers/handle-referral'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -84,13 +78,26 @@ export const onCreateBet = functions
       userUsername: bettor.username,
     })
 
-    await addUserToContractFollowers(contractId, bettor.id)
+    // They may be selling out of a position completely, so only add them if they're buying
+    if (bet.amount > 0 && !bet.isSold)
+      await addUserToContractFollowers(contractId, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
+    await processReferralBonus(bettor, eventId)
     await updateBettingStreak(bettor, bet, contract, eventId)
-
-    await revalidateStaticProps(getContractPath(contract))
   })
+
+const processReferralBonus = async (user: User, eventId: string) => {
+  if (user.lastBetTime || user.createdTime < Date.now() - DAY_MS) return
+
+  if (
+    user.referredByUserId ||
+    user.referredByContractId ||
+    user.referredByGroupId
+  ) {
+    await handleReferral(user, eventId)
+  }
+}
 
 const updateBettingStreak = async (
   user: User,
@@ -178,11 +185,10 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       const contractDoc = firestore.collection(`contracts`).doc(oldContract.id)
       const contract = (await trans.get(contractDoc)).data() as Contract
       let previousUniqueBettorIds = contract.uniqueBettorIds
-
-      const betsSnap = await trans.get(
-        firestore.collection(`contracts/${contract.id}/bets`)
-      )
       if (!previousUniqueBettorIds) {
+        const betsSnap = await trans.get(
+          firestore.collection(`contracts/${contract.id}/bets`)
+        )
         const contractBets = betsSnap.docs.map((doc) => doc.data() as Bet)
 
         if (contractBets.length === 0) {
@@ -218,7 +224,8 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     }
   )
 
-  if (!newUniqueBettorIds) return
+  if (!newUniqueBettorIds || newUniqueBettorIds.length > MAX_TRADERS_FOR_BONUS)
+    return
 
   // exclude bots from bonuses
   if (BOT_USERNAMES.includes(bettor.username)) return
@@ -234,14 +241,10 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-  const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
-  if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
-
-  const fromUser = fromSnap.data() as User
 
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
-      fromId: fromUser.id,
+      fromId: fromUserId,
       fromType: 'BANK',
       toId: oldContract.creatorId,
       toType: 'USER',
