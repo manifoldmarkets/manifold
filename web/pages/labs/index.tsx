@@ -1,10 +1,11 @@
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
+import Link from 'next/link'
 import Masonry from 'react-masonry-css'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { SiteLink } from 'web/components/widgets/site-link'
+import { Card } from 'web/components/widgets/card'
 import { Title } from 'web/components/widgets/title'
 import { getNativePlatform } from 'web/lib/native/is-native'
 
@@ -98,14 +99,11 @@ const LabCard = (props: {
 }) => {
   const { title, description, href } = props
   return (
-    <SiteLink
-      href={href}
-      className="group mb-4 flex flex-col gap-2 rounded-lg bg-white p-4 shadow-md transition-shadow duration-200 hover:no-underline hover:shadow-lg"
-    >
-      <h3 className="text-lg font-semibold group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2">
-        {title}
-      </h3>
-      <p className="text-gray-600">{description}</p>
-    </SiteLink>
+    <Link href={href} className="mb-4 block">
+      <Card className="flex flex-col gap-2 px-4 py-3">
+        <h3 className="text-lg font-semibold">{title}</h3>
+        <p className="text-gray-600">{description}</p>
+      </Card>
+    </Link>
   )
 }

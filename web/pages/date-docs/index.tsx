@@ -8,13 +8,14 @@ import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Button } from 'web/components/buttons/button'
-import { SiteLink } from 'web/components/widgets/site-link'
+import { buttonClass } from 'web/components/buttons/button'
 import { getUser, User } from 'web/lib/firebase/users'
 import { DateDocPost } from './[username]'
 import { NoSEO } from 'web/components/NoSEO'
 import { useDateDocs } from 'web/hooks/use-post'
 import { useTracking } from 'web/hooks/use-tracking'
+import Link from 'next/link'
+import clsx from 'clsx'
 
 export async function getStaticProps() {
   const dateDocs = await getDateDocs()
@@ -50,15 +51,16 @@ export default function DatePage(props: {
         <Row className="items-center justify-between p-4 sm:p-0">
           <Title className="!my-0 px-2 text-blue-500" text="Date docs" />
           {!hasDoc && (
-            <SiteLink href="/date-docs/create" className="!no-underline">
-              <Button className="flex flex-row gap-1" color="blue">
-                <PlusCircleIcon
-                  className={'h-5 w-5 flex-shrink-0 text-white'}
-                  aria-hidden="true"
-                />
-                New
-              </Button>
-            </SiteLink>
+            <Link
+              href="/date-docs/create"
+              className={clsx(buttonClass('md', 'blue'), 'flex flex-row gap-1')}
+            >
+              <PlusCircleIcon
+                className={'h-5 w-5 flex-shrink-0 text-white'}
+                aria-hidden
+              />
+              New
+            </Link>
           )}
         </Row>
         <Spacer h={6} />

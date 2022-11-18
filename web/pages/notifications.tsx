@@ -55,6 +55,7 @@ import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { groupPath } from 'common/group'
+import Link from 'next/link'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -538,11 +539,7 @@ function IncomeNotificationItem(props: {
         highlighted && HIGHLIGHT_CLASS
       )}
     >
-      <div className={'relative'}>
-        <SiteLink
-          href={getIncomeSourceUrl() ?? ''}
-          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
-        />
+      <Link href={getIncomeSourceUrl() ?? ''}>
         <Col className={'justify-start text-gray-500'}>
           {(isTip || isUniqueBettorBonus) && (
             <MultiUserTransactionLink
@@ -564,7 +561,7 @@ function IncomeNotificationItem(props: {
           </Row>
         </Col>
         <div className={'border-b border-gray-300 pt-4'} />
-      </div>
+      </Link>
     </div>
   )
 }

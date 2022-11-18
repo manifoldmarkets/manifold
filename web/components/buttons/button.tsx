@@ -27,7 +27,7 @@ const sizeClasses = {
 
 export function buttonClass(size: SizeType, color: ColorType | 'override') {
   return clsx(
-    'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed',
+    'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed text-center',
     sizeClasses[size],
     color === 'green' &&
       'disabled:bg-gray-200 bg-teal-500 text-white hover:bg-teal-500',

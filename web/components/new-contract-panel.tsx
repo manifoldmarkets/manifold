@@ -28,7 +28,6 @@ import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { MINUTE_MS } from 'common/util/time'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
@@ -377,9 +376,9 @@ export function NewContractPanel(props: {
               options={{ showSelector: showGroupSelector, showLabel: true }}
             />
             {showGroupSelector && selectedGroup && (
-              <SiteLink href={groupPath(selectedGroup.slug)}>
+              <a target="_blank" href={groupPath(selectedGroup.slug)}>
                 <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
-              </SiteLink>
+              </a>
             )}
           </Row>
 

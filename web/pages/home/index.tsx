@@ -205,7 +205,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               onClick={() => Router.push('/search')}
               onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
             />
-            <CustomizeButton className="ml-1" justIcon />
+            <CustomizeButton className="ml-1" />
           </Row>
           <DailyStats user={user} />
         </Row>
@@ -699,23 +699,14 @@ export const TrendingGroupsSection = memo(
   }
 )
 
-function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
-  const { justIcon, className } = props
+function CustomizeButton(props: { className?: string }) {
+  const { className } = props
   return (
-    <SiteLink
-      className={clsx(
-        className,
-        'flex flex-row items-center text-xl hover:no-underline'
-      )}
+    <Link
+      className={clsx(className, buttonClass('xs', 'gray-white'))}
       href="/home/edit"
     >
-      <Button size="xs" color="gray-white">
-        <HomeSettingsIcon
-          className={clsx('h-7 w-7 text-gray-400')}
-          aria-hidden="true"
-        />
-        {!justIcon && 'Customize'}
-      </Button>
-    </SiteLink>
+      <HomeSettingsIcon className="h-7 w-7 text-gray-400" aria-hidden />
+    </Link>
   )
 }

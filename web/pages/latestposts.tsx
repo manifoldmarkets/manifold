@@ -29,11 +29,7 @@ export default function LatestPostsPage() {
             {user && (
               <Link
                 href={'/create-post'}
-                onClick={() =>
-                  track('latest posts click create post', {
-                    section: 'create-post',
-                  })
-                }
+                onClick={() => track('latest posts click create post')}
                 className={buttonClass('md', 'indigo')}
               >
                 Create Post

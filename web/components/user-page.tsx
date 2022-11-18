@@ -44,9 +44,10 @@ import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-about'
-import { Button } from './buttons/button'
+import { buttonClass } from './buttons/button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { BotBadge, CoreBadge, PostBanBadge } from './widgets/user-link'
+import Link from 'next/link'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -99,9 +100,9 @@ export function UserPage(props: { user: User }) {
           />
           {isCurrentUser && (
             <div className="absolute ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
-              <SiteLink href="/profile">
-                <PencilIcon className="h-5" />{' '}
-              </SiteLink>
+              <Link href="/profile">
+                <PencilIcon className="h-5" />
+              </Link>
             </div>
           )}
 
@@ -263,24 +264,17 @@ export function UserPage(props: { user: User }) {
                     <Spacer h={4} />
 
                     <Row className="flex items-center justify-between">
-                      <Col>
-                        <SectionHeader label={'Posts'} href={''} />
-                      </Col>
-                      <Col>
-                        {currentUser && (
-                          <SiteLink
-                            className="mb-3 text-xl"
-                            href={'/create-post'}
-                            onClick={() =>
-                              track('home click create post', {
-                                section: 'create-post',
-                              })
-                            }
-                          >
-                            <Button>Create Post</Button>
-                          </SiteLink>
-                        )}
-                      </Col>
+                      <SectionHeader label={'Posts'} href={''} />
+
+                      {currentUser && (
+                        <Link
+                          className={clsx('mb-3', buttonClass('md', 'indigo'))}
+                          href={'/create-post'}
+                          onClick={() => track('profile click create post')}
+                        >
+                          Create Post
+                        </Link>
+                      )}
                     </Row>
 
                     <Col>
