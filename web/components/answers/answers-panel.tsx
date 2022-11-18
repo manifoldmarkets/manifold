@@ -40,13 +40,18 @@ export function AnswersPanel(props: {
   const { creatorId, resolution, resolutions, outcomeType } = contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
+  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+
   const answers = contract.answers.filter(
-    (a) => a.number != 0 || contract.outcomeType === 'MULTIPLE_CHOICE'
+    (a) => a.number != 0 || isMultipleChoice
   )
 
-  const answersToHide = answers.filter(
-    (answer) => getOutcomeProbability(contract, answer.id) < 0.01
-  )
+  const answersToHide =
+    isMultipleChoice || answers.length <= 5
+      ? []
+      : answers.filter(
+          (answer) => getOutcomeProbability(contract, answer.id) < 0.01
+        )
 
   const [winningAnswers, losingAnswers] = partition(
     answers.filter((answer) =>
