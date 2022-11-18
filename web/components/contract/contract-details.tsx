@@ -435,7 +435,7 @@ function EditableCloseDate(props: {
         position="top"
       >
         <Col className="rounded bg-white px-8 pb-8">
-          <Subtitle text="Edit market close time" />
+          <Subtitle text="Change when this market closes" />
           <Row className="mt-4 flex-wrap items-center justify-center gap-2">
             <Input
               type="date"
@@ -454,7 +454,7 @@ function EditableCloseDate(props: {
               value={closeHoursMinutes}
             />
             <Button color={'indigo'} onClick={() => onSave()}>
-              Set
+              Save
             </Button>
           </Row>
 
@@ -463,10 +463,10 @@ function EditableCloseDate(props: {
               <Button
                 className="mt-8"
                 size={'sm'}
-                color="red"
+                color="gray-white"
                 onClick={() => onSave(Date.now())}
               >
-                Close market now
+                (Or, close this market now)
               </Button>
             </Row>
           )}
