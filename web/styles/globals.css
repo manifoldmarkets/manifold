@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+::-webkit-datetime-edit-fields-wrapper {
+  cursor: crosshair;
+}
+/* ::-webkit-datetime-edit-month-field {
+  
+} */
+/* ::-webkit-datetime-edit-day-field {
+
+}
+::-webkit-datetime-edit-year-field {
+
+} */
+
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
