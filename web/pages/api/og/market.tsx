@@ -1,7 +1,8 @@
 import { ImageResponse } from '@vercel/og'
 import { NextRequest } from 'next/server'
 import React from 'react'
-import { OgMarket, OgMarketProps } from 'web/pages/og/og-market'
+import { OgMarket } from 'web/pages/og/og-market'
+import { OgCardProps } from 'common/contract-details'
 
 export const config = {
   runtime: 'experimental-edge',
@@ -21,7 +22,7 @@ export default async function handler(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const OgMarketProps = Object.fromEntries(
       searchParams.entries()
-    ) as OgMarketProps
+    ) as OgCardProps
     const image = OgMarket(OgMarketProps)
 
     return new ImageResponse(replaceTw(image), {
