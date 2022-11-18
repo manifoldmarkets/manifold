@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Modal, Text, View, StyleSheet } from 'react-native'
+import { useEffect } from 'react'
+import { View } from 'react-native'
 import {
   isIosStorekit2,
   PurchaseError,
@@ -29,10 +29,23 @@ export const IosIapListener = (props: {
 
   useEffect(() => {
     if (currentPurchaseError || initConnectionError) {
-      Sentry.Native.captureException(currentPurchaseError, {
-        extra: { message: 'currentPurchaseError' },
+      console.log('error with products:', products)
+      if (currentPurchaseError) {
+        console.log('current purchase error', currentPurchaseError)
+        console.log('currentPurchase:', currentPurchase)
+      } else if (initConnectionError)
+        console.log('init connection error', initConnectionError)
+      Sentry.Native.captureException('error on purchase or connection', {
+        extra: {
+          message: currentPurchaseError
+            ? 'currentPurchaseError'
+            : 'initConnectionError',
+          products,
+          currentPurchase,
+          currentPurchaseError,
+          initConnectionError,
+        },
       })
-      console.log('initConnectionError', initConnectionError)
       communicateWithWebview('iapError', {})
     }
   }, [currentPurchaseError, initConnectionError])
@@ -105,6 +118,7 @@ export const IosIapListener = (props: {
     console.log('usdAmount', usdAmount)
     const sku = products.find((p) => p.price === usdAmount)
     if (sku) {
+      console.log('found sku', sku)
       handleBuyProduct(sku.productId)
     }
     setCheckoutAmount(null)
