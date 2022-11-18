@@ -8,6 +8,12 @@ import { ValidationError } from 'web/pages/api/v0/_types'
 const queryParams = z
   .object({
     availableToUserId: z.string().optional(),
+    limit: z
+      .number()
+      .default(100) //Is this an ok amount?
+      .or(z.string().regex(/\d+/).transform(Number))
+      .refine((n) => n >= 0 && n <= 100, 'Limit must be between 0 and 100'),
+    before: z.string().optional(),
   })
   .strict()
 
@@ -27,7 +33,7 @@ export default async function handler(
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
 
-  const { availableToUserId } = params
+  const { availableToUserId, limit, before } = params
 
   // TODO: should we check if the user is a real user?
   if (availableToUserId) {
@@ -37,7 +43,7 @@ export default async function handler(
     return
   }
 
-  const groups = await listAllGroups()
+  const groups = await listAllGroups({ limit, before })
   res.setHeader('Cache-Control', 'max-age=0')
   res.status(200).json(groups)
 }

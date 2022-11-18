@@ -6,11 +6,15 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  QueryConstraint,
   orderBy,
   query,
   setDoc,
   updateDoc,
   where,
+  limit,
+  DocumentSnapshot,
+  startAfter,
 } from 'firebase/firestore'
 import { partition, uniq, uniqBy } from 'lodash'
 import { Group, GroupLink } from 'common/group'
@@ -50,8 +54,25 @@ export function deleteGroup(group: Group) {
   return deleteDoc(doc(groups, group.id))
 }
 
-export async function listAllGroups() {
-  return getValues<Group>(groups)
+export async function listAllGroups(options: {
+  before?: string
+  limit: number
+}) {
+  const { before } = options
+  const queryParts: QueryConstraint[] = [
+    limit(options.limit)
+  ];
+
+  if (before) {
+    const beforeSnap: DocumentSnapshot = (await getDocs(
+      query(collectionGroup(db, 'groups'), where('id', '==', before))
+    )).docs[0];
+    queryParts.push(startAfter(beforeSnap));
+  }
+
+  const querySource = collectionGroup(db, 'groups');
+
+  return getValues<Group>(query(querySource, ...queryParts));
 }
 
 export async function listGroups(groupSlugs: string[]) {
