@@ -2,6 +2,7 @@ import { Bet } from './bet'
 import { getProbability } from './calculate'
 import { CPMM2Contract, CPMMContract } from './contract'
 import { getProb } from './calculate-cpmm-multi'
+import { mapValues, sum } from 'lodash'
 
 export function calculateFixedPayout(
   contract: CPMMContract | CPMM2Contract,
@@ -19,7 +20,12 @@ export function calculateFixedCancelPayout(bet: Bet) {
 }
 
 export function calculateStandardFixedPayout(bet: Bet, outcome: string) {
-  const { outcome: betOutcome, shares } = bet
+  const { outcome: betOutcome, shares, sharesByOutcome } = bet
+
+  if (sharesByOutcome) {
+    return sharesByOutcome[outcome] ?? 0
+  }
+
   if (betOutcome !== outcome) return 0
   return shares
 }
@@ -28,7 +34,7 @@ function calculateFixedMktPayout(
   contract: CPMMContract | CPMM2Contract,
   bet: Bet
 ) {
-  const { outcome, shares } = bet
+  const { outcome, shares, sharesByOutcome } = bet
 
   if (
     contract.outcomeType === 'BINARY' ||
@@ -45,11 +51,25 @@ function calculateFixedMktPayout(
     return betP * shares
   }
 
-  let p: number | undefined
-  if (contract.resolutions) {
-    p = contract.resolutions[outcome] ?? 0
+  const { resolutions, pool } = contract
+
+  let p: number
+  if (resolutions) {
+    p = resolutions[outcome] ?? 0
   } else {
     p = getProb(contract.pool, outcome)
   }
+
+  if (sharesByOutcome) {
+    return sum(
+      Object.values(
+        mapValues(sharesByOutcome, (s, o) => {
+          const p = resolutions ? resolutions[o] ?? 0 : getProb(pool, o)
+          return s * p
+        })
+      )
+    )
+  }
+
   return p * shares
 }

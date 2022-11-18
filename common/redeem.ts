@@ -102,7 +102,7 @@ export const getRedemptionBetMulti = (
   loanPayment: number,
   probsByOutcome: Record<string, number>
 ) => {
-  const sharesByOutcome = mapValues(probsByOutcome, (p) => p * -shares)
+  const sharesByOutcome = mapValues(probsByOutcome, () => -shares)
   const firstOutcome = Object.keys(sharesByOutcome)[0]
   const createdTime = Date.now()
 

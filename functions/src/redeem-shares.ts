@@ -32,7 +32,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
       contract,
       bets
     )
-    if (floatingEqual(netAmount, 0)) {
+    if (floatingEqual(shares, 0)) {
       return { status: 'success' }
     }
 

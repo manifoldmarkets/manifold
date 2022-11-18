@@ -418,6 +418,7 @@ export function ContractBetsTable(props: {
   isYourBets: boolean
 }) {
   const { contract, isYourBets } = props
+  const { isResolved, mechanism, outcomeType } = contract
 
   const bets = sortBy(
     props.bets.filter((b) => !b.isAnte && b.amount !== 0),
@@ -431,18 +432,24 @@ export function ContractBetsTable(props: {
   )
 
   const [redemptions, normalBets] = partition(
-    contract.mechanism === 'cpmm-1' ? bets : buys,
+    mechanism === 'cpmm-1' ? bets : buys,
     (b) => b.isRedemption
   )
-  const amountRedeemed = Math.floor(-0.5 * sumBy(redemptions, (b) => b.shares))
+  const firstOutcome = redemptions[0]?.outcome
+  const amountRedeemed = Math.floor(
+    sumBy(
+      redemptions.filter((r) => r.outcome === firstOutcome),
+      (b) => -1 * b.shares
+    )
+  )
 
   const amountLoaned = sumBy(
     bets.filter((bet) => !bet.isSold && !bet.sale),
     (bet) => bet.loanAmount ?? 0
   )
 
-  const { isResolved, mechanism, outcomeType } = contract
   const isCPMM = mechanism === 'cpmm-1'
+  const isCPMM2 = mechanism === 'cpmm-2'
   const isDPM = mechanism === 'dpm-2'
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -452,9 +459,18 @@ export function ContractBetsTable(props: {
       {amountRedeemed > 0 && (
         <>
           <div className="pl-2 text-sm text-gray-500">
-            {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
-            {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
-            automatically redeemed for {formatMoney(amountRedeemed)}.
+            {isCPMM2 ? (
+              <>
+                {amountRedeemed} shares of each outcome redeemed for{' '}
+                {formatMoney(amountRedeemed)}.
+              </>
+            ) : (
+              <>
+                {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
+                {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
+                automatically redeemed for {formatMoney(amountRedeemed)}.
+              </>
+            )}
           </div>
           <Spacer h={4} />
         </>
