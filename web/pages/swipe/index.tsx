@@ -21,6 +21,7 @@ import { ExternalLinkIcon } from '@heroicons/react/outline'
 import HorizontalArrows from 'web/lib/icons/horizontal-arrows'
 import clsx from 'clsx'
 import { getBinaryProb } from 'common/contract-details'
+import { MinusIcon, PlusIcon } from '@heroicons/react/solid'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(
@@ -103,7 +104,8 @@ const Card = (props: {
   const userId = useUser()?.id
 
   const [amount, setAmount] = useState(10)
-  const onClickMoney = () => setAmount?.((amount) => amount + betTapAdd)
+  const addMoney = () => setAmount?.((amount) => amount + betTapAdd)
+  const subMoney = () => setAmount?.((amount) => amount - betTapAdd)
 
   const image =
     coverImageUrl ??
@@ -182,17 +184,28 @@ const Card = (props: {
                 ? description
                 : richTextToString(description)}
             </div>
-            <div className="mb-4 flex flex-col items-center gap-2 self-center text-yellow-100">
-              <div className="flex gap-1">
+            <div className="mb-4 flex flex-col items-center gap-2 self-center">
+              <div className="flex gap-1 text-yellow-100">
                 Swipe <HorizontalArrows /> to bet
               </div>
-              <button
-                onClick={onClickMoney}
-                onTouchStart={onClickMoney}
-                className="rounded-full border border-yellow-400 px-12 py-4 font-bold text-yellow-300 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-              >
-                {formatMoney(amount)}
-              </button>
+              <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
+                <button
+                  onClick={subMoney}
+                  onTouchStart={subMoney}
+                  disabled={amount <= betTapAdd}
+                  className="pl-5 pr-4 transition-colors enabled:focus:bg-yellow-200/20 enabled:active:bg-yellow-400 enabled:active:text-white"
+                >
+                  <MinusIcon className="h-4" />
+                </button>
+                <span className="mx-1 py-4">{formatMoney(amount)}</span>
+                <button
+                  onClick={addMoney}
+                  onTouchStart={addMoney}
+                  className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+                >
+                  <PlusIcon className="h-4" />
+                </button>
+              </span>
             </div>
           </div>
         </div>
