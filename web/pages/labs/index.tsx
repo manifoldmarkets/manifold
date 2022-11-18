@@ -85,6 +85,12 @@ export default function LabsPage() {
             href={`https://${DOMAIN}/mtg/index.html`}
           />
 
+          <LabCard
+            title="💭 Dream"
+            description="Ask our AI to generate a custom image"
+            href="/dream"
+          />
+
           <LabCard title="🐮 Cowp" description="???" href="/cowp" />
         </Masonry>
       </Col>

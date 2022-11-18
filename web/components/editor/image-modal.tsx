@@ -5,6 +5,7 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
+import { CopyLinkButton } from '../buttons/copy-link-button'
 
 const MODIFIERS =
   '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
@@ -14,29 +15,70 @@ export function DreamModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  const { open, setOpen } = props
+  const { open, setOpen, editor } = props
+  const [prompt, setPrompt] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const onDream = ({ prompt, url }: DreamResults) => {
+    setPrompt(prompt)
+    setImageUrl(url)
+  }
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Dream {...props} />
+      <Col className="gap-2 rounded bg-white">
+        <DreamCard {...props} onDream={onDream} />
+        {imageUrl && (
+          <>
+            <img src={imageUrl} alt="Image" />
+            {/* Show the current imageUrl */}
+            {/* TODO: Keep the other generated images, so the user can play with different attempts. */}
+            <Col className="gap-2 p-6">
+              <CopyLinkButton url={imageUrl} />
+
+              <Row className="gap-2">
+                <Button
+                  onClick={() => {
+                    const imageCode = `<img src="${imageUrl}" alt="${prompt}" />`
+                    if (editor) {
+                      editor.chain().insertContent(imageCode).run()
+                      setOpen(false)
+                    }
+                  }}
+                >
+                  Add image
+                </Button>
+                <Button
+                  color="gray"
+                  onClick={() => {
+                    setOpen(false)
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Row>
+            </Col>
+          </>
+        )}
+      </Col>
     </Modal>
   )
+}
+
+export type DreamResults = {
+  prompt: string
+  url: string
 }
 
 // Note: this is currently tied to a DreamStudio API key tied to akrolsmir@gmail.com,
 // and injected on Vercel.
 const API_KEY = process.env.NEXT_PUBLIC_DREAM_KEY
 
-function Dream(props: {
-  editor: Editor | null
-  open: boolean
-  setOpen: (open: boolean) => void
+export function DreamCard(props: {
+  onDream: (dreamResults: DreamResults) => void
 }) {
-  const { editor, setOpen } = props
+  const { onDream } = props
   const [input, setInput] = useState('')
   const [isDreaming, setIsDreaming] = useState(false)
-  const [imageUrl, setImageUrl] = useState('')
-  const imageCode = `<img src="${imageUrl}" alt="${input}" />`
 
   if (!API_KEY) {
     return (
@@ -47,7 +89,7 @@ function Dream(props: {
     )
   }
 
-  async function dream() {
+  async function requestDream() {
     setIsDreaming(true)
     const data = {
       prompt: input + ', ' + MODIFIERS,
@@ -59,12 +101,19 @@ function Dream(props: {
       body: JSON.stringify(data),
     })
     const json = await response.json()
-    setImageUrl(json.url)
+    // For faster local development, just use this hardcoded image:
+    // const json = {
+    //   url: 'https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/dream%2FtWI0cid8Wr.png?alt=media&token=26745bc7-a9eb-472a-860a-e9de20de5ead',
+    // }
+    onDream({ prompt: input, url: json.url })
     setIsDreaming(false)
   }
 
   return (
-    <Col className="gap-2 rounded bg-white p-6">
+    <Col className="gap-2 p-6">
+      <div className="pt-2 text-sm text-gray-600">
+        Ask our AI to generate a custom image
+      </div>
       <Row className="gap-2">
         <input
           autoFocus
@@ -72,14 +121,14 @@ function Dream(props: {
           name="embed"
           id="embed"
           className="block w-full rounded-md border-gray-300 shadow-sm placeholder:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          placeholder="A crane playing poker on a green table"
+          placeholder="Prediction markets taking over the world"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           autoComplete="off"
         />
         <Button
           className="whitespace-nowrap"
-          onClick={dream}
+          onClick={requestDream}
           loading={isDreaming}
         >
           Dream
@@ -90,41 +139,7 @@ function Dream(props: {
         <div className="text-sm">This may take ~10 seconds...</div>
       )}
       {/* TODO: Allow the user to choose their own modifiers */}
-      <div className="pt-2 text-sm text-gray-400">
-        Commission a custom image using AI.
-      </div>
-      <div className="pt-2 text-xs text-gray-400">Modifiers: {MODIFIERS}</div>
-
-      {/* Show the current imageUrl */}
-      {/* TODO: Keep the other generated images, so the user can play with different attempts. */}
-      {imageUrl && (
-        <>
-          <img src={imageUrl} alt="Image" />
-          <Row className="gap-2">
-            <Button
-              disabled={isDreaming}
-              onClick={() => {
-                if (editor) {
-                  editor.chain().insertContent(imageCode).run()
-                  setInput('')
-                  setOpen(false)
-                }
-              }}
-            >
-              Add image
-            </Button>
-            <Button
-              color="gray"
-              onClick={() => {
-                setInput('')
-                setOpen(false)
-              }}
-            >
-              Cancel
-            </Button>
-          </Row>
-        </>
-      )}
+      <div className="pt-2 text-xs text-gray-300">Modifiers: {MODIFIERS}</div>
     </Col>
   )
 }
