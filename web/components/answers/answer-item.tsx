@@ -101,7 +101,7 @@ export function AnswerItem(props: {
           ))}
         {showChoice ? (
           <div className="flex flex-col py-1">
-            <label className="cursor-pointer gap-3 px-1 py-2">
+            <Row className="cursor-pointer items-center gap-2 px-1 py-2">
               <span className="">Choose this answer</span>
               {showChoice === 'radio' && (
                 <input
@@ -128,7 +128,7 @@ export function AnswerItem(props: {
                   value={answer.id}
                 />
               )}
-            </label>
+            </Row>
             {showChoice === 'checkbox' && (
               <div className="ml-1">
                 {chosenProb && totalChosenProb
