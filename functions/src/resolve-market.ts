@@ -169,7 +169,7 @@ export const resolveMarket = async (
       resolutionTime,
       closeTime: newCloseTime,
       resolutionProbability,
-      resolutionProbs,
+      resolutions,
       collectedFees,
     }),
     subsidyPool: 0,

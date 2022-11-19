@@ -1,4 +1,4 @@
-import { mapValues, sumBy } from 'lodash'
+import { mapValues, sum, sumBy } from 'lodash'
 import { Bet } from './bet'
 import { getOutcomeProbability, getProbability } from './calculate'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
@@ -95,9 +95,19 @@ export const getMktFixedPayouts = (
     )
   })()
 
-  const payouts = bets.map(({ userId, outcome, shares }) => {
-    const p = outcomeProbs[outcome] ?? 0
-    return { userId, payout: p * shares }
+  const payouts = bets.map(({ userId, outcome, shares, sharesByOutcome }) => {
+    let payout: number
+    if (sharesByOutcome) {
+      payout = sum(
+        Object.values(
+          mapValues(sharesByOutcome, (s, o) => s * (outcomeProbs[o] ?? 0))
+        )
+      )
+    } else {
+      const p = outcomeProbs[outcome] ?? 0
+      payout = p * shares
+    }
+    return { userId, payout }
   })
 
   const liquidityPayouts = getLiquidityPoolProbPayouts(
