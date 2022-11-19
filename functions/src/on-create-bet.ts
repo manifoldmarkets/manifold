@@ -83,21 +83,9 @@ export const onCreateBet = functions
       await addUserToContractFollowers(contractId, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
-    await processReferralBonus(bettor, eventId)
+    await handleReferral(bettor, eventId)
     await updateBettingStreak(bettor, bet, contract, eventId)
   })
-
-const processReferralBonus = async (user: User, eventId: string) => {
-  if (user.lastBetTime || user.createdTime < Date.now() - DAY_MS) return
-
-  if (
-    user.referredByUserId ||
-    user.referredByContractId ||
-    user.referredByGroupId
-  ) {
-    await handleReferral(user, eventId)
-  }
-}
 
 const updateBettingStreak = async (
   user: User,
