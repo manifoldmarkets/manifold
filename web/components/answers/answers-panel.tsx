@@ -210,7 +210,7 @@ function OpenAnswer(props: {
     undefined
   )
   const colorWidth = 100 * Math.max(prob, 0.01)
-  const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
+  const isDpm = contract.mechanism === 'dpm-2'
 
   return (
     <Col className="my-1 px-2">
@@ -252,7 +252,7 @@ function OpenAnswer(props: {
           <Row className="gap-2">
             <div className="my-auto text-xl">{probPercent}</div>
             {tradingAllowed(contract) &&
-              (isFreeResponse ? (
+              (isDpm ? (
                 <Button
                   size="2xs"
                   color="gray-outline"
