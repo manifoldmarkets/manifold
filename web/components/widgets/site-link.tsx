@@ -8,7 +8,7 @@ export const linkClass =
 export const SiteLink = (props: {
   href: string | undefined
   children?: ReactNode
-  onClick?: () => void
+  onClick?: (e: any) => void
   className?: string
 }) => {
   const { href, children, onClick, className } = props
@@ -20,7 +20,6 @@ export const SiteLink = (props: {
       href={href}
       className={clsx(linkClass, className)}
       target={href.startsWith('http') ? '_blank' : undefined}
-      // onClick={onClick ? (e) => (e.stopPropagation(), onClick()) : undefined}
       onClick={onClick}
     >
       {children}

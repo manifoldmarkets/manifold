@@ -848,7 +848,8 @@ function NotificationFrame(props: {
         <SiteLink
           href={getSourceUrl(notification)}
           className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
-          onClick={() =>
+          onClick={(e) => {
+            e.stopPropagation()
             track('Notification Clicked', {
               type: 'notification item',
               sourceType,
@@ -860,7 +861,7 @@ function NotificationFrame(props: {
               sourceUserUsername,
               sourceText,
             })
-          }
+          }}
         />
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <Avatar
