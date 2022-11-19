@@ -210,6 +210,7 @@ function OpenAnswer(props: {
     undefined
   )
   const colorWidth = 100 * Math.max(prob, 0.01)
+  const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
   return (
     <Col className="my-1 px-2">
@@ -250,26 +251,36 @@ function OpenAnswer(props: {
           </Row>
           <Row className="gap-2">
             <div className="my-auto text-xl">{probPercent}</div>
-            {tradingAllowed(contract) && (
-              <Row className="gap-2">
+            {tradingAllowed(contract) &&
+              (isFreeResponse ? (
                 <Button
                   size="2xs"
-                  color="green"
+                  color="gray-outline"
                   onClick={() => setBetMode('buy')}
                   className="my-auto"
                 >
-                  YES
+                  Buy
                 </Button>
-                <Button
-                  size="2xs"
-                  color="red"
-                  onClick={() => setBetMode('short-sell')}
-                  className="my-auto"
-                >
-                  NO
-                </Button>
-              </Row>
-            )}
+              ) : (
+                <Row className="gap-2">
+                  <Button
+                    size="2xs"
+                    color="green"
+                    onClick={() => setBetMode('buy')}
+                    className="my-auto"
+                  >
+                    YES
+                  </Button>
+                  <Button
+                    size="2xs"
+                    color="red"
+                    onClick={() => setBetMode('short-sell')}
+                    className="my-auto"
+                  >
+                    NO
+                  </Button>
+                </Row>
+              ))}
             {
               <button
                 className="p-1"
