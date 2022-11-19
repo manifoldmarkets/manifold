@@ -1,6 +1,7 @@
 import { mapValues, minBy, sumBy } from 'lodash'
 import { binarySearch } from './util/algos'
 
+// TODO: Remove min pool shares. Switch to throwing an error if k invariant is violated.
 const MIN_POOL_SHARES = 1e-20
 
 export function getProb(pool: { [outcome: string]: number }, outcome: string) {
@@ -122,7 +123,7 @@ export function test() {
   console.log('START')
   console.log('pool', pool, 'k', getK(pool), 'probs', poolToProbs(pool))
 
-  const { newPool: poolAfterShortSell, shares } = buy(pool, 'C', 10000000)
+  const { newPool: poolAfterShortSell, shares } = buy(pool, 'C', 100000000)
   console.log(
     'after buy',
     shares,
@@ -132,4 +133,5 @@ export function test() {
     poolToProbs(poolAfterShortSell)
   )
   console.log('k', getK(poolAfterShortSell))
+  console.log('liquidity', getLiquidity(poolAfterShortSell))
 }
