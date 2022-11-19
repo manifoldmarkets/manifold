@@ -8,7 +8,7 @@ export type User = {
 
   name: string
   username: string
-  avatarUrl?: string
+  avatarUrl: string
 
   // For their user page
   bio?: string

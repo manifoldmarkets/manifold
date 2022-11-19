@@ -83,7 +83,7 @@ export const onCreateBet = functions
       await addUserToContractFollowers(contractId, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
-    await processReferralBonus(bettor, eventId)
+    await handleReferral(bettor, eventId)
     await updateBettingStreak(bettor, bet, contract, eventId)
   })
 
