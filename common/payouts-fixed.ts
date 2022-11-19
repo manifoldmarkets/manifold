@@ -72,7 +72,7 @@ export const getMktFixedPayouts = (
   contract: CPMMContract | CPMM2Contract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
-  resolutions?: {
+  resolutionProbs?: {
     [outcome: string]: number
   },
   resolutionProbability?: number
@@ -89,7 +89,7 @@ export const getMktFixedPayouts = (
       return { YES: p, NO: 1 - p }
     }
 
-    if (resolutions) return resolutions
+    if (resolutionProbs) return resolutionProbs
     return mapValues(contract.pool, (_, o) =>
       getOutcomeProbability(contract, o)
     )

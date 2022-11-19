@@ -52,10 +52,11 @@ function calculateFixedMktPayout(
   }
 
   const { resolutions, pool } = contract
+  const resolutionsSum = resolutions ? sum(Object.values(resolutions)) : 100
 
   let p: number
   if (resolutions) {
-    p = resolutions[outcome] ?? 0
+    p = (resolutions[outcome] ?? 0) / resolutionsSum
   } else {
     p = getProb(contract.pool, outcome)
   }
@@ -64,7 +65,9 @@ function calculateFixedMktPayout(
     return sum(
       Object.values(
         mapValues(sharesByOutcome, (s, o) => {
-          const p = resolutions ? resolutions[o] ?? 0 : getProb(pool, o)
+          const p = resolutions
+            ? (resolutions[o] ?? 0) / resolutionsSum
+            : getProb(pool, o)
           return s * p
         })
       )
