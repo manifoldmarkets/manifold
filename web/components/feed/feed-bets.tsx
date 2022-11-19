@@ -55,10 +55,11 @@ export function BetStatusText(props: {
   className?: string
 }) {
   const { bet, contract, hideUser, className } = props
-  const { outcomeType } = contract
+  const { outcomeType, mechanism } = contract
   const self = useUser()
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
-  const { amount, outcome, createdTime, challengeSlug } = bet
+  const isCPMM2 = mechanism === 'cpmm-2'
+  const { amount, outcome, createdTime, challengeSlug, shares } = bet
   const [challenge, setChallenge] = React.useState<Challenge>()
   useEffect(() => {
     if (challengeSlug) {
@@ -69,6 +70,7 @@ export function BetStatusText(props: {
   }, [challengeSlug, contract.id])
 
   const bought = amount >= 0 ? 'bought' : 'sold'
+  const isShortSell = isCPMM2 && amount > 0 && shares === 0
   const money = formatMoney(Math.abs(amount))
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined
@@ -118,7 +120,7 @@ export function BetStatusText(props: {
         </>
       ) : (
         <>
-          {bought} {money}{' '}
+          {bought} {money} {isCPMM2 && (isShortSell ? 'NO of ' : 'YES of')}{' '}
           <OutcomeLabel
             outcome={outcome}
             value={(bet as any).value}

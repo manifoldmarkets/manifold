@@ -540,6 +540,8 @@ function BetRow(props: {
   const isClosed = closeTime && Date.now() > closeTime
 
   const isCPMM = mechanism === 'cpmm-1'
+  const isCPMM2 = mechanism === 'cpmm-2'
+  const isShortSell = isCPMM2 && bet.amount > 0 && bet.shares === 0
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isDPM = mechanism === 'dpm-2'
@@ -582,6 +584,11 @@ function BetRow(props: {
       ? ''
       : ` / ${formatMoney(bet.orderAmount)}`
 
+  const sharesOrShortSellShares =
+    isShortSell && bet.sharesByOutcome
+      ? -Math.max(...Object.values(bet.sharesByOutcome))
+      : Math.abs(shares)
+
   return (
     <tr>
       <td className="text-gray-700">
@@ -595,6 +602,7 @@ function BetRow(props: {
       </td>
       {isCPMM && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       <td>
+        {isCPMM2 && (isShortSell ? 'NO ' : 'YES ')}
         {bet.isAnte ? (
           'ANTE'
         ) : (
@@ -614,7 +622,7 @@ function BetRow(props: {
       </td>
       {isDPM && !isNumeric && <td>{saleDisplay}</td>}
       {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
-      <td>{formatWithCommas(Math.abs(shares))}</td>
+      <td>{formatWithCommas(sharesOrShortSellShares)}</td>
       {!isPseudoNumeric && (
         <td>
           {outcomeType === 'FREE_RESPONSE' || hadPoolMatch ? (
