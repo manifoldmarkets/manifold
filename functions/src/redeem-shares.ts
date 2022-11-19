@@ -10,8 +10,8 @@ import {
 
 import { User } from '../../common/user'
 import { floatingEqual } from '../../common/util/math'
-import { poolToProbs } from 'common/calculate-cpmm-multi'
-import { CPMM2Contract, CPMMContract } from 'common/contract'
+import { poolToProbs } from '../../common/calculate-cpmm-multi'
+import { CPMM2Contract, CPMMContract } from '../../common/contract'
 
 export const redeemShares = async (
   userId: string,
