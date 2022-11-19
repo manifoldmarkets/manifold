@@ -24,6 +24,7 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getBinaryProb } from 'common/contract-details'
+import { getLiquidity } from 'common/calculate-cpmm-multi'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -51,6 +52,8 @@ export function contractUrl(contract: Contract) {
 export function contractPool(contract: Contract) {
   return contract.mechanism === 'cpmm-1'
     ? formatMoney(contract.totalLiquidity)
+    : contract.mechanism === 'cpmm-2'
+    ? formatMoney(getLiquidity(contract.pool))
     : contract.mechanism === 'dpm-2'
     ? formatMoney(sum(Object.values(contract.pool)))
     : 'Empty pool'

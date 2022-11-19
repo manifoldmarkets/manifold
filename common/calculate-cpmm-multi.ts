@@ -20,6 +20,10 @@ const getK = (pool: { [outcome: string]: number }) => {
   return sumBy(values, Math.log)
 }
 
+export const getLiquidity = (pool: { [outcome: string]: number }) => {
+  return Math.exp(getK(pool) / Object.keys(pool).length)
+}
+
 export function buy(
   pool: {
     [outcome: string]: number
