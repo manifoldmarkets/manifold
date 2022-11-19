@@ -62,17 +62,17 @@ export function ContractTabs(props: {
   const commentTitle =
     comments.length === 0 ? 'Comments' : `${comments.length} Comments`
 
-  const nonZeroBets = bets.filter((bet) => bet.amount !== 0)
-  const betsTitle =
-    nonZeroBets.length === 0 ? 'Trades' : `${nonZeroBets.length} Trades`
+  const betsTitle = bets.length === 0 ? 'Trades' : `${bets.length} Trades`
 
-  const nonZeroUserBets = userBets.filter((bet) => bet.amount !== 0)
+  const visibleUserBets = userBets.filter(
+    (bet) => bet.amount !== 0 && !bet.isRedemption
+  )
   const yourBetsTitle =
-    nonZeroUserBets.length === 0
+    visibleUserBets.length === 0
       ? 'Trades by you'
-      : nonZeroUserBets.length === 1
+      : visibleUserBets.length === 1
       ? '1 Trade by you'
-      : `${nonZeroUserBets.length} Trades by you`
+      : `${visibleUserBets.length} Trades by you`
 
   return (
     <ControlledTabs
