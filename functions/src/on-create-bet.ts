@@ -87,18 +87,6 @@ export const onCreateBet = functions
     await updateBettingStreak(bettor, bet, contract, eventId)
   })
 
-const _processReferralBonus = async (user: User, eventId: string) => {
-  if (user.lastBetTime || user.createdTime < Date.now() - DAY_MS) return
-
-  if (
-    user.referredByUserId ||
-    user.referredByContractId ||
-    user.referredByGroupId
-  ) {
-    await handleReferral(user, eventId)
-  }
-}
-
 const updateBettingStreak = async (
   user: User,
   bet: Bet,
