@@ -1,6 +1,8 @@
 import { mapValues, minBy, sumBy } from 'lodash'
 import { binarySearch } from './util/algos'
 
+const MIN_POOL_SHARES = 1e-20
+
 export function getProb(pool: { [outcome: string]: number }, outcome: string) {
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
@@ -36,7 +38,9 @@ export function buy(
   const kMissingOutcome = getK(tempPool)
   const shares = maxShares - Math.exp(k - kMissingOutcome)
 
-  tempPool[outcome] = maxShares - shares
+  const newShares = maxShares - shares
+  tempPool[outcome] = Math.max(MIN_POOL_SHARES, newShares)
+
   const newPool = tempPool
 
   return { newPool, shares }
@@ -56,12 +60,16 @@ export function sell(
   const poolWithShares = { ...pool, [outcome]: pool[outcome] + shares }
 
   const saleAmount = binarySearch(0, shares, (saleAmount) => {
-    const poolAfterSale = mapValues(poolWithShares, (s) => s - saleAmount)
+    const poolAfterSale = mapValues(poolWithShares, (s) =>
+      Math.max(MIN_POOL_SHARES, s - saleAmount)
+    )
     const kAfterSale = getK(poolAfterSale)
     return k - kAfterSale
   })
 
-  const newPool = mapValues(poolWithShares, (s) => s - saleAmount)
+  const newPool = mapValues(poolWithShares, (s) =>
+    Math.max(MIN_POOL_SHARES, s - saleAmount)
+  )
 
   return { newPool, saleAmount }
 }
@@ -86,14 +94,14 @@ export function shortSell(
 
   const shares = binarySearch(amount, maxShares, (shares) => {
     const poolAfterPurchase = mapValues(poolWithAmount, (s, o) =>
-      o === outcome ? s : s - shares
+      o === outcome ? s : Math.max(MIN_POOL_SHARES, s - shares)
     )
     const kAfterSale = getK(poolAfterPurchase)
     return k - kAfterSale
   })
 
   const newPool = mapValues(poolWithAmount, (s, o) =>
-    o === outcome ? s : s - shares
+    o === outcome ? s : Math.max(MIN_POOL_SHARES, s - shares)
   )
   const gainedShares = mapValues(newPool, (s, o) => poolWithAmount[o] - s)
 
@@ -110,15 +118,13 @@ export function test() {
   console.log('START')
   console.log('pool', pool, 'k', getK(pool), 'probs', poolToProbs(pool))
 
-  const { newPool: poolAfterShortSell, gainedShares } = shortSell(
-    pool,
-    'C',
-    100
-  )
+  const { newPool: poolAfterShortSell, shares } = buy(pool, 'C', 10000000)
   console.log(
-    'after short sell',
-    gainedShares,
+    'after buy',
+    shares,
+    'pool',
     poolAfterShortSell,
+    'probs',
     poolToProbs(poolAfterShortSell)
   )
   console.log('k', getK(poolAfterShortSell))
