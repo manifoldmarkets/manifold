@@ -98,7 +98,9 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
       ? bets
       : newContracts ?? [],
     (i) => i.createdTime
-  ).reverse()
+  )
+    .reverse()
+    .filter((i) => i.createdTime < Date.now())
 
   const contracts = filterDefined(
     useContracts([
