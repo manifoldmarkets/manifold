@@ -77,8 +77,10 @@ export const getRedemptionBets = (
     probBefore: prob,
     probAfter: prob,
     createdTime,
-    isRedemption: true,
     fees: noFees,
+    isAnte: false,
+    isRedemption: true,
+    isChallenge: false,
   }
   const noBet: CandidateBet = {
     contractId: contractId,
@@ -89,8 +91,10 @@ export const getRedemptionBets = (
     probBefore: prob,
     probAfter: prob,
     createdTime,
-    isRedemption: true,
     fees: noFees,
+    isAnte: false,
+    isRedemption: true,
+    isChallenge: false,
   }
   return [yesBet, noBet]
 }
@@ -115,7 +119,9 @@ export const getRedemptionBetMulti = (
     probBefore: probsByOutcome[firstOutcome],
     probAfter: probsByOutcome[firstOutcome],
     createdTime,
+    isAnte: false,
     isRedemption: true,
+    isChallenge: false,
     fees: noFees,
   }
   return redemptionBet
