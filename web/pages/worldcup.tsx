@@ -13,36 +13,30 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 const group_winners = [
   // groups A through H
-  'which-country-will-win-group-a-of-t-506d1ab4e4ec',
-  'which-country-will-win-group-b-of-t',
-  'which-country-will-win-group-c-of-t',
-  'which-country-will-win-group-d-of-t',
-  'httpsenwikipediaorgwiki2022fifaworl',
-  'which-country-will-win-group-f-of-t',
-  'which-country-will-win-group-g-of-t',
-  'which-country-will-win-group-h-of-t',
+  'which-team-will-win-group-a',
+  'which-team-will-win-group-b',
+  'which-team-will-win-group-c',
+  'which-team-will-win-group-d',
+  'which-team-will-win-group-e',
+  'which-team-will-win-group-f',
+  'which-team-will-win-group-g',
+  'which-team-will-win-group-h',
 ]
 
 const group_runnerups = [
-  'which-country-will-win-group-a-of-t-506d1ab4e4ec',
-  'which-country-will-win-group-b-of-t',
-  'which-country-will-win-group-c-of-t',
-  'which-country-will-win-group-d-of-t',
-  'httpsenwikipediaorgwiki2022fifaworl',
-  'which-country-will-win-group-f-of-t',
-  'which-country-will-win-group-g-of-t',
-  'which-country-will-win-group-h-of-t',
+  'which-team-will-finish-2nd-in-group',
+  'which-team-will-finish-2nd-in-group-4dfb5e86a538',
+  'which-team-will-finish-2nd-in-group-9a6a9ce8c548',
+  'which-team-will-finish-2nd-in-group-ca47ae80f852',
+  'which-team-will-finish-2nd-in-group-f244b90960d0',
+  'which-team-will-finish-2nd-in-group-17b7655095d7',
+  'which-team-will-finish-2nd-in-group-98fd8698c4d3',
+  'which-team-will-finish-2nd-in-group-87644ea5dc4b',
 ]
 
 const general_markets = [
   'which-country-will-win-the-2022-fif',
   'will-a-team-score-7-or-more-goals-i',
-  'will-luis-suarez-bite-another-playe',
-  'will-a-nation-outside-of-europe-or',
-  'will-iran-be-removed-from-the-world',
-  'what-countries-will-make-it-to-the-b27d5c3e5461',
-  'will-any-player-in-the-2022-fifa-wo',
-  'will-the-total-number-of-goals-scor',
 ] as string[]
 
 const round_of_16 = [] as string[]
