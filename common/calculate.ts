@@ -82,9 +82,12 @@ export function calculateSharesBought(
 }
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
-  return contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-2'
+  const { mechanism } = contract
+  return mechanism === 'cpmm-1' || mechanism === 'cpmm-2'
     ? calculateFixedPayout(contract, bet, outcome)
-    : calculateDpmPayout(contract, bet, outcome)
+    : mechanism === 'dpm-2'
+    ? calculateDpmPayout(contract, bet, outcome)
+    : 0
 }
 
 export function resolvedPayout(contract: Contract, bet: Bet) {
@@ -93,7 +96,9 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
 
   return mechanism === 'cpmm-1' || mechanism === 'cpmm-2'
     ? calculateFixedPayout(contract, bet, resolution)
-    : calculateDpmPayout(contract, bet, resolution)
+    : mechanism === 'dpm-2'
+    ? calculateDpmPayout(contract, bet, resolution)
+    : 0
 }
 
 // Note: Works for cpmm-1 and cpmm-2.
