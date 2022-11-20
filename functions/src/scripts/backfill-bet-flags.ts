@@ -12,23 +12,25 @@ async function updateAllBets() {
   log(`Loading bets...`)
   const writer = firestore.bulkWriter({ throttling: false })
   const flags = ['isAnte', 'isRedemption', 'isChallenge']
-  const betsQuery = firestore.collectionGroup('bets').select(...flags)
-  const betSnaps = await betsQuery.get()
-  log(`Loaded ${betSnaps.size} bets.`)
   let updated = 0
-  for (const doc of betSnaps.docs) {
-    let needsUpdate = false
-    const update: { [k: string]: boolean } = {}
-    for (const flag of flags) {
-      const currVal = doc.get(flag) as boolean | undefined
-      if (currVal == null) {
-        needsUpdate = true
-        update[flag] = false
+  const betsPartitions = firestore.collectionGroup('bets').getPartitions(50)
+  for await (const q of betsPartitions) {
+    const betSnaps = await q.toQuery().get()
+    log(`Loaded partition with ${betSnaps.size} bets.`)
+    for (const doc of betSnaps.docs) {
+      let needsUpdate = false
+      const update: { [k: string]: boolean } = {}
+      for (const flag of flags) {
+        const currVal = doc.get(flag) as boolean | undefined
+        if (currVal == null) {
+          needsUpdate = true
+          update[flag] = false
+        }
       }
-    }
-    if (needsUpdate) {
-      updated++
-      writer.update(doc.ref, update)
+      if (needsUpdate) {
+        updated++
+        writer.update(doc.ref, update)
+      }
     }
   }
   log('Committing writes...')
