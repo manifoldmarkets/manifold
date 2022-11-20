@@ -1,22 +1,18 @@
+import Masonry from 'react-masonry-css'
+
 import { Contract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { Row } from 'web/components/layout/row'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Spacer } from 'web/components/layout/spacer'
-import { Card } from 'web/components/widgets/card'
 import { Tabs } from 'web/components/layout/tabs'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
-import { Button } from 'web/components/buttons/button'
-import { useState } from 'react'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import Masonry from 'react-masonry-css'
 
 const group_winners = [
+  // groups A through H
   'which-country-will-win-group-a-of-t-506d1ab4e4ec',
   'which-country-will-win-group-b-of-t',
   'which-country-will-win-group-c-of-t',
@@ -38,11 +34,6 @@ const group_runnerups = [
   'which-country-will-win-group-h-of-t',
 ]
 
-const round_of_16 = [] as string[]
-const quarter_finals = [] as string[]
-const semifinals = [] as string[]
-const final = [] as string[]
-const daily_markets = ['will-either-brazil-or-argentina-win'] as string[]
 const general_markets = [
   'which-country-will-win-the-2022-fif',
   'will-a-team-score-7-or-more-goals-i',
@@ -53,6 +44,12 @@ const general_markets = [
   'will-any-player-in-the-2022-fifa-wo',
   'will-the-total-number-of-goals-scor',
 ] as string[]
+
+const round_of_16 = [] as string[]
+const quarter_finals = [] as string[]
+const semifinals = [] as string[]
+const final = [] as string[]
+const daily_markets = ['will-either-brazil-or-argentina-win'] as string[]
 
 export async function getStaticProps() {
   const groupWinners = await getContractsFromSlugs(group_winners)
@@ -98,7 +95,7 @@ const getContractsFromSlugs = async (slugs: string[]) => {
   return contracts ?? []
 }
 
-const App = (props: {
+export default function WorldCup(props: {
   groupWinners: Contract[]
   groupRunnerups: Contract[]
   roundOf16: Contract[]
@@ -107,25 +104,20 @@ const App = (props: {
   finals: Contract[]
   dailyMarkets: Contract[]
   generalMarkets: Contract[]
-}) => {
+}) {
   const {
     groupWinners,
     groupRunnerups,
-    dailyMarkets /*roundOf16, quarterFinals, semiFinals, finals*/,
+    // dailyMarkets,
     generalMarkets,
   } = props
-
-  const [hideRoundOf16, setHideRoundOf16] = useState(true)
-  const [hideQuarterFinals, setHideQuarterFinals] = useState(true)
-  const [hideSemiFinals, setHideSemiFinals] = useState(true)
-  const [hideFinals, setHideFinals] = useState(true)
 
   const isMobile = useIsMobile()
 
   const groupWinnerTab = (
     <>
       <Spacer h={4} />
-      <div className="row-span-full grid grid-rows-1 gap-1 sm:grid-cols-2	">
+      <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
         {groupWinners.map((group, index) => (
           <GroupComponent
             group={groupWinners[index]}
@@ -139,7 +131,7 @@ const App = (props: {
   const groupRunnerupTab = (
     <>
       <Spacer h={4} />
-      <div className="row-span-full grid grid-rows-1 gap-1 sm:grid-cols-2	">
+      <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
         {groupRunnerups.map((group, index) => (
           <GroupComponent
             group={groupRunnerups[index]}
@@ -154,23 +146,27 @@ const App = (props: {
     <Page className="">
       <div className={'relative p-1 px-4 pt-0'}>
         <Col className="mx-auto max-w-7xl">
-          <SEO title="World Cup 2022 " description="Wc 2022." image="" />
+          <SEO
+            title="World Cup 2022"
+            description="Manifold's 2022 FIFA World Cup forecast. Place your bets and win up to $500 USD in our tournament."
+            image="" // TODO: Add image for preview
+          />
 
-          <div className="mb-2  text-5xl text-indigo-700">
-            FIFA World Cup 2022 Tournament
-          </div>
+          <div className="mb-2 text-5xl text-indigo-700">World Cup 2022</div>
 
-          <div className="mb-2 text-base text-gray-500">
-            Manifold's World Cup forecast. Bet on results and{' '}
-            <SiteLink href="/group/us-2022-midterms/about">
-              win up to $1,000 USD in our tournament
+          <div className="my-4 text-base text-gray-500">
+            Manifold's 2022 FIFA World Cup forecast. Place your bets and{' '}
+            <SiteLink href="#rules">
+              win up to $500 USD in our tournament
             </SiteLink>
-            . Only the markets shown in this page will be considered for the
-            tournament.
+            .
           </div>
-          <Divider />
-          <Spacer h={8} />
 
+          <Spacer h={4} />
+
+          {/* Might want to put an image or something here. */}
+
+          {/* 
           <div className="mb-2  text-3xl text-indigo-500">
             Market of the Day
           </div>
@@ -194,10 +190,11 @@ const App = (props: {
           </div>
 
           <Spacer h={4} />
-          <Divider />
+          <Divider /> 
 
-          <Spacer h={8} />
-          <div className="mb-2  text-3xl text-indigo-500">Group Stage </div>
+          <Spacer h={8} />*/}
+
+          <div className="mb-2 text-3xl text-indigo-700">Group Stage </div>
           {isMobile && (
             <div className="mb-2  text-xl text-indigo-400">
               Pick the winner and runner-up of each group
@@ -221,177 +218,80 @@ const App = (props: {
             ]}
           />
 
-          <Spacer h={4} />
-          <div className="mb-2  text-3xl text-indigo-500">Round of 16 </div>
-          {hideRoundOf16 ? (
-            <div className="flex-start flex">
-              <Button
-                className="text-xl"
-                color="gray-white"
-                onClick={() => setHideRoundOf16(false)}
-              >
-                <ChevronDownIcon className="h-5 w-5" />
-                Show Round of 16
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mb-2  text-xl text-indigo-400">
-                Pick the winner of each match{' '}
-              </div>
+          <Spacer h={16} />
 
-              <Spacer h={4} />
-
-              <div className="row-span-full grid  grid-rows-1 gap-1 sm:grid-cols-2	">
-                <MatchComponent match={undefined} title="TBD - Match 49" />
-                <MatchComponent match={undefined} title="TBD - Match 50" />
-                <MatchComponent match={undefined} title="TBD - Match 51" />
-                <MatchComponent match={undefined} title="TBD - Match 52" />
-                <MatchComponent match={undefined} title="TBD - Match 53" />
-                <MatchComponent match={undefined} title="TBD - Match 54" />
-                <MatchComponent match={undefined} title="TBD - Match 55" />
-                <MatchComponent match={undefined} title="TBD - Match 56" />
-              </div>
-              <Row className="mt-4 ">
-                <Button
-                  color="gray-white"
-                  onClick={() => setHideRoundOf16(true)}
-                >
-                  <ChevronUpIcon className="h-5 w-5" />
-                  Hide Round of 16
-                </Button>
-              </Row>
-            </>
-          )}
-
-          <Spacer h={4} />
-          <div className="mb-2  text-3xl text-indigo-500">Quarter-Finals </div>
-          {hideQuarterFinals ? (
-            <div className="flex-start flex">
-              <Button
-                className="text-xl"
-                color="gray-white"
-                onClick={() => setHideQuarterFinals(false)}
-              >
-                <ChevronDownIcon className="h-5 w-5" />
-                Show Quarter-Finals
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mb-2  text-xl text-indigo-400">
-                Pick the winner of each match{' '}
-              </div>
-
-              <Spacer h={4} />
-
-              <div className="row-span-full grid  grid-rows-1 gap-1 sm:grid-cols-2	">
-                <MatchComponent match={undefined} title="TBD - Match 57" />
-                <MatchComponent match={undefined} title="TBD - Match 58" />
-                <MatchComponent match={undefined} title="TBD - Match 59" />
-                <MatchComponent match={undefined} title="TBD - Match 60" />
-              </div>
-              <Row className="mt-4 ">
-                <Button
-                  color="gray-white"
-                  onClick={() => setHideQuarterFinals(true)}
-                >
-                  <ChevronUpIcon className="h-5 w-5" />
-                  Hide Quarter-Finals
-                </Button>
-              </Row>
-            </>
-          )}
-
-          <Spacer h={4} />
-          <div className="mb-2  text-3xl text-indigo-500">Semi-Finals </div>
-          {hideSemiFinals ? (
-            <div className="flex-start flex">
-              <Button
-                className="text-xl"
-                color="gray-white"
-                onClick={() => setHideFinals(false)}
-              >
-                <ChevronDownIcon className="h-5 w-5" />
-                Show Semi-Finals
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mb-2  text-xl text-indigo-400">
-                Pick the winner of each match{' '}
-              </div>
-
-              <Spacer h={4} />
-
-              <div className="row-span-full grid  grid-rows-1 gap-1 sm:grid-cols-2	">
-                <MatchComponent match={undefined} title="TBD - Match 61" />
-                <MatchComponent match={undefined} title="TBD - Match 62" />
-              </div>
-              <Row className="mt-4 ">
-                <Button
-                  color="gray-white"
-                  onClick={() => setHideSemiFinals(true)}
-                >
-                  <ChevronUpIcon className="h-5 w-5" />
-                  Hide Semi-Finals
-                </Button>
-              </Row>
-            </>
-          )}
-
-          <Spacer h={4} />
-          <div className="mb-2  text-3xl text-indigo-500">Final</div>
-          {hideFinals ? (
-            <div className="flex-start flex">
-              <Button
-                className="text-xl"
-                color="gray-white"
-                onClick={() => setHideFinals(false)}
-              >
-                <ChevronDownIcon className="h-5 w-5" />
-                Show Final
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mb-2  text-xl text-indigo-400">
-                Pick the winner of the final
-              </div>
-
-              <Spacer h={4} />
-
-              <Row className="mb-4 min-h-[100px] gap-2">
-                <MatchComponent match={undefined} title="TBD - Match 63" />
-              </Row>
-              <Row className="mt-4 ">
-                <Button color="gray-white" onClick={() => setHideFinals(true)}>
-                  <ChevronUpIcon className="h-5 w-5" />
-                  Hide Final
-                </Button>
-              </Row>
-            </>
-          )}
-          <Spacer h={4} />
-
-          <Divider />
-          <Spacer h={8} />
-
-          <div className="mb-2  text-5xl text-indigo-700">General Markets</div>
+          <div className="mb-2 text-3xl text-indigo-700">General markets</div>
           <Spacer h={4} />
           <Masonry
             breakpointCols={{ default: 2, 768: 1 }}
             className="-ml-4 flex w-auto"
             columnClassName="pl-4 bg-clip-padding"
           >
-            {generalMarkets.map((contract) => (
+            {generalMarkets.map((contract, i) => (
               <ContractCard
                 key={contract.slug}
                 contract={contract}
-                hideDetails={true}
+                hideDetails={false}
+                showImage={true}
+                className="mb-4"
               />
             ))}
           </Masonry>
+
+          <Spacer h={8} />
+
+          <div className="mb-2 text-3xl text-indigo-700" id="rules">
+            Tournament rules
+          </div>
+          <Spacer h={4} />
+
+          <div className="mb-4 text-base text-gray-700">
+            Manifold is sponsoring a tournament on the 2022 World Cup with a{' '}
+            <strong>$500 USD prize</strong> {''}
+            pool. Show off your soccer/football knowledge, and win real USD if
+            you're correct.
+          </div>
+
+          <ol className="list-decimal space-y-4 px-4 text-base text-gray-700">
+            <li>
+              <p>
+                USD prizes will be awarded to the top 5 traders on the
+                leaderboard in proportion to profit earned in this group
+                (excluding members of the Manifold team).
+              </p>
+            </li>
+            <li>
+              <p>Only 1 account per person can trade in this market.</p>
+            </li>
+            <li>
+              <p>
+                Don't collude with other people to inflate your or their
+                profits.
+              </p>
+              <ul>
+                <li>
+                  <p>
+                    E.g. don't transfer money to your friends account via
+                    betting a market artificially high/low and having them
+                    correct it.
+                  </p>
+                </li>
+              </ul>
+            </li>
+            <li>
+              <p>
+                All forms of trading are allowed (including API, limit orders).
+              </p>
+            </li>
+            <li>
+              <p>
+                Manifold reserves the right to modify rules, exclude
+                participants, and other changes necessary to abide by the spirit
+                of this tournament.
+              </p>
+            </li>
+          </ol>
+          <Spacer h={8} />
         </Col>
       </div>
     </Page>
@@ -416,39 +316,3 @@ function GroupComponent(props: { group: Contract; title: string }) {
     </Col>
   )
 }
-
-function MatchComponent(props: {
-  match: Contract | undefined
-  title?: string
-}) {
-  const { match, title } = props
-
-  if (!match) {
-    return (
-      <Col className="relative min-h-[100px] w-[100%]">
-        <div className="text-black-500 absolute top-0 left-0 right-0 bottom-0 text-xl">
-          <Card className="h-full w-full">
-            <div className="flex h-full items-center justify-center bg-gray-100">
-              <div className="text-xl text-gray-500">{title ?? 'TBD'}</div>
-            </div>
-          </Card>
-        </div>
-      </Col>
-    )
-  }
-  return (
-    <ContractCard
-      contract={match}
-      showImage={true}
-      noLinkAvatar={true}
-      hideGroupLink={true}
-      hideDetails={true}
-    />
-  )
-}
-
-function Divider() {
-  return <div className="mb-4 border-t-2 border-gray-300" />
-}
-
-export default App
