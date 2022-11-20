@@ -211,6 +211,7 @@ function OpenAnswer(props: {
   )
   const colorWidth = 100 * Math.max(prob, 0.01)
   const isDpm = contract.mechanism === 'dpm-2'
+  const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
   return (
     <Col className="my-1 px-2">
@@ -281,14 +282,14 @@ function OpenAnswer(props: {
                   </Button>
                 </Row>
               ))}
-            {
+            {isFreeResponse && (
               <button
                 className="p-1"
                 onClick={() => onAnswerCommentClick(answer)}
               >
                 <ChatIcon className="h-5 w-5 text-gray-400 transition-colors hover:text-gray-600" />
               </button>
-            }
+            )}
           </Row>
         </Row>
       </Col>
