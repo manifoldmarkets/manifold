@@ -25,7 +25,19 @@ const computeInvestmentValue = (
     if (!contract || contract.isResolved) return 0
     if (bet.sale || bet.isSold) return 0
 
-    const payout = calculatePayout(contract, bet, 'MKT')
+    let payout
+    try {
+      payout = calculatePayout(contract, bet, 'MKT')
+    } catch (e) {
+      console.log(
+        'contract',
+        contract.question,
+        contract.mechanism,
+        contract.id
+      )
+      console.error(e)
+      payout = 0
+    }
     const value = payout - (bet.loanAmount ?? 0)
     if (isNaN(value)) return 0
     return value
