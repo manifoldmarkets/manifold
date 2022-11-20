@@ -1,6 +1,12 @@
 import * as admin from 'firebase-admin'
 import fetch from 'node-fetch'
-import { FieldValue, Transaction } from 'firebase-admin/firestore'
+import {
+  CollectionGroup,
+  DocumentData,
+  FieldValue,
+  QueryDocumentSnapshot,
+  Transaction,
+} from 'firebase-admin/firestore'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 
 import { Contract } from '../../common/contract'
@@ -75,6 +81,25 @@ export const writeAsync = async (
     }
     await batch.commit()
   }
+}
+
+export const processPartitioned = async <T extends DocumentData, U>(
+  group: CollectionGroup<T>,
+  partitions: number,
+  fn: (ts: QueryDocumentSnapshot<T>[]) => Promise<U>
+) => {
+  const parts = group.getPartitions(partitions)
+  const results = []
+  let processed = 0
+  for await (const part of parts) {
+    const i = results.length
+    log(`[${i + 1}/${partitions}] Loading partition.`)
+    const ts = await part.toQuery().get()
+    processed += ts.size
+    log(`[${i + 1}/${partitions}] Loaded = ${ts.size}. Total = ${processed}.`)
+    results.push(await fn(ts.docs))
+  }
+  return results
 }
 
 export const tryOrLogError = async <T>(task: Promise<T>) => {

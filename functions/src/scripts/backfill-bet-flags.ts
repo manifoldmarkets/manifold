@@ -3,21 +3,18 @@
 
 import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
-import { log } from '../utils'
+import { log, processPartitioned } from '../utils'
 
 initAdmin()
 const firestore = admin.firestore()
 
 async function updateAllBets() {
-  log(`Loading bets...`)
   const writer = firestore.bulkWriter({ throttling: false })
   const flags = ['isAnte', 'isRedemption', 'isChallenge']
   let updated = 0
-  const betsPartitions = firestore.collectionGroup('bets').getPartitions(50)
-  for await (const q of betsPartitions) {
-    const betSnaps = await q.toQuery().get()
-    log(`Loaded partition with ${betSnaps.size} bets.`)
-    for (const doc of betSnaps.docs) {
+  const bets = firestore.collectionGroup('bets')
+  await processPartitioned(bets, 100, async (docs) => {
+    for (const doc of docs) {
       let needsUpdate = false
       const update: { [k: string]: boolean } = {}
       for (const flag of flags) {
@@ -32,7 +29,7 @@ async function updateAllBets() {
         writer.update(doc.ref, update)
       }
     }
-  }
+  })
   log('Committing writes...')
   await writer.close()
   return updated
