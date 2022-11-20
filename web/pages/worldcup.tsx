@@ -227,7 +227,7 @@ export default function WorldCup(props: {
             className="-ml-4 flex w-auto"
             columnClassName="pl-4 bg-clip-padding"
           >
-            {generalMarkets.map((contract, i) => (
+            {generalMarkets.map((contract) => (
               <ContractCard
                 key={contract.slug}
                 contract={contract}
