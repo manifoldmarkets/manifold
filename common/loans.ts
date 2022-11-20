@@ -3,9 +3,9 @@ import { Bet } from './bet'
 import { getContractBetMetrics } from './calculate'
 import {
   Contract,
+  CPMM2Contract,
   CPMMContract,
-  FreeResponseContract,
-  MultipleChoiceContract,
+  DPMContract,
 } from './contract'
 import { PortfolioMetrics } from './user'
 import { filterDefined } from './util/array'
@@ -45,13 +45,11 @@ const calculateLoanBetUpdates = (
   return contracts
     .map((c) => {
       const bets = betsByContractId[c.id]
-      if (c.mechanism === 'cpmm-1') {
-        return getBinaryContractLoanUpdate(c, bets) ?? []
-      } else if (
-        c.outcomeType === 'FREE_RESPONSE' ||
-        c.outcomeType === 'MULTIPLE_CHOICE'
-      )
-        return filterDefined(getFreeResponseContractLoanUpdate(c, bets))
+      if (c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-2') {
+        return getCpmmContractLoanUpdate(c, bets) ?? []
+      } 
+      else if (c.mechanism === 'dpm-2')
+        return filterDefined(getDpmContractLoanUpdate(c, bets))
       else {
         // Unsupported contract / mechanism for loans.
         return []
@@ -60,7 +58,7 @@ const calculateLoanBetUpdates = (
     .flat()
 }
 
-const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
+const getCpmmContractLoanUpdate = (contract: CPMMContract | CPMM2Contract, bets: Bet[]) => {
   const { invested } = getContractBetMetrics(contract, bets)
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
@@ -79,10 +77,7 @@ const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
   }
 }
 
-const getFreeResponseContractLoanUpdate = (
-  contract: FreeResponseContract | MultipleChoiceContract,
-  bets: Bet[]
-) => {
+const getDpmContractLoanUpdate = (contract: DPMContract, bets: Bet[]) => {
   const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
 
   return openBets.map((bet) => {

@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { FieldValue } from 'firebase-admin/firestore'
 import { JSONContent } from '@tiptap/core'
-import { uniq, zip } from 'lodash'
+import { uniq } from 'lodash'
 
 import {
   Contract,
@@ -10,10 +10,10 @@ import {
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
-  MultipleChoiceContract,
   NumericContract,
   OUTCOME_TYPES,
   VISIBILITIES,
+  CPMM2Contract,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
@@ -21,18 +21,17 @@ import { getContract } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
 import { FIXED_ANTE } from '../../common/economy'
 import {
+  getCpmm2InitialLiquidity,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
-  getMultipleChoiceAntes,
   getNumericAnte,
 } from '../../common/antes'
-import { Answer, getNoneAnswer } from '../../common/answer'
+import { getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
-import { Bet } from '../../common/bet'
 import { getCloseDate, getGroupForMarket } from './helpers/openai-utils'
 import { htmlToRichText } from '../../common/util/parse'
 import { marked } from 'marked'
@@ -294,30 +293,18 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
     await liquidityDoc.set(lp)
   } else if (outcomeType === 'MULTIPLE_CHOICE') {
-    const betCol = firestore.collection(`contracts/${contract.id}/bets`)
-    const betDocs = (answers ?? []).map(() => betCol.doc())
+    const liquidityDoc = firestore
+      .collection(`contracts/${contract.id}/liquidity`)
+      .doc()
 
-    const answerCol = firestore.collection(`contracts/${contract.id}/answers`)
-    const answerDocs = (answers ?? []).map((_, i) =>
-      answerCol.doc(i.toString())
-    )
-
-    const { bets, answerObjects } = getMultipleChoiceAntes(
-      user,
-      contract as MultipleChoiceContract,
-      answers ?? [],
-      betDocs.map((bd) => bd.id)
+    const lp = getCpmm2InitialLiquidity(
+      providerId,
+      contract as CPMM2Contract,
+      liquidityDoc.id,
+      ante
     )
 
-    await Promise.all(
-      zip(bets, betDocs).map(([bet, doc]) => doc?.create(bet as Bet))
-    )
-    await Promise.all(
-      zip(answerObjects, answerDocs).map(([answer, doc]) =>
-        doc?.create(answer as Answer)
-      )
-    )
-    await contractRef.update({ answers: answerObjects })
+    await liquidityDoc.set(lp)
   } else if (outcomeType === 'FREE_RESPONSE') {
     const noneAnswerDoc = firestore
       .collection(`contracts/${contract.id}/answers`)

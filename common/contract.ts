@@ -3,7 +3,7 @@ import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 
-export type AnyMechanism = DPM | CPMM
+export type AnyMechanism = DPM | CPMM | CPMM2
 export type AnyOutcomeType =
   | Binary
   | MultipleChoice
@@ -18,6 +18,7 @@ export type AnyContractType =
   | (DPM & FreeResponse)
   | (DPM & Numeric)
   | (DPM & MultipleChoice)
+  | (CPMM2 & MultipleChoice)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -75,15 +76,23 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   coverImageUrl?: string
 } & T
 
+export type DPMContract = Contract & DPM
+export type CPMMContract = Contract & CPMM
+export type CPMM2Contract = Contract & CPMM2
+
 export type BinaryContract = Contract & Binary
+export type DPMBinaryContract = BinaryContract & DPM
+export type CPMMBinaryContract = BinaryContract & CPMM
 export type PseudoNumericContract = Contract & PseudoNumeric
 export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
 export type MultipleChoiceContract = Contract & MultipleChoice
-export type DPMContract = Contract & DPM
-export type CPMMContract = Contract & CPMM
-export type DPMBinaryContract = BinaryContract & DPM
-export type CPMMBinaryContract = BinaryContract & CPMM
+export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
+export type CPMMMultipleChoiceContract = Contract & MultipleChoice & CPMM2
+
+export type BinaryOrPseudoNumericContract =
+  | CPMMBinaryContract
+  | PseudoNumericContract
 
 export type DPM = {
   mechanism: 'dpm-2'
@@ -92,6 +101,13 @@ export type DPM = {
   phantomShares?: { [outcome: string]: number }
   totalShares: { [outcome: string]: number }
   totalBets: { [outcome: string]: number }
+}
+
+// Simple constant product market maker for a variable number of outcomes.
+export type CPMM2 = {
+  mechanism: 'cpmm-2'
+  pool: { [outcome: string]: number }
+  subsidyPool: number // current value of subsidy pool in M$
 }
 
 export type CPMM = {

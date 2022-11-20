@@ -125,6 +125,13 @@ export function ContractInfoDialog(props: {
                           text={`Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins.`}
                         />
                       </>
+                    ) : mechanism === 'cpmm-2' ? (
+                      <>
+                        Fixed{' '}
+                        <InfoTooltip
+                          text={`Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen.`}
+                        />
+                      </>
                     ) : (
                       <>
                         Parimutuel{' '}
@@ -182,6 +189,8 @@ export function ContractInfoDialog(props: {
                         text={
                           mechanism === 'cpmm-1'
                             ? 'Probability change between a Ṁ50 bet on YES and NO'
+                            : mechanism === 'cpmm-2'
+                            ? 'Probability change between a Ṁ50 bet for and against each outcome'
                             : 'Probability change from a Ṁ100 bet'
                         }
                       />

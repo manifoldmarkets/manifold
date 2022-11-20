@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { mapValues, groupBy, sumBy, uniqBy } from 'lodash'
+import { mapValues, groupBy, sumBy, uniqBy, sum } from 'lodash'
 
 import {
   Contract,
@@ -120,6 +120,13 @@ export const resolveMarket = async (
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
 
+  const resolutionProbs = resolutions
+    ? (() => {
+        const total = sum(Object.values(resolutions))
+        return mapValues(resolutions, (p) => p / total)
+      })()
+    : undefined
+
   const resolutionTime = Date.now()
   const newCloseTime = closeTime
     ? Math.min(closeTime, resolutionTime)
@@ -149,7 +156,7 @@ export const resolveMarket = async (
     contract,
     bets,
     liquidities,
-    resolutions,
+    resolutionProbs,
     resolutionProbability
   )
 

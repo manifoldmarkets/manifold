@@ -1,7 +1,8 @@
+import { mapValues, sum, sumBy } from 'lodash'
 import { Bet } from './bet'
-import { getProbability } from './calculate'
+import { getOutcomeProbability, getProbability } from './calculate'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
-import { CPMMContract } from './contract'
+import { CPMM2Contract, CPMMContract } from './contract'
 import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
@@ -15,7 +16,7 @@ export const getFixedCancelPayouts = (
   }))
 
   const payouts = bets
-    .filter((b) => !b.isAnte && !b.isLiquidityProvision)
+    .filter((b) => !b.isAnte)
     .map((bet) => ({
       userId: bet.userId,
       payout: bet.amount,
@@ -28,7 +29,7 @@ export const getFixedCancelPayouts = (
 
 export const getStandardFixedPayouts = (
   outcome: string,
-  contract: CPMMContract,
+  contract: CPMMContract | CPMM2Contract,
   bets: Bet[],
   liquidities: LiquidityProvision[]
 ) => {
@@ -51,7 +52,7 @@ export const getStandardFixedPayouts = (
 }
 
 export const getLiquidityPoolPayouts = (
-  contract: CPMMContract,
+  contract: CPMMContract | CPMM2Contract,
   outcome: string,
   liquidities: LiquidityProvision[]
 ) => {
@@ -68,35 +69,66 @@ export const getLiquidityPoolPayouts = (
 }
 
 export const getMktFixedPayouts = (
-  contract: CPMMContract,
+  contract: CPMMContract | CPMM2Contract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
+  resolutionProbs?: {
+    [outcome: string]: number
+  },
   resolutionProbability?: number
 ) => {
-  const p =
-    resolutionProbability === undefined
-      ? getProbability(contract)
-      : resolutionProbability
+  const { collectedFees, outcomeType } = contract
+  const creatorPayout = collectedFees.creatorFee
 
-  const payouts = bets.map(({ userId, outcome, shares }) => {
-    const betP = outcome === 'YES' ? p : 1 - p
-    return { userId, payout: betP * shares }
+  const outcomeProbs = (() => {
+    if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
+      const p =
+        resolutionProbability === undefined
+          ? getProbability(contract)
+          : resolutionProbability
+      return { YES: p, NO: 1 - p }
+    }
+
+    if (resolutionProbs) return resolutionProbs
+    return mapValues(contract.pool, (_, o) =>
+      getOutcomeProbability(contract, o)
+    )
+  })()
+
+  const payouts = bets.map(({ userId, outcome, shares, sharesByOutcome }) => {
+    let payout: number
+    if (sharesByOutcome) {
+      payout = sum(
+        Object.values(
+          mapValues(sharesByOutcome, (s, o) => s * (outcomeProbs[o] ?? 0))
+        )
+      )
+    } else {
+      const p = outcomeProbs[outcome] ?? 0
+      payout = p * shares
+    }
+    return { userId, payout }
   })
 
-  const { collectedFees } = contract
-  const creatorPayout = collectedFees.creatorFee
-  const liquidityPayouts = getLiquidityPoolProbPayouts(contract, p, liquidities)
+  const liquidityPayouts = getLiquidityPoolProbPayouts(
+    contract,
+    outcomeProbs,
+    liquidities
+  )
 
   return { payouts, creatorPayout, liquidityPayouts, collectedFees }
 }
 
 export const getLiquidityPoolProbPayouts = (
-  contract: CPMMContract,
-  p: number,
+  contract: CPMMContract | CPMM2Contract,
+  outcomeProbs: { [outcome: string]: number },
   liquidities: LiquidityProvision[]
 ) => {
   const { pool, subsidyPool } = contract
-  const finalPool = p * pool.YES + (1 - p) * pool.NO + (subsidyPool ?? 0)
+  const finalPool = sumBy(
+    Object.keys(pool),
+    (o) => pool[o] * (outcomeProbs[o] ?? 0) + (subsidyPool ?? 0)
+  )
   if (finalPool < 1e-3) return []
 
   const weights = getCpmmLiquidityPoolWeights(liquidities)

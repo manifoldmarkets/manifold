@@ -161,10 +161,11 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       contract
     )
     log('Done, sent notification.')
-    return yourNewBetDoc
+    return { bet: yourNewBetDoc, contract }
   })
 
-  await redeemShares(auth.uid, contractId)
+  const { bet, contract } = result
+  await redeemShares(auth.uid, contract)
 
-  return { betId: result.id }
+  return { betId: bet.id }
 })
