@@ -78,6 +78,7 @@ async function getPriorContractBets(
     .collection('bets')
     .where('createdTime', '<', before)
     .where('userId', '==', userId)
+    .where('isAnte', '==', false)
     .get()
   return priorBetsQuery.docs.map((d) => d.data() as Bet)
 }
@@ -128,7 +129,7 @@ export const onCreateCommentOnContract = functions
     )
     const bet = getMostRecentCommentableBet(
       comment.createdTime,
-      priorUserBets.filter((b) => !b.isAnte),
+      priorUserBets,
       priorUserComments,
       comment.answerOutcome
     )
