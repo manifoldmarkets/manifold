@@ -34,9 +34,19 @@ const group_runnerups = [
   'which-team-will-finish-2nd-in-group-87644ea5dc4b',
 ]
 
+const player_ratings = [
+  'which-player-will-win-the-golden-bo',
+  'which-goalkeeper-will-win-the-golde',
+  'which-player-will-win-the-golden-ba-7f5df675c9b0',
+  'which-player-will-win-the-fifa-youn',
+] as string[]
+
 const general_markets = [
-  'which-country-will-win-the-2022-fif',
+  'which-team-will-win-the-2022-fifa-w',
   'will-a-team-score-7-or-more-goals-i',
+  'will-any-national-team-captain-wear',
+  'will-germany-reach-the-world-cup-qu',
+  'will-we-have-a-messi-vs-ronaldo-fin',
 ] as string[]
 
 const round_of_16 = [] as string[]
@@ -60,6 +70,8 @@ export async function getStaticProps() {
 
   const dailyMarkets = await getContractsFromSlugs(daily_markets)
 
+  const playerRatings = await getContractsFromSlugs(player_ratings)
+
   const generalMarkets = await getContractsFromSlugs(general_markets)
 
   return {
@@ -71,6 +83,7 @@ export async function getStaticProps() {
       semiFinals,
       finals,
       dailyMarkets,
+      playerRatings,
       generalMarkets,
     },
     revalidate: 60, // regenerate after a minute
@@ -97,14 +110,10 @@ export default function WorldCup(props: {
   semiFinals: Contract[]
   finals: Contract[]
   dailyMarkets: Contract[]
+  playerRatings: Contract[]
   generalMarkets: Contract[]
 }) {
-  const {
-    groupWinners,
-    groupRunnerups,
-    // dailyMarkets,
-    generalMarkets,
-  } = props
+  const { groupWinners, groupRunnerups, playerRatings, generalMarkets } = props
 
   const isMobile = useIsMobile()
 
@@ -214,6 +223,30 @@ export default function WorldCup(props: {
 
           <Spacer h={16} />
 
+          <div className="mb-2 text-3xl text-indigo-700">
+            Player Performance
+          </div>
+          <Spacer h={4} />
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {playerRatings.map((contract) => (
+              <ContractCard
+                key={contract.slug}
+                contract={contract}
+                hideDetails={false}
+                showImage={true}
+                className="mb-4"
+              />
+            ))}
+          </Masonry>
+
+          <Spacer h={8} />
+
+          <Spacer h={16} />
+
           <div className="mb-2 text-3xl text-indigo-700">General markets</div>
           <Spacer h={4} />
           <Masonry
@@ -244,6 +277,32 @@ export default function WorldCup(props: {
             <strong>$500 USD prize</strong> {''}
             pool. Show off your soccer/football knowledge, and win real USD if
             you're correct.
+          </div>
+
+          <div className="mb-4 text-base text-gray-700">
+            Only markets on this page will count towards the{' '}
+            <SiteLink
+              href="group/fifa-2022-world-cup-1000-competitio/leaderboards"
+              className="font-semibold"
+            >
+              tournament leaderboard
+            </SiteLink>
+            . Visit the{' '}
+            <SiteLink href="#group/2022-fifa-world-cup">
+              2022 Fifa World Cup group
+            </SiteLink>
+            &nbsp;to view all the other user-created World Cup markets.
+          </div>
+          <div className="mb-4 text-base text-gray-700">
+            A couple of new markets will be added weekly in addition to the
+            existing collection.
+          </div>
+
+          <div className="mb-4 text-base text-gray-700">
+            Trading will cease at half-time for markets predicting the result of
+            a match. This is to allow some live trading while ensuring users who
+            are predicting in advance aren’t significantly disadvantaged by
+            people who are on the site 24/7.
           </div>
 
           <ol className="list-decimal space-y-4 px-4 text-base text-gray-700">
@@ -282,6 +341,14 @@ export default function WorldCup(props: {
                 Manifold reserves the right to modify rules, exclude
                 participants, and other changes necessary to abide by the spirit
                 of this tournament.
+              </p>
+            </li>
+            <li>
+              <p>
+                Markets may occasionally be sourced from users, Manifold will
+                make sure these markets are resolved correctly. If users wish to
+                maintain full autonomy over their markets they may request their
+                market removed from the tournament before a resolution is met.
               </p>
             </li>
           </ol>
