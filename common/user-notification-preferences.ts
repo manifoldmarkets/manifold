@@ -236,7 +236,8 @@ export const getNotificationDestinationsForUser = (
     const optedOutOfPush =
       !privateUser.pushToken || optOutOfAllSettings.includes('mobile')
     return {
-      sendToEmail: destinations.includes('email') && !optedOutOfEmail,
+      sendToEmail:
+        destinations.includes('email') && !optedOutOfEmail && privateUser.email,
       sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
       sendToMobile: destinations.includes('mobile') && !optedOutOfPush,
       unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${subscriptionType}`,
