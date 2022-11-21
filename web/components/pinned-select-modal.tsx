@@ -140,7 +140,7 @@ export function PinnedSelectModal(props: {
         </div>
 
         {selectedTab === 'contracts' ? (
-          <div className="overflow-y-auto px-2 sm:px-8">
+          <div className="grow overflow-y-auto px-2 sm:px-8">
             <ContractSearch
               hideOrderSelector
               onContractClick={selectContract}
