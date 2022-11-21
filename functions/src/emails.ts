@@ -512,6 +512,8 @@ export const sendNewFollowedMarketEmail = async (
   const firstName = name.split(' ')[0]
   const creatorName = contract.creatorName
 
+  const questionImgSrc = imageSourceUrl(contract)
+  console.log('questionImgSrc', questionImgSrc)
   return await sendTemplateEmail(
     privateUser.email,
     `${creatorName} asked ${contract.question}`,
@@ -522,7 +524,7 @@ export const sendNewFollowedMarketEmail = async (
       unsubscribeUrl,
       questionTitle: contract.question,
       questionUrl: contractUrl(contract),
-      questionImgSrc: imageSourceUrl(contract),
+      questionImgSrc,
     },
     {
       from: `${creatorName} on Manifold <no-reply@manifold.markets>`,
