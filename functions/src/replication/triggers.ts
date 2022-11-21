@@ -15,7 +15,7 @@ function replicator(documentPath: string, table: SupabaseTable) {
     }
   }
   return functions
-    .runWith({ secrets: ['SUPABASE_ANON_KEY'] })
+    .runWith({ secrets: ['SUPABASE_KEY'] })
     .firestore.document(documentPath)
     .onWrite(handler)
 }
