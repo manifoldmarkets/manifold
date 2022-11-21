@@ -1,6 +1,6 @@
 import { APIError, newEndpoint } from './api'
 import { isProd } from './utils'
-import { send3DayCreatorGuideEmails } from 'functions/src/onboarding-emails'
+import { send3DayCreatorGuideEmails } from './onboarding-emails'
 
 // Function for testing scheduled functions locally
 export const testscheduledfunction = newEndpoint(
