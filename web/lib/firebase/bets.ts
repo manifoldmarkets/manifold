@@ -24,6 +24,14 @@ import { getContractFromId } from './contracts'
 import { filterDefined } from 'common/util/array'
 export type { Bet }
 
+export const MAX_USER_BETS_LOADED = 10000
+
+export const USER_BET_FILTER = {
+  order: 'desc',
+  limit: MAX_USER_BETS_LOADED,
+  filterAntes: true,
+} as const
+
 export type BetFilter = {
   contractId?: string
   userId?: string
@@ -41,7 +49,7 @@ function getBetsCollection(contractId: string) {
 
 export const getBetsQuery = (options?: BetFilter) => {
   let q = query(
-    collectionGroup(db, 'bets'),
+    collectionGroup(db, 'bets') as Query<Bet>,
     orderBy('createdTime', options?.order)
   )
   if (options?.contractId) {
@@ -77,20 +85,6 @@ export function listenForBets(
   options?: BetFilter
 ) {
   return listenForValues<Bet>(getBetsQuery(options), setBets)
-}
-
-export async function getUserBets(userId: string) {
-  return getValues<Bet>(getUserBetsQuery(userId))
-}
-
-export const MAX_USER_BETS_LOADED = 10000
-export function getUserBetsQuery(userId: string) {
-  return query(
-    collectionGroup(db, 'bets'),
-    where('userId', '==', userId),
-    orderBy('createdTime', 'desc'),
-    limit(MAX_USER_BETS_LOADED)
-  ) as Query<Bet>
 }
 
 export async function getBets(options: {
@@ -131,10 +125,8 @@ export async function getBets(options: {
 }
 
 export async function getContractsOfUserBets(userId: string) {
-  const bets = await getUserBets(userId)
-  const contractIds = uniq(
-    bets.filter((b) => !b.isAnte).map((bet) => bet.contractId)
-  )
+  const bets = await listBets({ userId, ...USER_BET_FILTER })
+  const contractIds = uniq(bets.map((bet) => bet.contractId))
   const contracts = await Promise.all(
     contractIds.map((contractId) => getContractFromId(contractId))
   )
@@ -167,18 +159,6 @@ export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
   }
 
   return bets?.filter((bet) => !bet.isAnte) ?? []
-}
-
-export function listenForLiveBets(
-  count: number,
-  setBets: (bets: Bet[]) => void
-) {
-  const betsQuery = query(
-    collectionGroup(db, 'bets'),
-    orderBy('createdTime', 'desc'),
-    limit(count)
-  )
-  return listenForValues<Bet>(betsQuery, setBets)
 }
 
 export async function getSwipes(userId: string) {

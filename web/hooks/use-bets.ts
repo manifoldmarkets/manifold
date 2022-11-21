@@ -4,7 +4,6 @@ import {
   Bet,
   BetFilter,
   listenForBets,
-  listenForLiveBets,
   listenForUnfilledBets,
   withoutAnteBets,
 } from 'web/lib/firebase/bets'
@@ -18,9 +17,7 @@ import { filterDefined } from 'common/util/array'
 export const useBets = (options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
   useEffectCheckEquality(() => {
-    return listenForBets((bets) => {
-      setBets(bets.sort((b) => b.createdTime))
-    }, options)
+    return listenForBets(setBets, options)
   }, [options])
 
   return bets
@@ -63,15 +60,14 @@ export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
   return { unfilledBets, balanceByUserId }
 }
 
-export const useLiveBets = (count: number) => {
+export const useLiveBets = (count: number, options?: BetFilter) => {
   const [bets, setBets] = usePersistentState<Bet[] | undefined>(undefined, {
     store: inMemoryStore(),
     key: `liveBets-${count}`,
   })
-
-  useEffect(() => {
-    return listenForLiveBets(count, setBets)
-  }, [count, setBets])
+  useEffectCheckEquality(() => {
+    return listenForBets(setBets, { limit: count, order: 'desc', ...options })
+  }, [count, setBets, options])
 
   return bets
 }

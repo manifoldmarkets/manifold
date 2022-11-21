@@ -3,9 +3,10 @@ import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { useEffect, useState } from 'react'
 import {
   Bet,
+  USER_BET_FILTER,
   getSwipes,
-  getUserBets,
-  getUserBetsQuery,
+  getBetsQuery,
+  listBets,
   listenForBets,
 } from 'web/lib/firebase/bets'
 import { MINUTE_MS, sleep } from 'common/util/time'
@@ -16,7 +17,7 @@ export const usePrefetchUserBets = (userId: string) => {
   const queryClient = useQueryClient()
   return queryClient.prefetchQuery(
     ['bets', userId],
-    () => sleep(1000).then(() => getUserBets(userId)),
+    () => sleep(1000).then(() => listBets({ userId, ...USER_BET_FILTER })),
     { staleTime: 15 * MINUTE_MS }
   )
 }
@@ -24,7 +25,7 @@ export const usePrefetchUserBets = (userId: string) => {
 export const useUserBets = (userId: string) => {
   const result = useFirestoreQueryData(
     ['bets', userId],
-    getUserBetsQuery(userId)
+    getBetsQuery({ userId, ...USER_BET_FILTER })
   )
   return result.data
 }
@@ -37,7 +38,7 @@ export const useUserContractBets = (
 
   useEffect(() => {
     if (userId && contractId)
-      return listenForBets((bets) => setBets(bets.sort((b) => b.createdTime)), {
+      return listenForBets(setBets, {
         contractId: contractId,
         userId: userId,
       })
