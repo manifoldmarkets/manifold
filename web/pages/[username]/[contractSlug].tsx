@@ -15,7 +15,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import { Bet, listFirstNBets } from 'web/lib/firebase/bets'
+import { Bet, listBets } from 'web/lib/firebase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -66,7 +66,7 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? await listFirstNBets(2500, { contractId, ...CONTRACT_BET_FILTER })
+    ? await listBets({ contractId, limit: 2500, ...CONTRACT_BET_FILTER })
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 

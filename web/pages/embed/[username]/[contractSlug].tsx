@@ -18,7 +18,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { listAllBets } from 'web/lib/firebase/bets'
+import { listBets } from 'web/lib/firebase/bets'
 import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
@@ -39,7 +39,7 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? await listAllBets({ contractId, ...CONTRACT_BET_LOADING_OPTS })
+    ? await listBets({ contractId, ...CONTRACT_BET_LOADING_OPTS })
     : []
 
   return {

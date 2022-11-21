@@ -23,7 +23,7 @@ import { BinaryOutcomeLabel } from 'web/components/outcome-label'
 import { formatMoney } from 'common/util/format'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { Bet, listAllBets } from 'web/lib/firebase/bets'
+import { Bet, listBets } from 'web/lib/firebase/bets'
 import { SEO } from 'web/components/SEO'
 import Custom404 from 'web/pages/404'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -39,9 +39,7 @@ export async function getStaticProps(props: {
   const { username, contractSlug, challengeSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const user = (await getUserByUsername(username)) || null
-  const bets = contract?.id
-    ? await listAllBets({ contractId: contract.id })
-    : []
+  const bets = contract?.id ? await listBets({ contractId: contract.id }) : []
   const challenge = contract?.id
     ? await getChallenge(challengeSlug, contract.id)
     : null

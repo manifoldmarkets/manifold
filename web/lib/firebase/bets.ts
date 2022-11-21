@@ -30,6 +30,7 @@ export type BetFilter = {
   filterRedemptions?: boolean
   filterAntes?: boolean
   afterTime?: number
+  limit?: number
 }
 
 function getBetsCollection(contractId: string) {
@@ -37,7 +38,7 @@ function getBetsCollection(contractId: string) {
 }
 
 const getBetsQuery = (options?: BetFilter) => {
-  let q = query(collectionGroup(db, 'bets'))
+  let q = query(collectionGroup(db, 'bets'), orderBy('createdTime'))
   if (options?.contractId) {
     q = query(q, where('contractId', '==', options.contractId))
   }
@@ -57,15 +58,13 @@ const getBetsQuery = (options?: BetFilter) => {
     q = query(q, where('isRedemption', '==', false))
   }
   q = query(q, orderBy('createdTime'))
+  if (options?.limit) {
+    q = query(q, limit(options.limit))
+  }
   return q
 }
 
-export async function listFirstNBets(n: number, options?: BetFilter) {
-  const q = query(getBetsQuery(options), orderBy('createdTime'), limit(n))
-  return await getValues<Bet>(q)
-}
-
-export async function listAllBets(options?: BetFilter) {
+export async function listBets(options?: BetFilter) {
   return await getValues<Bet>(getBetsQuery(options))
 }
 
