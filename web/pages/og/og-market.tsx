@@ -28,6 +28,7 @@ export function OgMarket(props: OgCardProps) {
     numericValue,
     resolution,
     topAnswer,
+    probability,
   } = props
 
   return (
@@ -76,7 +77,7 @@ export function OgMarket(props: OgCardProps) {
             ResolutionDiv(props)
           ) : numericValue ? (
             NumericValueDiv(props)
-          ) : topAnswer ? (
+          ) : topAnswer || probability === undefined ? (
             <div className={'hidden'} />
           ) : (
             ProbabilityDiv(props)
