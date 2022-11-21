@@ -20,7 +20,6 @@ import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -154,17 +153,6 @@ export function ContractPageContent(
     filterAntes: true,
   })
 
-  const [showConfetti, setShowConfetti] = useState(false)
-
-  useEffect(() => {
-    const shouldSeeConfetti = !!(
-      user &&
-      contract.creatorId === user.id &&
-      Date.now() - contract.createdTime < 10 * 1000
-    )
-    setShowConfetti(shouldSeeConfetti)
-  }, [contract, user])
-
   const { isResolved, question, outcomeType } = contract
 
   const allowTrade = tradingAllowed(contract)
@@ -209,12 +197,6 @@ export function ContractPageContent(
         )
       }
     >
-      {showConfetti && (
-        <FullscreenConfetti
-          recycle={false}
-          numberOfPieces={isMobile ? 100 : 300}
-        />
-      )}
       {ogCardProps && (
         <SEO
           title={question}
