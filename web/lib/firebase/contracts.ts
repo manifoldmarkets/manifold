@@ -20,8 +20,6 @@ import { BinaryContract, Contract } from 'common/contract'
 import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
-import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getBinaryProb } from 'common/contract-details'
 import { getLiquidity } from 'common/calculate-cpmm-multi'
@@ -366,34 +364,4 @@ export const getRecommendedContracts = async (
     chosen.push(...chooseRandomSubset(betOnContracts, count - chosen.length))
 
   return chosen
-}
-
-export async function getRecentBetsAndComments(contract: Contract) {
-  const contractDoc = doc(contracts, contract.id)
-
-  const [recentBets, recentComments] = await Promise.all([
-    getValues<Bet>(
-      query(
-        collection(contractDoc, 'bets'),
-        where('createdTime', '>', Date.now() - DAY_MS),
-        orderBy('createdTime', 'desc'),
-        limit(1)
-      )
-    ),
-
-    getValues<Comment>(
-      query(
-        collection(contractDoc, 'comments'),
-        where('createdTime', '>', Date.now() - 3 * DAY_MS),
-        orderBy('createdTime', 'desc'),
-        limit(3)
-      )
-    ),
-  ])
-
-  return {
-    contract,
-    recentBets,
-    recentComments,
-  }
 }

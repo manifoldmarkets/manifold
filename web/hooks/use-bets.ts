@@ -5,7 +5,6 @@ import {
   BetFilter,
   listenForBets,
   listenForLiveBets,
-  listenForRecentBets,
   listenForUnfilledBets,
   withoutAnteBets,
 } from 'web/lib/firebase/bets'
@@ -43,12 +42,6 @@ export const useBetsWithoutAntes = (contract: Contract, initialBets: Bet[]) => {
   }, [contract])
 
   return bets
-}
-
-export const useRecentBets = () => {
-  const [recentBets, setRecentBets] = useState<Bet[] | undefined>()
-  useEffect(() => listenForRecentBets(setRecentBets), [])
-  return recentBets
 }
 
 export const useUnfilledBets = (contractId: string) => {
