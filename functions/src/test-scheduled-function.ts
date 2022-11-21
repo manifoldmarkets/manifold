@@ -1,6 +1,6 @@
 import { APIError, newEndpoint } from './api'
 import { isProd } from './utils'
-import { sendOneWeekManaBonuses } from './mana-signup-bonus'
+import { send3DayCreatorGuideEmails } from 'functions/src/onboarding-emails'
 
 // Function for testing scheduled functions locally
 export const testscheduledfunction = newEndpoint(
@@ -9,8 +9,7 @@ export const testscheduledfunction = newEndpoint(
     if (isProd())
       throw new APIError(400, 'This function is only available in dev mode')
 
-    sendOneWeekManaBonuses()
-
+    await send3DayCreatorGuideEmails()
     return { success: true }
   }
 )

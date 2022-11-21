@@ -174,8 +174,7 @@ export const sendWelcomeEmail = async (
 
 export const sendPersonalFollowupEmail = async (
   user: User,
-  privateUser: PrivateUser,
-  sendTime: string
+  privateUser: PrivateUser
 ) => {
   if (!privateUser || !privateUser.email) return
 
@@ -203,7 +202,6 @@ https://manifold.markets
     emailBody,
     {
       from: 'James from Manifold <james@manifold.markets>',
-      'o:deliverytime': sendTime,
     }
   )
 }
@@ -240,8 +238,7 @@ export const sendOneWeekBonusEmail = async (
 
 export const sendCreatorGuideEmail = async (
   user: User,
-  privateUser: PrivateUser,
-  sendTime: string
+  privateUser: PrivateUser
 ) => {
   if (!privateUser || !privateUser.email) return
 
@@ -262,7 +259,6 @@ export const sendCreatorGuideEmail = async (
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
-      'o:deliverytime': sendTime,
     }
   )
 }
