@@ -64,7 +64,7 @@ type FirebaseConfig = {
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
-  supabaseUrl: 'https://mfodonznyfxllcezufgr.supabase.co',
+  supabaseUrl: 'https://pxidrgkatumlvfqaxcll.supabase.co',
   sprigEnvironmentId: 'sQcrq9TDqkib',
 
   firebaseConfig: {
