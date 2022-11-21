@@ -48,7 +48,6 @@ import { useEvent } from 'web/hooks/use-event'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
 import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
@@ -117,7 +116,7 @@ export function ContractPageContent(
     privateUser?.blockedByUserIds ?? []
   )
   const isCreator = user?.id === contract.creatorId
-  const isMobile = useIsMobile()
+
   usePrefetch(user?.id)
   useTracking(
     'view market',
