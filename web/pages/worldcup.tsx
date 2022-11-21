@@ -280,13 +280,18 @@ export default function WorldCup(props: {
           </div>
 
           <div className="mb-4 text-base text-gray-700">
-            Only markets on this page will count towards the tournament
-            leaderboard. Visit the{' '}
+            Only markets on this page will count towards the{' '}
+            <SiteLink
+              href="group/fifa-2022-world-cup-1000-competitio/leaderboards"
+              className="font-semibold"
+            >
+              tournament leaderboard
+            </SiteLink>
+            . Visit the{' '}
             <SiteLink href="#group/2022-fifa-world-cup">
               2022 Fifa World Cup group
             </SiteLink>
-            &nbsp;to view all the user created World Cup markets which are not
-            counted.
+            &nbsp;to view all the other user-created World Cup markets.
           </div>
           <div className="mb-4 text-base text-gray-700">
             A couple of new markets will be added weekly in addition to the
