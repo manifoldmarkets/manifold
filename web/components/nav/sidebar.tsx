@@ -112,6 +112,8 @@ const getDesktopNav = (loggedIn: boolean) =>
         href: '/leaderboards',
         icon: ChartBarIcon,
       },
+
+      { name: 'World Cup', href: '/worldcup', icon: TrophyIcon },
     ]
   )
 
@@ -142,6 +144,7 @@ const getMobileNav = (loggedIn: boolean) => {
   }
   return buildArray(
     loggedIn && { name: 'Swipe', href: '/swipe', icon: FireIcon },
+    { name: 'World Cup', href: '/worldcup', icon: TrophyIcon },
     { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     loggedIn && { name: 'Groups', href: '/groups', icon: UsersIcon },

@@ -172,9 +172,7 @@ export function AnswerBetPanel(props: {
                 />
               </>
             ) : (
-              <>
-                <div>Payout if chosen</div>
-              </>
+              <div>Max payout</div>
             )}
           </Row>
           <Row className="flex-wrap items-end justify-end gap-2">

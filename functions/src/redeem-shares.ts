@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 import { maxBy } from 'lodash'
 
 import { Bet } from '../../common/bet'
@@ -7,8 +8,6 @@ import {
   getRedemptionBets,
   getRedemptionBetMulti,
 } from '../../common/redeem'
-
-import { User } from '../../common/user'
 import { floatingEqual } from '../../common/util/math'
 import { poolToProbs } from '../../common/calculate-cpmm-multi'
 import { CPMM2Contract, CPMMContract } from '../../common/contract'
@@ -32,16 +31,12 @@ export const redeemShares = async (
       return { status: 'success' }
     }
 
-    const userDoc = firestore.doc(`users/${userId}`)
-    const userSnap = await trans.get(userDoc)
-    if (!userSnap.exists) return { status: 'error', message: 'User not found' }
-    const user = userSnap.data() as User
-    const newBalance = user.balance + netAmount
-
-    if (!isFinite(newBalance)) {
-      throw new Error('Invalid user balance for ' + user.username)
+    if (!isFinite(netAmount)) {
+      throw new Error('Invalid redemption amount, no clue what happened here.')
     }
-    trans.update(userDoc, { balance: newBalance })
+
+    const userDoc = firestore.collection('users').doc(userId)
+    trans.update(userDoc, { balance: FieldValue.increment(netAmount) })
 
     if (mechanism === 'cpmm-1') {
       const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
