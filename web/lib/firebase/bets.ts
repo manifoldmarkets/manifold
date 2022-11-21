@@ -52,6 +52,7 @@ const getContractBetsQuery = (contractId: string, options?: BetFilter) => {
   if (options?.filterRedemptions) {
     q = query(q, where('isRedemption', '==', false))
   }
+  q = query(q, orderBy('createdTime'))
   return q
 }
 
@@ -60,11 +61,7 @@ export async function listFirstNBets(
   n: number,
   options?: BetFilter
 ) {
-  const q = query(
-    getContractBetsQuery(contractId, options),
-    orderBy('createdTime'),
-    limit(n)
-  )
+  const q = query(getContractBetsQuery(contractId, options), limit(n))
   return await getValues<Bet>(q)
 }
 
