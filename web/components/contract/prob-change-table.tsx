@@ -129,7 +129,7 @@ export function ProbOrNumericChange(props: {
   // Some contract without a probChanges.day was crashing the site, so I added the conditional
   const change = contract.probChanges?.day ?? 0
 
-  if (Math.abs(change * 100) > 5) {
+  if (Math.abs(change * 100) >= 1) {
     return (
       <div
         className={clsx(
