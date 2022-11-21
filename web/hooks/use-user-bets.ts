@@ -37,11 +37,10 @@ export const useUserContractBets = (
 
   useEffect(() => {
     if (userId && contractId)
-      return listenForBets(
-        contractId,
-        (bets) => setBets(bets.sort((b) => b.createdTime)),
-        { userId: userId }
-      )
+      return listenForBets((bets) => setBets(bets.sort((b) => b.createdTime)), {
+        contractId: contractId,
+        userId: userId,
+      })
   }, [userId, contractId])
 
   return bets

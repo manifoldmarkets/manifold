@@ -24,6 +24,7 @@ import { filterDefined } from 'common/util/array'
 export type { Bet }
 
 export type BetFilter = {
+  contractId?: string
   userId?: string
   filterChallenges?: boolean
   filterRedemptions?: boolean
@@ -35,8 +36,11 @@ function getBetsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'bets')
 }
 
-const getContractBetsQuery = (contractId: string, options?: BetFilter) => {
-  let q = query(getBetsCollection(contractId))
+const getBetsQuery = (options?: BetFilter) => {
+  let q = query(collectionGroup(db, 'bets'))
+  if (options?.contractId) {
+    q = query(q, where('contractId', '==', options.contractId))
+  }
   if (options?.userId) {
     q = query(q, where('userId', '==', options.userId))
   }
@@ -56,26 +60,20 @@ const getContractBetsQuery = (contractId: string, options?: BetFilter) => {
   return q
 }
 
-export async function listFirstNBets(
-  contractId: string,
-  n: number,
-  options?: BetFilter
-) {
-  const q = query(getContractBetsQuery(contractId, options), limit(n))
+export async function listFirstNBets(n: number, options?: BetFilter) {
+  const q = query(getBetsQuery(options), orderBy('createdTime'), limit(n))
   return await getValues<Bet>(q)
 }
 
-export async function listAllBets(contractId: string, options?: BetFilter) {
-  return await getValues<Bet>(getContractBetsQuery(contractId, options))
+export async function listAllBets(options?: BetFilter) {
+  return await getValues<Bet>(getBetsQuery(options))
 }
 
 export function listenForBets(
-  contractId: string,
   setBets: (bets: Bet[]) => void,
   options?: BetFilter
 ) {
-  const q = getContractBetsQuery(contractId, options)
-  return listenForValues<Bet>(q, setBets)
+  return listenForValues<Bet>(getBetsQuery(options), setBets)
 }
 
 export async function getUserBets(userId: string) {

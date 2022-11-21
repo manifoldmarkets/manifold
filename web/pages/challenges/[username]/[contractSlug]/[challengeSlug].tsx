@@ -39,7 +39,9 @@ export async function getStaticProps(props: {
   const { username, contractSlug, challengeSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const user = (await getUserByUsername(username)) || null
-  const bets = contract?.id ? await listAllBets(contract.id) : []
+  const bets = contract?.id
+    ? await listAllBets({ contractId: contract.id })
+    : []
   const challenge = contract?.id
     ? await getChallenge(challengeSlug, contract.id)
     : null

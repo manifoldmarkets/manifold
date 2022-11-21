@@ -39,7 +39,7 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? await listAllBets(contractId, CONTRACT_BET_LOADING_OPTS)
+    ? await listAllBets({ contractId, ...CONTRACT_BET_LOADING_OPTS })
     : []
 
   return {
@@ -63,8 +63,9 @@ export default function ContractEmbedPage(props: {
 
   // static props load bets in ascending order by time
   const lastBetTime = last(props.bets)?.createdTime
-  const newBets = useBets(contract?.id ?? '', {
+  const newBets = useBets({
     ...CONTRACT_BET_LOADING_OPTS,
+    contractId: contract?.id ?? '',
     afterTime: lastBetTime,
   })
   const bets = props.bets.concat(newBets ?? [])

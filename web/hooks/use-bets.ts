@@ -15,18 +15,13 @@ import { useUsersById } from './use-user'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 
-export const useBets = (contractId: string, options?: BetFilter) => {
+export const useBets = (options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
   useEffectCheckEquality(() => {
-    if (contractId)
-      return listenForBets(
-        contractId,
-        (bets) => {
-          setBets(bets.sort((b) => b.createdTime))
-        },
-        options
-      )
-  }, [contractId, options])
+    return listenForBets((bets) => {
+      setBets(bets.sort((b) => b.createdTime))
+    }, options)
+  }, [options])
 
   return bets
 }
@@ -36,9 +31,12 @@ export const useBetsWithoutAntes = (contract: Contract, initialBets: Bet[]) => {
     withoutAnteBets(contract, initialBets)
   )
   useEffect(() => {
-    return listenForBets(contract.id, (bets) => {
-      setBets(withoutAnteBets(contract, bets).sort((b) => b.createdTime))
-    })
+    return listenForBets(
+      (bets) => {
+        setBets(withoutAnteBets(contract, bets).sort((b) => b.createdTime))
+      },
+      { contractId: contract.id }
+    )
   }, [contract])
 
   return bets
