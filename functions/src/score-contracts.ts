@@ -38,7 +38,9 @@ async function scoreContractsInternal() {
   log(`Found ${contracts.length} contracts to score`)
 
   for (const contract of contracts) {
-    const popularityScore = contract.uniqueBettors7Days ?? 1
+    const popularityScore =
+      (contract.uniqueBettors7Days ?? 0) / 10 +
+      (contract.uniqueBettors24Hours ?? 0)
     const wasCreatedToday = contract.createdTime > dayAgo
 
     let dailyScore: number | undefined
