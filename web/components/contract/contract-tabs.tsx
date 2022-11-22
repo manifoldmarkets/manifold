@@ -4,7 +4,7 @@ import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FreeResponseComments } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
-import { groupBy, partition, sortBy, sum } from 'lodash'
+import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
 import { AnyContractType, Contract } from 'common/contract'
 import { ContractBetsTable } from '../bet/bets-list'
@@ -36,7 +36,10 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
 import { track } from 'web/lib/service/analytics'
-import { UserContractMetrics } from 'web/lib/firebase/contract-metrics'
+import {
+  UserContractMetrics,
+  UserIdAndPosition,
+} from 'web/lib/firebase/contract-metrics'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import clsx from 'clsx'
@@ -49,7 +52,7 @@ export function ContractTabs(props: {
   bets: Bet[]
   userBets: Bet[]
   comments: ContractComment[]
-  userContractMetrics: UserContractMetrics[]
+  userContractMetrics: UserContractMetrics
   answerResponse?: Answer | undefined
   onCancelAnswerResponse?: () => void
   blockedUserIds: string[]
@@ -154,28 +157,19 @@ type DenormalizedUserBetInfo = {
 // This is not currently re-computed every after trade, only once in static props
 const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
   bets: Bet[]
-  positions: UserContractMetrics[]
+  positions: UserContractMetrics
 }) {
   const { bets, positions } = props
+
   const [page, setPage] = useState(0)
   const pageSize = 20
   const itemsToShowBeforeCollapse = 7
   const currentUser = useUser()
   const followedUsers = useFollows(currentUser?.id)
   const contentRef = useRef<HTMLDivElement>(null)
+  const yesPositionsSorted = positions.YES
+  const noPositionsSorted = positions.NO
 
-  const [yesPositions, noPositions] = partition(
-    positions,
-    (position) => position.contractMetrics.hasYesShares
-  )
-  const yesPositionsSorted = sortBy(
-    yesPositions,
-    (position) => -position.contractMetrics.totalShares.YES
-  )
-  const noPositionsSorted = sortBy(
-    noPositions,
-    (position) => -position.contractMetrics.totalShares.NO
-  )
   const visibleYesPositions = yesPositionsSorted.slice(
     page * pageSize,
     (page + 1) * pageSize
@@ -185,13 +179,14 @@ const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
     (page + 1) * pageSize
   )
   const totalItems =
-    yesPositions.length > noPositions.length
-      ? yesPositions.length
-      : noPositions.length
+    yesPositionsSorted.length > noPositionsSorted.length
+      ? yesPositionsSorted.length
+      : noPositionsSorted.length
   // TODO: should we put this in the static props?
   const userInfosFromBets: { [userId: string]: DenormalizedUserBetInfo } = {}
   // How can we make a map of userId to user info?
-  positions.map((position) => {
+
+  yesPositionsSorted.concat(noPositionsSorted).map((position) => {
     const bet = bets.find((bet) => bet.userId === position.userId)
     userInfosFromBets[position.userId] = {
       username: bet?.userUsername,
@@ -207,23 +202,23 @@ const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
     }
   )
   const PositionRow = memo(function PositionRow(props: {
-    position: UserContractMetrics
-    userInfosFromBets: DenormalizedUserBetInfo
+    userIdsAndPositions: UserIdAndPosition
+    denormalizedUserInfoFromBets: DenormalizedUserBetInfo
   }) {
-    const { position, userInfosFromBets } = props
-    const { hasYesShares, totalShares } = position.contractMetrics
+    const { userIdsAndPositions, denormalizedUserInfoFromBets } = props
+    const { hasYesShares, totalShares } = userIdsAndPositions.contractMetrics
     const shares = hasYesShares ? totalShares.YES : totalShares.NO
 
-    const { name, username, avatarUrl } = userInfosFromBets
+    const { name, username, avatarUrl } = denormalizedUserInfoFromBets
     const isMobile = useIsMobile(800)
 
     return (
       <Row
-        key={position.userId}
+        key={userIdsAndPositions.userId}
         className={clsx(
           'items-center justify-between gap-2 rounded-sm border-b p-2',
-          currentUser?.id === position.userId && 'bg-amber-100',
-          followedUsers?.includes(position.userId) && 'bg-blue-50'
+          currentUser?.id === userIdsAndPositions.userId && 'bg-amber-100',
+          followedUsers?.includes(userIdsAndPositions.userId) && 'bg-blue-50'
         )}
       >
         <Row className={clsx('max-w-[8rem] items-center gap-2 sm:max-w-none')}>
@@ -265,8 +260,10 @@ const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
                   return (
                     <PositionRow
                       key={position.userId}
-                      position={position}
-                      userInfosFromBets={userInfosFromBets[position.userId]}
+                      userIdsAndPositions={position}
+                      denormalizedUserInfoFromBets={
+                        userInfosFromBets[position.userId]
+                      }
                     />
                   )
                 })}
@@ -279,8 +276,10 @@ const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
                   return (
                     <PositionRow
                       key={position.userId}
-                      position={position}
-                      userInfosFromBets={userInfosFromBets[position.userId]}
+                      userIdsAndPositions={position}
+                      denormalizedUserInfoFromBets={
+                        userInfosFromBets[position.userId]
+                      }
                     />
                   )
                 })}

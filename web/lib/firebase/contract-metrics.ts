@@ -12,9 +12,13 @@ import {
 import { db } from './init'
 import { filterDefined } from 'common/util/array'
 
-export type UserContractMetrics = {
+export type UserIdAndPosition = {
   userId: string
   contractMetrics: ContractMetrics
+}
+export type UserContractMetrics = {
+  YES: UserIdAndPosition[]
+  NO: UserIdAndPosition[]
 }
 
 export function getUserContractMetricsQuery(
@@ -30,7 +34,8 @@ export function getUserContractMetricsQuery(
   ) as Query<ContractMetrics>
 }
 
-export async function getContractShareholders(
+// Only works for binary contracts for now
+export async function getBinaryContractUserContractMetrics(
   contractId: string,
   count: number
 ) {
@@ -52,16 +57,28 @@ export async function getContractShareholders(
       limit(Math.round(count / 2))
     )
   )
-  const snapDocs = [...yesSnap.docs, ...noSnap.docs]
-  const userIdsWithMetrics = filterDefined(
-    snapDocs.map((doc) => {
-      const userId = doc.ref.parent.parent?.id
-      if (!userId) return undefined
-      return {
-        userId,
-        contractMetrics: doc.data() as ContractMetrics,
-      }
-    })
-  )
-  return userIdsWithMetrics
+  const outcomeToDetails = {
+    YES: filterDefined(
+      yesSnap.docs.map((doc) => {
+        const userId = doc.ref.parent.parent?.id
+        if (!userId) return undefined
+        return {
+          userId,
+          contractMetrics: doc.data() as ContractMetrics,
+        }
+      })
+    ),
+    NO: filterDefined(
+      noSnap.docs.map((doc) => {
+        const userId = doc.ref.parent.parent?.id
+        if (!userId) return undefined
+        return {
+          userId,
+          contractMetrics: doc.data() as ContractMetrics,
+        }
+      })
+    ),
+  }
+
+  return outcomeToDetails
 }

@@ -49,7 +49,7 @@ import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
 import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
 import {
-  getContractShareholders,
+  getBinaryContractUserContractMetrics,
   UserContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
 
@@ -73,7 +73,7 @@ export async function getStaticPropz(props: {
   // get all contractMetrics for users with hasShares = true
   const userPositions =
     contractId && contract?.outcomeType === 'BINARY'
-      ? await getContractShareholders(contractId, 1000)
+      ? await getBinaryContractUserContractMetrics(contractId, 500)
       : []
 
   return {
@@ -94,7 +94,7 @@ export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
   comments: ContractComment[]
-  userPositions: UserContractMetrics[]
+  userPositions: UserContractMetrics
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
