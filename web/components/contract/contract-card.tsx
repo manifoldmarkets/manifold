@@ -12,7 +12,6 @@ import { Col } from '../layout/col'
 import {
   BinaryContract,
   Contract,
-  CPMMBinaryContract,
   CPMMContract,
   FreeResponseContract,
   MultipleChoiceContract,
@@ -391,58 +390,46 @@ export function PseudoNumericResolutionOrExpectation(props: {
   )
 }
 
-export const ContractCardWithPosition = memo(
-  function ContractCardWithPosition(props: {
+export const ContractCardWithPosition = memo(function ContractCardWithPosition(
+  props: {
     contract: CPMMContract
-    noLinkAvatar?: boolean
     showDailyProfit?: boolean
-    onClick?: () => void
-    className?: string
-    showImage?: boolean
-    showTime?: ShowTime
-  }) {
-    const {
-      noLinkAvatar,
-      showDailyProfit,
-      className,
-      showImage,
-      showTime,
-      onClick,
-    } = props
-    const contract = (useContract(props.contract.id) ??
-      props.contract) as CPMMBinaryContract
+  } & Parameters<typeof ContractCard>[0]
+) {
+  const { contract, showDailyProfit, ...contractCardProps } = props
 
-    const user = useUser()
-    const userBets = useUserContractBets(user?.id, contract.id)
-    const metrics = useSavedContractMetrics(contract, userBets)
-
-    return (
-      <ContractCard
+  return (
+    <ContractCard contract={contract} {...contractCardProps}>
+      <ContractMetricsFooter
         contract={contract}
-        noLinkAvatar={noLinkAvatar}
-        showImage={showImage}
-        showTime={showTime}
-        onClick={onClick}
-        className={clsx(
-          className,
-          'mb-4 break-inside-avoid-column overflow-hidden'
-        )}
-      >
-        {user && metrics && metrics.hasShares ? (
-          <MetricsFooter
-            contract={contract}
-            metrics={metrics}
-            showDailyProfit={showDailyProfit}
-          />
-        ) : (
-          <Spacer h={2} />
-        )}
-      </ContractCard>
-    )
-  }
-)
+        showDailyProfit={showDailyProfit}
+      />
+    </ContractCard>
+  )
+})
 
-function MetricsFooter(props: {
+export function ContractMetricsFooter(props: {
+  contract: CPMMContract
+  showDailyProfit?: boolean
+}) {
+  const { contract, showDailyProfit } = props
+
+  const user = useUser()
+  const userBets = useUserContractBets(user?.id, contract.id)
+  const metrics = useSavedContractMetrics(contract, userBets)
+
+  return user && metrics && metrics.hasShares ? (
+    <LoadedMetricsFooter
+      contract={contract}
+      metrics={metrics}
+      showDailyProfit={showDailyProfit}
+    />
+  ) : (
+    <Spacer h={2} />
+  )
+}
+
+function LoadedMetricsFooter(props: {
   contract: CPMMContract
   metrics: ContractMetrics
   showDailyProfit?: boolean

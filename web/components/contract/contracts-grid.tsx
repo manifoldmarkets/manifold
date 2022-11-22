@@ -2,7 +2,7 @@ import { Contract } from 'web/lib/firebase/contracts'
 import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../widgets/site-link'
-import { ContractCard, ContractCardWithPosition } from './contract-card'
+import { ContractCard, ContractMetricsFooter } from './contract-card'
 import { ShowTime } from './contract-details'
 import { ContractSearch } from '../contract-search'
 import { useCallback } from 'react'
@@ -77,45 +77,32 @@ export function ContractsGrid(props: {
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
-        {contracts.map((contract, index) =>
-          contract.mechanism === 'cpmm-1' ? (
-            <ContractCardWithPosition
-              key={contract.id}
-              onClick={
-                onContractClick ? () => onContractClick(contract) : undefined
-              }
-              contract={contract as CPMMBinaryContract}
-              showTime={showTime}
-              showImage={
-                showImageOnTopContract && (index == 0 || index === lastIndex)
-              }
-              className={clsx(
-                contractIds?.includes(contract.id) && highlightClassName
-              )}
-            />
-          ) : (
-            <ContractCard
-              contract={contract}
-              key={contract.id}
-              showTime={showTime}
-              showImage={
-                showImageOnTopContract && (index == 0 || index === lastIndex)
-              }
-              onClick={
-                onContractClick ? () => onContractClick(contract) : undefined
-              }
-              noLinkAvatar={noLinkAvatar}
-              hideQuickBet={hideQuickBet}
-              hideGroupLink={hideGroupLink}
-              trackingPostfix={trackingPostfix}
-              className={clsx(
-                'mb-4 transition-all',
-                highlightCards?.includes(contract.id) &&
-                  'bg-gradient-to-b from-indigo-50 via-white to-white outline outline-2 outline-indigo-400'
-              )}
-            />
-          )
-        )}
+        {contracts.map((contract, index) => (
+          <ContractCard
+            contract={contract}
+            key={contract.id}
+            showTime={showTime}
+            showImage={
+              showImageOnTopContract && (index == 0 || index === lastIndex)
+            }
+            onClick={
+              onContractClick ? () => onContractClick(contract) : undefined
+            }
+            noLinkAvatar={noLinkAvatar}
+            hideQuickBet={hideQuickBet}
+            hideGroupLink={hideGroupLink}
+            trackingPostfix={trackingPostfix}
+            className={clsx(
+              'mb-4 transition-all',
+              highlightCards?.includes(contract.id) &&
+                'bg-gradient-to-b from-indigo-50 via-white to-white outline outline-2 outline-indigo-400'
+            )}
+          >
+            {contract.mechanism === 'cpmm-1' ? (
+              <ContractMetricsFooter contract={contract} />
+            ) : undefined}
+          </ContractCard>
+        ))}
       </Masonry>
       {loadMore && (
         <VisibilityObserver
