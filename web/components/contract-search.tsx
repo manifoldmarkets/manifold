@@ -223,7 +223,6 @@ export function ContractSearch(props: {
         className={headerClassName}
         defaultSort={defaultSort}
         defaultFilter={defaultFilter}
-        defaultPill={defaultPill}
         additionalFilter={additionalFilter}
         persistPrefix={persistPrefix}
         hideOrderSelector={hideOrderSelector}
@@ -259,7 +258,6 @@ function ContractSearchControls(props: {
   className?: string
   defaultSort?: Sort
   defaultFilter?: filter
-  defaultPill?: string
   additionalFilter?: AdditionalFilter
   persistPrefix?: string
   hideOrderSelector?: boolean
@@ -275,7 +273,6 @@ function ContractSearchControls(props: {
     className,
     defaultSort,
     defaultFilter,
-    defaultPill,
     additionalFilter,
     persistPrefix,
     hideOrderSelector,

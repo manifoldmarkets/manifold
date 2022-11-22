@@ -10,7 +10,6 @@ import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import Masonry from 'react-masonry-css'
-import { CPMMBinaryContract } from 'common/contract'
 
 export function ContractsGrid(props: {
   contracts: Contract[] | undefined
