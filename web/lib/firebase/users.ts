@@ -113,35 +113,40 @@ const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
 const CACHED_REFERRAL_GROUP_ID_KEY = 'CACHED_REFERRAL_GROUP_KEY'
 
+// Scenarios:
+// 1. User is referred by another user to homepage, group page, market page etc. explicitly via referrer= query param
+// 2. User lands on a market or group without a referrer, we attribute the market/group creator
+// Explicit referrers take priority over the implicit ones, (e.g. they're overwritten)
 export function writeReferralInfo(
   defaultReferrerUsername: string,
   otherOptions?: {
     contractId?: string
-    overwriteReferralUsername?: string
+    explicitReferrer?: string
     groupId?: string
   }
 ) {
   const local = safeLocalStorage()
   const cachedReferralUser = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
-  const { contractId, overwriteReferralUsername, groupId } = otherOptions || {}
+  const { contractId, explicitReferrer, groupId } = otherOptions || {}
+
   // Write the first referral username we see.
-  if (!cachedReferralUser)
+  if (!cachedReferralUser) {
     local?.setItem(
       CACHED_REFERRAL_USERNAME_KEY,
-      overwriteReferralUsername || defaultReferrerUsername
+      explicitReferrer || defaultReferrerUsername
     )
+    if (groupId) local?.setItem(CACHED_REFERRAL_GROUP_ID_KEY, groupId)
+    if (contractId) local?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
+  }
 
-  // If an explicit referral query is passed, overwrite the cached referral username.
-  if (overwriteReferralUsername)
-    local?.setItem(CACHED_REFERRAL_USERNAME_KEY, overwriteReferralUsername)
-
-  // Always write the most recent explicit group invite query value
-  if (groupId) local?.setItem(CACHED_REFERRAL_GROUP_ID_KEY, groupId)
-
-  // Write the first contract id that we see.
-  const cachedReferralContract = local?.getItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
-  if (!cachedReferralContract && contractId)
-    local?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
+  // Overwrite all referral info if we see an explicit referrer.
+  if (explicitReferrer) {
+    local?.setItem(CACHED_REFERRAL_USERNAME_KEY, explicitReferrer)
+    if (!groupId) local?.removeItem(CACHED_REFERRAL_GROUP_ID_KEY)
+    else local?.setItem(CACHED_REFERRAL_GROUP_ID_KEY, groupId)
+    if (!contractId) local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
+    else local?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
+  }
 }
 
 export async function setCachedReferralInfoForUser(user: User | null) {
