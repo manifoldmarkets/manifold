@@ -49,7 +49,7 @@ export function getNewContract(
       : outcomeType === 'NUMERIC'
       ? getNumericProps(ante, bucketCount, min, max)
       : outcomeType === 'MULTIPLE_CHOICE'
-      ? getMultipleChoiceProps(creator, ante, answers, createdTime, id)
+      ? getDpmMultipleChoiceProps(ante, answers)
       : getFreeAnswerProps(ante)
 
   const contract: Contract = removeUndefinedProps({
@@ -161,7 +161,28 @@ const getFreeAnswerProps = (ante: number) => {
   return system
 }
 
-const getMultipleChoiceProps = (
+const getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
+  const numAnswers = answers.length
+  const betAnte = ante / numAnswers
+  const betShares = Math.sqrt(ante ** 2 / numAnswers)
+
+  const defaultValues = (x: any) =>
+    Object.fromEntries(range(0, numAnswers).map((k) => [k, x]))
+
+  const system: DPM & MultipleChoice = {
+    mechanism: 'dpm-2',
+    outcomeType: 'MULTIPLE_CHOICE',
+    pool: defaultValues(betAnte),
+    totalShares: defaultValues(betShares),
+    totalBets: defaultValues(betAnte),
+    answers: [],
+  }
+
+  return system
+}
+
+// TODO (James): Remove.
+const _getMultipleChoiceProps = (
   creator: User,
   ante: number,
   answers: string[],
