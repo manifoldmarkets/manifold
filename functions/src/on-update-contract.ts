@@ -1,23 +1,9 @@
 import * as functions from 'firebase-functions'
-import {
-  getUser,
-  getValues,
-  getContractPath,
-  revalidateStaticProps,
-} from './utils'
-import {
-  createBadgeAwardedNotification,
-  createCommentOrAnswerOrUpdatedContractNotification,
-} from './create-notification'
+import { getUser, getContractPath, revalidateStaticProps } from './utils'
+import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
 import { Contract } from '../../common/contract'
-import { Bet } from '../../common/bet'
 import * as admin from 'firebase-admin'
-import { ContractComment } from '../../common/comment'
-import { scoreCommentorsAndBettors } from '../../common/scoring'
-import {
-  MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE,
-  ProvenCorrectBadge,
-} from '../../common/badge'
+
 import { GroupContractDoc } from '../../common/group'
 
 export const onUpdateContract = functions.firestore
@@ -32,16 +18,13 @@ export const onUpdateContract = functions.firestore
       await handleContractGroupUpdated(previousContract, contract)
     }
 
+    // No need to notify users of resolution, that's handled in resolve-market
     if (
-      previousContract.closeTime !== closeTime ||
-      previousContract.question !== question
+      (previousContract.closeTime !== closeTime ||
+        previousContract.question !== question) &&
+      !contract.isResolved
     ) {
       await handleUpdatedCloseTime(previousContract, contract, eventId)
-    }
-
-    if (!previousContract.isResolved && contract.isResolved) {
-      // No need to notify users of resolution, that's handled in resolve-market
-      await handleResolvedContract(contract)
     }
 
     // maybe we should do this more often, but at least if someone bets
@@ -49,67 +32,6 @@ export const onUpdateContract = functions.firestore
       await revalidateStaticProps(getContractPath(contract))
     }
   })
-
-//eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function handleResolvedContract(contract: Contract) {
-  if (
-    (contract.uniqueBettorCount ?? 0) <
-      MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE ||
-    contract.resolution === 'CANCEL'
-  )
-    return
-
-  // get all bets on this contract
-  const bets = await getValues<Bet>(
-    firestore.collection(`contracts/${contract.id}/bets`)
-  )
-
-  // get comments on this contract
-  const comments = await getValues<ContractComment>(
-    firestore.collection(`contracts/${contract.id}/comments`)
-  )
-
-  const { topCommentId, profitById, commentsById, betsById, topCommentBetId } =
-    scoreCommentorsAndBettors(contract, bets, comments)
-  if (topCommentBetId && profitById[topCommentBetId] > 0) {
-    // award proven correct badge to user
-    const comment = commentsById[topCommentId]
-    const bet = betsById[topCommentBetId]
-
-    const user = await getUser(comment.userId)
-    if (!user) return
-    const newProvenCorrectBadge = {
-      createdTime: Date.now(),
-      type: 'PROVEN_CORRECT',
-      name: 'Proven Correct',
-      data: {
-        contractSlug: contract.slug,
-        contractCreatorUsername: contract.creatorUsername,
-        commentId: comment.id,
-        betAmount: bet.amount < 0 ? bet.amount * -1 : bet.amount,
-        contractTitle: contract.question,
-        profit: profitById[topCommentBetId],
-      },
-    } as ProvenCorrectBadge
-    console.log('Awarding proven correct badge to user', newProvenCorrectBadge)
-    // update user
-    await firestore
-      .collection('users')
-      .doc(user.id)
-      .update({
-        achievements: {
-          ...user.achievements,
-          provenCorrect: {
-            badges: [
-              ...(user.achievements?.provenCorrect?.badges ?? []),
-              newProvenCorrectBadge,
-            ],
-          },
-        },
-      })
-    await createBadgeAwardedNotification(user, newProvenCorrectBadge)
-  }
-}
 
 async function handleUpdatedCloseTime(
   previousContract: Contract,
