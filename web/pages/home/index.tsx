@@ -64,7 +64,6 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { ActivityLog } from 'web/components/activity-log'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { LatestPosts } from '../latestposts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
@@ -125,15 +124,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     followedGroups?.map((g) => g.slug),
     userBlockFacetFilters
   )
-  const latestPosts = useAllPosts(true)
-    .filter(
-      (p) =>
-        !privateUser?.blockedUserIds.includes(p.creatorId) &&
-        !privateUser?.blockedUserIds.includes(p.creatorId)
-    )
-    // Remove "test" posts.
-    .filter((p) => !p.title.toLocaleLowerCase().split(' ').includes('test'))
-    .slice(0, 2)
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
@@ -224,8 +214,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               isAdmin,
               globalConfig,
               pinned,
-              contractMetricsByProfit,
-              latestPosts
+              contractMetricsByProfit
             )}
 
             {followedGroups && groupContracts && trendingGroups.length > 0 ? (
@@ -270,7 +259,6 @@ const HOME_SECTIONS = [
   { label: 'Featured', id: 'featured', icon: '⭐' },
   { label: 'New', id: 'newest', icon: '✨' },
   { label: 'Live feed', id: 'live-feed', icon: '🔴' },
-  { label: 'Latest posts', id: 'latest-posts', icon: '📝' },
 ] as const
 
 export const getHomeItems = (sections: string[]) => {
@@ -306,8 +294,7 @@ export function renderSections(
         contracts: CPMMBinaryContract[]
         metrics: ContractMetrics[]
       }
-    | undefined,
-  latestPosts: Post[]
+    | undefined
 ) {
   type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
@@ -333,10 +320,6 @@ export function renderSections(
 
         if (id === 'daily-movers') {
           return <DailyMoversSection key={id} data={dailyMovers} />
-        }
-
-        if (id === 'latest-posts') {
-          return <LatestPostsSection key={id} latestPosts={latestPosts} />
         }
 
         const contracts = sectionContracts[id]
@@ -457,37 +440,6 @@ export const SearchSection = memo(function SearchSection(props: {
     </Col>
   )
 })
-
-export function LatestPostsSection(props: { latestPosts: Post[] }) {
-  const { latestPosts } = props
-  const user = useUser()
-
-  return (
-    <Col className="pt-4">
-      <Row className="flex items-center justify-between">
-        <HomeSectionHeader
-          label={'Latest Posts'}
-          href="/latestposts"
-          icon="📝"
-        />
-        <Col>
-          {user && (
-            <Link
-              href={'/create-post'}
-              onClick={() =>
-                track('home click create post', { section: 'create-post' })
-              }
-              className={clsx(buttonClass('md', 'indigo'), 'mb-3')}
-            >
-              Create Post
-            </Link>
-          )}
-        </Col>
-      </Row>
-      <LatestPosts latestPosts={latestPosts} />
-    </Col>
-  )
-}
 
 export function FeaturedSection(props: {
   globalConfig: GlobalConfig
