@@ -2,8 +2,8 @@
 import { SearchOptions } from '@algolia/client-search'
 import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
-import { PAST_BETS, User } from 'common/user'
-import { CardHighlightOptions, ContractsGrid } from './contract/contracts-grid'
+import { User } from 'common/user'
+import { ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
 import { useEffect, useRef, useMemo, ReactNode, useState } from 'react'
@@ -79,7 +79,7 @@ export function ContractSearch(props: {
   defaultFilter?: filter
   defaultPill?: string
   additionalFilter?: AdditionalFilter
-  highlightOptions?: CardHighlightOptions
+  highlightCards?: string[]
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
   cardUIOptions?: {
@@ -110,7 +110,7 @@ export function ContractSearch(props: {
     onContractClick,
     hideOrderSelector,
     cardUIOptions,
-    highlightOptions,
+    highlightCards,
     headerClassName,
     persistPrefix,
     useQueryUrlParam,
@@ -247,7 +247,7 @@ export function ContractSearch(props: {
           loadMore={noControls ? undefined : performQuery}
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
-          highlightOptions={highlightOptions}
+          highlightCards={highlightCards}
           cardUIOptions={cardUIOptions}
         />
       )}

@@ -12,11 +12,6 @@ import { VisibilityObserver } from '../widgets/visibility-observer'
 import Masonry from 'react-masonry-css'
 import { CPMMBinaryContract } from 'common/contract'
 
-export type CardHighlightOptions = {
-  itemIds?: string[]
-  highlightClassName?: string
-}
-
 export function ContractsGrid(props: {
   contracts: Contract[] | undefined
   loadMore?: () => void
@@ -27,7 +22,7 @@ export function ContractsGrid(props: {
     hideGroupLink?: boolean
     noLinkAvatar?: boolean
   }
-  highlightOptions?: CardHighlightOptions
+  highlightCards?: string[]
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
   showImageOnTopContract?: boolean
@@ -38,12 +33,11 @@ export function ContractsGrid(props: {
     loadMore,
     onContractClick,
     cardUIOptions,
-    highlightOptions,
+    highlightCards,
     trackingPostfix,
     showImageOnTopContract,
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
-  const { itemIds: contractIds, highlightClassName } = highlightOptions || {}
   const onVisibilityUpdated = useCallback(
     (visible: boolean) => {
       if (visible && loadMore) {
@@ -115,8 +109,9 @@ export function ContractsGrid(props: {
               hideGroupLink={hideGroupLink}
               trackingPostfix={trackingPostfix}
               className={clsx(
-                'mb-4 break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
-                contractIds?.includes(contract.id) && highlightClassName
+                'mb-4 transition-all',
+                highlightCards?.includes(contract.id) &&
+                  'bg-gradient-to-b from-indigo-50 via-white to-white outline outline-2 outline-indigo-400'
               )}
             />
           )
