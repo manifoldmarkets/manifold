@@ -199,13 +199,6 @@ export type LiteUser = {
     monthly: number
     allTime: number
   }
-
-  creatorVolumeCached: {
-    daily: number
-    weekly: number
-    monthly: number
-    allTime: number
-  }
 }
 
 export function toLiteUser(user: User): LiteUser {
@@ -222,7 +215,6 @@ export function toLiteUser(user: User): LiteUser {
     balance,
     totalDeposits,
     profitCached,
-    creatorVolumeCached,
   } = user
 
   return removeUndefinedProps({
@@ -239,6 +231,5 @@ export function toLiteUser(user: User): LiteUser {
     balance,
     totalDeposits,
     profitCached,
-    creatorVolumeCached,
   })
 }

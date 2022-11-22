@@ -71,7 +71,6 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     createdTime: Date.now(),
     profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     profitRankCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-    creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     nextLoanCached: 0,
     followerCountCached: 0,
     followedCategories: DEFAULT_CATEGORIES,

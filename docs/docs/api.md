@@ -334,7 +334,6 @@ Requires no authorization.
       "balance":9122.607163564959,
       "totalDeposits":10339.004780544328,
       "totalPnLCached":9376.601262721899,
-      "creatorVolumeCached":76078.46984199001
     }
   ```
 - Response type: Array of `LiteUser`
@@ -360,7 +359,6 @@ Requires no authorization.
     balance: number
     totalDeposits: number
     totalPnLCached: number
-    creatorVolumeCached: number
   }
   ```
 

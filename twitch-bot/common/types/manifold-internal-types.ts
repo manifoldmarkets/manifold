@@ -270,13 +270,6 @@ export type User = {
     allTime: number;
   };
 
-  creatorVolumeCached: {
-    daily: number;
-    weekly: number;
-    monthly: number;
-    allTime: number;
-  };
-
   fractionResolvedCorrectly: number;
 
   nextLoanCached: number;
