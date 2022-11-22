@@ -59,6 +59,7 @@ export const BOT_USERNAMES = [
   'v',
   'acc',
   'jerk',
+  'snap',
   'ArbitrageBot',
   'MarketManagerBot',
   'Botlab',
@@ -71,6 +72,7 @@ export const BOT_USERNAMES = [
   'trainbot',
   'runebot',
   'LiquidityBonusBot',
+  '538',
 ]
 
 export const CORE_USERNAMES = [
