@@ -59,11 +59,11 @@ export const changeUser = async (
 
   // Update contracts, comments, and answers outside of a transaction to avoid contention.
   // Using bulkWriter to supports >500 writes at a time
-  const contractsRef = firestore
+  const contractSnap = await firestore
     .collection('contracts')
     .where('creatorId', '==', user.id)
-
-  const contracts = await contractsRef.get()
+    .select()
+    .get()
 
   const contractUpdate: Partial<Contract> = removeUndefinedProps({
     creatorName: update.name,
@@ -74,6 +74,7 @@ export const changeUser = async (
   const commentSnap = await firestore
     .collectionGroup('comments')
     .where('userUsername', '==', user.username)
+    .select()
     .get()
 
   const commentUpdate: Partial<Comment> = removeUndefinedProps({
@@ -85,12 +86,14 @@ export const changeUser = async (
   const answerSnap = await firestore
     .collectionGroup('answers')
     .where('username', '==', user.username)
+    .select()
     .get()
   const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
 
   const betsSnap = await firestore
     .collectionGroup('bets')
     .where('userId', '==', user.id)
+    .select()
     .get()
   const betsUpdate: Partial<Bet> = removeUndefinedProps({
     userName: update.name,
@@ -103,7 +106,7 @@ export const changeUser = async (
   bulkWriter.update(userRef, removeUndefinedProps(update))
   commentSnap.docs.forEach((d) => bulkWriter.update(d.ref, commentUpdate))
   answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
-  contracts.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
+  contractSnap.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
   betsSnap.docs.forEach((d) => bulkWriter.update(d.ref, betsUpdate))
 
   await bulkWriter.flush()
