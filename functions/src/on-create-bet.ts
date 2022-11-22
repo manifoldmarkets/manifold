@@ -5,7 +5,6 @@ import { keyBy, uniq } from 'lodash'
 import { Bet, LimitBet } from '../../common/bet'
 import { getUser, getValues, isProd, log } from './utils'
 import {
-  createBadgeAwardedNotification,
   createBetFillNotification,
   createBettingStreakBonusNotification,
   createUniqueBettorBonusNotification,
@@ -29,11 +28,6 @@ import { User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
 import { addHouseSubsidy } from './helpers/add-house-subsidy'
-import {
-  hasNoBadgeWithCurrentOrGreaterPropertyNumber,
-  StreakerBadge,
-  streakerBadgeRarityThresholds,
-} from '../../common/badge'
 import { BOT_USERNAMES } from '../../common/envs/constants'
 import { addUserToContractFollowers } from './follow-market'
 import { handleReferral } from './helpers/handle-referral'
@@ -159,7 +153,6 @@ const updateBettingStreak = async (
       newBettingStreak,
       eventId
     )
-    await handleBettingStreakBadgeAward(user, newBettingStreak)
   }
 }
 
@@ -311,40 +304,4 @@ const notifyFills = async (
 
 const currentDateBettingStreakResetTime = () => {
   return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
-}
-
-async function handleBettingStreakBadgeAward(
-  user: User,
-  newBettingStreak: number
-) {
-  const deservesBadge = hasNoBadgeWithCurrentOrGreaterPropertyNumber(
-    user.achievements.streaker?.badges,
-    'totalBettingStreak',
-    newBettingStreak
-  )
-  if (!deservesBadge) return
-
-  if (streakerBadgeRarityThresholds.includes(newBettingStreak)) {
-    const badge = {
-      type: 'STREAKER',
-      name: 'Streaker',
-      data: {
-        totalBettingStreak: newBettingStreak,
-      },
-      createdTime: Date.now(),
-    } as StreakerBadge
-    // update user
-    await firestore
-      .collection('users')
-      .doc(user.id)
-      .update({
-        achievements: {
-          ...user.achievements,
-          streaker: {
-            badges: [...(user.achievements?.streaker?.badges ?? []), badge],
-          },
-        },
-      })
-    await createBadgeAwardedNotification(user, badge)
-  }
 }
