@@ -181,14 +181,15 @@ export const ContractCard = memo(function ContractCard(props: {
           href={contractPath(contract)}
           onClick={(e) => {
             // Let the browser handle the link click (opens in new tab).
-            if (e.ctrlKey || e.metaKey) return
-
-            e.preventDefault()
-            track('click market card' + (trackingPostfix ?? ''), {
-              slug: contract.slug,
-              contractId: contract.id,
-            })
-            onClick()
+            if (e.ctrlKey || e.metaKey) {
+              track('click market card' + (trackingPostfix ?? ''), {
+                slug: contract.slug,
+                contractId: contract.id,
+              })
+            } else {
+              e.preventDefault()
+              onClick()
+            }
           }}
         />
       ) : (
