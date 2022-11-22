@@ -35,6 +35,7 @@ export * from './on-update-like'
 export * from './weekly-portfolio-emails'
 export * from './drizzle-liquidity'
 export * from './check-push-notification-receipts'
+export * from './onboarding-emails'
 
 // v2
 export * from './health'
