@@ -80,7 +80,10 @@ export function MiscDetails(props: {
         <Link
           prefetch={false}
           href={groupPath(groupToDisplay.slug)}
-          className={clsx(linkClass, 'w-32 truncate text-sm text-gray-400')}
+          className={clsx(
+            linkClass,
+            'max-w-[8rem] truncate text-sm text-gray-400'
+          )}
         >
           {groupToDisplay.name}
         </Link>
