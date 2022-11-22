@@ -658,6 +658,7 @@ Requires no authorization.
 
 ## Changelog
 
+- 2022-11-22: Update /market GET to remove `bets` and `comments`
 - 2022-10-17: Update /market POST to allow `visibility` and `groupId`; mark `closeTime` as optional; remove `tags`
 - 2022-09-24: Expand market POST docs to include new market types (`PSEUDO_NUMERIC`, `MULTIPLE_CHOICE`)
 - 2022-07-15: Add user by username and user by ID APIs
