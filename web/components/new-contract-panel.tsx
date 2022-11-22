@@ -268,7 +268,8 @@ export function NewContractPanel(props: {
               }}
               choicesMap={{
                 'Yes / No': 'BINARY',
-                'Multiple choice': 'MULTIPLE_CHOICE',
+                // TODO (James): Re-enable once old dpm-1 mechanism is deployed in createmarket function.
+                // 'Multiple choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
               }}
