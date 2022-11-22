@@ -113,16 +113,12 @@ export function ContractsGrid(props: {
   )
 }
 
-export function CreatorContractsList(props: {
-  user: User | null | undefined
-  creator: User
-}) {
-  const { user, creator } = props
+export function CreatorContractsList(props: { creator: User }) {
+  const { creator } = props
 
   return (
     <ContractSearch
       headerClassName="sticky"
-      user={user}
       defaultSort="newest"
       defaultFilter="all"
       additionalFilter={{

@@ -240,7 +240,7 @@ export function UserPage(props: { user: User }) {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <CreatorContractsList user={currentUser} creator={user} />
+                    <CreatorContractsList creator={user} />
                   </>
                 ),
               },

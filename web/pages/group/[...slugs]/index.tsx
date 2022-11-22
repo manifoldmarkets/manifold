@@ -226,7 +226,6 @@ export default function GroupPage(props: {
               content: (
                 <ContractSearch
                   headerClassName="md:sticky"
-                  user={user}
                   defaultSort={'score'}
                   defaultFilter={suggestedFilter}
                   additionalFilter={{

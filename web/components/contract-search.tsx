@@ -2,13 +2,11 @@
 import { SearchOptions } from '@algolia/client-search'
 import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
-import { User } from 'common/user'
 import { ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
 import { useEffect, useRef, useMemo, ReactNode, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
-import { useFollows } from 'web/hooks/use-follows'
 import {
   historyStore,
   inMemoryStore,
@@ -17,10 +15,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
-import { useMemberGroups } from 'web/hooks/use-group'
-import { NEW_USER_GROUP_SLUGS } from 'common/group'
-import { debounce, isEqual, sortBy } from 'lodash'
-import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
+import { debounce, isEqual } from 'lodash'
 import { Col } from './layout/col'
 import clsx from 'clsx'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -74,10 +69,8 @@ type AdditionalFilter = {
 }
 
 export function ContractSearch(props: {
-  user?: User | null
   defaultSort?: Sort
   defaultFilter?: filter
-  defaultPill?: string
   additionalFilter?: AdditionalFilter
   highlightCards?: string[]
   onContractClick?: (contract: Contract) => void
@@ -102,10 +95,8 @@ export function ContractSearch(props: {
   profile?: boolean | undefined
 }) {
   const {
-    user,
     defaultSort,
     defaultFilter,
-    defaultPill,
     additionalFilter,
     onContractClick,
     hideOrderSelector,
@@ -228,7 +219,6 @@ export function ContractSearch(props: {
         hideOrderSelector={hideOrderSelector}
         useQueryUrlParam={useQueryUrlParam}
         includeProbSorts={includeProbSorts}
-        user={user}
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
         autoFocus={autoFocus}
@@ -264,7 +254,6 @@ function ContractSearchControls(props: {
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
-  user?: User | null
   noControls?: boolean
   autoFocus?: boolean
   isWholePage?: boolean
@@ -278,7 +267,6 @@ function ContractSearchControls(props: {
     hideOrderSelector,
     onSearchParametersChanged,
     useQueryUrlParam,
-    user,
     noControls,
     autoFocus,
     includeProbSorts,
@@ -323,36 +311,6 @@ function ContractSearchControls(props: {
       safeLocalStorage()?.setItem(sortKey, sort as string)
     }
   }, [persistPrefix, query, sort, sortKey])
-
-  const follows = useFollows(user?.id)
-  const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
-    (group) => !NEW_USER_GROUP_SLUGS.includes(group.slug)
-  )
-  const memberGroupSlugs =
-    memberGroups.length > 0
-      ? memberGroups.map((g) => g.slug)
-      : DEFAULT_CATEGORY_GROUPS.map((g) => g.slug)
-
-  const memberPillGroups = sortBy(
-    memberGroups.filter((group) => group.totalContracts > 0),
-    (group) => group.totalContracts
-  ).reverse()
-
-  const pillGroups: { name: string; slug: string }[] =
-    memberPillGroups.length > 0 ? memberPillGroups : DEFAULT_CATEGORY_GROUPS
-
-  const personalFilters = user
-    ? [
-        // Show contracts in groups that the user is a member of.
-        memberGroupSlugs
-          .map((slug) => `groupLinks.slug:${slug}`)
-          // Or, show contracts created by users the user follows
-          .concat(follows?.map((followId) => `creatorId:${followId}`) ?? []),
-
-        // Subtract contracts you bet on, to show new ones.
-        `uniqueBettorIds:-${user.id}`,
-      ]
-    : []
 
   const additionalFilters = [
     additionalFilter?.creatorId
