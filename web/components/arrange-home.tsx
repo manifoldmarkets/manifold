@@ -100,7 +100,7 @@ const SectionItem = (props: {
     <Row
       className={clsx(
         className,
-        'items-center justify-between gap-4 rounded bg-gray-50 p-2'
+        'items-center justify-between gap-4 rounded bg-white p-2'
       )}
     >
       <Row className="items-center gap-4">

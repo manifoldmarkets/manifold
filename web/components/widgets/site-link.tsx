@@ -8,7 +8,7 @@ export const linkClass =
 export const SiteLink = (props: {
   href: string | undefined
   children?: ReactNode
-  onClick?: () => void
+  onClick?: (event?: any) => void
   className?: string
 }) => {
   const { href, children, onClick, className } = props
