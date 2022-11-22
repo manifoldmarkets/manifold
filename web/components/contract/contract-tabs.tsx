@@ -214,7 +214,6 @@ const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
 
     return (
       <Row
-        key={userIdsAndPositions.userId}
         className={clsx(
           'items-center justify-between gap-2 rounded-sm border-b p-2',
           currentUser?.id === userIdsAndPositions.userId && 'bg-amber-100',
@@ -259,7 +258,7 @@ const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
                 {visibleYesPositions.map((position) => {
                   return (
                     <PositionRow
-                      key={position.userId}
+                      key={position.userId + 'YES'}
                       userIdsAndPositions={position}
                       denormalizedUserInfoFromBets={
                         userInfosFromBets[position.userId]
@@ -275,7 +274,7 @@ const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
                 {visibleNoPositions.map((position) => {
                   return (
                     <PositionRow
-                      key={position.userId}
+                      key={position.userId + 'NO'}
                       userIdsAndPositions={position}
                       denormalizedUserInfoFromBets={
                         userInfosFromBets[position.userId]
