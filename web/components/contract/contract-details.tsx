@@ -82,7 +82,7 @@ export function MiscDetails(props: {
           href={groupPath(groupToDisplay.slug)}
           className={clsx(
             linkClass,
-            'max-w-[8rem] truncate text-sm text-gray-400'
+            'z-10 max-w-[8rem] truncate text-sm text-gray-400'
           )}
         >
           {groupToDisplay.name}

@@ -110,7 +110,11 @@ export const ContractCard = memo(function ContractCard(props: {
       <Col className="relative flex-1 gap-1 pt-2">
         {!hideDetails && (
           <Row className="justify-between px-4 ">
-            <AvatarDetails contract={contract} noLink={noLinkAvatar} />
+            <AvatarDetails
+              contract={contract}
+              noLink={noLinkAvatar}
+              className="z-10"
+            />
             <Row className="gap-1">
               {pinned && <FeaturedPill label={featuredLabel} />}
               {/* {isNew && <NewContractBadge />} */}
