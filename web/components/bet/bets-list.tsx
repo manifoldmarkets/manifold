@@ -479,7 +479,13 @@ export function ContractBetsTable(props: {
       {!isResolved && amountLoaned > 0 && (
         <>
           <div className="pl-2 text-sm text-gray-500">
-            You currently have a loan of {formatMoney(amountLoaned)}.
+            {isYourBets ? (
+              <>You currently have a loan of {formatMoney(amountLoaned)}.</>
+            ) : (
+              <>
+                This user currently has a loan of {formatMoney(amountLoaned)}.
+              </>
+            )}
           </div>
           <Spacer h={4} />
         </>
