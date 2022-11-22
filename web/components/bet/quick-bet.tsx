@@ -562,7 +562,7 @@ function ContractCardAnswer(props: {
           'absolute inset-0 flex items-center justify-between px-4'
         )}
       >
-        <AnswerLabel answer={answer} truncate="medium" />
+        <AnswerLabel answer={answer} truncate={'short'} />
         <div className="font-semibold">{display}</div>
       </span>
     </div>
