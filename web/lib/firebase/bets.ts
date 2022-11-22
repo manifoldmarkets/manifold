@@ -72,33 +72,6 @@ export async function listAllBets(contractId: string, options?: BetFilter) {
   return await getValues<Bet>(getContractBetsQuery(contractId, options))
 }
 
-const DAY_IN_MS = 24 * 60 * 60 * 1000
-
-// Define "recent" as "<24 hours ago" for now
-const recentBetsQuery = query(
-  collectionGroup(db, 'bets'),
-  where('createdTime', '>', Date.now() - DAY_IN_MS),
-  orderBy('createdTime', 'desc')
-)
-
-export async function getRecentBets() {
-  return getValues<Bet>(recentBetsQuery)
-}
-
-export function listenForRecentBets(setBets: (bets: Bet[]) => void) {
-  return listenForValues<Bet>(recentBetsQuery, setBets)
-}
-
-export async function getRecentContractBets(contractId: string) {
-  const q = query(
-    getBetsCollection(contractId),
-    where('createdTime', '>', Date.now() - DAY_IN_MS),
-    orderBy('createdTime', 'desc')
-  )
-
-  return getValues<Bet>(q)
-}
-
 export function listenForBets(
   contractId: string,
   setBets: (bets: Bet[]) => void,
