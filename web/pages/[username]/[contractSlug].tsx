@@ -48,6 +48,10 @@ import { useEvent } from 'web/hooks/use-event'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
 import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
+import {
+  getBinaryContractUserContractMetrics,
+  UserContractMetrics,
+} from 'web/lib/firebase/contract-metrics'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
@@ -66,11 +70,18 @@ export async function getStaticPropz(props: {
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
+  // get all contractMetrics for users with hasShares = true
+  const userPositions =
+    contractId && contract?.outcomeType === 'BINARY'
+      ? await getBinaryContractUserContractMetrics(contractId, 500)
+      : []
+
   return {
     props: {
       contract,
       bets,
       comments,
+      userPositions,
     },
   }
 }
@@ -83,6 +94,7 @@ export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
   comments: ContractComment[]
+  userPositions: UserContractMetrics
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -109,6 +121,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
+  const { userPositions } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -273,6 +286,7 @@ export function ContractPageContent(
             bets={bets}
             userBets={userBets ?? []}
             comments={comments}
+            userContractMetrics={userPositions}
             answerResponse={answerResponse}
             onCancelAnswerResponse={onCancelAnswerResponse}
             blockedUserIds={blockedUserIds}

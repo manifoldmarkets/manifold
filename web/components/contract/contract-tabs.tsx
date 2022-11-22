@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useRef, useState } from 'react'
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
@@ -28,6 +28,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Row } from '../layout/row'
 import {
+  inMemoryStore,
   storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
@@ -35,12 +36,23 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
 import { track } from 'web/lib/service/analytics'
+import {
+  UserContractMetrics,
+  UserIdAndPosition,
+} from 'web/lib/firebase/contract-metrics'
+import { UserLink } from 'web/components/widgets/user-link'
+import { Avatar } from 'web/components/widgets/avatar'
+import clsx from 'clsx'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useFollows } from 'web/hooks/use-follows'
+import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
   userBets: Bet[]
   comments: ContractComment[]
+  userContractMetrics: UserContractMetrics
   answerResponse?: Answer | undefined
   onCancelAnswerResponse?: () => void
   blockedUserIds: string[]
@@ -57,6 +69,7 @@ export function ContractTabs(props: {
     blockedUserIds,
     activeIndex,
     setActiveIndex,
+    userContractMetrics,
   } = props
 
   const commentTitle =
@@ -97,7 +110,25 @@ export function ContractTabs(props: {
         },
         bets.length > 0 && {
           title: betsTitle,
-          content: <BetsTabContent contract={contract} bets={bets} />,
+          content: (
+            <Col className={'gap-4'}>
+              {contract.outcomeType === 'BINARY' && (
+                <>
+                  <Row className={'text-xl text-indigo-700'}>
+                    User Positions
+                  </Row>
+                  <UserPositionsTabContent
+                    bets={bets}
+                    positions={userContractMetrics}
+                  />
+                  <Row className={'mt-2 text-xl text-indigo-700'}>
+                    User Trades
+                  </Row>
+                </>
+              )}
+              <BetsTabContent contract={contract} bets={bets} />
+            </Col>
+          ),
         },
         userBets.length > 0 && {
           title: yourBetsTitle,
@@ -117,6 +148,176 @@ export function ContractTabs(props: {
     />
   )
 }
+type DenormalizedUserBetInfo = {
+  name: string | undefined
+  username: string | undefined
+  avatarUrl: string | undefined
+}
+
+// This is not currently re-computed every after trade, only once in static props
+const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
+  bets: Bet[]
+  positions: UserContractMetrics
+}) {
+  const { bets, positions } = props
+
+  const [page, setPage] = useState(0)
+  const pageSize = 20
+  const itemsToShowBeforeCollapse = 7
+  const currentUser = useUser()
+  const followedUsers = useFollows(currentUser?.id)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const yesPositionsSorted = positions.YES
+  const noPositionsSorted = positions.NO
+
+  const visibleYesPositions = yesPositionsSorted.slice(
+    page * pageSize,
+    (page + 1) * pageSize
+  )
+  const visibleNoPositions = noPositionsSorted.slice(
+    page * pageSize,
+    (page + 1) * pageSize
+  )
+  const totalItems =
+    yesPositionsSorted.length > noPositionsSorted.length
+      ? yesPositionsSorted.length
+      : noPositionsSorted.length
+  // TODO: should we put this in the static props?
+  const userInfosFromBets: { [userId: string]: DenormalizedUserBetInfo } = {}
+  // How can we make a map of userId to user info?
+
+  yesPositionsSorted.concat(noPositionsSorted).map((position) => {
+    const bet = bets.find((bet) => bet.userId === position.userId)
+    userInfosFromBets[position.userId] = {
+      username: bet?.userUsername,
+      avatarUrl: bet?.userAvatarUrl,
+      name: bet?.userName,
+    }
+  })
+  const [isCollapsed, setIsCollapsed] = usePersistentState<boolean>(
+    totalItems > itemsToShowBeforeCollapse,
+    {
+      store: inMemoryStore(),
+      key: `is-collapsed-user-positions-${bets[0].contractId}`,
+    }
+  )
+  const PositionRow = memo(function PositionRow(props: {
+    userIdsAndPositions: UserIdAndPosition
+    denormalizedUserInfoFromBets: DenormalizedUserBetInfo
+  }) {
+    const { userIdsAndPositions, denormalizedUserInfoFromBets } = props
+    const { hasYesShares, totalShares } = userIdsAndPositions.contractMetrics
+    const shares = hasYesShares ? totalShares.YES : totalShares.NO
+
+    const { name, username, avatarUrl } = denormalizedUserInfoFromBets
+    const isMobile = useIsMobile(800)
+
+    return (
+      <Row
+        className={clsx(
+          'items-center justify-between gap-2 rounded-sm border-b p-2',
+          currentUser?.id === userIdsAndPositions.userId && 'bg-amber-100',
+          followedUsers?.includes(userIdsAndPositions.userId) && 'bg-blue-50'
+        )}
+      >
+        <Row className={clsx('max-w-[8rem] items-center gap-2 sm:max-w-none')}>
+          <Avatar size={'sm'} avatarUrl={avatarUrl} username={username} />
+          {name && username ? (
+            <UserLink short={isMobile} name={name} username={username} />
+          ) : (
+            <span>Loading..</span>
+          )}
+        </Row>
+        <span
+          className={clsx(
+            hasYesShares ? 'text-teal-500' : 'text-red-700',
+            'shrink-0'
+          )}
+        >
+          {Math.round(shares)}
+        </span>
+      </Row>
+    )
+  })
+
+  return (
+    <Col className="relative" ref={contentRef}>
+      <div
+        style={{ height: isCollapsed ? 450 : 'auto' }}
+        className={clsx(
+          'transition-height relative w-full overflow-hidden rounded-b-md'
+        )}
+      >
+        <div>
+          <Col className={'w-full '}>
+            <Row className={'gap-8'}>
+              <Col className={'w-full max-w-sm gap-2'}>
+                <Row className={'justify-end px-2 text-gray-500'}>
+                  <span>YES shares</span>
+                </Row>
+                {visibleYesPositions.map((position) => {
+                  return (
+                    <PositionRow
+                      key={position.userId + 'YES'}
+                      userIdsAndPositions={position}
+                      denormalizedUserInfoFromBets={
+                        userInfosFromBets[position.userId]
+                      }
+                    />
+                  )
+                })}
+              </Col>
+              <Col className={'w-full max-w-sm gap-2'}>
+                <Row className={'justify-end px-2 text-gray-500'}>
+                  <span>NO shares</span>
+                </Row>
+                {visibleNoPositions.map((position) => {
+                  return (
+                    <PositionRow
+                      key={position.userId + 'NO'}
+                      userIdsAndPositions={position}
+                      denormalizedUserInfoFromBets={
+                        userInfosFromBets[position.userId]
+                      }
+                    />
+                  )
+                })}
+              </Col>
+            </Row>
+            <Pagination
+              page={page}
+              itemsPerPage={pageSize}
+              totalItems={totalItems}
+              setPage={setPage}
+            />
+          </Col>
+        </div>
+        {isCollapsed && (
+          <>
+            <div className="absolute bottom-0 w-full">
+              <div className="h-12 bg-gradient-to-t from-gray-100" />
+            </div>
+          </>
+        )}
+      </div>
+      {isCollapsed && (
+        <ShowMoreLessButton
+          className="absolute right-0 -bottom-8 bg-transparent"
+          onClick={() => {
+            if (!isCollapsed)
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              })
+            setIsCollapsed(!isCollapsed)
+          }}
+          moreWhat={'Positions'}
+          isCollapsed={isCollapsed}
+        />
+      )}
+    </Col>
+  )
+})
 
 const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
