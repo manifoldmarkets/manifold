@@ -50,7 +50,7 @@ async function scoreContractsInternal() {
       !wasCreatedToday
     ) {
       const percentChange = Math.abs(contract.probChanges.day)
-      dailyScore = popularityScore * percentChange
+      dailyScore = Math.log(popularityScore + 1) * percentChange
     }
 
     if (
