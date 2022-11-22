@@ -54,6 +54,9 @@ export const changeUser = async (
     avatarUrl?: string
   }
 ) => {
+  if (update.username) update.username = cleanUsername(update.username)
+  if (update.name) update.name = cleanDisplayName(update.name)
+
   // Update contracts, comments, and answers outside of a transaction to avoid contention.
   // Using bulkWriter to supports >500 writes at a time
   const contractsRef = firestore
@@ -105,10 +108,6 @@ export const changeUser = async (
 
   // Update the username inside a transaction
   return await firestore.runTransaction(async (transaction) => {
-    if (update.username) update.username = cleanUsername(update.username)
-
-    if (update.name) update.name = cleanDisplayName(update.name)
-
     const userRef = firestore.collection('users').doc(user.id)
     const userUpdate: Partial<User> = removeUndefinedProps(update)
     transaction.update(userRef, userUpdate)
