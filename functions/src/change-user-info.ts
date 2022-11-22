@@ -99,19 +99,15 @@ export const changeUser = async (
   })
 
   const bulkWriter = firestore.bulkWriter()
+  const userRef = firestore.collection('users').doc(user.id)
+  bulkWriter.update(userRef, removeUndefinedProps(update))
   commentSnap.docs.forEach((d) => bulkWriter.update(d.ref, commentUpdate))
   answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
   contracts.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
   betsSnap.docs.forEach((d) => bulkWriter.update(d.ref, betsUpdate))
+
   await bulkWriter.flush()
   console.log('Done writing!')
-
-  // Update the username inside a transaction
-  return await firestore.runTransaction(async (transaction) => {
-    const userRef = firestore.collection('users').doc(user.id)
-    const userUpdate: Partial<User> = removeUndefinedProps(update)
-    transaction.update(userRef, userUpdate)
-  })
 }
 
 const firestore = admin.firestore()
