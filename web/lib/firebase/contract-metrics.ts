@@ -6,8 +6,16 @@ import {
   collection,
   orderBy,
   where,
+  collectionGroup,
+  getDocs,
 } from 'firebase/firestore'
 import { db } from './init'
+import { filterDefined } from 'common/util/array'
+
+export type UserContractMetrics = {
+  userId: string
+  contractMetrics: ContractMetrics
+}
 
 export function getUserContractMetricsQuery(
   userId: string,
@@ -20,4 +28,40 @@ export function getUserContractMetricsQuery(
     orderBy('from.day.profit', sort),
     limit(count)
   ) as Query<ContractMetrics>
+}
+
+export async function getContractShareholders(
+  contractId: string,
+  count: number
+) {
+  const yesSnap = await getDocs(
+    query(
+      collectionGroup(db, 'contract-metrics'),
+      where('contractId', '==', contractId),
+      where('hasYesShares', '==', true),
+      orderBy('totalShares.YES', 'desc'),
+      limit(Math.round(count / 2))
+    )
+  )
+  const noSnap = await getDocs(
+    query(
+      collectionGroup(db, 'contract-metrics'),
+      where('contractId', '==', contractId),
+      where('hasNoShares', '==', true),
+      orderBy('totalShares.NO', 'desc'),
+      limit(Math.round(count / 2))
+    )
+  )
+  const snapDocs = [...yesSnap.docs, ...noSnap.docs]
+  const userIdsWithMetrics = filterDefined(
+    snapDocs.map((doc) => {
+      const userId = doc.ref.parent.parent?.id
+      if (!userId) return undefined
+      return {
+        userId,
+        contractMetrics: doc.data() as ContractMetrics,
+      }
+    })
+  )
+  return userIdsWithMetrics
 }
