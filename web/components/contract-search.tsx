@@ -19,7 +19,6 @@ import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { NEW_USER_GROUP_SLUGS } from 'common/group'
-import { PillButton } from './buttons/pill-button'
 import { debounce, isEqual, sortBy } from 'lodash'
 import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
@@ -321,15 +320,6 @@ function ContractSearchControls(props: {
           store: urlParamStore(router),
         }
   )
-  const [pill, setPill] = usePersistentState(
-    defaultPill ?? '',
-    !useQueryUrlParam
-      ? undefined
-      : {
-          key: 'p',
-          store: urlParamStore(router),
-        }
-  )
 
   useEffect(() => {
     if (persistPrefix && sort) {
@@ -387,24 +377,10 @@ function ContractSearchControls(props: {
         filter === 'open' ? 'isResolved:false' : '',
         filter === 'closed' ? 'isResolved:false' : '',
         filter === 'resolved' ? 'isResolved:true' : '',
-
-        pill && pill !== 'personal' && pill !== 'your-bets'
-          ? `groupLinks.slug:${pill}`
-          : '',
-        ...(pill === 'personal' ? personalFilters : []),
-        pill === 'your-bets' && user
-          ? // Show contracts bet on by the user
-            `uniqueBettorIds:${user.id}`
-          : '',
       ].filter((f) => f)
 
   const openClosedFilter =
     filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
-
-  const selectPill = (pill: string | null) => () => {
-    setPill(pill ?? '')
-    track('select search category', { category: pill ?? 'all' })
-  }
 
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
@@ -468,43 +444,6 @@ function ContractSearchControls(props: {
           </ModalOnMobile>
         )}
       </Row>
-
-      {!additionalFilter && !query && (
-        <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
-          <PillButton key={'all'} selected={!pill} onSelect={selectPill(null)}>
-            All
-          </PillButton>
-          <PillButton
-            key={'personal'}
-            selected={pill === 'personal'}
-            onSelect={selectPill('personal')}
-          >
-            {user ? 'For you' : 'Featured'}
-          </PillButton>
-
-          {user && (
-            <PillButton
-              key={'your-bets'}
-              selected={pill === 'your-bets'}
-              onSelect={selectPill('your-bets')}
-            >
-              Your {PAST_BETS}
-            </PillButton>
-          )}
-
-          {pillGroups.map(({ name, slug }) => {
-            return (
-              <PillButton
-                key={slug}
-                selected={pill === slug}
-                onSelect={selectPill(slug)}
-              >
-                {name}
-              </PillButton>
-            )
-          })}
-        </Row>
-      )}
     </Col>
   )
 }

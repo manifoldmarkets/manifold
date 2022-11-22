@@ -100,7 +100,7 @@ export function SelectMarketsModal(props: {
             }}
             additionalFilter={{
               facetFilters: getUsersBlockFacetFilters(privateUser),
-            }} /* hide pills */
+            }}
             headerClassName="bg-white sticky"
             {...contractSearchOptions}
           />
