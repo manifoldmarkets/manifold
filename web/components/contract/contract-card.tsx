@@ -103,7 +103,7 @@ export const ContractCard = memo(function ContractCard(props: {
   return (
     <Card
       className={clsx(
-        'font-readex-pro group relative flex w-full leading-normal',
+        'group relative flex w-full leading-normal',
         hasImage ? 'ub-cover-image' : '',
         className
       )}
