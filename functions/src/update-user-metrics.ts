@@ -9,7 +9,6 @@ import { PortfolioMetrics, User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
 import {
-  calculateCreatorVolume,
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateMetricsByContract,
@@ -75,7 +74,6 @@ export async function updateUserMetrics() {
           .map((c) => c.id)
       )
       const portfolioHistory = await loadPortfolioHistory(user.id, now)
-      const newCreatorVolume = calculateCreatorVolume(userContracts)
       const newCreatorTraders = calculateCreatorTraders(userContracts)
 
       const newPortfolio = calculateNewPortfolioMetrics(
@@ -142,7 +140,6 @@ export async function updateUserMetrics() {
       return {
         user: user,
         fields: {
-          creatorVolumeCached: newCreatorVolume,
           creatorTraders: newCreatorTraders,
           profitCached: newProfit,
           nextLoanCached: nextLoanPayout ?? 0,

@@ -62,13 +62,6 @@ export type LiteUser = {
     monthly: number;
     allTime: number;
   };
-
-  creatorVolumeCached: {
-    daily: number;
-    weekly: number;
-    monthly: number;
-    allTime: number;
-  };
 };
 
 export type ApiAnswer = Answer & {

@@ -58,10 +58,7 @@ async function deleteUsersSubcollections() {
   const userSnap = await firestore.collection('users').get()
   const users = userSnap.docs.map((d) => d.data() as User)
   const usersToDelete = users.filter(
-    (u) =>
-      u.balance === 1000 ||
-      u.balance < 300 ||
-      u.creatorVolumeCached.allTime === 0
+    (u) => u.balance === 1000 || u.balance < 300
   )
   const userIds = usersToDelete.map((d) => d.id)
   console.log('deleting users subcollections:', userIds.length)

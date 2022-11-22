@@ -1,4 +1,4 @@
-import { Dictionary, last, partition, sum, sumBy, uniq } from 'lodash'
+import { Dictionary, last, partition, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
@@ -181,15 +181,6 @@ export const computeDpmElasticity = (
   return getNewMultiBetInfo('', 2 * betAmount, contract).newBet.probAfter
 }
 
-const computeTotalPool = (userContracts: Contract[], startTime = 0) => {
-  const periodFilteredContracts = userContracts.filter(
-    (contract) => contract.createdTime >= startTime
-  )
-  return sum(
-    periodFilteredContracts.map((contract) => sum(Object.values(contract.pool)))
-  )
-}
-
 export const computeVolume = (contractBets: Bet[], since: number) => {
   return sumBy(contractBets, (b) =>
     b.createdTime > since && !b.isRedemption && !b.isAnte
@@ -217,30 +208,6 @@ export const calculateProbChange = (
   }
 
   return prob - betBeforeSince.probAfter
-}
-
-export const calculateCreatorVolume = (userContracts: Contract[]) => {
-  const allTimeCreatorVolume = computeTotalPool(userContracts, 0)
-  const monthlyCreatorVolume = computeTotalPool(
-    userContracts,
-    Date.now() - 30 * DAY_MS
-  )
-  const weeklyCreatorVolume = computeTotalPool(
-    userContracts,
-    Date.now() - 7 * DAY_MS
-  )
-
-  const dailyCreatorVolume = computeTotalPool(
-    userContracts,
-    Date.now() - 1 * DAY_MS
-  )
-
-  return {
-    daily: dailyCreatorVolume,
-    weekly: weeklyCreatorVolume,
-    monthly: monthlyCreatorVolume,
-    allTime: allTimeCreatorVolume,
-  }
 }
 
 export const calculateCreatorTraders = (userContracts: Contract[]) => {
