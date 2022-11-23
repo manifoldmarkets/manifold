@@ -5,12 +5,18 @@ export const randomString = (length = 12) =>
 
 export function genHash(str: string) {
   // xmur3
-  let h: number
-  for (let i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
+
+  // Route around compiler bug by using object?
+  const o = { h: 1779033703 ^ str.length }
+
+  for (let i = 0; i < str.length; i++) {
+    let h = o.h
     h = Math.imul(h ^ str.charCodeAt(i), 3432918353)
     h = (h << 13) | (h >>> 19)
+    o.h = h
   }
   return function () {
+    let h = o.h
     h = Math.imul(h ^ (h >>> 16), 2246822507)
     h = Math.imul(h ^ (h >>> 13), 3266489909)
     return (h ^= h >>> 16) >>> 0
@@ -42,14 +48,19 @@ export function createRNG(seed: string) {
 
 export const shuffle = (array: unknown[], rand: () => number) => {
   for (let i = 0; i < array.length; i++) {
-    const swapIndex = Math.floor(rand() * (array.length - i))
+    const swapIndex = i + Math.floor(rand() * (array.length - i))
     ;[array[i], array[swapIndex]] = [array[swapIndex], array[i]]
   }
 }
 
-export function chooseRandomSubset<T>(items: T[], count: number) {
+export function chooseRandomSubset<T>(
+  items: T[],
+  count: number,
+  seed?: string
+) {
   const fiveMinutes = 5 * 60 * 1000
-  const seed = Math.round(Date.now() / fiveMinutes).toString()
-  shuffle(items, createRNG(seed))
-  return items.slice(0, count)
+  seed = seed ?? Math.round(Date.now() / fiveMinutes).toString()
+  const copy = [...items]
+  shuffle(copy, createRNG(seed))
+  return copy.slice(0, count)
 }

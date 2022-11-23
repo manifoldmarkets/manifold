@@ -6,6 +6,7 @@ import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
 import { Dictionary, sortBy, sum } from 'lodash'
 
+import { chooseRandomSubset } from 'common/util/random'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
@@ -70,6 +71,7 @@ import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { GroupCard } from '../groups'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import Link from 'next/link'
+import { MINUTE_MS } from 'common/util/time'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -109,7 +111,14 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     }
   }, [user, sections])
 
-  const trendingContracts = useTrendingContracts(6, userBlockFacetFilters)
+  const trending = useTrendingContracts(12, userBlockFacetFilters)
+
+  // Change seed every 15 minutes.
+  const seed = Math.round(Date.now() / (15 * MINUTE_MS)).toString()
+  const trendingContracts = trending
+    ? chooseRandomSubset(trending, 6, seed)
+    : undefined
+
   const newContracts = useNewContracts(6, userBlockFacetFilters)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
     6,
