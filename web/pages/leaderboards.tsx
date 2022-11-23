@@ -20,15 +20,6 @@ import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 
 export async function getStaticProps() {
-  const props = await fetchProps()
-
-  return {
-    props,
-    revalidate: 60, // regenerate after a minute
-  }
-}
-
-const fetchProps = async () => {
   const [allTime, monthly, weekly, daily] = await Promise.all([
     queryLeaderboardUsers('allTime'),
     queryLeaderboardUsers('monthly'),
@@ -36,13 +27,15 @@ const fetchProps = async () => {
     queryLeaderboardUsers('daily'),
   ])
   const topFollowed = await getTopFollowed()
-
   return {
-    allTime,
-    monthly,
-    weekly,
-    daily,
-    topFollowed,
+    props: {
+      allTime,
+      monthly,
+      weekly,
+      daily,
+      topFollowed,
+    },
+    revalidate: 60, // regenerate after a minute
   }
 }
 
@@ -62,23 +55,18 @@ type leaderboard = {
   topCreators: User[]
 }
 
-export default function Leaderboards(_props: {
+export default function Leaderboards(props: {
   allTime: leaderboard
   monthly: leaderboard
   weekly: leaderboard
   daily: leaderboard
   topFollowed: User[]
 }) {
-  const [props, setProps] = useState<Parameters<typeof Leaderboards>[0]>(_props)
   const [myRanks, setMyRanks] = useState<
     Record<Period, number | undefined> | undefined
   >()
 
   const user = useUser()
-
-  useEffect(() => {
-    fetchProps().then(setProps)
-  }, [])
 
   useEffect(() => {
     if (!user?.profitCached) {
