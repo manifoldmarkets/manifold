@@ -26,13 +26,6 @@ export type User = {
     allTime: number
   }
 
-  profitRankCached?: {
-    daily: number
-    weekly: number
-    monthly: number
-    allTime: number
-  }
-
   creatorTraders: {
     daily: number
     weekly: number

@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy } from 'lodash'
 
 import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
@@ -157,27 +157,10 @@ export async function updateUserMetrics() {
   const userUpdatesMinusBot = userUpdates.filter(
     (update) => HOUSE_BOT_USERNAME !== update.user.username
   )
-  const periods = ['daily', 'weekly', 'monthly', 'allTime'] as const
-  const periodRanksByUserId = periods.map((period) => {
-    const rankedUpdates = sortBy(
-      userUpdatesMinusBot,
-      ({ fields }) => -fields.profitCached[period]
-    )
-    return Object.fromEntries(
-      rankedUpdates.map((update, i) => [update.user.id, i + 1])
-    )
-  })
 
   for (const { user, fields } of userUpdatesMinusBot) {
-    const profitRankCached = Object.fromEntries(
-      periods.map((period, i) => {
-        return [period, periodRanksByUserId[i][user.id]]
-      })
-    ) as Record<typeof periods[number], number>
-
-    const update = { profitRankCached, ...fields }
-    if (hasChanges(user, update)) {
-      writer.update(firestore.collection('users').doc(user.id), update)
+    if (hasChanges(user, fields)) {
+      writer.update(firestore.collection('users').doc(user.id), fields)
     }
   }
 
