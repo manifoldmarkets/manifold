@@ -1,10 +1,8 @@
 import type { MentionOptions } from '@tiptap/extension-mention'
 import { PluginKey } from 'prosemirror-state'
-import { beginsWith, searchInAny } from 'common/util/parse'
-import { orderBy } from 'lodash'
-import { getCachedContracts } from 'web/hooks/use-contracts'
 import { MentionList } from './contract-mention-list'
 import { makeMentionRender } from './mention-suggestion'
+import { trendingIndex } from 'web/lib/service/algolia'
 
 type Suggestion = MentionOptions['suggestion']
 
@@ -15,12 +13,11 @@ export const contractMentionSuggestion: Suggestion = {
   // Note (James): After recreating yarn.lock, this line had a type error, so I cast it to any...
   pluginKey: new PluginKey('contract-mention') as any,
   items: async ({ query }) =>
-    orderBy(
-      (await getCachedContracts()).filter((c) =>
-        searchInAny(query, c.question)
-      ),
-      [(c) => [c.question].some((s) => beginsWith(s, query))],
-      ['desc']
-    ).slice(0, 5),
+    (
+      await trendingIndex.search(query, {
+        hitsPerPage: 5,
+        removeStopWords: true,
+      })
+    ).hits,
   render: makeMentionRender(MentionList),
 }

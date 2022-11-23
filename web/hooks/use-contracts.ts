@@ -106,12 +106,6 @@ export const useContractsByDailyScoreGroups = (
   )
 }
 
-const q = new QueryClient()
-export const getCachedContracts = async () =>
-  q.fetchQuery(['contracts'], () => listAllContracts(10000), {
-    staleTime: Infinity,
-  })
-
 export const useInactiveContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
