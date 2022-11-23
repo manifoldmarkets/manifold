@@ -93,14 +93,10 @@ export function SelectMarketsModal(props: {
               hideQuickBet: true,
               noLinkAvatar: true,
             }}
-            highlightOptions={{
-              itemIds: contracts.map((c) => c.id),
-              highlightClassName:
-                '!bg-indigo-100 outline outline-2 outline-indigo-300',
-            }}
+            highlightCards={contracts.map((c) => c.id)}
             additionalFilter={{
               facetFilters: getUsersBlockFacetFilters(privateUser),
-            }} /* hide pills */
+            }}
             headerClassName="bg-white sticky"
             {...contractSearchOptions}
           />

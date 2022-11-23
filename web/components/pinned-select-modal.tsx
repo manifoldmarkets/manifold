@@ -149,11 +149,7 @@ export function PinnedSelectModal(props: {
                 hideQuickBet: true,
                 noLinkAvatar: true,
               }}
-              highlightOptions={{
-                itemIds: [selectedItem?.itemId ?? ''],
-                highlightClassName:
-                  '!bg-indigo-100 outline outline-2 outline-indigo-300',
-              }}
+              highlightCards={[selectedItem?.itemId ?? '']}
               additionalFilter={group ? { groupSlug: group.slug } : undefined}
               persistPrefix={group ? `group-${group.slug}` : undefined}
               headerClassName="bg-white sticky"
@@ -166,11 +162,7 @@ export function PinnedSelectModal(props: {
               <PostCardList
                 posts={posts}
                 onPostClick={selectPost}
-                highlightOptions={{
-                  itemIds: [selectedItem?.itemId ?? ''],
-                  highlightClassName:
-                    '!bg-indigo-100 outline outline-2 outline-indigo-300',
-                }}
+                highlightCards={[selectedItem?.itemId ?? '']}
               />
               {posts.length == 0 && (
                 <div className="text-center text-gray-500">No posts yet</div>
@@ -196,11 +188,7 @@ export function PinnedSelectModal(props: {
                     .map((group) => (
                       <GroupCard
                         key={group.id}
-                        highlightOptions={{
-                          itemIds: [selectedItem?.itemId ?? ''],
-                          highlightClassName:
-                            '!bg-indigo-100 outline outline-2 outline-indigo-300',
-                        }}
+                        highlightCards={[selectedItem?.itemId ?? '']}
                         group={group}
                         onGroupClick={selectGroup}
                       />
