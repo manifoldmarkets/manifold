@@ -45,7 +45,7 @@ export async function getBinaryContractUserContractMetrics(
       where('contractId', '==', contractId),
       where('hasYesShares', '==', true),
       orderBy('totalShares.YES', 'desc'),
-      limit(Math.round(count / 2))
+      limit(count)
     )
   )
   const noSnap = await getDocs(
@@ -54,7 +54,7 @@ export async function getBinaryContractUserContractMetrics(
       where('contractId', '==', contractId),
       where('hasNoShares', '==', true),
       orderBy('totalShares.NO', 'desc'),
-      limit(Math.round(count / 2))
+      limit(count)
     )
   )
   const outcomeToDetails = {
