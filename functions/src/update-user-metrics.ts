@@ -17,7 +17,6 @@ import {
 import { batchedWaitAll } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
-import { HOUSE_BOT_USERNAME } from '../../common/envs/constants'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
 
@@ -154,11 +153,8 @@ export async function updateUserMetrics() {
     }),
     100
   )
-  const userUpdatesMinusBot = userUpdates.filter(
-    (update) => HOUSE_BOT_USERNAME !== update.user.username
-  )
 
-  for (const { user, fields } of userUpdatesMinusBot) {
+  for (const { user, fields } of userUpdates) {
     if (hasChanges(user, fields)) {
       writer.update(firestore.collection('users').doc(user.id), fields)
     }
