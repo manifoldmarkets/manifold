@@ -1,7 +1,9 @@
 import { Col } from 'web/components/layout/col'
 import { Leaderboard } from 'web/components/leaderboard'
+import { zip } from 'lodash'
 import { Page } from 'web/components/layout/page'
 import {
+  getProfitRank,
   getTopCreators,
   getTopTraders,
   getTopFollowed,
@@ -68,55 +70,52 @@ export default function Leaderboards(_props: {
   topFollowed: User[]
 }) {
   const [props, setProps] = useState<Parameters<typeof Leaderboards>[0]>(_props)
+  const [myRanks, setMyRanks] = useState<
+    Record<Period, number | undefined> | undefined
+  >()
+
   const user = useUser()
+
   useEffect(() => {
-    fetchProps().then((props) => {
-      if (!user || !user.profitRankCached) {
-        setProps(props)
-        return
-      }
-      const { allTime, monthly, weekly, daily, topFollowed } = props
-      let leaderboards = [allTime, monthly, weekly, daily]
-      leaderboards = leaderboards.map((leaderboard) => {
-        const { topTraders, topCreators } = leaderboard
-        // We're only caching users' profits for now
-        if (!topTraders.find((u) => u.id === user?.id)) {
-          topTraders.push(user)
+    fetchProps().then(setProps)
+  }, [])
+
+  useEffect(() => {
+    if (!user?.profitCached) {
+      return
+    }
+    const periods = ['allTime', 'monthly', 'weekly', 'daily'] as const
+    Promise.all(
+      periods.map((period) => {
+        const myProfit = user.profitCached?.[period]
+        if (myProfit == null) {
+          return undefined
+        } else {
+          return getProfitRank(myProfit, period)
         }
-        return { topTraders, topCreators }
       })
-      setProps({
-        allTime: leaderboards[0],
-        monthly: leaderboards[1],
-        weekly: leaderboards[2],
-        daily: leaderboards[3],
-        topFollowed,
-      })
+    ).then((results) => {
+      setMyRanks(Object.fromEntries(zip(periods, results)))
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    user?.profitRankCached?.allTime,
-    user?.profitRankCached?.monthly,
-    user?.profitRankCached?.weekly,
-    user?.profitRankCached?.daily,
-  ])
+  }, [user?.profitCached])
 
   const { topFollowed } = props
 
-  const LeaderboardWithPeriod = (period: Period) => {
+  const LeaderboardWithPeriod = (period: Period, myRank?: number) => {
     const { topTraders, topCreators } = props[period]
+
     const user = useUser()
+    const entries = topTraders.map((user, i) => ({ ...user, rank: i + 1 }))
+    if (user && myRank != null && !entries.find((x) => x.id === user.id)) {
+      entries.push({ ...user, rank: myRank })
+    }
 
     return (
       <>
         <Col className="mx-4 items-center gap-10 lg:flex-row lg:items-start">
           <Leaderboard
             title={`🏅 Top ${BETTORS}`}
-            // We're only caching profitRank for now
-            entries={topTraders.map((user) => ({
-              ...user,
-              rank: user.profitRankCached?.[period],
-            }))}
+            entries={entries}
             columns={[
               {
                 header: 'Total profit',
@@ -176,19 +175,19 @@ export default function Leaderboards(_props: {
         tabs={[
           {
             title: 'Daily',
-            content: LeaderboardWithPeriod('daily'),
+            content: LeaderboardWithPeriod('daily', myRanks?.['daily']),
           },
           {
             title: 'Weekly',
-            content: LeaderboardWithPeriod('weekly'),
+            content: LeaderboardWithPeriod('weekly', myRanks?.['weekly']),
           },
           {
             title: 'Monthly',
-            content: LeaderboardWithPeriod('monthly'),
+            content: LeaderboardWithPeriod('monthly', myRanks?.['monthly']),
           },
           {
             title: 'All Time',
-            content: LeaderboardWithPeriod('allTime'),
+            content: LeaderboardWithPeriod('allTime', myRanks?.['allTime']),
           },
         ]}
       />
