@@ -199,7 +199,7 @@ export function listenForInactiveContracts(
 const newContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
-  where('volume7Days', '==', 0),
+  where('volume', '==', 0),
   where('createdTime', '>', Date.now() - 7 * DAY_MS)
 )
 
