@@ -44,7 +44,7 @@ export function ProfitChangeTable(props: {
 
   return (
     <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
-      <Col className="flex-1">
+      <Col className="flex-1 gap-4">
         {positive.map((contract) => (
           <ContractCardWithPosition
             key={contract.id}
@@ -53,7 +53,7 @@ export function ProfitChangeTable(props: {
           />
         ))}
       </Col>
-      <Col className="flex-1">
+      <Col className="flex-1 gap-4">
         {negative.map((contract) => (
           <ContractCardWithPosition
             key={contract.id}
@@ -97,7 +97,7 @@ export function ProbChangeTable(props: {
 
   return (
     <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
-      <Col className="flex-1">
+      <Col className="flex-1 gap-4">
         {filteredPositiveChanges.map((contract) => (
           <ContractCardWithPosition
             key={contract.id}
@@ -106,7 +106,7 @@ export function ProbChangeTable(props: {
           />
         ))}
       </Col>
-      <Col className="flex-1">
+      <Col className="flex-1 gap-4">
         {filteredNegativeChanges.map((contract) => (
           <ContractCardWithPosition
             key={contract.id}
