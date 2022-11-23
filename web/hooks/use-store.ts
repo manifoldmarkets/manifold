@@ -75,22 +75,28 @@ export const useStoreItems = <T>(
   listenForValue: (key: string, setValue: (value: T) => void) => () => void,
   options: {
     prefix?: string
+    loadOnce?: boolean
   } = {}
 ) => {
-  const { prefix = '' } = options
+  const { prefix = '', loadOnce = false } = options
 
   const forceUpdate = useForceUpdate()
   const subscribe = useEvent(listenForValue)
 
   useEffectCheckEquality(() => {
+    let hasLoaded = false
     const listeners = keys.map(
       (key) =>
         [
           key,
           () => {
             // Update after all have loaded, and on every subsequent update.
-            if (keys.every((key) => store[prefix + key] !== undefined)) {
+            if (
+              keys.every((key) => store[prefix + key] !== undefined) &&
+              !(loadOnce && hasLoaded)
+            ) {
               forceUpdate()
+              hasLoaded = true
             }
           },
         ] as const

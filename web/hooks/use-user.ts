@@ -50,7 +50,7 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
 
   const metrics = buildArray(positiveResult.data, negativeResult.data)
   const contractIds = sortBy(metrics.map((m) => m.contractId))
-  const contracts = useContracts(contractIds)
+  const contracts = useContracts(contractIds, { loadOnce: true })
 
   const isReady =
     positiveResult.data &&

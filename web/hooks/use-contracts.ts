@@ -167,6 +167,9 @@ export const useContract = (contractId: string | undefined) => {
   return useStore(contractId, listenForContract)
 }
 
-export const useContracts = (contractIds: string[]) => {
-  return useStoreItems(contractIds, listenForContract)
+export const useContracts = (
+  contractIds: string[],
+  options: { loadOnce?: boolean } = {}
+) => {
+  return useStoreItems(contractIds, listenForContract, options)
 }
