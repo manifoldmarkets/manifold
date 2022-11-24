@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { Bet, getUserBets } from 'web/lib/firebase/bets'
+import { Bet, listBets } from 'web/lib/firebase/bets'
 import { getUserByUsername } from 'web/lib/firebase/users'
 import { ApiError } from '../../../_types'
 
@@ -18,9 +18,13 @@ export default async function handler(
     return
   }
 
-  const bets = await getUserBets(user.id)
-  const visibleBets = bets.filter((b) => !b.isRedemption && !b.isAnte)
+  const bets = await listBets({
+    userId: user.id,
+    filterAntes: true,
+    filterRedemptions: true,
+    order: 'desc',
+  })
 
   res.setHeader('Cache-Control', 'max-age=0')
-  return res.status(200).json(visibleBets)
+  return res.status(200).json(bets)
 }

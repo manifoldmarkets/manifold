@@ -15,7 +15,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import { Bet, listFirstNBets } from 'web/lib/firebase/bets'
+import { Bet, listBets } from 'web/lib/firebase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -53,7 +53,7 @@ import {
   UserContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
 
-const CONTRACT_BET_LOADING_OPTS = {
+const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
   filterChallenges: true,
 }
@@ -66,7 +66,7 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? await listFirstNBets(contractId, 2500, CONTRACT_BET_LOADING_OPTS)
+    ? await listBets({ contractId, limit: 2500, ...CONTRACT_BET_FILTER })
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
@@ -152,15 +152,17 @@ export function ContractPageContent(
 
   // static props load bets in ascending order by time
   const lastBetTime = last(props.bets)?.createdTime
-  const newBets = useBets(contract.id, {
-    ...CONTRACT_BET_LOADING_OPTS,
+  const newBets = useBets({
+    contractId: contract.id,
     afterTime: lastBetTime,
+    ...CONTRACT_BET_FILTER,
   })
   const bets = props.bets.concat(newBets ?? [])
 
   const creator = useUserById(contract.creatorId) ?? null
 
-  const userBets = useBets(contract.id, {
+  const userBets = useBets({
+    contractId: contract.id,
     userId: user?.id ?? '_',
     filterAntes: true,
   })

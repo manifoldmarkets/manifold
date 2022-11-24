@@ -59,15 +59,16 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
   const { count, showPills } = props
-  const rawBets = useLiveBets(count * 3 + 20)
+  const rawBets = useLiveBets(count * 3 + 20, {
+    filterRedemptions: true,
+    filterAntes: true,
+  })
   const bets = (rawBets ?? []).filter(
     (bet) =>
       !blockedContractIds.includes(bet.contractId) &&
       !blockedUserIds.includes(bet.userId) &&
       !BOT_USERNAMES.includes(bet.userUsername) &&
-      !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername) &&
-      !bet.isRedemption &&
-      !bet.isAnte
+      !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
   )
   const rawComments = useLiveComments(count * 3)
   const comments = (rawComments ?? []).filter(
