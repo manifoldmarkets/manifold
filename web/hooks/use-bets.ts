@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Contract } from 'common/contract'
 import {
   Bet,
   BetFilter,
   listenForBets,
   listenForUnfilledBets,
-  withoutAnteBets,
 } from 'web/lib/firebase/bets'
 import { LimitBet } from 'common/bet'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
@@ -19,22 +17,6 @@ export const useBets = (options?: BetFilter) => {
   useEffectCheckEquality(() => {
     return listenForBets(setBets, options)
   }, [options])
-
-  return bets
-}
-
-export const useBetsWithoutAntes = (contract: Contract, initialBets: Bet[]) => {
-  const [bets, setBets] = useState<Bet[]>(
-    withoutAnteBets(contract, initialBets)
-  )
-  useEffect(() => {
-    return listenForBets(
-      (bets) => {
-        setBets(withoutAnteBets(contract, bets).sort((b) => b.createdTime))
-      },
-      { contractId: contract.id }
-    )
-  }, [contract])
 
   return bets
 }

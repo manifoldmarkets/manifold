@@ -18,7 +18,6 @@ import { uniq } from 'lodash'
 
 import { db } from './init'
 import { Bet, LimitBet } from 'common/bet'
-import { Contract } from 'common/contract'
 import { getValues, listenForValues } from './utils'
 import { getContractFromId } from './contracts'
 import { filterDefined } from 'common/util/array'
@@ -140,21 +139,6 @@ export function listenForUnfilledBets(
     orderBy('createdTime', 'desc')
   )
   return listenForValues<LimitBet>(betsQuery, setBets)
-}
-
-export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
-  const { createdTime } = contract
-
-  if (
-    bets &&
-    bets.length >= 2 &&
-    bets[0].createdTime === createdTime &&
-    bets[1].createdTime === createdTime
-  ) {
-    return bets.slice(2)
-  }
-
-  return bets?.filter((bet) => !bet.isAnte) ?? []
 }
 
 export async function getSwipes(userId: string) {
