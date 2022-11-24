@@ -55,6 +55,7 @@ export async function updateContractMetrics() {
           .collection('bets')
           .orderBy('createdTime', 'desc')
           .where('createdTime', '>=', monthAgo)
+          .where('isRedemption', '==', false)
       )
       const unfilledBets = await getValues<LimitBet>(
         firestore
