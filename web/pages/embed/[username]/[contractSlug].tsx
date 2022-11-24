@@ -2,6 +2,7 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect } from 'react'
+import { last } from 'lodash'
 import {
   BinaryResolutionOrChance,
   ContractCard,
@@ -22,7 +23,13 @@ import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 import { useContract } from 'web/hooks/use-contracts'
+import { useBets } from 'web/hooks/use-bets'
 import { useRouter } from 'next/router'
+
+const CONTRACT_BET_LOADING_OPTS = {
+  filterRedemptions: true,
+  filterChallenges: true,
+}
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -31,11 +38,9 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
-  const opts = {
-    filterRedemptions: true,
-    filterChallenges: true,
-  }
-  const bets = contractId ? await listAllBets(contractId, opts) : []
+  const bets = contractId
+    ? await listAllBets(contractId, CONTRACT_BET_LOADING_OPTS)
+    : []
 
   return {
     props: { contract, bets },
@@ -55,7 +60,14 @@ export default function ContractEmbedPage(props: {
   const router = useRouter()
 
   const contract = useContract(props.contract?.id) ?? props.contract
-  const { bets } = props
+
+  // static props load bets in ascending order by time
+  const lastBetTime = last(props.bets)?.createdTime
+  const newBets = useBets(contract?.id ?? '', {
+    ...CONTRACT_BET_LOADING_OPTS,
+    afterTime: lastBetTime,
+  })
+  const bets = props.bets.concat(newBets ?? [])
 
   if (!contract) {
     return <Custom404 />
