@@ -62,12 +62,74 @@ import {
 } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
 import {
-  HIGHLIGHT_CLASS,
   NESTED_NOTIFICATION_STYLE,
   NOTIFICATION_STYLE,
-  QuestionOrGroupLink,
+  NUM_SUMMARY_LINES,
+  PARENT_NOTIFICATION_STYLE,
+  getHighlightClass,
+  NotificationGroupItemComponent,
+  NotificationFrame,
 } from 'web/pages/notifications'
 import { BettingStreakModal } from '../profile/betting-streak-modal'
+import {
+  ParentNotificationHeader,
+  QuestionOrGroupLink,
+} from './notification-types'
+
+// Loop through the contracts and combine the notification items into one
+function combineNotificationsByAddingNumericSourceTexts(
+  notifications: Notification[]
+) {
+  const newNotifications: Notification[] = []
+  const groupedNotificationsBySourceType = groupBy(
+    notifications,
+    (n) => n.sourceType
+  )
+  for (const sourceType in groupedNotificationsBySourceType) {
+    // Source title splits by contracts, groups, betting streak bonus
+    const groupedNotificationsBySourceTitle = groupBy(
+      groupedNotificationsBySourceType[sourceType],
+      (notification) => {
+        return notification.sourceTitle ?? notification.sourceContractTitle
+      }
+    )
+    for (const sourceTitle in groupedNotificationsBySourceTitle) {
+      const notificationsForSourceTitle =
+        groupedNotificationsBySourceTitle[sourceTitle]
+
+      let sum = 0
+      notificationsForSourceTitle.forEach(
+        (notification) => (sum = parseInt(notification.sourceText ?? '0') + sum)
+      )
+      const uniqueUsers = uniqBy(
+        notificationsForSourceTitle.map((notification) => {
+          let thisSum = 0
+          notificationsForSourceTitle
+            .filter(
+              (n) => n.sourceUserUsername === notification.sourceUserUsername
+            )
+            .forEach((n) => (thisSum = parseInt(n.sourceText ?? '0') + thisSum))
+          return {
+            username: notification.sourceUserUsername,
+            name: notification.sourceUserName,
+            avatarUrl: notification.sourceUserAvatarUrl,
+            amount: thisSum,
+          } as MultiUserLinkInfo
+        }),
+        (n) => n.username
+      )
+
+      const newNotification = {
+        ...notificationsForSourceTitle[0],
+        sourceText: sum.toString(),
+        sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
+        data: { uniqueUsers },
+      }
+      newNotifications.push(newNotification)
+    }
+  }
+  return newNotifications
+}
 
 export function IncomeNotificationGroupItem(props: {
   notificationGroup: NotificationGroup
@@ -75,85 +137,17 @@ export function IncomeNotificationGroupItem(props: {
 }) {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
-  const numSummaryLines = 3
-  const needsExpanding = notifications.length > numSummaryLines
-  const [expanded, setExpanded] = useState(needsExpanding ? false : null)
+
+  const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
+    notifications.filter((n) => n.sourceType !== 'betting_streak_bonus')
+  )
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )
-  const onExpandHandler = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.ctrlKey || event.metaKey) return
-    setExpanded(!expanded)
-  }
-
-  useEffect(() => {
-    if (expanded) setHighlighted(false)
-  }, [expanded])
-
   const totalIncome = sum(
     notifications.map((notification) =>
       notification.sourceText ? parseInt(notification.sourceText) : 0
     )
-  )
-  // Loop through the contracts and combine the notification items into one
-  function combineNotificationsByAddingNumericSourceTexts(
-    notifications: Notification[]
-  ) {
-    const newNotifications: Notification[] = []
-    const groupedNotificationsBySourceType = groupBy(
-      notifications,
-      (n) => n.sourceType
-    )
-    for (const sourceType in groupedNotificationsBySourceType) {
-      // Source title splits by contracts, groups, betting streak bonus
-      const groupedNotificationsBySourceTitle = groupBy(
-        groupedNotificationsBySourceType[sourceType],
-        (notification) => {
-          return notification.sourceTitle ?? notification.sourceContractTitle
-        }
-      )
-      for (const sourceTitle in groupedNotificationsBySourceTitle) {
-        const notificationsForSourceTitle =
-          groupedNotificationsBySourceTitle[sourceTitle]
-
-        let sum = 0
-        notificationsForSourceTitle.forEach(
-          (notification) =>
-            (sum = parseInt(notification.sourceText ?? '0') + sum)
-        )
-        const uniqueUsers = uniqBy(
-          notificationsForSourceTitle.map((notification) => {
-            let thisSum = 0
-            notificationsForSourceTitle
-              .filter(
-                (n) => n.sourceUserUsername === notification.sourceUserUsername
-              )
-              .forEach(
-                (n) => (thisSum = parseInt(n.sourceText ?? '0') + thisSum)
-              )
-            return {
-              username: notification.sourceUserUsername,
-              name: notification.sourceUserName,
-              avatarUrl: notification.sourceUserAvatarUrl,
-              amount: thisSum,
-            } as MultiUserLinkInfo
-          }),
-          (n) => n.username
-        )
-
-        const newNotification = {
-          ...notificationsForSourceTitle[0],
-          sourceText: sum.toString(),
-          sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-          data: { uniqueUsers },
-        }
-        newNotifications.push(newNotification)
-      }
-    }
-    return newNotifications
-  }
-  const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
-    notifications.filter((n) => n.sourceType !== 'betting_streak_bonus')
   )
   // Because the server's reset time will never align with the client's, we may
   // erroneously sum 2 betting streak bonuses, therefore just show the most recent
@@ -163,91 +157,35 @@ export function IncomeNotificationGroupItem(props: {
     .pop()
   if (mostRecentBettingStreakBonus)
     combinedNotifs.unshift(mostRecentBettingStreakBonus)
+  const header = (
+    <ParentNotificationHeader
+      icon={<TrendingUpIcon className=" text-teal-500" />}
+      header={
+        <div>
+          {'Daily Income Summary: '}
+          <span className={'text-teal-500'}>
+            {'+' + formatMoney(totalIncome)}
+          </span>
+        </div>
+      }
+      createdTime={notifications[0].createdTime}
+      highlighted={highlighted}
+    />
+  )
 
   return (
-    <div
-      className={clsx(
-        NOTIFICATION_STYLE,
-        className,
-        highlighted && !expanded ? HIGHLIGHT_CLASS : '',
-        'group'
-      )}
-    >
-      <Row className={'items-center text-gray-500 sm:justify-start'}>
-        <TrendingUpIcon
-          className={'ml-1 h-7 w-7 flex-shrink-0 text-teal-500'}
-        />
-        <div className={'ml-2 flex w-full flex-row flex-wrap truncate'}>
-          <div className={'flex w-full flex-row justify-between'}>
-            <div>
-              {'Daily Income Summary: '}
-              <span className={'text-teal-500'}>
-                {'+' + formatMoney(totalIncome)}
-              </span>
-            </div>
-            <div className={'inline-block'}>
-              <RelativeTimestamp time={notifications[0].createdTime} />
-            </div>
-          </div>
-        </div>
-      </Row>
-      <div className={clsx('mt-1 pl-4 md:text-base')}>
-        {' '}
-        <div className={clsx('mt-1 ml-1 gap-1 whitespace-pre-line')}>
-          {combinedNotifs
-            .slice(
-              0,
-              needsExpanding && expanded
-                ? combinedNotifs.length
-                : numSummaryLines
-            )
-            .map((notification) => {
-              return (
-                <IncomeNotificationItem
-                  notification={notification}
-                  key={notification.id}
-                  nested={true}
-                />
-              )
-            })}
-          {needsExpanding && (
-            <Row
-              className={
-                'w-full items-center justify-end gap-1 text-sm text-gray-500 hover:text-indigo-500'
-              }
-              onClick={onExpandHandler}
-            >
-              {!expanded && (
-                <>
-                  <div>
-                    {combinedNotifs.length - numSummaryLines > 0
-                      ? 'See ' +
-                        (combinedNotifs.length - numSummaryLines) +
-                        ' more'
-                      : ''}
-                  </div>
-                  <ChevronDoubleDownIcon className="h-4 w-4" />
-                </>
-              )}
-              {expanded && (
-                <>
-                  <div>See Less</div>
-                  <ChevronDoubleUpIcon className="h-4 w-4" />
-                </>
-              )}
-            </Row>
-          )}
-        </div>
-      </div>
-    </div>
+    <NotificationGroupItemComponent
+      notifications={combinedNotifs}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      header={header}
+      isIncomeNotification={true}
+    />
   )
 }
 
-function IncomeNotificationItem(props: {
-  notification: Notification
-  nested?: boolean
-}) {
-  const { notification, nested } = props
+export function IncomeNotificationItem(props: { notification: Notification }) {
+  const { notification } = props
   const { sourceType, sourceUserUsername, sourceText, data } = notification
   const [highlighted] = useState(!notification.isSeen)
   const isMobile = useIsMobile(768)
@@ -357,30 +295,23 @@ function IncomeNotificationItem(props: {
   }
 
   return (
-    <div
-      className={clsx(
-        nested ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
-        highlighted && HIGHLIGHT_CLASS
-      )}
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      // subtitle="hi"
+      isChildOfGroup={true}
+      symbol={incomeNotificationLabel()}
     >
-      {/* <Link href={getIncomeSourceUrl() ?? ''}> */}
-      <Col className={'justify-start text-gray-500'}>
-        <Row className={'line-clamp-2 flex max-w-xl'}>
-          <span>{incomeNotificationLabel()}</span>
-          <span className={'mx-1'}>
-            {isTip &&
-              (userLinks.length > 1
-                ? 'Multiple users'
-                : userLinks.length > 0
-                ? userLinks[0].name
-                : '')}
-          </span>
-          <span>{reasonAndLink()}</span>
-        </Row>
-      </Col>
-      {/* <div className={'border-b border-gray-300 pt-4'} /> */}
-      {/* </Link> */}
-    </div>
+      <span className={'mx-1'}>
+        {isTip &&
+          (userLinks.length > 1
+            ? 'Multiple users'
+            : userLinks.length > 0
+            ? userLinks[0].name
+            : '')}
+      </span>
+      <span>{reasonAndLink()}</span>
+    </NotificationFrame>
   )
 }
 

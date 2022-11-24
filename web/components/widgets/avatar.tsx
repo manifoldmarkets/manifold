@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { memo, MouseEvent, useEffect, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
+import { floor } from 'lodash'
 
 export const Avatar = memo(
   (props: {
@@ -66,7 +67,7 @@ export function EmptyAvatar(props: {
   multi?: boolean
 }) {
   const { className, size = 8, multi } = props
-  const insize = size - 3
+  const insize = size - floor(size / 3)
   const Icon = multi ? UsersIcon : UserIcon
 
   return (

@@ -1,5 +1,5 @@
 import { ControlledTabs } from 'web/components/layout/tabs'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { ReactNode, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import {
   BetFillData,
@@ -63,16 +63,34 @@ import {
 import { Button } from 'web/components/buttons/button'
 import {
   IncomeNotificationGroupItem,
+  IncomeNotificationItem,
   PredictionStreak,
 } from 'web/components/notifications/income-summary-notifications'
+import {
+  NotificationItem,
+  ParentNotificationHeader,
+  QuestionOrGroupLink,
+} from 'web/components/notifications/notification-types'
 
-export const NOTIFICATION_STYLE =
-  'group relative cursor-pointer p-2 text-sm bg-inherit border-b border-gray-200 transition-all hover:bg-indigo-50 opacity-70'
-export const NESTED_NOTIFICATION_STYLE =
-  'relative cursor-pointer p-2 text-sm bg-inherit opacity-70'
-
+const notification_base_style =
+  'relative cursor-pointer text-sm bg-inherit rounded-lg transition-all'
+export const NESTED_NOTIFICATION_STYLE = clsx(
+  notification_base_style,
+  'hover:bg-indigo-50 p-2'
+)
+export const PARENT_NOTIFICATION_STYLE = clsx(
+  notification_base_style,
+  'group px-2 pt-3'
+)
+export const NOTIFICATION_STYLE = clsx(
+  notification_base_style,
+  'py-4 px-2 hover:bg-indigo-50'
+)
 export const NOTIFICATIONS_PER_PAGE = 30
-export const HIGHLIGHT_CLASS = 'bg-white'
+export function getHighlightClass(highlight: boolean) {
+  return highlight ? 'opacity-100' : 'opacity-70'
+}
+export const NUM_SUMMARY_LINES = 3
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
@@ -149,24 +167,34 @@ function RenderNotificationGroups(props: {
   notificationGroups: NotificationGroup[]
 }) {
   const { notificationGroups } = props
+  const grayLine = <hr className="mx-auto w-[calc(100%-1rem)] bg-gray-400" />
   return (
     <>
       {notificationGroups.map((notification) =>
         notification.type === 'income' ? (
-          <IncomeNotificationGroupItem
-            notificationGroup={notification}
-            key={notification.groupedById + notification.timePeriod}
-          />
+          <>
+            <IncomeNotificationGroupItem
+              notificationGroup={notification}
+              key={notification.groupedById + notification.timePeriod}
+            />
+            {grayLine}
+          </>
         ) : notification.notifications.length === 1 ? (
-          <NotificationItem
-            notification={notification.notifications[0]}
-            key={notification.notifications[0].id}
-          />
+          <>
+            <NotificationItem
+              notification={notification.notifications[0]}
+              key={notification.notifications[0].id}
+            />
+            {grayLine}
+          </>
         ) : (
-          <NotificationGroupItem
-            notificationGroup={notification}
-            key={notification.groupedById + notification.timePeriod}
-          />
+          <>
+            <NotificationGroupItem
+              notificationGroup={notification}
+              key={notification.groupedById + notification.timePeriod}
+            />
+            {grayLine}
+          </>
         )
       )}
     </>
@@ -241,17 +269,60 @@ function NotificationGroupItem(props: {
 }) {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
-  const { sourceContractTitle } = notifications[0]
   const isMobile = useIsMobile(768)
-  const numSummaryLines = 3
-
-  const [expanded, setExpanded] = useState(
-    notifications.length <= numSummaryLines
-  )
+  const { sourceContractTitle } = notifications[0]
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )
+  const header = (
+    <ParentNotificationHeader
+      icon={<EmptyAvatar multi size={5} />}
+      header={
+        sourceContractTitle ? (
+          <>
+            Activity on
+            <QuestionOrGroupLink notification={notifications[0]} />
+          </>
+        ) : (
+          <span>Other activity</span>
+        )
+      }
+      createdTime={notifications[0].createdTime}
+      highlighted={highlighted}
+    />
+  )
 
+  return (
+    <NotificationGroupItemComponent
+      notifications={notifications}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      header={header}
+    />
+  )
+}
+
+export function NotificationGroupItemComponent(props: {
+  notifications: Notification[]
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  header: ReactNode
+  isIncomeNotification?: boolean
+  className?: string
+}) {
+  const {
+    notifications,
+    className,
+    highlighted,
+    setHighlighted,
+    header,
+    isIncomeNotification,
+  } = props
+
+  const needsExpanding = notifications.length > NUM_SUMMARY_LINES
+  const [expanded, setExpanded] = useState(
+    notifications.length <= NUM_SUMMARY_LINES
+  )
   const onExpandHandler = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.ctrlKey || event.metaKey) return
     setExpanded(!expanded)
@@ -262,155 +333,57 @@ function NotificationGroupItem(props: {
   }, [expanded])
 
   return (
-    <div
-      className={clsx(
-        NOTIFICATION_STYLE,
-        className,
-        highlighted && !expanded ? HIGHLIGHT_CLASS : ''
-      )}
-    >
-      {expanded && (
-        <span
-          className="absolute top-14 left-6 -ml-px h-[calc(100%-5rem)] w-0.5 bg-gray-200"
-          aria-hidden="true"
-        />
-      )}
-      <Row className={'items-center text-gray-500 sm:justify-start'}>
-        <EmptyAvatar multi />
-        <div
-          className={'line-clamp-2 flex w-full flex-row flex-wrap pl-1 sm:pl-0'}
-        >
-          {sourceContractTitle ? (
-            <div className={'flex w-full flex-row justify-between'}>
-              <div className={'ml-2'}>
-                Activity on
-                <QuestionOrGroupLink
-                  notification={notifications[0]}
-                  ignoreClick={!expanded && isMobile}
-                />
-              </div>
-              <div className={'hidden sm:inline-block'}>
-                <RelativeTimestamp time={notifications[0].createdTime} />
-              </div>
-            </div>
-          ) : (
-            <span>
-              Other activity
-              <RelativeTimestamp time={notifications[0].createdTime} />
-            </span>
-          )}
-        </div>
-      </Row>
-      <div>
-        <div className={clsx('mt-1 md:text-base', expanded ? 'pl-4' : '')}>
-          {' '}
-          <div
-            className={clsx(
-              'mt-1 ml-1 gap-1 whitespace-pre-line',
-              !expanded ? 'line-clamp-4' : ''
-            )}
+    <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
+      {header}
+      <div className={clsx(' whitespace-pre-line')}>
+        {notifications
+          .slice(
+            0,
+            needsExpanding
+              ? expanded
+                ? notifications.length
+                : NUM_SUMMARY_LINES
+              : notifications.length
+          )
+          .map((notification) => {
+            return (
+              <NotificationItem
+                notification={notification}
+                key={notification.id}
+                isChildOfGroup={true}
+                isIncomeNotification={isIncomeNotification}
+              />
+            )
+          })}
+        {needsExpanding && (
+          <Row
+            className={
+              'w-full items-center justify-end gap-1 text-sm text-gray-500 hover:text-indigo-500'
+            }
+            onClick={onExpandHandler}
           >
-            {' '}
-            {!expanded ? (
+            {!expanded && (
               <>
-                {notifications.slice(0, numSummaryLines).map((notification) => {
-                  return (
-                    <NotificationItem
-                      notification={notification}
-                      key={notification.id}
-                    />
-                  )
-                })}
-                <div className={'text-sm text-gray-500 hover:underline '}>
-                  {notifications.length - numSummaryLines > 0
-                    ? 'And ' +
-                      (notifications.length - numSummaryLines) +
-                      ' more...'
+                <div>
+                  {notifications.length - NUM_SUMMARY_LINES > 0
+                    ? 'See ' +
+                      (notifications.length - NUM_SUMMARY_LINES) +
+                      ' more'
                     : ''}
                 </div>
-              </>
-            ) : (
-              <>
-                {notifications.map((notification) => (
-                  <NotificationItem
-                    notification={notification}
-                    key={notification.id}
-                    isChildOfGroup={true}
-                  />
-                ))}
+                <ChevronDoubleDownIcon className="h-4 w-4" />
               </>
             )}
-          </div>
-        </div>
+            {expanded && (
+              <>
+                <div>See Less</div>
+                <ChevronDoubleUpIcon className="h-4 w-4" />
+              </>
+            )}
+          </Row>
+        )}
       </div>
     </div>
-  )
-}
-
-function NotificationItem(props: {
-  notification: Notification
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup } = props
-  const { sourceType, reason, sourceUpdateType } = notification
-
-  const [highlighted] = useState(!notification.isSeen)
-
-  // TODO Any new notification should be its own component
-  if (reason === 'bet_fill') {
-    return (
-      <BetFillNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-      />
-    )
-  } else if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
-    return (
-      <ContractResolvedNotification
-        highlighted={highlighted}
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-      />
-    )
-  } else if (sourceType === 'badge') {
-    return (
-      <BadgeNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-      />
-    )
-  } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
-    return (
-      <MarketClosedNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-      />
-    )
-  } else if (sourceType === 'signup_bonus') {
-    return (
-      <SignupBonusNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-      />
-    )
-  }
-  // TODO Add new notification components here
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      subtitle={getReasonForShowingNotification(notification)}
-      highlighted={highlighted}
-      isChildOfGroup={isChildOfGroup}
-    >
-      <div className={'mt-1 ml-1 md:text-base'}>
-        <NotificationTextLabel notification={notification} />
-      </div>
-    </NotificationFrame>
   )
 }
 
@@ -441,23 +414,25 @@ function NotificationSummaryFrame(props: {
   )
 }
 
-function NotificationFrame(props: {
+export function NotificationFrame(props: {
   notification: Notification
   highlighted: boolean
-  subtitle: string
   children: React.ReactNode
+  symbol: string | ReactNode
+  link?: string
+  onClick?: () => void
+  subtitle?: string | ReactNode
   isChildOfGroup?: boolean
-  hideUserName?: boolean
-  hideLinkToGroupOrQuestion?: boolean
 }) {
   const {
     notification,
     isChildOfGroup,
     highlighted,
-    subtitle,
     children,
-    hideUserName,
-    hideLinkToGroupOrQuestion,
+    symbol,
+    subtitle,
+    onClick,
+    link,
   } = props
   const {
     sourceType,
@@ -469,289 +444,54 @@ function NotificationFrame(props: {
     sourceUserUsername,
     sourceText,
   } = notification
-
   const isMobile = useIsMobile(600)
-  return (
-    <div
-      className={clsx(
-        // 'bg-white px-2 pt-6 text-sm sm:px-4',
-        isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
-        highlighted && HIGHLIGHT_CLASS
-      )}
-    >
-      <div className={'relative cursor-pointer'}>
-        <SiteLink
-          href={getSourceUrl(notification)}
-          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
-          onClick={() =>
-            track('Notification Clicked', {
-              type: 'notification item',
-              sourceType,
-              sourceUserName,
-              sourceUserAvatarUrl,
-              sourceUpdateType,
-              reasonText,
-              reason,
-              sourceUserUsername,
-              sourceText,
-            })
-          }
-        />
-        <Row className={'items-center text-gray-500 sm:justify-start'}>
-          <Avatar
-            avatarUrl={sourceUserAvatarUrl}
-            size={'sm'}
-            className={'z-10 mr-2'}
-            username={sourceUserUsername}
-          />
-          <div className={'flex w-full flex-row pl-1 sm:pl-0'}>
-            <div
-              className={
-                'line-clamp-2 sm:line-clamp-none flex w-full flex-row justify-between'
-              }
-            >
-              <div>
-                {!hideUserName && (
-                  <UserLink
-                    name={sourceUserName || ''}
-                    username={sourceUserUsername || ''}
-                    className={'relative mr-1 flex-shrink-0'}
-                    short={isMobile}
-                  />
-                )}
-                {subtitle}
-                {isChildOfGroup ? (
-                  <RelativeTimestamp time={notification.createdTime} />
-                ) : (
-                  !hideLinkToGroupOrQuestion && (
-                    <QuestionOrGroupLink notification={notification} />
-                  )
-                )}
-              </div>
-            </div>
-            {!isChildOfGroup && (
-              <div className={'hidden sm:inline-block'}>
-                <RelativeTimestamp time={notification.createdTime} />
-              </div>
-            )}
-          </div>
-        </Row>
-        <div className={'mt-1 ml-1 md:text-base'}>{children}</div>
-        {/* <div className={'mt-6 border-b border-gray-300'} /> */}
-      </div>
-    </div>
-  )
-}
 
-function BetFillNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted } = props
-  const { sourceText, data } = notification
-  const { creatorOutcome, probability, limitOrderTotal, limitOrderRemaining } =
-    (data as BetFillData) ?? {}
-  const subtitle = 'bet against you'
-  const amount = formatMoney(parseInt(sourceText ?? '0'))
-  const description =
-    creatorOutcome && probability ? (
-      <span>
-        of your {limitOrderTotal ? formatMoney(limitOrderTotal) : ''}
-        <span
-          className={clsx(
-            'mx-1',
-            creatorOutcome === 'YES'
-              ? 'text-teal-500'
-              : creatorOutcome === 'NO'
-              ? 'text-scarlet-500'
-              : 'text-blue-500'
+  const frameObject = (
+    <>
+      {' '}
+      <Row>
+        <Col className="w-4">
+          {highlighted && (
+            <div className="bg-highlight-blue mx-auto my-auto h-2 w-2 rounded-full" />
           )}
-        >
-          {creatorOutcome}
-        </span>
-        limit order at {Math.round(probability * 100)}% was filled{' '}
-        {limitOrderRemaining
-          ? `(${formatMoney(limitOrderRemaining)} remaining)`
-          : ''}
-      </span>
-    ) : (
-      <span>of your limit order was filled</span>
-    )
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      subtitle={subtitle}
-    >
-      <Row>
-        <span>
-          <span className="mr-1 text-teal-500">{amount}</span>
-          {description}
-        </span>
+        </Col>
+        <Row className="w-full justify-between gap-1 text-base text-gray-600">
+          <div>
+            <span>{symbol}</span> <span>{children}</span>
+          </div>
+          <RelativeTimestamp time={notification.createdTime} />
+        </Row>
       </Row>
-    </NotificationFrame>
-  )
-}
-
-function MarketClosedNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted } = props
-  notification.sourceUserAvatarUrl = MANIFOLD_AVATAR_URL
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      subtitle={'Please resolve'}
-      hideUserName={true}
-    >
-      <Row>
-        <span className="opacity-inherit">
-          {`Your market has closed. Please resolve it to pay out ${PAST_BETS}.`}
-        </span>
-      </Row>
-    </NotificationFrame>
-  )
-}
-
-function BadgeNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted } = props
-  const { sourceText } = notification
-  const subtitle = 'You earned a new badge!'
-  notification.sourceUserAvatarUrl = '/award.svg'
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      subtitle={subtitle}
-      hideUserName={true}
-      hideLinkToGroupOrQuestion={true}
-    >
-      <Row>
-        <span>{sourceText} 🎉</span>
-      </Row>
-    </NotificationFrame>
-  )
-}
-function SignupBonusNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted } = props
-  const subtitle = 'You got a signup bonus!'
-  const { sourceText } = notification
-  const text = (
-    <span>
-      Thanks for using Manifold! We sent you{' '}
-      <span className={'text-teal-500'}>
-        {formatMoney(parseInt(sourceText ?? ''))}
-      </span>{' '}
-      for being a valuable new predictor.
-    </span>
+      <div className="ml-4 text-sm text-gray-500">{subtitle}</div>
+    </>
   )
 
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      subtitle={subtitle}
-      hideUserName={true}
-      hideLinkToGroupOrQuestion={true}
-    >
-      <Row>{text}</Row>
-    </NotificationFrame>
-  )
-}
-
-function ContractResolvedNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted } = props
-  const { sourceText, data } = notification
-  const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
-  const subtitle = 'resolved the market'
-  const profitable = userPayout >= userInvestment
-  const ROI = (userPayout - userInvestment) / userInvestment
-
-  const resolutionDescription = () => {
-    if (!sourceText) return <div />
-
-    if (sourceText === 'YES' || sourceText == 'NO') {
-      return <BinaryOutcomeLabel outcome={sourceText as any} />
-    }
-
-    if (sourceText.includes('%'))
-      return (
-        <ProbPercentLabel
-          prob={parseFloat(sourceText.replace('%', '')) / 100}
-        />
-      )
-    if (sourceText === 'CANCEL') return <CancelLabel />
-    if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
-
-    // Numeric markets
-    const isNumberWithCommaOrPeriod = /^[0-9,.]*$/.test(sourceText)
-    if (isNumberWithCommaOrPeriod)
-      return <NumericValueLabel value={parseFloat(sourceText)} />
-
-    // Free response market
+  if (link) {
     return (
-      <span
-        className={
-          'inline-block max-w-[200px] truncate align-bottom text-blue-400'
-        }
+      <SiteLink
+        href={link}
+        className={clsx(
+          'group flex w-full flex-col',
+          isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
+          getHighlightClass(highlighted)
+        )}
+        followsLinkClass={false}
       >
-        {sourceText}
-      </span>
+        {frameObject}
+      </SiteLink>
     )
   }
-
-  const description =
-    userInvestment && userPayout !== undefined ? (
-      <>
-        Resolved: {resolutionDescription()} Invested:
-        <span className={'text-teal-500'}>{formatMoney(userInvestment)} </span>
-        Payout:
-        <span
-          className={clsx(
-            profitable ? 'text-teal-500' : 'text-scarlet-500',
-            'truncate text-ellipsis'
-          )}
-        >
-          {formatMoney(userPayout)}
-          {userPayout > 0 &&
-            ` (${profitable ? '+' : ''}${Math.round(ROI * 100)}%)`}
-        </span>
-      </>
-    ) : (
-      <span>Resolved {resolutionDescription()}</span>
-    )
-
   return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      subtitle={subtitle}
+    <Col
+      className={clsx(
+        'group w-full',
+        isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
+        getHighlightClass(highlighted)
+      )}
+      onClick={onClick}
     >
-      <Row className={'line-clamp-2 space-x-1'}>{description}</Row>
-    </NotificationFrame>
+      {frameObject}
+    </Col>
   )
 }
 
@@ -763,156 +503,4 @@ const markNotificationsAsSeen = async (notifications: Notification[]) => {
       return updateDoc(notificationDoc, { isSeen: true, viewTime: new Date() })
     })
   )
-}
-
-export function QuestionOrGroupLink(props: {
-  notification: Notification
-  ignoreClick?: boolean
-}) {
-  const { notification, ignoreClick } = props
-  const {
-    sourceType,
-    sourceContractTitle,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
-    sourceSlug,
-    sourceTitle,
-  } = notification
-
-  if (ignoreClick)
-    return (
-      <span className={'ml-1 font-bold '}>
-        {sourceContractTitle || sourceTitle}
-      </span>
-    )
-  return (
-    <SiteLink
-      className={'relative ml-1 font-semibold hover:text-indigo-500'}
-      href={
-        sourceContractCreatorUsername
-          ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-          : // User's added to group or received a tip there
-          (sourceType === 'group' || sourceType === 'tip') && sourceSlug
-          ? `${groupPath(sourceSlug)}`
-          : // User referral via group
-          sourceSlug?.includes('/group/')
-          ? `${sourceSlug}`
-          : ''
-      }
-      onClick={() =>
-        track('Notification Clicked', {
-          type: 'question title',
-          sourceType,
-          sourceContractTitle,
-          sourceContractCreatorUsername,
-          sourceContractSlug,
-          sourceSlug,
-          sourceTitle,
-        })
-      }
-    >
-      {sourceContractTitle || sourceTitle}
-    </SiteLink>
-  )
-}
-
-function NotificationTextLabel(props: {
-  notification: Notification
-  className?: string
-}) {
-  const { className, notification } = props
-  const { sourceUpdateType, sourceType, sourceText, reasonText } = notification
-  const defaultText = sourceText ?? reasonText ?? ''
-  if (sourceType === 'contract') {
-    // Resolved contracts
-
-    // Close date will be a number - it looks better without it
-    if (sourceUpdateType === 'closed') {
-      return <div />
-    }
-    // Updated contracts
-    // Description will be in default text
-    if (sourceText && parseInt(sourceText) > 0) {
-      return (
-        <span>
-          Updated close time: {new Date(parseInt(sourceText)).toLocaleString()}
-        </span>
-      )
-    }
-  } else if (sourceType === 'user' && sourceText) {
-    return (
-      <span>
-        As a thank you, we sent you{' '}
-        <span className="text-teal-500">
-          {formatMoney(parseInt(sourceText))}
-        </span>
-        !
-      </span>
-    )
-  } else if (sourceType === 'liquidity' && sourceText) {
-    return (
-      <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
-    )
-  } else if (sourceType === 'challenge' && sourceText) {
-    return (
-      <>
-        <span> for </span>
-        <span className="text-teal-500">
-          {formatMoney(parseInt(sourceText))}
-        </span>
-      </>
-    )
-  }
-  return (
-    <div className={className ? className : 'line-clamp-4 whitespace-pre-line'}>
-      <Linkify text={defaultText} />
-    </div>
-  )
-}
-
-function getReasonForShowingNotification(notification: Notification) {
-  const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
-  let reasonText: string
-  // TODO: we could leave out this switch and just use the reason field now that they have more information
-  if (reason === 'tagged_user') reasonText = 'tagged you on'
-  else
-    switch (sourceType) {
-      case 'comment':
-        if (reason === 'reply_to_users_answer') reasonText = 'replied to you on'
-        else if (reason === 'reply_to_users_comment')
-          reasonText = 'replied to you on'
-        else reasonText = `commented on`
-        break
-      case 'contract':
-        if (reason === 'contract_from_followed_user') reasonText = 'asked'
-        else if (sourceUpdateType === 'resolved') reasonText = `resolved`
-        else reasonText = `updated`
-        break
-      case 'answer':
-        if (reason === 'answer_on_your_contract')
-          reasonText = `answered your question `
-        else reasonText = `answered`
-        break
-      case 'follow':
-        reasonText = 'followed you'
-        break
-      case 'liquidity':
-        reasonText = 'added a subsidy to your question'
-        break
-      case 'group':
-        reasonText = 'added you to the group'
-        break
-      case 'user':
-        if (sourceSlug && reason === 'user_joined_to_bet_on_your_market')
-          reasonText = 'joined to bet on your market'
-        else if (sourceSlug) reasonText = 'joined because you shared'
-        else reasonText = 'joined because of you'
-        break
-      case 'challenge':
-        reasonText = 'accepted your challenge'
-        break
-      default:
-        reasonText = ''
-    }
-  return reasonText
 }
