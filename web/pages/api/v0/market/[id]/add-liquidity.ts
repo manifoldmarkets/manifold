@@ -19,7 +19,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.body) req.body.contractId = contractId
   try {
-    const backendRes = await fetchBackend(req, 'addliquidity')
+    const backendRes = await fetchBackend(req, 'addsubsidy')
     await forwardResponse(res, backendRes)
   } catch (err) {
     console.error('Error talking to cloud function: ', err)
