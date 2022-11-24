@@ -121,9 +121,10 @@ export default function WorldCup(props: {
     <>
       <Spacer h={4} />
       <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
-        {groupWinners.map((group, index) => (
+        {groupWinners.map((contract, index) => (
           <GroupComponent
-            group={groupWinners[index]}
+            key={contract.id}
+            group={contract}
             title={`GROUP ${String.fromCharCode(65 + index)} (1st Place)`}
           />
         ))}
@@ -135,9 +136,10 @@ export default function WorldCup(props: {
     <>
       <Spacer h={4} />
       <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
-        {groupRunnerups.map((group, index) => (
+        {groupRunnerups.map((contract, index) => (
           <GroupComponent
-            group={groupRunnerups[index]}
+            key={contract.id}
+            group={contract}
             title={`GROUP ${String.fromCharCode(65 + index)} (2nd Place)`}
           />
         ))}
@@ -169,7 +171,7 @@ export default function WorldCup(props: {
 
           {/* Might want to put an image or something here. */}
 
-          {/* 
+          {/*
           <div className="mb-2  text-3xl text-indigo-500">
             Market of the Day
           </div>
@@ -193,7 +195,7 @@ export default function WorldCup(props: {
           </div>
 
           <Spacer h={4} />
-          <Divider /> 
+          <Divider />
 
           <Spacer h={8} />*/}
 
