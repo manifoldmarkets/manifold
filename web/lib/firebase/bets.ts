@@ -43,10 +43,6 @@ export type BetFilter = {
   limit?: number
 }
 
-function getBetsCollection(contractId: string) {
-  return collection(db, 'contracts', contractId, 'bets')
-}
-
 export const getBetsQuery = (options?: BetFilter) => {
   let q = query(
     collectionGroup(db, 'bets') as Query<Bet>,
