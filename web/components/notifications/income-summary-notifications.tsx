@@ -69,12 +69,10 @@ import {
   getHighlightClass,
   NotificationGroupItemComponent,
   NotificationFrame,
+  ParentNotificationHeader,
 } from 'web/pages/notifications'
 import { BettingStreakModal } from '../profile/betting-streak-modal'
-import {
-  ParentNotificationHeader,
-  QuestionOrGroupLink,
-} from './notification-types'
+import { QuestionOrGroupLink } from './notification-types'
 
 // Loop through the contracts and combine the notification items into one
 function combineNotificationsByAddingNumericSourceTexts(
@@ -162,13 +160,12 @@ export function IncomeNotificationGroupItem(props: {
       icon={<TrendingUpIcon className=" text-teal-500" />}
       header={
         <div>
-          {'Daily Income Summary: '}
+          {'Daily Income: '}
           <span className={'text-teal-500'}>
             {'+' + formatMoney(totalIncome)}
           </span>
         </div>
       }
-      createdTime={notifications[0].createdTime}
       highlighted={highlighted}
     />
   )

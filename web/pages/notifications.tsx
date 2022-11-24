@@ -68,7 +68,6 @@ import {
 } from 'web/components/notifications/income-summary-notifications'
 import {
   NotificationItem,
-  ParentNotificationHeader,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-types'
 
@@ -84,11 +83,11 @@ export const PARENT_NOTIFICATION_STYLE = clsx(
 )
 export const NOTIFICATION_STYLE = clsx(
   notification_base_style,
-  'py-4 px-2 hover:bg-indigo-50'
+  'py-4 pl-4 pr-2 hover:bg-indigo-50'
 )
 export const NOTIFICATIONS_PER_PAGE = 30
 export function getHighlightClass(highlight: boolean) {
-  return highlight ? 'opacity-100' : 'opacity-70'
+  return highlight ? 'opacity-100' : 'opacity-60'
 }
 export const NUM_SUMMARY_LINES = 3
 
@@ -281,13 +280,15 @@ function NotificationGroupItem(props: {
         sourceContractTitle ? (
           <>
             Activity on
-            <QuestionOrGroupLink notification={notifications[0]} />
+            <QuestionOrGroupLink
+              notification={notifications[0]}
+              truncate={true}
+            />
           </>
         ) : (
-          <span>Other activity</span>
+          <span>Other Activity</span>
         )
       }
-      createdTime={notifications[0].createdTime}
       highlighted={highlighted}
     />
   )
@@ -449,20 +450,24 @@ export function NotificationFrame(props: {
   const frameObject = (
     <>
       {' '}
-      <Row>
+      <Row className="gap-1 text-sm md:text-base">
         <Col className="w-4">
           {highlighted && (
             <div className="bg-highlight-blue mx-auto my-auto h-2 w-2 rounded-full" />
           )}
         </Col>
-        <Row className="w-full justify-between gap-1 text-base text-gray-600">
-          <div>
+        <Col className="w-full text-gray-600">
+          <div className="whitespace-pre-wrap">
             <span>{symbol}</span> <span>{children}</span>
+            <span className="ml-1 text-gray-500">
+              •<RelativeTimestamp time={notification.createdTime} />
+            </span>
           </div>
-          <RelativeTimestamp time={notification.createdTime} />
-        </Row>
+          <div className="ml-4 text-xs text-gray-500 md:text-sm">
+            {subtitle}
+          </div>
+        </Col>
       </Row>
-      <div className="ml-4 text-sm text-gray-500">{subtitle}</div>
     </>
   )
 
@@ -502,5 +507,26 @@ const markNotificationsAsSeen = async (notifications: Notification[]) => {
       const notificationDoc = doc(db, `users/${n.userId}/notifications/`, n.id)
       return updateDoc(notificationDoc, { isSeen: true, viewTime: new Date() })
     })
+  )
+}
+
+export function ParentNotificationHeader(props: {
+  icon: ReactNode
+  header: ReactNode
+  highlighted: boolean
+}) {
+  const { header, highlighted, icon } = props
+  const highlightedClass = getHighlightClass(highlighted)
+  return (
+    <Row
+      className={clsx(
+        'items-center justify-start gap-2 text-sm text-gray-500 md:text-base'
+      )}
+    >
+      <div className={clsx('h-5 w-5 flex-shrink-0', highlightedClass)}>
+        {icon}
+      </div>
+      <div className={highlightedClass}>{header}</div>
+    </Row>
   )
 }
