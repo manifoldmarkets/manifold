@@ -72,6 +72,7 @@ export const useUserSwipes = () => {
   useEffect(() => {
     if (user)
       getSwipes(user.id).then((s) => setSwipes(s.map((swipe: any) => swipe.id)))
-  }, [user, setSwipes])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!user, getSwipes])
   return swipes
 }
