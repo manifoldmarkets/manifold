@@ -27,8 +27,15 @@ export const onUpdateContract = functions.firestore
       await handleUpdatedCloseTime(previousContract, contract, eventId)
     }
 
-    // maybe we should do this more often, but at least if someone bets
-    if (previousContract.volume !== contract.volume) {
+    // mqp: if you are here trying to figure out why the contract page is
+    // showing random incorrect data, it's probably because we don't do this on
+    // every contract change, and only do it sometimes instead.  complain to
+    // james because he's the one who has made all the decisions about this
+    if (
+      previousContract.volume !== contract.volume ||
+      previousContract.question !== contract.question ||
+      previousContract.description !== contract.description
+    ) {
       await revalidateStaticProps(getContractPath(contract))
     }
   })
