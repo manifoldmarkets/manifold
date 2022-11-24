@@ -28,7 +28,6 @@ export type LiteMarket = {
   totalLiquidity?: number;
 
   volume: number;
-  volume7Days: number;
   volume24Hours: number;
 
   isResolved: boolean;

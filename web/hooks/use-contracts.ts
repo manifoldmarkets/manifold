@@ -4,7 +4,6 @@ import {
   Contract,
   listenForContracts,
   listenForHotContracts,
-  listenForInactiveContracts,
   getUserBetContracts,
   getUserBetContractsQuery,
   listAllContracts,
@@ -111,16 +110,6 @@ export const getCachedContracts = async () =>
   q.fetchQuery(['contracts'], () => listAllContracts(10000), {
     staleTime: Infinity,
   })
-
-export const useInactiveContracts = () => {
-  const [contracts, setContracts] = useState<Contract[] | undefined>()
-
-  useEffect(() => {
-    return listenForInactiveContracts(setContracts)
-  }, [])
-
-  return contracts
-}
 
 export const useHotContracts = () => {
   const [hotContracts, setHotContracts] = useState<Contract[] | undefined>()

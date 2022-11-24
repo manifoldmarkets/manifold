@@ -114,7 +114,6 @@ export async function updateContractMetrics() {
 
       const update = {
         volume24Hours: computeVolume(descendingBets, yesterday),
-        volume7Days: computeVolume(descendingBets, weekAgo),
         elasticity: computeElasticity(unfilledBets, contract),
         uniqueBettors24Hours,
         uniqueBettors7Days,
