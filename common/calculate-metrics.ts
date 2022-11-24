@@ -1,4 +1,4 @@
-import { Dictionary, last, partition, sumBy, uniq } from 'lodash'
+import { Dictionary, partition, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
@@ -179,35 +179,6 @@ export const computeDpmElasticity = (
   betAmount: number
 ) => {
   return getNewMultiBetInfo('', 2 * betAmount, contract).newBet.probAfter
-}
-
-export const computeVolume = (contractBets: Bet[], since: number) => {
-  return sumBy(contractBets, (b) =>
-    b.createdTime > since && !b.isRedemption && !b.isAnte
-      ? Math.abs(b.amount)
-      : 0
-  )
-}
-
-export const calculateProbChange = (
-  prob: number,
-  descendingBets: Bet[],
-  since: number,
-  resolutionTime: number | undefined
-) => {
-  if (resolutionTime && since >= resolutionTime) return 0
-
-  const newestBet = descendingBets[0]
-  if (!newestBet) return 0
-
-  const betBeforeSince = descendingBets.find((b) => b.createdTime < since)
-
-  if (!betBeforeSince) {
-    const oldestBet = last(descendingBets) ?? newestBet
-    return prob - oldestBet.probBefore
-  }
-
-  return prob - betBeforeSince.probAfter
 }
 
 export const calculateCreatorTraders = (userContracts: Contract[]) => {
