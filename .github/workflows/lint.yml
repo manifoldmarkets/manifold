@@ -28,6 +28,8 @@ jobs:
           token: ${{ secrets.FORMATTER_ACCESS_TOKEN }}
       - name: Install Node 16
         uses: actions/setup-node@v3
+        env:
+          FORCE_COLOR: 0 # https://github.com/actions/setup-node/issues/317
         with:
           node-version: 16
           cache: 'yarn'
