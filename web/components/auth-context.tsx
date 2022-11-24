@@ -73,7 +73,6 @@ export function AuthProvider(props: {
   const { children, serverUser } = props
   const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
 
-  console.log(serverUser)
   useEffect(() => {
     if (serverUser === undefined) {
       const cachedUser = localStorage.getItem(CACHED_USER_KEY)
