@@ -3,7 +3,6 @@
   "private": true,
   "workspaces": [
     "common",
-    "docs",
     "functions",
     "web"
   ],
