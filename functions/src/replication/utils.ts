@@ -1,8 +1,4 @@
-import { Change } from 'firebase-functions'
-import { DocumentSnapshot } from 'firebase-admin/firestore'
-import { SupabaseClient } from '@supabase/supabase-js'
-import { SupabaseTable } from './schema'
-import { createClient, PostgrestError } from '@supabase/supabase-js'
+import { createClient, PostgrestResponse } from '@supabase/supabase-js'
 
 import { DEV_CONFIG } from '../../../common/envs/dev'
 import { PROD_CONFIG } from '../../../common/envs/prod'
@@ -18,45 +14,11 @@ export function createSupabaseClient() {
   }
 }
 
-export function formatPostgrestError(err: PostgrestError) {
-  return `${err.code} ${err.message} - ${err.details} - ${err.hint}`
-}
-
-export async function recordDeletion(
-  client: SupabaseClient,
-  table: SupabaseTable,
-  id: string
-) {
-  const { error } = await client.from(table).delete().eq('id', id)
-  if (error != null) {
-    throw new Error(formatPostgrestError(error))
-  }
-}
-
-export async function recordUpsert(
-  client: SupabaseClient,
-  table: SupabaseTable,
-  ...docs: DocumentSnapshot[]
-) {
-  const { error } = await client.from(table).upsert(
-    docs.map((doc) => ({
-      id: doc.id,
-      data: doc.data(),
-    }))
-  )
-  if (error != null) {
-    throw new Error(formatPostgrestError(error))
-  }
-}
-
-export async function recordChange(
-  client: SupabaseClient,
-  table: SupabaseTable,
-  change: Change<DocumentSnapshot>
-) {
-  if (change.after.exists) {
-    await recordUpsert(client, table, change.after)
+export async function run<T>(q: PromiseLike<PostgrestResponse<T>>) {
+  const response = await q
+  if (response.error != null) {
+    throw response.error
   } else {
-    await recordDeletion(client, table, change.before.id)
+    return { data: response.data, count: response.count }
   }
 }

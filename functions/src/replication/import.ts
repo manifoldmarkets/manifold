@@ -3,7 +3,7 @@ import { CollectionReference, CollectionGroup } from 'firebase-admin/firestore'
 import { SupabaseClient } from '@supabase/supabase-js'
 
 import { SupabaseTable } from './schema'
-import { createSupabaseClient, recordUpsert } from './utils'
+import { createSupabaseClient, run } from './utils'
 import { log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 
@@ -15,7 +15,8 @@ async function importCollection(
   log(`Populating ${destination}...`)
   const snaps = await source.get()
   log(`Loaded ${snaps.size} documents.`)
-  await recordUpsert(client, destination, ...snaps.docs)
+  const rows = snaps.docs.map((d) => ({ id: d.id, data: d.data() }))
+  await run(client.from(destination).upsert(rows))
   log(`Imported ${snaps.size} documents.`)
 }
 
@@ -26,8 +27,9 @@ async function importCollectionGroup(
   destination: SupabaseTable
 ) {
   log(`Populating ${destination}...`)
-  await processPartitioned(source, partitions, async (snaps) => {
-    await recordUpsert(client, destination, ...snaps)
+  await processPartitioned(source, partitions, async (docs) => {
+    const rows = docs.map((d) => ({ id: d.id, data: d.data() }))
+    await run(client.from(destination).upsert(rows))
   })
 }
 
