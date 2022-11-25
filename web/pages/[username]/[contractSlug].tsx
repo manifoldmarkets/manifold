@@ -83,6 +83,7 @@ export async function getStaticPropz(props: {
       comments,
       userPositions,
     },
+    revalidate: 60,
   }
 }
 
