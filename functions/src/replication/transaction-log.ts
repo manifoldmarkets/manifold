@@ -1,32 +1,9 @@
 import * as admin from 'firebase-admin'
-import {
-  CollectionReference,
-  DocumentSnapshot,
-  DocumentData,
-} from 'firebase-admin/firestore'
+import { CollectionReference, DocumentSnapshot } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions'
 import { Change, EventContext } from 'firebase-functions'
 import { createSupabaseClient, run } from './utils'
-
-type DocumentKind =
-  | 'txn'
-  | 'group'
-  | 'user'
-  | 'contract'
-  | 'contractBet'
-  | 'contractComment'
-
-type WriteKind = 'create' | 'update' | 'delete'
-
-type TLEntry<T extends DocumentData = DocumentData> = {
-  eventId: string
-  docKind: DocumentKind
-  writeKind: WriteKind
-  docId: string
-  parent: string
-  data: T | null
-  ts: number
-}
+import { DocumentKind, TLEntry } from '../../../common/transaction-log'
 
 function getWriteInfo<T>(change: Change<DocumentSnapshot<T>>) {
   const { before, after } = change
@@ -85,7 +62,15 @@ export const replicateLogToSupabase = functions
     const client = createSupabaseClient()
     if (client) {
       const entry = doc.data() as TLEntry
-      await run(client.from('incoming_writes').insert(entry))
+      const row = {
+        event_id: entry.eventId,
+        doc_kind: entry.docKind,
+        write_kind: entry.writeKind,
+        doc_id: entry.docId,
+        data: entry.data,
+        ts: new Date(entry.ts).toISOString(),
+      }
+      await run(client.from('incoming_writes').insert(row))
     } else {
       console.warn(`Couldn't connect to Supabase; not replicating ${doc.id}.`)
     }
