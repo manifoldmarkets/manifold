@@ -18,7 +18,8 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   // Create a map of userIds to total profits (including sales)
   const betsByUser = groupBy(bets, 'userId')
   const userProfits = mapValues(betsByUser, (bets) => {
-    const { profit } = getContractBetMetrics(contract, bets)
+    const nonAntes = bets.filter((b) => !b.isAnte)
+    const { profit } = getContractBetMetrics(contract, nonAntes)
     return {
       name: bets[0].userName,
       username: bets[0].userUsername,
