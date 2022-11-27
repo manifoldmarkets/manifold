@@ -11,9 +11,9 @@ import { Leaderboard } from '../leaderboard'
 import { Title } from '../widgets/title'
 import { BETTORS } from 'common/user'
 import { scoreCommentorsAndBettors } from 'common/scoring'
-import { ContractComment } from 'common/comment'
 import { memo } from 'react'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { useComments } from 'web/hooks/use-comments'
 
 export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   contract: Contract
@@ -54,12 +54,10 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   ) : null
 })
 
-export function ContractTopTrades(props: {
-  contract: Contract
-  bets: Bet[]
-  comments: ContractComment[]
-}) {
-  const { contract, bets, comments } = props
+export function ContractTopTrades(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
+  const comments = useComments(contract.id) ?? []
+
   const {
     topBetId,
     topBettor,

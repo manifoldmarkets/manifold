@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
+import React, { memo, useEffect, useRef, useState } from 'react'
 import { last } from 'lodash'
 
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -122,7 +122,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositions } = props
+  const { userPositions, comments } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -140,15 +140,6 @@ export function ContractPageContent(
       creatorId: contract.creatorId,
     },
     true
-  )
-
-  const comments = useMemo(
-    () =>
-      props.comments.filter(
-        (comment) => !blockedUserIds.includes(comment.userId)
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [props.comments.length, blockedUserIds]
   )
 
   // static props load bets in ascending order by time
@@ -267,11 +258,7 @@ export function ContractPageContent(
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <ContractLeaderboard contract={contract} bets={bets} />
-              <ContractTopTrades
-                contract={contract}
-                bets={bets}
-                comments={comments}
-              />
+              <ContractTopTrades contract={contract} bets={bets} />
             </div>
             <Spacer h={12} />
           </>
