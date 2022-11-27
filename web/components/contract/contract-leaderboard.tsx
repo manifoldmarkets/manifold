@@ -4,16 +4,10 @@ import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 
 import { groupBy, mapValues, sumBy } from 'lodash'
-import { FeedBet } from '../feed/feed-bets'
-import { FeedComment } from '../feed/feed-comments'
-import { Spacer } from '../layout/spacer'
 import { Leaderboard } from '../leaderboard'
-import { Title } from '../widgets/title'
 import { BETTORS } from 'common/user'
-import { scoreCommentorsAndBettors } from 'common/scoring'
 import { memo } from 'react'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
-import { useComments } from 'web/hooks/use-comments'
 
 export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   contract: Contract
@@ -53,47 +47,3 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
     />
   ) : null
 })
-
-export function ContractTopTrades(props: { contract: Contract; bets: Bet[] }) {
-  const { contract, bets } = props
-  const comments = useComments(contract.id) ?? []
-
-  const {
-    topBetId,
-    topBettor,
-    profitById,
-    betsById,
-    topCommentId,
-    commentsById,
-    topCommentBetId,
-  } = scoreCommentorsAndBettors(contract, bets, comments)
-  return (
-    <div className="mt-12 max-w-sm">
-      {topCommentBetId && profitById[topCommentBetId] > 0 && (
-        <>
-          <Title text="💬 Proven correct" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedComment
-              contract={contract}
-              comment={commentsById[topCommentId]}
-            />
-          </div>
-          <Spacer h={16} />
-        </>
-      )}
-
-      {/* If they're the same, only show the comment; otherwise show both */}
-      {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
-        <>
-          <Title text="💸 Best bet" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedBet contract={contract} bet={betsById[topBetId]} />
-          </div>
-          <div className="mt-2 ml-2 text-sm text-gray-500">
-            {topBettor} made {formatMoney(profitById[topBetId] || 0)}!
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
