@@ -8,6 +8,8 @@ import {
   Transaction,
 } from 'firebase-admin/firestore'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
+import { generateJSON } from '@tiptap/html'
+import { stringParseExts } from '../../common/util/parse'
 
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
@@ -24,6 +26,10 @@ export const logMemory = () => {
   for (const [k, v] of Object.entries(used)) {
     log(`${k} ${Math.round((v / 1024 / 1024) * 100) / 100} MB`)
   }
+}
+
+export function htmlToRichText(html: string) {
+  return generateJSON(html, stringParseExts)
 }
 
 export const invokeFunction = async (name: string, body?: unknown) => {

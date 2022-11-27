@@ -35,7 +35,6 @@
     "@tiptap/extension-link": "2.0.0-beta.199",
     "@tiptap/extension-mention": "2.0.0-beta.199",
     "@tiptap/extension-placeholder": "2.0.0-beta.199",
-    "@tiptap/html": "2.0.0-beta.199",
     "@tiptap/react": "2.0.0-beta.199",
     "@tiptap/starter-kit": "2.0.0-beta.199",
     "@tiptap/suggestion": "2.0.0-beta.199",
