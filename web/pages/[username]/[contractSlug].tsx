@@ -66,7 +66,7 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? await listBets({ contractId, limit: 2500, ...CONTRACT_BET_FILTER })
+    ? await listBets({ contractId, limit: 4000, ...CONTRACT_BET_FILTER })
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
