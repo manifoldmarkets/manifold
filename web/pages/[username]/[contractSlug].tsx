@@ -31,10 +31,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getOpenGraphProps } from 'common/contract-details'
 import { ContractDescription } from 'web/components/contract/contract-description'
-import {
-  ContractLeaderboard,
-  ContractTopTrades,
-} from 'web/components/contract/contract-leaderboard'
+import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/widgets/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
@@ -256,10 +253,7 @@ export function ContractPageContent(
 
         {isResolved && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2">
-              <ContractLeaderboard contract={contract} bets={bets} />
-              <ContractTopTrades contract={contract} bets={bets} />
-            </div>
+            <ContractLeaderboard contract={contract} bets={bets} />
             <Spacer h={12} />
           </>
         )}
