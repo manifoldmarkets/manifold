@@ -19,7 +19,7 @@ A list of community-created projects built on, or related to, Manifold Markets.
 - [ManifoldMarketManager](https://github.com/LivInTheLookingGlass/ManifoldMarketManager) - Python script and library to automatically manage markets
 - [manifeed](https://github.com/joy-void-joy/manifeed) - Tool that creates an RSS feed for new Manifold markets
 - [manifold-sdk](https://github.com/keriwarr/manifold-sdk) - TypeScript/JavaScript client for the Manifold API
-- [manifoildr](https://github.com/jcblsn/manifoldr) - R client for the Manifold API
+- [manifoldr](https://github.com/jcblsn/manifoldr) - R client for the Manifold API
 
 ## Bots
 
