@@ -289,7 +289,8 @@ module.exports = {
       typography: {
         DEFAULT: {
           css: {
-            'blockquote p:first-of-type': false,
+            'blockquote p:first-of-type::before': false,
+            'blockquote p:last-of-type::after': false,
             'code::before': false,
             'code::after': false,
           },
