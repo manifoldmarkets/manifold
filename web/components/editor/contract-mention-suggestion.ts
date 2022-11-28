@@ -1,10 +1,12 @@
 import type { MentionOptions } from '@tiptap/extension-mention'
 import { PluginKey } from 'prosemirror-state'
+import { searchClient, searchIndexName } from 'web/lib/service/algolia'
 import { MentionList } from './contract-mention-list'
 import { makeMentionRender } from './mention-suggestion'
-import { trendingIndex } from 'web/lib/service/algolia'
 
 type Suggestion = MentionOptions['suggestion']
+
+const index = searchClient.initIndex(searchIndexName)
 
 export const contractMentionSuggestion: Suggestion = {
   char: '%',
@@ -14,7 +16,7 @@ export const contractMentionSuggestion: Suggestion = {
   pluginKey: new PluginKey('contract-mention') as any,
   items: async ({ query }) =>
     (
-      await trendingIndex.search(query, {
+      await index.search(query, {
         hitsPerPage: 5,
         removeStopWords: true,
       })
