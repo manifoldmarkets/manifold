@@ -539,7 +539,11 @@ function IncomeNotificationItem(props: {
         highlighted && HIGHLIGHT_CLASS
       )}
     >
-      <Link href={getIncomeSourceUrl() ?? ''}>
+      <div className={'relative'}>
+        <Link
+          href={getIncomeSourceUrl() ?? ''}
+          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
+        />
         <Col className={'justify-start text-gray-500'}>
           {(isTip || isUniqueBettorBonus) && (
             <MultiUserTransactionLink
@@ -561,7 +565,7 @@ function IncomeNotificationItem(props: {
           </Row>
         </Col>
         <div className={'border-b border-gray-300 pt-4'} />
-      </Link>
+      </div>
     </div>
   )
 }
