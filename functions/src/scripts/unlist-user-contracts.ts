@@ -7,8 +7,7 @@ import { Contract } from '../../../common/contract'
 
 const firestore = admin.firestore()
 
-async function unlistUserContracts() {
-  const userId = 'XzeS8vkUpQOec65vy1Trmgnhz5V2'
+async function unlistUserContracts(userId: string) {
   console.log('Updating contracts to be unlisted from user', userId)
 
   const snapshot = await firestore
@@ -28,4 +27,11 @@ async function unlistUserContracts() {
   )
 }
 
-if (require.main === module) unlistUserContracts().then(() => process.exit())
+if (require.main === module) {
+  const args = process.argv.slice(2)
+  if (args.length != 1) {
+    console.log('Usage: unlist-user-contracts [userid]')
+  } else {
+    unlistUserContracts(args[0]).catch((e) => console.error(e))
+  }
+}
