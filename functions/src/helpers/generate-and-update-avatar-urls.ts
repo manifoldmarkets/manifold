@@ -16,7 +16,7 @@ export const generateAndUpdateAvatarUrls = async (users: User[]) => {
     users.map(async (user) => {
       const userDoc = firestore.collection('users').doc(user.id)
       console.log('backfilling user avatar:', user.id)
-      const avatarUrl = generateAvatarUrl(user.id, user.name, bucket)
+      const avatarUrl = await generateAvatarUrl(user.id, user.name, bucket)
       await userDoc.update({ avatarUrl })
     })
   )

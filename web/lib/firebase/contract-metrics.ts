@@ -10,16 +10,12 @@ import {
   getDocs,
 } from 'firebase/firestore'
 import { db } from './init'
-import { filterDefined } from 'common/util/array'
+import { ContractMetric } from 'common/contract-metric'
 
-export type UserIdAndPosition = {
-  userId: string
-  contractMetrics: ContractMetrics
-}
-export type UserContractMetrics = {
-  YES: UserIdAndPosition[]
-  NO: UserIdAndPosition[]
-}
+export type BinaryContractMetricsByOutcome = Record<
+  'YES' | 'NO',
+  ContractMetric[]
+>
 
 export function getUserContractMetricsQuery(
   userId: string,
@@ -58,26 +54,8 @@ export async function getBinaryContractUserContractMetrics(
     )
   )
   const outcomeToDetails = {
-    YES: filterDefined(
-      yesSnap.docs.map((doc) => {
-        const userId = doc.ref.parent.parent?.id
-        if (!userId) return undefined
-        return {
-          userId,
-          contractMetrics: doc.data() as ContractMetrics,
-        }
-      })
-    ),
-    NO: filterDefined(
-      noSnap.docs.map((doc) => {
-        const userId = doc.ref.parent.parent?.id
-        if (!userId) return undefined
-        return {
-          userId,
-          contractMetrics: doc.data() as ContractMetrics,
-        }
-      })
-    ),
+    YES: yesSnap.docs.map((doc) => doc.data() as ContractMetrics),
+    NO: noSnap.docs.map((doc) => doc.data() as ContractMetrics),
   }
 
   return outcomeToDetails

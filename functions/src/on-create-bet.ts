@@ -317,7 +317,8 @@ const updateContractMetrics = async (contract: Contract, user: User) => {
   const bets = betSnap.docs.map((doc) => doc.data() as Bet)
   const newMetrics = calculateMetricsByContract(
     { [contract.id]: bets },
-    { [contract.id]: contract }
+    { [contract.id]: contract },
+    user
   )
 
   console.log('newMetrics', newMetrics)

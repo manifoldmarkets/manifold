@@ -1,32 +1,62 @@
 import { useEffect, useState } from 'react'
-import { ContractMetrics } from 'common/calculate-metrics'
 import { listenForValues } from 'web/lib/firebase/utils'
-import { collectionGroup, orderBy, query, where } from 'firebase/firestore'
+import {
+  collectionGroup,
+  limit,
+  orderBy,
+  query,
+  where,
+  Unsubscribe,
+} from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
+import { BinaryContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
+import { ContractMetric } from 'common/contract-metric'
 
-export const useContractMetrics = (contractId: string) => {
-  const [contractMetrics, setContractMetrics] = useState<
-    ContractMetrics[] | undefined
-  >()
+const outcomes = ['YES', 'NO'] as const
+export const useBinaryContractMetrics = (contractId: string, count: number) => {
+  const cmbo = {} as BinaryContractMetricsByOutcome
+  outcomes.forEach((outcome) => (cmbo[outcome] = []))
+  const [contractMetrics, setContractMetrics] =
+    useState<BinaryContractMetricsByOutcome>(cmbo)
 
   useEffect(() => {
-    if (contractId)
-      return listenForContractMetricsOnContract(contractId, setContractMetrics)
-  }, [contractId])
+    let listeners: Unsubscribe[] | undefined
+
+    if (contractId) {
+      listeners = outcomes.map((outcome) =>
+        listenForBinaryContractMetricsOnContract(
+          contractId,
+          count,
+          outcome,
+          (cm) =>
+            setContractMetrics((prev) => ({
+              ...prev,
+              [outcome]: cm,
+            }))
+        )
+      )
+    }
+    return () => {
+      listeners?.forEach((l) => l())
+    }
+  }, [count, contractId])
 
   return contractMetrics
 }
-export function listenForContractMetricsOnContract(
+
+export function listenForBinaryContractMetricsOnContract(
   contractId: string,
-  setComments: (comments: ContractMetrics[]) => void
+  count: number,
+  outcome: 'YES' | 'NO',
+  setMetrics: (metrics: ContractMetric[]) => void
 ) {
-  return listenForValues<ContractMetrics>(
-    query(
-      collectionGroup(db, 'contract-metrics'),
-      where('contractId', '==', contractId),
-      where('hasShares', '==', true),
-      orderBy('createdTime', 'desc')
-    ),
-    setComments
+  const yesQuery = query(
+    collectionGroup(db, 'contract-metrics'),
+    where('contractId', '==', contractId),
+    where(outcome === 'YES' ? 'hasYesShares' : 'hasNoShares', '==', true),
+    orderBy('totalShares.' + outcome, 'desc'),
+    limit(count)
   )
+
+  return listenForValues<ContractMetric>(yesQuery, setMetrics)
 }

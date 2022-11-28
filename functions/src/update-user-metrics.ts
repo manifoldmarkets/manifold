@@ -102,7 +102,8 @@ export async function updateUserMetrics() {
 
       const metricsByContract = calculateMetricsByContract(
         metricRelevantBetsByContract,
-        contractsById
+        contractsById,
+        user
       )
 
       const contractRatios = userContracts

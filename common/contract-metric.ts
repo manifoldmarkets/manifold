@@ -1,14 +1,5 @@
 export type ContractMetric = {
-  loan: number
-  profitPercent: number
   contractId: string
-  payout: number
-  hasYesShares: boolean
-  maxSharesOutcome: string | null
-  hasShares: boolean
-  hasNoShares: boolean
-  profit: number
-  invested: number
   from:
     | {
         [period: string]: {
@@ -20,4 +11,20 @@ export type ContractMetric = {
         }
       }
     | undefined
+  hasNoShares: boolean
+  hasShares: boolean
+  hasYesShares: boolean
+  invested: number
+  loan: number
+  maxSharesOutcome: string | null
+  payout: number
+  profit: number
+  profitPercent: number
+  totalShares: {
+    [outcome: string]: number
+  }
+  userId: string
+  userUsername: string
+  userName: string
+  userAvatarUrl: string
 }

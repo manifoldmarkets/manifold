@@ -15,6 +15,7 @@ import { getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { buy, getProb, shortSell } from './calculate-cpmm-multi'
 import { average } from './util/math'
+import { ContractMetric } from 'common/contract-metric'
 
 const computeInvestmentValue = (
   bets: Bet[],
@@ -285,7 +286,8 @@ export const calculateNewProfit = (
 
 export const calculateMetricsByContract = (
   betsByContractId: Dictionary<Bet[]>,
-  contractsById: Dictionary<Contract>
+  contractsById: Dictionary<Contract>,
+  user: User
 ) => {
   return Object.entries(betsByContractId).map(([contractId, bets]) => {
     const contract = contractsById[contractId]
@@ -302,7 +304,15 @@ export const calculateMetricsByContract = (
       )
     }
 
-    return removeUndefinedProps({ contractId, ...current, from: periodMetrics })
+    return removeUndefinedProps({
+      contractId,
+      ...current,
+      from: periodMetrics,
+      userName: user.name,
+      userId: user.id,
+      userUsername: user.username,
+      userAvatarUrl: user.avatarUrl,
+    } as ContractMetric)
   })
 }
 
