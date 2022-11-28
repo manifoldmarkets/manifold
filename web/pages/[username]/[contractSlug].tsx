@@ -67,7 +67,6 @@ export async function getStaticPropz(props: {
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
-  // get all contractMetrics for users with hasShares = true
   const userPositions =
     contractId && contract?.outcomeType === 'BINARY'
       ? await getBinaryContractUserContractMetrics(contractId, 500)
