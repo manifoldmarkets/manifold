@@ -308,7 +308,7 @@ function CommentStatus(props: {
     <>
       {` predicting `}
       <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
-      {prob && ' at ' + Math.round(prob * 100) + '%'}
+      {prob && ' at ' + Math.round((prob > 1 ? prob / 100 : prob) * 100) + '%'}
     </>
   )
 }
