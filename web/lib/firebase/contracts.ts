@@ -19,7 +19,6 @@ import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract } from 'common/contract'
 import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { DAY_MS } from 'common/util/time'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getBinaryProb } from 'common/contract-details'
 import { getLiquidity } from 'common/calculate-cpmm-multi'
@@ -176,37 +175,6 @@ export function getUserBetContractsQuery(userId: string) {
     where('uniqueBettorIds', 'array-contains', userId),
     limit(MAX_USER_BET_CONTRACTS_LOADED)
   ) as Query<Contract>
-}
-
-const inactiveContractsQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('closeTime', '>', Date.now()),
-  where('visibility', '==', 'public'),
-  where('volume24Hours', '==', 0)
-)
-
-export function getInactiveContracts() {
-  return getValues<Contract>(inactiveContractsQuery)
-}
-
-export function listenForInactiveContracts(
-  setContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(inactiveContractsQuery, setContracts)
-}
-
-const newContractsQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('volume7Days', '==', 0),
-  where('createdTime', '>', Date.now() - 7 * DAY_MS)
-)
-
-export function listenForNewContracts(
-  setContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(newContractsQuery, setContracts)
 }
 
 export function listenForLiveContracts(

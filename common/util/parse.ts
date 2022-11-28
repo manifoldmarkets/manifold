@@ -1,5 +1,4 @@
 import { generateText, JSONContent, Node } from '@tiptap/core'
-import { generateJSON } from '@tiptap/html'
 import { StarterKit } from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
@@ -48,7 +47,7 @@ function skippableComponent(extension: string, label: string): Node<any, any> {
   })
 }
 
-const stringParseExts = [
+export const stringParseExts = [
   StarterKit,
   Link,
   Image.extend({ renderText: () => '[image]' }),
@@ -67,8 +66,4 @@ const stringParseExts = [
 export function richTextToString(text?: JSONContent) {
   if (!text) return ''
   return generateText(text, stringParseExts)
-}
-
-export function htmlToRichText(html: string) {
-  return generateJSON(html, stringParseExts)
 }

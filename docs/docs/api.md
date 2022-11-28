@@ -123,7 +123,6 @@ Requires no authorization.
       "outcomeType":"BINARY",
       "mechanism":"cpmm-1",
       "volume":241,
-      "volume7Days":0,
       "volume24Hours":0,
       "isResolved":true,
       "resolution":"YES",
@@ -170,7 +169,6 @@ Requires no authorization.
     isLogScale?: bool // PSEUDO_NUMERIC markets only, if true `number = (max - min + 1)^probability + minstart - 1`, otherwise `number = min + (max - min) * probability`
 
     volume: number
-    volume7Days: number
     volume24Hours: number
 
     isResolved: boolean
@@ -214,7 +212,6 @@ Requires no authorization.
     "outcomeType": "FREE_RESPONSE",
     "mechanism": "dpm-2",
     "volume": 112,
-    "volume7Days": 212,
     "volume24Hours": 0,
     "isResolved": true,
     "resolution": "MKT",

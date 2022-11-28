@@ -74,7 +74,6 @@ export function getNewContract(
 
     volume: 0,
     volume24Hours: 0,
-    volume7Days: 0,
     elasticity:
       propsByOutcomeType.mechanism === 'cpmm-1'
         ? computeBinaryCpmmElasticityFromAnte(ante)

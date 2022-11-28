@@ -6,30 +6,22 @@ export const addUserToContractFollowers = async (
   contractId: string,
   userId: string
 ) => {
-  const followerDoc = await firestore
-    .collection(`contracts/${contractId}/follows`)
-    .doc(userId)
-    .get()
-  if (followerDoc.exists) return
-  await firestore
-    .collection(`contracts/${contractId}/follows`)
-    .doc(userId)
-    .set({
-      id: userId,
-      createdTime: Date.now(),
-    })
+  try {
+    return await firestore
+      .collection(`contracts/${contractId}/follows`)
+      .doc(userId)
+      .create({ id: userId, createdTime: Date.now() })
+  } catch (e) {
+    // it probably already existed, that's fine
+    return
+  }
 }
 
 export const removeUserFromContractFollowers = async (
   contractId: string,
   userId: string
 ) => {
-  const followerDoc = await firestore
-    .collection(`contracts/${contractId}/follows`)
-    .doc(userId)
-    .get()
-  if (!followerDoc.exists) return
-  await firestore
+  return await firestore
     .collection(`contracts/${contractId}/follows`)
     .doc(userId)
     .delete()

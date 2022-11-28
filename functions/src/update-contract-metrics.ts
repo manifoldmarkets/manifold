@@ -55,6 +55,7 @@ export async function updateContractMetrics() {
           .collection('bets')
           .orderBy('createdTime', 'desc')
           .where('createdTime', '>=', monthAgo)
+          .where('isRedemption', '==', false)
       )
       const unfilledBets = await getValues<LimitBet>(
         firestore
@@ -113,7 +114,6 @@ export async function updateContractMetrics() {
 
       const update = {
         volume24Hours: computeVolume(descendingBets, yesterday),
-        volume7Days: computeVolume(descendingBets, weekAgo),
         elasticity: computeElasticity(unfilledBets, contract),
         uniqueBettors24Hours,
         uniqueBettors7Days,

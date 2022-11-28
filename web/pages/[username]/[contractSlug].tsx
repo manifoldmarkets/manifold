@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
+import React, { memo, useEffect, useRef, useState } from 'react'
 import { last } from 'lodash'
 
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -15,7 +15,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import { Bet, listFirstNBets } from 'web/lib/firebase/bets'
+import { Bet, listBets } from 'web/lib/firebase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -31,10 +31,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getOpenGraphProps } from 'common/contract-details'
 import { ContractDescription } from 'web/components/contract/contract-description'
-import {
-  ContractLeaderboard,
-  ContractTopTrades,
-} from 'web/components/contract/contract-leaderboard'
+import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/widgets/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
@@ -53,7 +50,7 @@ import {
   UserContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
 
-const CONTRACT_BET_LOADING_OPTS = {
+const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
   filterChallenges: true,
 }
@@ -66,7 +63,7 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? await listFirstNBets(contractId, 2500, CONTRACT_BET_LOADING_OPTS)
+    ? await listBets({ contractId, limit: 4000, ...CONTRACT_BET_FILTER })
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
@@ -83,6 +80,7 @@ export async function getStaticPropz(props: {
       comments,
       userPositions,
     },
+    revalidate: 60,
   }
 }
 
@@ -121,7 +119,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositions } = props
+  const { userPositions, comments } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -141,26 +139,19 @@ export function ContractPageContent(
     true
   )
 
-  const comments = useMemo(
-    () =>
-      props.comments.filter(
-        (comment) => !blockedUserIds.includes(comment.userId)
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [props.comments.length, blockedUserIds]
-  )
-
   // static props load bets in ascending order by time
   const lastBetTime = last(props.bets)?.createdTime
-  const newBets = useBets(contract.id, {
-    ...CONTRACT_BET_LOADING_OPTS,
+  const newBets = useBets({
+    contractId: contract.id,
     afterTime: lastBetTime,
+    ...CONTRACT_BET_FILTER,
   })
   const bets = props.bets.concat(newBets ?? [])
 
   const creator = useUserById(contract.creatorId) ?? null
 
-  const userBets = useBets(contract.id, {
+  const userBets = useBets({
+    contractId: contract.id,
     userId: user?.id ?? '_',
     filterAntes: true,
   })
@@ -262,14 +253,7 @@ export function ContractPageContent(
 
         {isResolved && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2">
-              <ContractLeaderboard contract={contract} bets={bets} />
-              <ContractTopTrades
-                contract={contract}
-                bets={bets}
-                comments={comments}
-              />
-            </div>
+            <ContractLeaderboard contract={contract} bets={bets} />
             <Spacer h={12} />
           </>
         )}

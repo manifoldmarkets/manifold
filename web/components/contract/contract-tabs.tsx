@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
@@ -60,7 +60,6 @@ export function ContractTabs(props: {
     contract,
     bets,
     userBets,
-    comments,
     answerResponse,
     onCancelAnswerResponse,
     blockedUserIds,
@@ -68,6 +67,15 @@ export function ContractTabs(props: {
     setActiveIndex,
     userContractMetrics,
   } = props
+
+  const contractComments = useComments(contract.id) ?? props.comments
+  const comments = useMemo(
+    () =>
+      contractComments.filter(
+        (comment) => !blockedUserIds.includes(comment.userId)
+      ),
+    [contractComments, blockedUserIds]
+  )
 
   const commentTitle =
     comments.length === 0 ? 'Comments' : `${comments.length} Comments`

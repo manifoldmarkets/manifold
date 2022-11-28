@@ -16,12 +16,6 @@ export const getIndexName = (sort: string) => {
 
 export const trendingIndex = searchClient.initIndex(getIndexName('score'))
 export const newIndex = searchClient.initIndex(getIndexName('newest'))
-export const probChangeDescendingIndex = searchClient.initIndex(
-  getIndexName('prob-change-day')
-)
-export const probChangeAscendingIndex = searchClient.initIndex(
-  getIndexName('prob-change-day-ascending')
-)
 export const dailyScoreIndex = searchClient.initIndex(
   getIndexName('daily-score')
 )
