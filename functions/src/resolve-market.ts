@@ -81,7 +81,7 @@ const pseudoNumericSchema = z.union([
   }),
 ])
 
-const opts = { secrets: ['MAILGUN_KEY'] }
+const opts = { secrets: ['MAILGUN_KEY', 'API_SECRET'] }
 
 export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)

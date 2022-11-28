@@ -34,7 +34,12 @@ export const scheduleUpdateUserMetrics = functions.pubsub
   })
 
 export const updateusermetrics = newEndpointNoAuth(
-  { timeoutSeconds: 2000, memory: '16GiB', minInstances: 0 },
+  {
+    timeoutSeconds: 2000,
+    memory: '16GiB',
+    minInstances: 0,
+    secrets: ['API_SECRET'],
+  },
   async (_req) => {
     await updateUserMetrics()
     return { success: true }
