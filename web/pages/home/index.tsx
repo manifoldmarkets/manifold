@@ -5,7 +5,6 @@ import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
 import { Dictionary, sortBy, sum, sumBy } from 'lodash'
-
 import { chooseRandomSubset } from 'common/util/random'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
@@ -218,7 +217,7 @@ export default function Home(props: {
         </Row>
 
         <Link href="/charity">
-          <div className="mt-3 flex items-center justify-between gap-1 rounded-lg bg-gradient-to-r from-pink-300 via-purple-400 to-indigo-400 p-4 text-xl font-semibold text-white">
+          <div className="text-md flex flex-wrap items-center justify-between gap-1 rounded-lg bg-gradient-to-r from-pink-300 via-purple-400 to-indigo-400 p-4 font-semibold text-white sm:text-xl">
             <div>It's Giving Tuesday!</div>
             <div>
               <span className="mr-2 rounded-md bg-white px-2 text-gray-700">
@@ -226,7 +225,7 @@ export default function Home(props: {
               </span>
               donated today
             </div>
-            <GoToIcon className="h-6 w-6" />
+            <GoToIcon className="hidden h-6 w-6 sm:inline" />
           </div>
         </Link>
 
