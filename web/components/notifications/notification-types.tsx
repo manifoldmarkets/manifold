@@ -195,10 +195,10 @@ function BetFillNotification(props: {
   const amount = formatMoney(parseInt(sourceText ?? '0'))
   const color =
     creatorOutcome === 'YES'
-      ? 'text-teal-500'
+      ? 'text-teal-600'
       : creatorOutcome === 'NO'
-      ? 'text-scarlet-500'
-      : 'text-blue-500'
+      ? 'text-scarlet-600'
+      : 'text-blue-600'
   const description =
     creatorOutcome && probability ? (
       <span>
@@ -379,7 +379,7 @@ function MarketResolvedNotification(props: {
     return (
       <span
         className={
-          'inline-block max-w-[200px] truncate align-bottom text-blue-400'
+          'inline-block max-w-[200px] truncate align-bottom text-blue-600'
         }
       >
         {sourceText}

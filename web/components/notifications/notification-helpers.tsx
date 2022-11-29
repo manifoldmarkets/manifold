@@ -186,20 +186,22 @@ export function NotificationFrame(props: {
   const frameObject = (
     <>
       <Row className="gap-2 text-sm text-gray-900 md:text-base">
-        <Col className="w-fit">{icon}</Col>
-        <Col className="font w-full">
-          <div className="whitespace-pre-wrap">
-            <span>{children}</span>
-          </div>
-          <div className="line-clamp-1 text-xs md:text-sm">{subtitle}</div>
-          <div className="-mt-0.5 w-fit md:-mt-1">
-            <RelativeTimestamp
-              time={notification.createdTime}
-              className="-ml-1 text-xs font-light text-gray-900"
-              placement={'right-start'}
-            />
-          </div>
-        </Col>
+        <Row className="gap-3">
+          <Col className="w-fit">{icon}</Col>
+          <Col className="font w-full">
+            <div className="whitespace-pre-wrap">
+              <span>{children}</span>
+            </div>
+            <div className="line-clamp-1 text-xs md:text-sm">{subtitle}</div>
+            <div className="-mt-0.5 w-fit md:-mt-1">
+              <RelativeTimestamp
+                time={notification.createdTime}
+                className="-ml-1 text-xs font-light text-gray-900"
+                placement={'right-start'}
+              />
+            </div>
+          </Col>
+        </Row>
         <Col className="w-4">
           {highlighted && (
             <div className="bg-highlight-blue mx-auto my-auto h-3 w-3 rounded-full" />
