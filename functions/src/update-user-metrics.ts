@@ -12,6 +12,7 @@ import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateCreatorTraders,
+  calculateMetricsByContract,
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
@@ -98,6 +99,12 @@ export async function updateUserMetrics() {
         (b) => b.contractId
       )
 
+      const metricsByContract = calculateMetricsByContract(
+        metricRelevantBetsByContract,
+        contractsById,
+        user
+      )
+
       const contractRatios = userContracts
         .map((contract) => {
           if (
@@ -129,6 +136,11 @@ export async function updateUserMetrics() {
       const userDoc = firestore.collection('users').doc(user.id)
       if (didPortfolioChange) {
         writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
+      }
+
+      const contractMetricsCollection = userDoc.collection('contract-metrics')
+      for (const metrics of metricsByContract) {
+        writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
       }
 
       return {
