@@ -9,7 +9,6 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
-import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 import { Notification } from 'common/notification'
 import {
   getPrivateUser,
@@ -19,6 +18,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { listenForValues } from './utils'
 import { postMessageToNative } from 'web/components/native-message-listener'
+import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 
 export function getNotificationsQuery(
   userId: string,

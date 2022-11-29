@@ -1,78 +1,31 @@
-import { ControlledTabs } from 'web/components/layout/tabs'
-import React, { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/router'
-import {
-  BetFillData,
-  ContractResolutionData,
-  getSourceIdForLinkComponent,
-  getSourceUrl,
-  Notification,
-} from 'common/notification'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
-import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
-import { doc, updateDoc } from 'firebase/firestore'
-import { db } from 'web/lib/firebase/init'
-import { MANIFOLD_AVATAR_URL, PAST_BETS, PrivateUser, User } from 'common/user'
-import clsx from 'clsx'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Linkify } from 'web/components/widgets/linkify'
-import {
-  BinaryOutcomeLabel,
-  CancelLabel,
-  MultiLabel,
-  NumericValueLabel,
-  ProbPercentLabel,
-} from 'web/components/outcome-label'
-import {
-  NotificationGroup,
-  useGroupedNotifications,
-} from 'web/hooks/use-notifications'
-import { TrendingUpIcon } from '@heroicons/react/outline'
-import { formatMoney } from 'common/util/format'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
+import { groupPath } from 'common/group'
+import { getSourceIdForLinkComponent, Notification } from 'common/notification'
+import { formatMoney } from 'common/util/format'
 import { groupBy, sum, uniqBy } from 'lodash'
-import { Pagination } from 'web/components/widgets/pagination'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { NotificationSettings } from 'web/components/notification-settings'
-import { SEO } from 'web/components/SEO'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { UserLink } from 'web/components/widgets/user-link'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { useState } from 'react'
 import {
   MultiUserLinkInfo,
-  MultiUserTransactionLink,
+  MultiUserTransactionModal,
 } from 'web/components/multi-user-transaction-link'
-import { Col } from 'web/components/layout/col'
-import { track } from 'web/lib/service/analytics'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { PushNotificationsModal } from 'web/components/push-notifications-modal'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { groupPath } from 'common/group'
-import Link from 'next/link'
-import {
-  ChevronDoubleDownIcon,
-  ChevronDoubleUpIcon,
-} from '@heroicons/react/solid'
-import { Button } from 'web/components/buttons/button'
-import {
-  NESTED_NOTIFICATION_STYLE,
-  NOTIFICATION_STYLE,
-  NUM_SUMMARY_LINES,
-  PARENT_NOTIFICATION_STYLE,
-  getHighlightClass,
-  NotificationGroupItemComponent,
-  NotificationFrame,
-  ParentNotificationHeader,
-} from 'web/pages/notifications'
+import { UserLink } from 'web/components/widgets/user-link'
+import { NotificationGroup } from 'web/hooks/use-notifications'
+import { useUser } from 'web/hooks/use-user'
+import { NotificationGroupItemComponent } from 'web/pages/notifications'
 import { BettingStreakModal } from '../profile/betting-streak-modal'
-import { QuestionOrGroupLink } from './notification-types'
+import { LoansModal } from '../profile/loans-modal'
+import {
+  AvatarNotificationIcon,
+  NotificationFrame,
+  NotificationIcon,
+  ParentNotificationHeader,
+  PrimaryNotificationLink,
+  QuestionOrGroupLink,
+} from './notification-helpers'
 
 // Loop through the contracts and combine the notification items into one
 function combineNotificationsByAddingNumericSourceTexts(
@@ -131,9 +84,8 @@ function combineNotificationsByAddingNumericSourceTexts(
 
 export function IncomeNotificationGroupItem(props: {
   notificationGroup: NotificationGroup
-  className?: string
 }) {
-  const { notificationGroup, className } = props
+  const { notificationGroup } = props
   const { notifications } = notificationGroup
 
   const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
@@ -157,13 +109,10 @@ export function IncomeNotificationGroupItem(props: {
     combinedNotifs.unshift(mostRecentBettingStreakBonus)
   const header = (
     <ParentNotificationHeader
-      icon={<TrendingUpIcon className=" text-teal-500" />}
       header={
         <div>
           {'Daily Income: '}
-          <span className={'text-teal-500'}>
-            {'+' + formatMoney(totalIncome)}
-          </span>
+          <span className={'text-teal-600'}>{formatMoney(totalIncome)}</span>
         </div>
       }
       highlighted={highlighted}
@@ -183,147 +132,225 @@ export function IncomeNotificationGroupItem(props: {
 
 export function IncomeNotificationItem(props: { notification: Notification }) {
   const { notification } = props
-  const { sourceType, sourceUserUsername, sourceText, data } = notification
+  const { sourceType } = notification
   const [highlighted] = useState(!notification.isSeen)
-  const isMobile = useIsMobile(768)
-  const user = useUser()
-  const isTip = sourceType === 'tip' || sourceType === 'tip_and_like'
-  const isUniqueBettorBonus = sourceType === 'bonus'
-  const userLinks: MultiUserLinkInfo[] =
-    isTip || isUniqueBettorBonus ? data?.uniqueUsers ?? [] : []
 
+  if (sourceType === 'tip' || sourceType === 'tip_and_like') {
+    return (
+      <TipIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+      />
+    )
+  } else if (sourceType === 'bonus') {
+    return (
+      <BonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+      />
+    )
+  } else if (sourceType === 'betting_streak_bonus') {
+    return (
+      <BettingStreakBonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+      />
+    )
+  } else if (sourceType === 'loan') {
+    return (
+      <LoanIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+      />
+    )
+  } else return <></>
+}
+
+export function TipIncomeNotification(props: {
+  notification: Notification
+  highlighted: boolean
+}) {
+  const { notification, highlighted } = props
+  const {
+    sourceUserName,
+    sourceUserUsername,
+    sourceContractTitle,
+    sourceTitle,
+  } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      isChildOfGroup={true}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💰'} />
+      }
+      link={getIncomeSourceUrl(notification)}
+    >
+      <span>
+        {incomeNotificationLabel(notification)}{' '}
+        <UserLink
+          name={sourceUserName || ''}
+          username={sourceUserUsername || ''}
+          className={'relative flex-shrink-0 hover:text-indigo-500'}
+        />{' '}
+        tipped you on{' '}
+        <PrimaryNotificationLink text={sourceContractTitle || sourceTitle} />
+      </span>
+    </NotificationFrame>
+  )
+}
+
+export function BonusIncomeNotification(props: {
+  notification: Notification
+  highlighted: boolean
+}) {
+  const { notification, highlighted } = props
+  const { sourceText, data } = notification
+  const userLinks: MultiUserLinkInfo[] = data?.uniqueUsers ?? []
+  const [open, setOpen] = useState(false)
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      isChildOfGroup={true}
+      icon={
+        <NotificationIcon
+          symbol={'🎁'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-indigo-500 to-indigo-300'
+          }
+        />
+      }
+      onClick={() => setOpen(true)}
+    >
+      <span>
+        {incomeNotificationLabel(notification)} Bonus for{' '}
+        <PrimaryNotificationLink
+          text={
+            sourceText
+              ? `${
+                  parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
+                } new traders`
+              : 'unique traders'
+          }
+        />{' '}
+        on <QuestionOrGroupLink notification={notification} truncate={true} />
+      </span>
+      <MultiUserTransactionModal
+        userInfos={userLinks}
+        modalLabel={'Unique traders'}
+        open={open}
+        setOpen={setOpen}
+      />
+    </NotificationFrame>
+  )
+}
+
+export function BettingStreakBonusIncomeNotification(props: {
+  notification: Notification
+  highlighted: boolean
+}) {
+  const { notification, highlighted } = props
+  const { sourceText } = notification
+  const [open, setOpen] = useState(false)
+  const user = useUser()
   const streakInDays = notification.data?.streak
     ? notification.data?.streak
     : Date.now() - notification.createdTime > 24 * 60 * 60 * 1000
     ? parseInt(sourceText ?? '0') / BETTING_STREAK_BONUS_AMOUNT
     : user?.currentBettingStreak ?? 0
-
-  function reasonAndLink() {
-    const { sourceText } = notification
-    let reasonText = ''
-    if (sourceType === 'bonus' && sourceText) {
-      return (
-        <>
-          Bonus for{' '}
-          <MultiUserTransactionLink
-            userInfos={userLinks}
-            modalLabel={'Unique traders'}
-            text={`${
-              parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-            } new traders`}
-          />{' '}
-          on
-          <QuestionOrGroupLink
-            notification={notification}
-            ignoreClick={false}
-          />
-        </>
-      )
-    } else if (sourceType === 'tip') {
-      reasonText = `tipped you on`
-    } else if (sourceType === 'betting_streak_bonus') {
-      if (sourceText && +sourceText === BETTING_STREAK_BONUS_MAX)
-        reasonText = '(max) for your'
-      else reasonText = 'for your'
-      return (
-        <>
-          {sourceText && +sourceText < BETTING_STREAK_BONUS_MAX && '(max)'} for
-          your {sourceText && `🔥 ${streakInDays} day `}
-          <PredictionStreak user={user} />
-        </>
-      )
-    } else if (sourceType === 'loan' && sourceText) {
-      reasonText = `of your invested predictions returned as a`
-      // TODO: support just 'like' notification without a tip
-    } else if (sourceType === 'tip_and_like' && sourceText) {
-      reasonText = `liked`
-    }
-
-    return (
-      <>
-        {reasonText}
-        {sourceType === 'loan' ? (
-          <SiteLink
-            className={'relative ml-1 font-bold hover:text-indigo-500'}
-            href={`/${sourceUserUsername}/?show=loans`}
-            onClick={(e) => e.stopPropagation}
-          >
-            🏦 Loan <span className="font-normal">(learn more)</span>
-          </SiteLink>
-        ) : (
-          <QuestionOrGroupLink
-            notification={notification}
-            ignoreClick={isMobile}
-          />
-        )}
-      </>
-    )
-  }
-
-  const incomeNotificationLabel = () => {
-    return sourceText ? (
-      <span className="text-teal-500">
-        {'+' + formatMoney(parseInt(sourceText))}
-      </span>
-    ) : (
-      <div />
-    )
-  }
-
-  const getIncomeSourceUrl = () => {
-    const {
-      sourceId,
-      sourceContractCreatorUsername,
-      sourceContractSlug,
-      sourceSlug,
-    } = notification
-    if (sourceType === 'tip' && sourceContractSlug)
-      return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
-    if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
-    if (sourceType === 'challenge') return `${sourceSlug}`
-    if (sourceType === 'betting_streak_bonus')
-      return `/${sourceUserUsername}/?show=betting-streak`
-    if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loans`
-    if (sourceContractCreatorUsername && sourceContractSlug)
-      return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
-        sourceId ?? '',
-        sourceType
-      )}`
-  }
-
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
-      // subtitle="hi"
       isChildOfGroup={true}
-      symbol={incomeNotificationLabel()}
+      icon={
+        <NotificationIcon
+          symbol={'🔥'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-indigo-600 to-indigo-300'
+          }
+        />
+      }
+      onClick={() => setOpen(true)}
     >
-      <span className={'mx-1'}>
-        {isTip &&
-          (userLinks.length > 1
-            ? 'Multiple users'
-            : userLinks.length > 0
-            ? userLinks[0].name
-            : '')}
+      <span>
+        {incomeNotificationLabel(notification)} Bonus for your{' '}
+        {sourceText && (
+          <span>
+            🔥 {streakInDays}
+            {+sourceText === BETTING_STREAK_BONUS_MAX && <span>(max)</span>} day
+          </span>
+        )}{' '}
+        <PrimaryNotificationLink text="Prediction Streak" />
       </span>
-      <span>{reasonAndLink()}</span>
+      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
     </NotificationFrame>
   )
 }
 
-export function PredictionStreak(props: { user: User | null | undefined }) {
-  const { user } = props
+export function LoanIncomeNotification(props: {
+  notification: Notification
+  highlighted: boolean
+}) {
+  const { notification, highlighted } = props
   const [open, setOpen] = useState(false)
   return (
-    <>
-      <span
-        className="font-semibold hover:text-indigo-500"
-        onClick={() => setOpen(!open)}
-      >
-        Prediction Streak
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      isChildOfGroup={true}
+      icon={
+        <NotificationIcon
+          symbol={'🏦'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-green-600 to-green-300'
+          }
+        />
+      }
+      onClick={() => setOpen(true)}
+    >
+      <span>
+        {incomeNotificationLabel(notification)} of your invested predictions
+        returned as a{' '}
+        <span>
+          <PrimaryNotificationLink text="Loan" />
+        </span>
       </span>
-      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
-    </>
+      <LoansModal isOpen={open} setOpen={setOpen} />
+    </NotificationFrame>
+  )
+}
+
+export function getIncomeSourceUrl(notification: Notification) {
+  const {
+    sourceId,
+    sourceContractCreatorUsername,
+    sourceContractSlug,
+    sourceSlug,
+    sourceType,
+    sourceUserUsername,
+  } = notification
+  if (sourceType === 'tip' && sourceContractSlug)
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
+  if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
+  if (sourceType === 'challenge') return `${sourceSlug}`
+  if (sourceType === 'betting_streak_bonus')
+    return `/${sourceUserUsername}/?show=betting-streak`
+  if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loans`
+  if (sourceContractCreatorUsername && sourceContractSlug)
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
+      sourceId ?? '',
+      sourceType
+    )}`
+}
+
+export function incomeNotificationLabel(notification: Notification) {
+  const { sourceText } = notification
+  return sourceText ? (
+    <span className="text-teal-600">{formatMoney(parseInt(sourceText))}</span>
+  ) : (
+    <div />
   )
 }

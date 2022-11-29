@@ -1,95 +1,40 @@
-import { ControlledTabs } from 'web/components/layout/tabs'
-import React, { ReactNode, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/router'
-import {
-  BetFillData,
-  ContractResolutionData,
-  getSourceIdForLinkComponent,
-  getSourceUrl,
-  Notification,
-} from 'common/notification'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
-import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
-import { doc, updateDoc } from 'firebase/firestore'
-import { db } from 'web/lib/firebase/init'
-import { MANIFOLD_AVATAR_URL, PAST_BETS, PrivateUser } from 'common/user'
-import clsx from 'clsx'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Linkify } from 'web/components/widgets/linkify'
-import {
-  BinaryOutcomeLabel,
-  CancelLabel,
-  MultiLabel,
-  NumericValueLabel,
-  ProbPercentLabel,
-} from 'web/components/outcome-label'
-import {
-  NotificationGroup,
-  useGroupedNotifications,
-} from 'web/hooks/use-notifications'
-import { TrendingUpIcon } from '@heroicons/react/outline'
-import { formatMoney } from 'common/util/format'
-import {
-  BETTING_STREAK_BONUS_AMOUNT,
-  BETTING_STREAK_BONUS_MAX,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
-import { groupBy, sum, uniqBy } from 'lodash'
-import { Pagination } from 'web/components/widgets/pagination'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { NotificationSettings } from 'web/components/notification-settings'
-import { SEO } from 'web/components/SEO'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { UserLink } from 'web/components/widgets/user-link'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import {
-  MultiUserLinkInfo,
-  MultiUserTransactionLink,
-} from 'web/components/multi-user-transaction-link'
-import { Col } from 'web/components/layout/col'
-import { track } from 'web/lib/service/analytics'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { PushNotificationsModal } from 'web/components/push-notifications-modal'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { groupPath } from 'common/group'
-import Link from 'next/link'
 import {
   ChevronDoubleDownIcon,
   ChevronDoubleUpIcon,
 } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { Notification } from 'common/notification'
+import { PrivateUser } from 'common/user'
+import { useRouter } from 'next/router'
+import React, { ReactNode, useEffect, useMemo, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { ControlledTabs } from 'web/components/layout/tabs'
+import { NotificationSettings } from 'web/components/notification-settings'
+import { IncomeNotificationGroupItem } from 'web/components/notifications/income-summary-notifications'
 import {
-  IncomeNotificationGroupItem,
-  IncomeNotificationItem,
-  PredictionStreak,
-} from 'web/components/notifications/income-summary-notifications'
-import {
-  NotificationItem,
+  markNotificationsAsSeen,
+  NOTIFICATIONS_PER_PAGE,
+  NUM_SUMMARY_LINES,
+  ParentNotificationHeader,
+  PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
-} from 'web/components/notifications/notification-types'
-
-const notification_base_style =
-  'relative cursor-pointer text-sm bg-inherit rounded-lg transition-all'
-export const NESTED_NOTIFICATION_STYLE = clsx(
-  notification_base_style,
-  'hover:bg-indigo-50 py-2'
-)
-export const PARENT_NOTIFICATION_STYLE = clsx(
-  notification_base_style,
-  'group px-2 pt-3'
-)
-export const NOTIFICATION_STYLE = clsx(
-  notification_base_style,
-  'p-2 hover:bg-indigo-50 mx-2'
-)
-export const NOTIFICATIONS_PER_PAGE = 30
-export function getHighlightClass(highlight: boolean) {
-  return highlight ? 'opacity-100' : 'opacity-60'
-}
-export const NUM_SUMMARY_LINES = 3
+} from 'web/components/notifications/notification-helpers'
+import { NotificationItem } from 'web/components/notifications/notification-types'
+import { PushNotificationsModal } from 'web/components/push-notifications-modal'
+import { SEO } from 'web/components/SEO'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Pagination } from 'web/components/widgets/pagination'
+import { Title } from 'web/components/widgets/title'
+import {
+  NotificationGroup,
+  useGroupedNotifications,
+} from 'web/hooks/use-notifications'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { usePrivateUser } from 'web/hooks/use-user'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
@@ -266,16 +211,14 @@ function NotificationGroupItem(props: {
   notificationGroup: NotificationGroup
   className?: string
 }) {
-  const { notificationGroup, className } = props
+  const { notificationGroup } = props
   const { notifications } = notificationGroup
-  const isMobile = useIsMobile(768)
   const { sourceContractTitle } = notifications[0]
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )
   const header = (
     <ParentNotificationHeader
-      icon={<EmptyAvatar multi size={5} />}
       header={
         sourceContractTitle ? (
           <>
@@ -314,7 +257,6 @@ export function NotificationGroupItemComponent(props: {
   const {
     notifications,
     className,
-    highlighted,
     setHighlighted,
     header,
     isIncomeNotification,
@@ -331,7 +273,7 @@ export function NotificationGroupItemComponent(props: {
 
   useEffect(() => {
     if (expanded) setHighlighted(false)
-  }, [expanded])
+  }, [expanded, setHighlighted])
 
   return (
     <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
@@ -359,7 +301,7 @@ export function NotificationGroupItemComponent(props: {
         {needsExpanding && (
           <Row
             className={
-              'w-full items-center justify-end gap-1 text-sm text-gray-500 hover:text-indigo-500'
+              'my-1 w-full items-center justify-end gap-1 text-sm text-gray-500 hover:text-indigo-500'
             }
             onClick={onExpandHandler}
           >
@@ -385,148 +327,5 @@ export function NotificationGroupItemComponent(props: {
         )}
       </div>
     </div>
-  )
-}
-
-function NotificationSummaryFrame(props: {
-  notification: Notification
-  subtitle: string
-  children: React.ReactNode
-}) {
-  const { notification, subtitle, children } = props
-  const { sourceUserName, sourceUserUsername } = notification
-  return (
-    <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
-      <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
-        <div className={'flex pl-1 sm:pl-0'}>
-          <UserLink
-            name={sourceUserName || ''}
-            username={sourceUserUsername || ''}
-            className={'mr-0 flex-shrink-0'}
-            short={true}
-          />
-          <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-            <span className={'flex-shrink-0'}>{subtitle}</span>
-            <div className={'line-clamp-1 ml-1 text-black'}>{children}</div>
-          </div>
-        </div>
-      </div>
-    </Row>
-  )
-}
-
-export function NotificationFrame(props: {
-  notification: Notification
-  highlighted: boolean
-  children: React.ReactNode
-  symbol: string | ReactNode
-  link?: string
-  onClick?: () => void
-  subtitle?: string | ReactNode
-  isChildOfGroup?: boolean
-}) {
-  const {
-    notification,
-    isChildOfGroup,
-    highlighted,
-    children,
-    symbol,
-    subtitle,
-    onClick,
-    link,
-  } = props
-  const {
-    sourceType,
-    sourceUserName,
-    sourceUserAvatarUrl,
-    sourceUpdateType,
-    reason,
-    reasonText,
-    sourceUserUsername,
-    sourceText,
-  } = notification
-  const isMobile = useIsMobile(600)
-
-  const frameObject = (
-    <>
-      {' '}
-      <Row className="gap-1 text-sm md:text-base">
-        <Col className="w-4">
-          {highlighted && (
-            <div className="bg-highlight-blue mx-auto my-auto h-2 w-2 rounded-full" />
-          )}
-        </Col>
-        <Col className="font w-full text-gray-600">
-          <div className="whitespace-pre-wrap">
-            <span>{symbol}</span> <span>{children}</span>
-            <span className="ml-1 text-sm font-light">
-              • <RelativeTimestamp time={notification.createdTime} />
-            </span>
-          </div>
-          <div className="ml-4 text-xs text-gray-600 md:text-sm">
-            {subtitle}
-          </div>
-        </Col>
-      </Row>
-    </>
-  )
-
-  if (link) {
-    return (
-      <SiteLink
-        href={link}
-        className={clsx(
-          'group flex w-full flex-col',
-          isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
-          getHighlightClass(highlighted)
-        )}
-        followsLinkClass={false}
-      >
-        {frameObject}
-      </SiteLink>
-    )
-  }
-  return (
-    <Col
-      className={clsx(
-        'group w-full',
-        isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
-        getHighlightClass(highlighted)
-      )}
-      onClick={onClick}
-    >
-      {frameObject}
-    </Col>
-  )
-}
-
-const markNotificationsAsSeen = async (notifications: Notification[]) => {
-  const unseenNotifications = notifications.filter((n) => !n.isSeen)
-  return await Promise.all(
-    unseenNotifications.map((n) => {
-      const notificationDoc = doc(db, `users/${n.userId}/notifications/`, n.id)
-      return updateDoc(notificationDoc, { isSeen: true, viewTime: new Date() })
-    })
-  )
-}
-
-export function ParentNotificationHeader(props: {
-  icon: ReactNode
-  header: ReactNode
-  highlighted: boolean
-}) {
-  const { header, highlighted, icon } = props
-  const highlightedClass = getHighlightClass(highlighted)
-  return (
-    <Row
-      className={clsx(
-        'items-center justify-start gap-2 text-sm text-gray-500 md:text-base'
-      )}
-    >
-      <div className={clsx('h-5 w-5 flex-shrink-0', highlightedClass)}>
-        {icon}
-      </div>
-      <div className={highlightedClass}>{header}</div>
-    </Row>
   )
 }

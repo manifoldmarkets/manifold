@@ -1,75 +1,33 @@
-import { ControlledTabs } from 'web/components/layout/tabs'
-import React, { ReactNode, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/router'
+import clsx from 'clsx'
 import {
   BetFillData,
   ContractResolutionData,
-  getSourceIdForLinkComponent,
   getSourceUrl,
   Notification,
 } from 'common/notification'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import { formatMoney } from 'common/util/format'
+import { useState } from 'react'
+import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
-import { doc, updateDoc } from 'firebase/firestore'
-import { db } from 'web/lib/firebase/init'
-import { MANIFOLD_AVATAR_URL, PAST_BETS, PrivateUser } from 'common/user'
-import clsx from 'clsx'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Linkify } from 'web/components/widgets/linkify'
+import { IncomeNotificationItem } from 'web/components/notifications/income-summary-notifications'
 import {
   BinaryOutcomeLabel,
-  CancelLabel,
   MultiLabel,
   NumericValueLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
-import {
-  NotificationGroup,
-  useGroupedNotifications,
-} from 'web/hooks/use-notifications'
-import { TrendingUpIcon } from '@heroicons/react/outline'
-import { formatMoney } from 'common/util/format'
-import {
-  BETTING_STREAK_BONUS_AMOUNT,
-  BETTING_STREAK_BONUS_MAX,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
-import { groupBy, sum, uniqBy } from 'lodash'
-import { Pagination } from 'web/components/widgets/pagination'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { NotificationSettings } from 'web/components/notification-settings'
-import { SEO } from 'web/components/SEO'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { UserLink } from 'web/components/widgets/user-link'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import {
-  MultiUserLinkInfo,
-  MultiUserTransactionLink,
-} from 'web/components/multi-user-transaction-link'
-import { Col } from 'web/components/layout/col'
-import { track } from 'web/lib/service/analytics'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { PushNotificationsModal } from 'web/components/push-notifications-modal'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { groupPath } from 'common/group'
-import Link from 'next/link'
-import {
-  ChevronDoubleDownIcon,
-  ChevronDoubleUpIcon,
-} from '@heroicons/react/solid'
-import { Button } from 'web/components/buttons/button'
-import {
-  IncomeNotificationGroupItem,
-  IncomeNotificationItem,
-  PredictionStreak,
-} from 'web/components/notifications/income-summary-notifications'
-import { getHighlightClass, NotificationFrame } from 'web/pages/notifications'
-import { truncateLengthType, truncateText } from '../widgets/truncate'
-import { useHistory } from 'react-router-dom'
+import { useUser } from 'web/hooks/use-user'
 import { BadgesModal } from '../profile/badges-modal'
+import { truncateText } from '../widgets/truncate'
+import {
+  AvatarNotificationIcon,
+  NotificationFrame,
+  NotificationIcon,
+  NotificationTextLabel,
+  PrimaryNotificationLink,
+  QuestionOrGroupLink,
+} from './notification-helpers'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -214,10 +172,9 @@ export function NotificationItem(props: {
   return (
     <NotificationFrame
       notification={notification}
-      // subtitle={getReasonForShowingNotification(notification)}
       highlighted={highlighted}
       isChildOfGroup={isChildOfGroup}
-      symbol={''}
+      icon={<></>}
     >
       <div className={'mt-1 ml-1 md:text-base'}>
         <NotificationTextLabel notification={notification} />
@@ -233,13 +190,8 @@ function BetFillNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted } = props
   const { sourceText, data, sourceContractTitle } = notification
-  const {
-    creatorOutcome,
-    probability,
-    limitOrderTotal,
-    limitOrderRemaining,
-    fillAmount,
-  } = (data as BetFillData) ?? {}
+  const { creatorOutcome, probability, limitOrderRemaining } =
+    (data as BetFillData) ?? {}
   const amount = formatMoney(parseInt(sourceText ?? '0'))
   const color =
     creatorOutcome === 'YES'
@@ -278,7 +230,16 @@ function BetFillNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={creatorOutcome === 'NO' ? '📉' : '📈'}
+      icon={
+        <NotificationIcon
+          symbol={creatorOutcome === 'NO' ? '👇' : '☝️'}
+          symbolBackgroundClass={
+            creatorOutcome === 'NO'
+              ? 'bg-gradient-to-br from-scarlet-600 to-scarlet-300'
+              : 'bg-gradient-to-br from-teal-600 to-teal-300'
+          }
+        />
+      }
       subtitle={subtitle}
       link={getSourceUrl(notification)}
     >
@@ -312,7 +273,12 @@ function BadgeNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'🥇'}
+      icon={
+        <NotificationIcon
+          symbol={'🥇'}
+          symbolBackgroundClass={'bg-gradient-to-br from-blue-600 to-blue-300'}
+        />
+      }
       onClick={() => setOpen(true)}
     >
       <span> {sourceText}</span>
@@ -342,7 +308,14 @@ function SignupBonusNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'✨'}
+      icon={
+        <NotificationIcon
+          symbol={'✨'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-indigo-600 to-indigo-300'
+          }
+        />
+      }
       link={getSourceUrl(notification)}
     >
       <Row>{text}</Row>
@@ -380,7 +353,6 @@ function MarketResolvedNotification(props: {
     ) : (
       <>You lost {formatMoney(Math.abs(profit))} ... Better luck next time!</>
     )
-  let symbol = '☑️'
 
   const resolutionDescription = () => {
     if (!sourceText) return <div />
@@ -461,7 +433,9 @@ function MarketResolvedNotification(props: {
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
       subtitle={subtitle}
-      symbol={symbol}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'☑️'} />
+      }
       link={getSourceUrl(notification)}
     >
       <>{content}</>
@@ -481,7 +455,14 @@ function MarketClosedNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol="❗"
+      icon={
+        <NotificationIcon
+          symbol={'❗'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-amber-400 to-amber-200'
+          }
+        />
+      }
       link={getSourceUrl(notification)}
     >
       <span>
@@ -510,7 +491,9 @@ function NewMarketNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol="🌟"
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🌟'} />
+      }
       link={getSourceUrl(notification)}
     >
       <>
@@ -554,7 +537,9 @@ function MarketUpdateNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol="✏️"
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'✏️'} />
+      }
       subtitle={subtitle}
       link={getSourceUrl(notification)}
     >
@@ -598,7 +583,9 @@ function CommentNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'💬'}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💬'} />
+      }
       subtitle={truncateText(sourceText, 'md')}
       link={getSourceUrl(notification)}
     >
@@ -636,7 +623,9 @@ function AnswerNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'🙋'}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🙋'} />
+      }
       subtitle={truncateText(sourceText, 'lg')}
       link={getSourceUrl(notification)}
     >
@@ -670,7 +659,9 @@ function TaggedUserNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'🏷️'}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🏷️'} />
+      }
       link={getSourceUrl(notification)}
     >
       <>
@@ -702,7 +693,16 @@ function FollowNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'➕'}
+      icon={
+        <AvatarNotificationIcon
+          notification={notification}
+          symbol={
+            <Col className="h-5 w-5 items-center rounded-lg bg-gradient-to-br from-gray-400 to-gray-200 text-sm">
+              ➕
+            </Col>
+          }
+        />
+      }
       link={getSourceUrl(notification)}
     >
       <>
@@ -734,7 +734,9 @@ function LiquidityNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'💧'}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💧'} />
+      }
       link={getSourceUrl(notification)}
     >
       <>
@@ -768,7 +770,9 @@ function GroupAddNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'👥'}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'👥'} />
+      }
       link={getSourceUrl(notification)}
     >
       <>
@@ -815,7 +819,9 @@ function UserJoinedNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'👋'}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'👋'} />
+      }
       link={getSourceUrl(notification)}
       subtitle={
         sourceText && (
@@ -858,7 +864,9 @@ function ChallengeNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
-      symbol={'⚔️'}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'⚔️'} />
+      }
       link={getSourceUrl(notification)}
     >
       <>
@@ -887,86 +895,5 @@ function ChallengeNotification(props: {
         )}
       </>
     </NotificationFrame>
-  )
-}
-
-export function PrimaryNotificationLink(props: {
-  text: string | undefined
-  truncatedLength?: truncateLengthType
-}) {
-  const { text, truncatedLength } = props
-  if (!text) {
-    ;<></>
-  }
-  return (
-    <span className="font-semibold transition-colors hover:text-indigo-500">
-      {truncateText(text, truncatedLength ?? 'lg')}
-    </span>
-  )
-}
-
-export function QuestionOrGroupLink(props: {
-  notification: Notification
-  truncate?: boolean
-  ignoreClick?: boolean
-}) {
-  const { notification, ignoreClick, truncate } = props
-  const {
-    sourceType,
-    sourceContractTitle,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
-    sourceSlug,
-    sourceTitle,
-  } = notification
-
-  let title = sourceContractTitle || sourceTitle
-  if (truncate && title) {
-    title = truncateText(title, 'lg')
-  }
-
-  if (ignoreClick) return <span className={'ml-1 font-bold '}>{title}</span>
-  return (
-    <SiteLink
-      className={'relative ml-1 font-semibold hover:text-indigo-500'}
-      href={
-        sourceContractCreatorUsername
-          ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-          : // User's added to group or received a tip there
-          (sourceType === 'group' || sourceType === 'tip') && sourceSlug
-          ? `${groupPath(sourceSlug)}`
-          : // User referral via group
-          sourceSlug?.includes('/group/')
-          ? `${sourceSlug}`
-          : ''
-      }
-      onClick={() =>
-        track('Notification Clicked', {
-          type: 'question title',
-          sourceType,
-          sourceContractTitle,
-          sourceContractCreatorUsername,
-          sourceContractSlug,
-          sourceSlug,
-          sourceTitle,
-        })
-      }
-    >
-      {title}
-    </SiteLink>
-  )
-}
-
-function NotificationTextLabel(props: {
-  notification: Notification
-  className?: string
-}) {
-  const { className, notification } = props
-  const { sourceText, reasonText } = notification
-  const defaultText = sourceText ?? reasonText ?? ''
-  return (
-    <div className={className ? className : 'line-clamp-4 whitespace-pre-line'}>
-      <Linkify text={defaultText} />
-    </div>
   )
 }
