@@ -13,6 +13,7 @@ import {
 import { removeUndefinedProps } from '../../common/util/object'
 import { Answer } from '../../common/answer'
 import { APIError, newEndpoint, validate } from './api'
+import { ContractMetric } from '../../common/contract-metric'
 
 const bodySchema = z.object({
   username: z.string().optional(),
@@ -95,11 +96,24 @@ export const changeUser = async (
     userAvatarUrl: update.avatarUrl,
   })
 
+  const contractMetricsSnap = await firestore
+    .collection(`users/${user.id}/contract-metrics`)
+    .get()
+
+  const contractMetricsUpdate: Partial<ContractMetric> = removeUndefinedProps({
+    userName: update.name,
+    userUsername: update.username,
+    userAvatarUrl: update.avatarUrl,
+  })
+
   const bulkWriter = firestore.bulkWriter()
   commentSnap.docs.forEach((d) => bulkWriter.update(d.ref, commentUpdate))
   answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
   contracts.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
   betsSnap.docs.forEach((d) => bulkWriter.update(d.ref, betsUpdate))
+  contractMetricsSnap.docs.forEach((d) =>
+    bulkWriter.update(d.ref, contractMetricsUpdate)
+  )
   await bulkWriter.flush()
   console.log('Done writing!')
 
