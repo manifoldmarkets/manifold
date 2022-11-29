@@ -210,9 +210,9 @@ function RichContent(props: {
         Iframe,
         TiptapTweet,
         TiptapSpoiler.configure({
-          spoilerOpenClass: 'rounded-sm bg-gray-200 cursor-text',
+          // TODO: actually add different class when clicked on instead of using selection
           spoilerCloseClass:
-            'rounded-sm bg-gray-600 text-transparent [&_*]:invisible cursor-pointer select-none',
+            'rounded-sm bg-gray-600 text-transparent [&_strong]:text-transparent [&_a]:text-transparent cursor-pointer select-all selection:text-gray-900 selection:bg-gray-200',
         }),
       ]),
     [content, size]
