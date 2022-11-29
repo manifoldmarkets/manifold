@@ -6,10 +6,7 @@ export function RelativeTimestamp(props: { time: number; className?: string }) {
   const { time, className } = props
   const isClient = useIsClient()
   return (
-    <DateTimeTooltip
-      className="ml-1 whitespace-nowrap text-gray-400"
-      time={time}
-    >
+    <DateTimeTooltip className="ml-1 whitespace-nowrap" time={time}>
       <span className={className}>{isClient && fromNow(time)}</span>
     </DateTimeTooltip>
   )

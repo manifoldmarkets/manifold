@@ -75,7 +75,7 @@ const notification_base_style =
   'relative cursor-pointer text-sm bg-inherit rounded-lg transition-all'
 export const NESTED_NOTIFICATION_STYLE = clsx(
   notification_base_style,
-  'hover:bg-indigo-50 p-2'
+  'hover:bg-indigo-50 py-2'
 )
 export const PARENT_NOTIFICATION_STYLE = clsx(
   notification_base_style,
@@ -83,7 +83,7 @@ export const PARENT_NOTIFICATION_STYLE = clsx(
 )
 export const NOTIFICATION_STYLE = clsx(
   notification_base_style,
-  'py-4 pl-4 pr-2 hover:bg-indigo-50'
+  'p-2 hover:bg-indigo-50 mx-2'
 )
 export const NOTIFICATIONS_PER_PAGE = 30
 export function getHighlightClass(highlight: boolean) {
@@ -456,14 +456,14 @@ export function NotificationFrame(props: {
             <div className="bg-highlight-blue mx-auto my-auto h-2 w-2 rounded-full" />
           )}
         </Col>
-        <Col className="w-full text-gray-600">
+        <Col className="font w-full text-gray-600">
           <div className="whitespace-pre-wrap">
             <span>{symbol}</span> <span>{children}</span>
-            <span className="ml-1 text-gray-500">
-              •<RelativeTimestamp time={notification.createdTime} />
+            <span className="ml-1 text-sm font-light">
+              • <RelativeTimestamp time={notification.createdTime} />
             </span>
           </div>
-          <div className="ml-4 text-xs text-gray-500 md:text-sm">
+          <div className="ml-4 text-xs text-gray-600 md:text-sm">
             {subtitle}
           </div>
         </Col>
