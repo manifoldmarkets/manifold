@@ -139,6 +139,7 @@ function ContractSmolView({
         <div>
           <a
             href={href}
+            target="_blank"
             className="text-xl md:text-2xl"
             style={{ color: questionColor }}
           >
