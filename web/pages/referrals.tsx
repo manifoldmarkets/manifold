@@ -47,12 +47,7 @@ export default function ReferralsPage() {
             if they sign up and place a trade!
           </div>
 
-          <CopyLinkButton
-            url={url}
-            tracking="copy referral link"
-            buttonClassName="rounded-l-none"
-            toastClassName={'-left-28 mt-1'}
-          />
+          <CopyLinkButton url={url} tracking="copy referral link" />
 
           <QRCode url={url} className="mt-4 self-center" />
 

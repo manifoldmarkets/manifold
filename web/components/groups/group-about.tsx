@@ -413,12 +413,7 @@ export function GroupAboutDetails(props: {
               {REFERRAL_AMOUNT} if they sign up and place a trade!
             </div>
 
-            <CopyLinkButton
-              url={shareUrl}
-              tracking="copy group share link"
-              buttonClassName="rounded-l-none"
-              toastClassName={'-left-28 mt-1'}
-            />
+            <CopyLinkButton url={shareUrl} tracking="copy group share link" />
           </Col>
         )}
       </Col>
