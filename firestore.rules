@@ -57,6 +57,10 @@ service cloud.firestore {
       allow read;
     }
 
+    match /{somePath=**}/contract-positions/{contractId} {
+      allow read;
+    }
+
     match /{somePath=**}/challenges/{challengeId}{
       allow read;
     }
@@ -97,7 +101,7 @@ service cloud.firestore {
                          .hasOnly(['blockedByUserIds'])
                        && request.resource.data.blockedByUserIds.toSet().difference(resource.data.blockedByUserIds.toSet()).hasOnly([request.auth.uid]);
 
-      allow delete: if (userId == request.auth.uid || isAdmin());              
+      allow delete: if (userId == request.auth.uid || isAdmin());
     }
 
     match /private-users/{userId}/views/{viewId} {
