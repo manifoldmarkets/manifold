@@ -67,6 +67,8 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           key="image2"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="apple-itunes-app" content="app-id=6444136749" />
+
         <link rel="manifest" href="manifest.json" />
       </Head>
       <AuthProvider serverUser={pageProps.auth}>
