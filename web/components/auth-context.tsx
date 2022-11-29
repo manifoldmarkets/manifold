@@ -44,17 +44,16 @@ const ensureDeviceToken = () => {
   return deviceToken
 }
 
-const stripUserData = (data: string) => {
+const stripUserData = (user: object) => {
   // there's some risk that this cookie could be too big for some clients,
   // so strip it down to only the keys that the server auth actually needs
   // in order to auth to the firebase SDK
   const whitelist = ['uid', 'emailVerified', 'isAnonymous', 'stsTokenManager']
-  const user = JSON.parse(data)
   const stripped = pickBy(user, (_v, k) => whitelist.includes(k))
   return JSON.stringify(stripped)
 }
 
-export const setUserCookie = (data: string | undefined) => {
+export const setUserCookie = (data: object | undefined) => {
   const stripped = data ? stripUserData(data) : ''
   const cookie = setCookie(AUTH_COOKIE_NAME, stripped, [
     ['path', '/'],
@@ -62,6 +61,7 @@ export const setUserCookie = (data: string | undefined) => {
     ['samesite', 'lax'],
     ['secure'],
   ])
+  console.log(`Setting auth cookie for UID ${(data as any).uid}:`, cookie)
   document.cookie = cookie
 }
 
@@ -100,7 +100,11 @@ export function AuthProvider(props: {
       auth,
       async (fbUser) => {
         if (fbUser) {
-          setUserCookie(JSON.stringify(fbUser.toJSON()))
+          console.log(
+            `Configuring client authentication for UID ${fbUser.uid}.`,
+            fbUser
+          )
+          setUserCookie(fbUser.toJSON())
           let current = await getUserAndPrivateUser(fbUser.uid)
           if (!current.user || !current.privateUser) {
             const deviceToken = ensureDeviceToken()
@@ -116,6 +120,7 @@ export function AuthProvider(props: {
           )
         } else {
           // User logged out; reset to null
+          console.log('Client logged out; configuring logged-out state.')
           setUserCookie(undefined)
           setAuthUser(null)
           webviewSignOut()
