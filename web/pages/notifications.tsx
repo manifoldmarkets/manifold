@@ -62,9 +62,6 @@ export default function Notifications() {
 
         {privateUser && router.isReady && (
           <div className="relative">
-            <Button size="xs" className="absolute right-0">
-              Mark all as read
-            </Button>
             <ControlledTabs
               currentPageForAnalytics={'notifications'}
               labelClassName={'pb-2 pt-1 '}

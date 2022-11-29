@@ -22,7 +22,7 @@ export const NESTED_NOTIFICATION_STYLE = clsx(
 )
 export const PARENT_NOTIFICATION_STYLE = clsx(
   notification_base_style,
-  'group pt-3'
+  'group pt-3 pb-2'
 )
 export const NOTIFICATION_STYLE = clsx(
   notification_base_style,
@@ -202,7 +202,7 @@ export function NotificationFrame(props: {
         </Col>
         <Col className="w-4">
           {highlighted && (
-            <div className="bg-highlight-blue mx-auto my-auto h-2 w-2 rounded-full" />
+            <div className="bg-highlight-blue mx-auto my-auto h-3 w-3 rounded-full" />
           )}
         </Col>
       </Row>
