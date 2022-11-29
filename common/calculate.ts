@@ -220,7 +220,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { YES: yesShares, NO: noShares } = totalShares
   const hasYesShares = yesShares >= 1
   const hasNoShares = noShares >= 1
-
+  const lastBetTime = Math.max(...yourBets.map((b) => b.createdTime))
   const maxSharesOutcome = hasShares
     ? maxBy(Object.keys(totalShares), (outcome) => totalShares[outcome])
     : null
@@ -236,6 +236,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     hasYesShares,
     hasNoShares,
     maxSharesOutcome,
+    lastBetTime,
   }
 }
 
@@ -251,6 +252,7 @@ export function getContractBetNullMetrics() {
     hasYesShares: false,
     hasNoShares: false,
     maxSharesOutcome: null,
+    lastBetTime: null,
   }
 }
 
