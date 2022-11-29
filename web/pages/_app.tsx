@@ -1,7 +1,6 @@
 import type { AppProps } from 'next/app'
 import { useEffect } from 'react'
 import Head from 'next/head'
-import Script from 'next/script'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import Welcome from 'web/components/onboarding/welcome'
