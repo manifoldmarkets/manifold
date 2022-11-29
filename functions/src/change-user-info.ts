@@ -1,9 +1,14 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+import { uniq } from 'lodash'
 
 import { getUser, getUserByUsername } from './utils'
 import { Bet } from '../../common/bet'
-import { Contract } from '../../common/contract'
+import {
+  Contract,
+  FreeResponseContract,
+  MultipleChoiceContract,
+} from '../../common/contract'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
 import {
@@ -13,6 +18,8 @@ import {
 import { removeUndefinedProps } from '../../common/util/object'
 import { Answer } from '../../common/answer'
 import { APIError, newEndpoint, validate } from './api'
+
+type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
 const bodySchema = z.object({
   username: z.string().optional(),
@@ -83,13 +90,6 @@ export const changeUser = async (
     userAvatarUrl: update.avatarUrl,
   })
 
-  const answerSnap = await firestore
-    .collectionGroup('answers')
-    .where('userId', '==', user.id)
-    .select()
-    .get()
-  const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
-
   const betsSnap = await firestore
     .collectionGroup('bets')
     .where('userId', '==', user.id)
@@ -105,9 +105,33 @@ export const changeUser = async (
   const userRef = firestore.collection('users').doc(user.id)
   bulkWriter.update(userRef, removeUndefinedProps(update))
   commentSnap.docs.forEach((d) => bulkWriter.update(d.ref, commentUpdate))
-  answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
   contractSnap.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
   betsSnap.docs.forEach((d) => bulkWriter.update(d.ref, betsUpdate))
+
+  const answerSnap = await firestore
+    .collectionGroup('answers')
+    .where('userId', '==', user.id)
+    .get()
+  const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
+  answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
+
+  const answerContractIds = uniq(
+    answerSnap.docs.map((a) => a.get('contractId') as string)
+  )
+  const answerContracts = await firestore.getAll(
+    ...answerContractIds.map((c) => firestore.collection('contracts').doc(c))
+  )
+  for (const doc of answerContracts) {
+    const contract = doc.data() as ChoiceContract
+    for (const a of contract.answers) {
+      if (a.userId === user.id) {
+        a.username = update.username ?? a.username
+        a.avatarUrl = update.avatarUrl ?? a.avatarUrl
+        a.name = update.name ?? a.name
+      }
+    }
+    bulkWriter.update(doc.ref, { answers: contract.answers })
+  }
 
   await bulkWriter.flush()
   console.log('Done writing!')
