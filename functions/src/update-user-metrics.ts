@@ -11,7 +11,6 @@ import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
 import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
-  calculateMetricsByContract,
   calculateCreatorTraders,
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
@@ -99,11 +98,6 @@ export async function updateUserMetrics() {
         (b) => b.contractId
       )
 
-      const metricsByContract = calculateMetricsByContract(
-        metricRelevantBetsByContract,
-        contractsById
-      )
-
       const contractRatios = userContracts
         .map((contract) => {
           if (
@@ -137,10 +131,6 @@ export async function updateUserMetrics() {
         writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
       }
 
-      const contractMetricsCollection = userDoc.collection('contract-metrics')
-      for (const metrics of metricsByContract) {
-        writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
-      }
       return {
         user: user,
         fields: {

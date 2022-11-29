@@ -18,6 +18,7 @@ import {
 import { removeUndefinedProps } from '../../common/util/object'
 import { Answer } from '../../common/answer'
 import { APIError, newEndpoint, validate } from './api'
+import { ContractMetric } from '../../common/contract-metric'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
@@ -102,12 +103,25 @@ export const changeUser = async (
     userAvatarUrl: update.avatarUrl,
   })
 
+  const contractMetricsSnap = await firestore
+    .collection(`users/${user.id}/contract-metrics`)
+    .get()
+
+  const contractMetricsUpdate: Partial<ContractMetric> = removeUndefinedProps({
+    userName: update.name,
+    userUsername: update.username,
+    userAvatarUrl: update.avatarUrl,
+  })
+
   const bulkWriter = firestore.bulkWriter()
   const userRef = firestore.collection('users').doc(user.id)
   bulkWriter.update(userRef, removeUndefinedProps(update))
   commentSnap.docs.forEach((d) => bulkWriter.update(d.ref, commentUpdate))
   contractSnap.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
   betsSnap.docs.forEach((d) => bulkWriter.update(d.ref, betsUpdate))
+  contractMetricsSnap.docs.forEach((d) =>
+    bulkWriter.update(d.ref, contractMetricsUpdate)
+  )
 
   const answerSnap = await firestore
     .collectionGroup('answers')

@@ -31,6 +31,7 @@ import { addHouseSubsidy } from './helpers/add-house-subsidy'
 import { BOT_USERNAMES } from '../../common/envs/constants'
 import { addUserToContractFollowers } from './follow-market'
 import { handleReferral } from './helpers/handle-referral'
+import { calculateMetricsByContract } from '../../common/calculate-metrics'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -52,11 +53,11 @@ export const onCreateBet = functions
       .doc(contractId)
       .update({ lastBetTime, lastUpdatedTime: Date.now() })
 
-    const userContractSnap = await firestore
+    const contractSnap = await firestore
       .collection(`contracts`)
       .doc(contractId)
       .get()
-    const contract = userContractSnap.data() as Contract
+    const contract = contractSnap.data() as Contract
 
     if (!contract) {
       log(`Could not find contract ${contractId}`)
@@ -77,8 +78,11 @@ export const onCreateBet = functions
       await addUserToContractFollowers(contractId, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
-    await handleReferral(bettor, eventId)
-    await updateBettingStreak(bettor, bet, contract, eventId)
+    await updateContractMetrics(contract, bettor)
+    // Referrals should always be handled before the betting streak bc they both use lastBetTime
+    handleReferral(bettor, eventId).then(async () => {
+      await updateBettingStreak(bettor, bet, contract, eventId)
+    })
   })
 
 const updateBettingStreak = async (
@@ -304,4 +308,23 @@ const notifyFills = async (
 
 const currentDateBettingStreakResetTime = () => {
   return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
+}
+
+const updateContractMetrics = async (contract: Contract, user: User) => {
+  const betSnap = await firestore
+    .collection(`contracts/${contract.id}/bets`)
+    .where('userId', '==', user.id)
+    .get()
+
+  const bets = betSnap.docs.map((doc) => doc.data() as Bet)
+  const newMetrics = calculateMetricsByContract(
+    { [contract.id]: bets },
+    { [contract.id]: contract },
+    user
+  )
+
+  await firestore
+    .collection(`users/${user.id}/contract-metrics`)
+    .doc(contract.id)
+    .set(newMetrics[0])
 }

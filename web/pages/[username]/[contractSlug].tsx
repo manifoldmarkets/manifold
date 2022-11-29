@@ -47,7 +47,7 @@ import { useContract } from 'web/hooks/use-contracts'
 import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
 import {
   getBinaryContractUserContractMetrics,
-  UserContractMetrics,
+  ContractMetricsByOutcome,
 } from 'web/lib/firebase/contract-metrics'
 
 const CONTRACT_BET_FILTER = {
@@ -67,18 +67,17 @@ export async function getStaticPropz(props: {
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
-  // get all contractMetrics for users with hasShares = true
-  const userPositions =
+  const userPositionsByOutcome =
     contractId && contract?.outcomeType === 'BINARY'
       ? await getBinaryContractUserContractMetrics(contractId, 500)
-      : { YES: [], NO: [] }
+      : {}
 
   return {
     props: {
       contract,
       bets,
       comments,
-      userPositions,
+      userPositionsByOutcome,
     },
     revalidate: 60,
   }
@@ -92,12 +91,13 @@ export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
   comments: ContractComment[]
-  userPositions: UserContractMetrics
+  userPositionsByOutcome: ContractMetricsByOutcome
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
     bets: [],
     comments: [],
+    userPositionsByOutcome: {},
   }
 
   const inIframe = useIsIframe()
@@ -119,7 +119,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositions, comments } = props
+  const { userPositionsByOutcome, comments } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -270,7 +270,7 @@ export function ContractPageContent(
             bets={bets}
             userBets={userBets ?? []}
             comments={comments}
-            userContractMetrics={userPositions}
+            userPositionsByOutcome={userPositionsByOutcome}
             answerResponse={answerResponse}
             onCancelAnswerResponse={onCancelAnswerResponse}
             blockedUserIds={blockedUserIds}

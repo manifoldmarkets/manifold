@@ -10,16 +10,11 @@ import {
   getDocs,
 } from 'firebase/firestore'
 import { db } from './init'
-import { filterDefined } from 'common/util/array'
+import { ContractMetric } from 'common/contract-metric'
 
-export type UserIdAndPosition = {
-  userId: string
-  contractMetrics: ContractMetrics
-}
-export type UserContractMetrics = {
-  YES: UserIdAndPosition[]
-  NO: UserIdAndPosition[]
-}
+export const CONTRACT_METRICS_SORTED_INDICES = ['YES', 'NO']
+
+export type ContractMetricsByOutcome = Record<string, ContractMetric[]>
 
 export function getUserContractMetricsQuery(
   userId: string,
@@ -34,7 +29,9 @@ export function getUserContractMetricsQuery(
   ) as Query<ContractMetrics>
 }
 
-// Only works for binary contracts for now
+// If you want shares sorted in descending order you have to make a new index for that outcome.
+// You can still get all users with contract-metrics and shares without the index and sort them afterwards
+// See use-contract-metrics.ts to extend this for more outcomes
 export async function getBinaryContractUserContractMetrics(
   contractId: string,
   count: number
@@ -58,26 +55,8 @@ export async function getBinaryContractUserContractMetrics(
     )
   )
   const outcomeToDetails = {
-    YES: filterDefined(
-      yesSnap.docs.map((doc) => {
-        const userId = doc.ref.parent.parent?.id
-        if (!userId) return undefined
-        return {
-          userId,
-          contractMetrics: doc.data() as ContractMetrics,
-        }
-      })
-    ),
-    NO: filterDefined(
-      noSnap.docs.map((doc) => {
-        const userId = doc.ref.parent.parent?.id
-        if (!userId) return undefined
-        return {
-          userId,
-          contractMetrics: doc.data() as ContractMetrics,
-        }
-      })
-    ),
+    YES: yesSnap.docs.map((doc) => doc.data() as ContractMetrics),
+    NO: noSnap.docs.map((doc) => doc.data() as ContractMetrics),
   }
 
   return outcomeToDetails

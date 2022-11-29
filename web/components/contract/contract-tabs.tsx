@@ -34,22 +34,21 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
 import { track } from 'web/lib/service/analytics'
-import {
-  UserContractMetrics,
-  UserIdAndPosition,
-} from 'web/lib/firebase/contract-metrics'
+import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useFollows } from 'web/hooks/use-follows'
+import { ContractMetric } from 'common/contract-metric'
+import { useContractMetrics } from 'web/hooks/use-contract-metrics'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
   userBets: Bet[]
   comments: ContractComment[]
-  userContractMetrics: UserContractMetrics
+  userPositionsByOutcome: ContractMetricsByOutcome
   answerResponse?: Answer | undefined
   onCancelAnswerResponse?: () => void
   blockedUserIds: string[]
@@ -65,7 +64,6 @@ export function ContractTabs(props: {
     blockedUserIds,
     activeIndex,
     setActiveIndex,
-    userContractMetrics,
   } = props
 
   const contractComments = useComments(contract.id) ?? props.comments
@@ -88,9 +86,13 @@ export function ContractTabs(props: {
   const yourBetsTitle =
     visibleUserBets.length === 0 ? 'You' : `${visibleUserBets.length} You`
 
+  const outcomes = ['YES', 'NO']
   const positions =
-    userContractMetrics.NO.length + userContractMetrics.YES.length
-  const positionsTitle = positions === 0 ? 'Users' : positions + ' Users'
+    useContractMetrics(contract.id, 500, outcomes) ??
+    props.userPositionsByOutcome
+  const totalPositions = positions.NO?.length + positions.YES?.length ?? 0
+  const positionsTitle =
+    totalPositions === 0 ? 'Users' : totalPositions + ' Users'
 
   return (
     <ControlledTabs
@@ -121,158 +123,130 @@ export function ContractTabs(props: {
             </Col>
           ),
         },
+
+        totalPositions > 0 &&
+          contract.outcomeType === 'BINARY' && {
+            title: positionsTitle,
+            content: <BinaryUserPositionsTabContent positions={positions} />,
+          },
         userBets.length > 0 && {
           title: yourBetsTitle,
           content: (
             <ContractBetsTable contract={contract} bets={userBets} isYourBets />
           ),
-        },
-        bets.length > 0 &&
-          positions > 0 &&
-          contract.outcomeType === 'BINARY' && {
-            title: positionsTitle,
-            content: (
-              <UserPositionsTabContent
-                bets={bets}
-                positions={userContractMetrics}
-              />
-            ),
-          }
+        }
       )}
     />
   )
 }
-type DenormalizedUserBetInfo = {
-  name: string | undefined
-  username: string | undefined
-  avatarUrl: string | undefined
-}
 
-// This is not currently re-computed every after trade, only once in static props
-const UserPositionsTabContent = memo(function UserPositionsTabContent(props: {
-  bets: Bet[]
-  positions: UserContractMetrics
-}) {
-  const { bets, positions } = props
-
-  const [page, setPage] = useState(0)
-  const pageSize = 20
-  const currentUser = useUser()
-  const followedUsers = useFollows(currentUser?.id)
-  const yesPositionsSorted = positions.YES
-  const noPositionsSorted = positions.NO
-
-  const visibleYesPositions = yesPositionsSorted.slice(
-    page * pageSize,
-    (page + 1) * pageSize
-  )
-  const visibleNoPositions = noPositionsSorted.slice(
-    page * pageSize,
-    (page + 1) * pageSize
-  )
-  const totalItems =
-    yesPositionsSorted.length > noPositionsSorted.length
-      ? yesPositionsSorted.length
-      : noPositionsSorted.length
-
-  // TODO: should we put this in the static props?
-  const userInfosFromBets: { [userId: string]: DenormalizedUserBetInfo } = {}
-  yesPositionsSorted.concat(noPositionsSorted).map((position) => {
-    const bet = bets.find((bet) => bet.userId === position.userId)
-    userInfosFromBets[position.userId] = {
-      username: bet?.userUsername,
-      avatarUrl: bet?.userAvatarUrl,
-      name: bet?.userName,
-    }
-  })
-  const PositionRow = memo(function PositionRow(props: {
-    userIdsAndPositions: UserIdAndPosition
-    denormalizedUserInfoFromBets: DenormalizedUserBetInfo
+const BinaryUserPositionsTabContent = memo(
+  function BinaryUserPositionsTabContent(props: {
+    positions: ContractMetricsByOutcome
   }) {
-    const { userIdsAndPositions, denormalizedUserInfoFromBets } = props
-    const { hasYesShares, totalShares } = userIdsAndPositions.contractMetrics
-    const shares = hasYesShares ? totalShares.YES : totalShares.NO
+    const { positions } = props
 
-    const { name, username, avatarUrl } = denormalizedUserInfoFromBets
-    const isMobile = useIsMobile(800)
+    const [page, setPage] = useState(0)
+    const pageSize = 20
+    const currentUser = useUser()
+    const followedUsers = useFollows(currentUser?.id)
+    const yesPositionsSorted = positions.YES ?? []
+    const noPositionsSorted = positions.NO ?? []
+
+    const visibleYesPositions = yesPositionsSorted.slice(
+      page * pageSize,
+      (page + 1) * pageSize
+    )
+    const visibleNoPositions = noPositionsSorted.slice(
+      page * pageSize,
+      (page + 1) * pageSize
+    )
+    const largestColumnLength =
+      yesPositionsSorted.length > noPositionsSorted.length
+        ? yesPositionsSorted.length
+        : noPositionsSorted.length
+
+    const PositionRow = memo(function PositionRow(props: {
+      position: ContractMetric
+      outcome: 'YES' | 'NO'
+    }) {
+      const { position, outcome } = props
+      const { totalShares, userName, userUsername, userAvatarUrl, userId } =
+        position
+      const shares = totalShares[outcome] ?? 0
+      const isMobile = useIsMobile(800)
+
+      return (
+        <Row
+          key={userId + outcome}
+          className={clsx(
+            'items-center justify-between gap-2 rounded-sm border-b p-2',
+            currentUser?.id === position.userId && 'bg-amber-100',
+            followedUsers?.includes(position.userId) && 'bg-blue-50'
+          )}
+        >
+          <Row
+            className={clsx(
+              'max-w-[7rem] shrink items-center gap-2 sm:max-w-none'
+            )}
+          >
+            <Avatar
+              size={'sm'}
+              avatarUrl={userAvatarUrl}
+              username={userUsername}
+            />
+            {userName && userUsername ? (
+              <UserLink
+                short={isMobile}
+                name={userName}
+                username={userUsername}
+              />
+            ) : (
+              <span>Loading..</span>
+            )}
+          </Row>
+          <span
+            className={clsx(
+              outcome === 'YES' ? 'text-teal-500' : 'text-red-700',
+              'shrink-0'
+            )}
+          >
+            {Math.round(shares)}
+          </span>
+        </Row>
+      )
+    })
 
     return (
-      <Row
-        className={clsx(
-          'items-center justify-between gap-2 rounded-sm border-b p-2',
-          currentUser?.id === userIdsAndPositions.userId && 'bg-amber-100',
-          followedUsers?.includes(userIdsAndPositions.userId) && 'bg-blue-50'
-        )}
-      >
-        <Row
-          className={clsx(
-            'max-w-[7rem] shrink items-center gap-2 sm:max-w-none'
-          )}
-        >
-          <Avatar size={'sm'} avatarUrl={avatarUrl} username={username} />
-          {name && username ? (
-            <UserLink short={isMobile} name={name} username={username} />
-          ) : (
-            <span>Loading..</span>
-          )}
+      <Col className={'w-full '}>
+        <Row className={'gap-8'}>
+          <Col className={'w-full max-w-sm gap-2'}>
+            <Row className={'justify-end px-2 text-gray-500'}>
+              <span>YES shares</span>
+            </Row>
+            {visibleYesPositions.map((position) => {
+              return <PositionRow outcome={'YES'} position={position} />
+            })}
+          </Col>
+          <Col className={'w-full max-w-sm gap-2'}>
+            <Row className={'justify-end px-2 text-gray-500'}>
+              <span>NO shares</span>
+            </Row>
+            {visibleNoPositions.map((position) => {
+              return <PositionRow position={position} outcome={'NO'} />
+            })}
+          </Col>
         </Row>
-        <span
-          className={clsx(
-            hasYesShares ? 'text-teal-500' : 'text-red-700',
-            'shrink-0'
-          )}
-        >
-          {Math.round(shares)}
-        </span>
-      </Row>
+        <Pagination
+          page={page}
+          itemsPerPage={pageSize}
+          totalItems={largestColumnLength}
+          setPage={setPage}
+        />
+      </Col>
     )
-  })
-
-  return (
-    <Col className={'w-full '}>
-      <Row className={'gap-8'}>
-        <Col className={'w-full max-w-sm gap-2'}>
-          <Row className={'justify-end px-2 text-gray-500'}>
-            <span>YES shares</span>
-          </Row>
-          {visibleYesPositions.map((position) => {
-            return (
-              <PositionRow
-                key={position.userId + 'YES'}
-                userIdsAndPositions={position}
-                denormalizedUserInfoFromBets={
-                  userInfosFromBets[position.userId]
-                }
-              />
-            )
-          })}
-        </Col>
-        <Col className={'w-full max-w-sm gap-2'}>
-          <Row className={'justify-end px-2 text-gray-500'}>
-            <span>NO shares</span>
-          </Row>
-          {visibleNoPositions.map((position) => {
-            return (
-              <PositionRow
-                key={position.userId + 'NO'}
-                userIdsAndPositions={position}
-                denormalizedUserInfoFromBets={
-                  userInfosFromBets[position.userId]
-                }
-              />
-            )
-          })}
-        </Col>
-      </Row>
-      <Pagination
-        page={page}
-        itemsPerPage={pageSize}
-        totalItems={totalItems}
-        setPage={setPage}
-      />
-    </Col>
-  )
-})
+  }
+)
 
 const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
