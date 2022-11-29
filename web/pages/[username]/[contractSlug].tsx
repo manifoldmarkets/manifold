@@ -47,7 +47,7 @@ import { useContract } from 'web/hooks/use-contracts'
 import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
 import {
   getBinaryContractUserContractMetrics,
-  BinaryContractMetricsByOutcome,
+  ContractMetricsByOutcome,
 } from 'web/lib/firebase/contract-metrics'
 
 const CONTRACT_BET_FILTER = {
@@ -70,7 +70,7 @@ export async function getStaticPropz(props: {
   const userPositionsByOutcome =
     contractId && contract?.outcomeType === 'BINARY'
       ? await getBinaryContractUserContractMetrics(contractId, 500)
-      : { YES: [], NO: [] }
+      : {}
 
   return {
     props: {
@@ -91,13 +91,13 @@ export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
   comments: ContractComment[]
-  userPositionsByOutcome: BinaryContractMetricsByOutcome
+  userPositionsByOutcome: ContractMetricsByOutcome
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
     bets: [],
     comments: [],
-    userPositionsByOutcome: { YES: [], NO: [] },
+    userPositionsByOutcome: {},
   }
 
   const inIframe = useIsIframe()

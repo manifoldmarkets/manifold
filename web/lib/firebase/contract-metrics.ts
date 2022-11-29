@@ -12,10 +12,9 @@ import {
 import { db } from './init'
 import { ContractMetric } from 'common/contract-metric'
 
-export type BinaryContractMetricsByOutcome = Record<
-  'YES' | 'NO',
-  ContractMetric[]
->
+export const CONTRACT_METRICS_SORTED_INDICES = ['YES', 'NO']
+
+export type ContractMetricsByOutcome = Record<string, ContractMetric[]>
 
 export function getUserContractMetricsQuery(
   userId: string,
@@ -30,7 +29,9 @@ export function getUserContractMetricsQuery(
   ) as Query<ContractMetrics>
 }
 
-// Only works for binary contracts for now
+// If you want shares sorted in descending order you have to make a new index for that outcome.
+// You can still get all users with contract-metrics and shares without the index and sort them afterwards
+// See use-contract-metrics.ts to extend this for more outcomes
 export async function getBinaryContractUserContractMetrics(
   contractId: string,
   count: number

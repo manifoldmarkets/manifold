@@ -6,57 +6,102 @@ import {
   orderBy,
   query,
   where,
-  Unsubscribe,
 } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
-import { BinaryContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
+import {
+  CONTRACT_METRICS_SORTED_INDICES,
+  ContractMetricsByOutcome,
+} from 'web/lib/firebase/contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 
-const outcomes = ['YES', 'NO'] as const
-export const useBinaryContractMetrics = (contractId: string, count: number) => {
-  const cmbo = {} as BinaryContractMetricsByOutcome
-  outcomes.forEach((outcome) => (cmbo[outcome] = []))
-  const [contractMetrics, setContractMetrics] =
-    useState<BinaryContractMetricsByOutcome>(cmbo)
+export const useContractMetrics = (
+  contractId: string,
+  count: number,
+  outcomes: string[]
+) => {
+  const [contractMetrics, setContractMetrics] = useState<
+    ContractMetricsByOutcome | undefined
+  >()
 
   useEffect(() => {
-    let listeners: Unsubscribe[] | undefined
-
-    if (contractId) {
-      listeners = outcomes.map((outcome) =>
-        listenForBinaryContractMetricsOnContract(
-          contractId,
+    if (!contractId) return
+    const listeners = outcomes.map((outcome) =>
+      listenForContractMetricsOnContract(
+        contractId,
+        (cm) =>
+          setContractMetrics((prev) => {
+            // We filter yes and no outcomes on the query side
+            const filtered =
+              outcome !== 'YES' && outcome !== 'NO'
+                ? cm.filter(
+                    (c) =>
+                      c.totalShares[outcome] && c.totalShares[outcome] > 0.1
+                  )
+                : cm
+            const resultsAlreadySorted =
+              CONTRACT_METRICS_SORTED_INDICES.includes(outcome)
+            if (resultsAlreadySorted) {
+              return { ...prev, [outcome]: filtered }
+            } else {
+              const sorted = filtered.sort(
+                (a, b) => b.totalShares[outcome] - a.totalShares[outcome]
+              )
+              return { ...prev, [outcome]: sorted }
+            }
+          }),
+        {
           count,
-          outcome,
-          (cm) =>
-            setContractMetrics((prev) => ({
-              ...prev,
-              [outcome]: cm,
-            }))
-        )
+          sortedOutcome: CONTRACT_METRICS_SORTED_INDICES.includes(outcome)
+            ? outcome
+            : undefined,
+        }
       )
-    }
+    )
+
     return () => {
       listeners?.forEach((l) => l())
     }
-  }, [count, contractId])
+  }, [count, contractId, outcomes.length])
 
   return contractMetrics
 }
 
-export function listenForBinaryContractMetricsOnContract(
+// If you want shares sorted in descending order you have to make a new index for that outcome.
+// You can still get all users with contract-metrics and shares without the index and sort them in the client
+export function listenForContractMetricsOnContract(
   contractId: string,
-  count: number,
-  outcome: 'YES' | 'NO',
-  setMetrics: (metrics: ContractMetric[]) => void
+  setMetrics: (metrics: ContractMetric[]) => void,
+  options: {
+    sortedOutcome: typeof CONTRACT_METRICS_SORTED_INDICES[number] | undefined
+    count: number
+  }
 ) {
-  const yesQuery = query(
-    collectionGroup(db, 'contract-metrics'),
-    where('contractId', '==', contractId),
-    where(outcome === 'YES' ? 'hasYesShares' : 'hasNoShares', '==', true),
-    orderBy('totalShares.' + outcome, 'desc'),
-    limit(count)
-  )
-
-  return listenForValues<ContractMetric>(yesQuery, setMetrics)
+  const { sortedOutcome, count } = options
+  if (sortedOutcome) {
+    const sortedQuery = query(
+      collectionGroup(db, 'contract-metrics'),
+      where('contractId', '==', contractId),
+      // This allows us to skip filtering the metrics by outcome in the client
+      where(
+        sortedOutcome === 'YES'
+          ? 'hasYesShares'
+          : sortedOutcome === 'NO'
+          ? 'hasNoShares'
+          : 'hasShares',
+        '==',
+        true
+      ),
+      orderBy('totalShares.' + sortedOutcome, 'desc'),
+      limit(count)
+    )
+    return listenForValues<ContractMetric>(sortedQuery, setMetrics)
+  } else {
+    const unsortedQuery = query(
+      collectionGroup(db, 'contract-metrics'),
+      where('contractId', '==', contractId),
+      where('hasShares', '==', true),
+      limit(count)
+    )
+    return listenForValues<ContractMetric>(unsortedQuery, setMetrics)
+  }
 }
