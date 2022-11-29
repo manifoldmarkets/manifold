@@ -41,7 +41,15 @@ const ContractMentionComponent = (props: any) => {
  */
 export const DisplayContractMention = Mention.extend({
   name: 'contract-mention',
-  parseHTML: () => [{ tag: name }],
-  renderHTML: ({ HTMLAttributes }) => [name, mergeAttributes(HTMLAttributes)],
+  parseHTML: () => [{ tag: `a[data-type="${name}"]` }],
+  renderHTML: ({ HTMLAttributes: { 'data-label': slug } }) => [
+    'a',
+    mergeAttributes({
+      'data-type': name,
+      href: slug,
+      class: 'hover:bg-indigo-50 focus:bg-indigo-50',
+    }),
+    slug,
+  ],
   addNodeView: () => ReactNodeViewRenderer(ContractMentionComponent),
 }).configure({ suggestion: contractMentionSuggestion })
