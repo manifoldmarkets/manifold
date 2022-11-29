@@ -50,6 +50,8 @@ const stripUserData = (user: object) => {
   // in order to auth to the firebase SDK
   const whitelist = ['uid', 'emailVerified', 'isAnonymous', 'stsTokenManager']
   const stripped = pickBy(user, (_v, k) => whitelist.includes(k))
+  // mqp: testing to see if smaller cookie saves kevin's bacon
+  delete (stripped as any).stsTokenManager.accessToken
   return JSON.stringify(stripped)
 }
 
