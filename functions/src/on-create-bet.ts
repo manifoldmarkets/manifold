@@ -323,7 +323,6 @@ const updateContractMetrics = async (contract: Contract, user: User) => {
     user
   )
 
-  console.log('newMetrics', newMetrics)
   await firestore
     .collection(`users/${user.id}/contract-metrics`)
     .doc(contract.id)
