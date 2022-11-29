@@ -707,6 +707,15 @@ With plant-based meat, cultivated meat, and fermentation, we can mitigate the en
 By making meat from plants and cultivating meat from cells, we can modernize meat production. `,
     tags: ['New'] as const,
   },
+  {
+    name: 'UMCOR',
+    website: 'https://umcmission.org/umcor/',
+    photo: 'https://i.imgur.com/MFURh7b.png',
+    preview:
+      'Assists United Methodists and churches to become involved globally in direct ministry to persons in need.',
+    description: `As the humanitarian relief and development arm of The United Methodist Church, the United Methodist Committee on Relief – UMCOR – assists United Methodists and churches to become involved globally in direct ministry to persons in need. UMCOR comes alongside those who suffer from natural or human-caused disasters – famine, hurricane, war, flood, fire or other events—to alleviate suffering and serve as a source of help and hope for the vulnerable. UMCOR provides relief, response and long-term recovery grants when events overwhelm a community’s ability to recover on their own. UMCOR also provides technical support and training for partners to address emerging and ongoing issues related to disaster relief, recovery, and long-term health and development.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
