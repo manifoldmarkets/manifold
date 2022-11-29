@@ -14,6 +14,7 @@ import {
   updateDoc,
   where,
   startAfter,
+  getCountFromServer,
 } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { app, db } from './init'
@@ -243,11 +244,17 @@ export async function listAllUsers(
   return snapshot.docs.map((doc) => doc.data())
 }
 
+export async function getProfitRank(profit: number, period: Period) {
+  const resp = await getCountFromServer(
+    query(users, where(`profitCached.${period}`, '>', profit))
+  )
+  return resp.data().count + 1
+}
+
 export function getTopTraders(period: Period) {
   const topTraders = query(
     users,
-    orderBy('profitRankCached.' + period, 'asc'),
-    where('profitRankCached.' + period, '>', 0),
+    orderBy('profitCached.' + period, 'desc'),
     limit(20)
   )
 
