@@ -716,6 +716,18 @@ By making meat from plants and cultivating meat from cells, we can modernize mea
     description: `As the humanitarian relief and development arm of The United Methodist Church, the United Methodist Committee on Relief – UMCOR – assists United Methodists and churches to become involved globally in direct ministry to persons in need. UMCOR comes alongside those who suffer from natural or human-caused disasters – famine, hurricane, war, flood, fire or other events—to alleviate suffering and serve as a source of help and hope for the vulnerable. UMCOR provides relief, response and long-term recovery grants when events overwhelm a community’s ability to recover on their own. UMCOR also provides technical support and training for partners to address emerging and ongoing issues related to disaster relief, recovery, and long-term health and development.`,
     tags: ['New'] as const,
   },
+  {
+    name: 'Sentience Institute',
+    website: 'https://www.sentienceinstitute.org/',
+    photo: 'https://i.imgur.com/074K7gL.png',
+    preview: "Expanding humanity's moral circle.",
+    description: `At Sentience Institute, we approach moral circle expansion through research. The research we conduct is interdisciplinary, particularly across economics, history, philosophy, psychology, and sociology. We focus on empirical questions, such as how the moral circle has expanded historically, what people’s moral circles look like today, and the factors that influence people’s moral circles, but also work on some conceptual questions to clarify concepts such as sentience and moral circle expansion. Historically, we have focused on farmed animals; we now allocate a substantial proportion of our resources to address questions related to artificial sentience.
+
+Our research has many different routes to impact, often referred to as the “Theory of Change.” Most directly, we aim to discover the factors (e.g., activism and business strategies) that most lead to moral circle expansion, but we also aim to understand the nature of moral progress (e.g., How do more people become longtermist?) and evaluate the extent to which certain moral and social outcomes should be prioritized by those trying to do the most good (i.e., “global priorities research”). This helps activists, donors, investors, governments, firms, and other stakeholders working on these issues knowledge to implement strategies that will change social norms and implement more morally inclusive laws and policies. While we mainly focus on institutional change, we expect our research will also help organizations working on changing individual behavior. Because of our longtermist perspective, we are interested in helping develop social movements and organizations that can take action many years from now.
+
+Where appropriate, we publish our research in academic journals, which helps communicate our findings to academics and encourages other researchers to carry out similar research. Our research sometimes attracts media attention, which we expect also has positive effects by informing public opinion and promoting more morally inclusive social norms. Usually, stakeholders see our research via email or directly on our website.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
