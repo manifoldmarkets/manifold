@@ -5,6 +5,7 @@ import { Contract } from '../../common/contract'
 import * as admin from 'firebase-admin'
 
 import { GroupContractDoc } from '../../common/group'
+import { isEqual } from 'lodash'
 
 export const onUpdateContract = functions
   .runWith({ secrets: ['API_SECRET'] })
@@ -15,7 +16,7 @@ export const onUpdateContract = functions
     const { eventId } = context
     const { closeTime, question } = contract
 
-    if (previousContract.groupSlugs !== contract.groupSlugs) {
+    if (!isEqual(previousContract.groupSlugs, contract.groupSlugs)) {
       await handleContractGroupUpdated(previousContract, contract)
     }
 
