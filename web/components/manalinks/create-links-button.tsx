@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { useState } from 'react'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
 import { User } from 'common/user'
 import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
@@ -68,8 +67,6 @@ function CreateManalinkForm(props: {
   const { user, onCreate, highlightedSlug } = props
   const [isCreating, setIsCreating] = useState(false)
   const [finishedCreating, setFinishedCreating] = useState(false)
-  const [copyPressed, setCopyPressed] = useState(false)
-  setTimeout(() => setCopyPressed(false), 300)
   const defaultExpire = 'week'
   const [expiresIn, setExpiresIn] = useState(defaultExpire)
 
