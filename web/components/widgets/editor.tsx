@@ -223,7 +223,10 @@ function RichContent(props: {
   return (
     <div className={className}>
       <div
-        className={proseClass(size)}
+        className={clsx(
+          proseClass(size),
+          `empty:prose-p:after:content-["\\00a0"]` // make empty paragraphs have height
+        )}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </div>
