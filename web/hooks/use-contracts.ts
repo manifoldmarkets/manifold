@@ -6,11 +6,10 @@ import {
   listenForHotContracts,
   getUserBetContracts,
   getUserBetContractsQuery,
-  listAllContracts,
   listenForContract,
   listenForLiveContracts,
 } from 'web/lib/firebase/contracts'
-import { QueryClient, useQuery, useQueryClient } from 'react-query'
+import { useQuery, useQueryClient } from 'react-query'
 import { MINUTE_MS, sleep } from 'common/util/time'
 import {
   dailyScoreIndex,
@@ -104,12 +103,6 @@ export const useContractsByDailyScoreGroups = (
     data.map((d) => d.hits.filter((c) => c.dailyScore))
   )
 }
-
-const q = new QueryClient()
-export const getCachedContracts = async () =>
-  q.fetchQuery(['contracts'], () => listAllContracts(10000), {
-    staleTime: Infinity,
-  })
 
 export const useHotContracts = () => {
   const [hotContracts, setHotContracts] = useState<Contract[] | undefined>()

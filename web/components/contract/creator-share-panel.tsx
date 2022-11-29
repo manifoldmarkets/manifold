@@ -18,8 +18,6 @@ export function CreatorSharePanel(props: { contract: Contract }) {
       <CopyLinkButton
         url={getShareUrl(contract, contract.creatorUsername)}
         tracking="copy share link"
-        buttonClassName="rounded-l-none"
-        toastClassName={'-left-28 mt-1'}
       />
     </Col>
   )

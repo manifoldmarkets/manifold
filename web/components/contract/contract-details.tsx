@@ -121,28 +121,21 @@ export function AvatarDetails(props: {
   )
 }
 
-export function ContractDetails(props: {
-  contract: Contract
-  disabled?: boolean
-}) {
-  const { contract, disabled } = props
+export function ContractDetails(props: { contract: Contract }) {
+  const { contract } = props
 
   return (
     <Row className="flex-wrap gap-2 sm:flex-nowrap">
-      <MarketSubheader contract={contract} disabled={disabled} />
-      <MarketGroups contract={contract} disabled={disabled} />
+      <MarketSubheader contract={contract} />
+      <MarketGroups contract={contract} />
       <ExtraContractActionsRow contract={contract} />
     </Row>
   )
 }
 
-export function MarketSubheader(props: {
-  contract: Contract
-  disabled?: boolean
-}) {
-  const { contract, disabled } = props
+export function MarketSubheader(props: { contract: Contract }) {
+  const { contract } = props
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
-  const { resolvedDate } = contractMetrics(contract)
   const user = useUser()
   const creator = useUserById(creatorId)
   const correctResolutionPercentage = creator?.fractionResolvedCorrectly
@@ -152,28 +145,22 @@ export function MarketSubheader(props: {
       <Avatar
         username={creatorUsername}
         avatarUrl={creatorAvatarUrl}
-        noLink={disabled}
         size={9}
         className="mr-1.5"
       />
 
-      {!disabled && (
-        <div className="absolute bottom-0 ml-5 flex h-5 w-5 items-center justify-center sm:-bottom-1">
-          <MiniUserFollowButton userId={creatorId} />
-        </div>
-      )}
+      <div className="absolute bottom-0 ml-5 flex h-5 w-5 items-center justify-center sm:-bottom-1">
+        <MiniUserFollowButton userId={creatorId} />
+      </div>
+
       <Col className="ml-2 flex-1 text-sm text-gray-600">
         <Row className="gap-1">
-          {disabled ? (
-            creatorName
-          ) : (
-            <UserLink
-              className="my-auto whitespace-nowrap"
-              name={creatorName}
-              username={creatorUsername}
-            />
-            /*<BadgeDisplay user={creator} className="mr-1" />*/
-          )}
+          <UserLink
+            className="my-auto whitespace-nowrap"
+            name={creatorName}
+            username={creatorUsername}
+          />
+          {/* <BadgeDisplay user={creator} className="mr-1" /> */}
           {correctResolutionPercentage != null &&
             correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
               <Tooltip
@@ -186,12 +173,7 @@ export function MarketSubheader(props: {
             )}
         </Row>
         <div className="text-2xs text-gray-400 sm:text-xs">
-          <CloseOrResolveTime
-            contract={contract}
-            resolvedDate={resolvedDate}
-            isCreator={isCreator}
-            disabled={disabled}
-          />
+          <CloseOrResolveTime contract={contract} isCreator={isCreator} />
         </div>
       </Col>
     </Row>
@@ -200,11 +182,11 @@ export function MarketSubheader(props: {
 
 export function CloseOrResolveTime(props: {
   contract: Contract
-  resolvedDate: any
   isCreator: boolean
   disabled?: boolean
 }) {
-  const { contract, resolvedDate, isCreator, disabled } = props
+  const { contract, isCreator, disabled } = props
+  const { resolvedDate } = contractMetrics(contract)
   const { resolutionTime, closeTime } = contract
   if (!!closeTime || !!resolvedDate) {
     return (

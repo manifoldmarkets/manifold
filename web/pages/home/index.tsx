@@ -4,8 +4,7 @@ import { PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
-import { Dictionary, sortBy, sum } from 'lodash'
-
+import { Dictionary, sortBy, sum, sumBy } from 'lodash'
 import { chooseRandomSubset } from 'common/util/random'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
@@ -72,17 +71,25 @@ import { GroupCard } from '../groups'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import Link from 'next/link'
 import { MINUTE_MS } from 'common/util/time'
+import { manaToUSD } from 'common/util/format'
+import { getAllCharityTxns } from 'web/lib/firebase/txns'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
 
+  const txns = await getAllCharityTxns()
+  const totalRaised = sumBy(txns, 'amount') - 1113458
+
   return {
-    props: { globalConfig },
+    props: { globalConfig, totalRaised },
     revalidate: 60, // regenerate after a minute
   }
 }
 
-export default function Home(props: { globalConfig: GlobalConfig }) {
+export default function Home(props: {
+  globalConfig: GlobalConfig
+  totalRaised: number
+}) {
   const user = useUser()
   const privateUser = usePrivateUser()
   const followedGroups = useMemberGroupsSubscription(user)
@@ -208,6 +215,19 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
           </Row>
           <DailyStats user={user} />
         </Row>
+
+        <Link href="/charity">
+          <div className="text-md flex flex-wrap items-center justify-between gap-1 rounded-lg bg-gradient-to-r from-pink-300 via-purple-400 to-indigo-400 p-4 font-semibold text-white sm:text-xl">
+            <div>It's Giving Tuesday!</div>
+            <div>
+              <span className="mr-2 rounded-md bg-white px-2 text-gray-700">
+                {manaToUSD(props.totalRaised)}
+              </span>
+              donated today
+            </div>
+            <GoToIcon className="hidden h-6 w-6 sm:inline" />
+          </div>
+        </Link>
 
         {isLoading ? (
           <LoadingIndicator />

@@ -1,15 +1,13 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { CollectionReference } from 'firebase-admin/firestore'
+import { sumBy } from 'lodash'
 
 import { getValues, invokeFunction, log } from './utils'
 import { Bet, LimitBet } from '../../common/bet'
 import { Contract, CPMM } from '../../common/contract'
 import { DAY_MS } from '../../common/util/time'
-import {
-  calculateProbChange,
-  computeElasticity,
-  computeVolume,
-} from '../../common/calculate-metrics'
+import { computeElasticity } from '../../common/calculate-metrics'
 import { getProbability } from '../../common/calculate'
 import { batchedWaitAll } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
@@ -48,14 +46,15 @@ export async function updateContractMetrics() {
   const writer = firestore.bulkWriter({ throttling: false })
   await batchedWaitAll(
     contracts.map((contract) => async () => {
-      const descendingBets = await getValues<Bet>(
+      const yesterdayBets = await getValues<Bet>(
         firestore
           .collection('contracts')
           .doc(contract.id)
           .collection('bets')
           .orderBy('createdTime', 'desc')
-          .where('createdTime', '>=', monthAgo)
+          .where('createdTime', '>=', yesterday)
           .where('isRedemption', '==', false)
+          .where('isAnte', '==', false)
       )
       const unfilledBets = await getValues<LimitBet>(
         firestore
@@ -69,51 +68,35 @@ export async function updateContractMetrics() {
 
       let cpmmFields: Partial<CPMM> = {}
       if (contract.mechanism === 'cpmm-1') {
-        let prob = descendingBets[0]
-          ? descendingBets[0].probAfter
-          : getProbability(contract)
-
-        const { resolution, resolutionProbability, resolutionTime } = contract
+        let prob = getProbability(contract)
+        const { resolution, resolutionProbability } = contract
         if (resolution === 'YES') prob = 1
         else if (resolution === 'NO') prob = 0
         else if (resolution === 'MKT' && resolutionProbability !== undefined)
           prob = resolutionProbability
 
+        const [probYesterday, probWeekAgo, probMonthAgo] = await Promise.all(
+          [yesterday, weekAgo, monthAgo].map((t) =>
+            getProbAt(contract, prob, t)
+          )
+        )
         const probChanges = {
-          day: calculateProbChange(
-            prob,
-            descendingBets,
-            yesterday,
-            resolutionTime
-          ),
-          week: calculateProbChange(
-            prob,
-            descendingBets,
-            weekAgo,
-            resolutionTime
-          ),
-          month: calculateProbChange(
-            prob,
-            descendingBets,
-            monthAgo,
-            resolutionTime
-          ),
+          day: prob - probYesterday,
+          week: prob - probWeekAgo,
+          month: prob - probMonthAgo,
         }
         cpmmFields = { prob, probChanges }
       }
 
-      const uniqueBettors24Hours = getUniqueBettors(
-        descendingBets.filter((bet) => bet.createdTime > yesterday)
-      )
-      const uniqueBettors7Days = getUniqueBettors(
-        descendingBets.filter((bet) => bet.createdTime > weekAgo)
-      )
-      const uniqueBettors30Days = getUniqueBettors(
-        descendingBets.filter((bet) => bet.createdTime > monthAgo)
-      )
+      const [uniqueBettors24Hours, uniqueBettors7Days, uniqueBettors30Days] =
+        await Promise.all(
+          [yesterday, weekAgo, monthAgo].map((t) =>
+            getUniqueBettors(contract.id, t)
+          )
+        )
 
       const update = {
-        volume24Hours: computeVolume(descendingBets, yesterday),
+        volume24Hours: sumBy(yesterdayBets, (b) => Math.abs(b.amount)),
         elasticity: computeElasticity(unfilledBets, contract),
         uniqueBettors24Hours,
         uniqueBettors7Days,
@@ -133,8 +116,48 @@ export async function updateContractMetrics() {
   log('Done.')
 }
 
-function getUniqueBettors(bets: Bet[]) {
-  const userIds = new Set<string>()
-  bets.forEach((bet) => userIds.add(bet.userId))
-  return userIds.size
+export const getProbAt = async (
+  contract: Contract,
+  currentProb: number,
+  since: number
+) => {
+  if (contract.resolutionTime && since >= contract.resolutionTime)
+    return currentProb
+
+  const [betBefore, betAfter] = await getBetsAroundTime(contract.id, since)
+  if (betBefore) {
+    return betBefore.probAfter
+  } else if (betAfter) {
+    return betAfter.probBefore
+  } else {
+    return currentProb // there are no bets at all
+  }
+}
+
+async function getBetsAroundTime(contractId: string, when: number) {
+  const bets = firestore
+    .collection('contracts')
+    .doc(contractId)
+    .collection('bets') as CollectionReference<Bet>
+  const beforeQ = bets
+    .where('createdTime', '<', when)
+    .orderBy('createdTime', 'desc')
+    .limit(1)
+  const afterQ = bets
+    .where('createdTime', '>=', when)
+    .orderBy('createdTime', 'asc')
+    .limit(1)
+  const results = await Promise.all([beforeQ.get(), afterQ.get()])
+  return results.map((d) => d.docs[0]?.data() as Bet | undefined)
+}
+
+async function getUniqueBettors(contractId: string, since: number) {
+  return (
+    await firestore
+      .collectionGroup('contract-metrics')
+      .where('contractId', '==', contractId)
+      .where('lastBetTime', '>', since)
+      .count()
+      .get()
+  ).data().count
 }

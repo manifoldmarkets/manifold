@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy } from 'lodash'
 
 import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
@@ -16,7 +16,6 @@ import {
 import { batchedWaitAll } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
-import { HOUSE_BOT_USERNAME } from '../../common/envs/constants'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
 
@@ -144,30 +143,10 @@ export async function updateUserMetrics() {
     }),
     100
   )
-  const userUpdatesMinusBot = userUpdates.filter(
-    (update) => HOUSE_BOT_USERNAME !== update.user.username
-  )
-  const periods = ['daily', 'weekly', 'monthly', 'allTime'] as const
-  const periodRanksByUserId = periods.map((period) => {
-    const rankedUpdates = sortBy(
-      userUpdatesMinusBot,
-      ({ fields }) => -fields.profitCached[period]
-    )
-    return Object.fromEntries(
-      rankedUpdates.map((update, i) => [update.user.id, i + 1])
-    )
-  })
 
-  for (const { user, fields } of userUpdatesMinusBot) {
-    const profitRankCached = Object.fromEntries(
-      periods.map((period, i) => {
-        return [period, periodRanksByUserId[i][user.id]]
-      })
-    ) as Record<typeof periods[number], number>
-
-    const update = { profitRankCached, ...fields }
-    if (hasChanges(user, update)) {
-      writer.update(firestore.collection('users').doc(user.id), update)
+  for (const { user, fields } of userUpdates) {
+    if (hasChanges(user, fields)) {
+      writer.update(firestore.collection('users').doc(user.id), fields)
     }
   }
 

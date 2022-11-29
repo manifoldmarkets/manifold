@@ -44,7 +44,6 @@ Campaigns bleed tons of value all the time, leaving large room for improvement. 
 We need your help - growing the team, engineering new software, analyzing policy space, finding experts, making connections, commissioning academic studies, drafting laws, writing up results, refining messaging, ultimately lobbying and working with campaigns, and of course raising money. 
 
 If you are interested in hearing more please get in touch at hello@balsaresearch.com and start the subject line with the most relevant category: policy (include what area if applicable), tech, media, networking, lobbying, campaigning or money, and then tell us about yourself and what interests you, or fill out this Google Doc.`,
-    tags: ['New'] as const,
   },
   {
     name: '1Day Sooner',
@@ -623,7 +622,6 @@ In addition to housing impact litigation, we provide free legal aid, education a
     preview: 'Donate supplies to soldiers in Ukraine',
     description:
       'Donate supplies to soldiers in Ukraine, including tourniquets and plate carriers.',
-    tags: ['New'] as const,
   },
   {
     name: 'The Society Library',
@@ -656,6 +654,57 @@ We do this by crowdfunding loans and unlocking capital for the underserved, impr
       'The leading nonprofit defending digital privacy, free speech, and innovation.',
     description: `
     The Electronic Frontier Foundation is the leading nonprofit organization defending civil liberties in the digital world. Founded in 1990, EFF champions user privacy, free expression, and innovation through impact litigation, policy analysis, grassroots activism, and technology development. EFF's mission is to ensure that technology supports freedom, justice, and innovation for all people of the world. Today, EFF uses the unique expertise of leading technologists, activists, and attorneys in our efforts to defend free speech online, fight illegal surveillance, advocate for users and innovators, and support freedom-enhancing technologies.`,
+  },
+  {
+    name: 'Rethink Priorities',
+    website: 'https://rethinkpriorities.org/',
+    photo: 'https://i.imgur.com/Xs3D69w.png',
+    preview: 'Uncovering actionable insights to make the world a better place.',
+    description: `Rethink Priorities’ mission is to generate the most significant possible impact for others in the present and the long-term future. 
+
+Using evidence and reason, we identify where resources would be most effective and help direct them there. We do this by conducting critical research to inform policymakers and philanthropists, and by guiding the development of new organizations to address key problems. 
+
+Our work covers important and neglected cause areas, including animal welfare, artificial intelligence, climate change, global health and development, and other work to safeguard a flourishing long-term future. We also aim to understand and support effective altruism – the community of people focused on these issues.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Happier Lives Institute',
+    website: 'https://www.happierlivesinstitute.org/',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2Fylh9QFPCkj.png?alt=media&token=6ea4b8c4-0d53-4b90-ad69-58b44a317e83',
+    preview: 'We rigorously examine charities based on subjective wellbeing',
+    description: `We compare charities on a common metric called wellbeing-adjusted life years (WELLBYs). One WELLBY is equivalent to a 1-point increase on a 0-10 life satisfaction scale for one year.
+
+We use WELLBYs to compare the impact of charities that improve different outcomes, such as health or finances. This is the only approach to charity evaluation that allows us to make apples-to-apples comparisons. No other charity evaluator uses this approach. `,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Strong Minds',
+    website: 'https://strongminds.org/',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2FzHV9DPRU9o.png?alt=media&token=2f3575b8-328e-4863-92f4-1fcd6350b4fc',
+    preview: 'Providing mental health therapy in Africa',
+    description: `- Globally, 280 million people are living with depressive disorders.
+- In low-income countries, approximately 85% receive no treatment.
+- StrongMinds provides free group talk therapy to low-income women and adolescents with depression in Uganda and Zambia.
+- We scale our reach through peer-to-peer therapy, teletherapy, public education, and partnerships.
+- Women who complete our therapy achieve clinically significant reductions in depression symptoms, restoring hope for themselves and their families.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Good Food Institute',
+    website: 'https://gfi.org',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2FTnNRCKWVG0.42?alt=media&token=f6ff8467-fce0-441c-b316-53374b6883a5',
+    preview:
+      'At GFI, we’re building a world where alternative proteins are no longer alternative.',
+    description: `The Good Food Institute is a nonprofit think tank and international network of organizations working to accelerate alternative protein innovation.
+
+Globally, meat consumption is the highest it has ever been. According to the UN, global meat production is projected to double by 2050.
+
+With plant-based meat, cultivated meat, and fermentation, we can mitigate the environmental impact of our food system, decrease the risk of zoonotic disease, and ultimately feed more people with fewer resources. 
+
+By making meat from plants and cultivating meat from cells, we can modernize meat production. `,
     tags: ['New'] as const,
   },
 ].map((charity) => {
