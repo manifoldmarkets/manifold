@@ -28,7 +28,7 @@ import { Button, buttonClass } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { getGroup, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { filterDefined } from 'common/util/array'
@@ -321,7 +321,7 @@ export function renderSections(
   dailyMovers:
     | {
         contracts: CPMMBinaryContract[]
-        metrics: ContractMetrics[]
+        metrics: ContractMetric[]
       }
     | undefined
 ) {
@@ -582,7 +582,7 @@ export const DailyMoversSection = memo(function DailyMoversSection(props: {
   data:
     | {
         contracts: CPMMBinaryContract[]
-        metrics: ContractMetrics[]
+        metrics: ContractMetric[]
       }
     | undefined
 }) {

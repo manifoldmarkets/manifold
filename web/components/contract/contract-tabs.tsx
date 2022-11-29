@@ -34,21 +34,21 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
 import { track } from 'web/lib/service/analytics'
-import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
+import { ContractPositionsByOutcome } from 'web/lib/firebase/contract-positions'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useFollows } from 'web/hooks/use-follows'
-import { ContractMetric } from 'common/contract-metric'
-import { useContractMetrics } from 'web/hooks/use-contract-metrics'
+import { ContractPositions } from 'common/contract-positions'
+import { useContractPositions } from 'web/hooks/use-contract-positions'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
   userBets: Bet[]
   comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
+  userPositionsByOutcome: ContractPositionsByOutcome
   answerResponse?: Answer | undefined
   onCancelAnswerResponse?: () => void
   blockedUserIds: string[]
@@ -88,7 +88,7 @@ export function ContractTabs(props: {
 
   const outcomes = ['YES', 'NO']
   const positions =
-    useContractMetrics(contract.id, 500, outcomes) ??
+    useContractPositions(contract.id, 500, outcomes) ??
     props.userPositionsByOutcome
   const totalPositions = positions.NO?.length + positions.YES?.length ?? 0
   const positionsTitle =
@@ -142,7 +142,7 @@ export function ContractTabs(props: {
 
 const BinaryUserPositionsTabContent = memo(
   function BinaryUserPositionsTabContent(props: {
-    positions: ContractMetricsByOutcome
+    positions: ContractPositionsByOutcome
   }) {
     const { positions } = props
 
@@ -167,7 +167,7 @@ const BinaryUserPositionsTabContent = memo(
         : noPositionsSorted.length
 
     const PositionRow = memo(function PositionRow(props: {
-      position: ContractMetric
+      position: ContractPositions
       outcome: 'YES' | 'NO'
     }) {
       const { position, outcome } = props

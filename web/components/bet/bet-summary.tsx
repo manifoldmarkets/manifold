@@ -9,7 +9,7 @@ import { YesLabel, NoLabel } from '../outcome-label'
 import { getProbability } from 'common/calculate'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useSavedContractInfo } from 'web/hooks/use-saved-contract-metrics'
 import { ENV_CONFIG } from 'common/envs/constants'
 
 export function BetsSummary(props: {
@@ -22,11 +22,12 @@ export function BetsSummary(props: {
   const isBinary = outcomeType === 'BINARY'
 
   const bets = props.userBets?.filter((b) => !b.isAnte)
-  const metrics = useSavedContractMetrics(contract, bets)
+  const [metrics, positions] = useSavedContractInfo(contract, bets)
 
-  if (!metrics) return <></>
+  if (!metrics || !positions) return <></>
 
-  const { profitPercent, payout, profit, invested, totalShares } = metrics
+  const { profitPercent, payout, profit, invested } = metrics
+  const { totalShares } = positions
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0

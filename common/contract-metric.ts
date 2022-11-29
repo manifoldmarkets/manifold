@@ -11,18 +11,10 @@ export type ContractMetric = {
         }
       }
     | undefined
-  hasNoShares: boolean
-  hasShares: boolean
-  hasYesShares: boolean
   invested: number
-  loan: number
-  maxSharesOutcome: string | null
   payout: number
   profit: number
   profitPercent: number
-  totalShares: {
-    [outcome: string]: number
-  }
   userId: string
   userUsername: string
   userName: string

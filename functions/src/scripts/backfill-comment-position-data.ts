@@ -62,7 +62,6 @@ async function denormalize() {
         (b) => b.createdTime < comment.createdTime
       )
       const position = getLargestPosition(
-        contract,
         previousBets.filter((b) => b.userId === comment.userId && !b.isAnte)
       )
       if (position) {

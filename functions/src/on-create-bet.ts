@@ -11,6 +11,7 @@ import {
 } from './create-notification'
 import { filterDefined } from '../../common/util/array'
 import { Contract } from '../../common/contract'
+import { ContractPositions } from '../../common/contract-positions'
 import { runTxn, TxnData } from './transact'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
@@ -31,7 +32,7 @@ import { addHouseSubsidy } from './helpers/add-house-subsidy'
 import { BOT_USERNAMES } from '../../common/envs/constants'
 import { addUserToContractFollowers } from './follow-market'
 import { handleReferral } from './helpers/handle-referral'
-import { calculateMetricsByContract } from '../../common/calculate-metrics'
+import { getContractPositions } from '../../common/calculate'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -78,7 +79,7 @@ export const onCreateBet = functions
       await addUserToContractFollowers(contractId, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
-    await updateContractMetrics(contract, bettor)
+    await updateContractPositions(contract, bettor)
     // Referrals should always be handled before the betting streak bc they both use lastBetTime
     handleReferral(bettor, eventId).then(async () => {
       await updateBettingStreak(bettor, bet, contract, eventId)
@@ -310,21 +311,26 @@ const currentDateBettingStreakResetTime = () => {
   return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
 }
 
-const updateContractMetrics = async (contract: Contract, user: User) => {
+const updateContractPositions = async (contract: Contract, user: User) => {
   const betSnap = await firestore
     .collection(`contracts/${contract.id}/bets`)
     .where('userId', '==', user.id)
     .get()
 
   const bets = betSnap.docs.map((doc) => doc.data() as Bet)
-  const newMetrics = calculateMetricsByContract(
-    { [contract.id]: bets },
-    { [contract.id]: contract },
-    user
-  )
+
+  const newPositions = getContractPositions(bets)
+  const update = {
+    ...newPositions,
+    contractId: contract.id,
+    userId: user.id,
+    userName: user.name,
+    userUsername: user.username,
+    userAvatarUrl: user.avatarUrl,
+  } as ContractPositions
 
   await firestore
-    .collection(`users/${user.id}/contract-metrics`)
+    .collection(`users/${user.id}/contract-positions`)
     .doc(contract.id)
-    .set(newMetrics[0])
+    .set(update)
 }

@@ -43,9 +43,10 @@ import { memo, ReactNode } from 'react'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useSavedContractInfo } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
+import { ContractPositions } from 'common/contract-positions'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -421,12 +422,13 @@ export function ContractMetricsFooter(props: {
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-  const metrics = useSavedContractMetrics(contract, userBets)
+  const [metrics, positions] = useSavedContractInfo(contract, userBets)
 
-  return user && metrics && metrics.hasShares ? (
+  return user && metrics && positions && positions.hasShares ? (
     <LoadedMetricsFooter
       contract={contract}
       metrics={metrics}
+      positions={positions}
       showDailyProfit={showDailyProfit}
     />
   ) : (
@@ -436,11 +438,13 @@ export function ContractMetricsFooter(props: {
 
 function LoadedMetricsFooter(props: {
   contract: CPMMContract
-  metrics: ContractMetrics
+  metrics: ContractMetric
+  positions: ContractPositions
   showDailyProfit?: boolean
 }) {
-  const { contract, metrics, showDailyProfit } = props
-  const { totalShares, maxSharesOutcome, from } = metrics
+  const { contract, metrics, positions, showDailyProfit } = props
+  const { totalShares, maxSharesOutcome } = positions
+  const { from } = metrics
   const { YES: yesShares, NO: noShares } = totalShares
   const dailyProfit = from ? from.day.profit : 0
   const profit = showDailyProfit ? dailyProfit : metrics.profit

@@ -154,7 +154,7 @@ async function getBetsAroundTime(contractId: string, when: number) {
 async function getUniqueBettors(contractId: string, since: number) {
   return (
     await firestore
-      .collectionGroup('contract-metrics')
+      .collectionGroup('contract-positions')
       .where('contractId', '==', contractId)
       .where('lastBetTime', '>', since)
       .count()

@@ -1,35 +1,51 @@
 import { Bet } from 'common/bet'
-import { getContractBetMetrics } from 'common/calculate'
-import { ContractMetrics } from 'common/calculate-metrics'
+import { getContractBetMetrics, getContractPositions } from 'common/calculate'
+import { ContractMetric } from 'common/contract-metric'
+import { ContractPositions } from 'common/contract-positions'
 import { Contract } from 'common/contract'
 import {
   usePersistentState,
   storageStore,
   inMemoryStore,
 } from './use-persistent-state'
-import { useUser, useUserContractMetrics } from './use-user'
+import {
+  useUser,
+  useUserContractMetrics,
+  useUserContractPositions,
+} from './use-user'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { safeLocalStorage } from 'web/lib/util/local'
 
-export const useSavedContractMetrics = (
+export const useSavedContractInfo = (
   contract: Contract,
   userBets: Bet[] | undefined
 ) => {
   const user = useUser()
   const contractMetrics = useUserContractMetrics(user?.id, contract.id)
+  const contractPositions = useUserContractPositions(user?.id, contract.id)
   const isDev =
     typeof window !== 'undefined'
       ? window.location.origin.startsWith('http://localhost')
       : false
+
   const [savedMetrics, setSavedMetrics] = usePersistentState<
-    ContractMetrics | undefined
+    ContractMetric | undefined
   >(undefined, {
-    key: `contract-metrics-${contract.id}`,
+    key: `contract-metrics-${contract.id}-v2`,
+    store: isDev ? inMemoryStore() : storageStore(safeLocalStorage()),
+  })
+  const [savedPositions, setSavedPositions] = usePersistentState<
+    ContractPositions | undefined
+  >(undefined, {
+    key: `contract-positions-${contract.id}`,
     store: isDev ? inMemoryStore() : storageStore(safeLocalStorage()),
   })
 
   const computedMetrics = userBets
     ? getContractBetMetrics(contract, userBets)
+    : savedMetrics
+  const computedPositions = userBets
+    ? getContractPositions(userBets)
     : savedMetrics
 
   const metrics =
@@ -39,12 +55,24 @@ export const useSavedContractMetrics = (
           ...contractMetrics,
           // Computed metrics has a subset of the fields of contract metrics.
           ...computedMetrics,
-        } as ContractMetrics)
+        } as ContractMetric)
+      : undefined
+  const positions =
+    contractPositions || savedPositions || computedPositions
+      ? ({
+          ...savedPositions,
+          ...contractPositions,
+          ...computedPositions,
+        } as ContractPositions)
       : undefined
 
   useEffectCheckEquality(() => {
     if (metrics) setSavedMetrics(metrics)
   }, [metrics, setSavedMetrics])
 
-  return metrics
+  useEffectCheckEquality(() => {
+    if (positions) setSavedPositions(positions)
+  }, [positions, setSavedPositions])
+
+  return [metrics, positions] as const
 }

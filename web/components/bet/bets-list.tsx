@@ -28,9 +28,11 @@ import { SiteLink } from '../widgets/site-link'
 import {
   calculatePayout,
   getOutcomeProbability,
-  getContractBetMetrics,
   resolvedPayout,
+  getContractBetMetrics,
   getContractBetNullMetrics,
+  getContractPositions,
+  getContractNullPositions,
 } from 'common/calculate'
 import { DPMContract, NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
@@ -125,6 +127,12 @@ export function BetsList(props: { user: User }) {
     return getContractBetMetrics(contract, bets)
   })
 
+  const contractsPositions = mapValues(contractBets, (bets, contractId) => {
+    const contract = contractsById[contractId]
+    if (!contract) return getContractNullPositions()
+    return getContractPositions(bets)
+  })
+
   const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
     resolved: (c) => !!c.resolutionTime,
     closed: (c) =>
@@ -151,7 +159,7 @@ export function BetsList(props: { user: User }) {
     .filter((c) => {
       if (filter === 'all') return true
 
-      const { hasShares } = contractsMetrics[c.id]
+      const { hasShares } = contractsPositions[c.id]
 
       if (filter === 'sold') return !hasShares
       if (filter === 'limit_bet')
@@ -174,7 +182,7 @@ export function BetsList(props: { user: User }) {
     unsettled,
     (c) => contractsMetrics[c.id].payout
   )
-  const currentLoan = sumBy(unsettled, (c) => contractsMetrics[c.id].loan)
+  const currentLoan = sumBy(unsettled, (c) => contractsPositions[c.id].loan)
 
   const investedProfitPercent =
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100

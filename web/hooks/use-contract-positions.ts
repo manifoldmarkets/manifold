@@ -9,24 +9,24 @@ import {
 } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import {
-  CONTRACT_METRICS_SORTED_INDICES,
-  ContractMetricsByOutcome,
-} from 'web/lib/firebase/contract-metrics'
-import { ContractMetric } from 'common/contract-metric'
+  ContractPositionsByOutcome,
+  CONTRACT_POSITIONS_SORTED_INDICES,
+} from 'web/lib/firebase/contract-positions'
+import { ContractPositions } from 'common/contract-positions'
 
-export const useContractMetrics = (
+export const useContractPositions = (
   contractId: string,
   count: number,
   outcomes: string[]
 ) => {
   const [contractMetrics, setContractMetrics] = useState<
-    ContractMetricsByOutcome | undefined
+    ContractPositionsByOutcome | undefined
   >()
 
   useEffect(() => {
     if (!contractId) return
     const listeners = outcomes.map((outcome) =>
-      listenForContractMetricsOnContract(
+      listenForContractPositionsOnContract(
         contractId,
         (cm) =>
           setContractMetrics((prev) => {
@@ -39,7 +39,7 @@ export const useContractMetrics = (
                   )
                 : cm
             const resultsAlreadySorted =
-              CONTRACT_METRICS_SORTED_INDICES.includes(outcome)
+              CONTRACT_POSITIONS_SORTED_INDICES.includes(outcome)
             if (resultsAlreadySorted) {
               return { ...prev, [outcome]: filtered }
             } else {
@@ -51,7 +51,7 @@ export const useContractMetrics = (
           }),
         {
           count,
-          sortedOutcome: CONTRACT_METRICS_SORTED_INDICES.includes(outcome)
+          sortedOutcome: CONTRACT_POSITIONS_SORTED_INDICES.includes(outcome)
             ? outcome
             : undefined,
         }
@@ -68,18 +68,18 @@ export const useContractMetrics = (
 
 // If you want shares sorted in descending order you have to make a new index for that outcome.
 // You can still get all users with contract-metrics and shares without the index and sort them in the client
-export function listenForContractMetricsOnContract(
+export function listenForContractPositionsOnContract(
   contractId: string,
-  setMetrics: (metrics: ContractMetric[]) => void,
+  setMetrics: (metrics: ContractPositions[]) => void,
   options: {
-    sortedOutcome: typeof CONTRACT_METRICS_SORTED_INDICES[number] | undefined
+    sortedOutcome: typeof CONTRACT_POSITIONS_SORTED_INDICES[number] | undefined
     count: number
   }
 ) {
   const { sortedOutcome, count } = options
   if (sortedOutcome) {
     const sortedQuery = query(
-      collectionGroup(db, 'contract-metrics'),
+      collectionGroup(db, 'contract-positions'),
       where('contractId', '==', contractId),
       // This allows us to skip filtering the metrics by outcome in the client
       where(
@@ -94,14 +94,14 @@ export function listenForContractMetricsOnContract(
       orderBy('totalShares.' + sortedOutcome, 'desc'),
       limit(count)
     )
-    return listenForValues<ContractMetric>(sortedQuery, setMetrics)
+    return listenForValues<ContractPositions>(sortedQuery, setMetrics)
   } else {
     const unsortedQuery = query(
-      collectionGroup(db, 'contract-metrics'),
+      collectionGroup(db, 'contract-positions'),
       where('contractId', '==', contractId),
       where('hasShares', '==', true),
       limit(count)
     )
-    return listenForValues<ContractMetric>(unsortedQuery, setMetrics)
+    return listenForValues<ContractPositions>(unsortedQuery, setMetrics)
   }
 }

@@ -5,6 +5,7 @@ import { groupBy } from 'lodash'
 import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
+import { ContractMetric } from '../../common/contract-metric'
 import { PortfolioMetrics, User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
@@ -101,8 +102,7 @@ export async function updateUserMetrics() {
 
       const metricsByContract = calculateMetricsByContract(
         metricRelevantBetsByContract,
-        contractsById,
-        user
+        contractsById
       )
 
       const contractRatios = userContracts
@@ -140,7 +140,14 @@ export async function updateUserMetrics() {
 
       const contractMetricsCollection = userDoc.collection('contract-metrics')
       for (const metrics of metricsByContract) {
-        writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
+        const update = {
+          ...metrics,
+          userId: user.id,
+          userName: user.name,
+          userUsername: user.username,
+          userAvatarUrl: user.avatarUrl,
+        } as ContractMetric
+        writer.set(contractMetricsCollection.doc(metrics.contractId), update)
       }
 
       return {

@@ -46,9 +46,9 @@ import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
 import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
 import {
-  getBinaryContractUserContractMetrics,
-  ContractMetricsByOutcome,
-} from 'web/lib/firebase/contract-metrics'
+  getBinaryContractUserContractPositions,
+  ContractPositionsByOutcome,
+} from 'web/lib/firebase/contract-positions'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
@@ -69,7 +69,7 @@ export async function getStaticPropz(props: {
 
   const userPositionsByOutcome =
     contractId && contract?.outcomeType === 'BINARY'
-      ? await getBinaryContractUserContractMetrics(contractId, 500)
+      ? await getBinaryContractUserContractPositions(contractId, 500)
       : {}
 
   return {
@@ -91,7 +91,7 @@ export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
   comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
+  userPositionsByOutcome: ContractPositionsByOutcome
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,

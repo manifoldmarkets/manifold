@@ -5,7 +5,8 @@ import { sortBy } from 'lodash'
 import { doc } from 'firebase/firestore'
 import { listenForUser, users } from 'web/lib/firebase/users'
 import { AuthContext } from 'web/components/auth-context'
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
+import { ContractPositions } from 'common/contract-positions'
 import { getUserContractMetricsQuery } from 'web/lib/firebase/contract-metrics'
 import { buildArray, filterDefined } from 'common/util/array'
 import { Contract, CPMMBinaryContract } from 'common/contract'
@@ -39,11 +40,11 @@ export const usePrefetchUsers = (userIds: string[]) => {
 
 // Note: we don't filter out blocked contracts/users/groups here like we do in unbet-on contracts
 export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
-  const positiveResult = useFirestoreQueryData<ContractMetrics>(
+  const positiveResult = useFirestoreQueryData<ContractMetric[]>(
     ['contract-metrics-descending', userId, count],
     getUserContractMetricsQuery(userId, count, 'desc')
   )
-  const negativeResult = useFirestoreQueryData<ContractMetrics>(
+  const negativeResult = useFirestoreQueryData<ContractMetric[]>(
     ['contract-metrics-ascending', userId, count],
     getUserContractMetricsQuery(userId, count, 'asc')
   )
@@ -59,7 +60,7 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
 
   const savedResult = useRef<
     | {
-        metrics: ContractMetrics[]
+        metrics: ContractMetric[]
         contracts: (Contract | null)[]
       }
     | undefined
@@ -99,8 +100,21 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
 export const useUserContractMetrics = (userId = '_', contractId: string) => {
   const metricsDoc = doc(users, userId, 'contract-metrics', contractId)
 
-  const data = useStore<ContractMetrics | null>(
+  const data = useStore<ContractMetric | null>(
     ['user-contract-metrics', userId, contractId].join('/'),
+    (_, setValue) => listenForValue(metricsDoc, setValue)
+  )
+
+  if (userId === '_') return undefined
+
+  return data
+}
+
+export const useUserContractPositions = (userId = '_', contractId: string) => {
+  const metricsDoc = doc(users, userId, 'contract-positions', contractId)
+
+  const data = useStore<ContractPositions | null>(
+    ['user-contract-positions', userId, contractId].join('/'),
     (_, setValue) => listenForValue(metricsDoc, setValue)
   )
 

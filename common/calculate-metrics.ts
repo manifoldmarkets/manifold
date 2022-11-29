@@ -9,13 +9,13 @@ import {
   DPMContract,
 } from './contract'
 import { PortfolioMetrics, User } from './user'
+import { ContractMetric } from './contract-metric'
 import { DAY_MS } from './util/time'
 import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { buy, getProb, shortSell } from './calculate-cpmm-multi'
 import { average } from './util/math'
-import { ContractMetric } from 'common/contract-metric'
 
 const computeInvestmentValue = (
   bets: Bet[],
@@ -257,8 +257,7 @@ export const calculateNewProfit = (
 
 export const calculateMetricsByContract = (
   betsByContractId: Dictionary<Bet[]>,
-  contractsById: Dictionary<Contract>,
-  user: User
+  contractsById: Dictionary<Contract>
 ) => {
   return Object.entries(betsByContractId).map(([contractId, bets]) => {
     const contract = contractsById[contractId]
@@ -279,17 +278,9 @@ export const calculateMetricsByContract = (
       contractId,
       ...current,
       from: periodMetrics,
-      userName: user.name,
-      userId: user.id,
-      userUsername: user.username,
-      userAvatarUrl: user.avatarUrl,
-    } as ContractMetric)
+    }) as ContractMetric
   })
 }
-
-export type ContractMetrics = ReturnType<
-  typeof calculateMetricsByContract
->[number]
 
 const calculatePeriodProfit = (
   contract: CPMMBinaryContract,

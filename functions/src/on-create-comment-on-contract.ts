@@ -141,7 +141,7 @@ export const onCreateCommentOnContract = functions
       })
     }
 
-    const position = getLargestPosition(contract, priorUserBets)
+    const position = getLargestPosition(priorUserBets)
     if (position) {
       const fields: { [k: string]: unknown } = {
         commenterPositionShares: position.shares,

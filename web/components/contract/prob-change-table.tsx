@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { sortBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { ContractMetrics } from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -10,7 +10,7 @@ import { User } from 'common/user'
 
 export function ProfitChangeTable(props: {
   contracts: CPMMBinaryContract[]
-  metrics: ContractMetrics[]
+  metrics: ContractMetric[]
   maxRows?: number
 }) {
   const { contracts, metrics, maxRows } = props
