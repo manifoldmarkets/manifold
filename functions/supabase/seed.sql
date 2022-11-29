@@ -73,7 +73,7 @@ begin
     raise warning 'Invalid document kind.';
     return new;
   end if;
-  if new.write_kind = 'create' or new.write_kind = 'update 'then
+  if new.write_kind = 'create' or new.write_kind = 'update' then
     execute format(
       'insert into %1$I (id, data, fs_updated_time) values (%2$L, %3$L, %4$L)
        on conflict (id) do update set data = %3$L, fs_updated_time = %4$L
