@@ -250,7 +250,7 @@ function BetFillNotification(props: {
             on{' '}
             <PrimaryNotificationLink
               text={sourceContractTitle}
-              truncatedLength={'md'}
+              truncatedLength={'xl'}
             />
           </span>
         )}
@@ -344,11 +344,8 @@ function MarketResolvedNotification(props: {
       <>Your {formatMoney(userInvestment)} invested has been returned to you</>
     ) : profitable ? (
       <>
-        You won{' '}
-        <span className="font-semibold text-teal-500">
-          +{formatMoney(profit)}
-        </span>{' '}
-        for you good investments!
+        Your {formatMoney(userInvestment)} investment won{' '}
+        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit!
       </>
     ) : (
       <>You lost {formatMoney(Math.abs(profit))} ... Better luck next time!</>
@@ -402,7 +399,7 @@ function MarketResolvedNotification(props: {
             {' '}
             <PrimaryNotificationLink
               text={sourceContractTitle}
-              truncatedLength="md"
+              truncatedLength="lg"
             />
           </span>
         )}
@@ -419,7 +416,7 @@ function MarketResolvedNotification(props: {
           <span>
             <PrimaryNotificationLink
               text={sourceContractTitle}
-              truncatedLength="md"
+              truncatedLength="lg"
             />
           </span>
         )}{' '}
@@ -586,7 +583,7 @@ function CommentNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'💬'} />
       }
-      subtitle={truncateText(sourceText, 'md')}
+      subtitle={truncateText(sourceText, 'xl')}
       link={getSourceUrl(notification)}
     >
       <>
@@ -626,7 +623,7 @@ function AnswerNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'🙋'} />
       }
-      subtitle={truncateText(sourceText, 'lg')}
+      subtitle={truncateText(sourceText, 'xl')}
       link={getSourceUrl(notification)}
     >
       <>
@@ -803,14 +800,20 @@ function UserJoinedNotification(props: {
     reasonBlock = (
       <>
         to bet on your market{' '}
-        <QuestionOrGroupLink notification={notification} truncate={true} />
+        <QuestionOrGroupLink
+          notification={notification}
+          truncatedLength={'xl'}
+        />
       </>
     )
   } else if (sourceSlug) {
     reasonBlock = (
       <>
         because you shared{' '}
-        <QuestionOrGroupLink notification={notification} truncate={true} />
+        <QuestionOrGroupLink
+          notification={notification}
+          truncatedLength={'xl'}
+        />
       </>
     )
   }
@@ -881,7 +884,7 @@ function ChallengeNotification(props: {
             on{' '}
             <PrimaryNotificationLink
               text={sourceContractTitle}
-              truncatedLength="md"
+              truncatedLength="lg"
             />{' '}
           </span>
         )}

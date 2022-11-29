@@ -235,7 +235,11 @@ export function BonusIncomeNotification(props: {
               : 'unique traders'
           }
         />{' '}
-        on <QuestionOrGroupLink notification={notification} truncate={true} />
+        on{' '}
+        <QuestionOrGroupLink
+          notification={notification}
+          truncatedLength={'xl'}
+        />
       </span>
       <MultiUserTransactionModal
         userInfos={userLinks}

@@ -221,7 +221,7 @@ function NotificationGroupItem(props: {
             Activity on
             <QuestionOrGroupLink
               notification={notifications[0]}
-              truncate={true}
+              truncatedLength={'xl'}
             />
           </>
         ) : (

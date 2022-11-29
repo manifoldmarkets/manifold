@@ -8,6 +8,7 @@ import { Col } from 'web/components/layout/col'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
 import { SiteLink } from 'web/components/widgets/site-link'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { db } from 'web/lib/firebase/init'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
@@ -46,17 +47,17 @@ export function PrimaryNotificationLink(props: {
   }
   return (
     <span className="font-semibold transition-colors hover:text-indigo-500">
-      {truncateText(text, truncatedLength ?? 'lg')}
+      {truncateText(text, truncatedLength ?? 'xl')}
     </span>
   )
 }
 
 export function QuestionOrGroupLink(props: {
   notification: Notification
-  truncate?: boolean
+  truncatedLength?: truncateLengthType
   ignoreClick?: boolean
 }) {
-  const { notification, ignoreClick, truncate } = props
+  const { notification, ignoreClick, truncatedLength } = props
   const {
     sourceType,
     sourceContractTitle,
@@ -67,8 +68,8 @@ export function QuestionOrGroupLink(props: {
   } = notification
 
   let title = sourceContractTitle || sourceTitle
-  if (truncate && title) {
-    title = truncateText(title, 'lg')
+  if (truncatedLength && title) {
+    title = truncateText(title, truncatedLength)
   }
 
   if (ignoreClick) return <span className={'ml-1 font-bold '}>{title}</span>
@@ -162,6 +163,7 @@ export function NotificationIcon(props: {
   )
 }
 
+// the primary skeleton for notifications
 export function NotificationFrame(props: {
   notification: Notification
   highlighted: boolean
@@ -182,26 +184,37 @@ export function NotificationFrame(props: {
     onClick,
     link,
   } = props
-
+  const isMobile = useIsMobile()
   const frameObject = (
     <>
       <Row className="gap-2 text-sm text-gray-900 md:text-base">
-        <Row className="gap-3">
+        <Row className="w-full gap-3">
           <Col className="w-fit">{icon}</Col>
           <Col className="font w-full">
             <div className="whitespace-pre-wrap">
               <span>{children}</span>
             </div>
-            <div className="line-clamp-1 text-xs md:text-sm">{subtitle}</div>
-            <div className="-mt-0.5 w-fit md:-mt-1">
-              <RelativeTimestamp
-                time={notification.createdTime}
-                className="-ml-1 text-xs font-light text-gray-900"
-                placement={'right-start'}
-              />
-            </div>
+            <div className="mt-1 text-xs md:text-sm">{subtitle}</div>
+            {isMobile && (
+              <div className="-mt-0.5 w-fit md:-mt-1">
+                <RelativeTimestamp
+                  time={notification.createdTime}
+                  className="-ml-1 text-xs font-light text-gray-900"
+                  placement={'right-start'}
+                />
+              </div>
+            )}
           </Col>
         </Row>
+        {!isMobile && (
+          <Row className="mx-1 w-20 justify-end">
+            <RelativeTimestamp
+              time={notification.createdTime}
+              className="text-xs font-light text-gray-900"
+              placement={'right-start'}
+            />
+          </Row>
+        )}
         <Col className="w-4">
           {highlighted && (
             <div className="bg-highlight-blue mx-auto my-auto h-3 w-3 rounded-full" />
