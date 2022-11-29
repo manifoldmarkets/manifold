@@ -49,7 +49,8 @@ export const changeuserinfo = newEndpoint({}, async (req, auth) => {
     })
     return { message: 'Successfully changed user info.' }
   } catch (e) {
-    throw new APIError(400, 'update failed, please revert changes')
+    console.error(e)
+    throw new APIError(500, 'update failed, please revert changes')
   }
 })
 
