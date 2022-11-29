@@ -73,7 +73,7 @@ export const changeUser = async (
 
   const commentSnap = await firestore
     .collectionGroup('comments')
-    .where('userUsername', '==', user.username)
+    .where('userId', '==', user.id)
     .select()
     .get()
 
@@ -85,7 +85,7 @@ export const changeUser = async (
 
   const answerSnap = await firestore
     .collectionGroup('answers')
-    .where('username', '==', user.username)
+    .where('userId', '==', user.id)
     .select()
     .get()
   const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
