@@ -34,15 +34,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
   return (
     <>
-      <Script src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D" />
-      <Script id="google-analytics">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-SSFK1Q138D');
-        `}
-      </Script>
       <Head>
         <title>{'Manifold Markets — A market for every question'}</title>
 
