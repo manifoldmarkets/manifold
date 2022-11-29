@@ -7,10 +7,10 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { formatPercent } from 'common/util/format'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Linkify } from '../widgets/linkify'
 import { Input } from '../widgets/input'
+import { getOutcomeProbability } from 'common/calculate'
 
 export function AnswerItem(props: {
   answer: Answer
@@ -30,11 +30,11 @@ export function AnswerItem(props: {
     onChoose,
     onDeselect,
   } = props
-  const { resolution, resolutions, totalShares } = contract
+  const { resolution, resolutions } = contract
   const { username, avatarUrl, name, number, text } = answer
   const isChosen = chosenProb !== undefined
 
-  const prob = getDpmOutcomeProbability(totalShares, answer.id)
+  const prob = getOutcomeProbability(contract, answer.id)
   const roundedProb = Math.round(prob * 100)
   const probPercent = formatPercent(prob)
   const wasResolvedTo =
@@ -101,7 +101,7 @@ export function AnswerItem(props: {
           ))}
         {showChoice ? (
           <div className="flex flex-col py-1">
-            <label className="cursor-pointer gap-3 px-1 py-2">
+            <Row className="cursor-pointer items-center gap-2 px-1 py-2">
               <span className="">Choose this answer</span>
               {showChoice === 'radio' && (
                 <input
@@ -128,7 +128,7 @@ export function AnswerItem(props: {
                   value={answer.id}
                 />
               )}
-            </label>
+            </Row>
             {showChoice === 'checkbox' && (
               <div className="ml-1">
                 {chosenProb && totalChosenProb

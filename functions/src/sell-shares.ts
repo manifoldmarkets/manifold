@@ -140,14 +140,16 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
       })
     }
 
-    return { newBet, makers, maxShares, soldShares }
+    return { newBet, makers, maxShares, soldShares, contract }
   })
 
-  if (floatingEqual(result.maxShares, result.soldShares)) {
+  const { makers, maxShares, soldShares, contract } = result
+
+  if (floatingEqual(maxShares, soldShares)) {
     await removeUserFromContractFollowers(contractId, auth.uid)
   }
-  const userIds = uniq(result.makers.map((maker) => maker.bet.userId))
-  await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
+  const userIds = uniq(makers.map((maker) => maker.bet.userId))
+  await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
   log('Share redemption transaction finished.')
 
   return { status: 'success' }

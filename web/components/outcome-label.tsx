@@ -39,7 +39,7 @@ export function OutcomeLabel(props: {
       contract={contract}
       resolution={outcome}
       truncate={truncate}
-      answerClassName={'font-bold text-base-400'}
+      answerClassName={'font-bold text-base-400 !break-normal'}
     />
   )
 }

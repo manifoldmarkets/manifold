@@ -82,7 +82,7 @@ export function Button(props: {
     >
       {loading && (
         <LoadingIndicator
-          className="mr-2 w-fit self-stretch"
+          className="mr-4 w-fit self-stretch"
           spinnerClassName="!h-full !w-[unset] aspect-square"
         />
       )}

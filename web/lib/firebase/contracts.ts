@@ -19,11 +19,9 @@ import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract } from 'common/contract'
 import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { DAY_MS } from 'common/util/time'
-import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getBinaryProb } from 'common/contract-details'
+import { getLiquidity } from 'common/calculate-cpmm-multi'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -51,6 +49,8 @@ export function contractUrl(contract: Contract) {
 export function contractPool(contract: Contract) {
   return contract.mechanism === 'cpmm-1'
     ? formatMoney(contract.totalLiquidity)
+    : contract.mechanism === 'cpmm-2'
+    ? formatMoney(getLiquidity(contract.pool))
     : contract.mechanism === 'dpm-2'
     ? formatMoney(sum(Object.values(contract.pool)))
     : 'Empty pool'
@@ -175,37 +175,6 @@ export function getUserBetContractsQuery(userId: string) {
     where('uniqueBettorIds', 'array-contains', userId),
     limit(MAX_USER_BET_CONTRACTS_LOADED)
   ) as Query<Contract>
-}
-
-const inactiveContractsQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('closeTime', '>', Date.now()),
-  where('visibility', '==', 'public'),
-  where('volume24Hours', '==', 0)
-)
-
-export function getInactiveContracts() {
-  return getValues<Contract>(inactiveContractsQuery)
-}
-
-export function listenForInactiveContracts(
-  setContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(inactiveContractsQuery, setContracts)
-}
-
-const newContractsQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('volume7Days', '==', 0),
-  where('createdTime', '>', Date.now() - 7 * DAY_MS)
-)
-
-export function listenForNewContracts(
-  setContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(newContractsQuery, setContracts)
 }
 
 export function listenForLiveContracts(
@@ -363,34 +332,4 @@ export const getRecommendedContracts = async (
     chosen.push(...chooseRandomSubset(betOnContracts, count - chosen.length))
 
   return chosen
-}
-
-export async function getRecentBetsAndComments(contract: Contract) {
-  const contractDoc = doc(contracts, contract.id)
-
-  const [recentBets, recentComments] = await Promise.all([
-    getValues<Bet>(
-      query(
-        collection(contractDoc, 'bets'),
-        where('createdTime', '>', Date.now() - DAY_MS),
-        orderBy('createdTime', 'desc'),
-        limit(1)
-      )
-    ),
-
-    getValues<Comment>(
-      query(
-        collection(contractDoc, 'comments'),
-        where('createdTime', '>', Date.now() - 3 * DAY_MS),
-        orderBy('createdTime', 'desc'),
-        limit(3)
-      )
-    ),
-  ])
-
-  return {
-    contract,
-    recentBets,
-    recentComments,
-  }
 }

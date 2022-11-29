@@ -26,18 +26,23 @@ export default function LabsPage() {
           className="-ml-4 flex w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
-          {!isNative ||
-            (isNative && platform !== 'ios' && (
-              <LabCard
-                title="🫀 Charity"
-                description={`Turn your ${ENV_CONFIG.moneyMoniker} earnings into real donations to causes you care about`}
-                href="/charity"
-              />
-            ))}
+          <LabCard
+            title="🔥 Swipe"
+            description="High frequency trading tool"
+            href="/swipe"
+          />
+
+          {(!isNative || (isNative && platform !== 'ios')) && (
+            <LabCard
+              title="🫀 Charity"
+              description={`Turn ${ENV_CONFIG.moneyMoniker} into real donations to causes you care about`}
+              href="/charity"
+            />
+          )}
 
           {CHALLENGES_ENABLED && (
             <LabCard
-              title="💥 Challenges"
+              title="⚔️ Challenges"
               description="One-on-one bets between friends"
               href="/challenges"
             />
@@ -62,15 +67,9 @@ export default function LabsPage() {
           />
 
           <LabCard
-            title="⚡ Live feed"
-            description="See trades and comments in real time"
-            href="/live"
-          />
-
-          <LabCard
-            title="🔥 Swipe"
-            description="High frequency trading tool"
-            href="/swipe"
+            title="✏ Posts"
+            description="Go long on longform"
+            href="/latestposts"
           />
 
           <LabCard
@@ -83,6 +82,12 @@ export default function LabsPage() {
             title="🎲 Magic the Guessering"
             description="Match MTG card names to their art"
             href={`https://${DOMAIN}/mtg/index.html`}
+          />
+
+          <LabCard
+            title="💭 Dream"
+            description="Ask our AI to generate a custom image"
+            href="/dream"
           />
 
           <LabCard title="🐮 Cowp" description="???" href="/cowp" />

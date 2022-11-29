@@ -1,7 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { listAllBets } from 'web/lib/firebase/bets'
-import { listAllComments } from 'web/lib/firebase/comments'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { FullMarket, ApiError, toFullMarket } from '../_types'
 
@@ -19,11 +17,6 @@ export default async function handler(
     return
   }
 
-  const [bets, comments] = await Promise.all([
-    listAllBets(contract.id),
-    listAllComments(contract.id),
-  ])
-
   res.setHeader('Cache-Control', 'max-age=0')
-  return res.status(200).json({ comments, bets, ...toFullMarket(contract) })
+  return res.status(200).json(toFullMarket(contract))
 }

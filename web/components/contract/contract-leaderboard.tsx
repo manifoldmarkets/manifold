@@ -1,17 +1,11 @@
 import { Bet } from 'common/bet'
-import { resolvedPayout } from 'common/calculate'
+import { getContractBetMetrics } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 
-import { groupBy, mapValues, sumBy } from 'lodash'
-import { FeedBet } from '../feed/feed-bets'
-import { FeedComment } from '../feed/feed-comments'
-import { Spacer } from '../layout/spacer'
+import { groupBy, mapValues } from 'lodash'
 import { Leaderboard } from '../leaderboard'
-import { Title } from '../widgets/title'
 import { BETTORS } from 'common/user'
-import { scoreCommentorsAndBettors } from 'common/scoring'
-import { ContractComment } from 'common/comment'
 import { memo } from 'react'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 
@@ -22,14 +16,15 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   const { contract, bets } = props
 
   // Create a map of userIds to total profits (including sales)
-  const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
-  const betsByUser = groupBy(openBets, 'userId')
+  const betsByUser = groupBy(bets, 'userId')
   const userProfits = mapValues(betsByUser, (bets) => {
+    const nonAntes = bets.filter((b) => !b.isAnte)
+    const { profit } = getContractBetMetrics(contract, nonAntes)
     return {
       name: bets[0].userName,
       username: bets[0].userUsername,
       avatarUrl: bets[0].userAvatarUrl,
-      total: sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount),
+      total: profit,
     }
   })
   // Find the 5 users with the most profits
@@ -53,49 +48,3 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
     />
   ) : null
 })
-
-export function ContractTopTrades(props: {
-  contract: Contract
-  bets: Bet[]
-  comments: ContractComment[]
-}) {
-  const { contract, bets, comments } = props
-  const {
-    topBetId,
-    topBettor,
-    profitById,
-    betsById,
-    topCommentId,
-    commentsById,
-    topCommentBetId,
-  } = scoreCommentorsAndBettors(contract, bets, comments)
-  return (
-    <div className="mt-12 max-w-sm">
-      {topCommentBetId && profitById[topCommentBetId] > 0 && (
-        <>
-          <Title text="💬 Proven correct" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedComment
-              contract={contract}
-              comment={commentsById[topCommentId]}
-            />
-          </div>
-          <Spacer h={16} />
-        </>
-      )}
-
-      {/* If they're the same, only show the comment; otherwise show both */}
-      {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
-        <>
-          <Title text="💸 Best bet" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedBet contract={contract} bet={betsById[topBetId]} />
-          </div>
-          <div className="mt-2 ml-2 text-sm text-gray-500">
-            {topBettor} made {formatMoney(profitById[topBetId] || 0)}!
-          </div>
-        </>
-      )}
-    </div>
-  )
-}

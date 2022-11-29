@@ -21,7 +21,6 @@ export const SiteLink = (props: {
       href={href}
       className={clsx(followsLinkClass ? linkClass : '', className)}
       target={href.startsWith('http') ? '_blank' : undefined}
-      // onClick={onClick ? (e) => (e.stopPropagation(), onClick()) : undefined}
       onClick={onClick}
     >
       {children}

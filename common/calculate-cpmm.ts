@@ -278,11 +278,11 @@ export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
 
 export function getUserLiquidityShares(
   userId: string,
-  state: CpmmState,
+  pool: { [outcome: string]: number },
   liquidities: LiquidityProvision[]
 ) {
   const weights = getCpmmLiquidityPoolWeights(liquidities)
   const userWeight = weights[userId] ?? 0
 
-  return mapValues(state.pool, (shares) => userWeight * shares)
+  return mapValues(pool, (shares) => userWeight * shares)
 }

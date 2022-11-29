@@ -2,6 +2,7 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect } from 'react'
+import { last } from 'lodash'
 import {
   BinaryResolutionOrChance,
   ContractCard,
@@ -9,20 +10,25 @@ import {
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
-import { MarketSubheader } from 'web/components/contract/contract-details'
+import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import { ContractChart } from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Spacer } from 'web/components/layout/spacer'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { listAllBets } from 'web/lib/firebase/bets'
+import { listBets } from 'web/lib/firebase/bets'
 import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 import { useContract } from 'web/hooks/use-contracts'
+import { useBets } from 'web/hooks/use-bets'
 import { useRouter } from 'next/router'
+import { Avatar } from 'web/components/widgets/avatar'
+
+const CONTRACT_BET_LOADING_OPTS = {
+  filterRedemptions: true,
+  filterChallenges: true,
+}
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -31,12 +37,9 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
-  const opts = {
-    filterRedemptions: true,
-    filterChallenges: true,
-    filterZeroes: true,
-  }
-  const bets = contractId ? await listAllBets(contractId, opts) : []
+  const bets = contractId
+    ? await listBets({ contractId, ...CONTRACT_BET_LOADING_OPTS, limit: 4000 })
+    : []
 
   return {
     props: { contract, bets },
@@ -56,7 +59,15 @@ export default function ContractEmbedPage(props: {
   const router = useRouter()
 
   const contract = useContract(props.contract?.id) ?? props.contract
-  const { bets } = props
+
+  // static props load bets in ascending order by time
+  const lastBetTime = last(props.bets)?.createdTime
+  const newBets = useBets({
+    ...CONTRACT_BET_LOADING_OPTS,
+    contractId: contract?.id ?? '',
+    afterTime: lastBetTime,
+  })
+  const bets = props.bets.concat(newBets ?? [])
 
   if (!contract) {
     return <Custom404 />
@@ -124,9 +135,15 @@ function ContractSmolView({
 
   return (
     <Col className="h-[100vh] w-full bg-white p-4">
-      <Row className="justify-between gap-4 px-2">
-        <div className="text-xl md:text-2xl" style={{ color: questionColor }}>
-          <SiteLink href={href}>{question}</SiteLink>
+      <Row className="justify-between gap-4">
+        <div>
+          <a
+            href={href}
+            className="text-xl md:text-2xl"
+            style={{ color: questionColor }}
+          >
+            {question}
+          </a>
         </div>
         {isBinary && <BinaryResolutionOrChance contract={contract} />}
 
@@ -142,14 +159,9 @@ function ContractSmolView({
           <NumericResolutionOrExpectation contract={contract} />
         )}
       </Row>
-      <Spacer h={3} />
-      <Row className="items-center justify-between gap-4 px-2">
-        <MarketSubheader contract={contract} disabled />
-      </Row>
+      <Details contract={contract} />
 
-      <Spacer h={2} />
-
-      <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
+      <div className="min-h-0 flex-1" ref={setElem}>
         {graphWidth != null && graphHeight != null && (
           <ContractChart
             contract={contract}
@@ -161,5 +173,26 @@ function ContractSmolView({
         )}
       </div>
     </Col>
+  )
+}
+
+const Details = (props: { contract: Contract }) => {
+  const { creatorAvatarUrl, creatorUsername, uniqueBettorCount } =
+    props.contract
+
+  return (
+    <div className="relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-400">
+      <span className="flex gap-1">
+        <Avatar
+          size="xxs"
+          avatarUrl={creatorAvatarUrl}
+          username={creatorUsername}
+          noLink
+        />
+        {creatorUsername}
+      </span>
+      <CloseOrResolveTime contract={props.contract} isCreator disabled />
+      <span>{uniqueBettorCount} traders</span>
+    </div>
   )
 }

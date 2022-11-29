@@ -16,6 +16,7 @@ import {
   BetInfo,
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
+  getNewMultiCpmmBetInfo,
   getNumericBetsInfo,
 } from '../../common/new-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
@@ -37,6 +38,7 @@ const binarySchema = z.object({
 
 const freeResponseSchema = z.object({
   outcome: z.string(),
+  shortSell: z.boolean().optional(),
 })
 
 const numericSchema = z.object({
@@ -117,6 +119,11 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           unfilledBets,
           balanceByUserId
         )
+      } else if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-2') {
+        const { outcome, shortSell } = validate(freeResponseSchema, req.body)
+        if (isNaN(+outcome) || !contract.answers[+outcome])
+          throw new APIError(400, 'Invalid answer')
+        return getNewMultiCpmmBetInfo(contract, outcome, amount, !!shortSell)
       } else if (
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'
@@ -198,13 +205,17 @@ export const placebet = newEndpoint({}, async (req, auth) => {
   log('Main transaction finished.')
 
   const { contract, newBet, makers } = result
+  const { mechanism } = contract
 
-  if (contract.mechanism === 'cpmm-1' && newBet.amount !== 0) {
+  if (
+    (mechanism === 'cpmm-1' || mechanism === 'cpmm-2') &&
+    newBet.amount !== 0
+  ) {
     const userIds = uniq([
       auth.uid,
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
-    await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
+    await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
     log('Share redemption transaction finished.')
   }
 

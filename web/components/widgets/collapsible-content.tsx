@@ -22,8 +22,10 @@ export function ShowMoreLessButton(props: {
   onClick: () => void
   isCollapsed: boolean
   className?: string
+  moreWhat?: string
 }) {
-  const { onClick, isCollapsed, className } = props
+  const { onClick, isCollapsed, className, moreWhat = '' } = props
+
   return (
     <Button
       color={'gray-white'}
@@ -36,7 +38,7 @@ export function ShowMoreLessButton(props: {
         ) : (
           <ChevronDoubleUpIcon className="h-4 w-4" />
         )}
-        {isCollapsed ? 'Show More' : 'Show Less'}
+        {isCollapsed ? `Show More ${moreWhat}` : `Show Less ${moreWhat}`}
       </Row>
     </Button>
   )

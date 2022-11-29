@@ -7,7 +7,7 @@ import { Contract } from '../../../common/contract'
 
 const firestore = admin.firestore()
 
-async function unlistContracts() {
+async function unlistContractsInGroup() {
   console.log('Updating some contracts to be unlisted')
 
   const snapshot = await firestore
@@ -26,4 +26,4 @@ async function unlistContracts() {
   }
 }
 
-if (require.main === module) unlistContracts().then(() => process.exit())
+if (require.main === module) unlistContractsInGroup().then(() => process.exit())

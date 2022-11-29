@@ -4,6 +4,7 @@ import {
   query,
   where,
   orderBy,
+  OrderByDirection,
   QueryConstraint,
   limit,
   startAfter,
@@ -17,108 +18,68 @@ import { uniq } from 'lodash'
 
 import { db } from './init'
 import { Bet, LimitBet } from 'common/bet'
-import { Contract } from 'common/contract'
 import { getValues, listenForValues } from './utils'
 import { getContractFromId } from './contracts'
 import { filterDefined } from 'common/util/array'
 export type { Bet }
 
+export const MAX_USER_BETS_LOADED = 10000
+
+export const USER_BET_FILTER = {
+  order: 'desc',
+  limit: MAX_USER_BETS_LOADED,
+  filterAntes: true,
+} as const
+
 export type BetFilter = {
+  contractId?: string
   userId?: string
   filterChallenges?: boolean
   filterRedemptions?: boolean
-  filterZeroes?: boolean
   filterAntes?: boolean
   afterTime?: number
+  order?: OrderByDirection
+  limit?: number
 }
 
-function getBetsCollection(contractId: string) {
-  return collection(db, 'contracts', contractId, 'bets')
-}
-
-const getContractBetsQuery = (contractId: string, options?: BetFilter) => {
-  let q = query(getBetsCollection(contractId))
+export const getBetsQuery = (options?: BetFilter) => {
+  let q = query(
+    collectionGroup(db, 'bets') as Query<Bet>,
+    orderBy('createdTime', options?.order)
+  )
+  if (options?.contractId) {
+    q = query(q, where('contractId', '==', options.contractId))
+  }
   if (options?.userId) {
     q = query(q, where('userId', '==', options.userId))
   }
   if (options?.afterTime) {
     q = query(q, where('createdTime', '>', options.afterTime))
   }
-  if (options?.filterZeroes) {
-    q = query(q, where('amount', '!=', 0))
+  if (options?.filterChallenges) {
+    q = query(q, where('isChallenge', '==', false))
+  }
+  if (options?.filterAntes) {
+    q = query(q, where('isAnte', '==', false))
+  }
+  if (options?.filterRedemptions) {
+    q = query(q, where('isRedemption', '==', false))
+  }
+  if (options?.limit) {
+    q = query(q, limit(options.limit))
   }
   return q
 }
 
-export async function listFirstNBets(contractId: string, n: number) {
-  const q = query(
-    getBetsCollection(contractId),
-    orderBy('createdTime'),
-    limit(n)
-  )
-  return await getValues<Bet>(q)
-}
-
-export async function listAllBets(contractId: string, options?: BetFilter) {
-  const q = getContractBetsQuery(contractId, options)
-  const bets = await getValues<Bet>(q)
-  const filteredBets = bets.filter(
-    (b) =>
-      (!options?.filterChallenges || !b.challengeSlug) &&
-      (!options?.filterAntes || !b.isAnte) &&
-      (!options?.filterRedemptions || !b.isRedemption)
-  )
-  return filteredBets
-}
-
-const DAY_IN_MS = 24 * 60 * 60 * 1000
-
-// Define "recent" as "<24 hours ago" for now
-const recentBetsQuery = query(
-  collectionGroup(db, 'bets'),
-  where('createdTime', '>', Date.now() - DAY_IN_MS),
-  orderBy('createdTime', 'desc')
-)
-
-export async function getRecentBets() {
-  return getValues<Bet>(recentBetsQuery)
-}
-
-export function listenForRecentBets(setBets: (bets: Bet[]) => void) {
-  return listenForValues<Bet>(recentBetsQuery, setBets)
-}
-
-export async function getRecentContractBets(contractId: string) {
-  const q = query(
-    getBetsCollection(contractId),
-    where('createdTime', '>', Date.now() - DAY_IN_MS),
-    orderBy('createdTime', 'desc')
-  )
-
-  return getValues<Bet>(q)
+export async function listBets(options?: BetFilter) {
+  return await getValues<Bet>(getBetsQuery(options))
 }
 
 export function listenForBets(
-  contractId: string,
   setBets: (bets: Bet[]) => void,
   options?: BetFilter
 ) {
-  const q = getContractBetsQuery(contractId, options)
-  return listenForValues<Bet>(q, setBets)
-}
-
-export async function getUserBets(userId: string) {
-  return getValues<Bet>(getUserBetsQuery(userId))
-}
-
-export const MAX_USER_BETS_LOADED = 10000
-export function getUserBetsQuery(userId: string) {
-  return query(
-    collectionGroup(db, 'bets'),
-    where('userId', '==', userId),
-    orderBy('createdTime', 'desc'),
-    limit(MAX_USER_BETS_LOADED)
-  ) as Query<Bet>
+  return listenForValues<Bet>(getBetsQuery(options), setBets)
 }
 
 export async function getBets(options: {
@@ -159,10 +120,8 @@ export async function getBets(options: {
 }
 
 export async function getContractsOfUserBets(userId: string) {
-  const bets = await getUserBets(userId)
-  const contractIds = uniq(
-    bets.filter((b) => !b.isAnte).map((bet) => bet.contractId)
-  )
+  const bets = await listBets({ userId, ...USER_BET_FILTER })
+  const contractIds = uniq(bets.map((bet) => bet.contractId))
   const contracts = await Promise.all(
     contractIds.map((contractId) => getContractFromId(contractId))
   )
@@ -180,33 +139,6 @@ export function listenForUnfilledBets(
     orderBy('createdTime', 'desc')
   )
   return listenForValues<LimitBet>(betsQuery, setBets)
-}
-
-export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
-  const { createdTime } = contract
-
-  if (
-    bets &&
-    bets.length >= 2 &&
-    bets[0].createdTime === createdTime &&
-    bets[1].createdTime === createdTime
-  ) {
-    return bets.slice(2)
-  }
-
-  return bets?.filter((bet) => !bet.isAnte) ?? []
-}
-
-export function listenForLiveBets(
-  count: number,
-  setBets: (bets: Bet[]) => void
-) {
-  const betsQuery = query(
-    collectionGroup(db, 'bets'),
-    orderBy('createdTime', 'desc'),
-    limit(count)
-  )
-  return listenForValues<Bet>(betsQuery, setBets)
 }
 
 export async function getSwipes(userId: string) {

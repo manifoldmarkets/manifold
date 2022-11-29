@@ -32,7 +32,6 @@ export default function Search() {
     <Page>
       <Col className="mx-auto w-full p-2">
         <ContractSearch
-          user={user}
           persistPrefix="search"
           useQueryUrlParam={true}
           autoFocus={autoFocus}

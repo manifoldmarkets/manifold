@@ -623,7 +623,6 @@ In addition to housing impact litigation, we provide free legal aid, education a
     preview: 'Donate supplies to soldiers in Ukraine',
     description:
       'Donate supplies to soldiers in Ukraine, including tourniquets and plate carriers.',
-    tags: ['New'] as const,
   },
   {
     name: 'The Society Library',
@@ -656,6 +655,18 @@ We do this by crowdfunding loans and unlocking capital for the underserved, impr
       'The leading nonprofit defending digital privacy, free speech, and innovation.',
     description: `
     The Electronic Frontier Foundation is the leading nonprofit organization defending civil liberties in the digital world. Founded in 1990, EFF champions user privacy, free expression, and innovation through impact litigation, policy analysis, grassroots activism, and technology development. EFF's mission is to ensure that technology supports freedom, justice, and innovation for all people of the world. Today, EFF uses the unique expertise of leading technologists, activists, and attorneys in our efforts to defend free speech online, fight illegal surveillance, advocate for users and innovators, and support freedom-enhancing technologies.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Rethink Priorities',
+    website: 'https://rethinkpriorities.org/',
+    photo: 'https://i.imgur.com/Xs3D69w.png',
+    preview: 'Uncovering actionable insights to make the world a better place.',
+    description: `Rethink Priorities’ mission is to generate the most significant possible impact for others in the present and the long-term future. 
+
+Using evidence and reason, we identify where resources would be most effective and help direct them there. We do this by conducting critical research to inform policymakers and philanthropists, and by guiding the development of new organizations to address key problems. 
+
+Our work covers important and neglected cause areas, including animal welfare, artificial intelligence, climate change, global health and development, and other work to safeguard a flourishing long-term future. We also aim to understand and support effective altruism – the community of people focused on these issues.`,
     tags: ['New'] as const,
   },
 ].map((charity) => {

@@ -1,7 +1,15 @@
 import * as admin from 'firebase-admin'
 import fetch from 'node-fetch'
-import { FieldValue, Transaction } from 'firebase-admin/firestore'
+import {
+  CollectionGroup,
+  DocumentData,
+  FieldValue,
+  QueryDocumentSnapshot,
+  Transaction,
+} from 'firebase-admin/firestore'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
+import { generateJSON } from '@tiptap/html'
+import { stringParseExts } from '../../common/util/parse'
 
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
@@ -18,6 +26,10 @@ export const logMemory = () => {
   for (const [k, v] of Object.entries(used)) {
     log(`${k} ${Math.round((v / 1024 / 1024) * 100) / 100} MB`)
   }
+}
+
+export function htmlToRichText(html: string) {
+  return generateJSON(html, stringParseExts)
 }
 
 export const invokeFunction = async (name: string, body?: unknown) => {
@@ -46,7 +58,13 @@ export const revalidateStaticProps = async (
   if (isProd()) {
     const apiSecret = process.env.API_SECRET as string
     const queryStr = `?pathToRevalidate=${pathToRevalidate}&apiSecret=${apiSecret}`
-    await fetch('https://manifold.markets/api/v0/revalidate' + queryStr)
+    const { ok, json } = await fetch(
+      'https://manifold.markets/api/v0/revalidate' + queryStr
+    )
+    if (!ok) {
+      const body = await json()
+      throw new Error(`Error revalidating: ${body.error || body.message}`)
+    }
     console.log('Revalidated', pathToRevalidate)
   }
 }
@@ -75,6 +93,25 @@ export const writeAsync = async (
     }
     await batch.commit()
   }
+}
+
+export const processPartitioned = async <T extends DocumentData, U>(
+  group: CollectionGroup<T>,
+  partitions: number,
+  fn: (ts: QueryDocumentSnapshot<T>[]) => Promise<U>
+) => {
+  const parts = group.getPartitions(partitions)
+  const results = []
+  let processed = 0
+  for await (const part of parts) {
+    const i = results.length
+    log(`[${i + 1}/${partitions}] Loading partition.`)
+    const ts = await part.toQuery().get()
+    processed += ts.size
+    log(`[${i + 1}/${partitions}] Loaded = ${ts.size}. Total = ${processed}.`)
+    results.push(await fn(ts.docs))
+  }
+  return results
 }
 
 export const tryOrLogError = async <T>(task: Promise<T>) => {

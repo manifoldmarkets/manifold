@@ -23,7 +23,7 @@ export const useSaveReferral = (
     if (!user && router.isReady && referrerOrDefault) {
       writeReferralInfo(referrerOrDefault, {
         contractId: options?.contractId,
-        overwriteReferralUsername: referrer,
+        explicitReferrer: referrer,
         groupId: options?.groupId,
       })
     }

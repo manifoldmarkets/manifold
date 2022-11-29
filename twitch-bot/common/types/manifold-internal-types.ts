@@ -139,7 +139,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   volume: number;
   volume24Hours: number;
-  volume7Days: number;
   elasticity: number;
 
   collectedFees: Fees;
@@ -264,13 +263,6 @@ export type User = {
   totalDeposits: number;
 
   profitCached: {
-    daily: number;
-    weekly: number;
-    monthly: number;
-    allTime: number;
-  };
-
-  creatorVolumeCached: {
     daily: number;
     weekly: number;
     monthly: number;

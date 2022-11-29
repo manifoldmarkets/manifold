@@ -17,6 +17,7 @@ import { placebet } from './place-bet'
 import { cancelbet } from './cancel-bet'
 import { sellbet } from './sell-bet'
 import { sellshares } from './sell-shares'
+import { addsubsidy } from './add-subsidy'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
 import { createcomment } from './create-comment'
@@ -60,6 +61,7 @@ addJsonEndpointRoute('/placebet', placebet)
 addJsonEndpointRoute('/cancelbet', cancelbet)
 addJsonEndpointRoute('/sellbet', sellbet)
 addJsonEndpointRoute('/sellshares', sellshares)
+addJsonEndpointRoute('/addsubsidy', addsubsidy)
 addJsonEndpointRoute('/claimmanalink', claimmanalink)
 addJsonEndpointRoute('/createmarket', createmarket)
 addJsonEndpointRoute('/addCommentBounty', addcommentbounty)

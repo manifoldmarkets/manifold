@@ -1,10 +1,7 @@
 import { useRouter } from 'next/router'
 
-import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Page } from 'web/components/layout/page'
 import { useTracking } from 'web/hooks/use-tracking'
-import { User } from 'common/user'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { Title } from 'web/components/widgets/title'
 import { SEO } from 'web/components/SEO'
 import {
@@ -12,21 +9,18 @@ import {
   NewQuestionParams,
 } from 'web/components/new-contract-panel'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
-export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
-})
-
-export default function Create(props: { auth: { user: User } }) {
-  const { auth } = props
-
+export default function Create() {
   useTracking('view create page')
+  useRedirectIfSignedOut()
+
+  const user = useUser()
   const router = useRouter()
   const params = router.query as NewQuestionParams
-  const user = useUserById(auth.user.id) ?? auth.user
 
-  if (!router.isReady) return <div />
+  if (!user || !router.isReady) return <div />
 
   if (user.isBannedFromPosting)
     return (

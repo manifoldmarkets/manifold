@@ -98,19 +98,13 @@ export const TiptapSpoiler = Mark.create<SpoilerOptions>({
     ]
   },
 
+  // TODO: actually set class to open class on click
   renderHTML({ HTMLAttributes }) {
-    const elem = document.createElement(this.options.as as string)
-
-    Object.entries(
+    return [
+      'spoiler',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         class: this.options.spoilerCloseClass ?? this.options.spoilerOpenClass,
-      })
-    ).forEach(([attr, val]) => elem.setAttribute(attr, val))
-
-    elem.addEventListener('click', () => {
-      elem.setAttribute('class', this.options.spoilerOpenClass)
-    })
-
-    return elem
+      }),
+    ]
   },
 })

@@ -123,7 +123,6 @@ Requires no authorization.
       "outcomeType":"BINARY",
       "mechanism":"cpmm-1",
       "volume":241,
-      "volume7Days":0,
       "volume24Hours":0,
       "isResolved":true,
       "resolution":"YES",
@@ -170,7 +169,6 @@ Requires no authorization.
     isLogScale?: bool // PSEUDO_NUMERIC markets only, if true `number = (max - min + 1)^probability + minstart - 1`, otherwise `number = min + (max - min) * probability`
 
     volume: number
-    volume7Days: number
     volume24Hours: number
 
     isResolved: boolean
@@ -184,7 +182,9 @@ Requires no authorization.
 
 ### `GET /v0/market/[marketId]`
 
-Gets information about a single market by ID. Includes comments, bets, and answers.
+Gets information about a single market by ID. Includes answers, but not bets and
+comments. Use `/bets` or `/comments` with a market ID to retrieve bets or
+comments.
 
 Requires no authorization.
 
@@ -212,7 +212,6 @@ Requires no authorization.
     "outcomeType": "FREE_RESPONSE",
     "mechanism": "dpm-2",
     "volume": 112,
-    "volume7Days": 212,
     "volume24Hours": 0,
     "isResolved": true,
     "resolution": "MKT",
@@ -266,137 +265,6 @@ Requires no authorization.
         "avatarUrl": "https://lh3.googleusercontent.com/a-/AOh14GjC83uMe-fEfzd6QvxiK6ZqZdlMytuHxevgMYIkpAI=s96-c",
         "probability": 0.09211463154147384
       }
-    ],
-    "comments": [
-      {
-        "id": "ZdHIyfQazHyl8nI0ENS7",
-        "userId": "qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
-        "createdTime": 1655265807433,
-        "text": "ok what\ni did not resolve this intentionally",
-        "contractId": "lEoqtnDgJzft6apSKzYK",
-        "userName": "Angela",
-        "userAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
-        "userUsername": "Angela"
-      },
-      {
-        "userName": "James Grugett",
-        "userUsername": "JamesGrugett",
-        "id": "F7fvHGhTiFal8uTsUc9P",
-        "userAvatarUrl": "https://lh3.googleusercontent.com/a-/AOh14GjC83uMe-fEfzd6QvxiK6ZqZdlMytuHxevgMYIkpAI=s96-c",
-        "replyToCommentId": "ZdHIyfQazHyl8nI0ENS7",
-        "text": "@Angela Sorry! There was an error that automatically resolved several markets that were created in the last few hours.",
-        "createdTime": 1655266286514,
-        "userId": "5LZ4LgYuySdL1huCWe7bti02ghx2",
-        "contractId": "lEoqtnDgJzft6apSKzYK"
-      },
-      {
-        "userId": "qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
-        "contractId": "lEoqtnDgJzft6apSKzYK",
-        "id": "PIHhXy5hLHSgW8uoUD0Q",
-        "userName": "Angela",
-        "text": "lmk if anyone lost manna from this situation and i'll try to fix it",
-        "userUsername": "Angela",
-        "createdTime": 1655277581308,
-        "userAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476"
-      },
-      {
-        "userAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
-        "userName": "Angela",
-        "text": "from my end it looks like no one did",
-        "replyToCommentId": "PIHhXy5hLHSgW8uoUD0Q",
-        "createdTime": 1655287149528,
-        "userUsername": "Angela",
-        "id": "5slnWEQWwm6dHjDi6oiH",
-        "contractId": "lEoqtnDgJzft6apSKzYK",
-        "userId": "qe2QqIlOkeWsbljfeF3MsxpSJ9i2"
-      }
-    ],
-    "bets": [
-      {
-        "outcome": "0",
-        "contractId": "lEoqtnDgJzft6apSKzYK",
-        "fees": {
-          "liquidityFee": 0,
-          "creatorFee": 0,
-          "platformFee": 0
-        },
-        "isAnte": true,
-        "shares": 100,
-        "probAfter": 1,
-        "amount": 100,
-        "userId": "IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
-        "createdTime": 1655258914863,
-        "probBefore": 0,
-        "id": "2jNZqnwoEQL7WDTTAWDP"
-      },
-      {
-        "shares": 173.20508075688772,
-        "fees": {
-          "platformFee": 0,
-          "liquidityFee": 0,
-          "creatorFee": 0
-        },
-        "contractId": "lEoqtnDgJzft6apSKzYK",
-        "probBefore": 0,
-        "createdTime": 1655258941573,
-        "loanAmount": 0,
-        "userId": "qe2QqIlOkeWsbljfeF3MsxpSJ9i2",
-        "amount": 100,
-        "outcome": "1",
-        "probAfter": 0.75,
-        "id": "xuc3JoiNkE8lXPh15mUb"
-      },
-      {
-        "userId": "y1hb6k7txdZPV5mgyxPFApZ7nQl2",
-        "contractId": "lEoqtnDgJzft6apSKzYK",
-        "loanAmount": 0,
-        "probAfter": 0.009925496893641248,
-        "id": "8TBlzPtOdO0q5BgSyRbi",
-        "createdTime": 1655261198074,
-        "shares": 20.024984394500787,
-        "amount": 1,
-        "outcome": "2",
-        "probBefore": 0,
-        "fees": {
-          "liquidityFee": 0,
-          "creatorFee": 0,
-          "platformFee": 0
-        }
-      },
-      {
-        "probAfter": 0.00987648269777473,
-        "outcome": "3",
-        "id": "9vdwes6s9QxbYZUBhHs4",
-        "createdTime": 1655263226587,
-        "shares": 20.074859899884732,
-        "amount": 1,
-        "loanAmount": 0,
-        "fees": {
-          "liquidityFee": 0,
-          "platformFee": 0,
-          "creatorFee": 0
-        },
-        "userId": "jbgplxty4kUKIa1MmgZk22byJq03",
-        "contractId": "lEoqtnDgJzft6apSKzYK",
-        "probBefore": 0
-      },
-      {
-        "createdTime": 1655264793224,
-        "fees": {
-          "creatorFee": 0,
-          "liquidityFee": 0,
-          "platformFee": 0
-        },
-        "probAfter": 0.09211463154147384,
-        "amount": 10,
-        "id": "BehiSGgk1wAkIWz1a8L4",
-        "userId": "5LZ4LgYuySdL1huCWe7bti02ghx2",
-        "contractId": "lEoqtnDgJzft6apSKzYK",
-        "loanAmount": 0,
-        "probBefore": 0,
-        "outcome": "4",
-        "shares": 64.34283176858165
-      }
     ]
   }
   ```
@@ -407,35 +275,11 @@ Requires no authorization.
 - Response type: A `FullMarket`
 
   ```tsx
-  // A complete market, along with bets, comments, and answers (for free response markets)
+  // A complete market, along with answers (for free response markets)
   type FullMarket = LiteMarket & {
-    bets: Bet[]
-    comments: Comment[]
     answers?: Answer[] // dpm-2 markets only
     description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
     textDescription: string // string description without formatting, images, or embeds
-  }
-
-  type Bet = {
-    id: string
-    contractId: string
-
-    amount: number // bet size; negative if SELL bet
-    outcome: string
-    shares: number // dynamic parimutuel pool weight; negative if SELL bet
-
-    probBefore: number
-    probAfter: number
-
-    sale?: {
-      amount: number // amount user makes from sale
-      betId: string // id of bet being sold
-    }
-
-    isSold?: boolean // true if this BUY bet has been sold
-    isAnte?: boolean
-
-    createdTime: number
   }
   ```
 
@@ -487,7 +331,6 @@ Requires no authorization.
       "balance":9122.607163564959,
       "totalDeposits":10339.004780544328,
       "totalPnLCached":9376.601262721899,
-      "creatorVolumeCached":76078.46984199001
     }
   ```
 - Response type: Array of `LiteUser`
@@ -513,7 +356,6 @@ Requires no authorization.
     balance: number
     totalDeposits: number
     totalPnLCached: number
-    creatorVolumeCached: number
   }
   ```
 
@@ -811,6 +653,7 @@ Requires no authorization.
 
 ## Changelog
 
+- 2022-11-22: Update /market GET to remove `bets` and `comments`
 - 2022-10-17: Update /market POST to allow `visibility` and `groupId`; mark `closeTime` as optional; remove `tags`
 - 2022-09-24: Expand market POST docs to include new market types (`PSEUDO_NUMERIC`, `MULTIPLE_CHOICE`)
 - 2022-07-15: Add user by username and user by ID APIs

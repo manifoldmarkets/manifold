@@ -4,14 +4,12 @@ import {
   Contract,
   listenForContracts,
   listenForHotContracts,
-  listenForInactiveContracts,
   getUserBetContracts,
   getUserBetContractsQuery,
-  listAllContracts,
   listenForContract,
   listenForLiveContracts,
 } from 'web/lib/firebase/contracts'
-import { QueryClient, useQuery, useQueryClient } from 'react-query'
+import { useQuery, useQueryClient } from 'react-query'
 import { MINUTE_MS, sleep } from 'common/util/time'
 import {
   dailyScoreIndex,
@@ -106,22 +104,6 @@ export const useContractsByDailyScoreGroups = (
   )
 }
 
-const q = new QueryClient()
-export const getCachedContracts = async () =>
-  q.fetchQuery(['contracts'], () => listAllContracts(10000), {
-    staleTime: Infinity,
-  })
-
-export const useInactiveContracts = () => {
-  const [contracts, setContracts] = useState<Contract[] | undefined>()
-
-  useEffect(() => {
-    return listenForInactiveContracts(setContracts)
-  }, [])
-
-  return contracts
-}
-
 export const useHotContracts = () => {
   const [hotContracts, setHotContracts] = useState<Contract[] | undefined>()
 
@@ -167,6 +149,9 @@ export const useContract = (contractId: string | undefined) => {
   return useStore(contractId, listenForContract)
 }
 
-export const useContracts = (contractIds: string[]) => {
-  return useStoreItems(contractIds, listenForContract)
+export const useContracts = (
+  contractIds: string[],
+  options: { loadOnce?: boolean } = {}
+) => {
+  return useStoreItems(contractIds, listenForContract, options)
 }

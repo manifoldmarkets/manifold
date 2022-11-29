@@ -1,5 +1,6 @@
 import { FC } from 'react'
 import { Button } from 'web/components/buttons/button'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
@@ -95,6 +96,8 @@ export default function StylePage() {
         placeholder="ExpandingInput (try typing a lot)"
       />
       <EditorExample />
+      <Sub>Copy Link</Sub>
+      <CopyLinkButton url="www.example.com" />
       <Sub>Other stuff</Sub>
       TODO
     </Page>

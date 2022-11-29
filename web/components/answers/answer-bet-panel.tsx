@@ -16,25 +16,28 @@ import {
 } from 'common/util/format'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
-import {
-  getDpmOutcomeProbability,
-  calculateDpmShares,
-  calculateDpmPayoutAfterCorrectBet,
-  getDpmOutcomeProbabilityAfterBet,
-} from 'common/calculate-dpm'
+import { calculateDpmPayoutAfterCorrectBet } from 'common/calculate-dpm'
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
+import {
+  calculateSharesBought,
+  getOutcomeProbability,
+  getOutcomeProbabilityAfterBet,
+} from 'common/calculate'
+import { getProb, shortSell } from 'common/calculate-cpmm-multi'
+import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerBetPanel(props: {
   answer: Answer
   contract: FreeResponseContract | MultipleChoiceContract
+  mode: 'buy' | 'short-sell'
   closePanel: () => void
   className?: string
   isModal?: boolean
 }) {
-  const { answer, contract, closePanel, className, isModal } = props
+  const { answer, contract, closePanel, className, isModal, mode } = props
   const { id: answerId } = answer
 
   const user = useUser()
@@ -49,11 +52,14 @@ export function AnswerBetPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    placeBet({
-      amount: betAmount,
-      outcome: answerId,
-      contractId: contract.id,
-    })
+    placeBet(
+      removeUndefinedProps({
+        amount: betAmount,
+        outcome: answerId,
+        contractId: contract.id,
+        shortSell: mode === 'short-sell' ? true : undefined,
+      })
+    )
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
@@ -82,30 +88,17 @@ export function AnswerBetPanel(props: {
 
   const betDisabled = isSubmitting || !betAmount || error
 
-  const initialProb = getDpmOutcomeProbability(contract.totalShares, answer.id)
+  const initialProb = getOutcomeProbability(contract, answer.id)
 
-  const resultProb = getDpmOutcomeProbabilityAfterBet(
-    contract.totalShares,
-    answerId,
-    betAmount ?? 0
-  )
-
-  const shares = calculateDpmShares(
-    contract.totalShares,
+  const { resultProb, shares, maxPayout } = getSimulatedBetInfo(
     betAmount ?? 0,
-    answerId
+    answerId,
+    mode,
+    contract
   )
 
-  const currentPayout = betAmount
-    ? calculateDpmPayoutAfterCorrectBet(contract, {
-        outcome: answerId,
-        amount: betAmount,
-        shares,
-      } as Bet)
-    : 0
-
-  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
-  const currentReturnPercent = formatPercent(currentReturn)
+  const maxReturn = betAmount ? (maxPayout - betAmount) / betAmount : 0
+  const maxReturnPercent = formatPercent(maxReturn)
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
@@ -122,7 +115,8 @@ export function AnswerBetPanel(props: {
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="items-center justify-between self-stretch">
         <div className="text-xl">
-          Buy answer: {isModal ? `"${answer.text}"` : 'this answer'}
+          Buy {mode === 'buy' ? 'YES' : 'NO'} on:{' '}
+          {isModal ? `"${answer.text}"` : 'this answer'}
         </div>
 
         {!isModal && (
@@ -164,22 +158,26 @@ export function AnswerBetPanel(props: {
 
         <Row className="items-center justify-between gap-2 text-sm">
           <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-            <div>
-              Estimated <br /> payout if chosen
-            </div>
-            <InfoTooltip
-              text={`Current payout for ${formatWithCommas(
-                shares
-              )} / ${formatWithCommas(
-                shares + contract.totalShares[answerId]
-              )} shares`}
-            />
+            {contract.mechanism === 'dpm-2' && shares !== undefined ? (
+              <>
+                <div>
+                  Estimated <br /> payout if chosen
+                </div>
+                <InfoTooltip
+                  text={`Current payout for ${formatWithCommas(
+                    shares
+                  )} / ${formatWithCommas(
+                    shares + contract.totalShares[answerId]
+                  )} shares`}
+                />
+              </>
+            ) : (
+              <div>Max payout</div>
+            )}
           </Row>
           <Row className="flex-wrap items-end justify-end gap-2">
-            <span className="whitespace-nowrap">
-              {formatMoney(currentPayout)}
-            </span>
-            <span>(+{currentReturnPercent})</span>
+            <span className="whitespace-nowrap">{formatMoney(maxPayout)}</span>
+            <span>(+{maxReturnPercent})</span>
           </Row>
         </Row>
       </Col>
@@ -202,4 +200,42 @@ export function AnswerBetPanel(props: {
       )}
     </Col>
   )
+}
+
+const getSimulatedBetInfo = (
+  betAmount: number,
+  answerId: string,
+  mode: 'buy' | 'short-sell',
+  contract: FreeResponseContract | MultipleChoiceContract
+) => {
+  if (mode === 'short-sell') {
+    const { newPool, gainedShares } = shortSell(
+      contract.pool,
+      answerId,
+      betAmount
+    )
+    const resultProb = getProb(newPool, answerId)
+    const maxPayout = Math.max(...Object.values(gainedShares))
+    return { resultProb, maxPayout, gainedShares }
+  }
+
+  const resultProb = getOutcomeProbabilityAfterBet(
+    contract,
+    answerId,
+    betAmount
+  )
+
+  const shares = calculateSharesBought(contract, answerId, betAmount)
+
+  const maxPayout = betAmount
+    ? contract.mechanism === 'dpm-2'
+      ? calculateDpmPayoutAfterCorrectBet(contract, {
+          outcome: answerId,
+          amount: betAmount,
+          shares,
+        } as Bet)
+      : shares
+    : 0
+
+  return { resultProb, maxPayout, shares }
 }

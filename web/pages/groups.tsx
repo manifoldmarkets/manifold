@@ -22,7 +22,6 @@ import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useUser } from 'web/hooks/use-user'
 import { Input } from 'web/components/widgets/input'
 import { track } from 'web/lib/service/analytics'
-import { CardHighlightOptions } from 'web/components/contract/contracts-grid'
 import { Card } from 'web/components/widgets/card'
 import { FeaturedPill } from 'web/components/contract/contract-card'
 
@@ -182,7 +181,7 @@ export function GroupCard(props: {
   isMember?: boolean
   className?: string
   onGroupClick?: (group: Group) => void
-  highlightOptions?: CardHighlightOptions
+  highlightCards?: string[]
   pinned?: boolean
 }) {
   const {
@@ -192,17 +191,17 @@ export function GroupCard(props: {
     isMember,
     className,
     onGroupClick,
-    highlightOptions,
+    highlightCards,
     pinned,
   } = props
   const { totalContracts } = group
-  const { itemIds: itemIds, highlightClassName } = highlightOptions || {}
   return (
     <Card
       className={clsx(
         'relative min-w-[20rem]  gap-1 rounded-xl bg-white p-6  hover:bg-gray-100',
         className,
-        itemIds?.includes(group.id) && highlightClassName
+        highlightCards?.includes(group.id) &&
+          '!bg-indigo-100 outline outline-2 outline-indigo-500'
       )}
       onClick={(e) => {
         if (!onGroupClick) return

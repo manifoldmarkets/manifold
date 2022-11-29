@@ -34,7 +34,6 @@ export type LiteMarket = {
   totalLiquidity?: number
 
   volume: number
-  volume7Days: number
   volume24Hours: number
 
   isResolved: boolean
@@ -89,7 +88,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     outcomeType,
     mechanism,
     volume,
-    volume7Days,
     volume24Hours,
     isResolved,
     resolution,
@@ -129,7 +127,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     outcomeType,
     mechanism,
     volume,
-    volume7Days,
     volume24Hours,
     isResolved,
     resolution,
@@ -199,13 +196,6 @@ export type LiteUser = {
     monthly: number
     allTime: number
   }
-
-  creatorVolumeCached: {
-    daily: number
-    weekly: number
-    monthly: number
-    allTime: number
-  }
 }
 
 export function toLiteUser(user: User): LiteUser {
@@ -222,7 +212,6 @@ export function toLiteUser(user: User): LiteUser {
     balance,
     totalDeposits,
     profitCached,
-    creatorVolumeCached,
   } = user
 
   return removeUndefinedProps({
@@ -239,6 +228,5 @@ export function toLiteUser(user: User): LiteUser {
     balance,
     totalDeposits,
     profitCached,
-    creatorVolumeCached,
   })
 }

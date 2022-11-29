@@ -8,7 +8,7 @@ export type User = {
 
   name: string
   username: string
-  avatarUrl?: string
+  avatarUrl: string
 
   // For their user page
   bio?: string
@@ -20,20 +20,6 @@ export type User = {
   totalDeposits: number
 
   profitCached: {
-    daily: number
-    weekly: number
-    monthly: number
-    allTime: number
-  }
-
-  profitRankCached?: {
-    daily: number
-    weekly: number
-    monthly: number
-    allTime: number
-  }
-
-  creatorVolumeCached: {
     daily: number
     weekly: number
     monthly: number

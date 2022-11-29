@@ -10,15 +10,19 @@ import { REFERRAL_AMOUNT } from '../../../common/economy'
 
 const firestore = admin.firestore()
 
-export async function handleReferral(user: User, eventId: string) {
+export async function handleReferral(staleUser: User, eventId: string) {
   // Only create a referral txn if the user has a referredByUserId
-  if (!user.referredByUserId) {
-    console.log(`Not set: referredByUserId ${user.referredByUserId}`)
-    return
-  }
-  const referredByUserId = user.referredByUserId
+  if (!staleUser.referredByUserId || staleUser.lastBetTime) return
+
+  const referredByUserId = staleUser.referredByUserId
 
   await firestore.runTransaction(async (transaction) => {
+    const userDoc = firestore.doc(`users/${staleUser.id}`)
+    const user = (await transaction.get(userDoc)).data() as User
+
+    // Double-check the last bet time in the transaction bc otherwise we'll hand out multiple referral bonuses
+    if (user.lastBetTime !== undefined) return
+
     // get user that referred this user
     const referredByUserDoc = firestore.doc(`users/${referredByUserId}`)
     const referredByUserSnap = await transaction.get(referredByUserDoc)
@@ -27,6 +31,7 @@ export async function handleReferral(user: User, eventId: string) {
       return
     }
     const referredByUser = referredByUserSnap.data() as User
+    console.log(`referredByUser: ${referredByUserId}`)
 
     let referredByContract: Contract | undefined = undefined
     if (user.referredByContractId) {
@@ -37,7 +42,7 @@ export async function handleReferral(user: User, eventId: string) {
         .get(referredByContractDoc)
         .then((snap) => snap.data() as Contract)
     }
-    console.log(`referredByContract: ${referredByContract}`)
+    console.log(`referredByContract: ${referredByContract?.slug}`)
 
     let referredByGroup: Group | undefined = undefined
     if (user.referredByGroupId) {
@@ -48,7 +53,7 @@ export async function handleReferral(user: User, eventId: string) {
         .get(referredByGroupDoc)
         .then((snap) => snap.data() as Group)
     }
-    console.log(`referredByGroup: ${referredByGroup}`)
+    console.log(`referredByGroup: ${referredByGroup?.slug}`)
 
     const txns = await transaction.get(
       firestore
@@ -87,6 +92,11 @@ export async function handleReferral(user: User, eventId: string) {
     transaction.update(referredByUserDoc, {
       balance: referredByUser.balance + REFERRAL_AMOUNT,
       totalDeposits: referredByUser.totalDeposits + REFERRAL_AMOUNT,
+    })
+
+    // Set lastBetTime to 0 the first time they bet so they still get a streak bonus, but we don't hand out multiple referral txns
+    transaction.update(userDoc, {
+      lastBetTime: 0,
     })
 
     await createReferralNotification(

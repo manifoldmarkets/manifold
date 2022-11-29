@@ -1,7 +1,5 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { uniq } from 'lodash'
-import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { log } from './utils'
 import { removeUndefinedProps } from '../../common/util/object'
@@ -19,7 +17,6 @@ async function scoreContractsInternal() {
   const now = Date.now()
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
-  const threeDaysAgo = now - DAY_MS * 3
   const activeContractsSnap = await firestore
     .collection('contracts')
     .where('lastUpdatedTime', '>', hourAgo)
@@ -41,15 +38,9 @@ async function scoreContractsInternal() {
   log(`Found ${contracts.length} contracts to score`)
 
   for (const contract of contracts) {
-    const bets = await firestore
-      .collection(`contracts/${contract.id}/bets`)
-      .where('createdTime', '>', threeDaysAgo)
-      .get()
-    const bettors = bets.docs
-      .map((doc) => doc.data() as Bet)
-      .map((bet) => bet.userId)
-    const popularityScore = uniq(bettors).length
-
+    const popularityScore =
+      (contract.uniqueBettors7Days ?? 0) / 10 +
+      (contract.uniqueBettors24Hours ?? 0)
     const wasCreatedToday = contract.createdTime > dayAgo
 
     let dailyScore: number | undefined
@@ -59,7 +50,7 @@ async function scoreContractsInternal() {
       !wasCreatedToday
     ) {
       const percentChange = Math.abs(contract.probChanges.day)
-      dailyScore = popularityScore * percentChange
+      dailyScore = Math.log(popularityScore + 1) * percentChange
     }
 
     if (

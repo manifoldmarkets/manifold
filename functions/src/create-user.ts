@@ -20,6 +20,8 @@ import { Group } from '../../common/group'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from '../../common/economy'
 import { getDefaultNotificationPreferences } from '../../common/user-notification-preferences'
 import { removeUndefinedProps } from '../../common/util/object'
+import { generateAvatarUrl } from './helpers/generate-and-update-avatar-urls'
+import { getStorage } from 'firebase-admin/storage'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -51,6 +53,8 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
   }
 
   const avatarUrl = fbUser.photoURL
+    ? fbUser.photoURL
+    : await generateAvatarUrl(auth.uid, name, getStorage().bucket())
   const deviceUsedBefore =
     !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
 
@@ -66,8 +70,6 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     totalDeposits: balance,
     createdTime: Date.now(),
     profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-    profitRankCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-    creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     nextLoanCached: 0,
     followerCountCached: 0,
     followedCategories: DEFAULT_CATEGORIES,

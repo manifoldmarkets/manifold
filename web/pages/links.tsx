@@ -59,9 +59,9 @@ export default function LinkPage(props: { auth: { user: User } }) {
         description="Send mana to others with a link, even if they don't have a Manifold account yet!"
         url="/send"
       />
-      <Col className="w-full px-8">
-        <Row className="items-center justify-between">
-          <Title text="Manalinks" />
+      <Col className="mt-6 w-full px-8">
+        <Row className="items-start justify-between">
+          <Title text="Manalinks" className="!mt-0" />
           {user && (
             <CreateLinksButton
               user={user}

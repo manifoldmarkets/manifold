@@ -3,6 +3,7 @@ import {
   Binary,
   Contract,
   CPMM,
+  CPMM2,
   DPM,
   FreeResponse,
   MultipleChoice,
@@ -38,6 +39,8 @@ export function getNewContract(
   answers: string[],
   visibility: visibility
 ) {
+  const createdTime = Date.now()
+
   const propsByOutcomeType =
     outcomeType === 'BINARY'
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
@@ -46,7 +49,7 @@ export function getNewContract(
       : outcomeType === 'NUMERIC'
       ? getNumericProps(ante, bucketCount, min, max)
       : outcomeType === 'MULTIPLE_CHOICE'
-      ? getMultipleChoiceProps(ante, answers)
+      ? getDpmMultipleChoiceProps(ante, answers)
       : getFreeAnswerProps(ante)
 
   const contract: Contract = removeUndefinedProps({
@@ -66,12 +69,11 @@ export function getNewContract(
     visibility,
     unlistedById: visibility === 'unlisted' ? creator.id : undefined,
     isResolved: false,
-    createdTime: Date.now(),
+    createdTime,
     closeTime,
 
     volume: 0,
     volume24Hours: 0,
-    volume7Days: 0,
     elasticity:
       propsByOutcomeType.mechanism === 'cpmm-1'
         ? computeBinaryCpmmElasticityFromAnte(ante)
@@ -158,7 +160,7 @@ const getFreeAnswerProps = (ante: number) => {
   return system
 }
 
-const getMultipleChoiceProps = (ante: number, answers: string[]) => {
+const getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
   const numAnswers = answers.length
   const betAnte = ante / numAnswers
   const betShares = Math.sqrt(ante ** 2 / numAnswers)
@@ -173,6 +175,42 @@ const getMultipleChoiceProps = (ante: number, answers: string[]) => {
     totalShares: defaultValues(betShares),
     totalBets: defaultValues(betAnte),
     answers: [],
+  }
+
+  return system
+}
+
+// TODO (James): Remove.
+const _getMultipleChoiceProps = (
+  creator: User,
+  ante: number,
+  answers: string[],
+  createdTime: number,
+  contractId: string
+) => {
+  const numAnswers = answers.length
+
+  const pool = Object.fromEntries(range(0, numAnswers).map((k) => [k, ante]))
+
+  const { username, name, avatarUrl } = creator
+  const answerObjects = answers.map((answer, i) => ({
+    id: i.toString(),
+    number: i,
+    contractId,
+    createdTime,
+    userId: creator.id,
+    username,
+    name,
+    avatarUrl,
+    text: answer,
+  }))
+
+  const system: CPMM2 & MultipleChoice = {
+    mechanism: 'cpmm-2',
+    outcomeType: 'MULTIPLE_CHOICE',
+    pool,
+    answers: answerObjects,
+    subsidyPool: 0,
   }
 
   return system

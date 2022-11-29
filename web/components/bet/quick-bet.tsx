@@ -414,7 +414,10 @@ export function QuickOutcomeView(props: {
         )}
       >
         <div
-          className={clsx('h-full transition-all', getBarColor(contract))}
+          className={clsx(
+            'h-full rounded-r-md transition-all',
+            getBarColor(contract)
+          )}
           style={{ width: `${100 * prob}%` }}
           aria-hidden
         />
@@ -532,45 +535,36 @@ function ContractCardAnswer(props: {
   const { contract, answer, answersArray, type } = props
   const prob = getOutcomeProbability(contract, answer.id)
   const display = formatPercent(getOutcomeProbability(contract, answer.id))
-  const color = getAnswerColor(answer, answersArray)
   const isClosed = (contract.closeTime ?? Infinity) < Date.now()
+  const answerColor = getAnswerColor(answer, answersArray)
+  const color =
+    type === 'loser' || (isClosed && type === 'contender')
+      ? '#D8D8EB'
+      : answerColor
   return (
     <div
       className={clsx(
-        type === 'winner'
-          ? '-mx-[1.5px] -my-[1.5px] rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 px-[1.5px] py-[1.5px]'
-          : ''
+        'relative h-7 overflow-hidden rounded-md bg-gray-100',
+        type === 'winner' && 'ring-[1.5px] ring-purple-500'
       )}
     >
-      <Row
-        className={clsx(
-          'z-50 justify-between rounded-md px-4 py-0.5 transition-all'
-        )}
+      <div
+        className={'h-full rounded-r-md transition-all'}
         style={{
-          background: `linear-gradient(to right, ${
-            type === 'loser' || (isClosed && type === 'contender')
-              ? '#D8D8EB'
-              : `${color}`
-          } ${100 * prob}%, ${'#F4F4FB'} ${100 * prob}%)`,
+          backgroundColor: color,
+          width: `${100 * prob}%`,
         }}
+      />
+      <span
+        className={clsx(
+          'text-md',
+          type === 'loser' ? 'text-gray-500' : 'text-gray-900',
+          'absolute inset-0 flex items-center justify-between px-4'
+        )}
       >
-        <AnswerLabel
-          className={clsx(
-            'text-md',
-            type === 'loser' ? 'text-gray-500' : 'text-gray-900'
-          )}
-          answer={answer}
-          truncate="medium"
-        />
-        <div
-          className={clsx(
-            'text-md font-semibold',
-            type === 'loser' ? 'text-gray-500' : 'text-gray-900'
-          )}
-        >
-          {display}
-        </div>
-      </Row>
+        <AnswerLabel answer={answer} truncate={'short'} />
+        <div className="font-semibold">{display}</div>
+      </span>
     </div>
   )
 }
@@ -603,7 +597,7 @@ function getNumericScale(contract: NumericContract) {
 const OUTCOME_TO_COLOR_BAR = {
   YES: 'bg-teal-200',
   NO: 'bg-scarlet-200',
-  CANCEL: 'bg-gray-100',
+  CANCEL: 'bg-gray-200',
   MKT: 'bg-sky-200',
 }
 
@@ -611,14 +605,14 @@ export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-50'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-100'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
     return 'bg-slate-200'
   }
 
-  return 'bg-indigo-50'
+  return 'bg-indigo-100'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
@@ -632,14 +626,12 @@ export function getBgColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-gray-50'
+    return (
+      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-gray-100'
+    )
   }
 
-  // if ((contract.closeTime ?? Infinity) < Date.now()) {
-  //   return 'bg-gray-100'
-  // }
-
-  return 'bg-gray-50'
+  return 'bg-gray-100'
 }
 
 const OUTCOME_TO_COLOR_TEXT = {

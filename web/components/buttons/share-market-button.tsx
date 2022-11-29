@@ -7,12 +7,5 @@ export function ShareMarketButton(props: { contract: Contract }) {
 
   const url = `https://${ENV_CONFIG.domain}${contractPath(contract)}`
 
-  return (
-    <CopyLinkButton
-      url={url}
-      displayUrl={contractUrl(contract)}
-      buttonClassName="btn-md rounded-l-none"
-      toastClassName={'-left-28 mt-1'}
-    />
-  )
+  return <CopyLinkButton url={url} displayUrl={contractUrl(contract)} />
 }
