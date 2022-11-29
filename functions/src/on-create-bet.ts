@@ -76,11 +76,13 @@ export const onCreateBet = functions
     // They may be selling out of a position completely, so only add them if they're buying
     if (bet.amount > 0 && !bet.isSold)
       await addUserToContractFollowers(contractId, bettor.id)
-    await updateBettingStreak(bettor, bet, contract, eventId)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
-    await handleReferral(bettor, eventId)
     await updateContractMetrics(contract, bettor)
+    // Referrals should always be handled before the betting streak bc they both use lastBetTime
+    handleReferral(bettor, eventId).then(async () => {
+      await updateBettingStreak(bettor, bet, contract, eventId)
+    })
   })
 
 const updateBettingStreak = async (
