@@ -57,14 +57,15 @@ export const revalidateStaticProps = async (
 ) => {
   if (isProd()) {
     const apiSecret = process.env.API_SECRET as string
+    if (!apiSecret)
+      throw new Error('Revalidation failed because of missing API_SECRET.')
+
     const queryStr = `?pathToRevalidate=${pathToRevalidate}&apiSecret=${apiSecret}`
-    const { ok, json } = await fetch(
+    const { ok } = await fetch(
       'https://manifold.markets/api/v0/revalidate' + queryStr
     )
-    if (!ok) {
-      const body = await json()
-      throw new Error(`Error revalidating: ${body.error || body.message}`)
-    }
+    if (!ok) throw new Error('Error revalidating: ' + queryStr)
+
     console.log('Revalidated', pathToRevalidate)
   }
 }
