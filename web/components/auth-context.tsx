@@ -50,7 +50,7 @@ const stripUserData = (user: object) => {
   // in order to auth to the firebase SDK
   const whitelist = ['uid', 'emailVerified', 'isAnonymous', 'stsTokenManager']
   const stripped = pickBy(user, (_v, k) => whitelist.includes(k))
-  // mqp: testing to see if smaller cookie saves kevin's bacon
+  // mqp: temp fix to get cookie size under 4k in edge cases
   delete (stripped as any).stsTokenManager.accessToken
   return JSON.stringify(stripped)
 }
@@ -63,7 +63,6 @@ export const setUserCookie = (data: object | undefined) => {
     ['samesite', 'lax'],
     ['secure'],
   ])
-  console.log(`Setting auth cookie for UID ${(data as any).uid}:`, cookie)
   document.cookie = cookie
 }
 
@@ -102,10 +101,6 @@ export function AuthProvider(props: {
       auth,
       async (fbUser) => {
         if (fbUser) {
-          console.log(
-            `Configuring client authentication for UID ${fbUser.uid}.`,
-            fbUser
-          )
           setUserCookie(fbUser.toJSON())
           let current = await getUserAndPrivateUser(fbUser.uid)
           if (!current.user || !current.privateUser) {
@@ -122,7 +117,6 @@ export function AuthProvider(props: {
           )
         } else {
           // User logged out; reset to null
-          console.log('Client logged out; configuring logged-out state.')
           setUserCookie(undefined)
           setAuthUser(null)
           webviewSignOut()
