@@ -218,7 +218,7 @@ function NotificationGroupItem(props: {
       header={
         sourceContractTitle ? (
           <>
-            Activity on
+            Activity on{' '}
             <QuestionOrGroupLink
               notification={notifications[0]}
               truncatedLength={'xl'}

@@ -72,10 +72,10 @@ export function QuestionOrGroupLink(props: {
     title = truncateText(title, truncatedLength)
   }
 
-  if (ignoreClick) return <span className={'ml-1 font-bold '}>{title}</span>
+  if (ignoreClick) return <span className={'font-bold '}>{title}</span>
   return (
     <SiteLink
-      className={'relative ml-1 font-semibold hover:text-indigo-500'}
+      className={'relative font-semibold hover:text-indigo-500'}
       href={
         sourceContractCreatorUsername
           ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
