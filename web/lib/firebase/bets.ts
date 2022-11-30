@@ -77,7 +77,11 @@ export async function listBets(options?: BetFilter) {
 }
 
 export async function getTotalBetCount(contractId: string) {
-  const betsRef = collection(db, `contracts/${contractId}/bets`)
+  const betsRef = query(
+    collection(db, `contracts/${contractId}/bets`),
+    where('isChallenge', '==', false),
+    where('isRedemption', '==', false)
+  )
   const snap = await getCountFromServer(betsRef)
   return snap.data().count
 }
