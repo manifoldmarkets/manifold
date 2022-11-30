@@ -49,7 +49,7 @@ const SizedContractChart = (props: {
   bets: Bet[]
   fullHeight: number
   mobileHeight: number
-  betPoints: BetPoint[]
+  betPoints?: BetPoint[]
 }) => {
   const { fullHeight, betPoints, mobileHeight, contract, bets } = props
   return (
@@ -67,12 +67,8 @@ const SizedContractChart = (props: {
   )
 }
 
-const NumericOverview = (props: {
-  contract: NumericContract
-  bets: Bet[]
-  betPoints: BetPoint[]
-}) => {
-  const { contract, bets, betPoints } = props
+const NumericOverview = (props: { contract: NumericContract; bets: Bet[] }) => {
+  const { contract, bets } = props
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-3 px-2 sm:gap-4">
@@ -94,7 +90,6 @@ const NumericOverview = (props: {
         bets={bets}
         fullHeight={250}
         mobileHeight={150}
-        betPoints={betPoints}
       />
     </Col>
   )
@@ -141,9 +136,8 @@ const BinaryOverview = (props: {
 const ChoiceOverview = (props: {
   contract: FreeResponseContract | MultipleChoiceContract
   bets: Bet[]
-  betPoints: BetPoint[]
 }) => {
-  const { contract, bets, betPoints } = props
+  const { contract, bets } = props
   const { question, resolution, slug } = contract
 
   // TODO(James): Remove hideGraph once market is resolved.
@@ -170,7 +164,6 @@ const ChoiceOverview = (props: {
           bets={bets}
           fullHeight={350}
           mobileHeight={250}
-          betPoints={betPoints}
         />
       )}
     </Col>
@@ -180,9 +173,8 @@ const ChoiceOverview = (props: {
 const PseudoNumericOverview = (props: {
   contract: PseudoNumericContract
   bets: Bet[]
-  betPoints: BetPoint[]
 }) => {
-  const { contract, bets, betPoints } = props
+  const { contract, bets } = props
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-3 px-2 sm:gap-4">
@@ -210,7 +202,6 @@ const PseudoNumericOverview = (props: {
         bets={bets}
         fullHeight={250}
         mobileHeight={150}
-        betPoints={betPoints}
       />
     </Col>
   )
@@ -219,34 +210,22 @@ const PseudoNumericOverview = (props: {
 export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
-  betPoints: BetPoint[]
+  betPoints?: BetPoint[]
 }) => {
   const { betPoints, contract, bets } = props
   switch (contract.outcomeType) {
     case 'BINARY':
-      return (
+      return betPoints ? (
         <BinaryOverview betPoints={betPoints} contract={contract} bets={bets} />
+      ) : (
+        <div />
       )
     case 'NUMERIC':
-      return (
-        <NumericOverview
-          contract={contract}
-          bets={bets}
-          betPoints={betPoints}
-        />
-      )
+      return <NumericOverview contract={contract} bets={bets} />
     case 'PSEUDO_NUMERIC':
-      return (
-        <PseudoNumericOverview
-          contract={contract}
-          bets={bets}
-          betPoints={betPoints}
-        />
-      )
+      return <PseudoNumericOverview contract={contract} bets={bets} />
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
-      return (
-        <ChoiceOverview contract={contract} bets={bets} betPoints={betPoints} />
-      )
+      return <ChoiceOverview contract={contract} bets={bets} />
   }
 }

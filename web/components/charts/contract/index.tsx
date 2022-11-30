@@ -9,15 +9,22 @@ import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 export const ContractChart = (props: {
   contract: Contract
   bets: Bet[]
-  betPoints: BetPoint[]
+  betPoints?: BetPoint[] // required for binary charts
   width: number
   height: number
   color?: string
 }) => {
-  const { contract } = props
+  const { contract, betPoints } = props
   switch (contract.outcomeType) {
     case 'BINARY':
-      return <BinaryContractChart {...{ ...props, contract }} />
+      return betPoints ? (
+        <BinaryContractChart
+          {...{ ...props, contract }}
+          betPoints={betPoints}
+        />
+      ) : (
+        <div />
+      )
     case 'PSEUDO_NUMERIC':
       return <PseudoNumericContractChart {...{ ...props, contract }} />
     case 'FREE_RESPONSE':
