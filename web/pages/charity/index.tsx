@@ -49,7 +49,6 @@ export async function getStaticProps() {
       totalRaised,
       charities: sortedCharities,
       matches,
-      txns,
       numDonors,
       mostRecentDonor,
       mostRecentCharity,
@@ -94,7 +93,6 @@ export default function Charity(props: {
   totalRaised: number
   charities: CharityType[]
   matches: { [charityId: string]: number }
-  txns: Txn[]
   numDonors: number
   mostRecentDonor?: User | null
   mostRecentCharity?: string
