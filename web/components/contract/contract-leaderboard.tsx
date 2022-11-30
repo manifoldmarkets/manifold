@@ -14,15 +14,14 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   contractId: string
 }) {
   const { topContractMetrics, currentUser, contractId } = props
-  const topRankedUserIds = topContractMetrics.map((m) => m.userId)
+  const maxToShowMinusCurrentUser = 5
+  const topRankedUserIds = topContractMetrics
+    .slice(0, maxToShowMinusCurrentUser)
+    .map((m) => m.userId)
   const currentUserMetrics = useUserContractMetric(currentUser?.id, contractId)
   const userIsAlreadyRanked =
     currentUser && topRankedUserIds.includes(currentUser.id)
-  const [yourRank, setYourRank] = useState<number | undefined>(
-    userIsAlreadyRanked
-      ? topRankedUserIds.indexOf(currentUser.id) + 1
-      : undefined
-  )
+  const [yourRank, setYourRank] = useState<number | undefined>(undefined)
 
   useEffect(() => {
     if (currentUserMetrics?.profit && !yourRank && !userIsAlreadyRanked) {
@@ -35,7 +34,7 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   const allMetrics =
     currentUserMetrics && currentUser && !userIsAlreadyRanked
       ? [
-          ...topContractMetrics.slice(0, 5),
+          ...topContractMetrics.slice(0, maxToShowMinusCurrentUser),
           {
             ...currentUserMetrics,
             userName: currentUser.username,
@@ -54,8 +53,10 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
       avatarUrl: cm.userAvatarUrl,
       total: profit,
       rank:
-        cm.userId === currentUser?.id && yourRank
+        cm.userId === currentUser?.id
           ? yourRank
+            ? yourRank
+            : maxToShowMinusCurrentUser + 1
           : topContractMetrics.indexOf(cm) + 1,
     })
   })
@@ -64,7 +65,9 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
     .filter((p) => p.total > 0)
     .slice(
       0,
-      !currentUser || userIsAlreadyRanked || !currentUserMetrics ? 5 : 6
+      !currentUser || userIsAlreadyRanked || !currentUserMetrics
+        ? maxToShowMinusCurrentUser
+        : maxToShowMinusCurrentUser + 1
     )
 
   return top && top.length > 0 ? (
