@@ -192,7 +192,7 @@ export function ContractPageContent(
     true
   )
 
-  // static props load bets in ascending order by time
+  // Static props load bets in descending order by time
   const lastBetTime = first(props.bets)?.createdTime
   const newBets = useBets({
     contractId: contract.id,
