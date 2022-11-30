@@ -4,7 +4,7 @@ import { PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
-import { Dictionary, sortBy, sum } from 'lodash'
+import { sortBy, sum } from 'lodash'
 import { chooseRandomSubset } from 'common/util/random'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
@@ -128,11 +128,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   )
 
   const trendingGroups = useTrendingGroups()
-  const groupContracts = useContractsByDailyScoreGroups(
-    followedGroups?.map((g) => g.slug),
-    userBlockFacetFilters
-  )
-
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
     key: 'home-pinned',
@@ -225,23 +220,21 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               contractMetricsByProfit
             )}
 
-            {followedGroups && groupContracts && trendingGroups.length > 0 ? (
-              <>
-                <TrendingGroupsSection
-                  className="mb-4"
-                  user={user}
-                  myGroups={followedGroups}
-                  trendingGroups={trendingGroups}
-                />
-                <GroupSections
-                  user={user}
-                  groups={followedGroups}
-                  groupContracts={groupContracts}
-                />
-              </>
+            {followedGroups && trendingGroups.length > 0 ? (
+              <TrendingGroupsSection
+                className="mb-4"
+                user={user}
+                myGroups={followedGroups}
+                trendingGroups={trendingGroups}
+              />
             ) : (
               <LoadingIndicator />
             )}
+            <GroupSections
+              user={user}
+              followedGroups={followedGroups}
+              userBlockFacetFilters={userBlockFacetFilters}
+            />
           </>
         )}
       </Col>
@@ -359,11 +352,19 @@ export function renderSections(
 
 const GroupSections = memo(function GroupSections(props: {
   user: User
-  groups: Group[]
-  groupContracts: Dictionary<CPMMBinaryContract[]>
+  followedGroups: Group[] | undefined
+  userBlockFacetFilters: string[]
 }) {
-  const { user, groups, groupContracts } = props
-  const filteredGroups = groups.filter((g) => groupContracts[g.slug])
+  const { user, followedGroups, userBlockFacetFilters } = props
+  const groupContracts =
+    useContractsByDailyScoreGroups(
+      followedGroups?.map((g) => g.slug),
+      userBlockFacetFilters
+    ) ?? {}
+
+  const filteredGroups = (followedGroups ?? []).filter(
+    (g) => groupContracts[g.slug]
+  )
   const orderedGroups = sortBy(filteredGroups, (g) =>
     // Sort by sum of top two daily scores.
     sum(

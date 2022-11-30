@@ -23,6 +23,8 @@ import { useQuery } from 'react-query'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { limit, query } from 'firebase/firestore'
 import { useTrendingContracts } from './use-contracts'
+import { storageStore, usePersistentState } from './use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -104,8 +106,13 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
 }
 
 export function useMemberGroupsSubscription(user: User | null | undefined) {
-  const cachedGroups = useMemberGroups(user?.id)
-  const [groups, setGroups] = useState(cachedGroups)
+  const [groups, setGroups] = usePersistentState<Group[] | undefined>(
+    undefined,
+    {
+      key: 'member-groups',
+      store: storageStore(safeLocalStorage()),
+    }
+  )
 
   const userId = user?.id
   useEffect(() => {
@@ -116,7 +123,7 @@ export function useMemberGroupsSubscription(user: User | null | undefined) {
         )
       })
     }
-  }, [userId])
+  }, [setGroups, userId])
 
   return groups
 }
