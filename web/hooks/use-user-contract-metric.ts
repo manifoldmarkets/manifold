@@ -21,8 +21,6 @@ export const useUserContractMetric = (
   return contractMetrics
 }
 
-// If you want shares sorted in descending order you have to make a new index for that outcome.
-// You can still get all users with contract-metrics and shares without the index and sort them in the client
 export function listenForUserContractMetric(
   userId: string,
   contractId: string,

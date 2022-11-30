@@ -70,10 +70,10 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
-  // Prioritize newer bets via descending order
   const useBetPoints =
     contract?.outcomeType === 'BINARY' ||
     contract?.outcomeType === 'PSEUDO_NUMERIC'
+  // Prioritize newer bets via descending order
   const bets = contractId
     ? await listBets({
         contractId,
