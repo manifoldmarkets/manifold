@@ -174,14 +174,12 @@ const BinaryUserPositionsTabContent = memo(
       outcome: 'YES' | 'NO'
     }) {
       const { position, outcome } = props
-      const { totalShares, userName, userUsername, userAvatarUrl, userId } =
-        position
+      const { totalShares, userName, userUsername, userAvatarUrl } = position
       const shares = totalShares[outcome] ?? 0
       const isMobile = useIsMobile(800)
 
       return (
         <Row
-          key={userId + outcome}
           className={clsx(
             'items-center justify-between gap-2 rounded-sm border-b p-2',
             currentUser?.id === position.userId && 'bg-amber-100',
@@ -228,7 +226,13 @@ const BinaryUserPositionsTabContent = memo(
               <span>YES shares</span>
             </Row>
             {visibleYesPositions.map((position) => {
-              return <PositionRow outcome={'YES'} position={position} />
+              return (
+                <PositionRow
+                  key={position.userId + '-YES'}
+                  outcome={'YES'}
+                  position={position}
+                />
+              )
             })}
           </Col>
           <Col className={'w-full max-w-sm gap-2'}>
@@ -236,7 +240,13 @@ const BinaryUserPositionsTabContent = memo(
               <span>NO shares</span>
             </Row>
             {visibleNoPositions.map((position) => {
-              return <PositionRow position={position} outcome={'NO'} />
+              return (
+                <PositionRow
+                  key={position.userId + '-NO'}
+                  position={position}
+                  outcome={'NO'}
+                />
+              )
             })}
           </Col>
         </Row>
@@ -375,7 +385,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const items = [
     ...visibleBets.map((bet) => ({
       type: 'bet' as const,
-      id: bet.id + '-' + bet.isSold,
+      id: bet.id + '-' + (bet.isSold ? 'sold' : 'unsold'),
       bet,
     })),
     ...visibleLps.map((lp) => ({

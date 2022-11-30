@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useRef, useState } from 'react'
-import { last } from 'lodash'
+import { first } from 'lodash'
 
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
@@ -71,23 +71,30 @@ export async function getStaticPropz(props: {
   const contractId = contract?.id
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
   // Prioritize newer bets via descending order
+  const useBetPoints =
+    contract?.outcomeType === 'BINARY' ||
+    contract?.outcomeType === 'PSEUDO_NUMERIC'
   const bets = contractId
     ? await listBets({
         contractId,
         ...CONTRACT_BET_FILTER,
-        limit: 10000,
+        limit: useBetPoints ? 10000 : 4000,
         order: 'desc' as OrderByDirection,
       })
     : []
   const includeAvatar = totalBets < 1000
-  const betPoints = bets.map(
-    (bet) =>
-      removeUndefinedProps({
-        x: bet.createdTime,
-        y: bet.probAfter,
-        bet: includeAvatar ? { userAvatarUrl: bet.userAvatarUrl } : undefined,
-      }) as BetPoint
-  )
+  const betPoints = useBetPoints
+    ? bets.map(
+        (bet) =>
+          removeUndefinedProps({
+            x: bet.createdTime,
+            y: bet.probAfter,
+            bet: includeAvatar
+              ? { userAvatarUrl: bet.userAvatarUrl }
+              : undefined,
+          }) as BetPoint
+      )
+    : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
   const userPositionsByOutcome =
@@ -104,7 +111,7 @@ export async function getStaticPropz(props: {
   return {
     props: {
       contract,
-      bets: bets.slice(0, 100).reverse(),
+      bets: useBetPoints ? bets.slice(0, 100) : bets,
       comments,
       userPositionsByOutcome,
       betPoints,
@@ -186,7 +193,7 @@ export function ContractPageContent(
   )
 
   // static props load bets in ascending order by time
-  const lastBetTime = last(props.bets)?.createdTime
+  const lastBetTime = first(props.bets)?.createdTime
   const newBets = useBets({
     contractId: contract.id,
     afterTime: lastBetTime,
