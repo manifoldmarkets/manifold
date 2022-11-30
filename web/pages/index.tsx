@@ -20,7 +20,7 @@ import { Sort } from 'web/components/contract-search'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { PostCard } from 'web/components/posts/post-card'
 import {
-  useContractsByDailyScoreNotBetOn,
+  useContractsByDailyScore,
   useTrendingContracts,
 } from 'web/hooks/use-contracts'
 import { trendingIndex } from 'web/lib/service/algolia'
@@ -71,7 +71,7 @@ export default function Home() {
 
   const globalConfig = useGlobalConfig()
   const trendingContracts = useTrendingContracts(6, blockedFacetFilters)
-  const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
+  const dailyTrendingContracts = useContractsByDailyScore(
     6,
     blockedFacetFilters
   )

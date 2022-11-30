@@ -38,7 +38,7 @@ import { isArray, keyBy } from 'lodash'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import {
-  useContractsByDailyScoreNotBetOn,
+  useContractsByDailyScore,
   useContractsByDailyScoreGroups,
   useTrendingContracts,
   useNewContracts,
@@ -125,7 +125,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     : undefined
 
   const newContracts = useNewContracts(6, userBlockFacetFilters)
-  const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
+  const dailyTrendingContracts = useContractsByDailyScore(
     6,
     userBlockFacetFilters
   )

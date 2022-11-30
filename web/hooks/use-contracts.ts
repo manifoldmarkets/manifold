@@ -63,7 +63,7 @@ export const useNewContracts = (
   return data.hits
 }
 
-export const useContractsByDailyScoreNotBetOn = (
+export const useContractsByDailyScore = (
   maxContracts: number,
   additionalFilters?: string[]
 ) => {

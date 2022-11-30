@@ -150,7 +150,6 @@ export function useMemberGroupsIdsAndSlugs(user: User | null | undefined) {
     }
   }, [setGroupIdsAndSlugs, userId])
 
-  console.log('groups', groupIdsAndSlugs)
   return groupIdsAndSlugs
 }
 
