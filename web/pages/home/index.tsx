@@ -35,7 +35,6 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { filterDefined } from 'common/util/array'
 import { getUsersBlockFacetFilters, updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
-import { usePrefetch } from 'web/hooks/use-prefetch'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import {
   useContractsByDailyScore,
@@ -106,7 +105,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   useTracking('view home')
 
   useSaveReferral()
-  usePrefetch(user?.id)
 
   const { sections } = getHomeItems(user?.homeSections ?? [])
 

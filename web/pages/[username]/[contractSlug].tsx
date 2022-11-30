@@ -34,7 +34,6 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/widgets/title'
-import { usePrefetch } from 'web/hooks/use-prefetch'
 import { useAdmin } from 'web/hooks/use-admin'
 import { BetsSummary } from 'web/components/bet/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
@@ -181,7 +180,6 @@ export function ContractPageContent(
   )
   const isCreator = user?.id === contract.creatorId
 
-  usePrefetch(user?.id)
   useTracking(
     'view market',
     {
