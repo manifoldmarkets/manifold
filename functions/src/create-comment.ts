@@ -1,11 +1,10 @@
 import * as admin from 'firebase-admin'
 
-import { getContract, getUser } from './utils'
+import { getContract, getUser, htmlToRichText } from './utils'
 import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 import { removeUndefinedProps } from '../../common/util/object'
-import { htmlToRichText } from '../../common/util/parse'
 import { marked } from 'marked'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>

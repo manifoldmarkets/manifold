@@ -5,7 +5,6 @@ import { postPath } from 'web/lib/firebase/posts'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
 import { Card } from '../widgets/card'
-import { CardHighlightOptions } from '../contract/contracts-grid'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { UserLink } from '../widgets/user-link'
@@ -16,17 +15,16 @@ import { FeaturedPill } from '../contract/contract-card'
 export function PostCard(props: {
   post: Post
   onPostClick?: (post: Post) => void
-  highlightOptions?: CardHighlightOptions
+  highlight?: boolean
   pinned?: boolean
 }) {
-  const { post, onPostClick, highlightOptions, pinned } = props
-  const { itemIds: itemIds, highlightClassName } = highlightOptions || {}
+  const { post, onPostClick, highlight, pinned } = props
 
   return (
     <Card
       className={clsx(
         'group relative flex gap-2 py-2 px-4',
-        itemIds?.includes(post.id) && highlightClassName
+        highlight && '!bg-indigo-100 outline outline-2 outline-indigo-400'
       )}
     >
       <Col className="w-full gap-1">
@@ -38,25 +36,21 @@ export function PostCard(props: {
               size={4}
             />
             <UserLink
-              className="text-greyscale-4 text-sm"
+              className="text-sm text-gray-400"
               name={post.creatorName}
               username={post.creatorUsername}
             />
-            <span className="text-greyscale-4 mx-1">•</span>
-            <span className="text-greyscale-4">
-              {fromNow(post.createdTime)}
-            </span>
+            <span className="mx-1 text-gray-400">•</span>
+            <span className="text-gray-400">{fromNow(post.createdTime)}</span>
           </Row>
-          {pinned && <FeaturedPill />}
+          {pinned && <FeaturedPill label={post.featuredLabel} />}
         </Row>
-        <div className="text-greyscale-7 text-md mb-1 font-medium transition-all">
+        <div className="text-md mb-1 font-medium text-gray-900 transition-all">
           {post.title}
         </div>
-        <div className="text-greyscale-6 break-words text-sm">
-          {post.subtitle}
-        </div>
+        <div className="break-words text-sm text-gray-600">{post.subtitle}</div>
         <Row className="gap-2 pt-1">
-          <Row className="text-greyscale-4 gap-1 text-sm">
+          <Row className="gap-1 text-sm text-gray-400">
             <div className="font-semibold">{post.commentCount ?? 0}</div>
             <div className="font-normal">comments</div>
           </Row>
@@ -97,11 +91,11 @@ export function PostCard(props: {
 
 export function PostCardList(props: {
   posts: Post[]
-  highlightOptions?: CardHighlightOptions
+  highlightCards?: string[]
   onPostClick?: (post: Post) => void
   limit?: number
 }) {
-  const { posts, onPostClick, highlightOptions, limit } = props
+  const { posts, onPostClick, highlightCards, limit } = props
 
   const [shownPosts, setShownPosts] = useState<Post[]>(posts)
   useEffect(() => {
@@ -120,7 +114,7 @@ export function PostCardList(props: {
             key={post.id}
             post={post}
             onPostClick={onPostClick}
-            highlightOptions={highlightOptions}
+            highlight={highlightCards?.includes(post.id)}
           />
         </div>
       ))}

@@ -32,16 +32,22 @@ import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
-import { BOT_USERNAMES, DOMAIN } from 'common/envs/constants'
+import {
+  BOT_USERNAMES,
+  CORE_USERNAMES,
+  DOMAIN,
+  ENV_CONFIG,
+} from 'common/envs/constants'
 import { BadgeDisplay } from 'web/components/badge-display'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-about'
-import { Button } from './buttons/button'
-import { BotBadge } from './widgets/user-link'
-import { BlockUserButton } from 'web/components/buttons/block-user-button'
+import { buttonClass } from './buttons/button'
+import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { BotBadge, CoreBadge, PostBanBadge } from './widgets/user-link'
+import Link from 'next/link'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -94,21 +100,25 @@ export function UserPage(props: { user: User }) {
           />
           {isCurrentUser && (
             <div className="absolute ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
-              <SiteLink href="/profile">
-                <PencilIcon className="h-5" />{' '}
-              </SiteLink>
+              <Link href="/profile">
+                <PencilIcon className="h-5" />
+              </Link>
             </div>
           )}
 
           <Col className="w-full gap-4 pl-5">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
               <Col>
-                <span className="break-anywhere text-lg font-bold sm:text-2xl">
-                  {user.name}{' '}
+                <div className="inline-flex flex-row items-center gap-1">
+                  <span className="break-anywhere text-lg font-bold sm:text-2xl">
+                    {user.name}
+                  </span>
                   {BOT_USERNAMES.includes(user.username) && <BotBadge />}
-                </span>
+                  {CORE_USERNAMES.includes(user.username) && <CoreBadge />}
+                  {user.isBannedFromPosting && <PostBanBadge />}
+                </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
-                  <span className={' text-greyscale-4'}>@{user.username}</span>
+                  <span className={' text-gray-400'}>@{user.username}</span>
                   <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
@@ -119,11 +129,11 @@ export function UserPage(props: { user: User }) {
               >
                 {isCurrentUser && <DailyStats user={user} showLoans />}
                 {!isCurrentUser && <UserFollowButton userId={user.id} />}
-                {!isCurrentUser && <BlockUserButton user={user} />}
+                {!isCurrentUser && <MoreOptionsUserButton user={user} />}
               </Row>
             </div>
             <ProfilePublicStats
-              className="sm:text-md text-greyscale-6 hidden text-sm md:inline"
+              className="sm:text-md hidden text-sm text-gray-600 md:inline"
               user={user}
             />
           </Col>
@@ -131,7 +141,7 @@ export function UserPage(props: { user: User }) {
         <Col className="mx-4 mt-2">
           <Spacer h={1} />
           <ProfilePublicStats
-            className="text-greyscale-6 text-sm md:hidden"
+            className="text-sm text-gray-600 md:hidden"
             user={user}
           />
           <Spacer h={1} />
@@ -154,7 +164,7 @@ export function UserPage(props: { user: User }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    <span className="text-greyscale-4 text-sm">
+                    <span className="text-sm text-gray-400">
                       {user.website}
                     </span>
                   </Row>
@@ -175,7 +185,7 @@ export function UserPage(props: { user: User }) {
                       className="h-4 w-4"
                       alt="Twitter"
                     />
-                    <span className="text-greyscale-4 text-sm">
+                    <span className="text-sm text-gray-400">
                       {user.twitterHandle}
                     </span>
                   </Row>
@@ -190,7 +200,7 @@ export function UserPage(props: { user: User }) {
                       className="h-4 w-4"
                       alt="Discord"
                     />
-                    <span className="text-greyscale-4 text-sm">
+                    <span className="text-sm text-gray-400">
                       {user.discordHandle}
                     </span>
                   </Row>
@@ -201,7 +211,7 @@ export function UserPage(props: { user: User }) {
                 <div
                   className={clsx(
                     linkClass,
-                    'text-greyscale-4 cursor-pointer text-sm'
+                    'cursor-pointer text-sm text-gray-400'
                   )}
                   onClick={(e) => {
                     e.preventDefault()
@@ -214,7 +224,7 @@ export function UserPage(props: { user: User }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    Earn M$250 per friend referred
+                    Earn {ENV_CONFIG.moneyMoniker}250 per friend referred
                   </Row>
                 </div>
               )}
@@ -230,7 +240,7 @@ export function UserPage(props: { user: User }) {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <CreatorContractsList user={currentUser} creator={user} />
+                    <CreatorContractsList creator={user} />
                   </>
                 ),
               },
@@ -254,24 +264,17 @@ export function UserPage(props: { user: User }) {
                     <Spacer h={4} />
 
                     <Row className="flex items-center justify-between">
-                      <Col>
-                        <SectionHeader label={'Posts'} href={''} />
-                      </Col>
-                      <Col>
-                        {currentUser && (
-                          <SiteLink
-                            className="mb-3 text-xl"
-                            href={'/create-post'}
-                            onClick={() =>
-                              track('home click create post', {
-                                section: 'create-post',
-                              })
-                            }
-                          >
-                            <Button>Create Post</Button>
-                          </SiteLink>
-                        )}
-                      </Col>
+                      <SectionHeader label={'Posts'} href={''} />
+
+                      {currentUser && (
+                        <Link
+                          className={clsx('mb-3', buttonClass('md', 'indigo'))}
+                          href={'/create-post'}
+                          onClick={() => track('profile click create post')}
+                        >
+                          Create Post
+                        </Link>
+                      )}
                     </Row>
 
                     <Col>
@@ -279,12 +282,12 @@ export function UserPage(props: { user: User }) {
                         userPosts.length > 0 ? (
                           <PostCardList posts={userPosts} limit={6} />
                         ) : (
-                          <div className="text-greyscale-4 text-center">
+                          <div className="text-center text-gray-400">
                             No posts yet
                           </div>
                         )
                       ) : (
-                        <div className="text-greyscale-4 text-center">
+                        <div className="text-center text-gray-400">
                           <LoadingIndicator />
                         </div>
                       )}

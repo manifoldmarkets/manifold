@@ -17,6 +17,7 @@ import { placebet } from './place-bet'
 import { cancelbet } from './cancel-bet'
 import { sellbet } from './sell-bet'
 import { sellshares } from './sell-shares'
+import { addsubsidy } from './add-subsidy'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
 import { createcomment } from './create-comment'
@@ -29,6 +30,7 @@ import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { testscheduledfunction } from './test-scheduled-function'
 import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
+import { validateiap } from 'functions/src/validate-iap'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -59,6 +61,7 @@ addJsonEndpointRoute('/placebet', placebet)
 addJsonEndpointRoute('/cancelbet', cancelbet)
 addJsonEndpointRoute('/sellbet', sellbet)
 addJsonEndpointRoute('/sellshares', sellshares)
+addJsonEndpointRoute('/addsubsidy', addsubsidy)
 addJsonEndpointRoute('/claimmanalink', claimmanalink)
 addJsonEndpointRoute('/createmarket', createmarket)
 addJsonEndpointRoute('/addCommentBounty', addcommentbounty)
@@ -72,6 +75,7 @@ addJsonEndpointRoute('/savetwitchcredentials', savetwitchcredentials)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 addEndpointRoute('/createpost', createpost)
 addEndpointRoute('/testscheduledfunction', testscheduledfunction)
+addJsonEndpointRoute('/validateIap', validateiap)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)

@@ -20,7 +20,7 @@ export function ContractMention(props: { contract: Contract }) {
       className="group inline whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50"
       title={isClient ? tooltipLabel(contract) : undefined}
     >
-      <span className="break-anywhere text-greyscale-7 mr-0.5 whitespace-normal font-medium">
+      <span className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
         {contract.question}
       </span>
       {outcomeType === 'BINARY' && (
@@ -40,7 +40,7 @@ export function ContractMention(props: { contract: Contract }) {
           )}
         </span>
       )}
-      {/* TODO: numeric? */}
+      &zwnj;{/* cursor positioning hack */}
     </Link>
   )
 }

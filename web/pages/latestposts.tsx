@@ -9,9 +9,9 @@ import Masonry from 'react-masonry-css'
 import { Post } from 'common/post'
 import { PostCard } from 'web/components/posts/post-card'
 import { useUser } from 'web/hooks/use-user'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { track } from '@amplitude/analytics-browser'
-import { Button } from 'web/components/buttons/button'
+import { track } from 'web/lib/service/analytics'
+import { buttonClass } from 'web/components/buttons/button'
+import Link from 'next/link'
 
 export default function LatestPostsPage() {
   useTracking('view latest posts page')
@@ -27,17 +27,13 @@ export default function LatestPostsPage() {
           </Col>
           <Col>
             {user && (
-              <SiteLink
-                className="mb-3 text-xl"
+              <Link
                 href={'/create-post'}
-                onClick={() =>
-                  track('latest posts click create post', {
-                    section: 'create-post',
-                  })
-                }
+                onClick={() => track('latest posts click create post')}
+                className={buttonClass('md', 'indigo')}
               >
-                <Button className="mx-2">Create Post</Button>
-              </SiteLink>
+                Create Post
+              </Link>
             )}
           </Col>
         </Row>

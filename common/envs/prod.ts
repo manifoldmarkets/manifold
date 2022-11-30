@@ -16,7 +16,7 @@ export type EnvConfig = {
   visibility: 'PRIVATE' | 'PUBLIC'
 
   // Branding
-  moneyMoniker: string // e.g. 'M$'
+  moneyMoniker: string // e.g. 'Ṁ'
   bettor?: string // e.g. 'bettor' or 'predictor'
   presentBet?: string // e.g. 'bet' or 'predict'
   pastBet?: string // e.g. 'bet' or 'prediction'
@@ -46,6 +46,7 @@ export type Economy = {
   BETTING_STREAK_RESET_HOUR?: number
   FREE_MARKETS_PER_USER_MAX?: number
   COMMENT_BOUNTY_AMOUNT?: number
+  STARTING_BONUS?: number
 }
 
 type FirebaseConfig = {
@@ -90,9 +91,9 @@ export const PROD_CONFIG: EnvConfig = {
   ],
   visibility: 'PUBLIC',
 
-  moneyMoniker: 'M$',
+  moneyMoniker: 'Ṁ',
   bettor: 'trader',
-  pastBet: 'trade',
+  pastBet: 'traded',
   presentBet: 'trade',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',

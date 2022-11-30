@@ -3,7 +3,6 @@ import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
-import { Bet } from 'common/bet'
 import { DAY_MS } from 'common/util/time'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
@@ -18,6 +17,7 @@ import {
 import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
+import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
@@ -34,16 +34,16 @@ const getScaleP = (min: number, max: number, isLogScale: boolean) => {
       : p * (max - min) + min
 }
 
-const getBetPoints = (bets: Bet[], scaleP: (p: number) => number) => {
-  return sortBy(bets, (b) => b.createdTime).map((b) => ({
-    x: new Date(b.createdTime),
-    y: scaleP(b.probAfter),
+const getBetPoints = (bets: BetPoint[], scaleP: (p: number) => number) => {
+  return sortBy(bets, (b) => b.x).map((b) => ({
+    x: new Date(b.x),
+    y: scaleP(b.y),
     obj: b,
   }))
 }
 
 const PseudoNumericChartTooltip = (
-  props: TooltipProps<Date, HistoryPoint<Bet>>
+  props: TooltipProps<Date, HistoryPoint<BetPoint>>
 ) => {
   const { prev, x, xScale } = props
   const [start, end] = xScale.domain()
@@ -51,21 +51,24 @@ const PseudoNumericChartTooltip = (
   if (!prev) return null
   return (
     <Row className="items-center gap-2">
-      {prev.obj && <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />}
+      {prev.obj?.bet?.userAvatarUrl && (
+        <Avatar size="xs" avatarUrl={prev.obj.bet?.userAvatarUrl} />
+      )}{' '}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-greyscale-6">{formatLargeNumber(prev.y)}</span>
+      <span className="text-gray-600">{formatLargeNumber(prev.y)}</span>
     </Row>
   )
 }
 
 export const PseudoNumericContractChart = (props: {
   contract: PseudoNumericContract
-  bets: Bet[]
+  betPoints: BetPoint[]
   width: number
   height: number
-  onMouseOver?: (p: HistoryPoint<Bet> | undefined) => void
+  color?: string
+  onMouseOver?: (p: HistoryPoint<BetPoint> | undefined) => void
 }) => {
-  const { contract, bets, width, height, onMouseOver } = props
+  const { contract, width, height, color, onMouseOver } = props
   const { min, max, isLogScale } = contract
   const [start, end] = getDateRange(contract)
   const scaleP = useMemo(
@@ -74,7 +77,10 @@ export const PseudoNumericContractChart = (props: {
   )
   const startP = scaleP(getInitialProbability(contract))
   const endP = scaleP(getProbability(contract))
-  const betPoints = useMemo(() => getBetPoints(bets, scaleP), [bets, scaleP])
+  const betPoints = useMemo(
+    () => getBetPoints(props.betPoints, scaleP),
+    [props.betPoints, scaleP]
+  )
   const data = useMemo(
     () => [
       { x: new Date(start), y: startP },
@@ -105,7 +111,7 @@ export const PseudoNumericContractChart = (props: {
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={PseudoNumericChartTooltip}
-      color={NUMERIC_GRAPH_COLOR}
+      color={color ?? NUMERIC_GRAPH_COLOR}
     />
   )
 }

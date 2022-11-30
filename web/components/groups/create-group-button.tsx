@@ -1,12 +1,11 @@
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { groupPath } from 'web/lib/firebase/groups'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { Title } from '../widgets/title'
 import { User } from 'common/user'
-import { MAX_GROUP_NAME_LENGTH } from 'common/group'
+import { groupPath, MAX_GROUP_NAME_LENGTH } from 'common/group'
 import { createGroup } from 'web/lib/firebase/api'
 import { Input } from '../widgets/input'
 

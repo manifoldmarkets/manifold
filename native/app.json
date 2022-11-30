@@ -4,11 +4,17 @@
     "slug": "manifold-markets",
     "owner": "iansp",
     "sdkVersion": "46.0.0",
-    "version": "2.0.14",
+    "version": "2.0.21",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
-    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround", "sentry-expo"],
+    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround", "sentry-expo",
+    [
+      "expo-notifications",
+      {
+        "icon":"./assets/logo-96.png"
+      }
+    ]],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
@@ -51,7 +57,7 @@
         "backgroundColor": "#4337C9"
       },
       "package": "com.markets.manifold",
-      "versionCode": 22
+      "versionCode": 29
     },
     "ios": {
       "infoPlist": {
@@ -64,7 +70,7 @@
         "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
-      "buildNumber": "1.0.9",
+      "buildNumber": "1.0.16",
       "runtimeVersion": {
         "policy": "sdkVersion"
       }

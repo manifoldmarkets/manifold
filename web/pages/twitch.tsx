@@ -27,6 +27,7 @@ import {
 import { copyToClipboard } from 'web/lib/util/copy'
 import { formatMoney } from 'common/util/format'
 import { STARTING_BALANCE } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 function ButtonGetStarted(props: {
   user?: User | null
@@ -146,10 +147,11 @@ function TwitchPlaysManifoldMarkets(props: {
           receive their profit.
         </div>
         <div>
-          Instead of Twitch channel points we use our own play money, mana (M$).
-          All viewers start with {formatMoney(STARTING_BALANCE)} and can earn
-          more for free by betting well. Just like channel points, mana cannot
-          be converted to real money.
+          Instead of Twitch channel points we use our own play money, mana (
+          {ENV_CONFIG.moneyMoniker}). All viewers start with{' '}
+          {formatMoney(STARTING_BALANCE)} and can earn more for free by betting
+          well. Just like channel points, mana cannot be converted to real
+          money.
         </div>
       </Col>
     </div>
@@ -180,11 +182,11 @@ function TwitchChatCommands() {
         <Subtitle text="For Chat" />
         <Command
           command="y#"
-          desc="Bets # amount of M$ on yes, for example !y20 would bet M$20 on yes."
+          desc={`Bets # amount of ${ENV_CONFIG.moneyMoniker} on yes, for example !y20 would bet ${ENV_CONFIG.moneyMoniker}20 on yes.`}
         />
         <Command
           command="n#"
-          desc="Bets # amount of M$ on no, for example !n30 would bet M$30 on no."
+          desc={`Bets # amount of ${ENV_CONFIG.moneyMoniker} on no, for example !n30 would bet ${ENV_CONFIG.moneyMoniker}30 on no.`}
         />
         <Command
           command="sell"
@@ -196,7 +198,10 @@ function TwitchChatCommands() {
           command="position"
           desc="Shows how many shares you own in the current market and what your fixed payout is."
         />
-        <Command command="balance" desc="Shows how much M$ your account has." />
+        <Command
+          command="balance"
+          desc={`Shows how much ${ENV_CONFIG.moneyMoniker} your account has.`}
+        />
 
         <div className="mb-4" />
 

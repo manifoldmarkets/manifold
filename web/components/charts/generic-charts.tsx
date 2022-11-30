@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react'
 import { bisector, extent } from 'd3-array'
-import { axisBottom, axisLeft, axisRight } from 'd3-axis'
+import { axisBottom, axisRight } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 import {
@@ -35,12 +35,12 @@ import {
   formatPct,
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
-import { formatMoney } from 'common/util/format'
+import { formatMoneyNumber } from 'common/util/format'
 
 export type MultiPoint<T = unknown> = Point<Date, number[], T>
 export type HistoryPoint<T = unknown> = Point<Date, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
-export type ValueKind = 'm$' | 'percent' | 'amount'
+export type ValueKind = 'Ṁ' | 'percent' | 'amount'
 
 export type viewScale = {
   viewXScale: ScaleTime<number, number, never> | undefined
@@ -61,7 +61,7 @@ type AxisConstraints = {
 
 const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
   percent: { min: 0, max: 1, minExtent: 0.04 },
-  m$: { minExtent: 10 },
+  Ṁ: { minExtent: 10 },
   amount: { minExtent: 0.04 },
 }
 
@@ -168,7 +168,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
 
   const { xAxis, yAxis } = useMemo(() => {
     const xAxis = axisBottom<number>(xScale).ticks(w / 100)
-    const yAxis = axisLeft<number>(yScale).tickFormat((n) => formatPct(n, 2))
+    const yAxis = axisRight<number>(yScale).tickFormat((n) => formatPct(n, 2))
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
 
@@ -255,14 +255,14 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis =
       yKind === 'percent'
-        ? axisLeft<number>(yScale)
+        ? axisRight<number>(yScale)
             .tickValues(pctTickValues)
             .tickFormat((n) => formatPct(n))
-        : yKind === 'm$'
-        ? axisLeft<number>(yScale)
+        : yKind === 'Ṁ'
+        ? axisRight<number>(yScale)
             .ticks(nTicks)
-            .tickFormat((n) => formatMoney(n))
-        : axisLeft<number>(yScale).ticks(nTicks)
+            .tickFormat((n) => formatMoneyNumber(n))
+        : axisRight<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
@@ -371,10 +371,10 @@ export const ControllableSingleValueHistoryChart = <
         ? axisRight<number>(yScale)
             .tickValues(pctTickValues)
             .tickFormat((n) => formatPct(n))
-        : yKind === 'm$'
+        : yKind === 'Ṁ'
         ? axisRight<number>(yScale)
             .ticks(nTicks)
-            .tickFormat((n) => formatMoney(n))
+            .tickFormat((n) => formatMoneyNumber(n))
         : axisRight<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])

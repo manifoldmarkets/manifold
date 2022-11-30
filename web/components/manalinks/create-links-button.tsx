@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { useState } from 'react'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
 import { User } from 'common/user'
 import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
@@ -10,11 +9,13 @@ import { Modal } from 'web/components/layout/modal'
 import dayjs from 'dayjs'
 import { Button } from '../buttons/button'
 import { getManalinkUrl } from 'web/pages/links'
-import { DuplicateIcon } from '@heroicons/react/outline'
 import { QRCode } from '../widgets/qr-code'
 import { Input } from '../widgets/input'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Select } from '../widgets/select'
+import { canCreateManalink } from 'common/manalink'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { CopyLinkButton } from '../buttons/copy-link-button'
 
 export function CreateLinksButton(props: {
   user: User
@@ -23,6 +24,8 @@ export function CreateLinksButton(props: {
 }) {
   const { user, highlightedSlug, setHighlightedSlug } = props
   const [open, setOpen] = useState(false)
+
+  if (!canCreateManalink(user)) return <></>
 
   return (
     <>
@@ -64,8 +67,6 @@ function CreateManalinkForm(props: {
   const { user, onCreate, highlightedSlug } = props
   const [isCreating, setIsCreating] = useState(false)
   const [finishedCreating, setFinishedCreating] = useState(false)
-  const [copyPressed, setCopyPressed] = useState(false)
-  setTimeout(() => setCopyPressed(false), 300)
   const defaultExpire = 'week'
   const [expiresIn, setExpiresIn] = useState(defaultExpire)
 
@@ -120,7 +121,7 @@ function CreateManalinkForm(props: {
               <label className="px-1 py-2">Amount</label>
               <div className="relative">
                 <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
-                  M$
+                  {ENV_CONFIG.moneyMoniker}
                 </span>
                 <Input
                   className="w-full pl-10"
@@ -195,22 +196,7 @@ function CreateManalinkForm(props: {
         <>
           <Title className="!my-0" text="Manalink Created!" />
           <ManalinkCard className="my-4" info={newManalink} preview />
-          <Row
-            className={clsx(
-              'rounded border bg-gray-50 py-2 px-3 text-sm text-gray-500 transition-colors duration-700',
-              copyPressed ? 'bg-indigo-50 text-indigo-500 transition-none' : ''
-            )}
-          >
-            <div className="w-full select-text truncate">{url}</div>
-            <DuplicateIcon
-              onClick={() => {
-                navigator.clipboard.writeText(url)
-                setCopyPressed(true)
-              }}
-              className="my-auto ml-2 h-5 w-5 cursor-pointer transition hover:opacity-50"
-            />
-          </Row>
-
+          <CopyLinkButton url={url} />
           <QRCode url={url} className="self-center" />
         </>
       )}

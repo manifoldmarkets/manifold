@@ -5,8 +5,6 @@ import { ChatIcon } from '@heroicons/react/outline'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { getDpmOutcomeProbability } from 'common/calculate-dpm'
-import { useAnswers } from 'web/hooks/use-answers'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
@@ -39,18 +37,26 @@ export function AnswersPanel(props: {
 }) {
   const isAdmin = useAdmin()
   const { contract, onAnswerCommentClick } = props
-  const { creatorId, resolution, resolutions, totalBets, outcomeType } =
-    contract
+  const { creatorId, resolution, resolutions, outcomeType } = contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
-  const answers = (useAnswers(contract.id) ?? contract.answers).filter(
-    (a) => a.number != 0 || contract.outcomeType === 'MULTIPLE_CHOICE'
+  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+
+  const answers = contract.answers.filter(
+    (a) => a.number != 0 || isMultipleChoice
   )
 
-  const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] < 1)
+  const answersToHide =
+    isMultipleChoice || answers.length <= 5
+      ? []
+      : answers.filter(
+          (answer) => getOutcomeProbability(contract, answer.id) < 0.01
+        )
 
   const [winningAnswers, losingAnswers] = partition(
-    answers.filter((a) => (showAllAnswers ? true : totalBets[a.id] > 0)),
+    answers.filter((answer) =>
+      showAllAnswers ? true : !answersToHide.find((a) => answer.id === a.id)
+    ),
     (answer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
@@ -60,7 +66,7 @@ export function AnswersPanel(props: {
     ),
     ...sortBy(
       resolution ? [] : losingAnswers,
-      (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
+      (answer) => -1 * getOutcomeProbability(contract, answer.id)
     ),
   ]
 
@@ -150,7 +156,7 @@ export function AnswersPanel(props: {
               color={getAnswerColor(item, answersArray)}
             />
           ))}
-          {hasZeroBetAnswers && !showAllAnswers && (
+          {answersToHide.length > 0 && !showAllAnswers && (
             <Button
               className="self-end"
               color="gray-white"
@@ -198,27 +204,38 @@ function OpenAnswer(props: {
 }) {
   const { answer, contract, onAnswerCommentClick, color } = props
   const { username, avatarUrl, text } = answer
-  const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
+  const prob = getOutcomeProbability(contract, answer.id)
   const probPercent = formatPercent(prob)
-  const [open, setOpen] = useState(false)
+  const [betMode, setBetMode] = useState<'buy' | 'short-sell' | undefined>(
+    undefined
+  )
   const colorWidth = 100 * Math.max(prob, 0.01)
+  const isDpm = contract.mechanism === 'dpm-2'
+  const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
   return (
     <Col className="my-1 px-2">
-      <Modal open={open} setOpen={setOpen} position="center">
-        <AnswerBetPanel
-          answer={answer}
-          contract={contract}
-          closePanel={() => setOpen(false)}
-          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
-          isModal={true}
-        />
+      <Modal
+        open={!!betMode}
+        setOpen={(open) => setBetMode(open ? 'buy' : undefined)}
+        position="center"
+      >
+        {betMode && (
+          <AnswerBetPanel
+            answer={answer}
+            contract={contract}
+            mode={betMode}
+            closePanel={() => setBetMode(undefined)}
+            className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
+            isModal={true}
+          />
+        )}
       </Modal>
 
       <Col
         className={clsx(
           'relative w-full rounded-lg transition-all',
-          tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-5'
+          tradingAllowed(contract) ? 'text-gray-900' : 'text-gray-500'
         )}
         style={{
           background: `linear-gradient(to right, ${color}90 ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
@@ -235,24 +252,44 @@ function OpenAnswer(props: {
           </Row>
           <Row className="gap-2">
             <div className="my-auto text-xl">{probPercent}</div>
-            {tradingAllowed(contract) && (
-              <Button
-                size="2xs"
-                color="gray-outline"
-                onClick={() => setOpen(true)}
-                className="my-auto"
-              >
-                BUY
-              </Button>
-            )}
-            {
+            {tradingAllowed(contract) &&
+              (isDpm ? (
+                <Button
+                  size="2xs"
+                  color="gray-outline"
+                  onClick={() => setBetMode('buy')}
+                  className="my-auto"
+                >
+                  Buy
+                </Button>
+              ) : (
+                <Row className="gap-2">
+                  <Button
+                    size="2xs"
+                    color="green"
+                    onClick={() => setBetMode('buy')}
+                    className="my-auto"
+                  >
+                    YES
+                  </Button>
+                  <Button
+                    size="2xs"
+                    color="red"
+                    onClick={() => setBetMode('short-sell')}
+                    className="my-auto"
+                  >
+                    NO
+                  </Button>
+                </Row>
+              ))}
+            {isFreeResponse && (
               <button
                 className="p-1"
                 onClick={() => onAnswerCommentClick(answer)}
               >
-                <ChatIcon className="text-greyscale-4 hover:text-greyscale-6 h-5 w-5 transition-colors" />
+                <ChatIcon className="h-5 w-5 text-gray-400 transition-colors hover:text-gray-600" />
               </button>
-            }
+            )}
           </Row>
         </Row>
       </Col>

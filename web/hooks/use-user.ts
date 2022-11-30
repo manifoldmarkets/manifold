@@ -50,7 +50,7 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
 
   const metrics = buildArray(positiveResult.data, negativeResult.data)
   const contractIds = sortBy(metrics.map((m) => m.contractId))
-  const contracts = useContracts(contractIds)
+  const contracts = useContracts(contractIds, { loadOnce: true })
 
   const isReady =
     positiveResult.data &&
@@ -90,7 +90,7 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
     result.contracts
   ) as CPMMBinaryContract[]
   const filteredMetrics = result.metrics
-    .filter((m) => m.from && Math.abs(m.from.day.profit) >= 0.5)
+    .filter((m) => m.from && Math.abs(m.from.day.profit) >= 1)
     .filter((m) => filteredContracts.find((c) => c.id === m.contractId))
 
   return { contracts: filteredContracts, metrics: filteredMetrics }

@@ -3,9 +3,9 @@ import { Bet } from './bet'
 import { getContractBetMetrics } from './calculate'
 import {
   Contract,
+  CPMM2Contract,
   CPMMContract,
-  FreeResponseContract,
-  MultipleChoiceContract,
+  DPMContract,
 } from './contract'
 import { PortfolioMetrics } from './user'
 import { filterDefined } from './util/array'
@@ -21,10 +21,7 @@ export const getUserLoanUpdates = (
   betsByContractId: { [contractId: string]: Bet[] },
   contractsById: { [contractId: string]: Contract }
 ) => {
-  const updates = calculateLoanBetUpdates(
-    betsByContractId,
-    contractsById
-  ).betUpdates
+  const updates = calculateLoanBetUpdates(betsByContractId, contractsById)
   return { updates, payout: sumBy(updates, (update) => update.newLoan) }
 }
 
@@ -45,33 +42,23 @@ const calculateLoanBetUpdates = (
     Object.keys(betsByContractId).map((contractId) => contractsById[contractId])
   ).filter((c) => !c.isResolved)
 
-  const betUpdates = filterDefined(
-    contracts
-      .map((c) => {
-        if (c.mechanism === 'cpmm-1') {
-          return getBinaryContractLoanUpdate(c, betsByContractId[c.id])
-        } else if (
-          c.outcomeType === 'FREE_RESPONSE' ||
-          c.outcomeType === 'MULTIPLE_CHOICE'
-        )
-          return getFreeResponseContractLoanUpdate(c, betsByContractId[c.id])
-        else {
-          // Unsupported contract / mechanism for loans.
-          return []
-        }
-      })
-      .flat()
-  )
-
-  const totalNewLoan = sumBy(betUpdates, (loanUpdate) => loanUpdate.loanTotal)
-
-  return {
-    totalNewLoan,
-    betUpdates,
-  }
+  return contracts
+    .map((c) => {
+      const bets = betsByContractId[c.id]
+      if (c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-2') {
+        return getCpmmContractLoanUpdate(c, bets) ?? []
+      } 
+      else if (c.mechanism === 'dpm-2')
+        return filterDefined(getDpmContractLoanUpdate(c, bets))
+      else {
+        // Unsupported contract / mechanism for loans.
+        return []
+      }
+    })
+    .flat()
 }
 
-const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
+const getCpmmContractLoanUpdate = (contract: CPMMContract | CPMM2Contract, bets: Bet[]) => {
   const { invested } = getContractBetMetrics(contract, bets)
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
@@ -90,10 +77,7 @@ const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
   }
 }
 
-const getFreeResponseContractLoanUpdate = (
-  contract: FreeResponseContract | MultipleChoiceContract,
-  bets: Bet[]
-) => {
+const getDpmContractLoanUpdate = (contract: DPMContract, bets: Bet[]) => {
   const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
 
   return openBets.map((bet) => {

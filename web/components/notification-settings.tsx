@@ -32,6 +32,9 @@ import {
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
+import { getIsNative } from 'web/lib/native/is-native'
+import { Button } from 'web/components/buttons/button'
+import { deleteField } from 'firebase/firestore'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
@@ -39,6 +42,7 @@ export function NotificationSettings(props: {
 }) {
   const { navigateToSection, privateUser } = props
   const [showWatchModal, setShowWatchModal] = useState(false)
+  const isNative = getIsNative()
 
   const emailsEnabled: Array<notification_preference> = [
     'all_comments_on_watched_markets',
@@ -365,9 +369,66 @@ export function NotificationSettings(props: {
     )
   })
 
+  const PushNotificationsBanner = (props: { privateUser: PrivateUser }) => {
+    const { privateUser } = props
+    const {
+      interestedInPushNotifications,
+      rejectedPushNotificationsOn,
+      pushToken,
+    } = privateUser
+
+    if (
+      interestedInPushNotifications ||
+      pushToken ||
+      (interestedInPushNotifications === undefined &&
+        pushToken === undefined) ||
+      !isNative
+    )
+      return <div />
+
+    // If they only said they weren't interested in push notifications to our modal
+    if (
+      interestedInPushNotifications === false &&
+      !rejectedPushNotificationsOn
+    ) {
+      return (
+        <Row className="items-center justify-center font-medium text-gray-700">
+          <span className={'rounded-md bg-gray-100 p-2'}>
+            You haven't enabled mobile push notifications. To enable them
+            <Button
+              color={'blue'}
+              size={'2xs'}
+              className={'ml-2 inline-block whitespace-nowrap'}
+              onClick={() => {
+                updatePrivateUser(privateUser.id, {
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-ignore
+                  interestedInPushNotifications: deleteField(),
+                })
+              }}
+            >
+              click here
+            </Button>
+          </span>
+        </Row>
+      )
+    }
+
+    // Otherwise, they rejected the system modal, so they've to re-enable it in their settings
+    return (
+      <Row className="items-center justify-center text-sm text-gray-700">
+        <span className={'rounded-md bg-gray-100 p-2'}>
+          Mobile push notifications are disabled. To enable them, go to your
+          phone's notification settings.
+        </span>
+      </Row>
+    )
+  }
+
   return (
     <div className={'p-2'}>
       <Col className={'gap-6'}>
+        <PushNotificationsBanner privateUser={privateUser} />
         <Row className={'gap-2 text-xl text-gray-700'}>
           <span>Notifications for Watched Markets</span>
           <InformationCircleIcon

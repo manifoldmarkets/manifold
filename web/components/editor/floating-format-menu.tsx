@@ -111,10 +111,10 @@ const IconButton = (props: {
 }) => {
   const { icon: Icon, onClick, isActive, className } = props
   return (
-    <button onClick={onClick}>
+    <button onClick={onClick} type="button">
       <Icon className={clsx('h-5', isActive && 'text-indigo-200', className)} />
     </button>
   )
 }
 
-const Divider = () => <div className="bg-greyscale-4 mx-0.5 w-[1px]" />
+const Divider = () => <div className="mx-0.5 w-[1px] bg-gray-400" />

@@ -121,9 +121,7 @@ export function SignedInBinaryMobileBetting(props: {
         <SellRow
           contract={contract}
           user={user}
-          className={
-            'border-greyscale-2 bg-greyscale-0 rounded-md border-2 px-4 py-2'
-          }
+          className={'rounded-md border-2 border-gray-200 px-4 py-2'}
         />
       </Col>
     </>

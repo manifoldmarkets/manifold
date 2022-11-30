@@ -10,14 +10,14 @@ import {
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
-  MultipleChoiceContract,
   NumericContract,
   OUTCOME_TYPES,
   VISIBILITIES,
+  DpmMultipleChoiceContract,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
-import { getContract } from './utils'
+import { getContract, htmlToRichText } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
 import { FIXED_ANTE } from '../../common/economy'
 import {
@@ -32,10 +32,9 @@ import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
-import { Bet } from '../../common/bet'
 import { getCloseDate, getGroupForMarket } from './helpers/openai-utils'
-import { htmlToRichText } from '../../common/util/parse'
 import { marked } from 'marked'
+import { Bet } from 'common/bet'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -75,6 +74,7 @@ const bodySchema = z.object({
   outcomeType: z.enum(OUTCOME_TYPES),
   groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
   visibility: z.enum(VISIBILITIES).optional(),
+  isTwitchContract: z.boolean().optional(),
 })
 
 const binarySchema = z.object({
@@ -113,6 +113,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     outcomeType,
     groupId,
     visibility = 'public',
+    isTwitchContract,
   } = validate(bodySchema, body)
 
   let min, max, initialProb, isLogScale, answers
@@ -241,7 +242,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     max ?? 0,
     isLogScale ?? false,
     answers ?? [],
-    visibility
+    visibility,
+    isTwitchContract ? true : undefined
   )
 
   await contractRef.create(contract)
@@ -304,7 +306,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
     const { bets, answerObjects } = getMultipleChoiceAntes(
       user,
-      contract as MultipleChoiceContract,
+      contract as DpmMultipleChoiceContract,
       answers ?? [],
       betDocs.map((bd) => bd.id)
     )

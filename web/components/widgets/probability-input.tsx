@@ -41,7 +41,7 @@ function ProbabilityInput(props: {
           disabled={disabled}
           onChange={(e) => onProbChange(e.target.value)}
         />
-        <span className="text-greyscale-4 absolute top-1/2 right-10 my-auto -translate-y-1/2">
+        <span className="absolute top-1/2 right-10 my-auto -translate-y-1/2 text-gray-400">
           %
         </span>
       </label>

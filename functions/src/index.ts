@@ -9,7 +9,6 @@ export * from './on-create-user'
 export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
 export * from './on-create-comment-on-post'
-export * from './on-view'
 export { scheduleUpdateContractMetrics } from './update-contract-metrics'
 export { scheduleUpdateUserMetrics } from './update-user-metrics'
 export { scheduleUpdateGroupMetrics } from './update-group-metrics'
@@ -24,7 +23,6 @@ export * from './on-follow-user'
 export * from './on-unfollow-user'
 export * from './on-create-liquidity-provision'
 export * from './on-update-group'
-export * from './on-update-user'
 export * from './on-create-txn'
 export * from './on-delete-group'
 export * from './score-contracts'
@@ -53,11 +51,12 @@ export * from './create-group'
 export * from './resolve-market'
 export * from './unsubscribe'
 export * from './stripe'
-export * from './mana-bonus-email'
+export * from './mana-signup-bonus'
 export * from './close-market'
 export * from './update-comment-bounty'
 export * from './add-subsidy'
 export * from './test-scheduled-function'
+export * from './validate-iap'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -87,6 +86,7 @@ import { updategroupmetrics } from './update-group-metrics'
 import { updateloans } from './update-loans'
 import { addsubsidy } from './add-subsidy'
 import { testscheduledfunction } from './test-scheduled-function'
+import { validateiap } from './validate-iap'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -121,6 +121,7 @@ const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
 const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 const updateLoansFunction = toCloudFunction(updateloans)
+const validateIAPFunction = toCloudFunction(validateiap)
 
 export {
   healthFunction as health,
@@ -153,4 +154,5 @@ export {
   updateUserMetricsFunction as updateusermetrics,
   updateGroupMetricsFunction as updategroupmetrics,
   updateLoansFunction as updateloans,
+  validateIAPFunction as validateiap,
 }

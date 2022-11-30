@@ -15,7 +15,7 @@ import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { tournamentContractsByGroupSlugQuery } from 'web/lib/firebase/contracts'
-import { getGroup, groupPath } from 'web/lib/firebase/groups'
+import { getGroup } from 'web/lib/firebase/groups'
 import elon_pic from './_cspi/Will_Elon_Buy_Twitter.png'
 import china_pic from './_cspi/Chinese_Military_Action_against_Taiwan.png'
 import mpox_pic from './_cspi/Monkeypox_Cases.png'
@@ -26,6 +26,7 @@ import { usePagination } from 'web/hooks/use-pagination'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { useTracking } from 'web/hooks/use-tracking'
+import { groupPath } from 'common/group'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -112,7 +113,7 @@ const tourneys: Tourney[] = [
     title: 'Cause Exploration Prizes',
     blurb:
       'Which new charity ideas will Open Philanthropy find most promising?',
-    award: 'M$100k',
+    award: `Ṁ100k`,
     endTime: toDate('Sep 9, 2022'),
     groupId: 'cMcpBQ2p452jEcJD2SFw',
   },

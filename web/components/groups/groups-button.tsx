@@ -13,6 +13,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { GroupLinkItem } from 'web/pages/groups'
 import toast from 'react-hot-toast'
 import { Button } from '../buttons/button'
+import { useUser } from 'web/hooks/use-user'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -42,6 +43,8 @@ function GroupsDialog(props: {
   setIsOpen: (isOpen: boolean) => void
 }) {
   const { user, groups, isOpen, setIsOpen } = props
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
@@ -59,11 +62,13 @@ function GroupsDialog(props: {
                 <Row className="line-clamp-1 items-center gap-2">
                   <GroupLinkItem group={group} />
                 </Row>
-                <JoinOrLeaveGroupButton
-                  group={group}
-                  user={user}
-                  isMember={true}
-                />
+                {isCurrentUser && (
+                  <JoinOrLeaveGroupButton
+                    group={group}
+                    user={user}
+                    isMember={true}
+                  />
+                )}
               </Row>
             ))}
         </Col>{' '}

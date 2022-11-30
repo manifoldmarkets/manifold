@@ -1,23 +1,5 @@
 import { generateText, JSONContent, Node } from '@tiptap/core'
-import { generateJSON } from '@tiptap/html'
-// Tiptap starter extensions
-import { Blockquote } from '@tiptap/extension-blockquote'
-import { Bold } from '@tiptap/extension-bold'
-import { BulletList } from '@tiptap/extension-bullet-list'
-import { Code } from '@tiptap/extension-code'
-import { CodeBlock } from '@tiptap/extension-code-block'
-import { Document } from '@tiptap/extension-document'
-import { HardBreak } from '@tiptap/extension-hard-break'
-import { Heading } from '@tiptap/extension-heading'
-import { History } from '@tiptap/extension-history'
-import { HorizontalRule } from '@tiptap/extension-horizontal-rule'
-import { Italic } from '@tiptap/extension-italic'
-import { ListItem } from '@tiptap/extension-list-item'
-import { OrderedList } from '@tiptap/extension-ordered-list'
-import { Paragraph } from '@tiptap/extension-paragraph'
-import { Strike } from '@tiptap/extension-strike'
-import { Text } from '@tiptap/extension-text'
-// other tiptap extensions
+import { StarterKit } from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
 import { Mention } from '@tiptap/extension-mention'
@@ -57,43 +39,16 @@ export function parseMentions(data: JSONContent): string[] {
 
 // TODO: this is a hack to get around the fact that tiptap doesn't have a
 // way to add a node view without bundling in tsx
-function skippableComponent(name: string): Node<any, any> {
+function skippableComponent(extension: string, label: string): Node<any, any> {
   return Node.create({
-    name,
-
+    name: extension,
     group: 'block',
-
-    content: 'inline*',
-
-    parseHTML() {
-      return [
-        {
-          tag: 'grid-cards-component',
-        },
-      ]
-    },
+    renderText: () => label,
   })
 }
 
-const stringParseExts = [
-  // StarterKit extensions
-  Blockquote,
-  Bold,
-  BulletList,
-  Code,
-  CodeBlock,
-  Document,
-  HardBreak,
-  Heading,
-  History,
-  HorizontalRule,
-  Italic,
-  ListItem,
-  OrderedList,
-  Paragraph,
-  Strike,
-  Text,
-  // other extensions
+export const stringParseExts = [
+  StarterKit,
   Link,
   Image.extend({ renderText: () => '[image]' }),
   Mention, // user @mention
@@ -102,8 +57,8 @@ const stringParseExts = [
     renderText: ({ node }) =>
       '[embed]' + node.attrs.src ? `(${node.attrs.src})` : '',
   }),
-  skippableComponent('gridCardsComponent'),
-  skippableComponent('staticReactEmbedComponent'),
+  skippableComponent('gridCardsComponent', '[markets]'),
+  skippableComponent('staticReactEmbedComponent', '[map]'),
   TiptapTweet.extend({ renderText: () => '[tweet]' }),
   TiptapSpoiler.extend({ renderHTML: () => ['span', '[spoiler]', 0] }),
 ]
@@ -111,8 +66,4 @@ const stringParseExts = [
 export function richTextToString(text?: JSONContent) {
   if (!text) return ''
   return generateText(text, stringParseExts)
-}
-
-export function htmlToRichText(html: string) {
-  return generateJSON(html, stringParseExts)
 }

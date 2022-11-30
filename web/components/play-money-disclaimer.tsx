@@ -1,9 +1,10 @@
+import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoBox } from './widgets/info-box'
 
 export const PlayMoneyDisclaimer = () => (
   <InfoBox
-    title="Play-money trading"
+    title={`Mana (${ENV_CONFIG.moneyMoniker}) is play money`}
     className="mt-4"
-    text="Mana (M$) is the play-money used by our platform to keep track of your trades. It's completely free for you and your friends to get started!"
+    text={`Manifold Markets tracks your predictions in mana, not real cash. Sign up for free!`}
   />
 )

@@ -4,12 +4,13 @@ import {
   SearchIcon,
   BookOpenIcon,
   UsersIcon,
-  FlagIcon,
   ChatIcon,
   ChartBarIcon,
   LogoutIcon,
   BeakerIcon,
   GiftIcon,
+  FireIcon,
+  HeartIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -107,12 +108,12 @@ const getDesktopNav = (loggedIn: boolean) =>
     },
 
     !IS_PRIVATE_MANIFOLD && [
-      { name: 'Midterms', href: '/midterms', icon: FlagIcon },
       loggedIn && {
         name: 'Leaderboards',
         href: '/leaderboards',
         icon: ChartBarIcon,
       },
+      { name: 'World Cup', href: '/worldcup', icon: TrophyIcon },
     ]
   )
 
@@ -122,10 +123,9 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
   }
 
   return buildArray(
-    { name: 'Tournaments', href: '/tournaments' },
     { name: 'Groups', href: '/groups' },
-    loggedIn && { name: 'Refer a friend', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
+    loggedIn && { name: 'Refer a friend', href: '/referrals' },
     { name: 'Labs', href: '/labs' },
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -142,9 +142,10 @@ const getMobileNav = (loggedIn: boolean) => {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
   return buildArray(
-    { name: 'Midterms', href: '/midterms', icon: FlagIcon },
-    { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
+    loggedIn && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
+    { name: 'Charity', href: '/charity', icon: HeartIcon },
+    { name: 'World Cup', href: '/worldcup', icon: TrophyIcon },
     loggedIn && { name: 'Groups', href: '/groups', icon: UsersIcon },
     loggedIn && { name: 'Refer a friend', href: '/referrals', icon: GiftIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon }

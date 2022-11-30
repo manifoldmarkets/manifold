@@ -1,65 +1,39 @@
-import { ControlledTabs } from 'web/components/layout/tabs'
-import React, { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/router'
 import {
-  BetFillData,
-  ContractResolutionData,
-  Notification,
-} from 'common/notification'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
-import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
-import { doc, updateDoc } from 'firebase/firestore'
-import { db } from 'web/lib/firebase/init'
-import { MANIFOLD_AVATAR_URL, PAST_BETS, PrivateUser } from 'common/user'
+  ChevronDoubleDownIcon,
+  ChevronDoubleUpIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Linkify } from 'web/components/widgets/linkify'
+import { Notification } from 'common/notification'
+import { PrivateUser } from 'common/user'
+import { useRouter } from 'next/router'
+import React, { ReactNode, useEffect, useMemo, useState } from 'react'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { ControlledTabs } from 'web/components/layout/tabs'
+import { NotificationSettings } from 'web/components/notification-settings'
+import { IncomeNotificationGroupItem } from 'web/components/notifications/income-summary-notifications'
 import {
-  BinaryOutcomeLabel,
-  CancelLabel,
-  MultiLabel,
-  NumericValueLabel,
-  ProbPercentLabel,
-} from 'web/components/outcome-label'
+  markNotificationsAsSeen,
+  NOTIFICATIONS_PER_PAGE,
+  NUM_SUMMARY_LINES,
+  ParentNotificationHeader,
+  PARENT_NOTIFICATION_STYLE,
+  QuestionOrGroupLink,
+} from 'web/components/notifications/notification-helpers'
+import { NotificationItem } from 'web/components/notifications/notification-types'
+import { PushNotificationsModal } from 'web/components/push-notifications-modal'
+import { SEO } from 'web/components/SEO'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Pagination } from 'web/components/widgets/pagination'
+import { Title } from 'web/components/widgets/title'
 import {
   NotificationGroup,
   useGroupedNotifications,
 } from 'web/hooks/use-notifications'
-import { TrendingUpIcon } from '@heroicons/react/outline'
-import { formatMoney } from 'common/util/format'
-import { groupPath } from 'web/lib/firebase/groups'
-import {
-  BETTING_STREAK_BONUS_AMOUNT,
-  BETTING_STREAK_BONUS_MAX,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
-import { groupBy, sum, uniqBy } from 'lodash'
-import { Pagination } from 'web/components/widgets/pagination'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { NotificationSettings } from 'web/components/notification-settings'
-import { SEO } from 'web/components/SEO'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { UserLink } from 'web/components/widgets/user-link'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import {
-  MultiUserLinkInfo,
-  MultiUserTransactionLink,
-} from 'web/components/multi-user-transaction-link'
-import { Col } from 'web/components/layout/col'
-import { track } from 'web/lib/service/analytics'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { PushNotificationsModal } from 'web/components/push-notifications-modal'
-import {
-  getSourceIdForLinkComponent,
-  getSourceUrl,
-} from 'web/lib/firebase/notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-
-export const NOTIFICATIONS_PER_PAGE = 30
-const HIGHLIGHT_CLASS = 'bg-indigo-50'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { usePrivateUser } from 'web/hooks/use-user'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
@@ -86,7 +60,7 @@ export default function Notifications() {
         <SEO title="Notifications" description="Manifold user notifications" />
 
         {privateUser && router.isReady && (
-          <div>
+          <div className="relative">
             <ControlledTabs
               currentPageForAnalytics={'notifications'}
               labelClassName={'pb-2 pt-1 '}
@@ -133,25 +107,34 @@ function RenderNotificationGroups(props: {
   notificationGroups: NotificationGroup[]
 }) {
   const { notificationGroups } = props
+  const grayLine = <hr className="mx-auto w-[calc(100%-1rem)] bg-gray-400" />
   return (
     <>
       {notificationGroups.map((notification) =>
         notification.type === 'income' ? (
-          <IncomeNotificationGroupItem
-            notificationGroup={notification}
-            key={notification.groupedById + notification.timePeriod}
-          />
+          <>
+            <IncomeNotificationGroupItem
+              notificationGroup={notification}
+              key={notification.groupedById + notification.timePeriod}
+            />
+            {grayLine}
+          </>
         ) : notification.notifications.length === 1 ? (
-          <NotificationItem
-            notification={notification.notifications[0]}
-            key={notification.notifications[0].id}
-            justSummary={false}
-          />
+          <>
+            <NotificationItem
+              notification={notification.notifications[0]}
+              key={notification.notifications[0].id}
+            />
+            {grayLine}
+          </>
         ) : (
-          <NotificationGroupItem
-            notificationGroup={notification}
-            key={notification.groupedById + notification.timePeriod}
-          />
+          <>
+            <NotificationGroupItem
+              notificationGroup={notification}
+              key={notification.groupedById + notification.timePeriod}
+            />
+            {grayLine}
+          </>
         )
       )}
     </>
@@ -162,8 +145,6 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
 
   const [page, setPage] = useState(0)
-  const [showPushNotificationsModal, setShowPushNotificationsModal] =
-    useState(false)
 
   const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
@@ -178,20 +159,20 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 
   // Mark all notifications as seen.
   useEffect(() => {
-    if (isPageVisible && paginatedGroupedNotifications) {
-      const notifications = paginatedGroupedNotifications
+    if (isPageVisible && allGroupedNotifications) {
+      const notifications = allGroupedNotifications
         .flat()
         .flatMap((g) => g.notifications)
 
       markNotificationsAsSeen(notifications)
     }
-  }, [isPageVisible, paginatedGroupedNotifications])
+  }, [isPageVisible, allGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
 
   return (
-    <div className={'min-h-[100vh] text-sm'}>
+    <Col className={'min-h-[100vh] gap-0 text-sm'}>
       {paginatedGroupedNotifications.length === 0 && (
         <div className={'mt-2'}>
           You don't have any notifications. Try changing your settings to see
@@ -199,10 +180,8 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
         </div>
       )}
       <PushNotificationsModal
-        isOpen={showPushNotificationsModal}
-        setOpen={setShowPushNotificationsModal}
         privateUser={privateUser}
-        notifications={
+        totalNotifications={
           allGroupedNotifications.map((ng) => ng.notifications).flat().length
         }
       />
@@ -220,358 +199,7 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
             scrollToTop
           />
         )}
-    </div>
-  )
-}
-
-function IncomeNotificationGroupItem(props: {
-  notificationGroup: NotificationGroup
-  className?: string
-}) {
-  const { notificationGroup, className } = props
-  const { notifications } = notificationGroup
-  const numSummaryLines = 3
-  const [expanded, setExpanded] = useState(
-    notifications.length <= numSummaryLines
-  )
-  const [highlighted, setHighlighted] = useState(
-    notifications.some((n) => !n.isSeen)
-  )
-
-  const onClickHandler = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.ctrlKey || event.metaKey) return
-    setExpanded(!expanded)
-  }
-
-  useEffect(() => {
-    if (expanded) setHighlighted(false)
-  }, [expanded])
-
-  const totalIncome = sum(
-    notifications.map((notification) =>
-      notification.sourceText ? parseInt(notification.sourceText) : 0
-    )
-  )
-  // Loop through the contracts and combine the notification items into one
-  function combineNotificationsByAddingNumericSourceTexts(
-    notifications: Notification[]
-  ) {
-    const newNotifications: Notification[] = []
-    const groupedNotificationsBySourceType = groupBy(
-      notifications,
-      (n) => n.sourceType
-    )
-    for (const sourceType in groupedNotificationsBySourceType) {
-      // Source title splits by contracts, groups, betting streak bonus
-      const groupedNotificationsBySourceTitle = groupBy(
-        groupedNotificationsBySourceType[sourceType],
-        (notification) => {
-          return notification.sourceTitle ?? notification.sourceContractTitle
-        }
-      )
-      for (const sourceTitle in groupedNotificationsBySourceTitle) {
-        const notificationsForSourceTitle =
-          groupedNotificationsBySourceTitle[sourceTitle]
-
-        let sum = 0
-        notificationsForSourceTitle.forEach(
-          (notification) =>
-            (sum = parseInt(notification.sourceText ?? '0') + sum)
-        )
-        const uniqueUsers = uniqBy(
-          notificationsForSourceTitle.map((notification) => {
-            let thisSum = 0
-            notificationsForSourceTitle
-              .filter(
-                (n) => n.sourceUserUsername === notification.sourceUserUsername
-              )
-              .forEach(
-                (n) => (thisSum = parseInt(n.sourceText ?? '0') + thisSum)
-              )
-            return {
-              username: notification.sourceUserUsername,
-              name: notification.sourceUserName,
-              avatarUrl: notification.sourceUserAvatarUrl,
-              amount: thisSum,
-            } as MultiUserLinkInfo
-          }),
-          (n) => n.username
-        )
-
-        const newNotification = {
-          ...notificationsForSourceTitle[0],
-          sourceText: sum.toString(),
-          sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-          data: { uniqueUsers },
-        }
-        newNotifications.push(newNotification)
-      }
-    }
-    return newNotifications
-  }
-  const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
-    notifications.filter((n) => n.sourceType !== 'betting_streak_bonus')
-  )
-  // Because the server's reset time will never align with the client's, we may
-  // erroneously sum 2 betting streak bonuses, therefore just show the most recent
-  const mostRecentBettingStreakBonus = notifications
-    .filter((n) => n.sourceType === 'betting_streak_bonus')
-    .sort((a, b) => a.createdTime - b.createdTime)
-    .pop()
-  if (mostRecentBettingStreakBonus)
-    combinedNotifs.unshift(mostRecentBettingStreakBonus)
-
-  return (
-    <div
-      className={clsx(
-        'relative cursor-pointer bg-white px-2 pt-6 text-sm',
-        className,
-        !expanded ? 'hover:bg-gray-100' : '',
-        highlighted && !expanded ? HIGHLIGHT_CLASS : ''
-      )}
-      onClick={onClickHandler}
-    >
-      {expanded && (
-        <span
-          className="absolute top-14 left-6 -ml-px h-[calc(100%-5rem)] w-0.5 bg-gray-200"
-          aria-hidden="true"
-        />
-      )}
-      <Row className={'items-center text-gray-500 sm:justify-start'}>
-        <TrendingUpIcon
-          className={'ml-1 h-7 w-7 flex-shrink-0 text-teal-500 sm:ml-2'}
-        />
-        <div
-          className={'ml-2 flex w-full flex-row flex-wrap truncate'}
-          onClick={onClickHandler}
-        >
-          <div className={'flex w-full flex-row justify-between'}>
-            <div>
-              {'Daily Income Summary: '}
-              <span className={'text-teal-500'}>
-                {'+' + formatMoney(totalIncome)}
-              </span>
-            </div>
-            <div className={'inline-block'}>
-              <RelativeTimestamp time={notifications[0].createdTime} />
-            </div>
-          </div>
-        </div>
-      </Row>
-      <div>
-        <div className={clsx('mt-1 md:text-base', expanded ? 'pl-4' : '')}>
-          {' '}
-          <div
-            className={clsx(
-              'mt-1 ml-1 gap-1 whitespace-pre-line',
-              !expanded ? 'line-clamp-4' : ''
-            )}
-          >
-            {!expanded ? (
-              <>
-                {combinedNotifs
-                  .slice(0, numSummaryLines)
-                  .map((notification) => (
-                    <IncomeNotificationItem
-                      notification={notification}
-                      justSummary={true}
-                      key={notification.id}
-                    />
-                  ))}
-                <div className={'text-sm text-gray-500 hover:underline '}>
-                  {combinedNotifs.length - numSummaryLines > 0
-                    ? 'And ' +
-                      (combinedNotifs.length - numSummaryLines) +
-                      ' more...'
-                    : ''}
-                </div>
-              </>
-            ) : (
-              <>
-                {combinedNotifs.map((notification) => (
-                  <IncomeNotificationItem
-                    notification={notification}
-                    key={notification.id}
-                    justSummary={false}
-                  />
-                ))}
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className={'mt-6 border-b border-gray-300'} />
-      </div>
-    </div>
-  )
-}
-
-function IncomeNotificationItem(props: {
-  notification: Notification
-  justSummary?: boolean
-}) {
-  const { notification, justSummary } = props
-  const { sourceType, sourceUserUsername, sourceText, data } = notification
-  const [highlighted] = useState(!notification.isSeen)
-  const isMobile = useIsMobile(768)
-  const user = useUser()
-  const isTip = sourceType === 'tip' || sourceType === 'tip_and_like'
-  const isUniqueBettorBonus = sourceType === 'bonus'
-  const userLinks: MultiUserLinkInfo[] =
-    isTip || isUniqueBettorBonus ? data?.uniqueUsers ?? [] : []
-
-  function reasonAndLink(simple: boolean) {
-    const { sourceText } = notification
-    let reasonText = ''
-
-    if (sourceType === 'bonus' && sourceText) {
-      reasonText = !simple
-        ? `Bonus for ${
-            parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-          } new traders on`
-        : 'bonus on'
-    } else if (sourceType === 'tip') {
-      reasonText = !simple ? `tipped you on` : `in tips on`
-    } else if (sourceType === 'betting_streak_bonus') {
-      if (sourceText && +sourceText === BETTING_STREAK_BONUS_MAX)
-        reasonText = '(max) for your'
-      else reasonText = 'for your'
-    } else if (sourceType === 'loan' && sourceText) {
-      reasonText = `of your invested predictions returned as a`
-      // TODO: support just 'like' notification without a tip
-    } else if (sourceType === 'tip_and_like' && sourceText) {
-      reasonText = !simple ? `liked` : `in likes on`
-    }
-
-    const streakInDays = notification.data?.streak
-      ? notification.data?.streak
-      : Date.now() - notification.createdTime > 24 * 60 * 60 * 1000
-      ? parseInt(sourceText ?? '0') / BETTING_STREAK_BONUS_AMOUNT
-      : user?.currentBettingStreak ?? 0
-    const bettingStreakText =
-      sourceType === 'betting_streak_bonus' &&
-      (sourceText
-        ? `🔥 ${streakInDays} day Prediction Streak`
-        : 'Prediction Streak')
-
-    return (
-      <>
-        {reasonText}
-        {sourceType === 'loan' ? (
-          simple ? (
-            <span className={'ml-1 font-bold'}>🏦 Loan</span>
-          ) : (
-            <SiteLink
-              className={'relative ml-1 font-bold'}
-              href={`/${sourceUserUsername}/?show=loans`}
-            >
-              🏦 Loan <span className="font-normal">(learn more)</span>
-            </SiteLink>
-          )
-        ) : sourceType === 'betting_streak_bonus' ? (
-          simple ? (
-            <span className={'ml-1 font-bold'}>{bettingStreakText}</span>
-          ) : (
-            <SiteLink
-              className={'relative ml-1 font-bold'}
-              href={`/${sourceUserUsername}/?show=betting-streak`}
-            >
-              {bettingStreakText}
-            </SiteLink>
-          )
-        ) : (
-          <QuestionOrGroupLink
-            notification={notification}
-            ignoreClick={isMobile}
-          />
-        )}
-      </>
-    )
-  }
-
-  const incomeNotificationLabel = () => {
-    return sourceText ? (
-      <span className="text-teal-500">
-        {'+' + formatMoney(parseInt(sourceText))}
-      </span>
-    ) : (
-      <div />
-    )
-  }
-
-  const getIncomeSourceUrl = () => {
-    const {
-      sourceId,
-      sourceContractCreatorUsername,
-      sourceContractSlug,
-      sourceSlug,
-    } = notification
-    if (sourceType === 'tip' && sourceContractSlug)
-      return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
-    if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
-    if (sourceType === 'challenge') return `${sourceSlug}`
-    if (sourceType === 'betting_streak_bonus')
-      return `/${sourceUserUsername}/?show=betting-streak`
-    if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loans`
-    if (sourceContractCreatorUsername && sourceContractSlug)
-      return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
-        sourceId ?? '',
-        sourceType
-      )}`
-  }
-
-  if (justSummary) {
-    return (
-      <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
-        <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
-          <div className={'flex pl-1 sm:pl-0'}>
-            <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-              <div className={'mr-1 text-black'}>
-                {incomeNotificationLabel()}
-              </div>
-              <span className={'flex truncate'}>{reasonAndLink(true)}</span>
-            </div>
-          </div>
-        </div>
-      </Row>
-    )
-  }
-
-  return (
-    <div
-      className={clsx(
-        'bg-white px-2 pt-6 text-sm sm:px-4',
-        highlighted && HIGHLIGHT_CLASS
-      )}
-    >
-      <div className={'relative'}>
-        <SiteLink
-          href={getIncomeSourceUrl() ?? ''}
-          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
-        />
-        <Col className={'justify-start text-gray-500'}>
-          {(isTip || isUniqueBettorBonus) && (
-            <MultiUserTransactionLink
-              userInfos={userLinks}
-              modalLabel={isTip ? 'Who tipped you' : 'Unique traders'}
-            />
-          )}
-          <Row className={'line-clamp-2 flex max-w-xl'}>
-            <span>{incomeNotificationLabel()}</span>
-            <span className={'mx-1'}>
-              {isTip &&
-                (userLinks.length > 1
-                  ? 'Multiple users'
-                  : userLinks.length > 0
-                  ? userLinks[0].name
-                  : '')}
-            </span>
-            <span>{reasonAndLink(false)}</span>
-          </Row>
-        </Col>
-        <div className={'border-b border-gray-300 pt-4'} />
-      </div>
-    </div>
+    </Col>
   )
 }
 
@@ -579,716 +207,121 @@ function NotificationGroupItem(props: {
   notificationGroup: NotificationGroup
   className?: string
 }) {
-  const { notificationGroup, className } = props
+  const { notificationGroup } = props
   const { notifications } = notificationGroup
   const { sourceContractTitle } = notifications[0]
-  const isMobile = useIsMobile(768)
-  const numSummaryLines = 3
-
-  const [expanded, setExpanded] = useState(
-    notifications.length <= numSummaryLines
-  )
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )
+  const header = (
+    <ParentNotificationHeader
+      header={
+        sourceContractTitle ? (
+          <>
+            Activity on{' '}
+            <QuestionOrGroupLink
+              notification={notifications[0]}
+              truncatedLength={'xl'}
+            />
+          </>
+        ) : (
+          <span>Other Activity</span>
+        )
+      }
+      highlighted={highlighted}
+    />
+  )
 
-  const onClickHandler = (event: React.MouseEvent<HTMLDivElement>) => {
+  return (
+    <NotificationGroupItemComponent
+      notifications={notifications}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      header={header}
+    />
+  )
+}
+
+export function NotificationGroupItemComponent(props: {
+  notifications: Notification[]
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  header: ReactNode
+  isIncomeNotification?: boolean
+  className?: string
+}) {
+  const {
+    notifications,
+    className,
+    setHighlighted,
+    header,
+    isIncomeNotification,
+  } = props
+
+  const needsExpanding = notifications.length > NUM_SUMMARY_LINES
+  const [expanded, setExpanded] = useState(
+    notifications.length <= NUM_SUMMARY_LINES
+  )
+  const onExpandHandler = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.ctrlKey || event.metaKey) return
     setExpanded(!expanded)
   }
 
   useEffect(() => {
     if (expanded) setHighlighted(false)
-  }, [expanded])
+  }, [expanded, setHighlighted])
 
   return (
-    <div
-      className={clsx(
-        'relative cursor-pointer bg-white px-2 pt-6 text-sm',
-        className,
-        !expanded ? 'hover:bg-gray-100' : '',
-        highlighted && !expanded ? HIGHLIGHT_CLASS : ''
-      )}
-      onClick={onClickHandler}
-    >
-      {expanded && (
-        <span
-          className="absolute top-14 left-6 -ml-px h-[calc(100%-5rem)] w-0.5 bg-gray-200"
-          aria-hidden="true"
-        />
-      )}
-      <Row className={'items-center text-gray-500 sm:justify-start'}>
-        <EmptyAvatar multi />
-        <div
-          className={'line-clamp-2 flex w-full flex-row flex-wrap pl-1 sm:pl-0'}
-        >
-          {sourceContractTitle ? (
-            <div className={'flex w-full flex-row justify-between'}>
-              <div className={'ml-2'}>
-                Activity on
-                <QuestionOrGroupLink
-                  notification={notifications[0]}
-                  ignoreClick={!expanded && isMobile}
-                />
-              </div>
-              <div className={'hidden sm:inline-block'}>
-                <RelativeTimestamp time={notifications[0].createdTime} />
-              </div>
-            </div>
-          ) : (
-            <span>
-              Other activity
-              <RelativeTimestamp time={notifications[0].createdTime} />
-            </span>
-          )}
-        </div>
-      </Row>
-      <div>
-        <div className={clsx('mt-1 md:text-base', expanded ? 'pl-4' : '')}>
-          {' '}
-          <div
+    <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
+      {header}
+      <div className={clsx(' whitespace-pre-line')}>
+        {notifications
+          .slice(
+            0,
+            needsExpanding
+              ? expanded
+                ? notifications.length
+                : NUM_SUMMARY_LINES
+              : notifications.length
+          )
+          .map((notification) => {
+            return (
+              <NotificationItem
+                notification={notification}
+                key={notification.id}
+                isChildOfGroup={true}
+                isIncomeNotification={isIncomeNotification}
+              />
+            )
+          })}
+        {needsExpanding && (
+          <Row
             className={clsx(
-              'mt-1 ml-1 gap-1 whitespace-pre-line',
-              !expanded ? 'line-clamp-4' : ''
+              'text my-1 w-full items-center justify-end gap-1 text-indigo-700'
             )}
+            onClick={onExpandHandler}
           >
-            {' '}
-            {!expanded ? (
+            {!expanded && (
               <>
-                {notifications.slice(0, numSummaryLines).map((notification) => {
-                  return (
-                    <NotificationItem
-                      notification={notification}
-                      justSummary={true}
-                      key={notification.id}
-                    />
-                  )
-                })}
-                <div className={'text-sm text-gray-500 hover:underline '}>
-                  {notifications.length - numSummaryLines > 0
-                    ? 'And ' +
-                      (notifications.length - numSummaryLines) +
-                      ' more...'
+                <div>
+                  {notifications.length - NUM_SUMMARY_LINES > 0
+                    ? 'See ' +
+                      (notifications.length - NUM_SUMMARY_LINES) +
+                      ' more'
                     : ''}
                 </div>
+                <ChevronDoubleDownIcon className="h-4 w-4" />
               </>
-            ) : (
+            )}
+            {expanded && (
               <>
-                {notifications.map((notification) => (
-                  <NotificationItem
-                    notification={notification}
-                    key={notification.id}
-                    justSummary={false}
-                    isChildOfGroup={true}
-                  />
-                ))}
+                <div>See Less</div>
+                <ChevronDoubleUpIcon className="h-4 w-4" />
               </>
             )}
-          </div>
-        </div>
-
-        <div className={'mt-6 border-b border-gray-300'} />
+          </Row>
+        )}
       </div>
     </div>
   )
-}
-
-function NotificationItem(props: {
-  notification: Notification
-  justSummary: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, justSummary, isChildOfGroup } = props
-  const { sourceType, reason, sourceUpdateType } = notification
-
-  const [highlighted] = useState(!notification.isSeen)
-
-  // TODO Any new notification should be its own component
-  if (reason === 'bet_fill') {
-    return (
-      <BetFillNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        justSummary={justSummary}
-      />
-    )
-  } else if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
-    return (
-      <ContractResolvedNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        justSummary={justSummary}
-      />
-    )
-  } else if (sourceType === 'badge') {
-    return (
-      <BadgeNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        justSummary={justSummary}
-      />
-    )
-  } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
-    return (
-      <MarketClosedNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        justSummary={justSummary}
-      />
-    )
-  }
-  // TODO Add new notification components here
-
-  if (justSummary) {
-    return (
-      <NotificationSummaryFrame
-        notification={notification}
-        subtitle={
-          (sourceType &&
-            reason &&
-            getReasonForShowingNotification(notification, true)) ??
-          ''
-        }
-      >
-        <NotificationTextLabel
-          className={'line-clamp-1'}
-          notification={notification}
-          justSummary={true}
-        />
-      </NotificationSummaryFrame>
-    )
-  }
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      subtitle={getReasonForShowingNotification(
-        notification,
-        isChildOfGroup ?? false
-      )}
-      highlighted={highlighted}
-      isChildOfGroup={isChildOfGroup}
-    >
-      <div className={'mt-1 ml-1 md:text-base'}>
-        <NotificationTextLabel notification={notification} />
-      </div>
-    </NotificationFrame>
-  )
-}
-
-function NotificationSummaryFrame(props: {
-  notification: Notification
-  subtitle: string
-  children: React.ReactNode
-}) {
-  const { notification, subtitle, children } = props
-  const { sourceUserName, sourceUserUsername } = notification
-  return (
-    <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
-      <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
-        <div className={'flex pl-1 sm:pl-0'}>
-          <UserLink
-            name={sourceUserName || ''}
-            username={sourceUserUsername || ''}
-            className={'mr-0 flex-shrink-0'}
-            short={true}
-          />
-          <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-            <span className={'flex-shrink-0'}>{subtitle}</span>
-            <div className={'line-clamp-1 ml-1 text-black'}>{children}</div>
-          </div>
-        </div>
-      </div>
-    </Row>
-  )
-}
-
-function NotificationFrame(props: {
-  notification: Notification
-  highlighted: boolean
-  subtitle: string
-  children: React.ReactNode
-  isChildOfGroup?: boolean
-  hideUserName?: boolean
-  hideLinkToGroupOrQuestion?: boolean
-}) {
-  const {
-    notification,
-    isChildOfGroup,
-    highlighted,
-    subtitle,
-    children,
-    hideUserName,
-    hideLinkToGroupOrQuestion,
-  } = props
-  const {
-    sourceType,
-    sourceUserName,
-    sourceUserAvatarUrl,
-    sourceUpdateType,
-    reason,
-    reasonText,
-    sourceUserUsername,
-    sourceText,
-  } = notification
-
-  const isMobile = useIsMobile(600)
-  return (
-    <div
-      className={clsx(
-        'bg-white px-2 pt-6 text-sm sm:px-4',
-        highlighted && HIGHLIGHT_CLASS
-      )}
-    >
-      <div className={'relative cursor-pointer'}>
-        <SiteLink
-          href={getSourceUrl(notification)}
-          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
-          onClick={() =>
-            track('Notification Clicked', {
-              type: 'notification item',
-              sourceType,
-              sourceUserName,
-              sourceUserAvatarUrl,
-              sourceUpdateType,
-              reasonText,
-              reason,
-              sourceUserUsername,
-              sourceText,
-            })
-          }
-        />
-        <Row className={'items-center text-gray-500 sm:justify-start'}>
-          <Avatar
-            avatarUrl={sourceUserAvatarUrl}
-            size={'sm'}
-            className={'z-10 mr-2'}
-            username={sourceUserUsername}
-          />
-          <div className={'flex w-full flex-row pl-1 sm:pl-0'}>
-            <div
-              className={
-                'line-clamp-2 sm:line-clamp-none flex w-full flex-row justify-between'
-              }
-            >
-              <div>
-                {!hideUserName && (
-                  <UserLink
-                    name={sourceUserName || ''}
-                    username={sourceUserUsername || ''}
-                    className={'relative mr-1 flex-shrink-0'}
-                    short={isMobile}
-                  />
-                )}
-                {subtitle}
-                {isChildOfGroup ? (
-                  <RelativeTimestamp time={notification.createdTime} />
-                ) : (
-                  !hideLinkToGroupOrQuestion && (
-                    <QuestionOrGroupLink notification={notification} />
-                  )
-                )}
-              </div>
-            </div>
-            {!isChildOfGroup && (
-              <div className={'hidden sm:inline-block'}>
-                <RelativeTimestamp time={notification.createdTime} />
-              </div>
-            )}
-          </div>
-        </Row>
-        <div className={'mt-1 ml-1 md:text-base'}>{children}</div>
-
-        <div className={'mt-6 border-b border-gray-300'} />
-      </div>
-    </div>
-  )
-}
-
-function BetFillNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  justSummary: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, justSummary } = props
-  const { sourceText, data } = notification
-  const { creatorOutcome, probability, limitOrderTotal, limitOrderRemaining } =
-    (data as BetFillData) ?? {}
-  const subtitle = 'bet against you'
-  const amount = formatMoney(parseInt(sourceText ?? '0'))
-  const description =
-    creatorOutcome && probability ? (
-      <span>
-        of your {limitOrderTotal ? formatMoney(limitOrderTotal) : ''}
-        <span
-          className={clsx(
-            'mx-1',
-            creatorOutcome === 'YES'
-              ? 'text-teal-500'
-              : creatorOutcome === 'NO'
-              ? 'text-scarlet-500'
-              : 'text-blue-500'
-          )}
-        >
-          {creatorOutcome}
-        </span>
-        limit order at {Math.round(probability * 100)}% was filled{' '}
-        {limitOrderRemaining
-          ? `(${formatMoney(limitOrderRemaining)} remaining)`
-          : ''}
-      </span>
-    ) : (
-      <span>of your limit order was filled</span>
-    )
-
-  if (justSummary) {
-    return (
-      <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
-        <Row className={'line-clamp-1'}>
-          <span className={'mr-1 text-teal-500'}>{amount}</span>
-          <span>{description}</span>
-        </Row>
-      </NotificationSummaryFrame>
-    )
-  }
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      subtitle={subtitle}
-    >
-      <Row>
-        <span>
-          <span className="mr-1 text-teal-500">{amount}</span>
-          {description}
-        </span>
-      </Row>
-    </NotificationFrame>
-  )
-}
-
-function MarketClosedNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  justSummary: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted } = props
-  notification.sourceUserAvatarUrl = MANIFOLD_AVATAR_URL
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      subtitle={'Please resolve'}
-      hideUserName={true}
-    >
-      <Row>
-        <span>
-          {`Your market has closed. Please resolve it to pay out ${PAST_BETS}.`}
-        </span>
-      </Row>
-    </NotificationFrame>
-  )
-}
-
-function BadgeNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  justSummary: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, justSummary } = props
-  const { sourceText } = notification
-  const subtitle = 'You earned a new badge!'
-  notification.sourceUserAvatarUrl = '/award.svg'
-  if (justSummary) {
-    return (
-      <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
-        <Row className={'line-clamp-1'}>
-          <span>{sourceText} 🎉</span>
-        </Row>
-      </NotificationSummaryFrame>
-    )
-  }
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      subtitle={subtitle}
-      hideUserName={true}
-      hideLinkToGroupOrQuestion={true}
-    >
-      <Row>
-        <span>{sourceText} 🎉</span>
-      </Row>
-    </NotificationFrame>
-  )
-}
-
-function ContractResolvedNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  justSummary: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, justSummary } = props
-  const { sourceText, data } = notification
-  const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
-  const subtitle = 'resolved the market'
-  const profitable = userPayout >= userInvestment
-  const ROI = (userPayout - userInvestment) / userInvestment
-
-  const resolutionDescription = () => {
-    if (!sourceText) return <div />
-
-    if (sourceText === 'YES' || sourceText == 'NO') {
-      return <BinaryOutcomeLabel outcome={sourceText as any} />
-    }
-
-    if (sourceText.includes('%'))
-      return (
-        <ProbPercentLabel
-          prob={parseFloat(sourceText.replace('%', '')) / 100}
-        />
-      )
-    if (sourceText === 'CANCEL') return <CancelLabel />
-    if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
-
-    // Numeric markets
-    const isNumberWithCommaOrPeriod = /^[0-9,.]*$/.test(sourceText)
-    if (isNumberWithCommaOrPeriod)
-      return <NumericValueLabel value={parseFloat(sourceText)} />
-
-    // Free response market
-    return (
-      <span
-        className={
-          'inline-block max-w-[200px] truncate align-bottom text-blue-400'
-        }
-      >
-        {sourceText}
-      </span>
-    )
-  }
-
-  const description =
-    userInvestment && userPayout !== undefined ? (
-      <>
-        Resolved: {resolutionDescription()} Invested:
-        <span className={'text-teal-500'}>{formatMoney(userInvestment)} </span>
-        Payout:
-        <span
-          className={clsx(
-            profitable ? 'text-teal-500' : 'text-scarlet-500',
-            'truncate text-ellipsis'
-          )}
-        >
-          {formatMoney(userPayout)}
-          {userPayout > 0 &&
-            ` (${profitable ? '+' : ''}${Math.round(ROI * 100)}%)`}
-        </span>
-      </>
-    ) : (
-      <span>Resolved {resolutionDescription()}</span>
-    )
-
-  if (justSummary) {
-    return (
-      <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
-        <Row className={'line-clamp-1'}>{description}</Row>
-      </NotificationSummaryFrame>
-    )
-  }
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      subtitle={subtitle}
-    >
-      <Row className={'line-clamp-2 space-x-1'}>{description}</Row>
-    </NotificationFrame>
-  )
-}
-
-const markNotificationsAsSeen = async (notifications: Notification[]) => {
-  const unseenNotifications = notifications.filter((n) => !n.isSeen)
-  return await Promise.all(
-    unseenNotifications.map((n) => {
-      const notificationDoc = doc(db, `users/${n.userId}/notifications/`, n.id)
-      return updateDoc(notificationDoc, { isSeen: true, viewTime: new Date() })
-    })
-  )
-}
-
-function QuestionOrGroupLink(props: {
-  notification: Notification
-  ignoreClick?: boolean
-}) {
-  const { notification, ignoreClick } = props
-  const {
-    sourceType,
-    sourceContractTitle,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
-    sourceSlug,
-    sourceTitle,
-  } = notification
-
-  if (ignoreClick)
-    return (
-      <span className={'ml-1 font-bold '}>
-        {sourceContractTitle || sourceTitle}
-      </span>
-    )
-  return (
-    <SiteLink
-      className={'relative ml-1 font-bold'}
-      href={
-        sourceContractCreatorUsername
-          ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-          : // User's added to group or received a tip there
-          (sourceType === 'group' || sourceType === 'tip') && sourceSlug
-          ? `${groupPath(sourceSlug)}`
-          : // User referral via group
-          sourceSlug?.includes('/group/')
-          ? `${sourceSlug}`
-          : ''
-      }
-      onClick={() =>
-        track('Notification Clicked', {
-          type: 'question title',
-          sourceType,
-          sourceContractTitle,
-          sourceContractCreatorUsername,
-          sourceContractSlug,
-          sourceSlug,
-          sourceTitle,
-        })
-      }
-    >
-      {sourceContractTitle || sourceTitle}
-    </SiteLink>
-  )
-}
-
-function NotificationTextLabel(props: {
-  notification: Notification
-  className?: string
-  justSummary?: boolean
-}) {
-  const { className, notification, justSummary } = props
-  const { sourceUpdateType, sourceType, sourceText, reasonText } = notification
-  const defaultText = sourceText ?? reasonText ?? ''
-  if (sourceType === 'contract') {
-    if (justSummary || !sourceText) return <div />
-    // Resolved contracts
-
-    // Close date will be a number - it looks better without it
-    if (sourceUpdateType === 'closed') {
-      return <div />
-    }
-    // Updated contracts
-    // Description will be in default text
-    if (parseInt(sourceText) > 0) {
-      return (
-        <span>
-          Updated close time: {new Date(parseInt(sourceText)).toLocaleString()}
-        </span>
-      )
-    }
-  } else if (sourceType === 'user' && sourceText) {
-    return (
-      <span>
-        As a thank you, we sent you{' '}
-        <span className="text-teal-500">
-          {formatMoney(parseInt(sourceText))}
-        </span>
-        !
-      </span>
-    )
-  } else if (sourceType === 'liquidity' && sourceText) {
-    return (
-      <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
-    )
-  } else if (sourceType === 'challenge' && sourceText) {
-    return (
-      <>
-        <span> for </span>
-        <span className="text-teal-500">
-          {formatMoney(parseInt(sourceText))}
-        </span>
-      </>
-    )
-  }
-  return (
-    <div className={className ? className : 'line-clamp-4 whitespace-pre-line'}>
-      <Linkify text={defaultText} />
-    </div>
-  )
-}
-
-function getReasonForShowingNotification(
-  notification: Notification,
-  justSummary: boolean
-) {
-  const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
-  let reasonText: string
-  // TODO: we could leave out this switch and just use the reason field now that they have more information
-  if (reason === 'tagged_user')
-    reasonText = justSummary ? 'tagged you' : 'tagged you on'
-  else
-    switch (sourceType) {
-      case 'comment':
-        if (reason === 'reply_to_users_answer')
-          reasonText = justSummary ? 'replied' : 'replied to you on'
-        else if (reason === 'reply_to_users_comment')
-          reasonText = justSummary ? 'replied' : 'replied to you on'
-        else reasonText = justSummary ? `commented` : `commented on`
-        break
-      case 'contract':
-        if (reason === 'contract_from_followed_user')
-          reasonText = justSummary ? 'asked the question' : 'asked'
-        else if (sourceUpdateType === 'resolved')
-          reasonText = justSummary ? `resolved the question` : `resolved`
-        else reasonText = justSummary ? 'updated the question' : `updated`
-        break
-      case 'answer':
-        if (reason === 'answer_on_your_contract')
-          reasonText = `answered your question `
-        else reasonText = `answered`
-        break
-      case 'follow':
-        reasonText = 'followed you'
-        break
-      case 'liquidity':
-        reasonText = 'added a subsidy to your question'
-        break
-      case 'group':
-        reasonText = 'added you to the group'
-        break
-      case 'user':
-        if (sourceSlug && reason === 'user_joined_to_bet_on_your_market')
-          reasonText = 'joined to bet on your market'
-        else if (sourceSlug) reasonText = 'joined because you shared'
-        else reasonText = 'joined because of you'
-        break
-      case 'challenge':
-        reasonText = 'accepted your challenge'
-        break
-      default:
-        reasonText = ''
-    }
-  return reasonText
 }

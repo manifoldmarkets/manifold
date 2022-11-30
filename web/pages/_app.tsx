@@ -1,13 +1,12 @@
-import 'tailwindcss/tailwind.css'
 import type { AppProps } from 'next/app'
 import { useEffect } from 'react'
 import Head from 'next/head'
-import Script from 'next/script'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import Welcome from 'web/components/onboarding/welcome'
 import { NativeMessageListener } from 'web/components/native-message-listener'
 import { Analytics } from '@vercel/analytics/react'
+import '../styles/globals.css'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -34,15 +33,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
   return (
     <>
-      <Script src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D" />
-      <Script id="google-analytics">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-SSFK1Q138D');
-        `}
-      </Script>
       <Head>
         <title>{'Manifold Markets — A market for every question'}</title>
 
@@ -77,6 +67,8 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           key="image2"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="apple-itunes-app" content="app-id=6444136749" />
+
         <link rel="manifest" href="manifest.json" />
       </Head>
       <AuthProvider serverUser={pageProps.auth}>

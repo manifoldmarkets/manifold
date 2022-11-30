@@ -2,7 +2,6 @@ import { Editor } from '@tiptap/react'
 import { DOMAIN } from 'common/envs/constants'
 import { useState } from 'react'
 import { Button } from '../buttons/button'
-import { RichContent } from '../widgets/editor'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -45,6 +44,12 @@ const embedPatterns: EmbedPattern[] = [
     regex: /^https?:\/\/www\.metaculus\.com\/questions\/(\d+)/,
     rewrite: (id) =>
       `<iframe src="https://www.metaculus.com/questions/embed/${id}"></iframe>`,
+  },
+  // Metaforecast: https://metaforecast.org/questions/kalshi-1ca58f9a-a299-4d69-9984-c11001b130c8
+  {
+    regex: /^https?:\/\/metaforecast\.org\/questions\/([^\/]+)/,
+    rewrite: (id) =>
+      `<iframe src="https://metaforecast.org/questions/embed/${id}"></iframe>`,
   },
   {
     regex: /^(https?:\/\/www\.figma\.com\/(?:file|proto)\/[^\/]+\/[^\/]+)/,
@@ -114,8 +119,8 @@ export function EmbedModal(props: {
           onChange={(e) => setInput(e.target.value)}
         />
 
-        {/* Preview the embed if it's valid */}
-        {embed ? <RichContent content={embed} /> : <Spacer h={2} />}
+        {/* TODO: preview embed */}
+        <Spacer h={2} />
 
         <Row className="gap-2">
           <Button

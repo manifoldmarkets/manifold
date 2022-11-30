@@ -11,9 +11,10 @@ import {
   mergeAttributes,
   useEditor,
 } from '@tiptap/react'
+import { generateHTML } from '@tiptap/html'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import { ReactNode, useCallback, useEffect } from 'react'
+import { ReactNode, useCallback, useMemo } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention'
 import { DisplayMention } from '../editor/mention'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -67,18 +68,19 @@ export const editorExtensions = (simple = false): Extensions => [
   Iframe,
   TiptapTweet,
   TiptapSpoiler.configure({
-    spoilerOpenClass: 'rounded-sm bg-greyscale-2',
+    spoilerOpenClass: 'rounded-sm bg-gray-200',
   }),
   Upload,
 ]
 
 export const proseClass = (size: 'sm' | 'md' | 'lg') =>
   clsx(
-    'prose prose-ul:my-0 prose-ol:my-0 prose-li:my-0 max-w-none prose-quoteless leading-relaxed',
+    'prose max-w-none leading-relaxed',
     'prose-a:text-indigo-700 prose-a:no-underline',
     size === 'sm' ? 'prose-sm' : 'text-md',
-    size !== 'lg' && 'prose-p:my-0',
-    'text-greyscale-7 prose-blockquote:text-greyscale-6',
+    size !== 'lg' && 'prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0',
+    '[&>p]:prose-li:my-0',
+    'text-gray-900 prose-blockquote:text-gray-600',
     'prose-a:font-light prose-blockquote:font-light font-light'
   )
 
@@ -188,40 +190,47 @@ export function TextEditor(props: {
   )
 }
 
-export function RichContent(props: {
-  content: JSONContent | string
+function RichContent(props: {
+  content: JSONContent
   className?: string
   size?: 'sm' | 'md' | 'lg'
 }) {
   const { className, content, size = 'md' } = props
-  const editor = useEditor({
-    editorProps: { attributes: { class: proseClass(size) } },
-    extensions: [
-      StarterKit,
-      size === 'md' ? DisplayImage : Image,
-      DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
-      DisplayMention,
-      DisplayContractMention,
-      GridComponent,
-      StaticReactEmbedComponent,
-      Iframe,
-      TiptapTweet,
-      TiptapSpoiler.configure({
-        spoilerOpenClass: 'rounded-sm bg-greyscale-2 cursor-text',
-        spoilerCloseClass:
-          'rounded-sm bg-greyscale-6 text-transparent [&_*]:invisible cursor-pointer select-none',
-      }),
-    ],
-    content,
-    editable: false,
-  })
-  useEffect(
-    // Check isDestroyed here so hot reload works, see https://github.com/ueberdosis/tiptap/issues/1451#issuecomment-941988769
-    () => void !editor?.isDestroyed && editor?.commands?.setContent(content),
-    [editor, content]
+
+  const html = useMemo(
+    () =>
+      generateHTML(content, [
+        StarterKit,
+        size === 'sm' ? DisplayImage : Image,
+        DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
+        DisplayMention,
+        DisplayContractMention,
+        GridComponent,
+        StaticReactEmbedComponent,
+        Iframe,
+        TiptapTweet,
+        TiptapSpoiler.configure({
+          // TODO: actually add different class when clicked on instead of using selection
+          spoilerCloseClass:
+            'rounded-sm bg-gray-600 text-transparent [&_strong]:text-transparent [&_a]:text-transparent cursor-pointer select-all selection:text-gray-900 selection:bg-gray-200',
+        }),
+      ]),
+    [content, size]
   )
 
-  return <EditorContent className={className} editor={editor} />
+  // TODO: sanitize
+
+  return (
+    <div className={className}>
+      <div
+        className={clsx(
+          proseClass(size),
+          `empty:prose-p:after:content-["\\00a0"]` // make empty paragraphs have height
+        )}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </div>
+  )
 }
 
 // backwards compatibility: we used to store content as strings
@@ -238,6 +247,6 @@ export function Content(props: {
       text={content}
     />
   ) : (
-    <RichContent {...props} />
+    <RichContent {...(props as any)} />
   )
 }

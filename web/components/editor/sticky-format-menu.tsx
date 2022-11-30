@@ -1,4 +1,4 @@
-import { CloudIcon } from '@heroicons/react/outline'
+import { CloudIcon, EmojiHappyIcon } from '@heroicons/react/outline'
 import {
   CodeIcon,
   PhotographIcon,
@@ -45,6 +45,9 @@ export function StickyFormatMenu(props: {
         />
         <PresentationChartLineIcon className="h-5 w-5" aria-hidden="true" />
       </ToolbarButton>
+      <ToolbarButton label="Add emoji" onClick={() => insertEmoji(editor)}>
+        <EmojiHappyIcon className="h-5 w-5" />
+      </ToolbarButton>
 
       <div className="grow" />
       {children}
@@ -59,7 +62,7 @@ function UploadButton(props: { upload: UploadMutation }) {
     <Tooltip text="Upload image" noTap noFade>
       <FileUploadButton
         onFiles={(files) => upload?.mutate(files)}
-        className="active:bg-greyscale-3 hover:text-greyscale-6 relative flex h-full w-12 items-center justify-center text-gray-400 transition-colors"
+        className="relative flex h-full w-12 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300"
       >
         <PhotographIcon className="h-5 w-5" aria-hidden="true" />
         {upload?.isLoading && (
@@ -85,10 +88,25 @@ function ToolbarButton(props: {
       <button
         type="button"
         onClick={onClick}
-        className="active:bg-greyscale-3 hover:text-greyscale-6 flex h-full w-12 items-center justify-center text-gray-400 transition-colors"
+        className="flex h-full w-12 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300"
       >
         {children}
       </button>
     </Tooltip>
   )
+}
+
+/** insert a colon, and a space if necessary, to bring up emoji selctor */
+const insertEmoji = (editor: Editor | null) => {
+  if (!editor) return
+
+  const textBefore = editor.view.state.selection.$from.nodeBefore?.text
+  const addSpace = textBefore && !textBefore.endsWith(' ')
+
+  editor
+    .chain()
+    .focus()
+    .createParagraphNear()
+    .insertContent(addSpace ? ' :' : ':')
+    .run()
 }

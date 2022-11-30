@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
@@ -7,16 +7,13 @@ import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
 import { AnyContractType, Contract } from 'common/contract'
-import { PAST_BETS } from 'common/user'
 import { ContractBetsTable } from '../bet/bets-list'
-import { Spacer } from '../layout/spacer'
 import { ControlledTabs } from '../layout/tabs'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
-import { capitalize } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -37,73 +34,232 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
 import { track } from 'web/lib/service/analytics'
+import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
+import { UserLink } from 'web/components/widgets/user-link'
+import { Avatar } from 'web/components/widgets/avatar'
+import clsx from 'clsx'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useFollows } from 'web/hooks/use-follows'
+import { ContractMetric } from 'common/contract-metric'
+import { useContractMetrics } from 'web/hooks/use-contract-metrics'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
   userBets: Bet[]
   comments: ContractComment[]
+  userPositionsByOutcome: ContractMetricsByOutcome
   answerResponse?: Answer | undefined
   onCancelAnswerResponse?: () => void
   blockedUserIds: string[]
   activeIndex: number
   setActiveIndex: (i: number) => void
+  totalBets: number
+  totalPositions: number
 }) {
   const {
     contract,
     bets,
     userBets,
-    comments,
     answerResponse,
     onCancelAnswerResponse,
     blockedUserIds,
     activeIndex,
     setActiveIndex,
+    totalBets,
+    totalPositions,
   } = props
 
-  const yourTrades = (
-    <div>
-      <Spacer h={6} />
-      <ContractBetsTable contract={contract} bets={userBets} isYourBets />
-      <Spacer h={12} />
-    </div>
+  const contractComments = useComments(contract.id) ?? props.comments
+  const comments = useMemo(
+    () =>
+      contractComments.filter(
+        (comment) => !blockedUserIds.includes(comment.userId)
+      ),
+    [contractComments, blockedUserIds]
   )
 
-  const tabs = buildArray(
-    {
-      title: 'Comments',
-      content: (
-        <CommentsTabContent
-          contract={contract}
-          comments={comments}
-          answerResponse={answerResponse}
-          onCancelAnswerResponse={onCancelAnswerResponse}
-          blockedUserIds={blockedUserIds}
-        />
-      ),
-    },
-    bets.length > 0 && {
-      title: capitalize(PAST_BETS),
-      content: <BetsTabContent contract={contract} bets={bets} />,
-    },
-    userBets.length > 0 && {
-      title: 'Your trades',
-      content: yourTrades,
-    }
+  const commentTitle =
+    comments.length === 0 ? 'Comments' : `${comments.length} Comments`
+
+  const betsTitle = totalBets === 0 ? 'Trades' : `${totalBets} Trades`
+
+  const visibleUserBets = userBets.filter(
+    (bet) => bet.amount !== 0 && !bet.isRedemption
   )
+  const yourBetsTitle =
+    visibleUserBets.length === 0 ? 'You' : `${visibleUserBets.length} You`
+
+  const outcomes = ['YES', 'NO']
+  const positions =
+    useContractMetrics(contract.id, 100, outcomes) ??
+    props.userPositionsByOutcome
+  const positionsTitle =
+    totalPositions === 0 ? 'Users' : totalPositions + ' Users'
 
   return (
     <ControlledTabs
       className="mb-4"
       currentPageForAnalytics={'contract'}
-      tabs={tabs}
       activeIndex={activeIndex}
-      onClick={(title, i) => {
+      onClick={(_title, i) => {
         setActiveIndex(i)
       }}
+      tabs={buildArray(
+        {
+          title: commentTitle,
+          content: (
+            <CommentsTabContent
+              contract={contract}
+              comments={comments}
+              answerResponse={answerResponse}
+              onCancelAnswerResponse={onCancelAnswerResponse}
+              blockedUserIds={blockedUserIds}
+            />
+          ),
+        },
+        totalBets > 0 && {
+          title: betsTitle,
+          content: (
+            <Col className={'gap-4'}>
+              <BetsTabContent contract={contract} bets={bets} />
+            </Col>
+          ),
+        },
+
+        totalPositions > 0 &&
+          contract.outcomeType === 'BINARY' && {
+            title: positionsTitle,
+            content: <BinaryUserPositionsTabContent positions={positions} />,
+          },
+        userBets.length > 0 && {
+          title: yourBetsTitle,
+          content: (
+            <ContractBetsTable contract={contract} bets={userBets} isYourBets />
+          ),
+        }
+      )}
     />
   )
 }
+
+const BinaryUserPositionsTabContent = memo(
+  function BinaryUserPositionsTabContent(props: {
+    positions: ContractMetricsByOutcome
+  }) {
+    const { positions } = props
+
+    const [page, setPage] = useState(0)
+    const pageSize = 20
+    const currentUser = useUser()
+    const followedUsers = useFollows(currentUser?.id)
+    const yesPositionsSorted = positions.YES ?? []
+    const noPositionsSorted = positions.NO ?? []
+
+    const visibleYesPositions = yesPositionsSorted.slice(
+      page * pageSize,
+      (page + 1) * pageSize
+    )
+    const visibleNoPositions = noPositionsSorted.slice(
+      page * pageSize,
+      (page + 1) * pageSize
+    )
+    const largestColumnLength =
+      yesPositionsSorted.length > noPositionsSorted.length
+        ? yesPositionsSorted.length
+        : noPositionsSorted.length
+
+    const PositionRow = memo(function PositionRow(props: {
+      position: ContractMetric
+      outcome: 'YES' | 'NO'
+    }) {
+      const { position, outcome } = props
+      const { totalShares, userName, userUsername, userAvatarUrl } = position
+      const shares = totalShares[outcome] ?? 0
+      const isMobile = useIsMobile(800)
+
+      return (
+        <Row
+          className={clsx(
+            'items-center justify-between gap-2 rounded-sm border-b p-2',
+            currentUser?.id === position.userId && 'bg-amber-100',
+            followedUsers?.includes(position.userId) && 'bg-blue-50'
+          )}
+        >
+          <Row
+            className={clsx(
+              'max-w-[7rem] shrink items-center gap-2 sm:max-w-none'
+            )}
+          >
+            <Avatar
+              size={'sm'}
+              avatarUrl={userAvatarUrl}
+              username={userUsername}
+            />
+            {userName && userUsername ? (
+              <UserLink
+                short={isMobile}
+                name={userName}
+                username={userUsername}
+              />
+            ) : (
+              <span>Loading..</span>
+            )}
+          </Row>
+          <span
+            className={clsx(
+              outcome === 'YES' ? 'text-teal-500' : 'text-red-700',
+              'shrink-0'
+            )}
+          >
+            {Math.round(shares)}
+          </span>
+        </Row>
+      )
+    })
+
+    return (
+      <Col className={'w-full '}>
+        <Row className={'gap-8'}>
+          <Col className={'w-full max-w-sm gap-2'}>
+            <Row className={'justify-end px-2 text-gray-500'}>
+              <span>YES shares</span>
+            </Row>
+            {visibleYesPositions.map((position) => {
+              return (
+                <PositionRow
+                  key={position.userId + '-YES'}
+                  outcome={'YES'}
+                  position={position}
+                />
+              )
+            })}
+          </Col>
+          <Col className={'w-full max-w-sm gap-2'}>
+            <Row className={'justify-end px-2 text-gray-500'}>
+              <span>NO shares</span>
+            </Row>
+            {visibleNoPositions.map((position) => {
+              return (
+                <PositionRow
+                  key={position.userId + '-NO'}
+                  position={position}
+                  outcome={'NO'}
+                />
+              )
+            })}
+          </Col>
+        </Row>
+        <Pagination
+          page={page}
+          itemsPerPage={pageSize}
+          totalItems={largestColumnLength}
+          setPage={setPage}
+        />
+      </Col>
+    )
+  }
+)
 
 const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
@@ -229,7 +385,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const items = [
     ...visibleBets.map((bet) => ({
       type: 'bet' as const,
-      id: bet.id + '-' + bet.isSold,
+      id: bet.id + '-' + (bet.isSold ? 'sold' : 'unsold'),
       bet,
     })),
     ...visibleLps.map((lp) => ({
@@ -283,8 +439,8 @@ export function SortRow(props: {
     <Row className="mb-4 items-center justify-end gap-4">
       <BountiedContractSmallBadge contract={contract} showAmount />
       <Row className="items-center gap-1">
-        <div className="text-greyscale-4 text-sm">Sort by:</div>
-        <button className="text-greyscale-6 w-20 text-sm" onClick={onSortClick}>
+        <div className="text-sm text-gray-400">Sort by:</div>
+        <button className="w-20 text-sm text-gray-600" onClick={onSortClick}>
           <Tooltip
             text={sort === 'Best' ? 'Highest tips + bounties first.' : ''}
           >

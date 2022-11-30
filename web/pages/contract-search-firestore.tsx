@@ -44,6 +44,7 @@ export default function ContractSearchFirestore(props: {
   } else if (sort === 'resolve-date') {
     matches = sortBy(matches, (contract) => -1 * (contract.resolutionTime ?? 0))
   } else if (sort === 'close-date') {
+    // Use lodash for stable sort, so previous sort breaks all ties.
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
     matches = sortBy(matches, (contract) => contract.closeTime ?? Infinity)
   } else if (sort === 'most-traded') {
@@ -51,8 +52,6 @@ export default function ContractSearchFirestore(props: {
   } else if (sort === 'score') {
     matches.sort((a, b) => (b.popularityScore ?? 0) - (a.popularityScore ?? 0))
   } else if (sort === '24-hour-vol') {
-    // Use lodash for stable sort, so previous sort breaks all ties.
-    matches = sortBy(matches, ({ volume7Days }) => -1 * volume7Days)
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
   }
 

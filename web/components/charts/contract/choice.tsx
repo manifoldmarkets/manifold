@@ -18,6 +18,8 @@ import {
 import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
+import { buy, poolToProbs, shortSell } from 'common/calculate-cpmm-multi'
+import { buildArray } from 'common/util/array'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
@@ -48,7 +50,7 @@ const getAnswers = (contract: ChoiceContract) => {
   )
 }
 
-const getBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
+const getDpmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
   const sharesByOutcome = Object.fromEntries(
@@ -74,6 +76,30 @@ const getBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
   return points
 }
 
+const getCpmmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
+  const sortedBets = sortBy(bets, (b) => b.createdTime)
+  // TODO: Load liquidity provisions to update the pool.
+  let pool = Object.fromEntries(answers.map((a) => [a.id, 100]))
+
+  const points: MultiPoint<Bet>[] = []
+  for (const bet of sortedBets) {
+    const { outcome, amount, sharesByOutcome } = bet
+    const { newPool } = sharesByOutcome
+      ? shortSell(pool, outcome, amount)
+      : buy(pool, outcome, amount)
+    pool = newPool
+    const probs = answers.map((a) => poolToProbs(newPool)[a.id])
+
+    if (topN != null && probs.length > topN) {
+      const y = [...probs.slice(0, topN), sum(probs.slice(topN))]
+      points.push({ x: new Date(bet.createdTime), y, obj: bet })
+    } else {
+      points.push({ x: new Date(bet.createdTime), y: probs, obj: bet })
+    }
+  }
+  return points
+}
+
 type LegendItem = { color: string; label: string; value?: string }
 const Legend = (props: { className?: string; items: LegendItem[] }) => {
   const { items, className } = props
@@ -90,7 +116,7 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
               {item.label}
             </span>
           </Row>
-          <span className="text-greyscale-6">{item.value}</span>
+          <span className="text-gray-600">{item.value}</span>
         </li>
       ))}
     </ol>
@@ -109,12 +135,16 @@ export const ChoiceContractChart = (props: {
   onMouseOver?: (p: MultiPoint<Bet> | undefined) => void
 }) => {
   const { contract, bets, width, height, onMouseOver } = props
+  const isDpm = contract.mechanism === 'dpm-2'
   const [start, end] = getDateRange(contract)
   const answers = useChartAnswers(contract)
   const topN = Math.min(CHOICE_ANSWER_COLORS.length, answers.length)
   const betPoints = useMemo(
-    () => getBetPoints(answers, bets, topN),
-    [answers, bets, topN]
+    () =>
+      isDpm
+        ? getDpmBetPoints(answers, bets, topN)
+        : getCpmmBetPoints(answers, bets, topN),
+    [answers, bets, topN, isDpm]
   )
   const endProbs = useMemo(
     () => answers.map((a) => getOutcomeProbability(contract, a.id)),
@@ -122,8 +152,10 @@ export const ChoiceContractChart = (props: {
   )
 
   const data = useMemo(() => {
-    const yCount = answers.length > topN ? topN + 1 : topN
-    const startY = range(0, yCount).map((_) => 0)
+    const startY = buildArray(
+      range(0, topN).map(() => 1 / answers.length),
+      answers.length > topN ? 1 - topN / answers.length : undefined
+    )
     const endY =
       answers.length > topN
         ? [...endProbs.slice(0, topN), sum(endProbs.slice(topN))]

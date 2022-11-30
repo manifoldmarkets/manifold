@@ -3,7 +3,7 @@ import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 
-export type AnyMechanism = DPM | CPMM
+export type AnyMechanism = DPM | CPMM | CPMM2
 export type AnyOutcomeType =
   | Binary
   | MultipleChoice
@@ -18,6 +18,7 @@ export type AnyContractType =
   | (DPM & FreeResponse)
   | (DPM & Numeric)
   | (DPM & MultipleChoice)
+  | (CPMM2 & MultipleChoice)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -49,7 +50,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   volume: number
   volume24Hours: number
-  volume7Days: number
   elasticity: number
 
   collectedFees: Fees
@@ -70,19 +70,29 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   flaggedByUsernames?: string[]
   openCommentBounties?: number
   unlistedById?: string
+  featuredLabel?: string
+  isTwitchContract?: boolean
 
   coverImageUrl?: string
 } & T
 
+export type DPMContract = Contract & DPM
+export type CPMMContract = Contract & CPMM
+export type CPMM2Contract = Contract & CPMM2
+
 export type BinaryContract = Contract & Binary
+export type DPMBinaryContract = BinaryContract & DPM
+export type CPMMBinaryContract = BinaryContract & CPMM
 export type PseudoNumericContract = Contract & PseudoNumeric
 export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
 export type MultipleChoiceContract = Contract & MultipleChoice
-export type DPMContract = Contract & DPM
-export type CPMMContract = Contract & CPMM
-export type DPMBinaryContract = BinaryContract & DPM
-export type CPMMBinaryContract = BinaryContract & CPMM
+export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
+export type CPMMMultipleChoiceContract = Contract & MultipleChoice & CPMM2
+
+export type BinaryOrPseudoNumericContract =
+  | CPMMBinaryContract
+  | PseudoNumericContract
 
 export type DPM = {
   mechanism: 'dpm-2'
@@ -93,12 +103,19 @@ export type DPM = {
   totalBets: { [outcome: string]: number }
 }
 
+// Simple constant product market maker for a variable number of outcomes.
+export type CPMM2 = {
+  mechanism: 'cpmm-2'
+  pool: { [outcome: string]: number }
+  subsidyPool: number // current value of subsidy pool in M$
+}
+
 export type CPMM = {
   mechanism: 'cpmm-1'
   pool: { [outcome: string]: number }
   p: number // probability constant in y^p * n^(1-p) = k
-  totalLiquidity: number // for historical reasons, this the total subsidy amount added in M$
-  subsidyPool: number // current value of subsidy pool in M$
+  totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
+  subsidyPool: number // current value of subsidy pool in Ṁ
   prob: number
   probChanges: {
     day: number

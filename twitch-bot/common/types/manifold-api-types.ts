@@ -28,7 +28,6 @@ export type LiteMarket = {
   totalLiquidity?: number;
 
   volume: number;
-  volume7Days: number;
   volume24Hours: number;
 
   isResolved: boolean;
@@ -57,13 +56,6 @@ export type LiteUser = {
   totalDeposits: number;
 
   profitCached: {
-    daily: number;
-    weekly: number;
-    monthly: number;
-    allTime: number;
-  };
-
-  creatorVolumeCached: {
     daily: number;
     weekly: number;
     monthly: number;

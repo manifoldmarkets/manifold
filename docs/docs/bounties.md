@@ -11,9 +11,18 @@ Examples of community work that may be eligible for a bounty:
 - Promoting Manifold & forecasting to a wider audience
 - Identifying serious exploits with our financial infrastructure
 
+Have something cool to share with us? Drop by our [Discord](https://discord.gg/eHQBNBqXuh) or send us an email at [bounty@manifold.markets](mailto:bounty@manifold.markets) (especially for exploits)
+
 Our community is the beating heart of Manifold; your individual contributions are what make this platform valuable at all. Thanks to everyone listed here (as well as countless unnamed others) for your help & support!
 
 ## Awarded bounties
+
+👾 *Awarded on 2022-11-16*
+
+**[legolas](https://manifold.markets/legolas) + team: M$20,000**
+**[miaz](https://manifold.markets/jack): M$10,000**
+
+- For building out live stock exchanges for the Destiny.gg community: https://www.dgg.exchange/, https://dggexchange.miaz.xyz/
 
 💥 *Awarded on 2022-10-31*
 

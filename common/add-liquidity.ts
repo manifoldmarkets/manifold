@@ -18,7 +18,6 @@ export const getNewLiquidityProvision = (
     contractId: contract.id,
     amount,
     pool,
-    p,
     liquidity,
     createdTime: Date.now(),
   }

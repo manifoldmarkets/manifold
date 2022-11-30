@@ -12,6 +12,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   await applyCorsHeaders(req, res, {
     origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
     methods: 'POST',
+    allowedHeaders: 'Authorization',
   })
 
   const { id } = req.query
@@ -19,7 +20,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.body) req.body.contractId = contractId
   try {
-    const backendRes = await fetchBackend(req, 'addliquidity')
+    const backendRes = await fetchBackend(req, 'addsubsidy')
     await forwardResponse(res, backendRes)
   } catch (err) {
     console.error('Error talking to cloud function: ', err)

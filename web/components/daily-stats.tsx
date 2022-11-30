@@ -5,7 +5,6 @@ import { sum } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
-import { SiteLink } from 'web/components/widgets/site-link'
 import {
   usePrivateUser,
   useUserContractMetricsByProfit,
@@ -17,8 +16,9 @@ import {
   hasCompletedStreakToday,
 } from 'web/components/profile/betting-streak-modal'
 import { LoansModal } from 'web/components/profile/loans-modal'
+import Link from 'next/link'
 
-const dailyStatsHeaderClass = 'text-greyscale-5 text-xs sm:text-sm'
+const dailyStatsHeaderClass = 'text-gray-500 text-xs sm:text-sm'
 const dailyStatsClass = 'items-center text-lg'
 
 export function DailyStats(props: {
@@ -35,6 +35,8 @@ export function DailyStats(props: {
   useEffect(() => {
     const showLoansModel = Router.query['show'] === 'loans'
     setShowLoansModal(showLoansModel)
+    const showStreaksModal = Router.query['show'] === 'betting-streak'
+    setShowStreakModal(showStreaksModal)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -104,11 +106,11 @@ export function DailyProfit(props: { user: User | null | undefined }) {
     ) ?? []
   )
   return (
-    <SiteLink className="flex flex-col hover:no-underline" href="/daily-movers">
+    <Link className="flex flex-col" href="/daily-movers">
       <div className={dailyStatsHeaderClass}>Daily profit</div>
       <Row className={dailyStatsClass}>
         <span>{formatMoney(profit)}</span>{' '}
       </Row>
-    </SiteLink>
+    </Link>
   )
 }

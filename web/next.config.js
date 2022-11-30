@@ -30,6 +30,7 @@ module.exports = {
       'lh3.googleusercontent.com',
       'i.imgur.com',
       'firebasestorage.googleapis.com',
+      'storage.googleapis.com',
     ],
   },
   async redirects() {

@@ -3,7 +3,6 @@ import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
-import { Bet } from 'common/bet'
 import { getProbability, getInitialProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
 import { DAY_MS } from 'common/util/time'
@@ -16,46 +15,55 @@ import {
 } from '../helpers'
 import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
+import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 import { Avatar } from 'web/components/widgets/avatar'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
-const getBetPoints = (bets: Bet[]) => {
-  return sortBy(bets, (b) => b.createdTime).map((b) => ({
-    x: new Date(b.createdTime),
-    y: b.probAfter,
+const getBetPoints = (bets: BetPoint[]) => {
+  return sortBy(bets, (b) => b.x).map((b) => ({
+    x: new Date(b.x),
+    y: b.y,
     obj: b,
   }))
 }
 
-const BinaryChartTooltip = (props: TooltipProps<Date, HistoryPoint<Bet>>) => {
+const BinaryChartTooltip = (
+  props: TooltipProps<Date, HistoryPoint<BetPoint>>
+) => {
   const { prev, x, xScale } = props
   const [start, end] = xScale.domain()
   const d = xScale.invert(x)
   if (!prev) return null
   return (
     <Row className="items-center gap-2">
-      {prev.obj && <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />}
+      {prev.obj?.bet?.userAvatarUrl && (
+        <Avatar size="xs" avatarUrl={prev.obj.bet?.userAvatarUrl} />
+      )}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-greyscale-6">{formatPct(prev.y)}</span>
+      <span className="text-gray-600">{formatPct(prev.y)}</span>
     </Row>
   )
 }
 
 export const BinaryContractChart = (props: {
   contract: BinaryContract
-  bets: Bet[]
+  betPoints: BetPoint[]
   width: number
   height: number
-  onMouseOver?: (p: HistoryPoint<Bet> | undefined) => void
+  color?: string
+  onMouseOver?: (p: HistoryPoint<BetPoint> | undefined) => void
 }) => {
-  const { contract, bets, width, height, onMouseOver } = props
+  const { contract, width, height, onMouseOver, color } = props
   const [start, end] = getDateRange(contract)
   const startP = getInitialProbability(contract)
   const endP = getProbability(contract)
-  const betPoints = useMemo(() => getBetPoints(bets), [bets])
+  const betPoints = useMemo(
+    () => getBetPoints(props.betPoints),
+    [props.betPoints]
+  )
   const data = useMemo(() => {
     return [
       { x: new Date(start), y: startP },
@@ -81,7 +89,7 @@ export const BinaryContractChart = (props: {
       yScale={yScale}
       yKind="percent"
       data={data}
-      color="#11b981"
+      color={color ?? '#11b981'}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}

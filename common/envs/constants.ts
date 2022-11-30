@@ -3,6 +3,7 @@ import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 import { THEOREMONE_CONFIG } from './theoremone'
 
+export const BACKGROUND_COLOR = 'bg-gray-50'
 export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 
 const CONFIGS: { [env: string]: EnvConfig } = {
@@ -59,6 +60,7 @@ export const BOT_USERNAMES = [
   'v',
   'acc',
   'jerk',
+  'snap',
   'ArbitrageBot',
   'MarketManagerBot',
   'Botlab',
@@ -71,6 +73,20 @@ export const BOT_USERNAMES = [
   'trainbot',
   'runebot',
   'LiquidityBonusBot',
+  '538',
+  'FairlyRandom',
+]
+
+export const CORE_USERNAMES = [
+  'Austin',
+  'JamesGrugett',
+  'SG',
+  'ian',
+  'Sinclair',
+  'Alice',
+  'DavidChee',
+  'mqp',
+  'IngaWei',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -80,3 +96,10 @@ export function firestoreConsolePath(contractId: string) {
 }
 
 export const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
+
+export const DESTINY_GROUP_SLUGS = [
+  'destinygg',
+  'destinygg-stocks',
+  'eto',
+  'mumbowl-stonks',
+]

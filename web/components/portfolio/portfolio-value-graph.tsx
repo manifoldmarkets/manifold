@@ -24,7 +24,7 @@ export const PortfolioTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
   return (
     <Col className="text-xs font-semibold sm:text-sm">
       <div>{d.format('MMM/D/YY')}</div>
-      <div className="text-greyscale-6 text-2xs font-normal sm:text-xs">
+      <div className="text-2xs font-normal text-gray-600 sm:text-xs">
         {d.format('h:mm A')}
       </div>
     </Col>
@@ -72,7 +72,7 @@ export const PortfolioGraph = (props: {
       xScale={scaleTime([minDate, maxDate], [0, width - MARGIN_X])}
       yScale={scaleLinear([minValue, maxValue], [height - MARGIN_Y, 0])}
       viewScaleProps={viewScaleProps}
-      yKind="m$"
+      yKind="Ṁ"
       data={data}
       curve={curveStepAfter}
       Tooltip={PortfolioTooltip}

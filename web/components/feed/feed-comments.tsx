@@ -151,7 +151,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       className={clsx(
         commentKind,
         'relative ml-3 gap-2',
-        highlighted ? 'bg-indigo-50' : 'hover:bg-greyscale-1'
+        highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
       )}
     >
       <Col className="-ml-3.5">
@@ -276,7 +276,7 @@ export const FeedComment = memo(function FeedComment(props: {
       id={comment.id}
       className={clsx(
         'relative ml-12 gap-2 ',
-        highlighted ? 'bg-indigo-50' : 'hover:bg-greyscale-1'
+        highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
       )}
     >
       <Col className="-ml-3">
@@ -308,7 +308,7 @@ function CommentStatus(props: {
     <>
       {` predicting `}
       <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
-      {prob && ' at ' + Math.round(prob * 100) + '%'}
+      {prob && ' at ' + Math.round((prob > 1 ? prob / 100 : prob) * 100) + '%'}
     </>
   )
 }
@@ -379,9 +379,9 @@ export function FeedCommentHeader(props: {
   const totalAwarded = bountiesAwarded ?? 0
   return (
     <Row>
-      <div className="text-greyscale-6 mt-0.5 text-sm">
+      <div className="mt-0.5 text-sm text-gray-600">
         <UserLink username={userUsername} name={userName} />{' '}
-        <span className="text-greyscale-4">
+        <span className="text-gray-400">
           {comment.betId == null &&
             commenterPositionProb != null &&
             commenterPositionOutcome != null &&

@@ -155,7 +155,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     profit_loss_updates: constructPref(false, true, false),
     probability_updates_on_watched_markets: constructPref(true, false, true),
     thank_you_for_purchases: constructPref(false, false, false),
-    onboarding_flow: constructPref(false, false, false),
+    onboarding_flow: constructPref(true, true, false),
 
     opt_out_all: [],
     badges_awarded: constructPref(true, false, false),
@@ -225,7 +225,7 @@ export const getNotificationDestinationsForUser = (
         ? notificationSettings[subscriptionType]
         : []
     }
-    const optOutOfAllSettings = notificationSettings['opt_out_all']
+    const optOutOfAllSettings = notificationSettings.opt_out_all
     // Your market closure notifications are high priority, opt-out doesn't affect their delivery
     const optedOutOfEmail =
       optOutOfAllSettings.includes('email') &&
@@ -255,6 +255,14 @@ export const getNotificationDestinationsForUser = (
       urlToManageThisNotification: '',
     }
   }
+}
+
+export const userOptedOutOfBrowserNotifications = (
+  privateUser: PrivateUser
+) => {
+  const { notificationPreferences } = privateUser
+  const optOutOfAllSettings = notificationPreferences.opt_out_all
+  return optOutOfAllSettings.includes('browser')
 }
 
 export const userIsBlocked = (

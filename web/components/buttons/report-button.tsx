@@ -14,7 +14,6 @@ import { db } from 'web/lib/firebase/init'
 import { removeUndefinedProps } from 'common/util/object'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { FlagIcon } from '@heroicons/react/outline'
-import { User } from 'common/user'
 
 export function ReportButton(props: {
   iconButton?: boolean
@@ -31,7 +30,7 @@ export function ReportButton(props: {
 
   const onReport = async () => {
     if (!currentUser) return
-    await toast.promise(reportContent(currentUser, report), {
+    await toast.promise(reportContent(currentUser.id, report), {
       loading: 'Reporting...',
       success: `${capitalize(
         label
@@ -52,7 +51,7 @@ export function ReportButton(props: {
           >
             <FlagIcon
               className={
-                'disabled:text-greyscale-2 text-greyscale-5 hover:text-greyscale-6 h-5 w-5'
+                'h-5 w-5 text-gray-500 hover:text-gray-600 disabled:text-gray-200'
               }
             />
           </IconButton>
@@ -76,8 +75,9 @@ export function ReportButton(props: {
     </>
   )
 }
-const reportContent = async (
-  currentUser: User,
+
+export const reportContent = async (
+  currentUserId: string,
   report: Omit<Report, 'id' | 'createdTime' | 'userId'>
 ) => {
   const {
@@ -93,7 +93,7 @@ const reportContent = async (
     reportDoc,
     removeUndefinedProps({
       id: reportDoc.id,
-      userId: currentUser.id,
+      userId: currentUserId,
       createdTime: Date.now(),
       contentId,
       contentOwnerId,
@@ -118,7 +118,7 @@ export const ReportModal = (props: {
 
   const onReport = async () => {
     if (!currentUser) return
-    await toast.promise(reportContent(currentUser, report), {
+    await toast.promise(reportContent(currentUser.id, report), {
       loading: 'Reporting...',
       success: `${capitalize(
         label

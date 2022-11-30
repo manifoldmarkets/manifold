@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useEffect } from 'react'
+import { pickBy } from 'lodash'
 import { onIdTokenChanged } from 'firebase/auth'
 import {
   auth,
@@ -43,14 +44,26 @@ const ensureDeviceToken = () => {
   return deviceToken
 }
 
-export const setUserCookie = (cookie: string | undefined) => {
-  const data = setCookie(AUTH_COOKIE_NAME, cookie ?? '', [
+const stripUserData = (user: object) => {
+  // there's some risk that this cookie could be too big for some clients,
+  // so strip it down to only the keys that the server auth actually needs
+  // in order to auth to the firebase SDK
+  const whitelist = ['uid', 'emailVerified', 'isAnonymous', 'stsTokenManager']
+  const stripped = pickBy(user, (_v, k) => whitelist.includes(k))
+  // mqp: temp fix to get cookie size under 4k in edge cases
+  delete (stripped as any).stsTokenManager.accessToken
+  return JSON.stringify(stripped)
+}
+
+export const setUserCookie = (data: object | undefined) => {
+  const stripped = data ? stripUserData(data) : ''
+  const cookie = setCookie(AUTH_COOKIE_NAME, stripped, [
     ['path', '/'],
-    ['max-age', (cookie === undefined ? 0 : TEN_YEARS_SECS).toString()],
+    ['max-age', (data === undefined ? 0 : TEN_YEARS_SECS).toString()],
     ['samesite', 'lax'],
     ['secure'],
   ])
-  document.cookie = data
+  document.cookie = cookie
 }
 
 export const AuthContext = createContext<AuthUser>(undefined)
@@ -88,7 +101,7 @@ export function AuthProvider(props: {
       auth,
       async (fbUser) => {
         if (fbUser) {
-          setUserCookie(JSON.stringify(fbUser.toJSON()))
+          setUserCookie(fbUser.toJSON())
           let current = await getUserAndPrivateUser(fbUser.uid)
           if (!current.user || !current.privateUser) {
             const deviceToken = ensureDeviceToken()

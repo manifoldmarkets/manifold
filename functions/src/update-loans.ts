@@ -52,7 +52,7 @@ async function updateLoansCore() {
     ),
     100
   )
-  const bets = sortBy(contractBets.flat(), b => b.createdTime)
+  const bets = sortBy(contractBets.flat(), (b) => b.createdTime)
 
   log(
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
@@ -116,8 +116,8 @@ async function updateLoansCore() {
   const key = `loan-notifications-${today}`
   await Promise.all(
     userUpdates
-      // Don't send a notification if the payout is < M$1,
-      // because a M$0 loan is confusing.
+      // Don't send a notification if the payout is < Ṁ1,
+      // because a Ṁ0 loan is confusing.
       .filter(({ result: { payout } }) => payout >= 1)
       .map(({ user, result: { payout } }) =>
         createLoanIncomeNotification(user, key, payout)

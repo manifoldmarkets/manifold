@@ -1,12 +1,15 @@
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { BOT_USERNAMES } from 'common/envs/constants'
-import { filterDefined } from 'common/util/array'
+import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { buildArray, filterDefined } from 'common/util/array'
 import { keyBy, range, groupBy, sortBy } from 'lodash'
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
 import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
+import { useMemberGroups } from 'web/hooks/use-group'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { getGroupBySlug, getGroupContractIds } from 'web/lib/firebase/groups'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -18,20 +21,70 @@ import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 
+const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie']
+
 export function ActivityLog(props: { count: number; showPills: boolean }) {
+  const privateUser = usePrivateUser()
+  const user = useUser()
+
+  const memberGroups = useMemberGroups(user?.id)
+  const shouldBlockDestiny =
+    // If signed out, or you don't follow destiny group, block it!
+    !(
+      memberGroups &&
+      memberGroups.some((g) => DESTINY_GROUP_SLUGS.includes(g.slug))
+    )
+
+  const [blockedGroupContractIds, setBlockedGroupContractIds] = useState<
+    string[]
+  >([])
+
+  useEffect(() => {
+    const blockedGroupSlugs = buildArray(
+      privateUser?.blockedGroupSlugs ?? [],
+      shouldBlockDestiny && 'destinygg'
+    )
+
+    Promise.all(blockedGroupSlugs.map(getGroupBySlug))
+      .then((groups) =>
+        Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
+      )
+      .then((cids) => setBlockedGroupContractIds(cids.flat()))
+  }, [privateUser, shouldBlockDestiny])
+
+  const blockedContractIds = [
+    ...blockedGroupContractIds,
+    ...(privateUser?.blockedContractIds ?? []),
+  ]
+  const blockedUserIds = privateUser?.blockedUserIds ?? []
+
   const { count, showPills } = props
-  const bets = (useLiveBets(count * 2 + 10) ?? []).filter(
+  const rawBets = useLiveBets(count * 3 + 20, {
+    filterRedemptions: true,
+    filterAntes: true,
+  })
+  const bets = (rawBets ?? []).filter(
     (bet) =>
+      !blockedContractIds.includes(bet.contractId) &&
+      !blockedUserIds.includes(bet.userId) &&
       !BOT_USERNAMES.includes(bet.userUsername) &&
-      !bet.isRedemption &&
-      !bet.isAnte
+      !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
   )
-  const comments = (useLiveComments(count * 2) ?? []).filter(
+  const rawComments = useLiveComments(count * 3)
+  const comments = (rawComments ?? []).filter(
     (c) =>
-      c.commentType === 'contract' && !BOT_USERNAMES.includes(c.userUsername)
+      c.commentType === 'contract' &&
+      !blockedContractIds.includes(c.contractId) &&
+      !blockedUserIds.includes(c.userId) &&
+      !BOT_USERNAMES.includes(c.userUsername)
   ) as ContractComment[]
 
-  const newContracts = useLiveContracts(count)
+  const rawContracts = useLiveContracts(count * 3)
+  const newContracts = (rawContracts ?? []).filter(
+    (c) =>
+      !blockedContractIds.includes(c.id) &&
+      !blockedUserIds.includes(c.creatorId)
+  )
 
   const [pill, setPill] = useState<'all' | 'markets' | 'comments' | 'trades'>(
     'all'
@@ -46,7 +99,9 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
       ? bets
       : newContracts ?? [],
     (i) => i.createdTime
-  ).reverse()
+  )
+    .reverse()
+    .filter((i) => i.createdTime < Date.now())
 
   const contracts = filterDefined(
     useContracts([
@@ -67,8 +122,9 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
   const itemsSubset = items.slice(startIndex, startIndex + count)
 
   const allLoaded =
-    bets.length > 0 &&
-    comments.length > 0 &&
+    rawBets &&
+    rawComments &&
+    rawContracts &&
     itemsSubset.every((item) =>
       'contractId' in item ? contractsById[item.contractId] : true
     )

@@ -22,10 +22,12 @@ import { Txn } from '../../common/txn'
 import { formatMoney } from '../../common/util/format'
 import { getContractBetMetrics } from '../../common/calculate'
 
+const USERS_TO_EMAIL = 600
+// This should(?) work until we have ~70k users (500 * 120)
 export const weeklyPortfolioUpdateEmails = functions
-  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB' })
-  // every minute on Friday for an hour at 12pm PT (UTC -07:00)
-  .pubsub.schedule('* 19 * * 5')
+  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB', timeoutSeconds: 540 })
+  // every minute on Friday for two hours at 12pm PT (UTC -07:00)
+  .pubsub.schedule('* 19-20 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await sendPortfolioUpdateEmailsToAllUsers()
@@ -47,15 +49,31 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     .filter((user) => {
       return isProd()
         ? user.notificationPreferences.profit_loss_updates.includes('email') &&
-            !user.weeklyPortfolioUpdateEmailSent
+            !user.notificationPreferences.opt_out_all.includes('email') &&
+            !user.weeklyPortfolioUpdateEmailSent &&
+            user.email
         : user.notificationPreferences.profit_loss_updates.includes('email')
     })
     // Send emails in batches
-    .slice(0, 200)
+    .slice(0, USERS_TO_EMAIL)
+
+  if (privateUsersToSendEmailsTo.length === 0) {
+    log('No users to send trending markets emails to')
+    return
+  }
+
   log(
     'Sending weekly portfolio emails to',
     privateUsersToSendEmailsTo.length,
     'users'
+  )
+
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (privateUser) => {
+      await firestore.collection('private-users').doc(privateUser.id).update({
+        weeklyPortfolioUpdateEmailSent: true,
+      })
+    })
   )
 
   const usersBets: { [userId: string]: Bet[] } = {}
@@ -112,12 +130,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       )
     )
   )
+
+  let sent = 0
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (privateUser) => {
       const user = await getUser(privateUser.id)
       // Don't send to a user unless they're over 5 days old
-      if (!user || user.createdTime > Date.now() - 5 * DAY_MS)
-        return await setEmailFlagAsSent(privateUser.id)
+      if (!user || user.createdTime > Date.now() - 5 * DAY_MS) return
       const userBets = usersBets[privateUser.id] as Bet[]
       const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
         userBets.some((bet) => bet.contractId === contract.id)
@@ -175,11 +194,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
 
             const marketProbabilityAWeekAgo =
               cpmmContract.prob - cpmmContract.probChanges.week
-            const currentMarketProbability = cpmmContract.resolutionProbability
-              ? cpmmContract.resolutionProbability
-              : cpmmContract.prob
+            const currentMarketProbability = cpmmContract.prob
 
-            // TODO: returns 0 for resolved markets - doesn't include them
             const betsMadeAWeekAgoValue = computeInvestmentValueCustomProb(
               previousBets,
               contract,
@@ -236,27 +252,18 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         worstInvestments.length === 0 &&
         usersToContractsCreated[privateUser.id].length === 0
       ) {
-        log(
-          `No bets in last week, no market movers, no markets created. Not sending an email to ${privateUser.email} .`
-        )
-        return await setEmailFlagAsSent(privateUser.id)
+        return
       }
-      // Set the flag beforehand just to be safe
-      await setEmailFlagAsSent(privateUser.id)
       await sendWeeklyPortfolioUpdateEmail(
         user,
         privateUser,
         topInvestments.concat(worstInvestments) as PerContractInvestmentsData[],
         performanceData
       )
+      sent++
+      log(`emails sent: ${sent}/${USERS_TO_EMAIL}`)
     })
   )
-}
-
-async function setEmailFlagAsSent(privateUserId: string) {
-  await firestore.collection('private-users').doc(privateUserId).update({
-    weeklyPortfolioUpdateEmailSent: true,
-  })
 }
 
 export type PerContractInvestmentsData = {

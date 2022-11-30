@@ -7,10 +7,10 @@ export interface Charity {
   photo?: string
   preview: string
   description: string
-  tags?: CharityTag[]
+  tags?: readonly CharityTag[]
 }
 
-type CharityTag = 'Featured' // | 'Health' | 'Poverty' | 'X-Risk' | 'Animal Welfare' | 'Policy'
+type CharityTag = 'Featured' | 'New' // | 'Health' | 'Poverty' | 'X-Risk' | 'Animal Welfare' | 'Policy'
 
 // Warning: 'name' is currently used as the slug and the txn toId for the charity.
 export const charities: Charity[] = [
@@ -44,7 +44,6 @@ Campaigns bleed tons of value all the time, leaving large room for improvement. 
 We need your help - growing the team, engineering new software, analyzing policy space, finding experts, making connections, commissioning academic studies, drafting laws, writing up results, refining messaging, ultimately lobbying and working with campaigns, and of course raising money. 
 
 If you are interested in hearing more please get in touch at hello@balsaresearch.com and start the subject line with the most relevant category: policy (include what area if applicable), tech, media, networking, lobbying, campaigning or money, and then tell us about yourself and what interests you, or fill out this Google Doc.`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: '1Day Sooner',
@@ -59,7 +58,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     In a human challenge trial (HCT), willing participants would receive the vaccine candidate or placebo and, after some time for the vaccine to take effect, be deliberately exposed to live coronavirus. Since exposure to the virus is guaranteed in HCTs, it may be possible to judge a vaccine candidate’s efficacy more quickly and with far fewer participants than a standard Phase III trial. While HCT efficacy results do not traditionally provide sufficient basis for licensure on their own, they could allow us to (1) more quickly weed out disappointing vaccine candidates or (2) promote the development of promising candidates in conjunction with traditional Phase III studies.
       
     In addition, by gathering detailed data on the process of infection and vaccine protection in a clinical setting, researchers could learn information that proves extremely useful for broader vaccine and therapeutic development efforts. Altogether, there are scenarios in which the speed of HCTs and the richness of the data they provide accelerate the development of an effective and broadly accessible COVID-19 vaccine, with thousands of lives spared (depending on the pandemic’s long-term trajectory).`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'QURI',
@@ -72,7 +70,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     We emphasize technological solutions that can heavily scale in the next 5 to 30 years.
     
     We believe that humanity’s success in the next few hundred years will lie intensely on its ability to coordinate and make good decisions. If important governmental and philanthropic bodies become significantly more effective, this will make society far more resilient to many kinds of challenges ahead.`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'Long-Term Future Fund',
@@ -88,7 +85,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     - Projects that directly contribute to reducing existential risks through technical research, policy analysis, advocacy, and/or demonstration projects
     - Training for researchers or practitioners who work to mitigate existential risks, or help with relevant recruitment efforts, or infrastructure for people working on longtermist projects
     - Promoting long-term thinking`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'New Science',
@@ -101,7 +97,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     As its second major project, in the fall of 2022, New Science will run an in-person 12-month-long fellowship for young scientists starting to directly attack the biggest structural issues of the established institutions of science. We will double down on things that worked well during the summer fellowship, while extending the fellowship to one year, thus allowing researchers to make much more progress and will strive to provide them as much scientific leverage as possible.
     
     In several years, New Science will start funding entire labs outside of academia and then will be creating an entire network of scientific organizations, while supporting the broader scientific ecosystem that will constitute the 21st century institutions of basic science.`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'Global Health and Development Fund',
@@ -177,7 +172,6 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     - The Nonlinear Library: Listen to top EA content on your podcast player. We use text-to-speech software to create an automatically updating repository of audio content from the EA Forum, Alignment Forum, and LessWrong. You can find it on all major podcast players here. 
     - EA Hiring Agency: Helping EA orgs scalably hire talent.
     - EA Houses: EA's Airbnb - Connecting EAs who have extra space with EAs who need space here.`,
-    tags: ['Featured'] as CharityTag[],
   },
   {
     name: 'GiveWell Maximum Impact Fund',
@@ -332,7 +326,6 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Wild Animal Initiative',
     website: 'https://www.wildanimalinitiative.org/',
     ein: '82-2281466',
-    tags: ['Featured'] as CharityTag[],
     photo: 'https://i.imgur.com/bOVUnDm.png',
     preview:
       'Our mission is to understand and improve the lives of wild animals.',
@@ -652,6 +645,88 @@ In addition to housing impact litigation, we provide free legal aid, education a
     description: ` More than 1.7 billion people around the world are unbanked and can’t access the financial services they need. Kiva is an international nonprofit, founded in 2005 in San Francisco, with a mission to expand financial access to help underserved communities thrive.
 
 We do this by crowdfunding loans and unlocking capital for the underserved, improving the quality and cost of financial services, and addressing the underlying barriers to financial access around the world. Through Kiva's work, students can pay for tuition, women can start businesses, farmers are able to invest in equipment and families can afford needed emergency care. `,
+  },
+  {
+    name: 'Electronic Frontier Foundation',
+    website: 'https://www.eff.org/',
+    photo: 'https://i.imgur.com/CmO8Bfn.png',
+    preview:
+      'The leading nonprofit defending digital privacy, free speech, and innovation.',
+    description: `
+    The Electronic Frontier Foundation is the leading nonprofit organization defending civil liberties in the digital world. Founded in 1990, EFF champions user privacy, free expression, and innovation through impact litigation, policy analysis, grassroots activism, and technology development. EFF's mission is to ensure that technology supports freedom, justice, and innovation for all people of the world. Today, EFF uses the unique expertise of leading technologists, activists, and attorneys in our efforts to defend free speech online, fight illegal surveillance, advocate for users and innovators, and support freedom-enhancing technologies.`,
+  },
+  {
+    name: 'Rethink Priorities',
+    website: 'https://rethinkpriorities.org/',
+    photo: 'https://i.imgur.com/Xs3D69w.png',
+    preview: 'Uncovering actionable insights to make the world a better place.',
+    description: `Rethink Priorities’ mission is to generate the most significant possible impact for others in the present and the long-term future. 
+
+Using evidence and reason, we identify where resources would be most effective and help direct them there. We do this by conducting critical research to inform policymakers and philanthropists, and by guiding the development of new organizations to address key problems. 
+
+Our work covers important and neglected cause areas, including animal welfare, artificial intelligence, climate change, global health and development, and other work to safeguard a flourishing long-term future. We also aim to understand and support effective altruism – the community of people focused on these issues.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Happier Lives Institute',
+    website: 'https://www.happierlivesinstitute.org/',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2Fylh9QFPCkj.png?alt=media&token=6ea4b8c4-0d53-4b90-ad69-58b44a317e83',
+    preview: 'We rigorously examine charities based on subjective wellbeing',
+    description: `We compare charities on a common metric called wellbeing-adjusted life years (WELLBYs). One WELLBY is equivalent to a 1-point increase on a 0-10 life satisfaction scale for one year.
+
+We use WELLBYs to compare the impact of charities that improve different outcomes, such as health or finances. This is the only approach to charity evaluation that allows us to make apples-to-apples comparisons. No other charity evaluator uses this approach. `,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Strong Minds',
+    website: 'https://strongminds.org/',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2FzHV9DPRU9o.png?alt=media&token=2f3575b8-328e-4863-92f4-1fcd6350b4fc',
+    preview: 'Providing mental health therapy in Africa',
+    description: `- Globally, 280 million people are living with depressive disorders.
+- In low-income countries, approximately 85% receive no treatment.
+- StrongMinds provides free group talk therapy to low-income women and adolescents with depression in Uganda and Zambia.
+- We scale our reach through peer-to-peer therapy, teletherapy, public education, and partnerships.
+- Women who complete our therapy achieve clinically significant reductions in depression symptoms, restoring hope for themselves and their families.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Good Food Institute',
+    website: 'https://gfi.org',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2FTnNRCKWVG0.42?alt=media&token=f6ff8467-fce0-441c-b316-53374b6883a5',
+    preview:
+      'At GFI, we’re building a world where alternative proteins are no longer alternative.',
+    description: `The Good Food Institute is a nonprofit think tank and international network of organizations working to accelerate alternative protein innovation.
+
+Globally, meat consumption is the highest it has ever been. According to the UN, global meat production is projected to double by 2050.
+
+With plant-based meat, cultivated meat, and fermentation, we can mitigate the environmental impact of our food system, decrease the risk of zoonotic disease, and ultimately feed more people with fewer resources. 
+
+By making meat from plants and cultivating meat from cells, we can modernize meat production. `,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'UMCOR',
+    website: 'https://umcmission.org/umcor/',
+    photo: 'https://i.imgur.com/MFURh7b.png',
+    preview:
+      'Assists United Methodists and churches to become involved globally in direct ministry to persons in need.',
+    description: `As the humanitarian relief and development arm of The United Methodist Church, the United Methodist Committee on Relief – UMCOR – assists United Methodists and churches to become involved globally in direct ministry to persons in need. UMCOR comes alongside those who suffer from natural or human-caused disasters – famine, hurricane, war, flood, fire or other events—to alleviate suffering and serve as a source of help and hope for the vulnerable. UMCOR provides relief, response and long-term recovery grants when events overwhelm a community’s ability to recover on their own. UMCOR also provides technical support and training for partners to address emerging and ongoing issues related to disaster relief, recovery, and long-term health and development.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Sentience Institute',
+    website: 'https://www.sentienceinstitute.org/',
+    photo: 'https://i.imgur.com/074K7gL.png',
+    preview: "Expanding humanity's moral circle.",
+    description: `At Sentience Institute, we approach moral circle expansion through research. The research we conduct is interdisciplinary, particularly across economics, history, philosophy, psychology, and sociology. We focus on empirical questions, such as how the moral circle has expanded historically, what people’s moral circles look like today, and the factors that influence people’s moral circles, but also work on some conceptual questions to clarify concepts such as sentience and moral circle expansion. Historically, we have focused on farmed animals; we now allocate a substantial proportion of our resources to address questions related to artificial sentience.
+
+Our research has many different routes to impact, often referred to as the “Theory of Change.” Most directly, we aim to discover the factors (e.g., activism and business strategies) that most lead to moral circle expansion, but we also aim to understand the nature of moral progress (e.g., How do more people become longtermist?) and evaluate the extent to which certain moral and social outcomes should be prioritized by those trying to do the most good (i.e., “global priorities research”). This helps activists, donors, investors, governments, firms, and other stakeholders working on these issues knowledge to implement strategies that will change social norms and implement more morally inclusive laws and policies. While we mainly focus on institutional change, we expect our research will also help organizations working on changing individual behavior. Because of our longtermist perspective, we are interested in helping develop social movements and organizations that can take action many years from now.
+
+Where appropriate, we publish our research in academic journals, which helps communicate our findings to academics and encourages other researchers to carry out similar research. Our research sometimes attracts media attention, which we expect also has positive effects by informing public opinion and promoting more morally inclusive social norms. Usually, stakeholders see our research via email or directly on our website.`,
+    tags: ['New'] as const,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
