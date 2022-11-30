@@ -1,5 +1,4 @@
 import {
-  BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
@@ -12,7 +11,6 @@ import {
   MultiUserLinkInfo,
   MultiUserTransactionModal,
 } from 'web/components/multi-user-transaction-link'
-import { UserLink } from 'web/components/widgets/user-link'
 import { NotificationGroup } from 'web/hooks/use-notifications'
 import { useUser } from 'web/hooks/use-user'
 import { NotificationGroupItemComponent } from 'web/pages/notifications'
@@ -133,7 +131,7 @@ export function IncomeNotificationGroupItem(props: {
 export function IncomeNotificationItem(props: { notification: Notification }) {
   const { notification } = props
   const { sourceType } = notification
-  const highlighted = !notification.isSeen
+  const [highlighted, _setHighlighted] = useState(!notification.isSeen)
 
   if (sourceType === 'tip' || sourceType === 'tip_and_like') {
     return (
@@ -171,12 +169,7 @@ export function TipIncomeNotification(props: {
   highlighted: boolean
 }) {
   const { notification, highlighted } = props
-  const {
-    sourceUserName,
-    sourceUserUsername,
-    sourceContractTitle,
-    sourceTitle,
-  } = notification
+  const { sourceUserName } = notification
   const [open, setOpen] = useState(false)
   const userLinks: MultiUserLinkInfo[] = notification.data?.uniqueUsers ?? []
   const multipleTips = userLinks.length > 1
@@ -195,19 +188,12 @@ export function TipIncomeNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'💰'} />
       }
-      // link={getIncomeSourceUrl(notification)}
       onClick={() => setOpen(true)}
     >
       <span>
         <IncomeNotificationLabel notification={notification} />{' '}
-        {/* <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
-        /> */}
         {tippersText && <PrimaryNotificationLink text={tippersText} />} tipped
         you on <QuestionOrGroupLink notification={notification} />
-        {/* <PrimaryNotificationLink text={sourceContractTitle || sourceTitle} /> */}
       </span>
       <MultiUserTransactionModal
         userInfos={userLinks}

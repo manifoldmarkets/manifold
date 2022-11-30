@@ -207,7 +207,7 @@ export function NotificationFrame(props: {
           </Col>
         </Row>
         {!isMobile && (
-          <Row className="mx-1 w-20 justify-end">
+          <Row className="w-30 mx-1 justify-end">
             <RelativeTimestamp
               time={notification.createdTime}
               className="text-xs font-light text-gray-900"

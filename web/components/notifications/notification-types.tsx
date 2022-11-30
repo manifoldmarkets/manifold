@@ -38,7 +38,7 @@ export function NotificationItem(props: {
   const { notification, isChildOfGroup, isIncomeNotification } = props
   const { sourceType, reason, sourceUpdateType } = notification
 
-  const highlighted = !notification.isSeen
+  const [highlighted, _setHighlighted] = useState(!notification.isSeen)
   if (isIncomeNotification) {
     return <IncomeNotificationItem notification={notification} />
   }
@@ -154,7 +154,6 @@ export function NotificationItem(props: {
     )
   } else if (sourceType === 'user') {
     return (
-      // not appearing?
       <UserJoinedNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
