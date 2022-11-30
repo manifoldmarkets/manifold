@@ -48,9 +48,14 @@ import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
 import {
   getBinaryContractUserContractMetrics,
   ContractMetricsByOutcome,
+  getTopContractMetrics,
+  getTotalContractMetricsCount,
 } from 'web/lib/firebase/contract-metrics'
 import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
+import { ContractMetric } from 'common/contract-metric'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { HOUSE_BOT_USERNAME } from 'common/lib/envs/constants'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
@@ -75,7 +80,7 @@ export async function getStaticPropz(props: {
         order: 'desc' as OrderByDirection,
       })
     : []
-  const includeAvatar = totalBets < 500
+  const includeAvatar = totalBets < 1000
   const betPoints = bets.map(
     (bet) =>
       removeUndefinedProps({
@@ -90,6 +95,12 @@ export async function getStaticPropz(props: {
     contractId && contract?.outcomeType === 'BINARY'
       ? await getBinaryContractUserContractMetrics(contractId, 500)
       : {}
+  const topContractMetrics = contractId
+    ? await getTopContractMetrics(contractId, 10)
+    : []
+  const totalPositions = contractId
+    ? await getTotalContractMetricsCount(contractId)
+    : 0
 
   return {
     props: {
@@ -99,6 +110,8 @@ export async function getStaticPropz(props: {
       userPositionsByOutcome,
       betPoints,
       totalBets,
+      topContractMetrics,
+      totalPositions,
     },
     revalidate: 60,
   }
@@ -115,6 +128,8 @@ export default function ContractPage(props: {
   userPositionsByOutcome: ContractMetricsByOutcome
   betPoints: BetPoint[]
   totalBets: number
+  topContractMetrics: ContractMetric[]
+  totalPositions: number
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -123,6 +138,8 @@ export default function ContractPage(props: {
     userPositionsByOutcome: {},
     betPoints: [],
     totalBets: 0,
+    topContractMetrics: [],
+    totalPositions: 0,
   }
 
   const inIframe = useIsIframe()
@@ -144,7 +161,12 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositionsByOutcome, comments } = props
+  const {
+    userPositionsByOutcome,
+    comments,
+    topContractMetrics,
+    totalPositions,
+  } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -191,6 +213,7 @@ export function ContractPageContent(
     userId: user?.id ?? '_',
     filterAntes: true,
   })
+  const metrics = useSavedContractMetrics(contract, bets)
 
   const { isResolved, question, outcomeType } = contract
 
@@ -293,7 +316,14 @@ export function ContractPageContent(
 
         {isResolved && (
           <>
-            <ContractLeaderboard contract={contract} bets={bets} />
+            <ContractLeaderboard
+              topContractMetrics={topContractMetrics.filter(
+                (metric) => metric.userUsername !== HOUSE_BOT_USERNAME
+              )}
+              contractId={contract.id}
+              currentUserMetrics={metrics}
+              currentUser={user}
+            />
             <Spacer h={12} />
           </>
         )}
@@ -306,6 +336,7 @@ export function ContractPageContent(
 
         <div ref={tabsContainerRef}>
           <ContractTabs
+            totalPositions={totalPositions}
             contract={contract}
             bets={bets}
             totalBets={totalBets}

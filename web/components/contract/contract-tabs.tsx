@@ -55,6 +55,7 @@ export function ContractTabs(props: {
   activeIndex: number
   setActiveIndex: (i: number) => void
   totalBets: number
+  totalPositions: number
 }) {
   const {
     contract,
@@ -66,6 +67,7 @@ export function ContractTabs(props: {
     activeIndex,
     setActiveIndex,
     totalBets,
+    totalPositions,
   } = props
 
   const contractComments = useComments(contract.id) ?? props.comments
@@ -92,7 +94,6 @@ export function ContractTabs(props: {
   const positions =
     useContractMetrics(contract.id, 500, outcomes) ??
     props.userPositionsByOutcome
-  const totalPositions = positions.NO?.length + positions.YES?.length ?? 0
   const positionsTitle =
     totalPositions === 0 ? 'Users' : totalPositions + ' Users'
 
