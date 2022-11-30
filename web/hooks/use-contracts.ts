@@ -81,6 +81,7 @@ export const useContractsByDailyScore = (
 
 export const useContractsByDailyScoreGroups = (
   groupSlugs: string[] | undefined,
+  count: number,
   additionalFilters?: string[]
 ) => {
   const { data } = useQuery(['daily-score', groupSlugs], () =>
@@ -90,7 +91,7 @@ export const useContractsByDailyScoreGroups = (
           facetFilters: ['isResolved:false', `groupLinks.slug:${slug}`].concat(
             additionalFilters ?? []
           ),
-          hitsPerPage: 10,
+          hitsPerPage: count,
         })
       )
     )

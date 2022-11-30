@@ -38,7 +38,7 @@ export const usePrefetchUsers = (userIds: string[]) => {
 }
 
 // Note: we don't filter out blocked contracts/users/groups here like we do in unbet-on contracts
-export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
+export const useUserContractMetricsByProfit = (userId = '_', count = 50) => {
   const positiveResult = useFirestoreQueryData<ContractMetrics>(
     ['contract-metrics-descending', userId, count],
     getUserContractMetricsQuery(userId, count, 'desc')
@@ -76,6 +76,8 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
     : savedResult.current
 
   useEffectCheckEquality(() => {
+    if (userId === '_') return
+
     const key = `user-contract-metrics-${userId}`
     if (isReady) {
       safeLocalStorage()?.setItem(key, JSON.stringify(result))
