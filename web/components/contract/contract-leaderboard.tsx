@@ -53,7 +53,7 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
       avatarUrl: cm.userAvatarUrl,
       total: profit,
       rank:
-        cm.userId === currentUser?.id
+        cm.userId === currentUser?.id && !userIsAlreadyRanked
           ? yourRank
             ? yourRank
             : maxToShowMinusCurrentUser + 1
