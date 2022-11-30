@@ -1,4 +1,4 @@
-import React, { memo, ReactNode, useEffect } from 'react'
+import React, { memo, ReactNode, useEffect, useMemo } from 'react'
 import Router from 'next/router'
 import { PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
@@ -88,11 +88,16 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const shouldFilterDestiny = !followedGroups?.find((g) =>
     DESTINY_GROUP_SLUGS.includes(g.slug)
   )
-  const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser).concat(
-    shouldFilterDestiny
-      ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
-      : []
+  const userBlockFacetFilters = useMemo(
+    () =>
+      getUsersBlockFacetFilters(privateUser).concat(
+        shouldFilterDestiny
+          ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
+          : []
+      ),
+    [privateUser, shouldFilterDestiny]
   )
+
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
   useRedirectIfSignedOut()
