@@ -296,9 +296,9 @@ export function NotificationGroupItemComponent(props: {
           })}
         {needsExpanding && (
           <Row
-            className={
-              'my-1 w-full items-center justify-end gap-1 text-sm text-gray-500 hover:text-indigo-500'
-            }
+            className={clsx(
+              'text my-1 w-full items-center justify-end gap-1 text-indigo-700'
+            )}
             onClick={onExpandHandler}
           >
             {!expanded && (

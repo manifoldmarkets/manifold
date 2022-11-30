@@ -16,7 +16,7 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { truncateLengthType, truncateText } from '../widgets/truncate'
 
 const notification_base_style =
-  'relative cursor-pointer text-sm bg-inherit rounded-lg transition-all'
+  'relative cursor-pointer text-sm bg-inherit rounded-lg transition-colors'
 export const NESTED_NOTIFICATION_STYLE = clsx(
   notification_base_style,
   'hover:bg-indigo-50 p-2'
@@ -31,7 +31,7 @@ export const NOTIFICATION_STYLE = clsx(
 )
 export const NOTIFICATIONS_PER_PAGE = 30
 export function getHighlightClass(highlight: boolean) {
-  return highlight ? 'opacity-100 bg-white' : 'opacity-60'
+  return highlight ? 'opacity-100' : 'opacity-60'
 }
 export const NUM_SUMMARY_LINES = 3
 
