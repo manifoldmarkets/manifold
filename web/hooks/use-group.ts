@@ -25,6 +25,7 @@ import { limit, query } from 'firebase/firestore'
 import { useTrendingContracts } from './use-contracts'
 import { storageStore, usePersistentState } from './use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { useStoreItems } from './use-store'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -36,7 +37,7 @@ export const useGroup = (groupId: string | undefined) => {
   return group
 }
 
-export const useGroups = () => {
+export const useAllGroups = () => {
   const [groups, setGroups] = useState<Group[] | undefined>()
 
   useEffect(() => {
@@ -128,6 +129,31 @@ export function useMemberGroupsSubscription(user: User | null | undefined) {
   return groups
 }
 
+export function useMemberGroupsIdsAndSlugs(user: User | null | undefined) {
+  const [groupIdsAndSlugs, setGroupIdsAndSlugs] = usePersistentState<
+    { id: string; slug: string }[] | undefined
+  >(undefined, {
+    key: 'member-groups-ids-and-slugs',
+    store: storageStore(safeLocalStorage()),
+  })
+
+  const userId = user?.id
+  useEffect(() => {
+    if (userId) {
+      return listenForMemberGroupIds(userId, (groupIds) => {
+        Promise.all(groupIds.map((id) => getGroup(id))).then((groups) =>
+          setGroupIdsAndSlugs(
+            filterDefined(groups).map((g) => ({ id: g.id, slug: g.slug }))
+          )
+        )
+      })
+    }
+  }, [setGroupIdsAndSlugs, userId])
+
+  console.log('groups', groupIdsAndSlugs)
+  return groupIdsAndSlugs
+}
+
 export function useMembers(groupId: string | undefined) {
   const [members, setMembers] = useState<User[]>([])
   useEffect(() => {
@@ -177,4 +203,8 @@ export function useGroupContractIds(groupId: string) {
   }, [groupId])
 
   return contractIds
+}
+
+export function useGroups(groupIds: string[]) {
+  return useStoreItems(groupIds, listenForGroup, { loadOnce: true })
 }

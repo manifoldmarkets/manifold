@@ -21,7 +21,8 @@ import {
   useUserContractMetricsByProfit,
 } from 'web/hooks/use-user'
 import {
-  useMemberGroupsSubscription,
+  useGroups,
+  useMemberGroupsIdsAndSlugs,
   useTrendingGroups,
 } from 'web/hooks/use-group'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -84,7 +85,7 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const followedGroups = useMemberGroupsSubscription(user)
+  const followedGroups = useMemberGroupsIdsAndSlugs(user)
   const shouldFilterDestiny = !followedGroups?.find((g) =>
     DESTINY_GROUP_SLUGS.includes(g.slug)
   )
@@ -229,7 +230,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               <TrendingGroupsSection
                 className="mb-4"
                 user={user}
-                myGroups={followedGroups}
+                followedGroupIds={followedGroups}
                 trendingGroups={trendingGroups}
               />
             ) : (
@@ -237,7 +238,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
             )}
             <GroupSections
               user={user}
-              followedGroups={followedGroups}
+              followedGroupIds={followedGroups}
               userBlockFacetFilters={userBlockFacetFilters}
             />
           </>
@@ -357,19 +358,20 @@ export function renderSections(
 
 const GroupSections = memo(function GroupSections(props: {
   user: User
-  followedGroups: Group[] | undefined
+  followedGroupIds: { id: string; slug: string }[] | undefined
   userBlockFacetFilters: string[]
 }) {
-  const { user, followedGroups, userBlockFacetFilters } = props
+  const { user, followedGroupIds, userBlockFacetFilters } = props
   const groupContracts =
     useContractsByDailyScoreGroups(
-      followedGroups?.map((g) => g.slug),
+      followedGroupIds?.map((g) => g.slug),
       userBlockFacetFilters
     ) ?? {}
 
-  const filteredGroups = (followedGroups ?? []).filter(
-    (g) => groupContracts[g.slug]
+  const groups = filterDefined(
+    useGroups(followedGroupIds?.map((g) => g.id) ?? [])
   )
+  const filteredGroups = groups.filter((g) => groupContracts[g.slug])
   const orderedGroups = sortBy(filteredGroups, (g) =>
     // Sort by sum of top two daily scores.
     sum(
@@ -606,13 +608,13 @@ export const ActivitySection = memo(function ActivitySection() {
 export const TrendingGroupsSection = memo(
   function TrendingGroupsSection(props: {
     user: User
-    myGroups: Group[]
+    followedGroupIds: { id: string; slug: string }[]
     trendingGroups: Group[]
     className?: string
   }) {
-    const { user, myGroups, trendingGroups, className } = props
+    const { user, followedGroupIds, trendingGroups, className } = props
 
-    const myGroupIds = new Set(myGroups.map((g) => g.id))
+    const myGroupIds = new Set(followedGroupIds.map((g) => g.id))
 
     const groups = trendingGroups.filter((g) => !myGroupIds.has(g.id))
     const count = 20
