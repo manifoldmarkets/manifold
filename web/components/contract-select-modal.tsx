@@ -33,7 +33,7 @@ export function SelectMarketsModal(props: {
   const [loading, setLoading] = useState(false)
 
   async function addContract(contract: Contract) {
-    if (contracts.map((c) => c.id).includes(contract.id)) {
+    if (contracts.find((c) => c.id === contract.id) !== undefined) {
       setContracts(contracts.filter((c) => c.id !== contract.id))
     } else setContracts([...contracts, contract])
   }

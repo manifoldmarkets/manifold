@@ -446,7 +446,7 @@ const removeSimilarQuestions = (
   // )
 
   const returnContracts = contractsToFilter.filter(
-    (cf) => !contractsToRemove.map((c) => c.id).includes(cf.id)
+    (cf) => !contractsToRemove.some((c) => c.id === cf.id)
   )
 
   return returnContracts
