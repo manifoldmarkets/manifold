@@ -49,11 +49,14 @@ import {
   getBinaryContractUserContractMetrics,
   ContractMetricsByOutcome,
 } from 'web/lib/firebase/contract-metrics'
+import { OrderByDirection } from 'firebase/firestore'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
   filterChallenges: true,
+  order: 'desc' as OrderByDirection,
 }
+export type BetPoint = { x: number; y: number }
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -63,8 +66,18 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? await listBets({ contractId, limit: 4000, ...CONTRACT_BET_FILTER })
+    ? await listBets({
+        contractId,
+        ...CONTRACT_BET_FILTER,
+      })
     : []
+  const betPoints = bets.map(
+    (bet) =>
+      ({
+        x: bet.createdTime,
+        y: bet.probAfter,
+      } as BetPoint)
+  )
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
   const userPositionsByOutcome =
@@ -75,9 +88,10 @@ export async function getStaticPropz(props: {
   return {
     props: {
       contract,
-      bets,
+      bets: bets.slice(0, 100),
       comments,
       userPositionsByOutcome,
+      betPoints,
     },
     revalidate: 60,
   }
@@ -92,12 +106,14 @@ export default function ContractPage(props: {
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
+  betPoints: BetPoint[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
     bets: [],
     comments: [],
     userPositionsByOutcome: {},
+    betPoints: [],
   }
 
   const inIframe = useIsIframe()
@@ -119,7 +135,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositionsByOutcome, comments } = props
+  const { userPositionsByOutcome, comments, betPoints } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -209,7 +225,11 @@ export function ContractPageContent(
         />
       )}
       <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
-        <ContractOverview contract={contract} bets={bets} />
+        <ContractOverview
+          contract={contract}
+          bets={bets}
+          betPoints={betPoints}
+        />
         {creator?.fractionResolvedCorrectly != null &&
           creator.fractionResolvedCorrectly < BAD_CREATOR_THRESHOLD && (
             <div className="pt-2">

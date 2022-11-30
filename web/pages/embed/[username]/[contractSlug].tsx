@@ -24,6 +24,7 @@ import { useContract } from 'web/hooks/use-contracts'
 import { useBets } from 'web/hooks/use-bets'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
+import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
@@ -38,11 +39,15 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId
-    ? await listBets({ contractId, ...CONTRACT_BET_LOADING_OPTS, limit: 4000 })
+    ? await listBets({ contractId, ...CONTRACT_BET_LOADING_OPTS })
     : []
+  const betPoints = bets.map((bet) => ({
+    x: bet.createdTime,
+    y: bet.probAfter,
+  }))
 
   return {
-    props: { contract, bets },
+    props: { contract, bets: bets.slice(0, 100), betPoints },
     revalidate: 60, // regenerate after a minute
   }
 }
@@ -54,8 +59,13 @@ export async function getStaticPaths() {
 export default function ContractEmbedPage(props: {
   contract: Contract | null
   bets: Bet[]
+  betPoints: BetPoint[]
 }) {
-  props = usePropz(props, getStaticPropz) ?? { contract: null, bets: [] }
+  props = usePropz(props, getStaticPropz) ?? {
+    contract: null,
+    bets: [],
+    betPoints: [],
+  }
   const router = useRouter()
 
   const contract = useContract(props.contract?.id) ?? props.contract
@@ -76,7 +86,13 @@ export default function ContractEmbedPage(props: {
   // Check ?graphColor=hex&textColor=hex from router
   const graphColor = router.query.graphColor as string
   const textColor = router.query.textColor as string
-  const embedProps = { contract, bets, graphColor, textColor }
+  const embedProps = {
+    contract,
+    bets,
+    graphColor,
+    textColor,
+    betPoints: props.betPoints,
+  }
 
   return <ContractEmbed {...embedProps} />
 }
@@ -84,6 +100,7 @@ export default function ContractEmbedPage(props: {
 interface EmbedProps {
   contract: Contract
   bets: Bet[]
+  betPoints: BetPoint[]
   graphColor?: string
   textColor?: string
 }
@@ -122,6 +139,7 @@ function ContractSmolView({
   bets,
   graphColor,
   textColor,
+  betPoints,
 }: EmbedProps) {
   const { question, outcomeType } = contract
 
@@ -170,6 +188,7 @@ function ContractSmolView({
             width={graphWidth}
             height={graphHeight}
             color={graphColor}
+            betPoints={betPoints}
           />
         )}
       </div>

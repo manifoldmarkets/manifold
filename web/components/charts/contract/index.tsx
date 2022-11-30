@@ -4,10 +4,12 @@ import { BinaryContractChart } from './binary'
 import { PseudoNumericContractChart } from './pseudo-numeric'
 import { ChoiceContractChart } from './choice'
 import { NumericContractChart } from './numeric'
+import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 
 export const ContractChart = (props: {
   contract: Contract
   bets: Bet[]
+  betPoints: BetPoint[]
   width: number
   height: number
   color?: string
