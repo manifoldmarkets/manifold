@@ -36,13 +36,13 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
     )
 
   const [blockedGroupContractIds, setBlockedGroupContractIds] = useState<
-    string[]
-  >([])
+    string[] | undefined
+  >(undefined)
 
   useEffect(() => {
     const blockedGroupSlugs = buildArray(
       privateUser?.blockedGroupSlugs ?? [],
-      shouldBlockDestiny && 'destinygg'
+      shouldBlockDestiny && DESTINY_GROUP_SLUGS
     )
 
     Promise.all(blockedGroupSlugs.map(getGroupBySlug))
@@ -52,10 +52,10 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
       .then((cids) => setBlockedGroupContractIds(cids.flat()))
   }, [privateUser, shouldBlockDestiny])
 
-  const blockedContractIds = [
-    ...blockedGroupContractIds,
-    ...(privateUser?.blockedContractIds ?? []),
-  ]
+  const blockedContractIds = buildArray(
+    blockedGroupContractIds,
+    privateUser?.blockedContractIds
+  )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
   const { count, showPills } = props
@@ -125,6 +125,7 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
     rawBets &&
     rawComments &&
     rawContracts &&
+    blockedGroupContractIds &&
     itemsSubset.every((item) =>
       'contractId' in item ? contractsById[item.contractId] : true
     )
