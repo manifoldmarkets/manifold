@@ -99,7 +99,7 @@ export async function getStaticPropz(props: {
 
   const userPositionsByOutcome =
     contractId && contract?.outcomeType === 'BINARY'
-      ? await getBinaryContractUserContractMetrics(contractId, 500)
+      ? await getBinaryContractUserContractMetrics(contractId, 100)
       : {}
   const topContractMetrics = contractId
     ? await getTopContractMetrics(contractId, 10)

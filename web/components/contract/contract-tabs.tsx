@@ -92,7 +92,7 @@ export function ContractTabs(props: {
 
   const outcomes = ['YES', 'NO']
   const positions =
-    useContractMetrics(contract.id, 500, outcomes) ??
+    useContractMetrics(contract.id, 100, outcomes) ??
     props.userPositionsByOutcome
   const positionsTitle =
     totalPositions === 0 ? 'Users' : totalPositions + ' Users'
