@@ -46,7 +46,7 @@ const numericSchema = z.object({
   value: z.number(),
 })
 
-export const placebet = newEndpoint({}, async (req, auth) => {
+export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
   log('Inside endpoint handler.')
   const { amount, contractId } = validate(bodySchema, req.body)
 
