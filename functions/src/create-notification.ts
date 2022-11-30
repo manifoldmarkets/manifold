@@ -1011,7 +1011,7 @@ export const createContractResolvedNotifications = async (
     }
 
     // Emails notifications
-    if (sendToEmail)
+    if (sendToEmail && !contract.isTwitchContract)
       await sendMarketResolutionEmail(
         reason,
         privateUser,
