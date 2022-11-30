@@ -71,6 +71,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   openCommentBounties?: number
   unlistedById?: string
   featuredLabel?: string
+  isTwitchContract?: boolean
 
   coverImageUrl?: string
 } & T
