@@ -6,7 +6,7 @@ import {
   Notification,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { IncomeNotificationItem } from 'web/components/notifications/income-summary-notifications'
@@ -32,15 +32,29 @@ import {
 
 export function NotificationItem(props: {
   notification: Notification
+  markedAsRead: boolean
   isChildOfGroup?: boolean
   isIncomeNotification?: boolean
 }) {
-  const { notification, isChildOfGroup, isIncomeNotification } = props
+  const { notification, isChildOfGroup, isIncomeNotification, markedAsRead } =
+    props
   const { sourceType, reason, sourceUpdateType } = notification
 
-  const [highlighted, _setHighlighted] = useState(!notification.isSeen)
+  const [highlighted, setHighlighted] = useState(!notification.isSeen)
+
+  useEffect(() => {
+    if (markedAsRead && highlighted) {
+      setHighlighted(!markedAsRead)
+    }
+  }, [markedAsRead, highlighted])
+
   if (isIncomeNotification) {
-    return <IncomeNotificationItem notification={notification} />
+    return (
+      <IncomeNotificationItem
+        notification={notification}
+        highlighted={highlighted}
+      />
+    )
   }
 
   // TODO Any new notification should be its own component

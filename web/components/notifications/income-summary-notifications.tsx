@@ -82,15 +82,16 @@ function combineNotificationsByAddingNumericSourceTexts(
 
 export function IncomeNotificationGroupItem(props: {
   notificationGroup: NotificationGroup
+  allMarkedAsRead: boolean
 }) {
-  const { notificationGroup } = props
+  const { notificationGroup, allMarkedAsRead } = props
   const { notifications } = notificationGroup
 
   const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
     notifications.filter((n) => n.sourceType !== 'betting_streak_bonus')
   )
   const [highlighted, setHighlighted] = useState(
-    notifications.some((n) => !n.isSeen)
+    allMarkedAsRead ? !allMarkedAsRead : notifications.some((n) => !n.isSeen)
   )
   const totalIncome = sum(
     notifications.map((notification) =>
@@ -120,18 +121,20 @@ export function IncomeNotificationGroupItem(props: {
   return (
     <NotificationGroupItemComponent
       notifications={combinedNotifs}
-      highlighted={highlighted}
       setHighlighted={setHighlighted}
       header={header}
       isIncomeNotification={true}
+      allMarkedAsRead={allMarkedAsRead}
     />
   )
 }
 
-export function IncomeNotificationItem(props: { notification: Notification }) {
-  const { notification } = props
+export function IncomeNotificationItem(props: {
+  notification: Notification
+  highlighted: boolean
+}) {
+  const { notification, highlighted } = props
   const { sourceType } = notification
-  const [highlighted, _setHighlighted] = useState(!notification.isSeen)
 
   if (sourceType === 'tip' || sourceType === 'tip_and_like') {
     return (

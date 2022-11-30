@@ -7,6 +7,7 @@ import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { useRouter } from 'next/router'
 import React, { ReactNode, useEffect, useMemo, useState } from 'react'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -40,6 +41,7 @@ export default function Notifications() {
   const router = useRouter()
   const [navigateToSection, setNavigateToSection] = useState<string>()
   const [activeIndex, setActiveIndex] = useState(0)
+  const [allMarkedAsRead, setAllMarkedAsRead] = useState(false)
 
   useRedirectIfSignedOut()
 
@@ -56,7 +58,19 @@ export default function Notifications() {
   return (
     <Page>
       <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
-        <Title text={'Notifications'} className={'hidden md:block'} />
+        <Row className="hidden w-full justify-between md:flex">
+          <Title text={'Notifications'} className="grow" />
+          <div className="my-auto">
+            <Button
+              onClick={() => {
+                setAllMarkedAsRead(true)
+                setTimeout(() => setAllMarkedAsRead(false), 50)
+              }}
+            >
+              Mark all as read
+            </Button>
+          </div>
+        </Row>
         <SEO title="Notifications" description="Manifold user notifications" />
 
         {privateUser && router.isReady && (
@@ -83,7 +97,12 @@ export default function Notifications() {
               tabs={[
                 {
                   title: 'Notifications',
-                  content: <NotificationsList privateUser={privateUser} />,
+                  content: (
+                    <NotificationsList
+                      privateUser={privateUser}
+                      allMarkedAsRead={allMarkedAsRead}
+                    />
+                  ),
                 },
                 {
                   title: 'Settings',
@@ -105,8 +124,9 @@ export default function Notifications() {
 
 function RenderNotificationGroups(props: {
   notificationGroups: NotificationGroup[]
+  allMarkedAsRead: boolean
 }) {
-  const { notificationGroups } = props
+  const { notificationGroups, allMarkedAsRead } = props
   const grayLine = <hr className="mx-auto w-[calc(100%-1rem)] bg-gray-400" />
   return (
     <>
@@ -116,6 +136,7 @@ function RenderNotificationGroups(props: {
             <IncomeNotificationGroupItem
               notificationGroup={notification}
               key={notification.groupedById + notification.timePeriod}
+              allMarkedAsRead={allMarkedAsRead}
             />
             {grayLine}
           </>
@@ -124,6 +145,7 @@ function RenderNotificationGroups(props: {
             <NotificationItem
               notification={notification.notifications[0]}
               key={notification.notifications[0].id}
+              markedAsRead={allMarkedAsRead}
             />
             {grayLine}
           </>
@@ -132,6 +154,7 @@ function RenderNotificationGroups(props: {
             <NotificationGroupItem
               notificationGroup={notification}
               key={notification.groupedById + notification.timePeriod}
+              allMarkedAsRead={allMarkedAsRead}
             />
             {grayLine}
           </>
@@ -141,8 +164,11 @@ function RenderNotificationGroups(props: {
   )
 }
 
-function NotificationsList(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
+function NotificationsList(props: {
+  privateUser: PrivateUser
+  allMarkedAsRead: boolean
+}) {
+  const { privateUser, allMarkedAsRead } = props
 
   const [page, setPage] = useState(0)
 
@@ -188,6 +214,7 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 
       <RenderNotificationGroups
         notificationGroups={paginatedGroupedNotifications}
+        allMarkedAsRead={allMarkedAsRead}
       />
       {paginatedGroupedNotifications.length > 0 &&
         allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
@@ -206,8 +233,9 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 function NotificationGroupItem(props: {
   notificationGroup: NotificationGroup
   className?: string
+  allMarkedAsRead: boolean
 }) {
-  const { notificationGroup } = props
+  const { notificationGroup, allMarkedAsRead } = props
   const { notifications } = notificationGroup
   const { sourceContractTitle } = notifications[0]
   const [highlighted, setHighlighted] = useState(
@@ -235,18 +263,18 @@ function NotificationGroupItem(props: {
   return (
     <NotificationGroupItemComponent
       notifications={notifications}
-      highlighted={highlighted}
       setHighlighted={setHighlighted}
       header={header}
+      allMarkedAsRead={allMarkedAsRead}
     />
   )
 }
 
 export function NotificationGroupItemComponent(props: {
   notifications: Notification[]
-  highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
   header: ReactNode
+  allMarkedAsRead: boolean
   isIncomeNotification?: boolean
   className?: string
 }) {
@@ -255,6 +283,7 @@ export function NotificationGroupItemComponent(props: {
     className,
     setHighlighted,
     header,
+    allMarkedAsRead,
     isIncomeNotification,
   } = props
 
@@ -291,6 +320,7 @@ export function NotificationGroupItemComponent(props: {
                 key={notification.id}
                 isChildOfGroup={true}
                 isIncomeNotification={isIncomeNotification}
+                markedAsRead={allMarkedAsRead}
               />
             )
           })}
