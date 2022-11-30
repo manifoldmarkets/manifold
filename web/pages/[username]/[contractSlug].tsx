@@ -54,7 +54,7 @@ import {
 import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import { ContractMetric } from 'common/contract-metric'
-import { HOUSE_BOT_USERNAME } from 'common/lib/envs/constants'
+import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
