@@ -1,5 +1,6 @@
 import { Html, Head, Main, NextScript } from 'next/document'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { BACKGROUND_COLOR, ENV_CONFIG } from 'common/envs/constants'
+import clsx from 'clsx'
 
 export default function Document() {
   return (
@@ -17,7 +18,7 @@ export default function Document() {
           crossOrigin="anonymous"
         />
       </Head>
-      <body className="font-readex-pro bg-gray-50">
+      <body className={clsx('font-readex-pro', BACKGROUND_COLOR)}>
         <Main />
         <NextScript />
       </body>

@@ -8,17 +8,18 @@ export const linkClass =
 export const SiteLink = (props: {
   href: string | undefined
   children?: ReactNode
-  onClick?: (e: any) => void
+  onClick?: (event?: any) => void
   className?: string
+  followsLinkClass?: boolean
 }) => {
-  const { href, children, onClick, className } = props
+  const { href, children, onClick, className, followsLinkClass } = props
 
   if (!href) return <>{children}</>
 
   return (
     <Link
       href={href}
-      className={clsx(linkClass, className)}
+      className={clsx(followsLinkClass ? linkClass : '', className)}
       target={href.startsWith('http') ? '_blank' : undefined}
       onClick={onClick}
     >

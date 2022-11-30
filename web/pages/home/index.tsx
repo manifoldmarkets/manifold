@@ -68,7 +68,7 @@ import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { GroupCard } from '../groups'
-import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { BACKGROUND_COLOR, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import Link from 'next/link'
 import { MINUTE_MS } from 'common/util/time'
 import { manaToUSD } from 'common/util/format'
@@ -430,7 +430,12 @@ function HomeSectionHeader(props: {
   const { label, href, children, icon } = props
 
   return (
-    <Row className="sticky top-0 z-20 my-1 items-center justify-between bg-gray-50 pb-2 text-gray-900">
+    <Row
+      className={clsx(
+        'sticky top-0 z-20 my-1 -ml-1 items-center justify-between pb-2 pl-1 text-gray-900',
+        BACKGROUND_COLOR
+      )}
+    >
       {icon != null && <div className="mr-2 inline">{icon}</div>}
       {href ? (
         <SiteLink

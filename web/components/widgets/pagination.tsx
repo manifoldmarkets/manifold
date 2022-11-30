@@ -57,7 +57,10 @@ export function Pagination(props: {
   const pageNumbers = getPageNumbers(maxPage, page)
   return (
     <nav
-      className={clsx('flex w-full items-center bg-white pt-2 pb-4', className)}
+      className={clsx(
+        'flex w-full items-center bg-inherit pt-2 pb-4',
+        className
+      )}
       aria-label="Pagination"
     >
       <Row className="mx-auto gap-4">
