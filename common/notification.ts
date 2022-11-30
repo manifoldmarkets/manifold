@@ -248,6 +248,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed:
       'Opt out of all notifications excluding your own market closure notifications',
   },
+  user_liked_your_content: {
+    simple: 'A user liked your content',
+    detailed: 'A user liked your comment, market, or other content',
+  },
 }
 
 export type BettingStreakData = {

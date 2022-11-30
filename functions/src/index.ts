@@ -30,10 +30,11 @@ export * from './weekly-markets-emails'
 export * from './reset-betting-streaks'
 export * from './reset-weekly-emails-flags'
 export * from './on-update-contract-follow'
-export * from './on-update-like'
+export * from 'functions/src/on-update-reaction'
 export * from './weekly-portfolio-emails'
 export * from './drizzle-liquidity'
 export * from './check-push-notification-receipts'
+export * from './on-update-reaction'
 
 // v2
 export * from './health'

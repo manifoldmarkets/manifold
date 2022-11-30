@@ -15,7 +15,14 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
     <Row className="gap-1">
       <FollowMarketButton contract={contract} user={user} />
 
-      <LikeItemButton item={contract} user={user} itemType={'contract'} />
+      <LikeItemButton
+        itemId={contract.id}
+        itemCreatorId={contract.creatorId}
+        user={user}
+        itemType={'contract'}
+        totalLikes={contract.likedByUserCount ?? 0}
+        contract={contract}
+      />
 
       <SimpleLinkButton getUrl={() => getShareUrl(contract, user?.username)} />
 

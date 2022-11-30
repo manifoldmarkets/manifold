@@ -1,70 +1,71 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
-import toast from 'react-hot-toast'
-import { likeItem } from 'web/lib/firebase/likes'
-import { LIKE_TIP_AMOUNT } from 'common/like'
+import { react } from 'web/lib/firebase/reactions'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { useItemTipTxns } from 'web/hooks/use-tip-txns'
-import { sum } from 'lodash'
-import { TipButton } from './tip-button'
+import clsx from 'clsx'
+import { HeartIcon } from '@heroicons/react/outline'
 import { Contract } from 'common/contract'
-import { Post } from 'common/post'
-import { formatMoney } from 'common/util/format'
 
 export function LikeItemButton(props: {
-  item: Contract | Post
+  itemId: string
+  itemCreatorId: string
   user: User | null | undefined
   itemType: string
+  totalLikes: number
+  contract: Contract
 }) {
-  const { item, user, itemType } = props
+  const { user, itemType, itemCreatorId, itemId, totalLikes, contract } = props
 
-  const tips = useItemTipTxns(item.id)
-  const [tempTip, setTempTip] = useState(0)
-
-  const totalTipped = useMemo(() => {
-    return sum(tips.map((tip) => tip.amount))
-  }, [tips])
-
+  const disabled = !user || itemCreatorId === user?.id
+  const [hover, setHover] = useState(false)
+  // const [liked, setLiked] = useState(false)
   const likes = useUserLikes(user?.id)
 
-  const [isLiking, setIsLiking] = useState(false)
-
-  const userLikedItemIds = likes
-    ?.filter((l) => l.type === 'contract' || l.type === 'post')
-    .map((l) => l.id)
+  const userLikedItemIds = likes?.map((l) => l.id)
+  const userLiked = userLikedItemIds?.includes(itemId)
 
   const onLike = async () => {
     if (!user) return firebaseLogin()
-    setTempTip((tempTip) => tempTip + LIKE_TIP_AMOUNT)
-
-    setIsLiking(true)
-    likeItem(user, item, itemType)
-      .then(() => {
-        setTempTip((tempTip) => tempTip - LIKE_TIP_AMOUNT)
-      })
-      .catch(() => {
-        setIsLiking(false)
-      })
-    toast(`Tipped ${item.creatorUsername} ${formatMoney(LIKE_TIP_AMOUNT)}`)
+    await react(
+      user,
+      itemId,
+      itemCreatorId,
+      itemType,
+      contract,
+      contract.question
+    )
   }
 
   return (
-    <TipButton
+    <button
       onClick={onLike}
-      tipAmount={LIKE_TIP_AMOUNT}
-      totalTipped={totalTipped}
-      userTipped={
-        !!user &&
-        (isLiking ||
-          userLikedItemIds?.includes(item.id) ||
-          (!likes && !!item.likedByUserIds?.includes(user.id)))
-      }
-      disabled={
-        !user ||
-        item.creatorId === user?.id ||
-        user.balance - tempTip < LIKE_TIP_AMOUNT
-      }
-    />
+      disabled={disabled}
+      className={clsx(
+        'px-2 py-1 text-xs', //2xs button
+        'text-gray-500 transition-transform disabled:cursor-not-allowed',
+        !disabled ? 'hover:text-gray-600' : ''
+      )}
+      onMouseOver={() => {
+        if (!disabled) {
+          setHover(true)
+        }
+      }}
+      onMouseLeave={() => setHover(false)}
+    >
+      <div className="relative m-px">
+        <div className={clsx(hover ? 'bg-red-300' : '')}>
+          <HeartIcon className="h-4 w-4" />
+          <div
+            className={clsx(
+              userLiked && 'text-indigo-600',
+              'absolute top-0.5 text-[0.5rem]'
+            )}
+          >
+            {totalLikes > 0 ? totalLikes : ''}
+          </div>
+        </div>
+      </div>
+    </button>
   )
 }

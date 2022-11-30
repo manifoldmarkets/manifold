@@ -19,7 +19,6 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { createCommentOnContract } from 'web/lib/firebase/comments'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
-import { Tipper } from '../widgets/tipper'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useEvent } from 'web/hooks/use-event'
 import { Content } from '../widgets/editor'
@@ -34,6 +33,7 @@ import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { toast } from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { FlagIcon } from '@heroicons/react/outline'
+import { LikeItemButton } from 'web/components/contract/like-item-button'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -76,7 +76,7 @@ export function FeedCommentThread(props: {
         highlighted={highlightedId === parentComment.id}
         myTip={user ? tips[parentComment.id]?.[user.id] : undefined}
         totalTip={sum(Object.values(tips[parentComment.id] ?? {}))}
-        showTip={true}
+        showLike={true}
         seeReplies={seeReplies}
         numComments={threadComments.length}
         onSeeReplyClick={onSeeRepliesClick}
@@ -91,7 +91,7 @@ export function FeedCommentThread(props: {
             highlighted={highlightedId === comment.id}
             myTip={user ? tips[comment.id]?.[user.id] : undefined}
             totalTip={sum(Object.values(tips[comment.id] ?? {}))}
-            showTip={true}
+            showLike={true}
             onReplyClick={onReplyClick}
           />
         ))}
@@ -113,7 +113,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   contract: Contract
   comment: ContractComment
   highlighted?: boolean
-  showTip?: boolean
+  showLike?: boolean
   myTip?: number
   totalTip?: number
   seeReplies: boolean
@@ -127,7 +127,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     highlighted,
     myTip,
     totalTip,
-    showTip,
+    showLike,
     onReplyClick,
     onSeeReplyClick,
     seeReplies,
@@ -169,7 +169,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
           <CommentActions
             onReplyClick={onReplyClick}
             comment={comment}
-            showTip={showTip}
+            showLike={showLike}
             myTip={myTip}
             totalTip={totalTip}
             contract={contract}
@@ -183,12 +183,12 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
   comment: ContractComment
-  showTip?: boolean
+  showLike?: boolean
   myTip?: number
   totalTip?: number
   contract: Contract
 }) {
-  const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
+  const { onReplyClick, comment, showLike, contract } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   return (
@@ -198,8 +198,15 @@ export function CommentActions(props: {
           <ReplyIcon className="h-5 w-5" />
         </IconButton>
       )}
-      {showTip && (
-        <Tipper comment={comment} myTip={myTip ?? 0} totalTip={totalTip ?? 0} />
+      {showLike && (
+        <LikeItemButton
+          itemCreatorId={comment.userId}
+          itemId={comment.id}
+          user={user}
+          itemType={'comment'}
+          totalLikes={comment.likes ?? 0}
+          contract={contract}
+        />
       )}
       {(contract.openCommentBounties ?? 0) > 0 && (
         <AwardBountyButton comment={comment} contract={contract} />
@@ -247,7 +254,7 @@ export const FeedComment = memo(function FeedComment(props: {
   contract: Contract
   comment: ContractComment
   highlighted?: boolean
-  showTip?: boolean
+  showLike?: boolean
   myTip?: number
   totalTip?: number
   onReplyClick?: (comment: ContractComment) => void
@@ -258,7 +265,7 @@ export const FeedComment = memo(function FeedComment(props: {
     highlighted,
     myTip,
     totalTip,
-    showTip,
+    showLike,
     onReplyClick,
   } = props
   const { text, content, userUsername, userAvatarUrl } = comment
@@ -288,7 +295,7 @@ export const FeedComment = memo(function FeedComment(props: {
         <CommentActions
           onReplyClick={onReplyClick}
           comment={comment}
-          showTip={showTip}
+          showLike={showLike}
           myTip={myTip}
           totalTip={totalTip}
           contract={contract}

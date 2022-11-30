@@ -1,27 +1,29 @@
 import { useEffect, useState } from 'react'
-import { listenForLikes } from 'web/lib/firebase/users'
-import { Like } from 'common/like'
 import { Contract } from 'common/contract'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { filterDefined } from 'common/util/array'
+import { collection, query, where } from 'firebase/firestore'
+import { users } from 'web/lib/firebase/users'
+import { listenForValues } from 'web/lib/firebase/utils'
+import { Reaction } from 'common/reaction'
 
 export const useUserLikes = (userId: string | undefined) => {
-  const [contractIds, setContractIds] = useState<Like[] | undefined>()
+  const [reactionIds, setReactionIds] = useState<Reaction[] | undefined>()
 
   useEffect(() => {
-    if (userId) return listenForLikes(userId, setContractIds)
+    if (userId) return listenForLikes(userId, setReactionIds)
   }, [userId])
 
-  return contractIds
+  return reactionIds
 }
 export const useUserLikedContracts = (userId: string | undefined) => {
-  const [likes, setLikes] = useState<Like[] | undefined>()
+  const [likes, setLikes] = useState<Reaction[] | undefined>()
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   useEffect(() => {
     if (userId)
       return listenForLikes(userId, (likes) => {
-        setLikes(likes.filter((l) => l.type === 'contract'))
+        setLikes(likes.filter((l) => l.onType === 'contract'))
       })
   }, [userId])
 
@@ -35,4 +37,12 @@ export const useUserLikedContracts = (userId: string | undefined) => {
   }, [likes])
 
   return contracts
+}
+
+function listenForLikes(userId: string, setLikes: (likes: Reaction[]) => void) {
+  const likes = query(
+    collection(users, userId, 'reactions'),
+    where('type', '==', 'like')
+  )
+  return listenForValues<Reaction>(likes, (docs) => setLikes(docs))
 }

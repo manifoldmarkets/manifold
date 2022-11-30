@@ -78,7 +78,7 @@ service cloud.firestore {
       allow write: if request.auth.uid == userId;
     }
 
-    match /users/{userId}/likes/{likeId} {
+    match /users/{userId}/reactions/{reactionId} {
       allow read;
       allow write: if request.auth.uid == userId;
     }

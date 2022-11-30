@@ -23,7 +23,6 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
 import { Group } from '../../common/group'
 import { Challenge } from '../../common/challenge'
-import { Like } from '../../common/like'
 import {
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
@@ -40,6 +39,7 @@ import {
 import { ContractFollow } from '../../common/follow'
 import { Badge } from '../../common/badge'
 import { createPushNotification } from './create-push-notification'
+import { Reaction } from 'common/reaction'
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -709,49 +709,37 @@ export const createBettingStreakBonusNotification = async (
 }
 
 export const createLikeNotification = async (
-  fromUser: User,
-  toUser: User,
-  like: Like,
-  idempotencyKey: string,
-  contract: Contract,
-  tip?: TipTxn
+  like: Reaction,
+  idempotencyKey: string
 ) => {
-  const privateUser = await getPrivateUser(toUser.id)
+  const privateUser = await getPrivateUser(like.toUserId)
   if (!privateUser) return
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
-    'liked_and_tipped_your_contract'
+    'user_liked_your_content'
   )
   if (!sendToBrowser) return
 
-  // not handling just likes, must include tip
-  if (!tip) return
-
   const notificationRef = firestore
-    .collection(`/users/${toUser.id}/notifications`)
+    .collection(`/users/${like.toUserId}/notifications`)
     .doc(idempotencyKey)
   const notification: Notification = {
     id: idempotencyKey,
-    userId: toUser.id,
-    reason: 'liked_and_tipped_your_contract',
+    userId: like.toUserId,
+    reason: 'user_liked_your_content',
     createdTime: Date.now(),
     isSeen: false,
     sourceId: like.id,
-    sourceType: tip ? 'tip_and_like' : 'like',
+    sourceType: 'like',
     sourceUpdateType: 'created',
-    sourceUserName: fromUser.name,
-    sourceUserUsername: fromUser.username,
-    sourceUserAvatarUrl: fromUser.avatarUrl,
-    sourceText: tip?.amount.toString(),
-    sourceContractCreatorUsername: contract.creatorUsername,
-    sourceContractTitle: contract.question,
-    sourceContractSlug: contract.slug,
-    sourceSlug: contract.slug,
-    sourceTitle: contract.question,
+    sourceUserName: like.userDisplayName,
+    sourceUserUsername: like.userUsername,
+    sourceUserAvatarUrl: like.userAvatarUrl,
+    sourceText: like.onType,
+    sourceSlug: like.slug,
+    sourceTitle: like.text,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
-
-  // TODO send email notification
 }
 
 export const createUniqueBettorBonusNotification = async (
