@@ -15,7 +15,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import { Bet, listBets } from 'web/lib/firebase/bets'
+import { Bet, getTotalBetCount, listBets } from 'web/lib/firebase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -50,6 +50,7 @@ import {
   ContractMetricsByOutcome,
 } from 'web/lib/firebase/contract-metrics'
 import { OrderByDirection } from 'firebase/firestore'
+import { removeUndefinedProps } from 'common/util/object'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
@@ -64,6 +65,7 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
+  const totalBets = contractId ? await getTotalBetCount(contractId) : 0
   // Prioritize newer bets via descending order
   const bets = contractId
     ? await listBets({
@@ -73,14 +75,14 @@ export async function getStaticPropz(props: {
         order: 'desc' as OrderByDirection,
       })
     : []
-  const includeAvatar = bets.length < 500
+  const includeAvatar = totalBets < 500
   const betPoints = bets.map(
     (bet) =>
-      ({
+      removeUndefinedProps({
         x: bet.createdTime,
         y: bet.probAfter,
         bet: includeAvatar ? { userAvatarUrl: bet.userAvatarUrl } : undefined,
-      } as BetPoint)
+      }) as BetPoint
   )
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
@@ -92,10 +94,11 @@ export async function getStaticPropz(props: {
   return {
     props: {
       contract,
-      bets: bets.slice(bets.length - 100, bets.length).reverse(),
+      bets: bets.slice(0, 100).reverse(),
       comments,
       userPositionsByOutcome,
       betPoints,
+      totalBets,
     },
     revalidate: 60,
   }
@@ -111,6 +114,7 @@ export default function ContractPage(props: {
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
   betPoints: BetPoint[]
+  totalBets: number
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -118,6 +122,7 @@ export default function ContractPage(props: {
     comments: [],
     userPositionsByOutcome: {},
     betPoints: [],
+    totalBets: 0,
   }
 
   const inIframe = useIsIframe()
@@ -166,6 +171,7 @@ export function ContractPageContent(
     afterTime: lastBetTime,
     ...CONTRACT_BET_FILTER,
   })
+  const totalBets = props.totalBets + (newBets?.length ?? 0)
   const bets = props.bets.concat(newBets ?? [])
   const betPoints = props.betPoints.concat(
     newBets?.map(
@@ -173,6 +179,7 @@ export function ContractPageContent(
         ({
           x: bet.createdTime,
           y: bet.probAfter,
+          bet: { userAvatarUrl: bet.userAvatarUrl },
         } as BetPoint)
     ) ?? []
   )
@@ -301,6 +308,7 @@ export function ContractPageContent(
           <ContractTabs
             contract={contract}
             bets={bets}
+            totalBets={totalBets}
             userBets={userBets ?? []}
             comments={comments}
             userPositionsByOutcome={userPositionsByOutcome}

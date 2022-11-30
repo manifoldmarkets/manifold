@@ -13,6 +13,7 @@ import {
   getDoc,
   DocumentSnapshot,
   Query,
+  getCountFromServer,
 } from 'firebase/firestore'
 import { uniq } from 'lodash'
 
@@ -73,6 +74,12 @@ export const getBetsQuery = (options?: BetFilter) => {
 
 export async function listBets(options?: BetFilter) {
   return await getValues<Bet>(getBetsQuery(options))
+}
+
+export async function getTotalBetCount(contractId: string) {
+  const betsRef = collection(db, `contracts/${contractId}/bets`)
+  const snap = await getCountFromServer(betsRef)
+  return snap.data().count
 }
 
 export function listenForBets(

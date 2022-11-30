@@ -54,6 +54,7 @@ export function ContractTabs(props: {
   blockedUserIds: string[]
   activeIndex: number
   setActiveIndex: (i: number) => void
+  totalBets: number
 }) {
   const {
     contract,
@@ -64,6 +65,7 @@ export function ContractTabs(props: {
     blockedUserIds,
     activeIndex,
     setActiveIndex,
+    totalBets,
   } = props
 
   const contractComments = useComments(contract.id) ?? props.comments
@@ -78,7 +80,7 @@ export function ContractTabs(props: {
   const commentTitle =
     comments.length === 0 ? 'Comments' : `${comments.length} Comments`
 
-  const betsTitle = bets.length === 0 ? 'Trades' : `${bets.length} Trades`
+  const betsTitle = totalBets === 0 ? 'Trades' : `${totalBets} Trades`
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
@@ -115,7 +117,7 @@ export function ContractTabs(props: {
             />
           ),
         },
-        bets.length > 0 && {
+        totalBets > 0 && {
           title: betsTitle,
           content: (
             <Col className={'gap-4'}>
