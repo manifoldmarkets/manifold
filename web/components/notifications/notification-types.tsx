@@ -303,18 +303,22 @@ function MarketResolvedNotification(props: {
   } = notification
   const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
   const profit = userPayout - userInvestment
-  const profitable = profit >= 0
-  const subtitle =
-    sourceText === 'CANCEL' ? (
-      <>Your {formatMoney(userInvestment)} invested has been returned to you</>
-    ) : profitable ? (
-      <>
-        Your {formatMoney(userInvestment)} investment won{' '}
-        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit!
-      </>
-    ) : (
-      <>You lost {formatMoney(Math.abs(profit))} ... Better luck next time!</>
-    )
+  const profitable = profit >= 0 
+  let subtitle = <>;
+  if (userInvestment > 0) {
+    if (sourceText === 'CANCEL') {
+      subtitle = <>Your {formatMoney(userInvestment)} invested has been returned to you</>
+    } else {
+      if (profitable) {
+        subtitle = <>
+          Your {formatMoney(userInvestment)} investment won{' '}
+          <span className="text-teal-600">+{formatMoney(profit)}</span> in profit!
+          </>
+      } else {
+        subtitle = <>You lost {formatMoney(Math.abs(profit))} ... Better luck next time!</>
+      }
+    }
+  }
 
   const resolutionDescription = () => {
     if (!sourceText) return <div />
