@@ -57,7 +57,10 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   })
   const top = Object.values(userProfits)
     .filter((p) => p.total > 0)
-    .slice(0, userIsAlreadyRanked ? 5 : 6)
+    .slice(
+      0,
+      !currentUser || userIsAlreadyRanked || !currentUserMetrics ? 5 : 6
+    )
 
   return top && top.length > 0 ? (
     <Leaderboard
