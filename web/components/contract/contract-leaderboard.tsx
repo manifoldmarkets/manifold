@@ -2,29 +2,30 @@ import { formatMoney } from 'common/util/format'
 
 import { Leaderboard } from '../leaderboard'
 import { BETTORS, User } from 'common/user'
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { ContractMetric } from 'common/contract-metric'
 import { getProfitRankForContract } from 'web/lib/firebase/contract-metrics'
 import { removeUndefinedProps } from 'common/util/object'
+import { useUserContractMetric } from 'web/hooks/use-user-contract-metric'
 
-export const ContractLeaderboard = function ContractLeaderboard(props: {
+export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   topContractMetrics: ContractMetric[]
-  currentUserMetrics?: ContractMetric
   currentUser: User | undefined | null
   contractId: string
 }) {
-  const { topContractMetrics, currentUserMetrics, currentUser, contractId } =
-    props
+  const { topContractMetrics, currentUser, contractId } = props
+  const currentUserMetrics = useUserContractMetric(currentUser?.id, contractId)
   const [yourRank, setYourRank] = useState<number | undefined>(undefined)
   const userIsAlreadyRanked =
     currentUser &&
     topContractMetrics.map((m) => m.userId).includes(currentUser.id)
 
   useEffect(() => {
-    if (currentUserMetrics?.profit && !yourRank)
+    if (currentUserMetrics?.profit && !yourRank) {
       getProfitRankForContract(currentUserMetrics.profit, contractId).then(
         (rank) => setYourRank(rank)
       )
+    }
   }, [currentUserMetrics?.profit, yourRank, contractId])
 
   const allMetrics =
@@ -72,4 +73,4 @@ export const ContractLeaderboard = function ContractLeaderboard(props: {
       highlightUsername={currentUser?.username}
     />
   ) : null
-}
+})

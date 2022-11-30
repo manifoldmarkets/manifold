@@ -54,7 +54,6 @@ import {
 import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import { ContractMetric } from 'common/contract-metric'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { HOUSE_BOT_USERNAME } from 'common/lib/envs/constants'
 
 const CONTRACT_BET_FILTER = {
@@ -213,7 +212,6 @@ export function ContractPageContent(
     userId: user?.id ?? '_',
     filterAntes: true,
   })
-  const metrics = useSavedContractMetrics(contract, bets)
 
   const { isResolved, question, outcomeType } = contract
 
@@ -321,7 +319,6 @@ export function ContractPageContent(
                 (metric) => metric.userUsername !== HOUSE_BOT_USERNAME
               )}
               contractId={contract.id}
-              currentUserMetrics={metrics}
               currentUser={user}
             />
             <Spacer h={12} />
