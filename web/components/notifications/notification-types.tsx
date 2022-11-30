@@ -19,6 +19,7 @@ import {
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { BadgesModal } from '../profile/badges-modal'
+import { Linkify } from '../widgets/linkify'
 import { truncateText } from '../widgets/truncate'
 import {
   AvatarNotificationIcon,
@@ -37,7 +38,7 @@ export function NotificationItem(props: {
   const { notification, isChildOfGroup, isIncomeNotification } = props
   const { sourceType, reason, sourceUpdateType } = notification
 
-  const [highlighted] = useState(!notification.isSeen)
+  const highlighted = !notification.isSeen
   if (isIncomeNotification) {
     return <IncomeNotificationItem notification={notification} />
   }
@@ -524,7 +525,7 @@ function MarketUpdateNotification(props: {
   const subtitle =
     sourceText && parseInt(sourceText) > 0 ? (
       <span>
-        updated close time: {new Date(parseInt(sourceText)).toLocaleString()}
+        Updated close time: {new Date(parseInt(sourceText)).toLocaleString()}
       </span>
     ) : (
       sourceText
@@ -575,6 +576,7 @@ function CommentNotification(props: {
     reason === 'reply_to_users_answer' || reason === 'reply_to_users_comment'
       ? 'replied to you '
       : `commented `
+  const comment = truncateText(sourceText, 'xl')
   return (
     <NotificationFrame
       notification={notification}
@@ -583,7 +585,7 @@ function CommentNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'💬'} />
       }
-      subtitle={truncateText(sourceText, 'xl')}
+      subtitle={comment ? <Linkify text={comment} /> : <></>}
       link={getSourceUrl(notification)}
     >
       <>

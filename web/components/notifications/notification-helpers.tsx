@@ -43,7 +43,7 @@ export function PrimaryNotificationLink(props: {
 }) {
   const { text, truncatedLength } = props
   if (!text) {
-    ;<></>
+    return <></>
   }
   return (
     <span className="font-semibold transition-colors hover:text-indigo-500">

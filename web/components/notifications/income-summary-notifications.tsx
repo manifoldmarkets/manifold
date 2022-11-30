@@ -133,7 +133,7 @@ export function IncomeNotificationGroupItem(props: {
 export function IncomeNotificationItem(props: { notification: Notification }) {
   const { notification } = props
   const { sourceType } = notification
-  const [highlighted] = useState(!notification.isSeen)
+  const highlighted = !notification.isSeen
 
   if (sourceType === 'tip' || sourceType === 'tip_and_like') {
     return (
@@ -177,6 +177,16 @@ export function TipIncomeNotification(props: {
     sourceContractTitle,
     sourceTitle,
   } = notification
+  const [open, setOpen] = useState(false)
+  const userLinks: MultiUserLinkInfo[] = notification.data?.uniqueUsers ?? []
+  const multipleTips = userLinks.length > 1
+  const tippersText = multipleTips
+    ? `${sourceUserName} & ${userLinks.length - 1} other${
+        userLinks.length - 1 > 1 ? 's' : ''
+      }`
+    : sourceUserName
+    ? sourceUserName
+    : 'some users'
   return (
     <NotificationFrame
       notification={notification}
@@ -185,18 +195,26 @@ export function TipIncomeNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'💰'} />
       }
-      link={getIncomeSourceUrl(notification)}
+      // link={getIncomeSourceUrl(notification)}
+      onClick={() => setOpen(true)}
     >
       <span>
-        {incomeNotificationLabel(notification)}{' '}
-        <UserLink
+        <IncomeNotificationLabel notification={notification} />{' '}
+        {/* <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
           className={'relative flex-shrink-0 hover:text-indigo-500'}
-        />{' '}
-        tipped you on{' '}
-        <PrimaryNotificationLink text={sourceContractTitle || sourceTitle} />
+        /> */}
+        {tippersText && <PrimaryNotificationLink text={tippersText} />} tipped
+        you on <QuestionOrGroupLink notification={notification} />
+        {/* <PrimaryNotificationLink text={sourceContractTitle || sourceTitle} /> */}
       </span>
+      <MultiUserTransactionModal
+        userInfos={userLinks}
+        modalLabel={'Who tipped you'}
+        open={open}
+        setOpen={setOpen}
+      />
     </NotificationFrame>
   )
 }
@@ -225,7 +243,7 @@ export function BonusIncomeNotification(props: {
       onClick={() => setOpen(true)}
     >
       <span>
-        {incomeNotificationLabel(notification)} Bonus for{' '}
+        <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
           text={
             sourceText
@@ -260,10 +278,6 @@ export function BettingStreakBonusIncomeNotification(props: {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const streakInDays = notification.data?.streak
-    ? notification.data?.streak
-    : Date.now() - notification.createdTime > 24 * 60 * 60 * 1000
-    ? parseInt(sourceText ?? '0') / BETTING_STREAK_BONUS_AMOUNT
-    : user?.currentBettingStreak ?? 0
   return (
     <NotificationFrame
       notification={notification}
@@ -280,13 +294,11 @@ export function BettingStreakBonusIncomeNotification(props: {
       onClick={() => setOpen(true)}
     >
       <span>
-        {incomeNotificationLabel(notification)} Bonus for your{' '}
-        {sourceText && (
-          <span>
-            🔥 {streakInDays}
-            {+sourceText === BETTING_STREAK_BONUS_MAX && <span>(max)</span>} day
-          </span>
-        )}{' '}
+        <IncomeNotificationLabel notification={notification} />{' '}
+        {sourceText && +sourceText === BETTING_STREAK_BONUS_MAX && (
+          <span>(max) </span>
+        )}
+        Bonus for your {sourceText && <span>🔥 {streakInDays} day</span>}{' '}
         <PrimaryNotificationLink text="Prediction Streak" />
       </span>
       <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
@@ -316,8 +328,8 @@ export function LoanIncomeNotification(props: {
       onClick={() => setOpen(true)}
     >
       <span>
-        {incomeNotificationLabel(notification)} of your invested predictions
-        returned as a{' '}
+        <IncomeNotificationLabel notification={notification} /> of your invested
+        predictions returned as a{' '}
         <span>
           <PrimaryNotificationLink text="Loan" />
         </span>
@@ -350,7 +362,8 @@ export function getIncomeSourceUrl(notification: Notification) {
     )}`
 }
 
-export function incomeNotificationLabel(notification: Notification) {
+export function IncomeNotificationLabel(props: { notification: Notification }) {
+  const { notification } = props
   const { sourceText } = notification
   return sourceText ? (
     <span className="text-teal-600">{formatMoney(parseInt(sourceText))}</span>

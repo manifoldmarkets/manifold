@@ -11,14 +11,14 @@ export type Notification = {
   viewTime?: number
   isSeen: boolean
 
-  sourceId?: string
+  sourceId: string
   sourceType?: notification_source_types
   sourceUpdateType?: notification_source_update_types
   sourceContractId?: string
-  sourceUserName?: string
-  sourceUserUsername?: string
-  sourceUserAvatarUrl?: string
-  sourceText?: string
+  sourceUserName: string
+  sourceUserUsername: string
+  sourceUserAvatarUrl: string
+  sourceText: string
   data?: { [key: string]: any }
 
   sourceContractTitle?: string
