@@ -14,19 +14,23 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   contractId: string
 }) {
   const { topContractMetrics, currentUser, contractId } = props
+  const topRankedUserIds = topContractMetrics.map((m) => m.userId)
   const currentUserMetrics = useUserContractMetric(currentUser?.id, contractId)
-  const [yourRank, setYourRank] = useState<number | undefined>(undefined)
   const userIsAlreadyRanked =
-    currentUser &&
-    topContractMetrics.map((m) => m.userId).includes(currentUser.id)
+    currentUser && topRankedUserIds.includes(currentUser.id)
+  const [yourRank, setYourRank] = useState<number | undefined>(
+    userIsAlreadyRanked
+      ? topRankedUserIds.indexOf(currentUser.id) + 1
+      : undefined
+  )
 
   useEffect(() => {
-    if (currentUserMetrics?.profit && !yourRank) {
+    if (currentUserMetrics?.profit && !yourRank && !userIsAlreadyRanked) {
       getProfitRankForContract(currentUserMetrics.profit, contractId).then(
         (rank) => setYourRank(rank)
       )
     }
-  }, [currentUserMetrics?.profit, yourRank, contractId])
+  }, [currentUserMetrics?.profit, yourRank, contractId, userIsAlreadyRanked])
 
   const allMetrics =
     currentUserMetrics && currentUser && !userIsAlreadyRanked
@@ -50,12 +54,13 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
       avatarUrl: cm.userAvatarUrl,
       total: profit,
       rank:
-        cm.userId === currentUser?.id
+        cm.userId === currentUser?.id && yourRank
           ? yourRank
           : topContractMetrics.indexOf(cm) + 1,
     })
   })
   const top = Object.values(userProfits)
+    .sort((a, b) => b.total - a.total)
     .filter((p) => p.total > 0)
     .slice(
       0,
