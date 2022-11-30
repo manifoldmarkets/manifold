@@ -132,6 +132,7 @@ export async function createBinaryMarket(
     initialProb: initialProb_percent,
     ...(groupID && { groupId: groupID }),
     visibility,
+    isTwitchContract: true,
   };
   return <Promise<ManifoldAPITypes.LiteMarket>>(await post(`${MANIFOLD_API_BASE_URL}market`, APIKey, requestData)).json();
 }
