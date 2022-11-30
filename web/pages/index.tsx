@@ -23,9 +23,7 @@ import {
   useContractsByDailyScore,
   useTrendingContracts,
 } from 'web/hooks/use-contracts'
-import { trendingIndex } from 'web/lib/service/algolia'
-import { CPMMBinaryContract, Contract } from 'common/contract'
-import { sortBy } from 'lodash'
+import { Contract } from 'common/contract'
 import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import Link from 'next/link'
@@ -37,27 +35,8 @@ import { Title } from 'web/components/widgets/title'
 import { formatMoney } from 'common/util/format'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
-  const trending = await trendingIndex.search<CPMMBinaryContract>('', {
-    facetFilters: ['isResolved:false', 'visibility:public'].concat([
-      'groupSlugs:-destinygg',
-    ]),
-    hitsPerPage: 10,
-  })
-  const trendingPossiblyWithDestiny =
-    await trendingIndex.search<CPMMBinaryContract>('', {
-      facetFilters: ['isResolved:false', 'visibility:public'],
-      hitsPerPage: 10,
-    })
-  const destinyMarket = trendingPossiblyWithDestiny.hits.filter((c) =>
-    c.groupSlugs?.includes('destinygg')
-  )
-  // add one destiny market to trending
-  if (destinyMarket.length > 0) trending.hits.push(destinyMarket[0])
-
   return {
-    props: {
-      hotContracts: sortBy(trending.hits, (c) => -(c.popularityScore ?? 0)),
-    },
+    props: {},
   }
 })
 

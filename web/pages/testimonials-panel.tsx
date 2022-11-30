@@ -117,6 +117,7 @@ export default function TestimonialsPanel() {
             >
               {testimonialList.map((testimonial, index) => (
                 <PaginationCircle
+                  key={testimonial.name}
                   currentPageNumber={pageNumber}
                   pageNumber={index}
                   onClick={() => {
