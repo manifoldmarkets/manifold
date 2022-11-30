@@ -1,43 +1,71 @@
-import { Bet } from 'common/bet'
-import { getContractBetMetrics } from 'common/calculate'
-import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 
-import { groupBy, mapValues } from 'lodash'
 import { Leaderboard } from '../leaderboard'
-import { BETTORS } from 'common/user'
-import { memo } from 'react'
-import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { BETTORS, User } from 'common/user'
+import { memo, useEffect, useState } from 'react'
+import { ContractMetric } from 'common/contract-metric'
+import { getProfitRankForContract } from 'web/lib/firebase/contract-metrics'
+import { removeUndefinedProps } from 'common/util/object'
+import { useUserContractMetric } from 'web/hooks/use-user-contract-metric'
 
 export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
-  contract: Contract
-  bets: Bet[]
+  topContractMetrics: ContractMetric[]
+  currentUser: User | undefined | null
+  contractId: string
 }) {
-  const { contract, bets } = props
+  const { topContractMetrics, currentUser, contractId } = props
+  const currentUserMetrics = useUserContractMetric(currentUser?.id, contractId)
+  const [yourRank, setYourRank] = useState<number | undefined>(undefined)
+  const userIsAlreadyRanked =
+    currentUser &&
+    topContractMetrics.map((m) => m.userId).includes(currentUser.id)
 
-  // Create a map of userIds to total profits (including sales)
-  const betsByUser = groupBy(bets, 'userId')
-  const userProfits = mapValues(betsByUser, (bets) => {
-    const nonAntes = bets.filter((b) => !b.isAnte)
-    const { profit } = getContractBetMetrics(contract, nonAntes)
-    return {
-      name: bets[0].userName,
-      username: bets[0].userUsername,
-      avatarUrl: bets[0].userAvatarUrl,
-      total: profit,
+  useEffect(() => {
+    if (currentUserMetrics?.profit && !yourRank) {
+      getProfitRankForContract(currentUserMetrics.profit, contractId).then(
+        (rank) => setYourRank(rank)
+      )
     }
-  })
-  // Find the 5 users with the most profits
-  const top5 = Object.values(userProfits)
-    .sort((p1, p2) => p2.total - p1.total)
-    .filter((p) => p.total > 0)
-    .filter((p) => p.username !== HOUSE_BOT_USERNAME)
-    .slice(0, 5)
+  }, [currentUserMetrics?.profit, yourRank, contractId])
 
-  return top5 && top5.length > 0 ? (
+  const allMetrics =
+    currentUserMetrics && currentUser && !userIsAlreadyRanked
+      ? [
+          ...topContractMetrics.slice(0, 5),
+          {
+            ...currentUserMetrics,
+            userName: currentUser.username,
+            userId: currentUser.id,
+            userAvatarUrl: currentUser.avatarUrl,
+            userUsername: currentUser.username,
+          } as ContractMetric,
+        ]
+      : topContractMetrics
+
+  const userProfits = allMetrics.map((cm) => {
+    const { profit } = cm
+    return removeUndefinedProps({
+      name: cm.userName,
+      username: cm.userUsername,
+      avatarUrl: cm.userAvatarUrl,
+      total: profit,
+      rank:
+        cm.userId === currentUser?.id
+          ? yourRank
+          : topContractMetrics.indexOf(cm) + 1,
+    })
+  })
+  const top = Object.values(userProfits)
+    .filter((p) => p.total > 0)
+    .slice(
+      0,
+      !currentUser || userIsAlreadyRanked || !currentUserMetrics ? 5 : 6
+    )
+
+  return top && top.length > 0 ? (
     <Leaderboard
       title={`🏅 Top ${BETTORS}`}
-      entries={top5 || []}
+      entries={top || []}
       columns={[
         {
           header: 'Total profit',
@@ -45,6 +73,7 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
         },
       ]}
       className="mt-12 max-w-sm"
+      highlightUsername={currentUser?.username}
     />
   ) : null
 })

@@ -2,7 +2,7 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect } from 'react'
-import { last } from 'lodash'
+import { first } from 'lodash'
 import {
   BinaryResolutionOrChance,
   ContractCard,
@@ -24,6 +24,8 @@ import { useContract } from 'web/hooks/use-contracts'
 import { useBets } from 'web/hooks/use-bets'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
+import { BetPoint } from 'web/pages/[username]/[contractSlug]'
+import { OrderByDirection } from 'firebase/firestore'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
@@ -37,12 +39,32 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
+  const useBetPoints =
+    contract?.outcomeType === 'BINARY' ||
+    contract?.outcomeType === 'PSEUDO_NUMERIC'
+  // Prioritize newer bets via descending order
   const bets = contractId
-    ? await listBets({ contractId, ...CONTRACT_BET_LOADING_OPTS, limit: 4000 })
+    ? await listBets({
+        contractId,
+        ...CONTRACT_BET_LOADING_OPTS,
+        limit: 10000,
+        order: 'desc' as OrderByDirection,
+      })
+    : []
+  // We could include avatars in the embed, but not sure it's worth it
+  const betPoints = useBetPoints
+    ? bets.map((bet) => ({
+        x: bet.createdTime,
+        y: bet.probAfter,
+      }))
     : []
 
   return {
-    props: { contract, bets },
+    props: {
+      contract,
+      bets: useBetPoints ? bets.slice(0, 100) : bets,
+      betPoints,
+    },
     revalidate: 60, // regenerate after a minute
   }
 }
@@ -54,21 +76,35 @@ export async function getStaticPaths() {
 export default function ContractEmbedPage(props: {
   contract: Contract | null
   bets: Bet[]
+  betPoints: BetPoint[]
 }) {
-  props = usePropz(props, getStaticPropz) ?? { contract: null, bets: [] }
+  props = usePropz(props, getStaticPropz) ?? {
+    contract: null,
+    bets: [],
+    betPoints: [],
+  }
   const router = useRouter()
 
   const contract = useContract(props.contract?.id) ?? props.contract
 
-  // static props load bets in ascending order by time
-  const lastBetTime = last(props.bets)?.createdTime
+  // Static props load bets in descending order by time
+  const lastBetTime = first(props.bets)?.createdTime
   const newBets = useBets({
     ...CONTRACT_BET_LOADING_OPTS,
     contractId: contract?.id ?? '',
     afterTime: lastBetTime,
   })
   const bets = props.bets.concat(newBets ?? [])
-
+  const betPoints = props.betPoints.concat(
+    newBets?.map(
+      (bet) =>
+        ({
+          x: bet.createdTime,
+          y: bet.probAfter,
+          bet: { userAvatarUrl: bet.userAvatarUrl },
+        } as BetPoint)
+    ) ?? []
+  )
   if (!contract) {
     return <Custom404 />
   }
@@ -76,7 +112,13 @@ export default function ContractEmbedPage(props: {
   // Check ?graphColor=hex&textColor=hex from router
   const graphColor = router.query.graphColor as string
   const textColor = router.query.textColor as string
-  const embedProps = { contract, bets, graphColor, textColor }
+  const embedProps = {
+    contract,
+    bets,
+    graphColor,
+    textColor,
+    betPoints,
+  }
 
   return <ContractEmbed {...embedProps} />
 }
@@ -84,6 +126,7 @@ export default function ContractEmbedPage(props: {
 interface EmbedProps {
   contract: Contract
   bets: Bet[]
+  betPoints: BetPoint[]
   graphColor?: string
   textColor?: string
 }
@@ -122,6 +165,7 @@ function ContractSmolView({
   bets,
   graphColor,
   textColor,
+  betPoints,
 }: EmbedProps) {
   const { question, outcomeType } = contract
 
@@ -170,6 +214,7 @@ function ContractSmolView({
             width={graphWidth}
             height={graphHeight}
             color={graphColor}
+            betPoints={betPoints}
           />
         )}
       </div>
