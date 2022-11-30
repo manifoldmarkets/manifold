@@ -54,9 +54,8 @@ import { OrderByDirection } from 'firebase/firestore'
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
   filterChallenges: true,
-  order: 'desc' as OrderByDirection,
 }
-export type BetPoint = { x: number; y: number }
+export type BetPoint = { x: number; y: number; bet?: Partial<Bet> }
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -65,17 +64,22 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
+  // Prioritize newer bets via descending order
   const bets = contractId
     ? await listBets({
         contractId,
         ...CONTRACT_BET_FILTER,
+        limit: 10000,
+        order: 'desc' as OrderByDirection,
       })
     : []
+  const includeAvatar = bets.length < 500
   const betPoints = bets.map(
     (bet) =>
       ({
         x: bet.createdTime,
         y: bet.probAfter,
+        bet: includeAvatar ? { userAvatarUrl: bet.userAvatarUrl } : undefined,
       } as BetPoint)
   )
   const comments = contractId ? await listAllComments(contractId, 100) : []
@@ -88,7 +92,7 @@ export async function getStaticPropz(props: {
   return {
     props: {
       contract,
-      bets: bets.slice(0, 100),
+      bets: bets.slice(bets.length - 100, bets.length).reverse(),
       comments,
       userPositionsByOutcome,
       betPoints,
@@ -135,7 +139,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositionsByOutcome, comments, betPoints } = props
+  const { userPositionsByOutcome, comments } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -163,6 +167,15 @@ export function ContractPageContent(
     ...CONTRACT_BET_FILTER,
   })
   const bets = props.bets.concat(newBets ?? [])
+  const betPoints = props.betPoints.concat(
+    newBets?.map(
+      (bet) =>
+        ({
+          x: bet.createdTime,
+          y: bet.probAfter,
+        } as BetPoint)
+    ) ?? []
+  )
 
   const creator = useUserById(contract.creatorId) ?? null
 

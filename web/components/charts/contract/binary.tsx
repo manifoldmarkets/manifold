@@ -16,6 +16,7 @@ import {
 import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { BetPoint } from 'web/pages/[username]/[contractSlug]'
+import { Avatar } from 'web/components/widgets/avatar'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
@@ -38,6 +39,9 @@ const BinaryChartTooltip = (
   if (!prev) return null
   return (
     <Row className="items-center gap-2">
+      {prev.obj?.bet?.userAvatarUrl && (
+        <Avatar size="xs" avatarUrl={prev.obj.bet?.userAvatarUrl} />
+      )}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
       <span className="text-gray-600">{formatPct(prev.y)}</span>
     </Row>
