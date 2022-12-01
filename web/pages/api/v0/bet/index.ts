@@ -1,5 +1,3 @@
-import { NextApiRequest, NextApiResponse } from 'next'
-
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import {
@@ -25,62 +23,15 @@ import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { filterDefined } from 'common/util/array'
-import { applyCorsHeaders } from 'web/lib/api/cors'
-import {
-  CORS_ORIGIN_MANIFOLD,
-  CORS_ORIGIN_LOCALHOST,
-} from 'common/envs/constants'
-import { verifyUserId } from 'web/lib/api/auth'
 import { APIError } from 'common/api'
 import { log, validate } from 'web/lib/api/utils'
+import { newEndpoint } from 'web/lib/api/endpoint'
 
 export const config = { api: { bodyParser: true } }
 
-export default async function route(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    await applyCorsHeaders(req, res, {
-      origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
-      methods: 'POST',
-    })
-
-    const userId = await verifyUserId(req)
-
-    if (userId) {
-      const result = await placeBet(req.body, userId)
-      return res.status(200).json(result)
-    }
-  } catch (e) {
-    if (e instanceof APIError) {
-      return res.status(e.status).json({ error: e.message })
-    }
-    log.error('Error placing bet: ', e)
-    return res.status(500).json({ error: 'Internal server error' })
-  }
-}
-
-const bodySchema = z.object({
-  contractId: z.string(),
-  amount: z.number().gte(1),
-})
-
-const binarySchema = z.object({
-  outcome: z.enum(['YES', 'NO']),
-  limitProb: z.number().gte(0).lte(1).optional(),
-})
-
-const freeResponseSchema = z.object({
-  outcome: z.string(),
-  shortSell: z.boolean().optional(),
-})
-
-const numericSchema = z.object({
-  outcome: z.string(),
-  value: z.number(),
-})
-
-const placeBet = async (body: unknown, userId: string) => {
+const placeBet = newEndpoint(async (req, userId: string) => {
   log('Inside endpoint handler.')
-  const { amount, contractId } = validate(bodySchema, body)
+  const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {
     log('Inside main transaction.')
@@ -127,7 +78,7 @@ const placeBet = async (body: unknown, userId: string) => {
         mechanism == 'cpmm-1'
       ) {
         // eslint-disable-next-line prefer-const
-        let { outcome, limitProb } = validate(binarySchema, body)
+        let { outcome, limitProb } = validate(binarySchema, req.body)
 
         if (limitProb !== undefined && outcomeType === 'BINARY') {
           const isRounded = floatingEqual(
@@ -152,7 +103,7 @@ const placeBet = async (body: unknown, userId: string) => {
           balanceByUserId
         )
       } else if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-2') {
-        const { outcome, shortSell } = validate(freeResponseSchema, body)
+        const { outcome, shortSell } = validate(freeResponseSchema, req.body)
         if (isNaN(+outcome) || !contract.answers[+outcome])
           throw new APIError(400, 'Invalid answer')
         return getNewMultiCpmmBetInfo(contract, outcome, amount, !!shortSell)
@@ -160,13 +111,13 @@ const placeBet = async (body: unknown, userId: string) => {
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
         mechanism == 'dpm-2'
       ) {
-        const { outcome } = validate(freeResponseSchema, body)
+        const { outcome } = validate(freeResponseSchema, req.body)
         const answerDoc = contractDoc.collection('answers').doc(outcome)
         const answerSnap = await trans.get(answerDoc)
         if (!answerSnap.exists) throw new APIError(400, 'Invalid answer')
         return getNewMultiBetInfo(outcome, amount, contract)
       } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
-        const { outcome, value } = validate(numericSchema, body)
+        const { outcome, value } = validate(numericSchema, req.body)
         return getNumericBetsInfo(value, outcome, amount, contract)
       } else {
         throw new APIError(500, 'Contract has invalid type/mechanism.')
@@ -252,7 +203,27 @@ const placeBet = async (body: unknown, userId: string) => {
   }
 
   return { betId: result.betId }
-}
+})
+
+const bodySchema = z.object({
+  contractId: z.string(),
+  amount: z.number().gte(1),
+})
+
+const binarySchema = z.object({
+  outcome: z.enum(['YES', 'NO']),
+  limitProb: z.number().gte(0).lte(1).optional(),
+})
+
+const freeResponseSchema = z.object({
+  outcome: z.string(),
+  shortSell: z.boolean().optional(),
+})
+
+const numericSchema = z.object({
+  outcome: z.string(),
+  value: z.number(),
+})
 
 const firestore = admin.firestore()
 
@@ -329,3 +300,5 @@ export const updateMakers = (
     trans.update(userDoc, { balance: FieldValue.increment(-spent) })
   }
 }
+
+export default placeBet
