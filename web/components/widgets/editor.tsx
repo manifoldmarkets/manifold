@@ -17,7 +17,6 @@ import React, { ReactNode, useCallback, useMemo } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention'
 import { DisplayMention } from '../editor/mention'
 import GridComponent from '../editor/tiptap-grid-cards'
-import StaticReactEmbedComponent from '../editor/tiptap-static-react-embed'
 import { Linkify } from './linkify'
 import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
@@ -60,7 +59,6 @@ export const editorExtensions = (simple = false): Extensions => [
   DisplayMention,
   DisplayContractMention,
   GridComponent,
-  StaticReactEmbedComponent,
   Iframe,
   DisplayTweet,
   TiptapSpoiler.configure({ class: 'rounded-sm bg-gray-200' }),
@@ -200,7 +198,6 @@ function RichContent(props: {
         DisplayMention,
         DisplayContractMention,
         GridComponent,
-        StaticReactEmbedComponent,
         Iframe,
         DisplayTweet,
         DisplaySpoiler,
