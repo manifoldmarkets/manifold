@@ -53,6 +53,7 @@ export const LikeButton = memo(function LikeItemButton(props: {
     )
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedOnLike = useMemo(() => debounce(onLike, 1000), [])
   useEffect(() => {
     setLiked(userLiked ?? false)

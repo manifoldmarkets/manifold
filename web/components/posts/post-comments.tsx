@@ -112,7 +112,6 @@ export function PostCommentItem(props: {
     comment
 
   const commentRef = useRef<HTMLDivElement>(null)
-  const me = useUser()
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
   useEffect(() => {
