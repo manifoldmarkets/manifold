@@ -8,6 +8,7 @@ import {
   where,
   collectionGroup,
   getDocs,
+  getCountFromServer,
 } from 'firebase/firestore'
 import { db } from './init'
 import { ContractMetric } from 'common/contract-metric'
@@ -60,4 +61,43 @@ export async function getBinaryContractUserContractMetrics(
   }
 
   return outcomeToDetails
+}
+
+export async function getTopContractMetrics(contractId: string, count: number) {
+  const snap = await getDocs(
+    query(
+      collectionGroup(db, 'contract-metrics'),
+      where('contractId', '==', contractId),
+      orderBy('profit', 'desc'),
+      limit(count)
+    )
+  )
+  const cms = snap.docs.map((doc) => doc.data() as ContractMetrics)
+
+  return cms
+}
+
+export async function getProfitRankForContract(
+  profit: number,
+  contractId: string
+) {
+  const resp = await getCountFromServer(
+    query(
+      collectionGroup(db, 'contract-metrics'),
+      where('contractId', '==', contractId),
+      where('profit', '>', profit)
+    )
+  )
+  return resp.data().count + 1
+}
+
+export async function getTotalContractMetricsCount(contractId: string) {
+  const resp = await getCountFromServer(
+    query(
+      collectionGroup(db, 'contract-metrics'),
+      where('contractId', '==', contractId),
+      where('hasShares', '==', true)
+    )
+  )
+  return resp.data().count
 }

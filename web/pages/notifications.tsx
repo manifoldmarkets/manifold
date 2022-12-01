@@ -8,9 +8,10 @@ import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { partition } from 'lodash'
 import { useRouter } from 'next/router'
-import React, { ReactNode, useEffect, useMemo, useState } from 'react'
+import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
+import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -141,33 +142,35 @@ function RenderNotificationGroups(props: {
   const grayLine = <hr className="mx-auto w-[calc(100%-1rem)] bg-gray-400" />
   return (
     <>
-      {notificationGroups.map((notification) =>
-        notification.type === 'income' ? (
-          <>
-            <IncomeNotificationGroupItem
-              notificationGroup={notification}
-              key={notification.groupedById + notification.timePeriod}
-            />
-            {grayLine}
-          </>
-        ) : notification.notifications.length === 1 ? (
-          <>
-            <NotificationItem
-              notification={notification.notifications[0]}
-              key={notification.notifications[0].id}
-            />
-            {grayLine}
-          </>
-        ) : (
-          <>
-            <NotificationGroupItem
-              notificationGroup={notification}
-              key={notification.groupedById + notification.timePeriod}
-            />
-            {grayLine}
-          </>
-        )
-      )}
+      {notificationGroups.map((notification) => (
+        <Fragment key={notification.groupedById + notification.timePeriod}>
+          {notification.type === 'income' ? (
+            <>
+              <IncomeNotificationGroupItem
+                notificationGroup={notification}
+                key={notification.groupedById + notification.timePeriod}
+              />
+              {grayLine}
+            </>
+          ) : notification.notifications.length === 1 ? (
+            <>
+              <NotificationItem
+                notification={notification.notifications[0]}
+                key={notification.notifications[0].id}
+              />
+              {grayLine}
+            </>
+          ) : (
+            <>
+              <NotificationGroupItem
+                notificationGroup={notification}
+                key={notification.groupedById + notification.timePeriod}
+              />
+              {grayLine}
+            </>
+          )}
+        </Fragment>
+      ))}
     </>
   )
 }

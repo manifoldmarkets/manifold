@@ -245,9 +245,14 @@ export async function listAllUsers(
 }
 
 export async function getProfitRank(profit: number, period: Period) {
-  const resp = await getCountFromServer(
-    query(users, where(`profitCached.${period}`, '>', profit))
-  )
+  const q = query(users, where(`profitCached.${period}`, '>', profit))
+  const resp = await getCountFromServer(q)
+  return resp.data().count + 1
+}
+
+export async function getCreatorRank(traders: number, period: Period) {
+  const q = query(users, where(`creatorTraders.${period}`, '>', traders))
+  const resp = await getCountFromServer(q)
   return resp.data().count + 1
 }
 

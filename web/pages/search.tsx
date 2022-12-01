@@ -3,7 +3,6 @@ import { Col } from 'web/components/layout/col'
 import { ContractSearch } from 'web/components/contract-search'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { usePrefetch } from 'web/hooks/use-prefetch'
 import { useRouter } from 'next/router'
 import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
@@ -12,7 +11,6 @@ import { useMemberGroupsSubscription } from 'web/hooks/use-group'
 export default function Search() {
   const user = useUser()
   const privateUser = usePrivateUser()
-  usePrefetch(user?.id)
 
   useTracking('view search')
 

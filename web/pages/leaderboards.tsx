@@ -3,10 +3,11 @@ import { Leaderboard } from 'web/components/leaderboard'
 import { zip } from 'lodash'
 import { Page } from 'web/components/layout/page'
 import {
+  getCreatorRank,
   getProfitRank,
   getTopCreators,
-  getTopTraders,
   getTopFollowed,
+  getTopTraders,
   Period,
   User,
 } from 'web/lib/firebase/users'
@@ -54,7 +55,10 @@ type leaderboard = {
   topTraders: User[]
   topCreators: User[]
 }
-
+type ranking = {
+  profit: number
+  traders: number
+}
 export default function Leaderboards(props: {
   allTime: leaderboard
   monthly: leaderboard
@@ -63,7 +67,7 @@ export default function Leaderboards(props: {
   topFollowed: User[]
 }) {
   const [myRanks, setMyRanks] = useState<
-    Record<Period, number | undefined> | undefined
+    Record<Period, ranking | undefined> | undefined
   >()
 
   const user = useUser()
@@ -74,28 +78,50 @@ export default function Leaderboards(props: {
     }
     const periods = ['allTime', 'monthly', 'weekly', 'daily'] as const
     Promise.all(
-      periods.map((period) => {
+      periods.map(async (period) => {
+        const rankings = {} as ranking
         const myProfit = user.profitCached?.[period]
-        if (myProfit == null) {
-          return undefined
-        } else {
-          return getProfitRank(myProfit, period)
+        if (myProfit != null) {
+          rankings.profit = await getProfitRank(myProfit, period)
         }
+        const myTraders = user.creatorTraders?.[period]
+        if (myTraders != null) {
+          rankings.traders = await getCreatorRank(myTraders, period)
+        }
+        return rankings
       })
     ).then((results) => {
       setMyRanks(Object.fromEntries(zip(periods, results)))
     })
-  }, [user?.profitCached])
+  }, [user?.creatorTraders, user?.profitCached])
 
   const { topFollowed } = props
 
-  const LeaderboardWithPeriod = (period: Period, myRank?: number) => {
+  const LeaderboardWithPeriod = (period: Period, myRank?: ranking) => {
     const { topTraders, topCreators } = props[period]
 
     const user = useUser()
-    const entries = topTraders.map((user, i) => ({ ...user, rank: i + 1 }))
-    if (user && myRank != null && !entries.find((x) => x.id === user.id)) {
-      entries.push({ ...user, rank: myRank })
+    const topTraderEntries = topTraders.map((user, i) => ({
+      ...user,
+      rank: i + 1,
+    }))
+    const topCreatorEntries = topCreators.map((user, i) => ({
+      ...user,
+      rank: i + 1,
+    }))
+    if (user && myRank != null) {
+      if (
+        myRank.profit != null &&
+        !topTraderEntries.find((x) => x.id === user.id)
+      ) {
+        topTraderEntries.push({ ...user, rank: myRank.profit })
+      }
+      if (
+        myRank.traders != null &&
+        !topCreatorEntries.find((x) => x.id === user.id)
+      ) {
+        topCreatorEntries.push({ ...user, rank: myRank.traders })
+      }
     }
 
     return (
@@ -103,7 +129,7 @@ export default function Leaderboards(props: {
         <Col className="mx-4 items-center gap-10 lg:flex-row lg:items-start">
           <Leaderboard
             title={`🏅 Top ${BETTORS}`}
-            entries={entries}
+            entries={topTraderEntries}
             columns={[
               {
                 header: 'Total profit',
@@ -115,7 +141,7 @@ export default function Leaderboards(props: {
 
           <Leaderboard
             title="🏅 Top creators"
-            entries={topCreators}
+            entries={topCreatorEntries}
             columns={[
               {
                 header: 'Number of traders',

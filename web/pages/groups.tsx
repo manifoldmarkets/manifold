@@ -7,7 +7,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
+import { useAllGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, getUserAndPrivateUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
@@ -48,7 +48,7 @@ export default function Groups(props: {
   //TODO: do we really need the creatorsDict?
   const [creatorsDict, setCreatorsDict] = useState(props.creatorsDict)
   const serverUser = props.auth?.user
-  const groups = useGroups() ?? props.groups
+  const groups = useAllGroups() ?? props.groups
   const user = useUser() ?? serverUser
   const memberGroupIds = useMemberGroupIds(user) || []
 
