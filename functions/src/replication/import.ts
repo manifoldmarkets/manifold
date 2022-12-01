@@ -69,30 +69,22 @@ async function importCollectionGroup(
 async function importDatabase() {
   const firestore = admin.firestore()
   const client = createSupabaseClient()
-  if (client) {
-    await importCollection(client, firestore.collection('txns'), 'txn')
-    await importCollection(client, firestore.collection('groups'), 'group')
-    await importCollection(client, firestore.collection('users'), 'user')
-    await importCollection(
-      client,
-      firestore.collection('contracts'),
-      'contract'
-    )
-    await importCollectionGroup(
-      client,
-      firestore.collectionGroup('bets'),
-      100,
-      'contractBet'
-    )
-    await importCollectionGroup(
-      client,
-      firestore.collectionGroup('comments'),
-      10,
-      'contractComment'
-    )
-  } else {
-    throw new Error('supabaseUrl and process.env.SUPABASE_KEY must be set.')
-  }
+  await importCollection(client, firestore.collection('txns'), 'txn')
+  await importCollection(client, firestore.collection('groups'), 'group')
+  await importCollection(client, firestore.collection('users'), 'user')
+  await importCollection(client, firestore.collection('contracts'), 'contract')
+  await importCollectionGroup(
+    client,
+    firestore.collectionGroup('bets'),
+    100,
+    'contractBet'
+  )
+  await importCollectionGroup(
+    client,
+    firestore.collectionGroup('comments'),
+    10,
+    'contractComment'
+  )
 }
 
 if (require.main === module) {

@@ -7,11 +7,7 @@ import { isProd } from '../utils'
 export function createSupabaseClient() {
   const url = isProd() ? PROD_CONFIG.supabaseUrl : DEV_CONFIG.supabaseUrl
   const key = process.env.SUPABASE_KEY
-  if (url == null || key == null) {
-    return null
-  } else {
-    return createClient(url, key)
-  }
+  return createClient(url, key)
 }
 
 export async function run<T>(q: PromiseLike<PostgrestResponse<T>>) {
