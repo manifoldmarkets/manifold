@@ -82,20 +82,20 @@ export function LikeItemButton(props: {
         onMouseLeave={() => setHover(false)}
       >
         <div className="relative">
-          <HeartIcon
-            className={clsx(
-              'h-5 w-5',
-              showRed ? 'fill-red-700 stroke-red-700' : ''
-            )}
-          />
           <div
             className={clsx(
-              'text-gray-500',
-              'absolute -bottom-1 right-0 text-[0.5rem]'
+              totalLikes > 0 ? 'bg-gray-500' : '',
+              ' absolute -bottom-1.5 -right-1.5 min-w-[15px] rounded-full p-[1.5px] text-center text-[10px] leading-3 text-white'
             )}
           >
             {totalLikes > 0 ? totalLikes : ''}
           </div>
+          <HeartIcon
+            className={clsx(
+              'h-5 w-5',
+              showRed ? 'fill-red-400 stroke-red-400' : ''
+            )}
+          />
         </div>
       </button>
     </div>
