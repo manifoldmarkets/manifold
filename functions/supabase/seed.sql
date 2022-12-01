@@ -66,7 +66,7 @@ begin
     when 'group' then 'groups'
     when 'contract' then 'contracts'
     when 'contractBet' then 'bets'
-    when 'contractComments' then 'comments'
+    when 'contractComment' then 'comments'
     else null
   end;
   if dest_table = null then
