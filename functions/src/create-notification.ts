@@ -6,13 +6,7 @@ import {
   Notification,
   notification_reason_types,
 } from '../../common/notification'
-import {
-  MANIFOLD_AVATAR_URL,
-  MANIFOLD_USER_NAME,
-  MANIFOLD_USER_USERNAME,
-  PrivateUser,
-  User,
-} from '../../common/user'
+import { PrivateUser, User } from '../../common/user'
 import { Contract } from '../../common/contract'
 import { getPrivateUser, getValues, log } from './utils'
 import { Comment } from '../../common/comment'
@@ -37,7 +31,6 @@ import {
   userIsBlocked,
 } from '../../common/user-notification-preferences'
 import { ContractFollow } from '../../common/follow'
-import { Badge } from '../../common/badge'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
 
@@ -1092,45 +1085,6 @@ export const createBountyNotification = async (
     sourceTitle: contract.question,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
-}
-
-export const createBadgeAwardedNotification = async (
-  user: User,
-  badge: Badge
-) => {
-  const privateUser = await getPrivateUser(user.id)
-  if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'badges_awarded'
-  )
-  if (!sendToBrowser) return
-
-  const notificationRef = firestore
-    .collection(`/users/${user.id}/notifications`)
-    .doc()
-  const notification: Notification = {
-    id: notificationRef.id,
-    userId: user.id,
-    reason: 'badges_awarded',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: badge.type,
-    sourceType: 'badge',
-    sourceUpdateType: 'created',
-    sourceUserName: MANIFOLD_USER_NAME,
-    sourceUserUsername: MANIFOLD_USER_USERNAME,
-    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-    sourceText: `You earned a new ${badge.name} badge!`,
-    sourceSlug: `/${user.username}?show=badges&badge=${badge.type}`,
-    sourceTitle: badge.name,
-    data: {
-      badge,
-    },
-  }
-  return await notificationRef.set(removeUndefinedProps(notification))
-
-  // TODO send email notification
 }
 
 export const createMarketClosedNotification = async (

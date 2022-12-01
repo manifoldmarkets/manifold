@@ -33,15 +33,20 @@ export const useAllContracts = () => {
 
 export const useTrendingContracts = (
   maxContracts: number,
-  additionalFilters?: string[]
+  additionalFilters?: string[],
+  active = true
 ) => {
-  const { data } = useQuery(['trending-contracts', maxContracts], () =>
-    trendingIndex.search<CPMMBinaryContract>('', {
-      facetFilters: ['isResolved:false', 'visibility:public'].concat(
-        additionalFilters ?? []
-      ),
-      hitsPerPage: maxContracts,
-    })
+  const { data } = useQuery(
+    ['trending-contracts', maxContracts, additionalFilters],
+    () =>
+      !active
+        ? undefined
+        : trendingIndex.search<CPMMBinaryContract>('', {
+            facetFilters: ['isResolved:false', 'visibility:public'].concat(
+              additionalFilters ?? []
+            ),
+            hitsPerPage: maxContracts,
+          })
   )
   if (!data) return undefined
   return data.hits
@@ -49,15 +54,20 @@ export const useTrendingContracts = (
 
 export const useNewContracts = (
   maxContracts: number,
-  additionalFilters?: string[]
+  additionalFilters?: string[],
+  active = true
 ) => {
-  const { data } = useQuery(['newest-contracts', maxContracts], () =>
-    newIndex.search<CPMMBinaryContract>('', {
-      facetFilters: ['isResolved:false', 'visibility:public'].concat(
-        additionalFilters ?? []
-      ),
-      hitsPerPage: maxContracts,
-    })
+  const { data } = useQuery(
+    ['newest-contracts', maxContracts, additionalFilters],
+    () =>
+      !active
+        ? undefined
+        : newIndex.search<CPMMBinaryContract>('', {
+            facetFilters: ['isResolved:false', 'visibility:public'].concat(
+              additionalFilters ?? []
+            ),
+            hitsPerPage: maxContracts,
+          })
   )
   if (!data) return undefined
   return data.hits
@@ -65,15 +75,20 @@ export const useNewContracts = (
 
 export const useContractsByDailyScore = (
   maxContracts: number,
-  additionalFilters?: string[]
+  additionalFilters?: string[],
+  active = true
 ) => {
-  const { data } = useQuery(['daily-score', maxContracts], () =>
-    dailyScoreIndex.search<CPMMBinaryContract>('', {
-      facetFilters: ['isResolved:false', 'visibility:public'].concat(
-        additionalFilters ?? []
-      ),
-      hitsPerPage: maxContracts,
-    })
+  const { data } = useQuery(
+    ['daily-score', maxContracts, additionalFilters],
+    () =>
+      !active
+        ? undefined
+        : dailyScoreIndex.search<CPMMBinaryContract>('', {
+            facetFilters: ['isResolved:false', 'visibility:public'].concat(
+              additionalFilters ?? []
+            ),
+            hitsPerPage: maxContracts,
+          })
   )
   if (!data) return undefined
   return data.hits.filter((c) => c.dailyScore)
@@ -81,19 +96,26 @@ export const useContractsByDailyScore = (
 
 export const useContractsByDailyScoreGroups = (
   groupSlugs: string[] | undefined,
-  additionalFilters?: string[]
+  count: number,
+  additionalFilters?: string[],
+  active = true
 ) => {
-  const { data } = useQuery(['daily-score', groupSlugs], () =>
-    Promise.all(
-      (groupSlugs ?? []).map((slug) =>
-        dailyScoreIndex.search<CPMMBinaryContract>('', {
-          facetFilters: ['isResolved:false', `groupLinks.slug:${slug}`].concat(
-            additionalFilters ?? []
-          ),
-          hitsPerPage: 10,
-        })
-      )
-    )
+  const { data } = useQuery(
+    ['daily-score', groupSlugs, additionalFilters],
+    () =>
+      !active
+        ? undefined
+        : Promise.all(
+            (groupSlugs ?? []).map((slug) =>
+              dailyScoreIndex.search<CPMMBinaryContract>('', {
+                facetFilters: [
+                  'isResolved:false',
+                  `groupLinks.slug:${slug}`,
+                ].concat(additionalFilters ?? []),
+                hitsPerPage: count,
+              })
+            )
+          )
   )
   if (!groupSlugs || !data || data.length !== groupSlugs.length)
     return undefined

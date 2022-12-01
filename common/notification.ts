@@ -242,10 +242,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: `Only on markets you've ${PAST_BET}`,
     detailed: `Answers on markets that you're watching and that you've ${PAST_BET}`,
   },
-  badges_awarded: {
-    simple: 'New badges awarded',
-    detailed: 'New badges you have earned',
-  },
   opt_out_all: {
     simple: 'Opt out of all notifications (excludes when your markets close)',
     detailed:

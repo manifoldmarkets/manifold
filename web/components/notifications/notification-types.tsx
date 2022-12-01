@@ -18,8 +18,6 @@ import {
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useUser } from 'web/hooks/use-user'
-import { BadgesModal } from '../profile/badges-modal'
 import { Linkify } from '../widgets/linkify'
 import { truncateText } from '../widgets/truncate'
 import {
@@ -101,13 +99,7 @@ export function NotificationItem(props: {
       />
     )
   } else if (sourceType === 'badge') {
-    return (
-      <BadgeNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-      />
-    )
+    return <div />
   } else if (sourceType === 'signup_bonus') {
     return (
       <SignupBonusNotification
@@ -272,33 +264,6 @@ function BetFillNotification(props: {
   )
 }
 
-function BadgeNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted } = props
-  const { sourceText } = notification
-  const [isOpen, setOpen] = useState(false)
-  const user = useUser()
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      icon={
-        <NotificationIcon
-          symbol={'🥇'}
-          symbolBackgroundClass={'bg-gradient-to-br from-blue-600 to-blue-300'}
-        />
-      }
-      onClick={() => setOpen(true)}
-    >
-      <span> {sourceText}</span>
-      {user && <BadgesModal isOpen={isOpen} setOpen={setOpen} user={user} />}
-    </NotificationFrame>
-  )
-}
 function SignupBonusNotification(props: {
   notification: Notification
   highlighted: boolean

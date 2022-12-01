@@ -97,9 +97,7 @@ export function DailyStats(props: {
 export function DailyProfit(props: { user: User | null | undefined }) {
   const { user } = props
 
-  const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_'
-  )
+  const contractMetricsByProfit = useUserContractMetricsByProfit(user?.id)
   const profit = sum(
     contractMetricsByProfit?.metrics.map((m) =>
       m.from ? m.from.day.profit : 0
