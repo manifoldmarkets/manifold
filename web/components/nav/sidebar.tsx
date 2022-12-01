@@ -108,7 +108,11 @@ const getDesktopNav = (loggedIn: boolean) =>
     },
 
     !IS_PRIVATE_MANIFOLD && [
-      { name: 'Charity', href: '/charity', icon: HeartIcon },
+      loggedIn && {
+        name: 'Leaderboards',
+        href: '/leaderboards',
+        icon: ChartBarIcon,
+      },
       { name: 'World Cup', href: '/worldcup', icon: TrophyIcon },
     ]
   )
@@ -119,8 +123,8 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
   }
 
   return buildArray(
-    { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Groups', href: '/groups' },
+    { name: 'Charity', href: '/charity' },
     loggedIn && { name: 'Refer a friend', href: '/referrals' },
     { name: 'Labs', href: '/labs' },
     { name: 'Blog', href: 'https://news.manifold.markets' },
@@ -139,9 +143,9 @@ const getMobileNav = (loggedIn: boolean) => {
   }
   return buildArray(
     loggedIn && { name: 'Swipe', href: '/swipe', icon: FireIcon },
+    { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
     { name: 'World Cup', href: '/worldcup', icon: TrophyIcon },
-    // { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     loggedIn && { name: 'Groups', href: '/groups', icon: UsersIcon },
     loggedIn && { name: 'Refer a friend', href: '/referrals', icon: GiftIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon }

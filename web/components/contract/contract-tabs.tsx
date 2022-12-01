@@ -54,6 +54,8 @@ export function ContractTabs(props: {
   blockedUserIds: string[]
   activeIndex: number
   setActiveIndex: (i: number) => void
+  totalBets: number
+  totalPositions: number
 }) {
   const {
     contract,
@@ -64,6 +66,8 @@ export function ContractTabs(props: {
     blockedUserIds,
     activeIndex,
     setActiveIndex,
+    totalBets,
+    totalPositions,
   } = props
 
   const contractComments = useComments(contract.id) ?? props.comments
@@ -78,7 +82,7 @@ export function ContractTabs(props: {
   const commentTitle =
     comments.length === 0 ? 'Comments' : `${comments.length} Comments`
 
-  const betsTitle = bets.length === 0 ? 'Trades' : `${bets.length} Trades`
+  const betsTitle = totalBets === 0 ? 'Trades' : `${totalBets} Trades`
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
@@ -88,9 +92,8 @@ export function ContractTabs(props: {
 
   const outcomes = ['YES', 'NO']
   const positions =
-    useContractMetrics(contract.id, 500, outcomes) ??
+    useContractMetrics(contract.id, 100, outcomes) ??
     props.userPositionsByOutcome
-  const totalPositions = positions.NO?.length + positions.YES?.length ?? 0
   const positionsTitle =
     totalPositions === 0 ? 'Users' : totalPositions + ' Users'
 
@@ -115,7 +118,7 @@ export function ContractTabs(props: {
             />
           ),
         },
-        bets.length > 0 && {
+        totalBets > 0 && {
           title: betsTitle,
           content: (
             <Col className={'gap-4'}>
@@ -171,14 +174,12 @@ const BinaryUserPositionsTabContent = memo(
       outcome: 'YES' | 'NO'
     }) {
       const { position, outcome } = props
-      const { totalShares, userName, userUsername, userAvatarUrl, userId } =
-        position
+      const { totalShares, userName, userUsername, userAvatarUrl } = position
       const shares = totalShares[outcome] ?? 0
       const isMobile = useIsMobile(800)
 
       return (
         <Row
-          key={userId + outcome}
           className={clsx(
             'items-center justify-between gap-2 rounded-sm border-b p-2',
             currentUser?.id === position.userId && 'bg-amber-100',
@@ -225,7 +226,13 @@ const BinaryUserPositionsTabContent = memo(
               <span>YES shares</span>
             </Row>
             {visibleYesPositions.map((position) => {
-              return <PositionRow outcome={'YES'} position={position} />
+              return (
+                <PositionRow
+                  key={position.userId + '-YES'}
+                  outcome={'YES'}
+                  position={position}
+                />
+              )
             })}
           </Col>
           <Col className={'w-full max-w-sm gap-2'}>
@@ -233,7 +240,13 @@ const BinaryUserPositionsTabContent = memo(
               <span>NO shares</span>
             </Row>
             {visibleNoPositions.map((position) => {
-              return <PositionRow position={position} outcome={'NO'} />
+              return (
+                <PositionRow
+                  key={position.userId + '-NO'}
+                  position={position}
+                  outcome={'NO'}
+                />
+              )
             })}
           </Col>
         </Row>
@@ -372,7 +385,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const items = [
     ...visibleBets.map((bet) => ({
       type: 'bet' as const,
-      id: bet.id + '-' + bet.isSold,
+      id: bet.id + '-' + (bet.isSold ? 'sold' : 'unsold'),
       bet,
     })),
     ...visibleLps.map((lp) => ({

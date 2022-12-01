@@ -37,7 +37,10 @@ export function getNewContract(
 
   // for multiple choice
   answers: string[],
-  visibility: visibility
+  visibility: visibility,
+
+  // twitch
+  isTwitchContract: boolean | undefined
 ) {
   const createdTime = Date.now()
 
@@ -84,6 +87,8 @@ export function getNewContract(
       liquidityFee: 0,
       platformFee: 0,
     },
+
+    isTwitchContract,
   })
 
   return contract as Contract
