@@ -64,11 +64,11 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
 
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
-    log('Loaded user and contract snapshots.')
 
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
+    log(`Loaded user ${user.username} and contract ${contract.slug}.`)
 
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
       contract
@@ -181,7 +181,7 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
           FLAT_TRADE_FEE
 
     trans.update(userDoc, { balance: FieldValue.increment(-balanceChange) })
-    log('Updated user balance.')
+    log(`Updated user ${user.username} balance.`)
 
     if (newBet.amount !== 0) {
       trans.update(
@@ -196,7 +196,7 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
           volume: volume + newBet.amount,
         })
       )
-      log('Updated contract properties.')
+      log(`Updated contract ${contract.slug} properties.`)
     }
 
     return { contract, betId: betDoc.id, makers, newBet }
