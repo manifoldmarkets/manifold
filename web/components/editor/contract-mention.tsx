@@ -3,6 +3,7 @@ import { ContractMention as LoadedContractMention } from 'web/components/contrac
 import Link from 'next/link'
 import { contractMentionSuggestion } from './contract-mention-suggestion'
 import { useContract } from 'web/hooks/use-contracts'
+import { mergeAttributes } from '@tiptap/core'
 
 const name = 'contract-mention-component'
 
@@ -36,7 +37,11 @@ const ContractMention = (attrs: any) => {
 export const DisplayContractMention = Mention.extend({
   name: 'contract-mention',
   parseHTML: () => [{ tag: 'name' }, { tag: `a[data-type="${name}"]` }],
-  renderHTML: ({ HTMLAttributes }) => [name, HTMLAttributes],
+  renderHTML: ({ HTMLAttributes }) => [
+    name,
+    mergeAttributes(HTMLAttributes),
+    0,
+  ],
 
   renderReact: (attrs: any) => <ContractMention {...attrs} />,
 }).configure({ suggestion: contractMentionSuggestion })

@@ -34,14 +34,14 @@ type ProsemirrorDOM =
 
 const pmdToJSX = (dom: ProsemirrorDOM, children: ReactNode): ReactNode => {
   if (Array.isArray(dom)) {
-    const [tag, attrs, content] = dom
+    const [tag, attrs, ...content] = dom
 
     return React.createElement(
       tag,
       { className: attrs.class, ...attrs },
-      pmdToJSX(content, children)
+      ...content.map((c) => pmdToJSX(c, children))
     )
-  } else if (!dom) {
+  } else if (dom === 0) {
     return children
   } else {
     return dom
@@ -102,7 +102,7 @@ export const generateReact = (doc: JSONContent, extensions: Extensions) => {
       renderHTML?.({
         node: { attrs: content.attrs },
         HTMLAttributes: content.attrs,
-      }),
+      }) ?? 0,
       children
     )
   }

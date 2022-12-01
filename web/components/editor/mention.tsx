@@ -15,6 +15,7 @@ export const DisplayMention = Mention.extend({
   renderHTML: ({ HTMLAttributes }) => [
     name,
     mergeAttributes({ HTMLAttributes }),
+    0,
   ],
   renderReact: (attrs: any) => <Linkify text={'@' + attrs.label} />,
 }).configure({ suggestion: mentionSuggestion })
