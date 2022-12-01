@@ -33,7 +33,7 @@ import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { toast } from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { FlagIcon } from '@heroicons/react/outline'
-import { LikeItemButton } from 'web/components/contract/like-item-button'
+import { LikeButton } from 'web/components/contract/like-button'
 import { richTextToString } from 'common/lib/util/parse'
 
 export type ReplyTo = { id: string; username: string }
@@ -200,7 +200,7 @@ export function CommentActions(props: {
         </IconButton>
       )}
       {showLike && (
-        <LikeItemButton
+        <LikeButton
           contentCreatorId={comment.userId}
           contentId={comment.id}
           user={user}

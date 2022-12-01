@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { memo, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
 import { react, unReact } from 'web/lib/firebase/reactions'
@@ -8,7 +8,7 @@ import { Contract } from 'common/contract'
 import { debounce } from 'lodash'
 import { ReactionContentTypes } from 'common/reaction'
 
-export function LikeItemButton(props: {
+export const LikeButton = memo(function LikeItemButton(props: {
   contentId: string
   contentCreatorId: string
   user: User | null | undefined
@@ -103,4 +103,4 @@ export function LikeItemButton(props: {
       </button>
     </div>
   )
-}
+})
