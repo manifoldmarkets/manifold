@@ -82,16 +82,15 @@ function combineNotificationsByAddingNumericSourceTexts(
 
 export function IncomeNotificationGroupItem(props: {
   notificationGroup: NotificationGroup
-  allMarkedAsRead: boolean
 }) {
-  const { notificationGroup, allMarkedAsRead } = props
+  const { notificationGroup } = props
   const { notifications } = notificationGroup
 
   const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
     notifications.filter((n) => n.sourceType !== 'betting_streak_bonus')
   )
   const [highlighted, _setHighlighted] = useState(
-    allMarkedAsRead ? !allMarkedAsRead : notifications.some((n) => !n.isSeen)
+    notifications.some((n) => !n.isSeen)
   )
   const totalIncome = sum(
     notifications.map((notification) =>

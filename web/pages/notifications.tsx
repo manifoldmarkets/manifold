@@ -35,14 +35,15 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser } from 'web/hooks/use-user'
+import EnvelopeClosedIcon from 'web/lib/icons/envelope-closed-icon'
+import EnvelopeOpenIcon from 'web/lib/icons/envelope-open-icon'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
   const router = useRouter()
   const [navigateToSection, setNavigateToSection] = useState<string>()
   const [activeIndex, setActiveIndex] = useState(0)
-  const [allMarkedAsRead, setAllMarkedAsRead] = useState(false)
-
+  const [markAllAsReadTrigger, setMarkAllAsReadTrigger] = useState(false)
   useRedirectIfSignedOut()
 
   useEffect(() => {
@@ -61,14 +62,18 @@ export default function Notifications() {
         <Row className="hidden w-full justify-between md:flex">
           <Title text={'Notifications'} className="grow" />
           <div className="my-auto">
-            <Button
-              onClick={() => {
-                setAllMarkedAsRead(true)
-                setTimeout(() => setAllMarkedAsRead(false), 50)
-              }}
-            >
-              Mark all as read
-            </Button>
+            {activeIndex === 0 && (
+              <Button
+                onClick={() => {
+                  setMarkAllAsReadTrigger(true)
+                  setTimeout(setMarkAllAsReadTrigger, 10)
+                }}
+              >
+                <Row className="gap-2">
+                  <EnvelopeOpenIcon className="h-5 w-5" /> Mark all as read
+                </Row>
+              </Button>
+            )}
           </div>
         </Row>
         <SEO title="Notifications" description="Manifold user notifications" />
@@ -100,7 +105,7 @@ export default function Notifications() {
                   content: (
                     <NotificationsList
                       privateUser={privateUser}
-                      allMarkedAsRead={allMarkedAsRead}
+                      markAllAsReadTrigger={markAllAsReadTrigger}
                     />
                   ),
                 },
@@ -124,9 +129,8 @@ export default function Notifications() {
 
 function RenderNotificationGroups(props: {
   notificationGroups: NotificationGroup[]
-  allMarkedAsRead: boolean
 }) {
-  const { notificationGroups, allMarkedAsRead } = props
+  const { notificationGroups } = props
   const grayLine = <hr className="mx-auto w-[calc(100%-1rem)] bg-gray-400" />
   return (
     <>
@@ -136,7 +140,6 @@ function RenderNotificationGroups(props: {
             <IncomeNotificationGroupItem
               notificationGroup={notification}
               key={notification.groupedById + notification.timePeriod}
-              allMarkedAsRead={allMarkedAsRead}
             />
             {grayLine}
           </>
@@ -145,7 +148,6 @@ function RenderNotificationGroups(props: {
             <NotificationItem
               notification={notification.notifications[0]}
               key={notification.notifications[0].id}
-              markedAsRead={allMarkedAsRead}
             />
             {grayLine}
           </>
@@ -154,7 +156,6 @@ function RenderNotificationGroups(props: {
             <NotificationGroupItem
               notificationGroup={notification}
               key={notification.groupedById + notification.timePeriod}
-              allMarkedAsRead={allMarkedAsRead}
             />
             {grayLine}
           </>
@@ -166,13 +167,13 @@ function RenderNotificationGroups(props: {
 
 function NotificationsList(props: {
   privateUser: PrivateUser
-  allMarkedAsRead: boolean
+  markAllAsReadTrigger: boolean
 }) {
-  const { privateUser, allMarkedAsRead } = props
+  const { privateUser, markAllAsReadTrigger } = props
+  const allGroupedNotifications = useGroupedNotifications(privateUser)
 
   const [page, setPage] = useState(0)
 
-  const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
     if (!allGroupedNotifications) return undefined
 
@@ -181,18 +182,14 @@ function NotificationsList(props: {
     return allGroupedNotifications.slice(start, end)
   }, [allGroupedNotifications, page])
 
-  // const isPageVisible = useIsPageVisible()
-
-  // Mark all notifications as seen.
-  // useEffect(() => {
-  //   if (isPageVisible && allGroupedNotifications) {
-  //     const notifications = allGroupedNotifications
-  //       .flat()
-  //       .flatMap((g) => g.notifications)
-
-  //     markNotificationsAsSeen(notifications)
-  //   }
-  // }, [isPageVisible, allGroupedNotifications])
+  useEffect(() => {
+    if (markAllAsReadTrigger && allGroupedNotifications) {
+      const notifications = allGroupedNotifications
+        .flat()
+        .flatMap((g) => g.notifications)
+      markNotificationsAsSeen(notifications)
+    }
+  }, [markAllAsReadTrigger])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
@@ -214,7 +211,6 @@ function NotificationsList(props: {
 
       <RenderNotificationGroups
         notificationGroups={paginatedGroupedNotifications}
-        allMarkedAsRead={allMarkedAsRead}
       />
       {paginatedGroupedNotifications.length > 0 &&
         allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
@@ -233,9 +229,8 @@ function NotificationsList(props: {
 function NotificationGroupItem(props: {
   notificationGroup: NotificationGroup
   className?: string
-  allMarkedAsRead: boolean
 }) {
-  const { notificationGroup, allMarkedAsRead } = props
+  const { notificationGroup } = props
   const { notifications } = notificationGroup
   const { sourceContractTitle } = notifications[0]
   const highlighted = notifications.some((n) => !n.isSeen)
@@ -262,7 +257,6 @@ function NotificationGroupItem(props: {
     <NotificationGroupItemComponent
       notifications={notifications}
       header={header}
-      allMarkedAsRead={allMarkedAsRead}
     />
   )
 }
@@ -270,17 +264,10 @@ function NotificationGroupItem(props: {
 export function NotificationGroupItemComponent(props: {
   notifications: Notification[]
   header: ReactNode
-  allMarkedAsRead: boolean
   isIncomeNotification?: boolean
   className?: string
 }) {
-  const {
-    notifications,
-    className,
-    header,
-    allMarkedAsRead,
-    isIncomeNotification,
-  } = props
+  const { notifications, className, header, isIncomeNotification } = props
 
   const needsExpanding = notifications.length > NUM_SUMMARY_LINES
   const [expanded, setExpanded] = useState(
@@ -311,7 +298,6 @@ export function NotificationGroupItemComponent(props: {
                 key={notification.id}
                 isChildOfGroup={true}
                 isIncomeNotification={isIncomeNotification}
-                markedAsRead={allMarkedAsRead}
               />
             )
           })}

@@ -242,9 +242,9 @@ export function NotificationFrame(props: {
             {
               name: highlighted ? 'Mark as read' : 'Mark as unread',
               icon: highlighted ? (
-                <EnvelopeClosedIcon className="h-5 w-5" />
-              ) : (
                 <EnvelopeOpenIcon className="h-5 w-5" />
+              ) : (
+                <EnvelopeClosedIcon className="h-5 w-5" />
               ),
               onClick: () => {
                 if (highlighted) {
@@ -254,11 +254,11 @@ export function NotificationFrame(props: {
                 }
               },
             },
-            {
-              name: 'Turn off this kind of notification',
-              icon: <MinusCircleIcon className="h-5 w-5" />,
-              onClick: () => console.log('hi'),
-            },
+            // {
+            //   name: 'Turn off this kind of notification',
+            //   icon: <MinusCircleIcon className="h-5 w-5" />,
+            //   onClick: () => console.log('hi'),
+            // },
           ]}
           Icon={
             <DotsVerticalIcon
@@ -268,7 +268,7 @@ export function NotificationFrame(props: {
               )}
             />
           }
-          MenuWidth="w-52"
+          MenuWidth="w-44"
         />
       </Col>
       <Col className="w-4">
