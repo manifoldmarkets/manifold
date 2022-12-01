@@ -116,6 +116,7 @@ export function BuyAmountInput(props: {
     onChange(amount)
   }
 
+  // Check for errors.
   useEffect(() => {
     if (amount !== undefined) {
       if (user && user.balance < amount) {
