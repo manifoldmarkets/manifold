@@ -5,13 +5,16 @@ import { filterDefined } from 'common/util/array'
 import { collection, query, where } from 'firebase/firestore'
 import { users } from 'web/lib/firebase/users'
 import { listenForValues } from 'web/lib/firebase/utils'
-import { Reaction } from 'common/reaction'
+import { Reaction, ReactionContentTypes } from 'common/reaction'
 
-export const useUserLikes = (userId: string | undefined) => {
+export const useUserLikes = (
+  userId: string | undefined,
+  contentType: ReactionContentTypes
+) => {
   const [reactionIds, setReactionIds] = useState<Reaction[] | undefined>()
 
   useEffect(() => {
-    if (userId) return listenForLikes(userId, setReactionIds)
+    if (userId) return listenForLikes(userId, contentType, setReactionIds)
   }, [userId])
 
   return reactionIds
@@ -22,8 +25,8 @@ export const useUserLikedContracts = (userId: string | undefined) => {
 
   useEffect(() => {
     if (userId)
-      return listenForLikes(userId, (likes) => {
-        setLikes(likes.filter((l) => l.contentType === 'contract'))
+      return listenForLikes(userId, 'contract', (likes) => {
+        setLikes(likes)
       })
   }, [userId])
 
@@ -39,10 +42,15 @@ export const useUserLikedContracts = (userId: string | undefined) => {
   return contracts
 }
 
-function listenForLikes(userId: string, setLikes: (likes: Reaction[]) => void) {
+function listenForLikes(
+  userId: string,
+  contentType: ReactionContentTypes,
+  setLikes: (likes: Reaction[]) => void
+) {
   const likes = query(
     collection(users, userId, 'reactions'),
-    where('type', '==', 'like')
+    where('type', '==', 'like'),
+    where('contentType', '==', contentType)
   )
   return listenForValues<Reaction>(likes, (docs) => setLikes(docs))
 }

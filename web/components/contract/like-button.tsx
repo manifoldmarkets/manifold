@@ -25,7 +25,7 @@ export const LikeButton = memo(function LikeItemButton(props: {
     contract,
     contentText,
   } = props
-  const likes = useUserLikes(user?.id)
+  const likes = useUserLikes(user?.id, contentType)
 
   const userLikedItemIds = likes?.map((l) => l.id)
   const userLiked = userLikedItemIds?.includes(contentId)
