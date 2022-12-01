@@ -698,11 +698,11 @@ function UserLikeNotification(props: {
 }) {
   const { notification, highlighted, isChildOfGroup } = props
   const [open, setOpen] = useState(false)
+  const { sourceUserName, sourceType } = notification
   const userLinks: MultiUserReactionInfo[] =
     notification.data?.uniqueUsers ?? []
-  const multipleTips = userLinks.length > 1
-  const { sourceUserName, sourceType } = notification
-  const tippersText = multipleTips
+  const multipleReactions = userLinks.length > 1
+  const reactorsText = multipleReactions
     ? `${sourceUserName} & ${userLinks.length - 1} other${
         userLinks.length - 1 > 1 ? 's' : ''
       }`
@@ -717,7 +717,8 @@ function UserLikeNotification(props: {
       }
       onClick={() => setOpen(true)}
     >
-      {tippersText && <PrimaryNotificationLink text={tippersText} />} liked your
+      {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
+      your
       {sourceType === 'comment_like' ? ' comment on ' : ' market '}
       <QuestionOrGroupLink notification={notification} />
       <MultiUserReactionModal
