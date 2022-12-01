@@ -38,7 +38,6 @@ import {
   DOMAIN,
   ENV_CONFIG,
 } from 'common/envs/constants'
-import { BadgeDisplay } from 'web/components/badge-display'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
@@ -119,7 +118,6 @@ export function UserPage(props: { user: User }) {
                 </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
-                  <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
               <Row
