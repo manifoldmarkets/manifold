@@ -1,6 +1,6 @@
 // Adopted from https://github.com/ueberdosis/tiptap/blob/main/demos/src/Experiments/Embeds/Vue/iframe.ts
 
-import { mergeAttributes, Node } from '@tiptap/core'
+import { Node } from '@tiptap/core'
 
 export interface IframeOptions {
   allowFullscreen: boolean
@@ -17,7 +17,10 @@ declare module '@tiptap/core' {
   }
 }
 
-const iframeClasses = 'w-full h-80'
+// These classes style the outer wrapper and the inner iframe;
+// Adopted from css in https://github.com/ueberdosis/tiptap/blob/main/demos/src/Experiments/Embeds/Vue/index.vue
+const wrapperClasses = 'relative h-auto w-full overflow-hidden'
+const iframeClasses = 'absolute top-0 left-0 h-full w-full'
 
 export default Node.create<IframeOptions>({
   name: 'iframe',
@@ -29,7 +32,11 @@ export default Node.create<IframeOptions>({
   addOptions() {
     return {
       allowFullscreen: true,
-      HTMLAttributes: {},
+      HTMLAttributes: {
+        class: 'iframe-wrapper' + ' ' + wrapperClasses,
+        // Tailwind JIT doesn't seem to pick up `pb-[20rem]`, so we hack this in:
+        style: 'padding-bottom: 20rem; ',
+      },
     }
   },
 
@@ -38,10 +45,13 @@ export default Node.create<IframeOptions>({
       src: {
         default: null,
       },
-      frameBorder: {
+      frameborder: {
         default: 0,
       },
-      allowFullScreen: {
+      height: {
+        default: 0,
+      },
+      allowfullscreen: {
         default: this.options.allowFullscreen,
         parseHTML: () => this.options.allowFullscreen,
       },
@@ -53,11 +63,21 @@ export default Node.create<IframeOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
+    this.options.HTMLAttributes.style =
+      this.options.HTMLAttributes.style +
+      ' height: ' +
+      HTMLAttributes.height +
+      ';'
     return [
-      'iframe',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        class: iframeClasses,
-      }),
+      'div',
+      this.options.HTMLAttributes,
+      [
+        'iframe',
+        {
+          ...HTMLAttributes,
+          class: HTMLAttributes.class + ' ' + iframeClasses,
+        },
+      ],
     ]
   },
 

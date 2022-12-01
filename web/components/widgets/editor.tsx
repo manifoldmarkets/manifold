@@ -11,12 +11,14 @@ import {
   mergeAttributes,
   useEditor,
 } from '@tiptap/react'
+import { generateHTML } from '@tiptap/html'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import React, { ReactNode, useCallback, useMemo } from 'react'
+import { ReactNode, useCallback, useMemo } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention'
 import { DisplayMention } from '../editor/mention'
 import GridComponent from '../editor/tiptap-grid-cards'
+import StaticReactEmbedComponent from '../editor/tiptap-static-react-embed'
 import { Linkify } from './linkify'
 import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
@@ -29,12 +31,10 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { FloatingFormatMenu } from '../editor/floating-format-menu'
 import { StickyFormatMenu } from '../editor/sticky-format-menu'
-import { DisplayTweet } from '../editor/tweet'
+import TiptapTweet from '../editor/tiptap-tweet'
 import { Upload, useUploadMutation } from '../editor/upload-extension'
-import { generateReact, insertContent } from '../editor/utils'
+import { insertContent } from '../editor/utils'
 import { EmojiExtension } from '../editor/emoji/emoji-extension'
-import { DisplaySpoiler } from '../editor/spoiler'
-import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -45,27 +45,33 @@ const DisplayImage = Image.configure({
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
     delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
-    return ['a', mergeAttributes(HTMLAttributes, { class: linkClass }), 0]
+    return [
+      'a',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      0,
+    ]
   },
-})
+}).configure({ HTMLAttributes: { class: linkClass } })
 
-export const editorExtensions = (simple = false): Extensions =>
-  nodeViewMiddleware([
-    StarterKit.configure({
-      heading: simple ? false : { levels: [1, 2, 3] },
-      horizontalRule: simple ? false : {},
-    }),
-    simple ? DisplayImage : Image,
-    EmojiExtension,
-    DisplayLink,
-    DisplayMention,
-    DisplayContractMention,
-    GridComponent,
-    Iframe,
-    DisplayTweet,
-    TiptapSpoiler.configure({ class: 'rounded-sm bg-gray-200' }),
-    Upload,
-  ])
+export const editorExtensions = (simple = false): Extensions => [
+  StarterKit.configure({
+    heading: simple ? false : { levels: [1, 2, 3] },
+    horizontalRule: simple ? false : {},
+  }),
+  simple ? DisplayImage : Image,
+  EmojiExtension,
+  DisplayLink,
+  DisplayMention,
+  DisplayContractMention,
+  GridComponent,
+  StaticReactEmbedComponent,
+  Iframe,
+  TiptapTweet,
+  TiptapSpoiler.configure({
+    spoilerOpenClass: 'rounded-sm bg-gray-200',
+  }),
+  Upload,
+]
 
 export const proseClass = (size: 'sm' | 'md' | 'lg') =>
   clsx(
@@ -191,32 +197,38 @@ function RichContent(props: {
 }) {
   const { className, content, size = 'md' } = props
 
-  const jsxContent = useMemo(
+  const html = useMemo(
     () =>
-      generateReact(content, [
+      generateHTML(content, [
         StarterKit,
         size === 'sm' ? DisplayImage : Image,
         DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
         DisplayMention,
         DisplayContractMention,
         GridComponent,
+        StaticReactEmbedComponent,
         Iframe,
-        DisplayTweet,
-        DisplaySpoiler,
+        TiptapTweet,
+        TiptapSpoiler.configure({
+          // TODO: actually add different class when clicked on instead of using selection
+          spoilerCloseClass:
+            'rounded-sm bg-gray-600 text-transparent [&_strong]:text-transparent [&_a]:text-transparent cursor-pointer select-all selection:text-gray-900 selection:bg-gray-200',
+        }),
       ]),
     [content, size]
   )
+
+  // TODO: sanitize
 
   return (
     <div className={className}>
       <div
         className={clsx(
           proseClass(size),
-          String.raw`empty:prose-p:after:content-["\00a0"]` // make empty paragraphs have height
+          `empty:prose-p:after:content-["\\00a0"]` // make empty paragraphs have height
         )}
-      >
-        {jsxContent}
-      </div>
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
     </div>
   )
 }

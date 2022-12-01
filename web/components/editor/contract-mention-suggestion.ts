@@ -12,7 +12,8 @@ export const contractMentionSuggestion: Suggestion = {
   char: '%',
   allowSpaces: true,
   allowedPrefixes: [' '],
-  pluginKey: new PluginKey('contract-mention'),
+  // Note (James): After recreating yarn.lock, this line had a type error, so I cast it to any...
+  pluginKey: new PluginKey('contract-mention') as any,
   items: async ({ query }) =>
     (
       await index.search(query, {

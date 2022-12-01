@@ -1,19 +1,25 @@
 import Mention from '@tiptap/extension-mention'
-import { ContractMention as LoadedContractMention } from 'web/components/contract/contract-mention'
+import {
+  mergeAttributes,
+  NodeViewWrapper,
+  ReactNodeViewRenderer,
+} from '@tiptap/react'
+import clsx from 'clsx'
+import { ContractMention } from 'web/components/contract/contract-mention'
 import Link from 'next/link'
 import { contractMentionSuggestion } from './contract-mention-suggestion'
 import { useContract } from 'web/hooks/use-contracts'
 
 const name = 'contract-mention-component'
 
-const ContractMention = (attrs: any) => {
-  const { label, id } = attrs
+const ContractMentionComponent = (props: any) => {
+  const { label, id } = props.node.attrs
   const contract = useContract(id)
 
   return (
-    <span className="not-prose">
+    <NodeViewWrapper className={clsx(name, 'not-prose inline')}>
       {contract ? (
-        <LoadedContractMention contract={contract} />
+        <ContractMention contract={contract} />
       ) : label ? (
         <Link
           href={label}
@@ -24,7 +30,7 @@ const ContractMention = (attrs: any) => {
       ) : (
         '[loading...]'
       )}
-    </span>
+    </NodeViewWrapper>
   )
 }
 
@@ -35,8 +41,15 @@ const ContractMention = (attrs: any) => {
  */
 export const DisplayContractMention = Mention.extend({
   name: 'contract-mention',
-  parseHTML: () => [{ tag: 'name' }, { tag: `a[data-type="${name}"]` }],
-  renderHTML: ({ HTMLAttributes }) => [name, HTMLAttributes],
-
-  renderReact: (attrs: any) => <ContractMention {...attrs} />,
+  parseHTML: () => [{ tag: `a[data-type="${name}"]` }],
+  renderHTML: ({ HTMLAttributes: { 'data-label': slug } }) => [
+    'a',
+    mergeAttributes({
+      'data-type': name,
+      href: slug,
+      class: 'hover:bg-indigo-50 focus:bg-indigo-50',
+    }),
+    slug,
+  ],
+  addNodeView: () => ReactNodeViewRenderer(ContractMentionComponent),
 }).configure({ suggestion: contractMentionSuggestion })

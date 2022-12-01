@@ -1,5 +1,6 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import React from 'react'
+import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import { ContractsGrid } from '../contract/contracts-grid'
 
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -31,19 +32,18 @@ export default Node.create({
     return ['grid-cards-component', mergeAttributes(HTMLAttributes)]
   },
 
-  renderReact(attrs: any) {
-    return <GridComponent {...attrs} />
+  addNodeView() {
+    return ReactNodeViewRenderer(GridComponent)
   },
 })
 
-function GridComponent(attrs: any) {
-  const { contractIds } = attrs
-
+export function GridComponent(props: any) {
+  const contractIds = props.node.attrs.contractIds
   const contracts = useContracts(contractIds.split(','))
   const loaded = contracts.every((c) => c !== undefined)
 
   return (
-    <div className=" not-prose font-normal">
+    <NodeViewWrapper className="grid-cards-component not-prose font-normal">
       {loaded ? (
         <ContractsGrid
           contracts={filterDefined(contracts)}
@@ -52,6 +52,6 @@ function GridComponent(attrs: any) {
       ) : (
         <LoadingIndicator />
       )}
-    </div>
+    </NodeViewWrapper>
   )
 }
