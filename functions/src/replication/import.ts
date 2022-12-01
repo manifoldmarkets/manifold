@@ -5,6 +5,7 @@ import {
   QueryDocumentSnapshot,
 } from 'firebase-admin/firestore'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { chunk } from 'lodash'
 
 import { createSupabaseClient, run } from './utils'
 import { log, processPartitioned } from '../utils'
@@ -18,10 +19,23 @@ import { DocumentKind } from '../../../common/transaction-log'
 // 4. read collection C from firestore with effective timestamp T1 and send supabase writes
 // 5. supabase should be caught up
 
+type SupabaseRow = { [k: string]: any }
+
 async function getServerTimestamp() {
   // firestore doesn't seem to have an API to just ask for the time, so we do this kludge
   const result = await admin.firestore().collection('temp').doc('time').get()
   return result.readTime.toDate()
+}
+
+async function upsertBatched(
+  client: SupabaseClient,
+  table: string,
+  rows: SupabaseRow[],
+  batchSize = 100
+) {
+  for (const rs of chunk(rows, batchSize)) {
+    await run(client.from(table).upsert(rs))
+  }
 }
 
 function getWriteRow(
@@ -48,7 +62,7 @@ async function importCollection(
   const snaps = await source.get()
   log(`Loaded ${snaps.size} documents.`)
   const rows = snaps.docs.map((d) => getWriteRow(d, docKind, t1))
-  await run(client.from('incoming_writes').upsert(rows))
+  await upsertBatched(client, 'incoming_writes', rows)
   log(`Imported ${snaps.size} documents.`)
 }
 
@@ -62,7 +76,7 @@ async function importCollectionGroup(
   log(`Import kind: ${docKind}. Effective timestamp: ${t1.toISOString()}.`)
   await processPartitioned(source, partitions, async (docs) => {
     const rows = docs.map((d) => getWriteRow(d, docKind, t1))
-    await run(client.from('incoming_writes').upsert(rows))
+    await upsertBatched(client, 'incoming_writes', rows)
   })
 }
 
