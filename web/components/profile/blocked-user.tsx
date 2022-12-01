@@ -1,5 +1,3 @@
-import { useRouter } from 'next/router'
-
 import { User } from 'web/lib/firebase/users'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
@@ -14,7 +12,6 @@ import { PrivateUser } from 'common/user'
 
 export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
   const { user } = props
-  const router = useRouter()
 
   return (
     <Page key={user.id}>
