@@ -1,10 +1,5 @@
 import Mention from '@tiptap/extension-mention'
-import {
-  mergeAttributes,
-  NodeViewWrapper,
-  ReactNodeViewRenderer,
-} from '@tiptap/react'
-import clsx from 'clsx'
+import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import { ContractMention as LoadedContractMention } from 'web/components/contract/contract-mention'
 import Link from 'next/link'
 import { contractMentionSuggestion } from './contract-mention-suggestion'

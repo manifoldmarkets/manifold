@@ -49,9 +49,6 @@ const NodeViewComponent = (props: any) => (
 
 function GridComponent(attrs: any) {
   const { contractIds } = attrs
-  if (!contractIds) {
-    return <>{JSON.stringify(attrs)}</>
-  }
 
   const contracts = useContracts(contractIds.split(','))
   const loaded = contracts.every((c) => c !== undefined)
