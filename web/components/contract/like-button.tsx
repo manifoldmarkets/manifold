@@ -38,9 +38,9 @@ export const LikeButton = memo(function LikeItemButton(props: {
     setTotalLikes(props.totalLikes)
   }, [props.totalLikes])
 
-  const onLike = async (setLike: boolean) => {
+  const onLike = async (like: boolean) => {
     if (!user) return
-    if (!setLike) return await unReact(user.id, contentId)
+    if (!like) return await unReact(user.id, contentId)
 
     await react(
       user,
@@ -54,10 +54,13 @@ export const LikeButton = memo(function LikeItemButton(props: {
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedOnLike = useMemo(() => debounce(onLike, 1000), [])
+  const debouncedOnLike = useMemo(() => debounce(onLike, 1000), [user])
+
+  // Handle changes from our useLike hook
   useEffect(() => {
     setLiked(userLiked ?? false)
   }, [userLiked])
+
   useEffect(() => {
     return () => debouncedOnLike.cancel()
   }, [debouncedOnLike])
