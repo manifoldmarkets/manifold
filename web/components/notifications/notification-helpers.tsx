@@ -1,16 +1,26 @@
+import {
+  CheckCircleIcon,
+  DotsVerticalIcon,
+  MinusCircleIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { groupPath } from 'common/group'
 import { Notification } from 'common/notification'
 import { doc, updateDoc } from 'firebase/firestore'
+import { set } from 'lodash'
 import Link from 'next/link'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { db } from 'web/lib/firebase/init'
+import EnvelopeClosedIcon from 'web/lib/icons/envelope-closed-icon'
+import EnvelopeOpenIcon from 'web/lib/icons/envelope-open-icon'
 import { track } from 'web/lib/service/analytics'
+import { IconButton } from '../buttons/button'
+import DropdownMenu from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { truncateLengthType, truncateText } from '../widgets/truncate'
@@ -23,7 +33,7 @@ export const NESTED_NOTIFICATION_STYLE = clsx(
 )
 export const PARENT_NOTIFICATION_STYLE = clsx(
   notification_base_style,
-  'group pt-3 pb-2'
+  'pt-3 pb-2'
 )
 export const NOTIFICATION_STYLE = clsx(
   notification_base_style,
@@ -47,7 +57,7 @@ export function PrimaryNotificationLink(props: {
   }
   return (
     <span className="font-semibold transition-colors hover:text-indigo-500">
-      {truncateText(text, truncatedLength ?? 'xl')}
+      {truncatedLength ? truncateText(text, truncatedLength ?? 'xl') : text}
     </span>
   )
 }
@@ -68,9 +78,6 @@ export function QuestionOrGroupLink(props: {
   } = notification
 
   let title = sourceContractTitle || sourceTitle
-  if (truncatedLength && title) {
-    title = truncateText(title, truncatedLength)
-  }
 
   if (ignoreClick) return <span className={'font-bold '}>{title}</span>
   return (
@@ -185,15 +192,14 @@ export function NotificationFrame(props: {
     link,
   } = props
   const isMobile = useIsMobile()
+
   const frameObject = (
     <>
-      <Row className="gap-2 text-sm text-gray-900 md:text-base">
+      <Row className="text-sm text-gray-900 md:text-base">
         <Row className="w-full gap-3">
           <Col className="w-fit">{icon}</Col>
           <Col className="font w-full">
-            <div className="whitespace-pre-wrap">
-              <span>{children}</span>
-            </div>
+            <span>{children}</span>
             <div className="mt-1 text-xs md:text-sm">{subtitle}</div>
             {isMobile && (
               <div className="-mt-0.5 w-fit md:-mt-1">
@@ -207,49 +213,107 @@ export function NotificationFrame(props: {
           </Col>
         </Row>
         {!isMobile && (
-          <Row className="w-30 mx-1 justify-end">
+          <Row className="mx-1 w-40 justify-end">
             <RelativeTimestamp
               time={notification.createdTime}
               className="text-xs font-light text-gray-900"
-              placement={'right-start'}
+              placement={'top'}
             />
           </Row>
         )}
-        <Col className="w-4">
-          {highlighted && (
-            <div className="bg-highlight-blue mx-auto my-auto h-3 w-3 rounded-full" />
-          )}
-        </Col>
       </Row>
     </>
   )
 
-  if (link) {
-    return (
-      <SiteLink
-        href={link}
-        className={clsx(
-          'group flex w-full flex-col',
-          isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
-          getHighlightClass(highlighted)
-        )}
-        followsLinkClass={false}
-      >
-        {frameObject}
-      </SiteLink>
-    )
-  }
-  return (
-    <Col
-      className={clsx(
-        'group w-full',
-        isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE,
-        getHighlightClass(highlighted)
-      )}
-      onClick={onClick}
+  const frameEnd = (
+    <Row
+      onClick={() => {
+        console.log('just clicked this button')
+      }}
+      className={clsx('group')}
     >
-      {frameObject}
-    </Col>
+      <Col
+        className={clsx(
+          'justify-start text-gray-500 transition-colors group-hover:text-gray-900'
+        )}
+      >
+        <DropdownMenu
+          Items={[
+            {
+              name: highlighted ? 'Mark as read' : 'Mark as unread',
+              icon: highlighted ? (
+                <EnvelopeClosedIcon className="h-5 w-5" />
+              ) : (
+                <EnvelopeOpenIcon className="h-5 w-5" />
+              ),
+              onClick: () => {
+                if (highlighted) {
+                  markNotificationAsSeen(notification)
+                } else {
+                  markNotificationAsUnseen(notification)
+                }
+              },
+            },
+            {
+              name: 'Turn off this kind of notification',
+              icon: <MinusCircleIcon className="h-5 w-5" />,
+              onClick: () => console.log('hi'),
+            },
+          ]}
+          Icon={
+            <DotsVerticalIcon
+              className={clsx(
+                'my-1 h-4 w-4 md:invisible md:group-hover:visible',
+                getHighlightClass(highlighted)
+              )}
+            />
+          }
+          MenuWidth="w-52"
+        />
+      </Col>
+      <Col className="w-4">
+        {highlighted && (
+          <div className="bg-highlight-blue mx-auto my-auto h-3 w-3 rounded-full" />
+        )}
+      </Col>
+    </Row>
+  )
+
+  return (
+    <Row
+      className={clsx(
+        isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE
+      )}
+    >
+      {link && (
+        <Col className={clsx(getHighlightClass(highlighted), 'w-full')}>
+          <SiteLink
+            href={link}
+            className={clsx('group flex w-full flex-col')}
+            followsLinkClass={false}
+            onClick={() => {
+              markNotificationAsSeen(notification)
+            }}
+          >
+            {frameObject}
+          </SiteLink>
+        </Col>
+      )}
+      {!link && (
+        <Col
+          className={clsx('group w-full', getHighlightClass(highlighted))}
+          onClick={() => {
+            markNotificationAsSeen(notification)
+            if (onClick) {
+              onClick()
+            }
+          }}
+        >
+          {frameObject}
+        </Col>
+      )}
+      {frameEnd}
+    </Row>
   )
 }
 
@@ -259,10 +323,32 @@ export const markNotificationsAsSeen = async (
   const unseenNotifications = notifications.filter((n) => !n.isSeen)
   return await Promise.all(
     unseenNotifications.map((n) => {
-      const notificationDoc = doc(db, `users/${n.userId}/notifications/`, n.id)
-      return updateDoc(notificationDoc, { isSeen: true, viewTime: new Date() })
+      return markNotificationAsSeen(n)
     })
   )
+}
+
+export async function markNotificationAsSeen(notification: Notification) {
+  const notificationDoc = doc(
+    db,
+    `users/${notification.userId}/notifications/`,
+    notification.id
+  )
+  return updateDoc(notificationDoc, {
+    isSeen: true,
+    viewTime: new Date(),
+  })
+}
+
+export async function markNotificationAsUnseen(notification: Notification) {
+  const notificationDoc = doc(
+    db,
+    `users/${notification.userId}/notifications/`,
+    notification.id
+  )
+  return updateDoc(notificationDoc, {
+    isSeen: false,
+  })
 }
 
 export function ParentNotificationHeader(props: {
@@ -277,7 +363,7 @@ export function ParentNotificationHeader(props: {
         'mx-2 items-center justify-start text-sm text-gray-900 md:text-base'
       )}
     >
-      <div className={highlightedClass}>{header}</div>
+      <div className={clsx(highlightedClass, 'line-clamp-3')}>{header}</div>
     </Row>
   )
 }

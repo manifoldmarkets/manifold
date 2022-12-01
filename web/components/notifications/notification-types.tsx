@@ -18,6 +18,7 @@ import {
 } from 'web/components/outcome-label'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
+import Notifications from 'web/pages/notifications'
 import { BadgesModal } from '../profile/badges-modal'
 import { Linkify } from '../widgets/linkify'
 import { truncateText } from '../widgets/truncate'
@@ -32,21 +33,13 @@ import {
 
 export function NotificationItem(props: {
   notification: Notification
-  markedAsRead: boolean
   isChildOfGroup?: boolean
   isIncomeNotification?: boolean
 }) {
-  const { notification, isChildOfGroup, isIncomeNotification, markedAsRead } =
-    props
+  const { notification, isChildOfGroup, isIncomeNotification } = props
   const { sourceType, reason, sourceUpdateType } = notification
 
-  const [highlighted, setHighlighted] = useState(!notification.isSeen)
-
-  useEffect(() => {
-    if (markedAsRead && highlighted) {
-      setHighlighted(!markedAsRead)
-    }
-  }, [markedAsRead, highlighted])
+  const highlighted = !notification.isSeen
 
   if (isIncomeNotification) {
     return (
@@ -257,18 +250,14 @@ function BetFillNotification(props: {
       subtitle={subtitle}
       link={getSourceUrl(notification)}
     >
-      <>
+      <div className="line-clamp-3">
         {description}
         {!isChildOfGroup && (
           <span>
-            on{' '}
-            <PrimaryNotificationLink
-              text={sourceContractTitle}
-              truncatedLength={'xl'}
-            />
+            on <PrimaryNotificationLink text={sourceContractTitle} />
           </span>
         )}
-      </>
+      </div>
     </NotificationFrame>
   )
 }
@@ -413,7 +402,7 @@ function MarketResolvedNotification(props: {
             {' '}
             <PrimaryNotificationLink
               text={sourceContractTitle}
-              truncatedLength="lg"
+              truncatedLength={'xl'}
             />
           </span>
         )}
@@ -430,7 +419,7 @@ function MarketResolvedNotification(props: {
           <span>
             <PrimaryNotificationLink
               text={sourceContractTitle}
-              truncatedLength="lg"
+              truncatedLength={'xl'}
             />
           </span>
         )}{' '}
@@ -476,7 +465,7 @@ function MarketClosedNotification(props: {
       }
       link={getSourceUrl(notification)}
     >
-      <span>
+      <span className="line-clamp-3">
         Please resolve your question
         {!isChildOfGroup && (
           <>
@@ -507,7 +496,7 @@ function NewMarketNotification(props: {
       }
       link={getSourceUrl(notification)}
     >
-      <>
+      <div className="line-clamp-3">
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
@@ -516,7 +505,7 @@ function NewMarketNotification(props: {
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
         </span>
-      </>
+      </div>
     </NotificationFrame>
   )
 }
@@ -554,7 +543,7 @@ function MarketUpdateNotification(props: {
       subtitle={subtitle}
       link={getSourceUrl(notification)}
     >
-      <>
+      <div className="line-clamp-3">
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
@@ -567,7 +556,7 @@ function MarketUpdateNotification(props: {
           )}
           {isChildOfGroup && <>the question</>}
         </span>
-      </>
+      </div>
     </NotificationFrame>
   )
 }
@@ -589,7 +578,7 @@ function CommentNotification(props: {
     reason === 'reply_to_users_answer' || reason === 'reply_to_users_comment'
       ? 'replied to you '
       : `commented `
-  const comment = truncateText(sourceText, 'xl')
+  const comment = sourceText
   return (
     <NotificationFrame
       notification={notification}
@@ -598,10 +587,18 @@ function CommentNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'💬'} />
       }
-      subtitle={comment ? <Linkify text={comment} /> : <></>}
+      subtitle={
+        comment ? (
+          <div className="line-clamp-2">
+            <Linkify text={comment} />{' '}
+          </div>
+        ) : (
+          <></>
+        )
+      }
       link={getSourceUrl(notification)}
     >
-      <>
+      <div className="line-clamp-3">
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
@@ -613,7 +610,7 @@ function CommentNotification(props: {
             on <PrimaryNotificationLink text={sourceContractTitle} />
           </span>
         )}
-      </>
+      </div>
     </NotificationFrame>
   )
 }
@@ -638,10 +635,10 @@ function AnswerNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'🙋'} />
       }
-      subtitle={truncateText(sourceText, 'xl')}
+      subtitle={<div className="line-clamp-2">{sourceText}</div>}
       link={getSourceUrl(notification)}
     >
-      <>
+      <div className="line-clamp-3">
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
@@ -653,7 +650,7 @@ function AnswerNotification(props: {
             on <PrimaryNotificationLink text={sourceContractTitle} />
           </span>
         )}
-      </>
+      </div>
     </NotificationFrame>
   )
 }
@@ -676,7 +673,7 @@ function TaggedUserNotification(props: {
       }
       link={getSourceUrl(notification)}
     >
-      <>
+      <div className="line-clamp-3">
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
@@ -688,7 +685,7 @@ function TaggedUserNotification(props: {
             on <PrimaryNotificationLink text={sourceContractTitle} />
           </span>
         )}
-      </>
+      </div>
     </NotificationFrame>
   )
 }
@@ -751,7 +748,7 @@ function LiquidityNotification(props: {
       }
       link={getSourceUrl(notification)}
     >
-      <>
+      <div className="line-clamp-3">
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
@@ -765,7 +762,7 @@ function LiquidityNotification(props: {
             to <PrimaryNotificationLink text={sourceContractTitle} />
           </span>
         )}
-      </>
+      </div>
     </NotificationFrame>
   )
 }
@@ -787,7 +784,7 @@ function GroupAddNotification(props: {
       }
       link={getSourceUrl(notification)}
     >
-      <>
+      <div className="line-clamp-3">
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
@@ -797,7 +794,7 @@ function GroupAddNotification(props: {
         <span>
           <PrimaryNotificationLink text={sourceTitle} />
         </span>
-      </>
+      </div>
     </NotificationFrame>
   )
 }
@@ -853,14 +850,14 @@ function UserJoinedNotification(props: {
         )
       }
     >
-      <>
+      <div className="line-clamp-3">
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
           className={'relative flex-shrink-0 hover:text-indigo-500'}
         />{' '}
         joined Manifold Markets {reasonBlock}
-      </>
+      </div>
     </NotificationFrame>
   )
 }
@@ -899,7 +896,7 @@ function ChallengeNotification(props: {
             on{' '}
             <PrimaryNotificationLink
               text={sourceContractTitle}
-              truncatedLength="lg"
+              truncatedLength="xl"
             />{' '}
           </span>
         )}

@@ -181,18 +181,18 @@ function NotificationsList(props: {
     return allGroupedNotifications.slice(start, end)
   }, [allGroupedNotifications, page])
 
-  const isPageVisible = useIsPageVisible()
+  // const isPageVisible = useIsPageVisible()
 
   // Mark all notifications as seen.
-  useEffect(() => {
-    if (isPageVisible && allGroupedNotifications) {
-      const notifications = allGroupedNotifications
-        .flat()
-        .flatMap((g) => g.notifications)
+  // useEffect(() => {
+  //   if (isPageVisible && allGroupedNotifications) {
+  //     const notifications = allGroupedNotifications
+  //       .flat()
+  //       .flatMap((g) => g.notifications)
 
-      markNotificationsAsSeen(notifications)
-    }
-  }, [isPageVisible, allGroupedNotifications])
+  //     markNotificationsAsSeen(notifications)
+  //   }
+  // }, [isPageVisible, allGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
@@ -238,9 +238,7 @@ function NotificationGroupItem(props: {
   const { notificationGroup, allMarkedAsRead } = props
   const { notifications } = notificationGroup
   const { sourceContractTitle } = notifications[0]
-  const [highlighted, setHighlighted] = useState(
-    notifications.some((n) => !n.isSeen)
-  )
+  const highlighted = notifications.some((n) => !n.isSeen)
   const header = (
     <ParentNotificationHeader
       header={
@@ -263,7 +261,6 @@ function NotificationGroupItem(props: {
   return (
     <NotificationGroupItemComponent
       notifications={notifications}
-      setHighlighted={setHighlighted}
       header={header}
       allMarkedAsRead={allMarkedAsRead}
     />
@@ -272,7 +269,6 @@ function NotificationGroupItem(props: {
 
 export function NotificationGroupItemComponent(props: {
   notifications: Notification[]
-  setHighlighted: (highlighted: boolean) => void
   header: ReactNode
   allMarkedAsRead: boolean
   isIncomeNotification?: boolean
@@ -281,7 +277,6 @@ export function NotificationGroupItemComponent(props: {
   const {
     notifications,
     className,
-    setHighlighted,
     header,
     allMarkedAsRead,
     isIncomeNotification,
@@ -295,10 +290,6 @@ export function NotificationGroupItemComponent(props: {
     if (event.ctrlKey || event.metaKey) return
     setExpanded(!expanded)
   }
-
-  useEffect(() => {
-    if (expanded) setHighlighted(false)
-  }, [expanded, setHighlighted])
 
   return (
     <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>

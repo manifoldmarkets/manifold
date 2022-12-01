@@ -90,7 +90,7 @@ export function IncomeNotificationGroupItem(props: {
   const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
     notifications.filter((n) => n.sourceType !== 'betting_streak_bonus')
   )
-  const [highlighted, setHighlighted] = useState(
+  const [highlighted, _setHighlighted] = useState(
     allMarkedAsRead ? !allMarkedAsRead : notifications.some((n) => !n.isSeen)
   )
   const totalIncome = sum(
@@ -121,10 +121,8 @@ export function IncomeNotificationGroupItem(props: {
   return (
     <NotificationGroupItemComponent
       notifications={combinedNotifs}
-      setHighlighted={setHighlighted}
       header={header}
       isIncomeNotification={true}
-      allMarkedAsRead={allMarkedAsRead}
     />
   )
 }
@@ -193,7 +191,7 @@ export function TipIncomeNotification(props: {
       }
       onClick={() => setOpen(true)}
     >
-      <span>
+      <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} />{' '}
         {tippersText && <PrimaryNotificationLink text={tippersText} />} tipped
         you on <QuestionOrGroupLink notification={notification} />
@@ -231,7 +229,7 @@ export function BonusIncomeNotification(props: {
       }
       onClick={() => setOpen(true)}
     >
-      <span>
+      <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
           text={
@@ -242,11 +240,7 @@ export function BonusIncomeNotification(props: {
               : 'unique traders'
           }
         />{' '}
-        on{' '}
-        <QuestionOrGroupLink
-          notification={notification}
-          truncatedLength={'xl'}
-        />
+        on <QuestionOrGroupLink notification={notification} />
       </span>
       <MultiUserTransactionModal
         userInfos={userLinks}
@@ -282,7 +276,7 @@ export function BettingStreakBonusIncomeNotification(props: {
       }
       onClick={() => setOpen(true)}
     >
-      <span>
+      <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} />{' '}
         {sourceText && +sourceText === BETTING_STREAK_BONUS_MAX && (
           <span>(max) </span>
