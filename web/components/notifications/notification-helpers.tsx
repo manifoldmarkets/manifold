@@ -276,7 +276,7 @@ export function combineReactionNotifications(notifications: Notification[]) {
     notifications,
     (n) => n.sourceType
   )
-  // map the grouped notifications by source type to notifications grouped by sourceTitle and sourceText
+  // User reactions should all be unique by source type and sourceTitle+sourceText
   const groupedNotificationsBySourceTitleAndText = Object.values(
     groupedNotificationsBySourceType
   ).map((notifications) => {
@@ -298,7 +298,6 @@ export function combineReactionNotifications(notifications: Notification[]) {
             ...mostRecentNotification,
             data: {
               ...mostRecentNotification.data,
-              // User reactions should all be unique by source type and sourceTitle+sourceText
               otherNotifications: notifications,
             },
           }
