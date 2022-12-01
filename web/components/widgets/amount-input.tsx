@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
@@ -114,8 +114,9 @@ export function BuyAmountInput(props: {
 
   const onAmountChange = (amount: number | undefined) => {
     onChange(amount)
+  }
 
-    // Check for errors.
+  useEffect(() => {
     if (amount !== undefined) {
       if (user && user.balance < amount) {
         setError('Insufficient balance')
@@ -127,7 +128,7 @@ export function BuyAmountInput(props: {
     } else {
       setError(undefined)
     }
-  }
+  })
 
   return (
     <>
