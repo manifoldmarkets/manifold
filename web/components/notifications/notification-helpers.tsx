@@ -1,15 +1,10 @@
-import {
-  CheckCircleIcon,
-  DotsVerticalIcon,
-  MinusCircleIcon,
-} from '@heroicons/react/solid'
+import { DotsVerticalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { groupPath } from 'common/group'
 import { Notification } from 'common/notification'
 import { doc, updateDoc } from 'firebase/firestore'
-import { set } from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useState } from 'react'
+import { ReactNode } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
@@ -19,7 +14,6 @@ import { db } from 'web/lib/firebase/init'
 import EnvelopeClosedIcon from 'web/lib/icons/envelope-closed-icon'
 import EnvelopeOpenIcon from 'web/lib/icons/envelope-open-icon'
 import { track } from 'web/lib/service/analytics'
-import { IconButton } from '../buttons/button'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'

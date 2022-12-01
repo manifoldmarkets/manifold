@@ -6,6 +6,8 @@ import {
 import clsx from 'clsx'
 import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
+import dayjs from 'dayjs'
+import { partition } from 'lodash'
 import { useRouter } from 'next/router'
 import React, { ReactNode, useEffect, useMemo, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -274,39 +276,48 @@ export function NotificationGroupItemComponent(props: {
   className?: string
 }) {
   const { notifications, className, header, isIncomeNotification } = props
-
-  const needsExpanding = notifications.length > NUM_SUMMARY_LINES
-  const [expanded, setExpanded] = useState(
-    notifications.length <= NUM_SUMMARY_LINES
+  const [readNotifications, unreadNotifications] = partition(
+    notifications,
+    (n: Notification) => n.isSeen
   )
+  const numRead = readNotifications.length
+  const numUnread = unreadNotifications.length
+  const numReadShown = NUM_SUMMARY_LINES - numUnread
+
+  const needsExpanding = numRead > 0 && notifications.length > NUM_SUMMARY_LINES
+  const [expanded, setExpanded] = useState(false)
   const onExpandHandler = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.ctrlKey || event.metaKey) return
     setExpanded(!expanded)
   }
+  if (notifications[0].sourceContractSlug === 'well-hello-there') {
+    console.log(
+      'UNREAD:',
+      unreadNotifications.map((n: Notification) => dayjs(n.createdTime)),
+      '\nREAD:',
+      readNotifications.map((n: Notification) => dayjs(n.createdTime))
+    )
+  }
 
+  let shownArray = expanded
+    ? unreadNotifications.concat(readNotifications)
+    : numReadShown > 0
+    ? unreadNotifications.concat(readNotifications.slice(0, numReadShown))
+    : unreadNotifications
   return (
     <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
       {header}
       <div className={clsx(' whitespace-pre-line')}>
-        {notifications
-          .slice(
-            0,
-            needsExpanding
-              ? expanded
-                ? notifications.length
-                : NUM_SUMMARY_LINES
-              : notifications.length
+        {shownArray.map((notification) => {
+          return (
+            <NotificationItem
+              notification={notification}
+              key={notification.id}
+              isChildOfGroup={true}
+              isIncomeNotification={isIncomeNotification}
+            />
           )
-          .map((notification) => {
-            return (
-              <NotificationItem
-                notification={notification}
-                key={notification.id}
-                isChildOfGroup={true}
-                isIncomeNotification={isIncomeNotification}
-              />
-            )
-          })}
+        })}
         {needsExpanding && (
           <Row
             className={clsx(
@@ -317,9 +328,9 @@ export function NotificationGroupItemComponent(props: {
             {!expanded && (
               <>
                 <div>
-                  {notifications.length - NUM_SUMMARY_LINES > 0
+                  {notifications.length - shownArray.length > 0
                     ? 'See ' +
-                      (notifications.length - NUM_SUMMARY_LINES) +
+                      (notifications.length - shownArray.length) +
                       ' more'
                     : ''}
                 </div>
