@@ -32,8 +32,11 @@ export function LikeItemButton(props: {
   const disabled = !user || contentCreatorId === user?.id
   const [hover, setHover] = useState(false)
   const [liked, setLiked] = useState(false)
-  const [totalLikes, setTotalLikes] = useState(props.totalLikes)
   const showRed = liked || (!liked && hover)
+  const [totalLikes, setTotalLikes] = useState(props.totalLikes)
+  useEffect(() => {
+    setTotalLikes(props.totalLikes)
+  }, [props.totalLikes])
 
   const onLike = async (setLike: boolean) => {
     if (!user) return
