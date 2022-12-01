@@ -30,6 +30,7 @@ export const onDeleteReaction = functions.firestore
     }
   })
 
+// This should technically be counting reaction documents but I haven't seen this method fail yet
 const incrementContractReactions = async (reaction: Reaction, num: number) => {
   await firestore
     .collection('contracts')
@@ -38,6 +39,7 @@ const incrementContractReactions = async (reaction: Reaction, num: number) => {
       likedByUserCount: FieldValue.increment(num),
     })
 }
+// This should technically be counting reaction documents but I haven't seen this method fail yet
 const incrementCommentReactions = async (reaction: Reaction, num: number) => {
   await firestore
     .collection(`contracts/${reaction.contentParentId}/comments`)
