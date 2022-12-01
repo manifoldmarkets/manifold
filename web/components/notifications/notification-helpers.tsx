@@ -13,8 +13,7 @@ import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { truncateLengthType, truncateText } from '../widgets/truncate'
-import { groupBy, uniqBy } from 'lodash'
-import { MultiUserReactionInfo } from 'web/components/multi-user-reaction-link'
+import { groupBy } from 'lodash'
 
 const notification_base_style =
   'relative cursor-pointer text-sm bg-inherit rounded-lg transition-colors'
@@ -273,53 +272,41 @@ export function ParentNotificationHeader(props: {
   )
 }
 export function combineReactionNotifications(notifications: Notification[]) {
-  const newNotifications: Notification[] = []
   const groupedNotificationsBySourceType = groupBy(
     notifications,
     (n) => n.sourceType
   )
-  for (const sourceType in groupedNotificationsBySourceType) {
-    // Source title splits by contracts, groups, betting streak bonus
-    const groupedNotificationsBySourceTitle = groupBy(
-      groupedNotificationsBySourceType[sourceType],
-      (notification) => {
-        return (
-          (notification.sourceTitle ??
-            notification.sourceContractTitle ??
-            notification.sourceContractId) + notification.sourceText
-        )
-      }
-    )
-    for (const sourceTitle in groupedNotificationsBySourceTitle) {
-      const notificationsForSourceTitle =
-        groupedNotificationsBySourceTitle[sourceTitle]
-
-      const sum = notificationsForSourceTitle.length
-      const uniqueUsers = uniqBy(
-        notificationsForSourceTitle.map((notification) => {
-          notificationsForSourceTitle.filter(
-            (n) => n.sourceUserUsername === notification.sourceUserUsername
-          )
-          return {
-            username: notification.sourceUserUsername,
-            name: notification.sourceUserName,
-            avatarUrl: notification.sourceUserAvatarUrl,
-            reaction: sourceType,
-          } as MultiUserReactionInfo
-        }),
-        (n) => n.username
+  // map the grouped notifications by source type to notifications grouped by sourceTitle and sourceText
+  const groupedNotificationsBySourceTitleAndText = Object.values(
+    groupedNotificationsBySourceType
+  ).map((notifications) => {
+    return groupBy(notifications, (notification) => {
+      return (
+        (notification.sourceTitle ??
+          notification.sourceContractTitle ??
+          notification.sourceContractId) + notification.sourceText
       )
+    })
+  })
+  const newNotifications = groupedNotificationsBySourceTitleAndText
+    .map((notificationsAccordingToSourceTitleAndText) =>
+      Object.values(notificationsAccordingToSourceTitleAndText).map(
+        (notifications) => {
+          const mostRecentNotification = notifications[0]
 
-      const newNotification = {
-        ...notificationsForSourceTitle[0],
-        sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-        data: {
-          uniqueUsers,
-          sum,
-        },
-      }
-      newNotifications.push(newNotification)
-    }
-  }
+          return {
+            ...mostRecentNotification,
+            data: {
+              ...mostRecentNotification.data,
+              // User reactions should all be unique by source type and sourceTitle+sourceText
+              otherNotifications: notifications,
+            },
+          }
+        }
+      )
+    )
+    .flat()
+  //
+
   return newNotifications
 }

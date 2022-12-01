@@ -3,35 +3,32 @@ import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-
-export type MultiUserReactionInfo = {
-  name: string
-  username: string
-  avatarUrl: string
-  reaction: string
-}
+import { Notification } from 'common/notification'
 
 export function MultiUserReactionModal(props: {
-  userInfos: MultiUserReactionInfo[]
+  similarNotifications: Notification[]
   modalLabel: string
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  const { userInfos, modalLabel, open, setOpen } = props
+  const { similarNotifications, modalLabel, open, setOpen } = props
   return (
     <Modal open={open} setOpen={setOpen} size={'sm'}>
       <Col className="items-start gap-4 rounded-md bg-white p-6">
         <span className={'text-xl'}>{modalLabel}</span>
-        {userInfos.map((userInfo) => (
+        {similarNotifications.map((userInfo) => (
           <Row
-            key={userInfo.username + 'list'}
+            key={userInfo.sourceUserUsername + 'list'}
             className="w-full items-center gap-2"
           >
             <Avatar
-              username={userInfo.username}
-              avatarUrl={userInfo.avatarUrl}
+              username={userInfo.sourceUserUsername}
+              avatarUrl={userInfo.sourceUserAvatarUrl}
             />
-            <UserLink name={userInfo.name} username={userInfo.username} />
+            <UserLink
+              name={userInfo.sourceUserName}
+              username={userInfo.sourceUserUsername}
+            />
           </Row>
         ))}
       </Col>

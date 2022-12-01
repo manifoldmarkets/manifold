@@ -28,10 +28,7 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import {
-  MultiUserReactionInfo,
-  MultiUserReactionModal,
-} from 'web/components/multi-user-reaction-link'
+import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -664,12 +661,12 @@ function UserLikeNotification(props: {
   const { notification, highlighted, isChildOfGroup } = props
   const [open, setOpen] = useState(false)
   const { sourceUserName, sourceType, sourceText } = notification
-  const userLinks: MultiUserReactionInfo[] =
-    notification.data?.uniqueUsers ?? []
-  const multipleReactions = userLinks.length > 1
+  const otherRelatedNotifications: Notification[] =
+    notification.data?.otherNotifications ?? []
+  const multipleReactions = otherRelatedNotifications.length > 1
   const reactorsText = multipleReactions
-    ? `${sourceUserName} & ${userLinks.length - 1} other${
-        userLinks.length - 1 > 1 ? 's' : ''
+    ? `${sourceUserName} & ${otherRelatedNotifications.length - 1} other${
+        otherRelatedNotifications.length - 1 > 1 ? 's' : ''
       }`
     : sourceUserName
   return (
@@ -690,7 +687,7 @@ function UserLikeNotification(props: {
       {sourceType === 'comment_like' ? ' comment on ' : ' market '}
       <QuestionOrGroupLink notification={notification} />
       <MultiUserReactionModal
-        userInfos={userLinks}
+        similarNotifications={otherRelatedNotifications}
         modalLabel={'Who dunnit?'}
         open={open}
         setOpen={setOpen}
