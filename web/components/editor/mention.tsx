@@ -9,14 +9,6 @@ import { mentionSuggestion } from './mention-suggestion'
 
 const name = 'mention-component'
 
-const MentionComponent = (props: any) => {
-  return (
-    <NodeViewWrapper className={name}>
-      <Linkify text={'@' + props.node.attrs.label} />
-    </NodeViewWrapper>
-  )
-}
-
 /**
  *  Mention extension that renders React. See:
  *  https://tiptap.dev/guide/custom-extensions#extend-existing-extensions
@@ -29,6 +21,4 @@ export const DisplayMention = Mention.extend({
     mergeAttributes({ HTMLAttributes }),
   ],
   renderReact: (attrs: any) => <Linkify text={'@' + attrs.label} />,
-  addNodeView: () =>
-    ReactNodeViewRenderer(MentionComponent, { className: 'inline-block' }),
 }).configure({ suggestion: mentionSuggestion })

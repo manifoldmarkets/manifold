@@ -38,10 +38,10 @@ export default Node.create<IframeOptions>({
       src: {
         default: null,
       },
-      frameborder: {
+      frameBorder: {
         default: 0,
       },
-      allowfullscreen: {
+      allowFullScreen: {
         default: this.options.allowFullscreen,
         parseHTML: () => this.options.allowFullscreen,
       },

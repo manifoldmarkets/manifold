@@ -35,17 +35,7 @@ export default Node.create({
   renderReact(attrs: any) {
     return <GridComponent {...attrs} />
   },
-
-  addNodeView() {
-    return ReactNodeViewRenderer(NodeViewComponent)
-  },
 })
-
-const NodeViewComponent = (props: any) => (
-  <NodeViewWrapper className="grid-cards-component">
-    <GridComponent {...props.node.attrs} />
-  </NodeViewWrapper>
-)
 
 function GridComponent(attrs: any) {
   const { contractIds } = attrs

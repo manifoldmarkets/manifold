@@ -48,7 +48,7 @@ const pmdToJSX = (dom: ProsemirrorDOM, children: ReactNode): ReactNode => {
   }
 }
 
-function getField(extension: AnyExtension, field: string) {
+export function getField(extension: AnyExtension, field: string) {
   const { name, options, storage } = extension
   return getExtensionField(extension, field, { name, options, storage })
 }

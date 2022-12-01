@@ -1,17 +1,10 @@
 import Mention from '@tiptap/extension-mention'
-import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import { ContractMention as LoadedContractMention } from 'web/components/contract/contract-mention'
 import Link from 'next/link'
 import { contractMentionSuggestion } from './contract-mention-suggestion'
 import { useContract } from 'web/hooks/use-contracts'
 
 const name = 'contract-mention-component'
-
-const NodeViewComponent = (props: any) => (
-  <NodeViewWrapper className={name}>
-    <ContractMention {...props.node.attrs} />
-  </NodeViewWrapper>
-)
 
 const ContractMention = (attrs: any) => {
   const { label, id } = attrs
@@ -46,6 +39,4 @@ export const DisplayContractMention = Mention.extend({
   renderHTML: ({ HTMLAttributes }) => [name, HTMLAttributes],
 
   renderReact: (attrs: any) => <ContractMention {...attrs} />,
-
-  addNodeView: () => ReactNodeViewRenderer(NodeViewComponent),
 }).configure({ suggestion: contractMentionSuggestion })

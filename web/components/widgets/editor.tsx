@@ -34,6 +34,7 @@ import { Upload, useUploadMutation } from '../editor/upload-extension'
 import { generateReact, insertContent } from '../editor/utils'
 import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { DisplaySpoiler } from '../editor/spoiler'
+import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -48,22 +49,23 @@ const DisplayLink = Link.extend({
   },
 })
 
-export const editorExtensions = (simple = false): Extensions => [
-  StarterKit.configure({
-    heading: simple ? false : { levels: [1, 2, 3] },
-    horizontalRule: simple ? false : {},
-  }),
-  simple ? DisplayImage : Image,
-  EmojiExtension,
-  DisplayLink,
-  DisplayMention,
-  DisplayContractMention,
-  GridComponent,
-  Iframe,
-  DisplayTweet,
-  TiptapSpoiler.configure({ class: 'rounded-sm bg-gray-200' }),
-  Upload,
-]
+export const editorExtensions = (simple = false): Extensions =>
+  nodeViewMiddleware([
+    StarterKit.configure({
+      heading: simple ? false : { levels: [1, 2, 3] },
+      horizontalRule: simple ? false : {},
+    }),
+    simple ? DisplayImage : Image,
+    EmojiExtension,
+    DisplayLink,
+    DisplayMention,
+    DisplayContractMention,
+    GridComponent,
+    Iframe,
+    DisplayTweet,
+    TiptapSpoiler.configure({ class: 'rounded-sm bg-gray-200' }),
+    Upload,
+  ])
 
 export const proseClass = (size: 'sm' | 'md' | 'lg') =>
   clsx(
