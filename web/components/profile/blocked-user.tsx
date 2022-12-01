@@ -1,5 +1,3 @@
-import { useRouter } from 'next/router'
-
 import { User } from 'web/lib/firebase/users'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
@@ -8,14 +6,12 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UserFollowButton } from 'web/components/buttons/follow-button'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { BadgeDisplay } from 'web/components/badge-display'
 import { BotBadge, PostBanBadge } from 'web/components/widgets/user-link'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { PrivateUser } from 'common/user'
 
 export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
   const { user } = props
-  const router = useRouter()
 
   return (
     <Page key={user.id}>
@@ -45,7 +41,6 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
                 </span>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
-                  <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
               <Row

@@ -53,7 +53,6 @@ export type notification_preferences = {
   profit_loss_updates: notification_destination_types[]
   onboarding_flow: notification_destination_types[]
   thank_you_for_purchases: notification_destination_types[]
-  badges_awarded: notification_destination_types[]
   opt_out_all: notification_destination_types[]
   // When adding a new notification preference, use add-new-notification-preference.ts to existing users
 }
@@ -158,7 +157,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     onboarding_flow: constructPref(true, true, false),
 
     opt_out_all: [],
-    badges_awarded: constructPref(true, false, false),
   }
   return defaults
 }
