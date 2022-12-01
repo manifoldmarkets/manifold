@@ -34,7 +34,7 @@ import { toast } from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { FlagIcon } from '@heroicons/react/outline'
 import { LikeButton } from 'web/components/contract/like-button'
-import { richTextToString } from 'common/lib/util/parse'
+import { richTextToString } from 'common/util/parse'
 
 export type ReplyTo = { id: string; username: string }
 
