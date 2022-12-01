@@ -26,7 +26,6 @@ import {
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { placeBet } from 'web/lib/firebase/api'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api'
@@ -53,6 +52,7 @@ import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import { floor } from 'lodash'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { placeBet } from 'web/lib/api/call-endpoint'
 
 const BET_SIZE = 10
 
@@ -386,12 +386,18 @@ function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
     if (direction === 'DOWN') {
       throw new Error("Can't bet against free response answers")
     }
-    return getTopAnswer(contract)?.id
+    const outcome = getTopAnswer(contract)?.id
+    if (!outcome) {
+      throw new Error('No top answer to bet on')
+    }
+    return outcome
   }
   if (outcomeType === 'NUMERIC') {
     // TODO: Ideally an 'UP' bet would be a uniform bet between [current, max]
     throw new Error("Can't quick bet on numeric markets")
   }
+
+  throw new Error('Unknown outcome type')
 }
 
 export function QuickOutcomeView(props: {

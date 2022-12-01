@@ -16,6 +16,7 @@ export const newEndpoint = (
 ) => {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     try {
+      initAdmin()
       await applyCorsHeaders(req, res, {
         origin: [
           CORS_ORIGIN_MANIFOLD,
@@ -24,7 +25,6 @@ export const newEndpoint = (
         ],
         methods: 'POST',
       })
-      initAdmin()
       const userId = await verifyUserId(req)
       const result = await fn(req, userId)
       res.status(200).json(result)

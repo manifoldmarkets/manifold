@@ -8,7 +8,6 @@ import { NumericContract } from 'common/contract'
 import { formatPercent, formatMoney } from 'common/util/format'
 
 import { useUser } from 'web/hooks/use-user'
-import { APIError, placeBet } from 'web/lib/firebase/api'
 import { User } from 'web/lib/firebase/users'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { BucketInput } from '../widgets/bucket-input'
@@ -19,6 +18,8 @@ import { BetSignUpPrompt } from '../sign-up-prompt'
 import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { calculateDpmPayoutAfterCorrectBet } from 'common/calculate-dpm'
+import { placeBet } from 'web/lib/api/call-endpoint'
+import { APIError } from 'common/api'
 
 export function NumericBetPanel(props: {
   contract: NumericContract

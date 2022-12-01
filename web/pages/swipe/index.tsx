@@ -9,7 +9,6 @@ import { Content } from 'web/components/widgets/editor'
 import { useUser } from 'web/hooks/use-user'
 import { useUserSwipes } from 'web/hooks/use-user-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { placeBet } from 'web/lib/firebase/api'
 import { logSwipe } from 'web/lib/firebase/views'
 import { contractPath, getTrendingContracts } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
@@ -28,6 +27,7 @@ import {
   MinusIcon,
   PlusIcon,
 } from '@heroicons/react/solid'
+import { placeBet } from 'web/lib/api/call-endpoint'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(

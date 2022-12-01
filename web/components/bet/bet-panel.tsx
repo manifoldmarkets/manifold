@@ -15,7 +15,6 @@ import {
 import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
 import { LimitBet } from 'common/bet'
-import { APIError, placeBet } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
 import {
   BinaryOutcomeLabel,
@@ -47,6 +46,8 @@ import { Title } from '../widgets/title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
+import { placeBet } from 'web/lib/api/call-endpoint'
+import { APIError } from 'common/api'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -229,7 +230,7 @@ export function BuyPanel(props: {
   }
 
   async function submitBet() {
-    if (!user || !betAmount) return
+    if (!user || !betAmount || !outcome) return
 
     setError(undefined)
     setIsSubmitting(true)

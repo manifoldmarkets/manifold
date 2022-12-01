@@ -204,6 +204,8 @@ const placeBet = newEndpoint(async (req, userId: string) => {
   return { betId: result.betId }
 })
 
+export default placeBet
+
 const bodySchema = z.object({
   contractId: z.string(),
   amount: z.number().gte(1),
@@ -223,6 +225,11 @@ const numericSchema = z.object({
   outcome: z.string(),
   value: z.number(),
 })
+
+export type PlaceBetParams = z.infer<
+  typeof bodySchema &
+    (typeof binarySchema | typeof freeResponseSchema | typeof numericSchema)
+>
 
 const firestore = admin.firestore()
 
@@ -299,5 +306,3 @@ export const updateMakers = (
     trans.update(userDoc, { balance: FieldValue.increment(-spent) })
   }
 }
-
-export default placeBet
