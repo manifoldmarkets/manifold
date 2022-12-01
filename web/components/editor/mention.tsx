@@ -1,9 +1,5 @@
 import Mention from '@tiptap/extension-mention'
-import {
-  mergeAttributes,
-  NodeViewWrapper,
-  ReactNodeViewRenderer,
-} from '@tiptap/react'
+import { mergeAttributes } from '@tiptap/react'
 import { Linkify } from '../widgets/linkify'
 import { mentionSuggestion } from './mention-suggestion'
 

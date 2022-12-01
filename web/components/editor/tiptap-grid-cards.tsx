@@ -1,6 +1,5 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import React from 'react'
-import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import { ContractsGrid } from '../contract/contracts-grid'
 
 import { LoadingIndicator } from '../widgets/loading-indicator'
