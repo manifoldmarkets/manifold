@@ -6,7 +6,7 @@ export interface TweetOptions {
 
 // This is a version of the Tiptap Node config without addNodeView,
 // since that would require bundling in tsx
-export const TiptapTweetNode = {
+export const TiptapTweet = Node.create<TweetOptions>({
   name: 'tiptapTweet',
   group: 'block',
   atom: true,
@@ -30,8 +30,4 @@ export const TiptapTweetNode = {
   renderHTML(props: { HTMLAttributes: Record<string, any> }) {
     return ['tiptap-tweet', mergeAttributes(props.HTMLAttributes)]
   },
-}
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-export default Node.create<TweetOptions>(TiptapTweetNode)
+})

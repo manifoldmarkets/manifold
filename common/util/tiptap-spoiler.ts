@@ -6,7 +6,6 @@ import {
   markPasteRule,
   mergeAttributes,
 } from '@tiptap/core'
-import type { ElementType } from 'react'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -19,12 +18,9 @@ declare module '@tiptap/core' {
 }
 
 export type SpoilerOptions = {
-  HTMLAttributes: Record<string, any>
-  spoilerOpenClass: string
-  spoilerCloseClass?: string
+  class: string
   inputRegex: RegExp
   pasteRegex: RegExp
-  as: ElementType
 }
 
 const spoilerInputRegex = /(?:^|\s)((?:\|\|)((?:[^||]+))(?:\|\|))$/
@@ -43,13 +39,9 @@ export const TiptapSpoiler = Mark.create<SpoilerOptions>({
 
   addOptions() {
     return {
-      HTMLAttributes: { 'aria-label': 'spoiler' },
-      spoilerOpenClass: '',
-      spoilerCloseClass: undefined,
+      class: '',
       inputRegex: spoilerInputRegex,
       pasteRegex: spoilerPasteRegex,
-      as: 'span',
-      editing: false,
     }
   },
 
@@ -89,22 +81,14 @@ export const TiptapSpoiler = Mark.create<SpoilerOptions>({
   },
 
   parseHTML() {
-    return [
-      {
-        tag: 'span',
-        getAttrs: (node) =>
-          (node as HTMLElement).ariaLabel?.toLowerCase() === 'spoiler' && null,
-      },
-    ]
+    return [{ tag: 'spoiler' }]
   },
 
-  // TODO: actually set class to open class on click
   renderHTML({ HTMLAttributes }) {
     return [
       'spoiler',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        class: this.options.spoilerCloseClass ?? this.options.spoilerOpenClass,
-      }),
+      mergeAttributes(HTMLAttributes, { class: this.options.class }),
+      0,
     ]
   },
 })
