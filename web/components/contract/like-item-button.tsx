@@ -6,21 +6,30 @@ import clsx from 'clsx'
 import { HeartIcon } from '@heroicons/react/outline'
 import { Contract } from 'common/contract'
 import { debounce } from 'lodash'
+import { ReactionContentTypes } from 'common/reaction'
 
 export function LikeItemButton(props: {
-  itemId: string
-  itemCreatorId: string
+  contentId: string
+  contentCreatorId: string
   user: User | null | undefined
-  itemType: string
+  contentType: ReactionContentTypes
   totalLikes: number
   contract: Contract
+  contentText: string
 }) {
-  const { user, itemType, itemCreatorId, itemId, contract } = props
+  const {
+    user,
+    contentType,
+    contentCreatorId,
+    contentId,
+    contract,
+    contentText,
+  } = props
   const likes = useUserLikes(user?.id)
 
   const userLikedItemIds = likes?.map((l) => l.id)
-  const userLiked = userLikedItemIds?.includes(itemId)
-  const disabled = !user || itemCreatorId === user?.id
+  const userLiked = userLikedItemIds?.includes(contentId)
+  const disabled = !user || contentCreatorId === user?.id
   const [hover, setHover] = useState(false)
   const [liked, setLiked] = useState(false)
   const [totalLikes, setTotalLikes] = useState(props.totalLikes)
@@ -28,15 +37,16 @@ export function LikeItemButton(props: {
 
   const onLike = async (setLike: boolean) => {
     if (!user) return
-    if (!setLike) return await unReact(user.id, itemId)
+    if (!setLike) return await unReact(user.id, contentId)
 
     await react(
       user,
-      itemId,
-      itemCreatorId,
-      itemType,
+      contentId,
+      contentCreatorId,
+      contentType,
       contract,
-      contract.question
+      contract.question,
+      contentText
     )
   }
 

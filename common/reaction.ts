@@ -16,6 +16,7 @@ export type Reaction = {
 
   slug: string // Used for notifications
   title: string // Used for notifications
+  text: string // Used for notifications
 
   data?: { [key: string]: any }
 }

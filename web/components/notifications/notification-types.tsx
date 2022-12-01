@@ -698,7 +698,7 @@ function UserLikeNotification(props: {
 }) {
   const { notification, highlighted, isChildOfGroup } = props
   const [open, setOpen] = useState(false)
-  const { sourceUserName, sourceType } = notification
+  const { sourceUserName, sourceType, sourceText } = notification
   const userLinks: MultiUserReactionInfo[] =
     notification.data?.uniqueUsers ?? []
   const multipleReactions = userLinks.length > 1
@@ -716,6 +716,9 @@ function UserLikeNotification(props: {
         <AvatarNotificationIcon notification={notification} symbol={'❤️'} />
       }
       onClick={() => setOpen(true)}
+      subtitle={
+        sourceType === 'comment_like' ? <Linkify text={sourceText} /> : <></>
+      }
     >
       {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
       your

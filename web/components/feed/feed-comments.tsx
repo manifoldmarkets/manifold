@@ -34,6 +34,7 @@ import { toast } from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { FlagIcon } from '@heroicons/react/outline'
 import { LikeItemButton } from 'web/components/contract/like-item-button'
+import { richTextToString } from 'common/lib/util/parse'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -200,12 +201,13 @@ export function CommentActions(props: {
       )}
       {showLike && (
         <LikeItemButton
-          itemCreatorId={comment.userId}
-          itemId={comment.id}
+          contentCreatorId={comment.userId}
+          contentId={comment.id}
           user={user}
-          itemType={'comment'}
+          contentType={'comment'}
           totalLikes={comment.likes ?? 0}
           contract={contract}
+          contentText={richTextToString(comment.content || comment.text)}
         />
       )}
       {(contract.openCommentBounties ?? 0) > 0 && (

@@ -284,9 +284,9 @@ export function combineReactionNotifications(notifications: Notification[]) {
       groupedNotificationsBySourceType[sourceType],
       (notification) => {
         return (
-          notification.sourceTitle ??
-          notification.sourceContractTitle ??
-          notification.sourceContractId
+          (notification.sourceTitle ??
+            notification.sourceContractTitle ??
+            notification.sourceContractId) + notification.sourceText
         )
       }
     )

@@ -21,7 +21,8 @@ export const react = async (
   contentOwnerId: string,
   contentType: string,
   contract: Contract,
-  title: string
+  title: string,
+  text: string
 ) => {
   // create new like in db under users collection
   const ref = doc(getReactsCollection(user.id), contentId)
@@ -43,6 +44,7 @@ export const react = async (
     userDisplayName: user.name,
     slug,
     title,
+    text,
   } as Reaction)
   track('like', {
     itemId: contentId,
