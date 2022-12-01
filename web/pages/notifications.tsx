@@ -6,7 +6,6 @@ import {
 import clsx from 'clsx'
 import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
-import dayjs from 'dayjs'
 import { partition } from 'lodash'
 import { useRouter } from 'next/router'
 import React, { ReactNode, useEffect, useMemo, useState } from 'react'
@@ -197,7 +196,7 @@ function NotificationsList(props: {
         .flatMap((g) => g.notifications)
       markNotificationsAsSeen(notifications)
     }
-  }, [markAllAsReadTrigger])
+  }, [markAllAsReadTrigger, allGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
@@ -290,16 +289,8 @@ export function NotificationGroupItemComponent(props: {
     if (event.ctrlKey || event.metaKey) return
     setExpanded(!expanded)
   }
-  if (notifications[0].sourceContractSlug === 'well-hello-there') {
-    console.log(
-      'UNREAD:',
-      unreadNotifications.map((n: Notification) => dayjs(n.createdTime)),
-      '\nREAD:',
-      readNotifications.map((n: Notification) => dayjs(n.createdTime))
-    )
-  }
 
-  let shownArray = expanded
+  const shownArray = expanded
     ? unreadNotifications.concat(readNotifications)
     : numReadShown > 0
     ? unreadNotifications.concat(readNotifications.slice(0, numReadShown))

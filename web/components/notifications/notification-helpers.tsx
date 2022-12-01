@@ -72,6 +72,9 @@ export function QuestionOrGroupLink(props: {
   } = notification
 
   let title = sourceContractTitle || sourceTitle
+  if (truncatedLength) {
+    title = truncateText(title, truncatedLength)
+  }
 
   if (ignoreClick) return <span className={'font-bold '}>{title}</span>
   return (

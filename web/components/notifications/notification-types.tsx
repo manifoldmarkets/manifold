@@ -6,7 +6,7 @@ import {
   Notification,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { IncomeNotificationItem } from 'web/components/notifications/income-summary-notifications'
@@ -18,10 +18,8 @@ import {
 } from 'web/components/outcome-label'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
-import Notifications from 'web/pages/notifications'
 import { BadgesModal } from '../profile/badges-modal'
 import { Linkify } from '../widgets/linkify'
-import { truncateText } from '../widgets/truncate'
 import {
   AvatarNotificationIcon,
   NotificationFrame,
