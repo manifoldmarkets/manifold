@@ -32,18 +32,32 @@ export default Node.create({
     return ['grid-cards-component', mergeAttributes(HTMLAttributes)]
   },
 
+  renderReact(attrs: any) {
+    return <GridComponent {...attrs} />
+  },
+
   addNodeView() {
-    return ReactNodeViewRenderer(GridComponent)
+    return ReactNodeViewRenderer(NodeViewComponent)
   },
 })
 
-export function GridComponent(props: any) {
-  const contractIds = props.node.attrs.contractIds
+const NodeViewComponent = (props: any) => (
+  <NodeViewWrapper className="grid-cards-component">
+    <GridComponent {...props.node.attrs} />
+  </NodeViewWrapper>
+)
+
+function GridComponent(attrs: any) {
+  const { contractIds } = attrs
+  if (!contractIds) {
+    return <>{JSON.stringify(attrs)}</>
+  }
+
   const contracts = useContracts(contractIds.split(','))
   const loaded = contracts.every((c) => c !== undefined)
 
   return (
-    <NodeViewWrapper className="grid-cards-component not-prose font-normal">
+    <div className=" not-prose font-normal">
       {loaded ? (
         <ContractsGrid
           contracts={filterDefined(contracts)}
@@ -52,6 +66,6 @@ export function GridComponent(props: any) {
       ) : (
         <LoadingIndicator />
       )}
-    </NodeViewWrapper>
+    </div>
   )
 }

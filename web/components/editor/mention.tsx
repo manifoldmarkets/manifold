@@ -23,16 +23,12 @@ const MentionComponent = (props: any) => {
  *  https://tiptap.dev/guide/node-views/react#render-a-react-component
  */
 export const DisplayMention = Mention.extend({
-  parseHTML: () => [{ tag: `a[data-type="${name}"]` }],
-  renderHTML: ({ HTMLAttributes: { 'data-label': username } }) => [
-    'a',
-    mergeAttributes({
-      'data-type': name,
-      href: `/${username}`,
-      class: 'hover:bg-indigo-50 focus:bg-indigo-50',
-    }),
-    `@${username}`,
+  parseHTML: () => [{ tag: name }, { tag: `a[data-type="${name}"]` }],
+  renderHTML: ({ HTMLAttributes }) => [
+    name,
+    mergeAttributes({ HTMLAttributes }),
   ],
+  renderReact: (attrs: any) => <Linkify text={'@' + attrs.label} />,
   addNodeView: () =>
     ReactNodeViewRenderer(MentionComponent, { className: 'inline-block' }),
 }).configure({ suggestion: mentionSuggestion })
