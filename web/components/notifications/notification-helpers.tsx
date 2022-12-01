@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-import { groupPath } from 'common/group'
-import { Notification } from 'common/notification'
+import { getSourceUrl, Notification } from 'common/notification'
 import { doc, updateDoc } from 'firebase/firestore'
 import Link from 'next/link'
 import { ReactNode } from 'react'
@@ -14,6 +13,8 @@ import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { truncateLengthType, truncateText } from '../widgets/truncate'
+import { groupBy, uniqBy } from 'lodash'
+import { MultiUserReactionInfo } from 'web/components/multi-user-reaction-link'
 
 const notification_base_style =
   'relative cursor-pointer text-sm bg-inherit rounded-lg transition-colors'
@@ -76,17 +77,7 @@ export function QuestionOrGroupLink(props: {
   return (
     <SiteLink
       className={'relative font-semibold hover:text-indigo-500'}
-      href={
-        sourceContractCreatorUsername
-          ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-          : // User's added to group or received a tip there
-          (sourceType === 'group' || sourceType === 'tip') && sourceSlug
-          ? `${groupPath(sourceSlug)}`
-          : // User referral via group
-          sourceSlug?.includes('/group/')
-          ? `${sourceSlug}`
-          : ''
-      }
+      href={getSourceUrl(notification).split('#')[0]}
       onClick={(e) => {
         e.stopPropagation()
         track('Notification Clicked', {
@@ -280,4 +271,55 @@ export function ParentNotificationHeader(props: {
       <div className={highlightedClass}>{header}</div>
     </Row>
   )
+}
+export function combineReactionNotifications(notifications: Notification[]) {
+  const newNotifications: Notification[] = []
+  const groupedNotificationsBySourceType = groupBy(
+    notifications,
+    (n) => n.sourceType
+  )
+  for (const sourceType in groupedNotificationsBySourceType) {
+    // Source title splits by contracts, groups, betting streak bonus
+    const groupedNotificationsBySourceTitle = groupBy(
+      groupedNotificationsBySourceType[sourceType],
+      (notification) => {
+        return (
+          notification.sourceTitle ??
+          notification.sourceContractTitle ??
+          notification.sourceContractId
+        )
+      }
+    )
+    for (const sourceTitle in groupedNotificationsBySourceTitle) {
+      const notificationsForSourceTitle =
+        groupedNotificationsBySourceTitle[sourceTitle]
+
+      const sum = notificationsForSourceTitle.length
+      const uniqueUsers = uniqBy(
+        notificationsForSourceTitle.map((notification) => {
+          notificationsForSourceTitle.filter(
+            (n) => n.sourceUserUsername === notification.sourceUserUsername
+          )
+          return {
+            username: notification.sourceUserUsername,
+            name: notification.sourceUserName,
+            avatarUrl: notification.sourceUserAvatarUrl,
+            reaction: sourceType,
+          } as MultiUserReactionInfo
+        }),
+        (n) => n.username
+      )
+
+      const newNotification = {
+        ...notificationsForSourceTitle[0],
+        sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
+        data: {
+          uniqueUsers,
+          sum,
+        },
+      }
+      newNotifications.push(newNotification)
+    }
+  }
+  return newNotifications
 }

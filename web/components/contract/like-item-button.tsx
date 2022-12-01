@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
-import { react } from 'web/lib/firebase/reactions'
+import { react, unReact } from 'web/lib/firebase/reactions'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import clsx from 'clsx'
 import { HeartIcon } from '@heroicons/react/outline'
@@ -27,6 +27,8 @@ export function LikeItemButton(props: {
 
   const onLike = async () => {
     if (!user) return firebaseLogin()
+    if (userLiked) return await unReact(user.id, itemId)
+
     await react(
       user,
       itemId,

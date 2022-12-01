@@ -164,6 +164,7 @@ export function NotificationSettings(props: {
       'tagged_user',
       'on_new_follow',
       'contract_from_followed_user',
+      'user_liked_your_content',
     ],
   }
   const generalOther: SectionData = {

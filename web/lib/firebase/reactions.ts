@@ -17,32 +17,35 @@ export const unReact = async (userId: string, itemId: string) => {
 
 export const react = async (
   user: User,
-  itemId: string,
-  itemCreatorId: string,
-  itemType: string,
+  contentId: string,
+  contentOwnerId: string,
+  contentType: string,
   contract: Contract,
-  text: string
+  title: string
 ) => {
   // create new like in db under users collection
-  const ref = doc(getReactsCollection(user.id), itemId)
+  const ref = doc(getReactsCollection(user.id), contentId)
+  const parentId = contentType === 'contract' ? contentOwnerId : contract.id
+  const slug =
+    `/${contract.creatorUsername}/${contract.slug}` +
+    (contentType === 'comment' ? `#${contentId}` : '')
   // contract slug and question are set via trigger
   const reaction = removeUndefinedProps({
     id: ref.id,
     userId: user.id,
     createdTime: Date.now(),
-    onType: itemType,
+    contentType: contentType,
+    parentId,
+    contentOwnerId: contentOwnerId,
     type: 'like',
     userUsername: user.username,
     userAvatarUrl: user.avatarUrl,
     userDisplayName: user.name,
-    slug:
-      contract.creatorUsername + '/' + contract.slug + itemType === 'comment'
-        ? `#${itemId}`
-        : '',
-    text,
+    slug,
+    title,
   } as Reaction)
   track('like', {
-    itemId,
+    itemId: contentId,
   })
   await setDoc(ref, reaction)
 }

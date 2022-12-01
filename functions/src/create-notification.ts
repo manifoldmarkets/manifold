@@ -40,6 +40,7 @@ import { ContractFollow } from '../../common/follow'
 import { Badge } from '../../common/badge'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
+
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -708,11 +709,8 @@ export const createBettingStreakBonusNotification = async (
   return await notificationRef.set(removeUndefinedProps(notification))
 }
 
-export const createLikeNotification = async (
-  like: Reaction,
-  idempotencyKey: string
-) => {
-  const privateUser = await getPrivateUser(like.toUserId)
+export const createLikeNotification = async (reaction: Reaction) => {
+  const privateUser = await getPrivateUser(reaction.contentOwnerId)
   if (!privateUser) return
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
@@ -720,24 +718,28 @@ export const createLikeNotification = async (
   )
   if (!sendToBrowser) return
 
+  const id = `${reaction.userId}-${reaction.id}-${reaction.type}`
   const notificationRef = firestore
-    .collection(`/users/${like.toUserId}/notifications`)
-    .doc(idempotencyKey)
+    .collection(`/users/${reaction.contentOwnerId}/notifications`)
+    .doc(id)
   const notification: Notification = {
-    id: idempotencyKey,
-    userId: like.toUserId,
+    id,
+    userId: reaction.contentOwnerId,
     reason: 'user_liked_your_content',
     createdTime: Date.now(),
     isSeen: false,
-    sourceId: like.id,
-    sourceType: 'like',
+    sourceId: reaction.id,
+    sourceType:
+      reaction.contentType === 'contract' ? 'contract_like' : 'comment_like',
     sourceUpdateType: 'created',
-    sourceUserName: like.userDisplayName,
-    sourceUserUsername: like.userUsername,
-    sourceUserAvatarUrl: like.userAvatarUrl,
-    sourceText: like.onType,
-    sourceSlug: like.slug,
-    sourceTitle: like.text,
+    sourceUserName: reaction.userDisplayName,
+    sourceUserUsername: reaction.userUsername,
+    sourceUserAvatarUrl: reaction.userAvatarUrl,
+    sourceContractId:
+      reaction.contentType === 'contract' ? reaction.id : reaction.parentId,
+    sourceText: reaction.title,
+    sourceSlug: reaction.slug,
+    sourceTitle: reaction.title,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }

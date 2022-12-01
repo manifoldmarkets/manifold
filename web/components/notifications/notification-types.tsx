@@ -4,6 +4,7 @@ import {
   ContractResolutionData,
   getSourceUrl,
   Notification,
+  ReactionNotificationTypes,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
 import { useState } from 'react'
@@ -29,6 +30,10 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
+import {
+  MultiUserReactionInfo,
+  MultiUserReactionModal,
+} from 'web/components/multi-user-reaction-link'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -163,6 +168,14 @@ export function NotificationItem(props: {
   } else if (sourceType === 'challenge') {
     return (
       <ChallengeNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+      />
+    )
+  } else if (ReactionNotificationTypes.includes(sourceType)) {
+    return (
+      <UserLikeNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -675,6 +688,44 @@ function TaggedUserNotification(props: {
           </span>
         )}
       </>
+    </NotificationFrame>
+  )
+}
+function UserLikeNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, isChildOfGroup } = props
+  const [open, setOpen] = useState(false)
+  const userLinks: MultiUserReactionInfo[] =
+    notification.data?.uniqueUsers ?? []
+  const multipleTips = userLinks.length > 1
+  const { sourceUserName, sourceType } = notification
+  const tippersText = multipleTips
+    ? `${sourceUserName} & ${userLinks.length - 1} other${
+        userLinks.length - 1 > 1 ? 's' : ''
+      }`
+    : sourceUserName
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'❤️'} />
+      }
+      onClick={() => setOpen(true)}
+    >
+      {tippersText && <PrimaryNotificationLink text={tippersText} />} liked your
+      {sourceType === 'comment_like' ? ' comment on ' : ' market '}
+      <QuestionOrGroupLink notification={notification} />
+      <MultiUserReactionModal
+        userInfos={userLinks}
+        modalLabel={'Who dunnit?'}
+        open={open}
+        setOpen={setOpen}
+      />
     </NotificationFrame>
   )
 }

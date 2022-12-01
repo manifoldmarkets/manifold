@@ -23,7 +23,7 @@ export const useUserLikedContracts = (userId: string | undefined) => {
   useEffect(() => {
     if (userId)
       return listenForLikes(userId, (likes) => {
-        setLikes(likes.filter((l) => l.onType === 'contract'))
+        setLikes(likes.filter((l) => l.contentType === 'contract'))
       })
   }, [userId])
 

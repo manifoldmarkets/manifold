@@ -1,7 +1,8 @@
 export type Reaction = {
   id: string // will be id of the object liked, i.e. contract.id, comment.id, etc.
-  onType: 'contract' | 'comment'
-  type: 'like'
+  parentId: string // will be id of the parent object, i.e. contract.id, user.id
+  contentType: ReactionContentTypes
+  type: ReactionTypes
   createdTime: number
 
   // The liker
@@ -11,11 +12,12 @@ export type Reaction = {
   userDisplayName: string
 
   // The likee
-  toUserId: string
+  contentOwnerId: string
 
   slug: string // Used for notifications
-  text: string // Used for notifications
+  title: string // Used for notifications
 
-  tipTxnId?: string
-  tipTxnAmount?: number
+  data?: { [key: string]: any }
 }
+export type ReactionContentTypes = 'contract' | 'comment'
+export type ReactionTypes = 'like'
