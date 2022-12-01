@@ -11,10 +11,7 @@ import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { log } from './utils'
 import { Bet } from '../../common/bet'
 import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
-import {
-  getUnfilledBetsAndUserBalances,
-  updateMakers,
-} from '../../web/lib/api/place-bet'
+import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { redeemShares } from './redeem-shares'
 import { removeUserFromContractFollowers } from './follow-market'
 import { FLAT_TRADE_FEE } from '../../common/fees'
