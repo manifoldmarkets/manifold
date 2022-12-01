@@ -7,7 +7,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 export type MultiUserReactionInfo = {
   name: string
   username: string
-  avatarUrl: string | undefined
+  avatarUrl: string
   reaction: string
 }
 
