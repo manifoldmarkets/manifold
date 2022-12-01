@@ -111,4 +111,6 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
   'trading-bots',
   'gambling',
   'free-money',
+  'whale-watching',
+  'spam',
 ]
