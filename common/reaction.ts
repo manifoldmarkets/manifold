@@ -1,6 +1,6 @@
 export type Reaction = {
-  id: string // will be id of the object liked, i.e. contract.id, comment.id, etc.
-  parentId: string // will be id of the parent object, i.e. contract.id, user.id
+  id: string // will be id of the content liked, i.e. contract.id, comment.id, etc.
+  contentParentId: string // will be id of the parent object, i.e. contract.id, user.id
   contentType: ReactionContentTypes
   type: ReactionTypes
   createdTime: number
@@ -11,7 +11,7 @@ export type Reaction = {
   userAvatarUrl: string
   userDisplayName: string
 
-  // The likee
+  // The owner of the liked content
   contentOwnerId: string
 
   slug: string // Used for notifications

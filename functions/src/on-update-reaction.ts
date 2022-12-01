@@ -40,7 +40,7 @@ const incrementContractReactions = async (reaction: Reaction, num: number) => {
 }
 const incrementCommentReactions = async (reaction: Reaction, num: number) => {
   await firestore
-    .collection(`contracts/${reaction.parentId}/comments`)
+    .collection(`contracts/${reaction.contentParentId}/comments`)
     .doc(reaction.id)
     .update({
       likes: FieldValue.increment(num),

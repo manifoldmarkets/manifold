@@ -26,7 +26,8 @@ export const react = async (
 ) => {
   // create new like in db under users collection
   const ref = doc(getReactsCollection(user.id), contentId)
-  const parentId = contentType === 'contract' ? contentOwnerId : contract.id
+  const contentParentId =
+    contentType === 'contract' ? contentOwnerId : contract.id
   const slug =
     `/${contract.creatorUsername}/${contract.slug}` +
     (contentType === 'comment' ? `#${contentId}` : '')
@@ -36,7 +37,7 @@ export const react = async (
     userId: user.id,
     createdTime: Date.now(),
     contentType: contentType,
-    parentId,
+    contentParentId,
     contentOwnerId: contentOwnerId,
     type: 'like',
     userUsername: user.username,

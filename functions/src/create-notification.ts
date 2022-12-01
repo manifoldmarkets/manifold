@@ -736,7 +736,9 @@ export const createLikeNotification = async (reaction: Reaction) => {
     sourceUserUsername: reaction.userUsername,
     sourceUserAvatarUrl: reaction.userAvatarUrl,
     sourceContractId:
-      reaction.contentType === 'contract' ? reaction.id : reaction.parentId,
+      reaction.contentType === 'contract'
+        ? reaction.id
+        : reaction.contentParentId,
     sourceText: reaction.text,
     sourceSlug: reaction.slug,
     sourceTitle: reaction.title,
