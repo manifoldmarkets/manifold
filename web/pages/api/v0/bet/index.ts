@@ -30,28 +30,24 @@ import { newEndpoint } from 'web/lib/api/endpoint'
 export const config = { api: { bodyParser: true } }
 
 const placeBet = newEndpoint(async (req, userId: string) => {
-  log('Inside endpoint handler.')
+  log(`Inside endpoint handler for ${userId}.`)
   const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {
-    log('Inside main transaction.')
+    log(`Inside main transaction for ${userId}.`)
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${userId}`)
-    const [[contractSnap, userSnap], { unfilledBets, balanceByUserId }] =
-      await Promise.all([
-        trans.getAll(contractDoc, userDoc),
-
-        // Note: Used only for cpmm-1 markets, but harmless to get for all markets.
-        getUnfilledBetsAndUserBalances(trans, contractDoc),
-      ])
+    const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
 
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
-    log('Loaded user and contract snapshots.')
 
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
+    log(
+      `Loaded user ${user.username} and contract ${contract.slug} - auth ${userId}.`
+    )
 
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
       contract
@@ -94,6 +90,9 @@ const placeBet = newEndpoint(async (req, userId: string) => {
           limitProb = Math.round(limitProb * 100) / 100
         }
 
+        const { unfilledBets, balanceByUserId } =
+          await getUnfilledBetsAndUserBalances(trans, contractDoc)
+
         return getBinaryCpmmBetInfo(
           outcome,
           amount,
@@ -123,7 +122,7 @@ const placeBet = newEndpoint(async (req, userId: string) => {
         throw new APIError(500, 'Contract has invalid type/mechanism.')
       }
     })()
-    log('Calculated new bet information.')
+    log(`Calculated new bet information for ${user.username} - auth ${userId}.`)
 
     if (
       mechanism == 'cpmm-1' &&
@@ -143,7 +142,7 @@ const placeBet = newEndpoint(async (req, userId: string) => {
       userName: user.name,
       ...newBet,
     })
-    log('Created new bet document.')
+    log(`Created new bet document for ${user.username} - auth ${userId}.`)
 
     if (makers) {
       updateMakers(makers, betDoc.id, contractDoc, trans)
@@ -164,7 +163,7 @@ const placeBet = newEndpoint(async (req, userId: string) => {
           FLAT_TRADE_FEE
 
     trans.update(userDoc, { balance: FieldValue.increment(-balanceChange) })
-    log('Updated user balance.')
+    log(`Updated user ${user.username} balance - auth ${userId}.`)
 
     if (newBet.amount !== 0) {
       trans.update(
@@ -179,13 +178,13 @@ const placeBet = newEndpoint(async (req, userId: string) => {
           volume: volume + newBet.amount,
         })
       )
-      log('Updated contract properties.')
+      log(`Updated contract ${contract.slug} properties - auth ${userId}.`)
     }
 
     return { contract, betId: betDoc.id, makers, newBet }
   })
 
-  log('Main transaction finished.')
+  log(`Main transaction finished - auth ${userId}.`)
 
   const { contract, newBet, makers } = result
   const { mechanism } = contract
@@ -199,7 +198,7 @@ const placeBet = newEndpoint(async (req, userId: string) => {
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
     await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
-    log('Share redemption transaction finished.')
+    log(`Share redemption transaction finished - auth ${userId}.`)
   }
 
   return { betId: result.betId }
