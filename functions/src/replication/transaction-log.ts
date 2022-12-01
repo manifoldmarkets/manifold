@@ -46,16 +46,6 @@ function logger(path: string, docKind: DocumentKind) {
   return functions.firestore.document(path).onWrite(handler)
 }
 
-export const logTxns = logger('txns/{g}', 'txn')
-export const logGroups = logger('groups/{g}', 'group')
-export const logUsers = logger('users/{u}', 'user')
-export const logContracts = logger('contracts/{c}', 'contract')
-export const logBets = logger('contracts/{c}/bets/{b}', 'contractBet')
-export const logComments = logger(
-  'contracts/{ct}/comments/{co}',
-  'contractComment'
-)
-
 async function replicateWrites(client: SupabaseClient, ...entries: TLEntry[]) {
   return await run(
     client.from('incoming_writes').insert(
@@ -70,6 +60,16 @@ async function replicateWrites(client: SupabaseClient, ...entries: TLEntry[]) {
     )
   )
 }
+
+export const logTxns = logger('txns/{g}', 'txn')
+export const logGroups = logger('groups/{g}', 'group')
+export const logUsers = logger('users/{u}', 'user')
+export const logContracts = logger('contracts/{c}', 'contract')
+export const logContractBets = logger('contracts/{c}/bets/{b}', 'contractBet')
+export const logContractComments = logger(
+  'contracts/{ct}/comments/{co}',
+  'contractComment'
+)
 
 export const replicateLogToSupabase = functions
   .runWith({ secrets: ['SUPABASE_KEY'] })
