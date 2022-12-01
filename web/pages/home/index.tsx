@@ -89,15 +89,15 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const shouldFilterDestiny = !followedGroupIds?.find((g) =>
     DESTINY_GROUP_SLUGS.includes(g.slug)
   )
-  const userBlockFacetFilters = useMemo(
-    () =>
-      getUsersBlockFacetFilters(privateUser).concat(
-        shouldFilterDestiny
-          ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
-          : []
-      ),
-    [privateUser, shouldFilterDestiny]
-  )
+  const userBlockFacetFilters = useMemo(() => {
+    if (!privateUser) return undefined
+
+    return getUsersBlockFacetFilters(privateUser).concat(
+      shouldFilterDestiny
+        ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
+        : []
+    )
+  }, [privateUser, shouldFilterDestiny])
 
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
@@ -115,7 +115,11 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     }
   }, [user, sections])
 
-  const trending = useTrendingContracts(12, userBlockFacetFilters)
+  const trending = useTrendingContracts(
+    12,
+    userBlockFacetFilters,
+    !!userBlockFacetFilters
+  )
 
   // Change seed every 15 minutes.
   const seed = Math.round(Date.now() / (15 * MINUTE_MS)).toString()
@@ -123,10 +127,15 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     ? chooseRandomSubset(trending, 6, seed)
     : undefined
 
-  const newContracts = useNewContracts(6, userBlockFacetFilters)
+  const newContracts = useNewContracts(
+    6,
+    userBlockFacetFilters,
+    !!userBlockFacetFilters
+  )
   const dailyTrendingContracts = useContractsByDailyScore(
     6,
-    userBlockFacetFilters
+    userBlockFacetFilters,
+    !!userBlockFacetFilters
   )
   const contractMetricsByProfit = useUserContractMetricsByProfit(user?.id)
 
@@ -195,7 +204,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     useContractsByDailyScoreGroups(
       followedGroupIds?.map((g) => g.slug),
       4,
-      userBlockFacetFilters
+      userBlockFacetFilters,
+      !!userBlockFacetFilters
     ) ?? {}
 
   const groups = filterDefined(
