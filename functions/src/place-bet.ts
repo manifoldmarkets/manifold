@@ -47,11 +47,11 @@ const numericSchema = z.object({
 })
 
 export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
-  log('Inside endpoint handler.')
+  log(`Inside endpoint handler for ${auth.uid}.`)
   const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {
-    log('Inside main transaction.')
+    log(`Inside main transaction for ${auth.uid}.`)
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const [[contractSnap, userSnap], { unfilledBets, balanceByUserId }] =
@@ -68,7 +68,9 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
-    log(`Loaded user ${user.username} and contract ${contract.slug}.`)
+    log(
+      `Loaded user ${user.username} and contract ${contract.slug} - auth ${auth.uid}.`
+    )
 
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
       contract
@@ -140,7 +142,9 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
         throw new APIError(500, 'Contract has invalid type/mechanism.')
       }
     })()
-    log('Calculated new bet information.')
+    log(
+      `Calculated new bet information for ${user.username} - auth ${auth.uid}.`
+    )
 
     if (
       mechanism == 'cpmm-1' &&
@@ -160,7 +164,7 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
       userName: user.name,
       ...newBet,
     })
-    log('Created new bet document.')
+    log(`Created new bet document for ${user.username} - auth ${auth.uid}.`)
 
     if (makers) {
       updateMakers(makers, betDoc.id, contractDoc, trans)
@@ -181,7 +185,7 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
           FLAT_TRADE_FEE
 
     trans.update(userDoc, { balance: FieldValue.increment(-balanceChange) })
-    log(`Updated user ${user.username} balance.`)
+    log(`Updated user ${user.username} balance - auth ${auth.uid}.`)
 
     if (newBet.amount !== 0) {
       trans.update(
@@ -196,13 +200,13 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
           volume: volume + newBet.amount,
         })
       )
-      log(`Updated contract ${contract.slug} properties.`)
+      log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
     }
 
     return { contract, betId: betDoc.id, makers, newBet }
   })
 
-  log('Main transaction finished.')
+  log(`Main transaction finished - auth ${auth.uid}.`)
 
   const { contract, newBet, makers } = result
   const { mechanism } = contract
@@ -216,7 +220,7 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
     await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
-    log('Share redemption transaction finished.')
+    log(`Share redemption transaction finished - auth ${auth.uid}.`)
   }
 
   return { betId: result.betId }
