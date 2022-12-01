@@ -195,70 +195,7 @@ export function NotificationSettings(props: {
     const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
     const [mobileEnabled, setMobileEnabled] = useState(previousMobileValue)
     const [error, setError] = useState<string>('')
-    const loading = 'Changing Notifications Settings'
-    const success = 'Changed Notification Settings!'
     const highlight = navigateToSection === subscriptionTypeKey
-
-    const attemptToChangeSetting = (
-      setting: 'browser' | 'email' | 'mobile',
-      newValue: boolean
-    ) => {
-      const necessaryError =
-        'This notification type is necessary. At least one destination must be enabled.'
-      const necessarySetting =
-        NOTIFICATION_DESCRIPTIONS[subscriptionTypeKey].necessary
-      if (
-        necessarySetting &&
-        setting === 'browser' &&
-        !emailEnabled &&
-        !newValue
-      ) {
-        setError(necessaryError)
-        return
-      } else if (
-        necessarySetting &&
-        setting === 'email' &&
-        !inAppEnabled &&
-        !newValue
-      ) {
-        setError(necessaryError)
-        return
-      }
-      // Mobile notifications not included in necessary destinations yet
-
-      changeSetting(setting, newValue)
-    }
-
-    const changeSetting = (
-      setting: 'browser' | 'email' | 'mobile',
-      newValue: boolean
-    ) => {
-      toast
-        .promise(
-          updatePrivateUser(privateUser.id, {
-            notificationPreferences: {
-              ...privateUser.notificationPreferences,
-              [subscriptionTypeKey]: destinations.includes(setting)
-                ? destinations.filter((d) => d !== setting)
-                : uniq([...destinations, setting]),
-            },
-          }),
-          {
-            success,
-            loading,
-            error: 'Error changing notification settings. Try again?',
-          }
-        )
-        .then(() => {
-          if (setting === 'browser') {
-            setInAppEnabled(newValue)
-          } else if (setting === 'email') {
-            setEmailEnabled(newValue)
-          } else if (setting === 'mobile') {
-            setMobileEnabled(newValue)
-          }
-        })
-    }
 
     return (
       <Row
@@ -275,7 +212,19 @@ export function NotificationSettings(props: {
             {!browserDisabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={inAppEnabled}
-                onChange={(newVal) => attemptToChangeSetting('browser', newVal)}
+                onChange={(newVal) =>
+                  attemptToChangeSetting(
+                    'browser',
+                    newVal,
+                    subscriptionTypeKey,
+                    privateUser,
+                    destinations,
+                    setInAppEnabled,
+                    emailEnabled,
+                    inAppEnabled,
+                    setError
+                  )
+                }
                 label={'Web'}
                 disabled={optOutAll.includes('browser')}
               />
@@ -283,7 +232,19 @@ export function NotificationSettings(props: {
             {emailsEnabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={emailEnabled}
-                onChange={(newVal) => attemptToChangeSetting('email', newVal)}
+                onChange={(newVal) =>
+                  attemptToChangeSetting(
+                    'email',
+                    newVal,
+                    subscriptionTypeKey,
+                    privateUser,
+                    destinations,
+                    setEmailEnabled,
+                    emailEnabled,
+                    inAppEnabled,
+                    setError
+                  )
+                }
                 label={'Email'}
                 disabled={optOutAll.includes('email')}
               />
@@ -291,7 +252,19 @@ export function NotificationSettings(props: {
             {mobilePushEnabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={mobileEnabled}
-                onChange={(newVal) => attemptToChangeSetting('mobile', newVal)}
+                onChange={(newVal) =>
+                  attemptToChangeSetting(
+                    'mobile',
+                    newVal,
+                    subscriptionTypeKey,
+                    privateUser,
+                    destinations,
+                    setMobileEnabled,
+                    emailEnabled,
+                    inAppEnabled,
+                    setError
+                  )
+                }
                 label={'Mobile'}
                 disabled={optOutAll.includes('mobile')}
               />
@@ -476,4 +449,101 @@ export function NotificationSettings(props: {
       </Col>
     </div>
   )
+}
+
+export const notificationIsNecessary = (
+  setting: 'browser' | 'email' | 'mobile',
+  subscriptionTypeKey: notification_preference,
+  emailEnabled: boolean,
+  newValue: boolean,
+  inAppEnabled: boolean,
+  setError?: (error: string) => void
+) => {
+  const necessaryError =
+    'This notification type is necessary. At least one destination must be enabled.'
+  const necessarySetting =
+    NOTIFICATION_DESCRIPTIONS[subscriptionTypeKey].necessary
+  if (necessarySetting && setting === 'browser' && !emailEnabled && !newValue) {
+    if (setError) {
+      setError(necessaryError)
+    }
+    return true
+  } else if (
+    necessarySetting &&
+    setting === 'email' &&
+    !inAppEnabled &&
+    !newValue
+  ) {
+    if (setError) {
+      setError(necessaryError)
+    }
+    return true
+  }
+  return false
+}
+
+export const attemptToChangeSetting = (
+  setting: 'browser' | 'email' | 'mobile',
+  newValue: boolean,
+  subscriptionTypeKey: notification_preference,
+  privateUser: PrivateUser,
+  destinations: notification_destination_types[],
+  setEnabled: (setting: boolean) => void,
+  emailEnabled: boolean,
+  inAppEnabled: boolean,
+  setError?: (error: string) => void
+) => {
+  // Mobile notifications not included in necessary destinations yet
+  if (
+    notificationIsNecessary(
+      setting,
+      subscriptionTypeKey,
+      emailEnabled,
+      newValue,
+      inAppEnabled,
+      setError
+    )
+  ) {
+    return
+  }
+
+  changeSetting(
+    setting,
+    newValue,
+    privateUser,
+    subscriptionTypeKey,
+    destinations,
+    setEnabled
+  )
+}
+
+export const changeSetting = (
+  setting: 'browser' | 'email' | 'mobile',
+  newValue: boolean,
+  privateUser: PrivateUser,
+  subscriptionTypeKey: notification_preference,
+  destinations: notification_destination_types[],
+  setEnabled: (setting: boolean) => void
+) => {
+  const loading = 'Changing Notifications Settings'
+  const success = 'Changed Notification Settings!'
+  toast
+    .promise(
+      updatePrivateUser(privateUser.id, {
+        notificationPreferences: {
+          ...privateUser.notificationPreferences,
+          [subscriptionTypeKey]: destinations.includes(setting)
+            ? destinations.filter((d) => d !== setting)
+            : uniq([...destinations, setting]),
+        },
+      }),
+      {
+        success,
+        loading,
+        error: 'Error changing notification settings. Try again?',
+      }
+    )
+    .then(() => {
+      setEnabled(newValue)
+    })
 }

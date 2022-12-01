@@ -1,6 +1,7 @@
 import {
   ChevronDoubleDownIcon,
   ChevronDoubleUpIcon,
+  DotsVerticalIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Notification } from 'common/notification'
@@ -8,6 +9,7 @@ import { PrivateUser } from 'common/user'
 import { useRouter } from 'next/router'
 import React, { ReactNode, useEffect, useMemo, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -28,14 +30,13 @@ import { SEO } from 'web/components/SEO'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
   NotificationGroup,
   useGroupedNotifications,
 } from 'web/hooks/use-notifications'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser } from 'web/hooks/use-user'
-import EnvelopeClosedIcon from 'web/lib/icons/envelope-closed-icon'
 import EnvelopeOpenIcon from 'web/lib/icons/envelope-open-icon'
 
 export default function Notifications() {
@@ -45,6 +46,7 @@ export default function Notifications() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [markAllAsReadTrigger, setMarkAllAsReadTrigger] = useState(false)
   useRedirectIfSignedOut()
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const query = { ...router.query }
@@ -59,67 +61,71 @@ export default function Notifications() {
   return (
     <Page>
       <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
-        <Row className="hidden w-full justify-between md:flex">
+        <Row
+          className={clsx('w-full justify-between', isMobile ? 'hidden' : '')}
+        >
           <Title text={'Notifications'} className="grow" />
           <div className="my-auto">
-            {activeIndex === 0 && (
-              <Button
-                onClick={() => {
-                  setMarkAllAsReadTrigger(true)
-                  setTimeout(setMarkAllAsReadTrigger, 10)
-                }}
-              >
-                <Row className="gap-2">
-                  <EnvelopeOpenIcon className="h-5 w-5" /> Mark all as read
-                </Row>
-              </Button>
+            {!isMobile && activeIndex === 0 && (
+              <MarkAllAsReadButton
+                setMarkAllAsReadTrigger={setMarkAllAsReadTrigger}
+              />
             )}
           </div>
         </Row>
         <SEO title="Notifications" description="Manifold user notifications" />
 
         {privateUser && router.isReady && (
-          <div className="relative">
-            <ControlledTabs
-              currentPageForAnalytics={'notifications'}
-              labelClassName={'pb-2 pt-1 '}
-              className={'mb-0 sm:mb-2'}
-              activeIndex={activeIndex}
-              onClick={(title, i) => {
-                router.replace(
-                  {
-                    query: {
-                      ...router.query,
-                      tab: title.toLowerCase(),
-                      section: '',
+          <div className="relative h-full w-full">
+            {isMobile && activeIndex === 0 && (
+              <div className="absolute right-2 top-1 z-10">
+                <MobileMarkAllAsReadButton
+                  setMarkAllAsReadTrigger={setMarkAllAsReadTrigger}
+                />
+              </div>
+            )}
+            <div className="relative">
+              <ControlledTabs
+                currentPageForAnalytics={'notifications'}
+                labelClassName={'pb-2 pt-1 '}
+                className={'mb-0 sm:mb-2'}
+                activeIndex={activeIndex}
+                onClick={(title, i) => {
+                  router.replace(
+                    {
+                      query: {
+                        ...router.query,
+                        tab: title.toLowerCase(),
+                        section: '',
+                      },
                     },
+                    undefined,
+                    { shallow: true }
+                  )
+                  setActiveIndex(i)
+                }}
+                tabs={[
+                  {
+                    title: 'Notifications',
+                    content: (
+                      <NotificationsList
+                        privateUser={privateUser}
+                        markAllAsReadTrigger={markAllAsReadTrigger}
+                      />
+                    ),
                   },
-                  undefined,
-                  { shallow: true }
-                )
-                setActiveIndex(i)
-              }}
-              tabs={[
-                {
-                  title: 'Notifications',
-                  content: (
-                    <NotificationsList
-                      privateUser={privateUser}
-                      markAllAsReadTrigger={markAllAsReadTrigger}
-                    />
-                  ),
-                },
-                {
-                  title: 'Settings',
-                  content: (
-                    <NotificationSettings
-                      navigateToSection={navigateToSection}
-                      privateUser={privateUser}
-                    />
-                  ),
-                },
-              ]}
-            />
+                  {
+                    title: 'Settings',
+                    content: (
+                      <NotificationSettings
+                        navigateToSection={navigateToSection}
+                        privateUser={privateUser}
+                      />
+                    ),
+                  },
+                ]}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -330,5 +336,50 @@ export function NotificationGroupItemComponent(props: {
         )}
       </div>
     </div>
+  )
+}
+
+function markAllAsRead(setMarkAllAsReadTrigger: (trigger: boolean) => void) {
+  setMarkAllAsReadTrigger(true)
+  setTimeout(setMarkAllAsReadTrigger, 10)
+}
+
+export function MarkAllAsReadButton(props: {
+  setMarkAllAsReadTrigger: (trigger: boolean) => void
+}) {
+  const { setMarkAllAsReadTrigger } = props
+  return (
+    <Button onClick={() => markAllAsRead(setMarkAllAsReadTrigger)}>
+      <Row className="gap-2">
+        <EnvelopeOpenIcon className="h-5 w-5" /> Mark all as read
+      </Row>
+    </Button>
+  )
+}
+
+export function MobileMarkAllAsReadButton(props: {
+  setMarkAllAsReadTrigger: (trigger: boolean) => void
+}) {
+  const { setMarkAllAsReadTrigger } = props
+  return (
+    <DropdownMenu
+      Items={[
+        {
+          name: 'Mark all as read',
+          icon: <EnvelopeOpenIcon className="h-5 w-5" />,
+          onClick: () => {
+            markAllAsRead(setMarkAllAsReadTrigger)
+          },
+        },
+      ]}
+      Icon={
+        <DotsVerticalIcon
+          className={clsx(
+            'my-1 h-4 w-4 text-gray-500 transition-colors group-hover:text-gray-900'
+          )}
+        />
+      }
+      MenuWidth="w-44"
+    />
   )
 }
