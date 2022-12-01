@@ -307,5 +307,5 @@ export function combineReactionNotifications(notifications: Notification[]) {
     .flat()
   //
 
-  return newNotifications
+  return newNotifications as Notification[]
 }
