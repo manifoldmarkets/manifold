@@ -15,5 +15,5 @@
     }
   ],
   "compileOnSave": true,
-  "include": ["src"]
+  "include": ["src", "../web/pages/api/v0/bet/place-bet.ts"]
 }
