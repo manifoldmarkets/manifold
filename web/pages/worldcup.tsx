@@ -49,7 +49,21 @@ const general_markets = [
   'will-we-have-a-messi-vs-ronaldo-fin',
 ] as string[]
 
-const round_of_16 = [] as string[]
+const round_of_16 = [
+  // Sat 3rd
+  'will-the-netherlands-beat-the-usa',
+  'who-will-be-man-of-the-match-in-the',
+  'will-argentina-beat-australia',
+  'who-will-be-man-of-the-match-in-arg',
+
+  // Sun 4th
+  'will-france-beat-poland',
+  'who-will-be-man-of-the-match-in-fra',
+  'will-england-beat-senegal',
+  'who-will-be-man-of-the-match-in-eng',
+  // Mon 5th TBD
+  // Tue 6h TBD
+] as string[]
 const quarter_finals = [] as string[]
 const semifinals = [] as string[]
 const final = [] as string[]
