@@ -24,7 +24,6 @@ import { ContractComment } from 'common/comment'
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Row } from '../layout/row'
 import {
   storageStore,
@@ -285,8 +284,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     return <LoadingIndicator />
   }
 
-  const tipsOrBountiesAwarded =
-    Object.keys(tips).length > 0 || comments.some((c) => c.bountiesAwarded)
+  const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
@@ -297,13 +295,13 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const sortedComments = sortBy(comments, [
     sort === 'Best'
       ? (c) =>
-          // Is this too magic? If there are tips/bounties, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-          tipsOrBountiesAwarded &&
+          // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+          likes &&
           c.createdTime > Date.now() - 10 * MINUTE_MS &&
           c.userId === me?.id &&
           shouldBeNewestFirst(c)
             ? -Infinity
-            : -((c.bountiesAwarded ?? 0) + sum(Object.values(tips[c.id] ?? [])))
+            : -(c?.likes ?? 0)
       : (c) => c,
     (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
   ])
@@ -431,19 +429,16 @@ export function SortRow(props: {
   sort: 'Best' | 'Newest'
   onSortClick: () => void
 }) {
-  const { comments, contract, sort, onSortClick } = props
+  const { comments, sort, onSortClick } = props
   if (comments.length <= 0) {
     return <></>
   }
   return (
     <Row className="mb-4 items-center justify-end gap-4">
-      <BountiedContractSmallBadge contract={contract} showAmount />
       <Row className="items-center gap-1">
         <div className="text-sm text-gray-400">Sort by:</div>
         <button className="w-20 text-sm text-gray-600" onClick={onSortClick}>
-          <Tooltip
-            text={sort === 'Best' ? 'Highest tips + bounties first.' : ''}
-          >
+          <Tooltip text={sort === 'Best' ? 'Most likes first.' : ''}>
             <Row className="items-center gap-1">
               {sort}
               <TriangleDownFillIcon className=" h-2 w-2" />

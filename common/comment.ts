@@ -18,7 +18,6 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   userName: string
   userUsername: string
   userAvatarUrl?: string
-  bountiesAwarded?: number
   likes?: number
 } & T
 

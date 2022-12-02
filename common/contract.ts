@@ -67,7 +67,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   followerCount?: number
   likedByUserCount?: number
   flaggedByUsernames?: string[]
-  openCommentBounties?: number
   unlistedById?: string
   featuredLabel?: string
   isTwitchContract?: boolean

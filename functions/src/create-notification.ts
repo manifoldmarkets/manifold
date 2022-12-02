@@ -1046,48 +1046,6 @@ export const createContractResolvedNotifications = async (
   )
 }
 
-export const createBountyNotification = async (
-  fromUser: User,
-  toUserId: string,
-  amount: number,
-  idempotencyKey: string,
-  contract: Contract,
-  commentId?: string
-) => {
-  const privateUser = await getPrivateUser(toUserId)
-  if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'tip_received'
-  )
-  if (!sendToBrowser) return
-
-  const slug = commentId
-  const notificationRef = firestore
-    .collection(`/users/${toUserId}/notifications`)
-    .doc(idempotencyKey)
-  const notification: Notification = {
-    id: idempotencyKey,
-    userId: toUserId,
-    reason: 'tip_received',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: commentId ? commentId : contract.id,
-    sourceType: 'tip',
-    sourceUpdateType: 'created',
-    sourceUserName: fromUser.name,
-    sourceUserUsername: fromUser.username,
-    sourceUserAvatarUrl: fromUser.avatarUrl,
-    sourceText: amount.toString(),
-    sourceContractCreatorUsername: contract.creatorUsername,
-    sourceContractTitle: contract.question,
-    sourceContractSlug: contract.slug,
-    sourceSlug: slug,
-    sourceTitle: contract.question,
-  }
-  return await notificationRef.set(removeUndefinedProps(notification))
-}
-
 export const createMarketClosedNotification = async (
   contract: Contract,
   creator: User,

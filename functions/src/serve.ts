@@ -29,7 +29,6 @@ import { getcurrentuser } from './get-current-user'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { testscheduledfunction } from './test-scheduled-function'
-import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
 import { validateiap } from 'functions/src/validate-iap'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
@@ -64,8 +63,6 @@ addJsonEndpointRoute('/sellshares', sellshares)
 addJsonEndpointRoute('/addsubsidy', addsubsidy)
 addJsonEndpointRoute('/claimmanalink', claimmanalink)
 addJsonEndpointRoute('/createmarket', createmarket)
-addJsonEndpointRoute('/addCommentBounty', addcommentbounty)
-addJsonEndpointRoute('/awardCommentBounty', awardcommentbounty)
 addJsonEndpointRoute('/creategroup', creategroup)
 addJsonEndpointRoute('/resolvemarket', resolvemarket)
 addJsonEndpointRoute('/unsubscribe', unsubscribe)

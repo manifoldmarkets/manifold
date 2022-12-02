@@ -13,10 +13,9 @@ async function main() {
   const contracts = await getValues<Contract>(firestore.collection('contracts'))
   await Promise.all(
     contracts.map(async (contract) => {
-      if (contract.likedByUserIds !== undefined)
-        await firestore.collection('contracts').doc(contract.id).update({
-          likedByUserIds: FieldValue.delete(),
-        })
+      await firestore.collection('contracts').doc(contract.id).update({
+        likedByUserIds: FieldValue.delete(),
+      })
     })
   )
 }
