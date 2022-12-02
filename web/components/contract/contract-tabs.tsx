@@ -41,6 +41,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetric } from 'common/contract-metric'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
+import { shortFormatNumber } from 'common/util/format'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -79,9 +80,12 @@ export function ContractTabs(props: {
   )
 
   const commentTitle =
-    comments.length === 0 ? 'Comments' : `${comments.length} Comments`
+    comments.length === 0
+      ? 'Comments'
+      : `${shortFormatNumber(comments.length)} Comments`
 
-  const betsTitle = totalBets === 0 ? 'Trades' : `${totalBets} Trades`
+  const betsTitle =
+    totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
@@ -94,7 +98,9 @@ export function ContractTabs(props: {
     useContractMetrics(contract.id, 100, outcomes) ??
     props.userPositionsByOutcome
   const positionsTitle =
-    totalPositions === 0 ? 'Users' : totalPositions + ' Users'
+    totalPositions === 0
+      ? 'Users'
+      : `${shortFormatNumber(totalPositions)} Users`
 
   return (
     <ControlledTabs
