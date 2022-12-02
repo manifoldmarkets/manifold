@@ -47,7 +47,6 @@ import { buttonClass } from './buttons/button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { BotBadge, CoreBadge, PostBanBadge } from './widgets/user-link'
 import Link from 'next/link'
-import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -328,7 +327,7 @@ export function ProfilePublicStats(props: { user: User; className?: string }) {
       <FollowersButton user={user} className={className} />
       {/* <ReferralsButton user={user} className={className} /> */}
       <GroupsButton user={user} className={className} />
-      <UserLikedContractsButton user={user} className={className} />
+      {/* <UserLikesButton user={user} className={className} /> */}
     </Row>
   )
 }

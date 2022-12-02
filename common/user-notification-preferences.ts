@@ -47,7 +47,6 @@ export type notification_preferences = {
 
   // General
   tagged_user: notification_destination_types[]
-  user_liked_your_content: notification_destination_types[]
   on_new_follow: notification_destination_types[]
   contract_from_followed_user: notification_destination_types[]
   trending_markets: notification_destination_types[]
@@ -156,7 +155,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     probability_updates_on_watched_markets: constructPref(true, false, true),
     thank_you_for_purchases: constructPref(false, false, false),
     onboarding_flow: constructPref(true, true, false),
-    user_liked_your_content: constructPref(true, false, false),
 
     opt_out_all: [],
   }

@@ -31,6 +31,7 @@ import { useUser } from 'web/hooks/use-user'
 import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
 import { Subtitle } from 'web/components/widgets/subtitle'
+import { LikeItemButton } from 'web/components/contract/like-item-button'
 import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
@@ -99,6 +100,8 @@ export default function PostPage(props: {
             </div>
           </Col>
           <Row className="items-center gap-2 sm:pr-2">
+            <LikeItemButton item={post} user={user} itemType={'post'} />
+
             <SimpleLinkButton
               getUrl={() => shareUrl}
               tooltip={'Copy link to post'}

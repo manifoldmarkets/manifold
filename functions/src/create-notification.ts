@@ -17,6 +17,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
 import { Group } from '../../common/group'
 import { Challenge } from '../../common/challenge'
+import { Like } from '../../common/like'
 import {
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
@@ -32,8 +33,6 @@ import {
 } from '../../common/user-notification-preferences'
 import { ContractFollow } from '../../common/follow'
 import { createPushNotification } from './create-push-notification'
-import { Reaction } from 'common/reaction'
-
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -702,42 +701,50 @@ export const createBettingStreakBonusNotification = async (
   return await notificationRef.set(removeUndefinedProps(notification))
 }
 
-export const createLikeNotification = async (reaction: Reaction) => {
-  const privateUser = await getPrivateUser(reaction.contentOwnerId)
+export const createLikeNotification = async (
+  fromUser: User,
+  toUser: User,
+  like: Like,
+  idempotencyKey: string,
+  contract: Contract,
+  tip?: TipTxn
+) => {
+  const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
-    'user_liked_your_content'
+    'liked_and_tipped_your_contract'
   )
   if (!sendToBrowser) return
 
-  // Reaction ids are constructed via contentId-reactionType, so this ensures idempotency
-  const id = `${reaction.userId}-${reaction.id}`
+  // not handling just likes, must include tip
+  if (!tip) return
+
   const notificationRef = firestore
-    .collection(`/users/${reaction.contentOwnerId}/notifications`)
-    .doc(id)
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
   const notification: Notification = {
-    id,
-    userId: reaction.contentOwnerId,
-    reason: 'user_liked_your_content',
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: 'liked_and_tipped_your_contract',
     createdTime: Date.now(),
     isSeen: false,
-    sourceId: reaction.id,
-    sourceType:
-      reaction.contentType === 'contract' ? 'contract_like' : 'comment_like',
+    sourceId: like.id,
+    sourceType: tip ? 'tip_and_like' : 'like',
     sourceUpdateType: 'created',
-    sourceUserName: reaction.userDisplayName,
-    sourceUserUsername: reaction.userUsername,
-    sourceUserAvatarUrl: reaction.userAvatarUrl,
-    sourceContractId:
-      reaction.contentType === 'contract'
-        ? reaction.contentId
-        : reaction.contentParentId,
-    sourceText: reaction.text,
-    sourceSlug: reaction.slug,
-    sourceTitle: reaction.title,
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: tip?.amount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceSlug: contract.slug,
+    sourceTitle: contract.question,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
+
+  // TODO send email notification
 }
 
 export const createUniqueBettorBonusNotification = async (
