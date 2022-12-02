@@ -9,7 +9,8 @@ import { PrivateUser } from 'common/user'
 import { partition } from 'lodash'
 import { useRouter } from 'next/router'
 import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
-import { Button } from 'web/components/buttons/button'
+import toast from 'react-hot-toast'
+import { Button, IconButton } from 'web/components/buttons/button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -80,7 +81,7 @@ export default function Notifications() {
         {privateUser && router.isReady && (
           <div className="relative h-full w-full">
             {isMobile && activeIndex === 0 && (
-              <div className="absolute right-2 top-1 z-10">
+              <div className="absolute right-0 -top-1 z-10">
                 <MobileMarkAllAsReadButton
                   setMarkAllAsReadTrigger={setMarkAllAsReadTrigger}
                 />
@@ -369,24 +370,16 @@ export function MobileMarkAllAsReadButton(props: {
 }) {
   const { setMarkAllAsReadTrigger } = props
   return (
-    <DropdownMenu
-      Items={[
-        {
-          name: 'Mark all as read',
-          icon: <EnvelopeOpenIcon className="h-5 w-5" />,
-          onClick: () => {
-            markAllAsRead(setMarkAllAsReadTrigger)
-          },
-        },
-      ]}
-      Icon={
-        <DotsVerticalIcon
-          className={clsx(
-            'my-1 h-4 w-4 text-gray-500 transition-colors group-hover:text-gray-900'
-          )}
-        />
-      }
-      MenuWidth="w-44"
-    />
+    <IconButton
+      onClick={() => {
+        markAllAsRead(setMarkAllAsReadTrigger)
+        toast.success('Marked all notifications as read!')
+      }}
+      size={'sm'}
+    >
+      <Row className="gap-2">
+        <EnvelopeOpenIcon className="h-5 w-5" />
+      </Row>
+    </IconButton>
   )
 }
