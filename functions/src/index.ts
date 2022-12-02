@@ -35,6 +35,7 @@ export * from './drizzle-liquidity'
 export * from './check-push-notification-receipts'
 export * from './on-update-reaction'
 export * from './replication/transaction-log'
+export * from './increment-streak-forgiveness'
 
 // v2
 export * from './health'

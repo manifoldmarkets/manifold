@@ -8,7 +8,7 @@ import { BETTING_STREAK_RESET_HOUR } from '../../common/economy'
 const firestore = admin.firestore()
 
 export const resetBettingStreaksForUsers = functions
-  .runWith({ timeoutSeconds: 540 })
+  .runWith({ timeoutSeconds: 540, memory: '4GB' })
   .pubsub.schedule(`0 ${BETTING_STREAK_RESET_HOUR} * * *`)
   .timeZone('Etc/UTC')
   .onRun(async () => {
@@ -39,7 +39,18 @@ const resetBettingStreakForUser = async (
     user.currentBettingStreak === 0
   )
     return
-  await firestore.collection('users').doc(user.id).update({
-    currentBettingStreak: 0,
-  })
+
+  if (user.streakForgiveness > 0) {
+    await firestore
+      .collection('users')
+      .doc(user.id)
+      .update({
+        streakForgiveness: user.streakForgiveness - 1,
+      })
+    // Should we send a notification to the user?
+  } else {
+    await firestore.collection('users').doc(user.id).update({
+      currentBettingStreak: 0,
+    })
+  }
 }
