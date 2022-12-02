@@ -274,23 +274,12 @@ export function ParentNotificationHeader(props: {
 export function combineReactionNotifications(notifications: Notification[]) {
   const groupedNotificationsBySourceType = groupBy(
     notifications,
-    (n) => n.sourceType
+    (n) => `${n.sourceType}-${n.sourceTitle ??
+    n.sourceContractTitle ??
+    n.sourceContractId}-${n.sourceText}`
   )
-  // User reactions should all be unique by source type and sourceTitle+sourceText
-  const groupedNotificationsBySourceTitleAndText = Object.values(
-    groupedNotificationsBySourceType
-  ).map((notifications) => {
-    return groupBy(notifications, (notification) => {
-      return (
-        (notification.sourceTitle ??
-          notification.sourceContractTitle ??
-          notification.sourceContractId) + notification.sourceText
-      )
-    })
-  })
-  const newNotifications = groupedNotificationsBySourceTitleAndText
-    .map((notificationsAccordingToSourceTitleAndText) =>
-      Object.values(notificationsAccordingToSourceTitleAndText).map(
+  const newNotifications =
+      Object.values(groupedNotificationsBySourceType).map(
         (notifications) => {
           const mostRecentNotification = notifications[0]
 
@@ -301,11 +290,7 @@ export function combineReactionNotifications(notifications: Notification[]) {
               otherNotifications: notifications,
             },
           }
-        }
-      )
-    )
-    .flat()
-  //
+        })
 
   return newNotifications as Notification[]
 }
