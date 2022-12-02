@@ -281,27 +281,25 @@ export function NotificationGroupItemComponent(props: {
     notifications,
     (n: Notification) => n.isSeen
   )
-  const numRead = readNotifications.length
-  const numUnread = unreadNotifications.length
-  const numReadShown = NUM_SUMMARY_LINES - numUnread
+  const orderedByReadNotifications =
+    unreadNotifications.concat(readNotifications)
+  const numNotifications = orderedByReadNotifications.length
 
-  const needsExpanding = numRead > 0 && notifications.length > NUM_SUMMARY_LINES
+  const needsExpanding = numNotifications > NUM_SUMMARY_LINES
   const [expanded, setExpanded] = useState(false)
   const onExpandHandler = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.ctrlKey || event.metaKey) return
     setExpanded(!expanded)
   }
 
-  const shownArray = expanded
-    ? unreadNotifications.concat(readNotifications)
-    : numReadShown > 0
-    ? unreadNotifications.concat(readNotifications.slice(0, numReadShown))
-    : unreadNotifications
+  const shownNotifications = expanded
+    ? orderedByReadNotifications
+    : orderedByReadNotifications.slice(0, NUM_SUMMARY_LINES)
   return (
     <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
       {header}
       <div className={clsx(' whitespace-pre-line')}>
-        {shownArray.map((notification) => {
+        {shownNotifications.map((notification) => {
           return (
             <NotificationItem
               notification={notification}
@@ -321,10 +319,8 @@ export function NotificationGroupItemComponent(props: {
             {!expanded && (
               <>
                 <div>
-                  {notifications.length - shownArray.length > 0
-                    ? 'See ' +
-                      (notifications.length - shownArray.length) +
-                      ' more'
+                  {numNotifications > NUM_SUMMARY_LINES
+                    ? 'See ' + (numNotifications - NUM_SUMMARY_LINES) + ' more'
                     : ''}
                 </div>
                 <ChevronDoubleDownIcon className="h-4 w-4" />
