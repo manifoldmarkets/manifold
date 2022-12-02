@@ -57,6 +57,23 @@ export function BettingStreakModal(props: {
             You can see your current streak on the top right of your profile
             page.
           </span>
+          <span className={'text-indigo-700'}>
+            • Can I save my streak if I forget?
+          </span>
+          <span className={'ml-2'}>
+            You get 1 streak forgiveness per month that prevents your streak
+            from resetting.
+            {currentUser && (
+              <span>
+                {' '}
+                Right now you have
+                <span className={'mx-1 font-bold'}>
+                  {currentUser.streakForgiveness ?? 0}
+                </span>
+                left.
+              </span>
+            )}
+          </span>
         </Col>
       </Col>
     </Modal>
