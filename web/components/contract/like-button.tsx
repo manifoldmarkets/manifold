@@ -49,7 +49,8 @@ export const LikeButton = memo(function LikeButton(props: {
       contentType,
       contract,
       contract.question,
-      contentText
+      contentText,
+      'like'
     )
   }
 
