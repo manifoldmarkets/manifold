@@ -711,7 +711,8 @@ export const createLikeNotification = async (reaction: Reaction) => {
   )
   if (!sendToBrowser) return
 
-  const id = `${reaction.userId}-${reaction.contentId}-${reaction.type}`
+  // Reaction ids are constructed via contentId-reactionType, so this ensures idempotency
+  const id = `${reaction.userId}-${reaction.id}`
   const notificationRef = firestore
     .collection(`/users/${reaction.contentOwnerId}/notifications`)
     .doc(id)

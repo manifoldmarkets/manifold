@@ -47,8 +47,8 @@ export const react = async (
   text: string,
   type: ReactionTypes
 ) => {
-  // ie like-commentId
-  const id = `${type}-${contentId}`
+  // i.e. commentId-like
+  const id = `${contentId}-${type}`
   const ref = doc(getReactsCollection(user.id), id)
   const contentParentId =
     contentType === 'contract' ? contentOwnerId : contract.id
