@@ -19,6 +19,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   userUsername: string
   userAvatarUrl?: string
   bountiesAwarded?: number
+  likes?: number
 } & T
 
 export type OnContract = {

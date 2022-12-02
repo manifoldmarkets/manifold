@@ -3,7 +3,7 @@ import {
   ChevronDoubleUpIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Notification } from 'common/notification'
+import { ReactionNotificationTypes, Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { useRouter } from 'next/router'
 import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
@@ -20,6 +20,7 @@ import {
   ParentNotificationHeader,
   PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
+  combineReactionNotifications,
 } from 'web/components/notifications/notification-helpers'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
@@ -211,14 +212,23 @@ function NotificationGroupItem(props: {
 }) {
   const { notificationGroup } = props
   const { notifications } = notificationGroup
-  const { sourceContractTitle } = notifications[0]
+  const { sourceTitle, sourceContractTitle } = notifications[0]
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
+  )
+  const combinedNotifs = combineReactionNotifications(
+    notifications.filter((n) =>
+      ReactionNotificationTypes.includes(n.sourceType)
+    )
+  ).concat(
+    notifications.filter(
+      (n) => !ReactionNotificationTypes.includes(n.sourceType)
+    )
   )
   const header = (
     <ParentNotificationHeader
       header={
-        sourceContractTitle ? (
+        sourceTitle || sourceContractTitle ? (
           <>
             Activity on{' '}
             <QuestionOrGroupLink
@@ -236,7 +246,7 @@ function NotificationGroupItem(props: {
 
   return (
     <NotificationGroupItemComponent
-      notifications={notifications}
+      notifications={combinedNotifs}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       header={header}
