@@ -51,16 +51,15 @@ create table if not exists incoming_writes (
   processed boolean not null default false
 );
 alter table incoming_writes enable row level security;
+create index if not exists incoming_writes_processed_ts on incoming_writes (processed, ts desc);
 
-create or replace function replicate_writes_process()
-  returns trigger
+create or replace function get_document_table(doc_kind text)
+  returns text
   language plpgsql
 as
 $$
-declare dest_table text;
-declare replicated_id text;
 begin
-  dest_table = case new.doc_kind
+  return case doc_kind
     when 'txn' then 'txns'
     when 'user' then 'users'
     when 'group' then 'groups'
@@ -69,28 +68,70 @@ begin
     when 'contractComment' then 'comments'
     else null
   end;
+end
+$$;
+
+create or replace function replicate_writes_process_one(r incoming_writes)
+  returns boolean
+  language plpgsql
+as
+$$
+declare dest_table text;
+declare replicated_id text;
+begin
+  dest_table = get_document_table(r.doc_kind);
   if dest_table = null then
     raise warning 'Invalid document kind.';
-    return new;
+    return false;
   end if;
-  if new.write_kind = 'create' or new.write_kind = 'update' then
+  if r.write_kind = 'create' or r.write_kind = 'update' then
     execute format(
       'insert into %1$I (id, data, fs_updated_time) values (%2$L, %3$L, %4$L)
        on conflict (id) do update set data = %3$L, fs_updated_time = %4$L
        where %1$I.fs_updated_time <= %4$L
        returning id;',
-      dest_table, new.doc_id, new.data, new.ts
+      dest_table, r.doc_id, r.data, r.ts
     ) into replicated_id;
-  elsif new.write_kind = 'delete' then
+  elsif r.write_kind = 'delete' then
     execute format(
       'delete from %1$I where id = %2$L and fs_updated_time <= %3$L',
-      dest_table, new.doc_id, new.ts
+      dest_table, r.doc_id, r.ts
     ) into replicated_id;
   else
     raise warning 'Invalid write kind.';
-    return new;
+    return false;
   end if;
-  new.processed := true;
+  return true;
+end
+$$;
+
+create or replace function replicate_writes_process_all()
+  returns table(succeeded boolean, n bigint)
+  language plpgsql
+as
+$$
+begin
+  return query with updates as (
+    select r.id, replicate_writes_process_one(r) as succeeded
+    from incoming_writes as r
+    where r.processed = false
+    order by r.ts desc /* apply more recent writes first is less total work */
+  ), writes as (
+    update incoming_writes
+    set processed = updates.succeeded
+    from updates where incoming_writes.id = updates.id
+  )
+  select u.succeeded, count(u.succeeded) as n from updates as u group by u.succeeded;
+end
+$$;
+
+create or replace function replicate_writes_process_new()
+  returns trigger
+  language plpgsql
+as
+$$
+begin
+  new.processed = replicate_writes_process_one(new);
   return new;
 end
 $$;
@@ -98,4 +139,4 @@ $$;
 drop trigger if exists replicate_writes on incoming_writes;
 create trigger replicate_writes
 before insert on incoming_writes for each row
-execute function replicate_writes_process();
+execute function replicate_writes_process_new();
