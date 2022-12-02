@@ -599,7 +599,7 @@ export const createLoanIncomeNotification = async (
     userId: toUser.id,
     reason: 'loan_income',
     createdTime: Date.now(),
-    isSeen: false,
+    isSeen: true,
     sourceId: idempotencyKey,
     sourceType: 'loan',
     sourceUpdateType: 'updated',
