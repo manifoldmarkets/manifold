@@ -40,15 +40,14 @@ const resetBettingStreakForUser = async (
   )
     return
 
-  const streakForgivenessCount = user.streakForgiveness ?? 0
-  if (streakForgivenessCount > 0) {
+  if (user.streakForgiveness > 0) {
     await firestore
       .collection('users')
       .doc(user.id)
       .update({
-        streakForgiveness: streakForgivenessCount - 1,
+        streakForgiveness: user.streakForgiveness - 1,
       })
-    // send a notification to the user?
+    // Should we send a notification to the user?
   } else {
     await firestore.collection('users').doc(user.id).update({
       currentBettingStreak: 0,

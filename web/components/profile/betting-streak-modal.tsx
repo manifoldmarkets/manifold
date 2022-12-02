@@ -68,7 +68,7 @@ export function BettingStreakModal(props: {
                 {' '}
                 Right now you have
                 <span className={'mx-1 font-bold'}>
-                  {currentUser.streakForgiveness ?? 0}
+                  {currentUser.streakForgiveness}
                 </span>
                 left.
               </span>
