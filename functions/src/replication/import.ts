@@ -7,7 +7,7 @@ import {
 import { SupabaseClient } from '@supabase/supabase-js'
 import { chunk } from 'lodash'
 
-import { createSupabaseClient, run } from './utils'
+import { createSupabaseClient, runWithRetries } from './utils'
 import { log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 import { DocumentKind } from '../../../common/transaction-log'
@@ -54,7 +54,7 @@ async function importCollection(
   log(`Loaded ${snaps.size} documents.`)
   for (const batch of chunk(snaps.docs, batchSize)) {
     const rows = batch.map((d) => getWriteRow(d, docKind, t1))
-    await run(client.from('incoming_writes').insert(rows))
+    await runWithRetries(client.from('incoming_writes').insert(rows))
     log(`Processed ${rows.length} documents.`)
   }
   log(`Imported ${snaps.size} documents.`)
@@ -64,6 +64,7 @@ async function importCollectionGroup(
   client: SupabaseClient,
   source: CollectionGroup,
   docKind: DocumentKind,
+  predicate: (d: QueryDocumentSnapshot) => boolean,
   batchSize: number
 ) {
   log(`Preparing to import ${docKind} documents.`)
@@ -74,8 +75,8 @@ async function importCollectionGroup(
   // partitions are different sizes so be conservative
   const partitions = Math.ceil(n / batchSize) * 2
   await processPartitioned(source, partitions, async (docs) => {
-    const rows = docs.map((d) => getWriteRow(d, docKind, t1))
-    await run(client.from('incoming_writes').insert(rows))
+    const rows = docs.filter(predicate).map((d) => getWriteRow(d, docKind, t1))
+    await runWithRetries(client.from('incoming_writes').insert(rows))
   })
 }
 
@@ -102,6 +103,7 @@ async function importDatabase(kinds?: string[]) {
       client,
       firestore.collectionGroup('bets'),
       'contractBet',
+      (_) => true,
       1000
     )
   if (shouldImport('contractComment'))
@@ -109,6 +111,7 @@ async function importDatabase(kinds?: string[]) {
       client,
       firestore.collectionGroup('comments'),
       'contractComment',
+      (c) => c.get('commentType') === 'contract',
       100
     )
 }

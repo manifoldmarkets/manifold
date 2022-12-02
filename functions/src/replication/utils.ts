@@ -6,7 +6,15 @@ import {
 
 import { DEV_CONFIG } from '../../../common/envs/dev'
 import { PROD_CONFIG } from '../../../common/envs/prod'
+import { delay } from '../../../common/util/promise'
 import { isProd } from '../utils'
+
+type QueryResponse = PostgrestResponse<any> | PostgrestSingleResponse<any>
+
+type RetryPolicy = {
+  initialBackoffSec: number
+  retries: number
+}
 
 export function createSupabaseClient() {
   const url =
@@ -24,8 +32,8 @@ export function createSupabaseClient() {
   return createClient(url, key)
 }
 
-export async function run(
-  q: PromiseLike<PostgrestResponse<any> | PostgrestSingleResponse<any>>
+export async function run<T extends QueryResponse = QueryResponse>(
+  q: PromiseLike<T>
 ) {
   const response = await q
   if (response.error != null) {
@@ -33,4 +41,23 @@ export async function run(
   } else {
     return { data: response.data, count: response.count }
   }
+}
+
+export async function runWithRetries<T extends QueryResponse = QueryResponse>(
+  q: PromiseLike<T>,
+  policy?: RetryPolicy
+) {
+  let err: any
+  let delaySec = policy?.initialBackoffSec ?? 5
+  for (let i = 0; i < (policy?.retries ?? 5); i++) {
+    try {
+      return await run(q)
+    } catch (e) {
+      console.error(e)
+      console.warn(`Error running query; retrying in ${delaySec} seconds.`)
+      await delay(delaySec * 1000)
+      delaySec *= 2
+    }
+  }
+  throw err
 }

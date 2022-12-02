@@ -4,6 +4,7 @@ create table if not exists users (
     fs_updated_time timestamp not null
 );
 alter table users enable row level security;
+drop policy if exists "public read" on users;
 create policy "public read" on users for select using (true);
 
 create table if not exists contracts (
@@ -12,6 +13,7 @@ create table if not exists contracts (
     fs_updated_time timestamp not null
 );
 alter table contracts enable row level security;
+drop policy if exists "public read" on contracts;
 create policy "public read" on contracts for select using (true);
 
 create table if not exists groups (
@@ -20,6 +22,7 @@ create table if not exists groups (
     fs_updated_time timestamp not null
 );
 alter table groups enable row level security;
+drop policy if exists "public read" on groups;
 create policy "public read" on groups for select using (true);
 
 create table if not exists txns (
@@ -28,6 +31,7 @@ create table if not exists txns (
     fs_updated_time timestamp not null
 );
 alter table txns enable row level security;
+drop policy if exists "public read" on txns;
 create policy "public read" on txns for select using (true);
 
 create table if not exists bets (
@@ -36,6 +40,7 @@ create table if not exists bets (
     fs_updated_time timestamp not null
 );
 alter table bets enable row level security;
+drop policy if exists "public read" on bets;
 create policy "public read" on bets for select using (true);
 
 create table if not exists comments (
@@ -44,6 +49,7 @@ create table if not exists comments (
     fs_updated_time timestamp not null
 );
 alter table comments enable row level security;
+drop policy if exists "public read" on comments;
 create policy "public read" on comments for select using (true);
 
 create table if not exists incoming_writes (
@@ -57,6 +63,7 @@ create table if not exists incoming_writes (
   processed boolean not null default false
 );
 alter table incoming_writes enable row level security;
+create index if not exists incoming_writes_ts on incoming_writes (ts desc);
 create index if not exists incoming_writes_processed_ts on incoming_writes (processed, ts desc);
 
 create or replace function get_document_table(doc_kind text)
