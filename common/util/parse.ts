@@ -58,7 +58,7 @@ export const stringParseExts = [
       '[embed]' + node.attrs.src ? `(${node.attrs.src})` : '',
   }),
   skippableComponent('gridCardsComponent', '[markets]'),
-  skippableComponent('staticReactEmbedComponent', '[map]'),
+  skippableComponent('market-embed', '[market]'),
   TiptapTweet.extend({ renderText: () => '[tweet]' }),
   TiptapSpoiler.extend({ renderHTML: () => ['span', '[spoiler]', 0] }),
 ]

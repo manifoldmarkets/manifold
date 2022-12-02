@@ -17,7 +17,11 @@ import { Row } from 'web/components/layout/row'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { listBets } from 'web/lib/firebase/bets'
-import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
+import {
+  contractPath,
+  getContractFromId,
+  getContractFromSlug,
+} from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 import { useContract } from 'web/hooks/use-contracts'
@@ -26,6 +30,8 @@ import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 import { OrderByDirection } from 'firebase/firestore'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { useQuery } from 'react-query'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
@@ -144,11 +150,11 @@ export function ContractEmbed(props: EmbedProps) {
 
   // return (height < 250px) ? Card : SmolView
   return (
-    <>
+    <div className="h-screen bg-white">
       <div className="contents [@media(min-height:250px)]:hidden">
         <ContractCard
           contract={contract}
-          className="h-screen"
+          className="h-full"
           noLinkAvatar
           newTab
         />
@@ -156,7 +162,47 @@ export function ContractEmbed(props: EmbedProps) {
       <div className="hidden [@media(min-height:250px)]:contents">
         <ContractSmolView {...props} />
       </div>
-    </>
+    </div>
+  )
+}
+
+// TODO: consider streaming SSR via /app instead
+export function LoadableContractEmbed(props: { contractId: string }) {
+  const { contractId } = props
+
+  const query = useQuery(['market bets', contractId], async () => {
+    const [contract, bets] = await Promise.all([
+      getContractFromId(contractId),
+      listBets({
+        contractId,
+        ...CONTRACT_BET_LOADING_OPTS,
+        limit: 10000,
+        order: 'desc',
+      }),
+    ])
+
+    const betPoints =
+      contract?.outcomeType === 'BINARY' ||
+      contract?.outcomeType === 'PSEUDO_NUMERIC'
+        ? bets.map((bet) => ({ x: bet.createdTime, y: bet.probAfter }))
+        : []
+    return { contract, bets, betPoints }
+  })
+
+  return (
+    <div className="not-prose grid h-80 place-items-center font-normal">
+      {query.isError ? (
+        <span className="text-red-400">Could not load market</span>
+      ) : query.data?.contract ? (
+        <ContractSmolView
+          contract={query.data.contract}
+          bets={query.data.bets}
+          betPoints={query.data.betPoints}
+        />
+      ) : (
+        <LoadingIndicator />
+      )}
+    </div>
   )
 }
 
@@ -178,7 +224,7 @@ function ContractSmolView({
   const questionColor = textColor ?? 'rgb(67, 56, 202)' // text-indigo-700
 
   return (
-    <Col className="h-[100vh] w-full bg-white p-4">
+    <Col className="h-full w-full p-4">
       <Row className="justify-between gap-4">
         <div>
           <a

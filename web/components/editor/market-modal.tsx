@@ -1,7 +1,6 @@
 import { Editor } from '@tiptap/react'
 import { Contract } from 'common/contract'
 import { SelectMarketsModal } from '../contract-select-modal'
-import { embedContractCode } from '../buttons/share-embed-button'
 import { insertContent } from './utils'
 
 export function MarketModal(props: {
@@ -13,7 +12,7 @@ export function MarketModal(props: {
 
   function onSubmit(contracts: Contract[]) {
     if (contracts.length == 1) {
-      insertContent(editor, embedContractCode(contracts[0]))
+      insertContent(editor, `<market-embed contractId=${contracts[0].id} />`)
     } else if (contracts.length > 1) {
       insertContent(
         editor,
