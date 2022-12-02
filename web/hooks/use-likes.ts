@@ -1,38 +1,40 @@
-import { useEffect, useState } from 'react'
-import { listenForLikes } from 'web/lib/firebase/users'
-import { Like } from 'common/like'
-import { Contract } from 'common/contract'
-import { getContractFromId } from 'web/lib/firebase/contracts'
-import { filterDefined } from 'common/util/array'
+import { collection, query, where } from 'firebase/firestore'
+import { users } from 'web/lib/firebase/users'
+import { listenForValues } from 'web/lib/firebase/utils'
+import { Reaction, ReactionContentTypes } from 'common/reaction'
+import { useStore } from 'web/hooks/use-store'
 
-export const useUserLikes = (userId: string | undefined) => {
-  const [contractIds, setContractIds] = useState<Like[] | undefined>()
-
-  useEffect(() => {
-    if (userId) return listenForLikes(userId, setContractIds)
-  }, [userId])
-
-  return contractIds
+export const useUserLikes = (
+  userId: string | undefined,
+  contentType: ReactionContentTypes
+) => {
+  return useStore<Reaction[] | undefined>(
+    `user-likes-${userId}-${contentType}`,
+    (_, setReactions) => {
+      return listenForLikes(userId ?? '_', contentType, setReactions)
+    }
+  )
 }
-export const useUserLikedContracts = (userId: string | undefined) => {
-  const [likes, setLikes] = useState<Like[] | undefined>()
-  const [contracts, setContracts] = useState<Contract[] | undefined>()
 
-  useEffect(() => {
-    if (userId)
-      return listenForLikes(userId, (likes) => {
-        setLikes(likes.filter((l) => l.type === 'contract'))
-      })
-  }, [userId])
+export const useIsLiked = (
+  userId: string | undefined,
+  contentType: ReactionContentTypes,
+  contentId: string
+) => {
+  const likes = useUserLikes(userId, contentType)
 
-  useEffect(() => {
-    if (likes)
-      Promise.all(
-        likes.map(async (like) => {
-          return await getContractFromId(like.id)
-        })
-      ).then((contracts) => setContracts(filterDefined(contracts)))
-  }, [likes])
+  return likes?.some((like) => like.contentId === contentId) ?? false
+}
 
-  return contracts
+function listenForLikes(
+  userId: string,
+  contentType: ReactionContentTypes,
+  setLikes: (likes: Reaction[]) => void
+) {
+  const likes = query(
+    collection(users, userId, 'reactions'),
+    where('type', '==', 'like'),
+    where('contentType', '==', contentType)
+  )
+  return listenForValues<Reaction>(likes, (docs) => setLikes(docs))
 }

@@ -12,8 +12,10 @@ export type Notification = {
   isSeen: boolean
 
   sourceId: string
-  sourceType?: notification_source_types
+  sourceType: notification_source_types
   sourceUpdateType?: notification_source_update_types
+
+  // sourceContractId is used to group notifications on the same contract together
   sourceContractId?: string
   sourceUserName: string
   sourceUserUsername: string
@@ -46,10 +48,11 @@ export type notification_source_types =
   | 'challenge'
   | 'betting_streak_bonus'
   | 'loan'
-  | 'like'
   | 'tip_and_like'
   | 'badge'
   | 'signup_bonus'
+  | 'comment_like'
+  | 'contract_like'
 
 export type notification_source_update_types =
   | 'created'
@@ -244,6 +247,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed:
       'Opt out of all notifications excluding your own market closure notifications',
   },
+  user_liked_your_content: {
+    simple: 'A user liked your content',
+    detailed: 'A user liked your comment, market, or other content',
+  },
 }
 
 export type BettingStreakData = {
@@ -305,7 +312,11 @@ export function getSourceUrl(notification: Notification) {
   // User referral:
   if (sourceType === 'user' && !sourceContractSlug)
     return `/${sourceUserUsername}`
-  if (sourceType === 'challenge') return `${sourceSlug}`
+  if (
+    sourceType === 'challenge' ||
+    ReactionNotificationTypes.includes(sourceType)
+  )
+    return `${sourceSlug}`
   if (sourceContractCreatorUsername && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
       sourceId ?? '',
@@ -318,3 +329,8 @@ export function getSourceUrl(notification: Notification) {
 
   return ''
 }
+
+export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
+  'comment_like',
+  'contract_like',
+]
