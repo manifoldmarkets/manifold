@@ -1,4 +1,3 @@
-import { DotsVerticalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { groupPath } from 'common/group'
 import { Notification } from 'common/notification'
@@ -11,13 +10,11 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { db } from 'web/lib/firebase/init'
-import EnvelopeClosedIcon from 'web/lib/icons/envelope-closed-icon'
-import EnvelopeOpenIcon from 'web/lib/icons/envelope-open-icon'
 import { track } from 'web/lib/service/analytics'
-import DropdownMenu from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { truncateLengthType, truncateText } from '../widgets/truncate'
+import NotificationDropdown from './notification-dropdown'
 
 const notification_base_style =
   'relative cursor-pointer text-sm bg-inherit rounded-lg transition-colors'
@@ -234,38 +231,9 @@ export function NotificationFrame(props: {
           'justify-start text-gray-500 transition-colors group-hover:text-gray-900'
         )}
       >
-        <DropdownMenu
-          Items={[
-            {
-              name: highlighted ? 'Mark as read' : 'Mark as unread',
-              icon: highlighted ? (
-                <EnvelopeOpenIcon className="h-5 w-5" />
-              ) : (
-                <EnvelopeClosedIcon className="h-5 w-5" />
-              ),
-              onClick: () => {
-                if (highlighted) {
-                  markNotificationAsSeen(notification)
-                } else {
-                  markNotificationAsUnseen(notification)
-                }
-              },
-            },
-            // {
-            //   name: 'Turn off this kind of notification',
-            //   icon: <MinusCircleIcon className="h-5 w-5" />,
-            //   onClick: () => console.log('hi'),
-            // },
-          ]}
-          Icon={
-            <DotsVerticalIcon
-              className={clsx(
-                'my-1 h-4 w-4 md:invisible md:group-hover:visible',
-                getHighlightClass(highlighted)
-              )}
-            />
-          }
-          MenuWidth="w-44"
+        <NotificationDropdown
+          notification={notification}
+          highlighted={highlighted}
         />
       </Col>
       <Col className="w-4">

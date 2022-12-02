@@ -168,7 +168,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
 // subscription type, i.e. 'comment_on_contract_you_follow' and 'comment_on_contract_with_users_answer' both map to
 // 'all_comments_on_watched_markets' subscription type
 // TODO: perhaps better would be to map notification_subscription_types to arrays of notification_reason_types
-const notificationReasonToSubscriptionType: Partial<
+export const notificationReasonToSubscriptionType: Partial<
   Record<notification_reason_types, notification_preference>
 > = {
   you_referred_user: 'referral_bonuses',

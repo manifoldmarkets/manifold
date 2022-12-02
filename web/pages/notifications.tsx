@@ -37,7 +37,8 @@ import {
   useGroupedNotifications,
 } from 'web/hooks/use-notifications'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { usePrivateUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { updateUser } from 'web/lib/firebase/users'
 import EnvelopeOpenIcon from 'web/lib/icons/envelope-open-icon'
 
 export default function Notifications() {
@@ -191,6 +192,8 @@ function NotificationsList(props: {
     return allGroupedNotifications.slice(start, end)
   }, [allGroupedNotifications, page])
 
+  const user = useUser()
+
   useEffect(() => {
     if (markAllAsReadTrigger && allGroupedNotifications) {
       const notifications = allGroupedNotifications
@@ -202,6 +205,10 @@ function NotificationsList(props: {
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
+
+  if (user) {
+    updateUser(user.id, { shouldShowWelcome: false })
+  }
 
   return (
     <Col className={'min-h-[100vh] gap-0 text-sm'}>

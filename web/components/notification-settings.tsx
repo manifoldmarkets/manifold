@@ -276,10 +276,6 @@ export function NotificationSettings(props: {
     )
   }
 
-  const getUsersSavedPreference = (key: notification_preference) => {
-    return privateUser.notificationPreferences[key] ?? []
-  }
-
   const Section = memo(function Section(props: {
     icon: ReactNode
     data: SectionData
@@ -327,13 +323,14 @@ export function NotificationSettings(props: {
               key={subType}
               subscriptionTypeKey={subType as notification_preference}
               destinations={getUsersSavedPreference(
-                subType as notification_preference
+                subType as notification_preference,
+                privateUser
               )}
               description={NOTIFICATION_DESCRIPTIONS[subType].simple}
               optOutAll={
                 subType === 'opt_out_all' || subType === 'your_contract_closed'
                   ? []
-                  : getUsersSavedPreference('opt_out_all')
+                  : getUsersSavedPreference('opt_out_all', privateUser)
               }
             />
           ))}
@@ -482,7 +479,7 @@ export const notificationIsNecessary = (
   return false
 }
 
-export const attemptToChangeSetting = (
+const attemptToChangeSetting = (
   setting: 'browser' | 'email' | 'mobile',
   newValue: boolean,
   subscriptionTypeKey: notification_preference,
@@ -491,7 +488,7 @@ export const attemptToChangeSetting = (
   setEnabled: (setting: boolean) => void,
   emailEnabled: boolean,
   inAppEnabled: boolean,
-  setError?: (error: string) => void
+  setError: (error: string) => void
 ) => {
   // Mobile notifications not included in necessary destinations yet
   if (
@@ -523,7 +520,7 @@ export const changeSetting = (
   privateUser: PrivateUser,
   subscriptionTypeKey: notification_preference,
   destinations: notification_destination_types[],
-  setEnabled: (setting: boolean) => void
+  setEnabled?: (setting: boolean) => void
 ) => {
   const loading = 'Changing Notifications Settings'
   const success = 'Changed Notification Settings!'
@@ -544,6 +541,15 @@ export const changeSetting = (
       }
     )
     .then(() => {
-      setEnabled(newValue)
+      if (setEnabled) {
+        setEnabled(newValue)
+      }
     })
+}
+
+export const getUsersSavedPreference = (
+  key: notification_preference,
+  privateUser: PrivateUser
+) => {
+  return privateUser.notificationPreferences[key] ?? []
 }
