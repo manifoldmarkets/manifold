@@ -50,7 +50,7 @@ export const LikeButton = memo(function LikeButton(props: {
       contract,
       contract.question,
       contentText,
-      'like'
+      ButtonReactionType
     )
   }
 
