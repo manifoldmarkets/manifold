@@ -6,6 +6,7 @@ import {
 
 import { DEV_CONFIG } from '../../../common/envs/dev'
 import { PROD_CONFIG } from '../../../common/envs/prod'
+import { delay } from '../../../common/util/promise'
 import { isProd } from '../utils'
 
 type QueryResponse = PostgrestResponse<any> | PostgrestSingleResponse<any>
@@ -29,10 +30,6 @@ export function createSupabaseClient() {
     throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
   }
   return createClient(url, key)
-}
-
-function delay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(() => resolve(), ms))
 }
 
 export async function run<T extends QueryResponse = QueryResponse>(

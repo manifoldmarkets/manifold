@@ -1,3 +1,7 @@
+export const delay = (ms: number) => {
+  return new Promise<void>((resolve) => setTimeout(() => resolve(), ms))
+}
+
 export const batchedWaitAll = async <T>(
   createPromises: (() => Promise<T>)[],
   batchSize = 10
