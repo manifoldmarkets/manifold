@@ -284,7 +284,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     return <LoadingIndicator />
   }
 
-  const likes = comments.some((c) => c.likes && c.likes > 0)
+  const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
@@ -301,7 +301,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           c.userId === me?.id &&
           shouldBeNewestFirst(c)
             ? -Infinity
-            : -((c?.likes ?? 0) + sum(Object.values(tips[c.id] ?? [])))
+            : -(c?.likes ?? 0)
       : (c) => c,
     (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
   ])
