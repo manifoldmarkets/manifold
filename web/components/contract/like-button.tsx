@@ -32,13 +32,15 @@ export const LikeButton = memo(function LikeButton(props: {
   const [liked, setLiked] = useState(false)
   const showRed = liked || (!liked && hover)
   const [totalLikes, setTotalLikes] = useState(props.totalLikes)
+
   useEffect(() => {
     setTotalLikes(props.totalLikes)
   }, [props.totalLikes])
 
   const onLike = async (like: boolean) => {
     if (!user) return
-    if (!like) return await unReact(user.id, contentId, contentType, ButtonReactionType)
+    if (!like)
+      return await unReact(user.id, contentId, contentType, ButtonReactionType)
 
     await react(
       user,

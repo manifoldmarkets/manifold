@@ -11,7 +11,7 @@ export const useUserLikes = (
   return useStore<Reaction[] | undefined>(
     `user-likes-${userId}-${contentType}`,
     (_, setReactions) => {
-      return listenForLikes(userId??'_', contentType, setReactions)
+      return listenForLikes(userId ?? '_', contentType, setReactions)
     }
   )
 }
@@ -22,6 +22,7 @@ export const useIsLiked = (
   contentId: string
 ) => {
   const likes = useUserLikes(userId, contentType)
+
   return likes?.some((like) => like.contentId === contentId) ?? false
 }
 

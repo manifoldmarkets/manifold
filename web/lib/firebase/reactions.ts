@@ -1,4 +1,11 @@
-import { collection, deleteDoc, doc, query, setDoc, where } from 'firebase/firestore'
+import {
+  collection,
+  deleteDoc,
+  doc,
+  query,
+  setDoc,
+  where,
+} from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { removeUndefinedProps } from 'common/util/object'
 import { User } from 'common/user'
@@ -11,13 +18,20 @@ function getReactsCollection(userId: string) {
   return collection(db, 'users', userId, 'reactions')
 }
 
-export const unReact = async (userId: string, contentId: string, contentType:ReactionContentTypes, reactionType:ReactionTypes) => {
+export const unReact = async (
+  userId: string,
+  contentId: string,
+  contentType: ReactionContentTypes,
+  reactionType: ReactionTypes
+) => {
   const reacts = await getValues<Reaction>(
-    query(getReactsCollection(userId),
-    where('contentId', '==', contentId),
-    where('contentType', '==', contentType),
-    where('type', '==', reactionType)
-    ))
+    query(
+      getReactsCollection(userId),
+      where('contentId', '==', contentId),
+      where('contentType', '==', contentType),
+      where('type', '==', reactionType)
+    )
+  )
   if (reacts.length > 0) {
     await deleteDoc(doc(getReactsCollection(userId), reacts[0].id))
   }

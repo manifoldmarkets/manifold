@@ -1,6 +1,5 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
 import { Reaction } from '../../common/reaction'
 import { createLikeNotification } from './create-notification'
 
@@ -10,41 +9,46 @@ export const onCreateReaction = functions.firestore
   .document('users/{userId}/reactions/{reactionId}')
   .onCreate(async (change) => {
     const reaction = change.data() as Reaction
-    console.log('on create reaction', reaction)
-    if (reaction.contentType === 'contract') {
-      await incrementContractReactions(reaction, 1)
-    } else if (reaction.contentType === 'comment') {
-      await incrementCommentReactions(reaction, 1)
+    const { type } = reaction
+    await updateCountsOnDocuments(reaction)
+    if (type === 'like') {
+      await createLikeNotification(reaction)
     }
-    await createLikeNotification(reaction)
   })
 
 export const onDeleteReaction = functions.firestore
   .document('users/{userId}/reactions/{reactionId}')
   .onDelete(async (change) => {
     const reaction = change.data() as Reaction
-    if (reaction.contentType === 'contract') {
-      await incrementContractReactions(reaction, -1)
-    } else if (reaction.contentType === 'comment') {
-      await incrementCommentReactions(reaction, -1)
-    }
+    await updateCountsOnDocuments(reaction)
   })
 
-// This should technically be counting reaction documents but I haven't seen this method fail yet
-const incrementContractReactions = async (reaction: Reaction, num: number) => {
-  await firestore
-    .collection('contracts')
-    .doc(reaction.contentId)
-    .update({
-      likedByUserCount: FieldValue.increment(num),
-    })
+const updateCountsOnDocuments = async (reaction: Reaction) => {
+  const { type, contentType, contentId } = reaction
+  const group = firestore
+    .collectionGroup('reactions')
+    .where('contentType', '==', contentType)
+    .where('contentId', '==', contentId)
+    .where('type', '==', type)
+  const count = (await group.count().get()).data().count
+  if (reaction.contentType === 'contract') {
+    await updateContractReactions(reaction, count)
+  } else if (reaction.contentType === 'comment') {
+    await updateCommentReactions(reaction, count)
+  }
 }
-// This should technically be counting reaction documents but I haven't seen this method fail yet
-const incrementCommentReactions = async (reaction: Reaction, num: number) => {
+
+const updateContractReactions = async (reaction: Reaction, count: number) => {
+  await firestore.collection('contracts').doc(reaction.contentId).update({
+    likedByUserCount: count,
+  })
+}
+const updateCommentReactions = async (reaction: Reaction, count: number) => {
+  // getServerCount of reactions with content type and id equal to this comment
   await firestore
     .collection(`contracts/${reaction.contentParentId}/comments`)
     .doc(reaction.contentId)
     .update({
-      likes: FieldValue.increment(num),
+      likes: count,
     })
 }

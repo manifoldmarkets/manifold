@@ -12,12 +12,18 @@ import { contractPath } from 'web/lib/firebase/contracts'
 import { useContracts } from 'web/hooks/use-contracts'
 import { filterDefined } from 'common/util/array'
 
-export function UserLikedContractsButton(props: { user: User; className?: string }) {
+export function UserLikedContractsButton(props: {
+  user: User
+  className?: string
+}) {
   const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
 
   const likes = useUserLikes(user.id, 'contract')
-  const likedContracts = filterDefined(useContracts((likes?.map((l) => l.contentId)??[])))
+  const likedContracts = filterDefined(
+    useContracts(likes?.map((l) => l.contentId) ?? [])
+  )
+
   return (
     <>
       <TextButton onClick={() => setIsOpen(true)} className={className}>
@@ -38,7 +44,9 @@ export function UserLikedContractsButton(props: { user: User; className?: string
                 </SiteLink>
                 <XIcon
                   className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
-                  onClick={() => unReact(user.id, likedContract.id, 'contract', 'like')}
+                  onClick={() =>
+                    unReact(user.id, likedContract.id, 'contract', 'like')
+                  }
                 />
               </Row>
             ))}
