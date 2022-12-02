@@ -114,7 +114,7 @@ export const replayFailedSupabaseWrites = functions
     const client = createSupabaseClient()
     const deleter = firestore.bulkWriter({ throttling: false })
     try {
-      for (const batch of chunk(snap.docs, 100)) {
+      for (const batch of chunk(snap.docs, 1000)) {
         const entries = batch.map((d) => d.data() as TLEntry)
         await replicateWrites(client, ...entries)
         for (const doc of batch) {
