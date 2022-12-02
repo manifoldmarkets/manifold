@@ -78,11 +78,13 @@ function useNotificationPreferenceItem(notification: Notification) {
   const subType = notificationReasonToSubscriptionType[
     reason
   ] as notification_preference
-
+  console.log('\nreason', reason)
+  console.log('\nsubType', subType)
   if (!subType) {
     return []
   }
   const destinations = getUsersSavedPreference(subType, privateUser)
+  console.log('\ndestinations', destinations)
   if (!destinations.includes('browser')) {
     return []
   }
@@ -90,16 +92,7 @@ function useNotificationPreferenceItem(notification: Notification) {
   const inAppEnabled = destinations.includes('browser')
   const emailEnabled = destinations.includes('email')
 
-  console.log(
-    '\nreason',
-    reason,
-    '\nsubType',
-    subType,
-    '\ndestinations',
-    destinations,
-    '\ninAppEnabled',
-    inAppEnabled
-  )
+  console.log('\ndestinations', destinations, '\ninAppEnabled', inAppEnabled)
 
   const canBeTurnedOff = !notificationIsNecessary(
     'browser',
