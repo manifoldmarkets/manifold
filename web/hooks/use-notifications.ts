@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
-import { PrivateUser } from 'common/user'
 import { Notification } from 'common/notification'
-import { listenForNotifications } from 'web/lib/firebase/notifications'
+import { PrivateUser } from 'common/user'
 import { groupBy, map, partition } from 'lodash'
+import { useMemo } from 'react'
+import { listenForNotifications } from 'web/lib/firebase/notifications'
 import { useStore } from './use-store'
 
 export type NotificationGroup = {
