@@ -37,7 +37,6 @@ export type User = {
   nextLoanCached: number
   followerCountCached: number
 
-  followedCategories?: string[]
   homeSections?: string[]
 
   referredByUserId?: string
