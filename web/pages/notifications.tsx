@@ -1,7 +1,6 @@
 import {
   ChevronDoubleDownIcon,
   ChevronDoubleUpIcon,
-  DotsVerticalIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Notification } from 'common/notification'
@@ -11,7 +10,6 @@ import { useRouter } from 'next/router'
 import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button, IconButton } from 'web/components/buttons/button'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'

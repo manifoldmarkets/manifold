@@ -1,4 +1,8 @@
-import { DotsVerticalIcon, MinusCircleIcon } from '@heroicons/react/solid'
+import {
+  DotsVerticalIcon,
+  MinusCircleIcon,
+  PlusCircleIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Notification, notification_reason_types } from 'common/notification'
 import {
@@ -40,7 +44,7 @@ export default function NotificationDropdown(props: {
           )}
         />
       }
-      MenuWidth="w-44"
+      MenuWidth="w-52"
     />
   )
 }
@@ -78,21 +82,16 @@ function useNotificationPreferenceItem(notification: Notification) {
   const subType = notificationReasonToSubscriptionType[
     reason
   ] as notification_preference
-  console.log('\nreason', reason)
-  console.log('\nsubType', subType)
   if (!subType) {
     return []
   }
   const destinations = getUsersSavedPreference(subType, privateUser)
-  console.log('\ndestinations', destinations)
-  if (!destinations.includes('browser')) {
-    return []
-  }
+  //   if (!destinations.includes('browser')) {
+  //     return []
+  //   }
 
   const inAppEnabled = destinations.includes('browser')
   const emailEnabled = destinations.includes('email')
-
-  console.log('\ndestinations', destinations, '\ninAppEnabled', inAppEnabled)
 
   const canBeTurnedOff = !notificationIsNecessary(
     'browser',
@@ -105,10 +104,22 @@ function useNotificationPreferenceItem(notification: Notification) {
   if (canBeTurnedOff) {
     return [
       {
-        name: 'Turn off this type of notification',
-        icon: <MinusCircleIcon className="h-5 w-5" />,
+        name: inAppEnabled
+          ? 'Turn OFF this type of notification'
+          : 'Turn ON this type of notification',
+        icon: inAppEnabled ? (
+          <MinusCircleIcon className="h-5 w-5" />
+        ) : (
+          <PlusCircleIcon className="h-5 w-5" />
+        ),
         onClick: () => {
-          changeSetting('browser', true, privateUser, subType, destinations)
+          changeSetting(
+            'browser',
+            !inAppEnabled,
+            privateUser,
+            subType,
+            destinations
+          )
         },
       },
     ]
