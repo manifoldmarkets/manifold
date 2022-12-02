@@ -115,7 +115,11 @@ export const replayFailedSupabaseWrites = functions
     const deleter = firestore.bulkWriter({ throttling: false })
     try {
       for (const batch of chunk(snap.docs, 1000)) {
-        const entries = batch.map((d) => d.data() as TLEntry)
+        const eventRefs = snap.docs.map((d) =>
+          firestore.collection('transactionLog').doc(d.id)
+        )
+        const eventDocs = await firestore.getAll(...eventRefs)
+        const entries = eventDocs.map((d) => d.data() as TLEntry)
         await replicateWrites(client, ...entries)
         for (const doc of batch) {
           deleter.delete(doc.ref)
