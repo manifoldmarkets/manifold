@@ -47,6 +47,7 @@ export type User = {
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
+  streakForgiveness?: number
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
   userDeleted?: boolean
