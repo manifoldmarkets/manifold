@@ -1,5 +1,6 @@
 export type Reaction = {
-  id: string // will be id of the content liked, i.e. contract.id, comment.id, etc.
+  id: string
+  contentId: string // will be id of the content liked, i.e. contract.id, comment.id, etc.
   contentParentId: string // will be id of the parent object, i.e. contract.id, user.id
   contentType: ReactionContentTypes
   type: ReactionTypes

@@ -34,7 +34,7 @@ export const onDeleteReaction = functions.firestore
 const incrementContractReactions = async (reaction: Reaction, num: number) => {
   await firestore
     .collection('contracts')
-    .doc(reaction.id)
+    .doc(reaction.contentId)
     .update({
       likedByUserCount: FieldValue.increment(num),
     })
@@ -43,7 +43,7 @@ const incrementContractReactions = async (reaction: Reaction, num: number) => {
 const incrementCommentReactions = async (reaction: Reaction, num: number) => {
   await firestore
     .collection(`contracts/${reaction.contentParentId}/comments`)
-    .doc(reaction.id)
+    .doc(reaction.contentId)
     .update({
       likes: FieldValue.increment(num),
     })

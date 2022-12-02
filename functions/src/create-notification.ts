@@ -711,7 +711,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
   )
   if (!sendToBrowser) return
 
-  const id = `${reaction.userId}-${reaction.id}-${reaction.type}`
+  const id = `${reaction.userId}-${reaction.contentId}-${reaction.type}`
   const notificationRef = firestore
     .collection(`/users/${reaction.contentOwnerId}/notifications`)
     .doc(id)
@@ -730,7 +730,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
     sourceUserAvatarUrl: reaction.userAvatarUrl,
     sourceContractId:
       reaction.contentType === 'contract'
-        ? reaction.id
+        ? reaction.contentId
         : reaction.contentParentId,
     sourceText: reaction.text,
     sourceSlug: reaction.slug,

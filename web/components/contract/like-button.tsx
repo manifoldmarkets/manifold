@@ -1,14 +1,15 @@
 import React, { memo, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
-import { useUserLikes } from 'web/hooks/use-likes'
+import { useIsLiked } from 'web/hooks/use-likes'
 import { react, unReact } from 'web/lib/firebase/reactions'
 import clsx from 'clsx'
 import { HeartIcon } from '@heroicons/react/outline'
 import { Contract } from 'common/contract'
 import { debounce } from 'lodash'
-import { ReactionContentTypes } from 'common/reaction'
+import { ReactionContentTypes, ReactionTypes } from 'common/reaction'
 
-export const LikeButton = memo(function LikeItemButton(props: {
+const ButtonReactionType = 'like' as ReactionTypes
+export const LikeButton = memo(function LikeButton(props: {
   contentId: string
   contentCreatorId: string
   user: User | null | undefined
@@ -25,10 +26,7 @@ export const LikeButton = memo(function LikeItemButton(props: {
     contract,
     contentText,
   } = props
-  const likes = useUserLikes(user?.id, contentType)
-
-  const userLikedItemIds = likes?.map((l) => l.id)
-  const userLiked = userLikedItemIds?.includes(contentId)
+  const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
   const [hover, setHover] = useState(false)
   const [liked, setLiked] = useState(false)
@@ -40,7 +38,7 @@ export const LikeButton = memo(function LikeItemButton(props: {
 
   const onLike = async (like: boolean) => {
     if (!user) return
-    if (!like) return await unReact(user.id, contentId)
+    if (!like) return await unReact(user.id, contentId, contentType, ButtonReactionType)
 
     await react(
       user,

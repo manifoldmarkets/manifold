@@ -1,18 +1,26 @@
-import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, query, setDoc, where } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { removeUndefinedProps } from 'common/util/object'
 import { User } from 'common/user'
 import { track } from '../service/analytics'
-import { Reaction } from 'common/reaction'
+import { Reaction, ReactionContentTypes, ReactionTypes } from 'common/reaction'
 import { Contract } from 'common/contract'
+import { getValues } from 'web/lib/firebase/utils'
 
 function getReactsCollection(userId: string) {
   return collection(db, 'users', userId, 'reactions')
 }
 
-export const unReact = async (userId: string, itemId: string) => {
-  const ref = await doc(getReactsCollection(userId), itemId)
-  return await deleteDoc(ref)
+export const unReact = async (userId: string, contentId: string, contentType:ReactionContentTypes, reactionType:ReactionTypes) => {
+  const reacts = await getValues<Reaction>(
+    query(getReactsCollection(userId),
+    where('contentId', '==', contentId),
+    where('contentType', '==', contentType),
+    where('type', '==', reactionType)
+    ))
+  if (reacts.length > 0) {
+    await deleteDoc(doc(getReactsCollection(userId), reacts[0].id))
+  }
 }
 
 export const react = async (
@@ -24,16 +32,15 @@ export const react = async (
   title: string,
   text: string
 ) => {
-  // create new like in db under users collection
-  const ref = doc(getReactsCollection(user.id), contentId)
+  const ref = doc(getReactsCollection(user.id))
   const contentParentId =
     contentType === 'contract' ? contentOwnerId : contract.id
   const slug =
     `/${contract.creatorUsername}/${contract.slug}` +
     (contentType === 'comment' ? `#${contentId}` : '')
-  // contract slug and question are set via trigger
   const reaction = removeUndefinedProps({
     id: ref.id,
+    contentId,
     userId: user.id,
     createdTime: Date.now(),
     contentType: contentType,
