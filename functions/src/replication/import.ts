@@ -64,6 +64,7 @@ async function importCollectionGroup(
   client: SupabaseClient,
   source: CollectionGroup,
   docKind: DocumentKind,
+  predicate: (d: QueryDocumentSnapshot) => boolean,
   batchSize: number
 ) {
   log(`Preparing to import ${docKind} documents.`)
@@ -74,7 +75,7 @@ async function importCollectionGroup(
   // partitions are different sizes so be conservative
   const partitions = Math.ceil(n / batchSize) * 2
   await processPartitioned(source, partitions, async (docs) => {
-    const rows = docs.map((d) => getWriteRow(d, docKind, t1))
+    const rows = docs.filter(predicate).map((d) => getWriteRow(d, docKind, t1))
     await runWithRetries(client.from('incoming_writes').insert(rows))
   })
 }
@@ -102,6 +103,7 @@ async function importDatabase(kinds?: string[]) {
       client,
       firestore.collectionGroup('bets'),
       'contractBet',
+      (_) => true,
       1000
     )
   if (shouldImport('contractComment'))
@@ -109,6 +111,7 @@ async function importDatabase(kinds?: string[]) {
       client,
       firestore.collectionGroup('comments'),
       'contractComment',
+      (c) => c.get('commentType') === 'contract',
       100
     )
 }
