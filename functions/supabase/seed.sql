@@ -4,6 +4,7 @@ create table if not exists users (
     fs_updated_time timestamp not null
 );
 alter table users enable row level security;
+create policy "public read" on users for select using (true);
 
 create table if not exists contracts (
     id text not null primary key,
@@ -11,6 +12,7 @@ create table if not exists contracts (
     fs_updated_time timestamp not null
 );
 alter table contracts enable row level security;
+create policy "public read" on contracts for select using (true);
 
 create table if not exists groups (
     id text not null primary key,
@@ -18,6 +20,7 @@ create table if not exists groups (
     fs_updated_time timestamp not null
 );
 alter table groups enable row level security;
+create policy "public read" on groups for select using (true);
 
 create table if not exists txns (
     id text not null primary key,
@@ -25,6 +28,7 @@ create table if not exists txns (
     fs_updated_time timestamp not null
 );
 alter table txns enable row level security;
+create policy "public read" on txns for select using (true);
 
 create table if not exists bets (
     id text not null primary key,
@@ -32,6 +36,7 @@ create table if not exists bets (
     fs_updated_time timestamp not null
 );
 alter table bets enable row level security;
+create policy "public read" on bets for select using (true);
 
 create table if not exists comments (
     id text not null primary key,
@@ -39,6 +44,7 @@ create table if not exists comments (
     fs_updated_time timestamp not null
 );
 alter table comments enable row level security;
+create policy "public read" on comments for select using (true);
 
 create table if not exists incoming_writes (
   id bigint generated always as identity primary key,
