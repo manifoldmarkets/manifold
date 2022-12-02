@@ -6,8 +6,7 @@ import { useFollows } from './use-follows'
 import { useUser } from './use-user'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { DocumentData } from 'firebase/firestore'
-import { users, privateUsers, getUsers } from 'web/lib/firebase/users'
-import { QueryClient } from 'react-query'
+import { users, privateUsers } from 'web/lib/firebase/users'
 
 export const useUsers = () => {
   const result = useFirestoreQueryData<DocumentData, User[]>(['users'], users, {
@@ -16,10 +15,6 @@ export const useUsers = () => {
   })
   return result.data ?? []
 }
-
-const q = new QueryClient()
-export const getCachedUsers = async () =>
-  q.fetchQuery(['users'], getUsers, { staleTime: Infinity })
 
 export const usePrivateUsers = () => {
   const result = useFirestoreQueryData<DocumentData, PrivateUser[]>(
