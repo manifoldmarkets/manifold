@@ -8,7 +8,7 @@ import { DAY_MS } from '../../common/util/time'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 export const marketCloseNotifications = functions
-  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 1 hours')
   .onRun(async () => {
     await sendMarketCloseEmails()
