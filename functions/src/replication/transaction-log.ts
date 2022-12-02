@@ -5,7 +5,6 @@ import { Change, EventContext } from 'firebase-functions'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseClient, run } from './utils'
 import { DocumentKind, TLEntry } from '../../../common/transaction-log'
-import { isProd } from '../utils'
 
 function getWriteInfo<T>(change: Change<DocumentSnapshot<T>>) {
   const { before, after } = change
@@ -72,14 +71,10 @@ export const logContractComments = logger(
   'contractComment'
 )
 
-//TODO: We don't have a supabase replica/key for prod yet
-const runtimeOpts = isProd() ? {} : { secrets: ['SUPABASE_KEY'] }
 export const replicateLogToSupabase = functions
-  .runWith(runtimeOpts)
+  .runWith({ secrets: ['SUPABASE_KEY'] })
   .firestore.document('transactionLog/{eventId}')
   .onCreate(async (doc) => {
-    //TODO: We don't have a supabase replica for prod yet
-    if (isProd()) return
     const entry = doc.data() as TLEntry
     try {
       await replicateWrites(createSupabaseClient(), entry)
@@ -100,11 +95,9 @@ export const replicateLogToSupabase = functions
   })
 
 export const replayFailedSupabaseWrites = functions
-  .runWith(runtimeOpts)
+  .runWith({ secrets: ['SUPABASE_KEY'] })
   .pubsub.schedule('every 1 minutes')
   .onRun(async () => {
-    //TODO: We don't have a supabase replica for prod yet
-    if (isProd()) return
     const firestore = admin.firestore()
     const failedWrites = firestore
       .collection('replicationState')
