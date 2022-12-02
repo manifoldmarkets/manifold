@@ -3,6 +3,8 @@ import { CollectionReference, DocumentSnapshot } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions'
 import { Change, EventContext } from 'firebase-functions'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { chunk } from 'lodash'
+
 import { createSupabaseClient, run } from './utils'
 import { DocumentKind, TLEntry } from '../../../common/transaction-log'
 
@@ -110,13 +112,17 @@ export const replayFailedSupabaseWrites = functions
 
     console.log(`Attempting to replay ${snap.size} write(s)...`)
     const client = createSupabaseClient()
-    const entries = snap.docs.map((d) => d.data() as TLEntry)
-    await replicateWrites(client, ...entries)
-
-    console.log(`Removing old failed writes from log...`)
     const deleter = firestore.bulkWriter({ throttling: false })
-    for (const doc of snap.docs) {
-      deleter.delete(doc.ref)
+    try {
+      for (const batch of chunk(snap.docs, 100)) {
+        const entries = batch.map((d) => d.data() as TLEntry)
+        await replicateWrites(client, ...entries)
+        for (const doc of batch) {
+          deleter.delete(doc.ref)
+        }
+      }
+    } catch (e) {
+      console.error(e)
     }
     await deleter.close()
   })
