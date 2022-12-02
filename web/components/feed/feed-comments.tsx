@@ -207,7 +207,7 @@ export function CommentActions(props: {
           contentType={'comment'}
           totalLikes={comment.likes ?? 0}
           contract={contract}
-          contentText={richTextToString(comment.content || comment.text)}
+          contentText={richTextToString(comment.content)}
         />
       )}
       {(contract.openCommentBounties ?? 0) > 0 && (
