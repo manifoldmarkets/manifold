@@ -18,20 +18,21 @@ const firestore = admin.firestore()
 
 export async function sendMarketCloseEmails() {
   const contracts = await firestore.runTransaction(async (transaction) => {
+    const now = Date.now()
     const snap = await transaction.get(
-      firestore.collection('contracts').where('isResolved', '!=', true)
+      firestore.collection('contracts').where('closeTime', '<', now)
     )
     const contracts = snap.docs.map((doc) => doc.data() as Contract)
-    const now = Date.now()
-    const closeContracts = contracts.filter(
+    console.log(`Found ${contracts.length} closed contracts`)
+    const unresolvedContracts = contracts.filter(
       (contract) =>
-        contract.closeTime &&
-        contract.closeTime < now &&
+        !contract.isResolved &&
         shouldSendFirstOrFollowUpCloseNotification(contract)
     )
+    console.log(`Found ${unresolvedContracts.length} unresolved contracts`)
 
     await Promise.all(
-      closeContracts.map(async (contract) => {
+      unresolvedContracts.map(async (contract) => {
         await transaction.update(
           firestore.collection('contracts').doc(contract.id),
           {
@@ -40,7 +41,7 @@ export async function sendMarketCloseEmails() {
         )
       })
     )
-    return closeContracts
+    return unresolvedContracts
   })
 
   for (const contract of contracts) {
