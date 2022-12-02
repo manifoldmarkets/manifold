@@ -7,6 +7,7 @@ import { HeartIcon } from '@heroicons/react/outline'
 import { Contract } from 'common/contract'
 import { debounce } from 'lodash'
 import { ReactionContentTypes, ReactionTypes } from 'common/reaction'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 const ButtonReactionType = 'like' as ReactionTypes
 export const LikeButton = memo(function LikeButton(props: {
@@ -73,7 +74,13 @@ export const LikeButton = memo(function LikeButton(props: {
   }
 
   return (
-    <div>
+    <Tooltip
+      text={userLiked ? 'Unlike' : 'Like'}
+      placement="bottom"
+      noTap
+      noFade
+    >
+      {' '}
       <button
         onClick={() => handleLiked(!liked)}
         disabled={disabled}
@@ -106,6 +113,6 @@ export const LikeButton = memo(function LikeButton(props: {
           />
         </div>
       </button>
-    </div>
+    </Tooltip>
   )
 })
