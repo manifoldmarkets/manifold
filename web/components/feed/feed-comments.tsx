@@ -24,7 +24,6 @@ import { useEvent } from 'web/hooks/use-event'
 import { Content } from '../widgets/editor'
 import { UserLink } from 'web/components/widgets/user-link'
 import { CommentInput } from '../comments/comment-input'
-import { AwardBountyButton } from 'web/components/buttons/award-bounty-button'
 import { ReplyIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
@@ -210,9 +209,6 @@ export function CommentActions(props: {
           contentText={richTextToString(comment.content)}
         />
       )}
-      {(contract.openCommentBounties ?? 0) > 0 && (
-        <AwardBountyButton comment={comment} contract={contract} />
-      )}
       <ReportModal
         report={{
           contentOwnerId: comment.userId,
@@ -334,7 +330,6 @@ export function ContractCommentInput(props: {
   const privateUser = usePrivateUser()
   const { contract, parentAnswerOutcome, parentCommentId, replyTo, className } =
     props
-  const { openCommentBounties } = contract
   async function onSubmitComment(editor: Editor) {
     if (!user) {
       track('sign in to comment')
@@ -344,7 +339,6 @@ export function ContractCommentInput(props: {
       contract.id,
       editor.getJSON(),
       user,
-      !!openCommentBounties,
       parentAnswerOutcome,
       parentCommentId
     )
@@ -376,7 +370,6 @@ export function FeedCommentHeader(props: {
     commenterPositionShares,
     commenterPositionOutcome,
     createdTime,
-    bountiesAwarded,
   } = comment
   const betOutcome = comment.betOutcome
   let bought: string | undefined
@@ -385,7 +378,6 @@ export function FeedCommentHeader(props: {
     bought = comment.betAmount >= 0 ? 'bought' : 'sold'
     money = formatMoney(Math.abs(comment.betAmount))
   }
-  const totalAwarded = bountiesAwarded ?? 0
   return (
     <Row>
       <div className="mt-0.5 text-sm text-gray-600">
@@ -425,11 +417,6 @@ export function FeedCommentHeader(props: {
           createdTime={createdTime}
           elementId={comment.id}
         />
-        {totalAwarded > 0 && (
-          <span className=" ml-2 text-sm text-teal-500">
-            +{formatMoney(totalAwarded)}
-          </span>
-        )}
       </div>
     </Row>
   )
