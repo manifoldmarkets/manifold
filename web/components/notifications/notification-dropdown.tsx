@@ -13,6 +13,7 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import EnvelopeClosedIcon from 'web/lib/icons/envelope-closed-icon'
 import EnvelopeOpenIcon from 'web/lib/icons/envelope-open-icon'
 import DropdownMenu from '../comments/dropdown-menu'
+import { Spacer } from '../layout/spacer'
 import {
   changeSetting,
   getUsersSavedPreference,
@@ -29,48 +30,25 @@ export default function NotificationDropdown(props: {
   highlighted: boolean
 }) {
   const { notification, highlighted } = props
-  const notificationDropdownItems = useNotificationDropdownItems(
-    notification,
-    highlighted
-  )
-  return (
-    <DropdownMenu
-      Items={notificationDropdownItems}
-      Icon={
-        <DotsVerticalIcon
-          className={clsx(
-            'my-1 h-4 w-4 md:invisible md:group-hover:visible',
-            getHighlightClass(highlighted)
-          )}
-        />
-      }
-      MenuWidth="w-52"
-    />
-  )
-}
+  const notificationDropdownItems = useNotificationPreferenceItem(notification)
 
-function useNotificationDropdownItems(
-  notification: Notification,
-  highlighted: boolean
-) {
-  const dropdownItems = [
-    {
-      name: highlighted ? 'Mark as read' : 'Mark as unread',
-      icon: highlighted ? (
-        <EnvelopeOpenIcon className="h-5 w-5" />
-      ) : (
-        <EnvelopeClosedIcon className="h-5 w-5" />
-      ),
-      onClick: () => {
-        if (highlighted) {
-          markNotificationAsSeen(notification)
-        } else {
-          markNotificationAsUnseen(notification)
+  if (notificationDropdownItems.length > 0) {
+    return (
+      <DropdownMenu
+        Items={notificationDropdownItems}
+        Icon={
+          <DotsVerticalIcon
+            className={clsx(
+              'my-1 h-4 w-4 md:invisible md:group-hover:visible',
+              getHighlightClass(highlighted)
+            )}
+          />
         }
-      },
-    },
-  ]
-  return dropdownItems.concat(useNotificationPreferenceItem(notification))
+        MenuWidth="w-52"
+      />
+    )
+  }
+  return <Spacer w={4} />
 }
 
 function useNotificationPreferenceItem(notification: Notification) {
@@ -86,9 +64,6 @@ function useNotificationPreferenceItem(notification: Notification) {
     return []
   }
   const destinations = getUsersSavedPreference(subType, privateUser)
-  //   if (!destinations.includes('browser')) {
-  //     return []
-  //   }
 
   const inAppEnabled = destinations.includes('browser')
   const emailEnabled = destinations.includes('email')

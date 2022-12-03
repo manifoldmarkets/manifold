@@ -37,13 +37,14 @@ export function NotificationItem(props: {
   const { notification, isChildOfGroup, isIncomeNotification } = props
   const { sourceType, reason, sourceUpdateType } = notification
 
-  const highlighted = !notification.isSeen
+  const [highlighted, setHighlighted] = useState(!notification.isSeen)
 
   if (isIncomeNotification) {
     return (
       <IncomeNotificationItem
         notification={notification}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   }
@@ -55,6 +56,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'contract') {
@@ -64,6 +66,7 @@ export function NotificationItem(props: {
           highlighted={highlighted}
           notification={notification}
           isChildOfGroup={isChildOfGroup}
+          setHighlighted={setHighlighted}
         />
       )
     }
@@ -73,6 +76,7 @@ export function NotificationItem(props: {
           notification={notification}
           isChildOfGroup={isChildOfGroup}
           highlighted={highlighted}
+          setHighlighted={setHighlighted}
         />
       )
     }
@@ -82,6 +86,7 @@ export function NotificationItem(props: {
           notification={notification}
           isChildOfGroup={isChildOfGroup}
           highlighted={highlighted}
+          setHighlighted={setHighlighted}
         />
       )
     } else if (reason === 'tagged_user') {
@@ -90,6 +95,7 @@ export function NotificationItem(props: {
           notification={notification}
           isChildOfGroup={isChildOfGroup}
           highlighted={highlighted}
+          setHighlighted={setHighlighted}
         />
       )
     }
@@ -98,6 +104,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'badge') {
@@ -106,6 +113,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'signup_bonus') {
@@ -114,6 +122,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'comment') {
@@ -122,6 +131,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'answer') {
@@ -130,6 +140,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'follow') {
@@ -138,6 +149,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'liquidity') {
@@ -146,6 +158,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'group') {
@@ -155,6 +168,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'user') {
@@ -163,6 +177,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'challenge') {
@@ -171,6 +186,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   }
@@ -178,6 +194,7 @@ export function NotificationItem(props: {
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       isChildOfGroup={isChildOfGroup}
       icon={<></>}
     >
@@ -191,9 +208,10 @@ export function NotificationItem(props: {
 function BetFillNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, isChildOfGroup, highlighted } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceText, data, sourceContractTitle } = notification
   const { creatorOutcome, probability, limitOrderRemaining } =
     (data as BetFillData) ?? {}
@@ -235,6 +253,7 @@ function BetFillNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <NotificationIcon
           symbol={creatorOutcome === 'NO' ? '👇' : '☝️'}
@@ -263,9 +282,10 @@ function BetFillNotification(props: {
 function BadgeNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, isChildOfGroup, highlighted } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceText } = notification
   const [isOpen, setOpen] = useState(false)
   const user = useUser()
@@ -274,6 +294,7 @@ function BadgeNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <NotificationIcon
           symbol={'🥇'}
@@ -290,9 +311,10 @@ function BadgeNotification(props: {
 function SignupBonusNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, isChildOfGroup, highlighted } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceText } = notification
   const text = (
     <span>
@@ -309,6 +331,7 @@ function SignupBonusNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <NotificationIcon
           symbol={'✨'}
@@ -327,9 +350,10 @@ function SignupBonusNotification(props: {
 function MarketResolvedNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, isChildOfGroup, highlighted } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
     sourceText,
     data,
@@ -430,6 +454,7 @@ function MarketResolvedNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       subtitle={subtitle}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'☑️'} />
@@ -444,15 +469,17 @@ function MarketResolvedNotification(props: {
 function MarketClosedNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, isChildOfGroup, highlighted } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceContractTitle } = notification
   return (
     <NotificationFrame
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <NotificationIcon
           symbol={'❗'}
@@ -479,9 +506,10 @@ function MarketClosedNotification(props: {
 function NewMarketNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, isChildOfGroup, highlighted } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceContractTitle, sourceUserName, sourceUserUsername } =
     notification
   return (
@@ -489,6 +517,7 @@ function NewMarketNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'🌟'} />
       }
@@ -510,9 +539,10 @@ function NewMarketNotification(props: {
 function MarketUpdateNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, isChildOfGroup, highlighted } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
     sourceContractTitle,
     sourceUserName,
@@ -535,6 +565,7 @@ function MarketUpdateNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'✏️'} />
       }
@@ -562,9 +593,10 @@ function MarketUpdateNotification(props: {
 function CommentNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, isChildOfGroup } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
     sourceUserName,
     sourceUserUsername,
@@ -582,6 +614,7 @@ function CommentNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'💬'} />
       }
@@ -616,9 +649,10 @@ function CommentNotification(props: {
 function AnswerNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, isChildOfGroup } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
     sourceUserName,
     sourceUserUsername,
@@ -630,6 +664,7 @@ function AnswerNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'🙋'} />
       }
@@ -656,9 +691,10 @@ function AnswerNotification(props: {
 function TaggedUserNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, isChildOfGroup } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceUserName, sourceUserUsername, sourceContractTitle } =
     notification
   return (
@@ -666,6 +702,7 @@ function TaggedUserNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'🏷️'} />
       }
@@ -691,15 +728,17 @@ function TaggedUserNotification(props: {
 function FollowNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, isChildOfGroup } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceUserName, sourceUserUsername } = notification
   return (
     <NotificationFrame
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon
           notification={notification}
@@ -727,9 +766,10 @@ function FollowNotification(props: {
 function LiquidityNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, isChildOfGroup } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
     sourceUserName,
     sourceUserUsername,
@@ -741,6 +781,7 @@ function LiquidityNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'💧'} />
       }
@@ -768,15 +809,17 @@ function LiquidityNotification(props: {
 function GroupAddNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, isChildOfGroup } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceUserName, sourceUserUsername, sourceTitle } = notification
   return (
     <NotificationFrame
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'👥'} />
       }
@@ -800,9 +843,10 @@ function GroupAddNotification(props: {
 function UserJoinedNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, isChildOfGroup } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceUserName, sourceUserUsername, sourceSlug, reason, sourceText } =
     notification
   let reasonBlock = <span>because of you</span>
@@ -832,6 +876,7 @@ function UserJoinedNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'👋'} />
       }
@@ -863,9 +908,10 @@ function UserJoinedNotification(props: {
 function ChallengeNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, isChildOfGroup } = props
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const {
     sourceUserName,
     sourceUserUsername,
@@ -877,6 +923,7 @@ function ChallengeNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'⚔️'} />
       }

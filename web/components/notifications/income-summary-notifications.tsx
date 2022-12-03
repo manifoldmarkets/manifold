@@ -129,8 +129,9 @@ export function IncomeNotificationGroupItem(props: {
 export function IncomeNotificationItem(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
 }) {
-  const { notification, highlighted } = props
+  const { notification, highlighted, setHighlighted } = props
   const { sourceType } = notification
 
   if (sourceType === 'tip' || sourceType === 'tip_and_like') {
@@ -138,6 +139,7 @@ export function IncomeNotificationItem(props: {
       <TipIncomeNotification
         notification={notification}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'bonus') {
@@ -145,6 +147,7 @@ export function IncomeNotificationItem(props: {
       <BonusIncomeNotification
         notification={notification}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'betting_streak_bonus') {
@@ -152,6 +155,7 @@ export function IncomeNotificationItem(props: {
       <BettingStreakBonusIncomeNotification
         notification={notification}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (sourceType === 'loan') {
@@ -159,6 +163,7 @@ export function IncomeNotificationItem(props: {
       <LoanIncomeNotification
         notification={notification}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else return <></>
@@ -167,8 +172,9 @@ export function IncomeNotificationItem(props: {
 export function TipIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
 }) {
-  const { notification, highlighted } = props
+  const { notification, highlighted, setHighlighted } = props
   const { sourceUserName } = notification
   const [open, setOpen] = useState(false)
   const userLinks: MultiUserLinkInfo[] = notification.data?.uniqueUsers ?? []
@@ -184,6 +190,7 @@ export function TipIncomeNotification(props: {
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       isChildOfGroup={true}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'💰'} />
@@ -208,8 +215,9 @@ export function TipIncomeNotification(props: {
 export function BonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
 }) {
-  const { notification, highlighted } = props
+  const { notification, highlighted, setHighlighted } = props
   const { sourceText, data } = notification
   const userLinks: MultiUserLinkInfo[] = data?.uniqueUsers ?? []
   const [open, setOpen] = useState(false)
@@ -217,6 +225,7 @@ export function BonusIncomeNotification(props: {
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       isChildOfGroup={true}
       icon={
         <NotificationIcon
@@ -254,8 +263,9 @@ export function BonusIncomeNotification(props: {
 export function BettingStreakBonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
 }) {
-  const { notification, highlighted } = props
+  const { notification, highlighted, setHighlighted } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
   const user = useUser()
@@ -264,6 +274,7 @@ export function BettingStreakBonusIncomeNotification(props: {
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       isChildOfGroup={true}
       icon={
         <NotificationIcon
@@ -291,13 +302,15 @@ export function BettingStreakBonusIncomeNotification(props: {
 export function LoanIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
 }) {
-  const { notification, highlighted } = props
+  const { notification, highlighted, setHighlighted } = props
   const [open, setOpen] = useState(false)
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       isChildOfGroup={true}
       icon={
         <NotificationIcon

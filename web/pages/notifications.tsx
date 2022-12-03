@@ -8,8 +8,6 @@ import { PrivateUser } from 'common/user'
 import { partition } from 'lodash'
 import { useRouter } from 'next/router'
 import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
-import toast from 'react-hot-toast'
-import { Button, IconButton } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -35,17 +33,15 @@ import {
   NotificationGroup,
   useGroupedNotifications,
 } from 'web/hooks/use-notifications'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { updateUser } from 'web/lib/firebase/users'
-import EnvelopeOpenIcon from 'web/lib/icons/envelope-open-icon'
+import { usePrivateUser } from 'web/hooks/use-user'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
   const router = useRouter()
   const [navigateToSection, setNavigateToSection] = useState<string>()
   const [activeIndex, setActiveIndex] = useState(0)
-  const [markAllAsReadTrigger, setMarkAllAsReadTrigger] = useState(false)
   useRedirectIfSignedOut()
   const isMobile = useIsMobile()
 
@@ -66,25 +62,11 @@ export default function Notifications() {
           className={clsx('w-full justify-between', isMobile ? 'hidden' : '')}
         >
           <Title text={'Notifications'} className="grow" />
-          <div className="my-auto">
-            {!isMobile && activeIndex === 0 && (
-              <MarkAllAsReadButton
-                setMarkAllAsReadTrigger={setMarkAllAsReadTrigger}
-              />
-            )}
-          </div>
         </Row>
         <SEO title="Notifications" description="Manifold user notifications" />
 
         {privateUser && router.isReady && (
           <div className="relative h-full w-full">
-            {isMobile && activeIndex === 0 && (
-              <div className="absolute right-0 -top-1 z-10">
-                <MobileMarkAllAsReadButton
-                  setMarkAllAsReadTrigger={setMarkAllAsReadTrigger}
-                />
-              </div>
-            )}
             <div className="relative">
               <ControlledTabs
                 currentPageForAnalytics={'notifications'}
@@ -108,12 +90,7 @@ export default function Notifications() {
                 tabs={[
                   {
                     title: 'Notifications',
-                    content: (
-                      <NotificationsList
-                        privateUser={privateUser}
-                        markAllAsReadTrigger={markAllAsReadTrigger}
-                      />
-                    ),
+                    content: <NotificationsList privateUser={privateUser} />,
                   },
                   {
                     title: 'Settings',
@@ -174,11 +151,8 @@ function RenderNotificationGroups(props: {
   )
 }
 
-function NotificationsList(props: {
-  privateUser: PrivateUser
-  markAllAsReadTrigger: boolean
-}) {
-  const { privateUser, markAllAsReadTrigger } = props
+function NotificationsList(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
   const allGroupedNotifications = useGroupedNotifications(privateUser)
 
   const [page, setPage] = useState(0)
@@ -191,23 +165,21 @@ function NotificationsList(props: {
     return allGroupedNotifications.slice(start, end)
   }, [allGroupedNotifications, page])
 
-  const user = useUser()
+  const isPageVisible = useIsPageVisible()
 
+  // Mark all notifications as seen.
   useEffect(() => {
-    if (markAllAsReadTrigger && allGroupedNotifications) {
+    if (isPageVisible && allGroupedNotifications) {
       const notifications = allGroupedNotifications
         .flat()
         .flatMap((g) => g.notifications)
+
       markNotificationsAsSeen(notifications)
     }
-  }, [markAllAsReadTrigger, allGroupedNotifications])
+  }, [isPageVisible, allGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
-
-  if (user) {
-    updateUser(user.id, { shouldShowWelcome: false })
-  }
 
   return (
     <Col className={'min-h-[100vh] gap-0 text-sm'}>
@@ -248,7 +220,7 @@ function NotificationGroupItem(props: {
   const { notificationGroup } = props
   const { notifications } = notificationGroup
   const { sourceContractTitle } = notifications[0]
-  const highlighted = notifications.some((n) => !n.isSeen)
+  const groupHighlighted = notifications.some((n) => !n.isSeen)
   const header = (
     <ParentNotificationHeader
       header={
@@ -264,7 +236,7 @@ function NotificationGroupItem(props: {
           <span>Other Activity</span>
         )
       }
-      highlighted={highlighted}
+      highlighted={groupHighlighted}
     />
   )
 
@@ -342,42 +314,5 @@ export function NotificationGroupItemComponent(props: {
         )}
       </div>
     </div>
-  )
-}
-
-function markAllAsRead(setMarkAllAsReadTrigger: (trigger: boolean) => void) {
-  setMarkAllAsReadTrigger(true)
-  setTimeout(setMarkAllAsReadTrigger, 10)
-}
-
-export function MarkAllAsReadButton(props: {
-  setMarkAllAsReadTrigger: (trigger: boolean) => void
-}) {
-  const { setMarkAllAsReadTrigger } = props
-  return (
-    <Button onClick={() => markAllAsRead(setMarkAllAsReadTrigger)}>
-      <Row className="gap-2">
-        <EnvelopeOpenIcon className="h-5 w-5" /> Mark all as read
-      </Row>
-    </Button>
-  )
-}
-
-export function MobileMarkAllAsReadButton(props: {
-  setMarkAllAsReadTrigger: (trigger: boolean) => void
-}) {
-  const { setMarkAllAsReadTrigger } = props
-  return (
-    <IconButton
-      onClick={() => {
-        markAllAsRead(setMarkAllAsReadTrigger)
-        toast.success('Marked all notifications as read!')
-      }}
-      size={'sm'}
-    >
-      <Row className="gap-2">
-        <EnvelopeOpenIcon className="h-5 w-5" />
-      </Row>
-    </IconButton>
   )
 }

@@ -1,9 +1,11 @@
 import { BellIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { PrivateUser } from 'common/user'
 import { Row } from 'web/components/layout/row'
-import { useUnseenNotificationCount } from 'web/hooks/use-notifications'
+import { useEffect, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
+import { useRouter } from 'next/router'
+import { useUnseenNotificationCount } from 'web/hooks/use-notifications'
+import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
 
 export default function NotificationsIcon(props: { className?: string }) {
@@ -17,9 +19,18 @@ export default function NotificationsIcon(props: { className?: string }) {
   )
 }
 function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
+  const { isReady, pathname } = useRouter()
   const { privateUser } = props
+  const [seen, setSeen] = useState(false)
+
+  useEffect(() => {
+    if (isReady) {
+      setSeen(pathname.endsWith('notifications'))
+    }
+  }, [isReady, pathname])
+
   const unseenCount = useUnseenNotificationCount(privateUser)
-  if (!unseenCount) {
+  if (!unseenCount || seen) {
     return null
   }
 

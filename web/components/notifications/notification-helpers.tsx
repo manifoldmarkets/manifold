@@ -168,6 +168,7 @@ export function NotificationIcon(props: {
 export function NotificationFrame(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   children: React.ReactNode
   icon: ReactNode
   link?: string
@@ -179,6 +180,7 @@ export function NotificationFrame(props: {
     notification,
     isChildOfGroup,
     highlighted,
+    setHighlighted,
     children,
     icon,
     subtitle,
@@ -220,12 +222,7 @@ export function NotificationFrame(props: {
   )
 
   const frameEnd = (
-    <Row
-      onClick={() => {
-        console.log('just clicked this button')
-      }}
-      className={clsx('group')}
-    >
+    <Row className={clsx('group')}>
       <Col
         className={clsx(
           'justify-start text-gray-500 transition-colors group-hover:text-gray-900'
@@ -257,7 +254,9 @@ export function NotificationFrame(props: {
             className={clsx('group flex w-full flex-col')}
             followsLinkClass={false}
             onClick={() => {
-              markNotificationAsSeen(notification)
+              if (highlighted) {
+                setHighlighted(false)
+              }
             }}
           >
             {frameObject}
@@ -268,7 +267,9 @@ export function NotificationFrame(props: {
         <Col
           className={clsx('group w-full', getHighlightClass(highlighted))}
           onClick={() => {
-            markNotificationAsSeen(notification)
+            if (highlighted) {
+              setHighlighted(false)
+            }
             if (onClick) {
               onClick()
             }
