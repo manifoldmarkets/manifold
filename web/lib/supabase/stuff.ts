@@ -11,9 +11,11 @@ const supabase = createClient(DEV_CONFIG.supabaseUrl ?? '', SUPABASE_READ_KEY)
 export async function searchUsers(prompt: string) {
   const { data } = await supabase
     .from('users')
-    .select('data')
+    .select(
+      'data->username, data->name, data->id, data->avatarUrl, data->followerCountCached'
+    )
     .or(`data->>username.ilike.%${prompt}%,data->>name.ilike.%${prompt}%`)
   // TODO: use fts (fullTextsearch) instead - may need to add index?
 
-  return data?.map((d) => d.data)
+  return data
 }
