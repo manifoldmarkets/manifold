@@ -4,7 +4,7 @@ import { PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
-import { sortBy, sum } from 'lodash'
+import { difference, sortBy, sum } from 'lodash'
 import { chooseRandomSubset } from 'common/util/random'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
@@ -95,19 +95,21 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   )
   const userBlockFacetFilters = useMemo(() => {
     if (!privateUser) return undefined
+    const followedGroupSlugs = followedGroupIds?.map((g) => g.slug) ?? []
 
     const destinyFilters = shouldFilterDestiny
       ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
       : []
-    const homeBlockedFilters = HOME_BLOCKED_GROUP_SLUGS.map(
-      (slug) => `groupSlugs:-${slug}`
-    )
+    const homeBlockedFilters = difference(
+      HOME_BLOCKED_GROUP_SLUGS,
+      followedGroupSlugs
+    ).map((slug) => `groupSlugs:-${slug}`)
     return buildArray(
       getUsersBlockFacetFilters(privateUser),
       destinyFilters,
       homeBlockedFilters
     )
-  }, [privateUser, shouldFilterDestiny])
+  }, [privateUser, followedGroupIds, shouldFilterDestiny])
 
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig

@@ -113,4 +113,7 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
   'free-money',
   'whale-watching',
   'spam',
+  'test',
+  'private-markets',
+  'proofniks',
 ]
