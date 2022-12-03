@@ -28,6 +28,7 @@ import {
   QuestionOrGroupLink,
 } from './notification-helpers'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
+import { useUser } from 'web/hooks/use-user'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -101,15 +102,6 @@ export function NotificationItem(props: {
     }
     return (
       <MarketUpdateNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'badge') {
-    return (
-      <BadgeNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -195,6 +187,7 @@ export function NotificationItem(props: {
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   }
@@ -283,36 +276,6 @@ function BetFillNotification(props: {
           </span>
         )}
       </div>
-    </NotificationFrame>
-  )
-}
-
-function BadgeNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceText } = notification
-  const [isOpen, setOpen] = useState(false)
-  const user = useUser()
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <NotificationIcon
-          symbol={'🥇'}
-          symbolBackgroundClass={'bg-gradient-to-br from-blue-600 to-blue-300'}
-        />
-      }
-      onClick={() => setOpen(true)}
-    >
-      <span> {sourceText}</span>
-      {user && <BadgesModal isOpen={isOpen} setOpen={setOpen} user={user} />}
     </NotificationFrame>
   )
 }
@@ -736,9 +699,10 @@ function TaggedUserNotification(props: {
 function UserLikeNotification(props: {
   notification: Notification
   highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, isChildOfGroup } = props
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
   const [open, setOpen] = useState(false)
   const { sourceUserName, sourceType, sourceText } = notification
   const otherRelatedNotifications: Notification[] =
@@ -754,6 +718,7 @@ function UserLikeNotification(props: {
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
+      setHighlighted={setHighlighted}
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'❤️'} />
       }

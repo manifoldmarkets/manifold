@@ -220,7 +220,6 @@ function NotificationGroupItem(props: {
 }) {
   const { notificationGroup } = props
   const { notifications } = notificationGroup
-  const { sourceContractTitle } = notifications[0]
   const groupHighlighted = notifications.some((n) => !n.isSeen)
   const { sourceTitle, sourceContractTitle } = notifications[0]
   const [highlighted, setHighlighted] = useState(
@@ -257,8 +256,6 @@ function NotificationGroupItem(props: {
   return (
     <NotificationGroupItemComponent
       notifications={combinedNotifs}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
       header={header}
     />
   )
@@ -293,7 +290,7 @@ export function NotificationGroupItemComponent(props: {
     <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
       {header}
       <div className={clsx(' whitespace-pre-line')}>
-        {shownNotifications.map((notification) => 
+        {shownNotifications.map((notification) => {
           return (
             <NotificationItem
               notification={notification}
