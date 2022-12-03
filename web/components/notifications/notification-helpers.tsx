@@ -32,7 +32,7 @@ export const NOTIFICATION_STYLE = clsx(
 )
 export const NOTIFICATIONS_PER_PAGE = 30
 export function getHighlightClass(highlight: boolean) {
-  return highlight ? 'opacity-100' : 'opacity-60'
+  return highlight ? 'opacity-100' : 'opacity-70'
 }
 export const NUM_SUMMARY_LINES = 3
 

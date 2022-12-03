@@ -237,9 +237,8 @@ function BetFillNotification(props: {
     <>
       {limitOrderRemaining ? (
         <>
-          Your limit order will buy{' '}
-          <span className={clsx(color)}>{creatorOutcome}</span> down to{' '}
-          <b>{Math.round(probability * 100)}%</b>. You have{' '}
+          You are buying <span className={clsx(color)}>{creatorOutcome}</span>{' '}
+          at <b>{Math.round(probability * 100)}%</b>. You have{' '}
           {formatMoney(limitOrderRemaining)} remaining.
         </>
       ) : (
