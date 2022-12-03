@@ -3,9 +3,8 @@ import {
   ChevronDoubleUpIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { ReactionNotificationTypes, Notification } from 'common/notification'
+import { Notification, ReactionNotificationTypes } from 'common/notification'
 import { PrivateUser } from 'common/user'
-import { partition } from 'lodash'
 import { useRouter } from 'next/router'
 import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -15,13 +14,13 @@ import { ControlledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { IncomeNotificationGroupItem } from 'web/components/notifications/income-summary-notifications'
 import {
+  combineReactionNotifications,
   markNotificationsAsSeen,
   NOTIFICATIONS_PER_PAGE,
   NUM_SUMMARY_LINES,
   ParentNotificationHeader,
   PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
-  combineReactionNotifications,
 } from 'web/components/notifications/notification-helpers'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
@@ -265,13 +264,7 @@ export function NotificationGroupItemComponent(props: {
   className?: string
 }) {
   const { notifications, className, header, isIncomeNotification } = props
-  const [readNotifications, unreadNotifications] = partition(
-    notifications,
-    (n: Notification) => n.isSeen
-  )
-  const orderedByReadNotifications =
-    unreadNotifications.concat(readNotifications)
-  const numNotifications = orderedByReadNotifications.length
+  const numNotifications = notifications.length
 
   const needsExpanding = numNotifications > NUM_SUMMARY_LINES
   const [expanded, setExpanded] = useState(false)
@@ -281,8 +274,8 @@ export function NotificationGroupItemComponent(props: {
   }
 
   const shownNotifications = expanded
-    ? orderedByReadNotifications
-    : orderedByReadNotifications.slice(0, NUM_SUMMARY_LINES)
+    ? notifications
+    : notifications.slice(0, NUM_SUMMARY_LINES)
   return (
     <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
       {header}

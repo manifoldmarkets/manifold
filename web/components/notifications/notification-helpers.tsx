@@ -296,17 +296,6 @@ export async function markNotificationAsSeen(notification: Notification) {
   })
 }
 
-export async function markNotificationAsUnseen(notification: Notification) {
-  const notificationDoc = doc(
-    db,
-    `users/${notification.userId}/notifications/`,
-    notification.id
-  )
-  return updateDoc(notificationDoc, {
-    isSeen: false,
-  })
-}
-
 export function ParentNotificationHeader(props: {
   header: ReactNode
   highlighted: boolean
