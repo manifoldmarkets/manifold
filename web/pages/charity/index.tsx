@@ -17,7 +17,6 @@ import { Title } from 'web/components/widgets/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { manaToUSD } from 'common/util/format'
 import { quadraticMatches } from 'common/quadratic-funding'
-import { Txn } from 'common/txn'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
@@ -49,7 +48,6 @@ export async function getStaticProps() {
       totalRaised,
       charities: sortedCharities,
       matches,
-      txns,
       numDonors,
       mostRecentDonor,
       mostRecentCharity,
@@ -94,7 +92,6 @@ export default function Charity(props: {
   totalRaised: number
   charities: CharityType[]
   matches: { [charityId: string]: number }
-  txns: Txn[]
   numDonors: number
   mostRecentDonor?: User | null
   mostRecentCharity?: string

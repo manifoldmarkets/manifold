@@ -65,12 +65,11 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   popularityScore?: number
   dailyScore?: number
   followerCount?: number
-  likedByUserIds?: string[]
   likedByUserCount?: number
   flaggedByUsernames?: string[]
-  openCommentBounties?: number
   unlistedById?: string
   featuredLabel?: string
+  isTwitchContract?: boolean
 
   coverImageUrl?: string
 } & T

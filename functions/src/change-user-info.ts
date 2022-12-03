@@ -133,19 +133,24 @@ export const changeUser = async (
   const answerContractIds = uniq(
     answerSnap.docs.map((a) => a.get('contractId') as string)
   )
-  const answerContracts = await firestore.getAll(
-    ...answerContractIds.map((c) => firestore.collection('contracts').doc(c))
+
+  const docRefs = answerContractIds.map((c) =>
+    firestore.collection('contracts').doc(c)
   )
-  for (const doc of answerContracts) {
-    const contract = doc.data() as ChoiceContract
-    for (const a of contract.answers) {
-      if (a.userId === user.id) {
-        a.username = update.username ?? a.username
-        a.avatarUrl = update.avatarUrl ?? a.avatarUrl
-        a.name = update.name ?? a.name
+  // firestore.getall() will fail with zero params, so add this check
+  if (docRefs.length > 0) {
+    const answerContracts = await firestore.getAll(...docRefs)
+    for (const doc of answerContracts) {
+      const contract = doc.data() as ChoiceContract
+      for (const a of contract.answers) {
+        if (a.userId === user.id) {
+          a.username = update.username ?? a.username
+          a.avatarUrl = update.avatarUrl ?? a.avatarUrl
+          a.name = update.name ?? a.name
+        }
       }
+      bulkWriter.update(doc.ref, { answers: contract.answers })
     }
-    bulkWriter.update(doc.ref, { answers: contract.answers })
   }
 
   await bulkWriter.flush()

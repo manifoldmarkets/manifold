@@ -74,6 +74,7 @@ const bodySchema = z.object({
   outcomeType: z.enum(OUTCOME_TYPES),
   groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
   visibility: z.enum(VISIBILITIES).optional(),
+  isTwitchContract: z.boolean().optional(),
 })
 
 const binarySchema = z.object({
@@ -112,6 +113,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     outcomeType,
     groupId,
     visibility = 'public',
+    isTwitchContract,
   } = validate(bodySchema, body)
 
   let min, max, initialProb, isLogScale, answers
@@ -240,7 +242,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     max ?? 0,
     isLogScale ?? false,
     answers ?? [],
-    visibility
+    visibility,
+    isTwitchContract ? true : undefined
   )
 
   await contractRef.create(contract)

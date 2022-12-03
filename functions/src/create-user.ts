@@ -72,7 +72,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     nextLoanCached: 0,
     followerCountCached: 0,
-    followedCategories: DEFAULT_CATEGORIES,
+    streakForgiveness: 1,
     shouldShowWelcome: true,
     fractionResolvedCorrectly: 1,
     achievements: {},

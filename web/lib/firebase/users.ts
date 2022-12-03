@@ -3,6 +3,7 @@ import {
   collectionGroup,
   deleteDoc,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -11,10 +12,9 @@ import {
   query,
   Query,
   setDoc,
+  startAfter,
   updateDoc,
   where,
-  startAfter,
-  getCountFromServer,
 } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { app, db } from './init'
@@ -31,7 +31,6 @@ import { addUserToGroupViaId } from 'web/lib/firebase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-import { Like } from 'common/like'
 import { track } from '../service/analytics'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
@@ -245,9 +244,14 @@ export async function listAllUsers(
 }
 
 export async function getProfitRank(profit: number, period: Period) {
-  const resp = await getCountFromServer(
-    query(users, where(`profitCached.${period}`, '>', profit))
-  )
+  const q = query(users, where(`profitCached.${period}`, '>', profit))
+  const resp = await getCountFromServer(q)
+  return resp.data().count + 1
+}
+
+export async function getCreatorRank(traders: number, period: Period) {
+  const q = query(users, where(`creatorTraders.${period}`, '>', traders))
+  const resp = await getCountFromServer(q)
   return resp.data().count + 1
 }
 
@@ -357,14 +361,6 @@ export function listenForReferrals(
       setReferralIds(filterDefined(values))
     }
   )
-}
-
-export function listenForLikes(
-  userId: string,
-  setLikes: (likes: Like[]) => void
-) {
-  const likes = collection(users, userId, 'likes')
-  return listenForValues<Like>(likes, (docs) => setLikes(docs))
 }
 
 export function saveUserEvent(

@@ -155,7 +155,6 @@ export function NotificationSettings(props: {
       'loan_income',
       'limit_order_fills',
       'tips_on_your_comments',
-      'badges_awarded',
     ],
   }
   const userInteractions: SectionData = {
@@ -164,6 +163,7 @@ export function NotificationSettings(props: {
       'tagged_user',
       'on_new_follow',
       'contract_from_followed_user',
+      'user_liked_your_content',
     ],
   }
   const generalOther: SectionData = {

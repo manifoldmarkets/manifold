@@ -24,7 +24,6 @@ import { ContractComment } from 'common/comment'
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Row } from '../layout/row'
 import {
   storageStore,
@@ -42,6 +41,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetric } from 'common/contract-metric'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
+import { shortFormatNumber } from 'common/util/format'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -54,6 +54,8 @@ export function ContractTabs(props: {
   blockedUserIds: string[]
   activeIndex: number
   setActiveIndex: (i: number) => void
+  totalBets: number
+  totalPositions: number
 }) {
   const {
     contract,
@@ -64,6 +66,8 @@ export function ContractTabs(props: {
     blockedUserIds,
     activeIndex,
     setActiveIndex,
+    totalBets,
+    totalPositions,
   } = props
 
   const contractComments = useComments(contract.id) ?? props.comments
@@ -76,9 +80,12 @@ export function ContractTabs(props: {
   )
 
   const commentTitle =
-    comments.length === 0 ? 'Comments' : `${comments.length} Comments`
+    comments.length === 0
+      ? 'Comments'
+      : `${shortFormatNumber(comments.length)} Comments`
 
-  const betsTitle = bets.length === 0 ? 'Trades' : `${bets.length} Trades`
+  const betsTitle =
+    totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
@@ -88,11 +95,12 @@ export function ContractTabs(props: {
 
   const outcomes = ['YES', 'NO']
   const positions =
-    useContractMetrics(contract.id, 500, outcomes) ??
+    useContractMetrics(contract.id, 100, outcomes) ??
     props.userPositionsByOutcome
-  const totalPositions = positions.NO?.length + positions.YES?.length ?? 0
   const positionsTitle =
-    totalPositions === 0 ? 'Users' : totalPositions + ' Users'
+    totalPositions === 0
+      ? 'Users'
+      : `${shortFormatNumber(totalPositions)} Users`
 
   return (
     <ControlledTabs
@@ -115,7 +123,7 @@ export function ContractTabs(props: {
             />
           ),
         },
-        bets.length > 0 && {
+        totalBets > 0 && {
           title: betsTitle,
           content: (
             <Col className={'gap-4'}>
@@ -171,14 +179,12 @@ const BinaryUserPositionsTabContent = memo(
       outcome: 'YES' | 'NO'
     }) {
       const { position, outcome } = props
-      const { totalShares, userName, userUsername, userAvatarUrl, userId } =
-        position
+      const { totalShares, userName, userUsername, userAvatarUrl } = position
       const shares = totalShares[outcome] ?? 0
       const isMobile = useIsMobile(800)
 
       return (
         <Row
-          key={userId + outcome}
           className={clsx(
             'items-center justify-between gap-2 rounded-sm border-b p-2',
             currentUser?.id === position.userId && 'bg-amber-100',
@@ -225,7 +231,13 @@ const BinaryUserPositionsTabContent = memo(
               <span>YES shares</span>
             </Row>
             {visibleYesPositions.map((position) => {
-              return <PositionRow outcome={'YES'} position={position} />
+              return (
+                <PositionRow
+                  key={position.userId + '-YES'}
+                  outcome={'YES'}
+                  position={position}
+                />
+              )
             })}
           </Col>
           <Col className={'w-full max-w-sm gap-2'}>
@@ -233,7 +245,13 @@ const BinaryUserPositionsTabContent = memo(
               <span>NO shares</span>
             </Row>
             {visibleNoPositions.map((position) => {
-              return <PositionRow position={position} outcome={'NO'} />
+              return (
+                <PositionRow
+                  key={position.userId + '-NO'}
+                  position={position}
+                  outcome={'NO'}
+                />
+              )
             })}
           </Col>
         </Row>
@@ -272,8 +290,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     return <LoadingIndicator />
   }
 
-  const tipsOrBountiesAwarded =
-    Object.keys(tips).length > 0 || comments.some((c) => c.bountiesAwarded)
+  const likes = comments.some((c) => (c?.likes ?? 0) > 0)
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
@@ -284,13 +301,13 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const sortedComments = sortBy(comments, [
     sort === 'Best'
       ? (c) =>
-          // Is this too magic? If there are tips/bounties, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-          tipsOrBountiesAwarded &&
+          // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+          likes &&
           c.createdTime > Date.now() - 10 * MINUTE_MS &&
           c.userId === me?.id &&
           shouldBeNewestFirst(c)
             ? -Infinity
-            : -((c.bountiesAwarded ?? 0) + sum(Object.values(tips[c.id] ?? [])))
+            : -(c?.likes ?? 0)
       : (c) => c,
     (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
   ])
@@ -372,7 +389,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const items = [
     ...visibleBets.map((bet) => ({
       type: 'bet' as const,
-      id: bet.id + '-' + bet.isSold,
+      id: bet.id + '-' + (bet.isSold ? 'sold' : 'unsold'),
       bet,
     })),
     ...visibleLps.map((lp) => ({
@@ -418,19 +435,16 @@ export function SortRow(props: {
   sort: 'Best' | 'Newest'
   onSortClick: () => void
 }) {
-  const { comments, contract, sort, onSortClick } = props
+  const { comments, sort, onSortClick } = props
   if (comments.length <= 0) {
     return <></>
   }
   return (
     <Row className="mb-4 items-center justify-end gap-4">
-      <BountiedContractSmallBadge contract={contract} showAmount />
       <Row className="items-center gap-1">
         <div className="text-sm text-gray-400">Sort by:</div>
         <button className="w-20 text-sm text-gray-600" onClick={onSortClick}>
-          <Tooltip
-            text={sort === 'Best' ? 'Highest tips + bounties first.' : ''}
-          >
+          <Tooltip text={sort === 'Best' ? 'Most likes first.' : ''}>
             <Row className="items-center gap-1">
               {sort}
               <TriangleDownFillIcon className=" h-2 w-2" />

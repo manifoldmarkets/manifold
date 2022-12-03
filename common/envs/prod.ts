@@ -2,6 +2,7 @@ export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
   amplitudeApiKey?: string
+  supabaseUrl?: string
   twitchBotEndpoint?: string
   sprigEnvironmentId?: string
 
@@ -45,7 +46,6 @@ export type Economy = {
   BETTING_STREAK_BONUS_MAX?: number
   BETTING_STREAK_RESET_HOUR?: number
   FREE_MARKETS_PER_USER_MAX?: number
-  COMMENT_BOUNTY_AMOUNT?: number
   STARTING_BONUS?: number
 }
 
@@ -63,6 +63,7 @@ type FirebaseConfig = {
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
+  supabaseUrl: 'https://pxidrgkatumlvfqaxcll.supabase.co',
   sprigEnvironmentId: 'sQcrq9TDqkib',
 
   firebaseConfig: {

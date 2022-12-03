@@ -106,11 +106,13 @@ export const processPartitioned = async <T extends DocumentData, U>(
   let processed = 0
   for await (const part of parts) {
     const i = results.length
-    log(`[${i + 1}/${partitions}] Loading partition.`)
+    const tag = `${i + 1}/${partitions}`
+    log(`[${tag}] Loading partition.`)
     const ts = await part.toQuery().get()
-    processed += ts.size
-    log(`[${i + 1}/${partitions}] Loaded = ${ts.size}. Total = ${processed}.`)
+    log(`[${tag}] Loaded ${ts.size} documents.`)
     results.push(await fn(ts.docs))
+    processed += ts.size
+    log(`[${tag}] Processed ${ts.size} documents. Total: ${processed}`)
   }
   return results
 }

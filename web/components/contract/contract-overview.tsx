@@ -24,6 +24,7 @@ import {
 import { ContractDetails } from './contract-details'
 import { ContractReportResolution } from './contract-report-resolution'
 import { SizedContainer } from 'web/components/sized-container'
+import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -48,8 +49,9 @@ const SizedContractChart = (props: {
   bets: Bet[]
   fullHeight: number
   mobileHeight: number
+  betPoints: BetPoint[]
 }) => {
-  const { fullHeight, mobileHeight, contract, bets } = props
+  const { fullHeight, betPoints, mobileHeight, contract, bets } = props
   return (
     <SizedContainer fullHeight={fullHeight} mobileHeight={mobileHeight}>
       {(width, height) => (
@@ -58,6 +60,7 @@ const SizedContractChart = (props: {
           height={height}
           contract={contract}
           bets={bets}
+          betPoints={betPoints}
         />
       )}
     </SizedContainer>
@@ -87,13 +90,18 @@ const NumericOverview = (props: { contract: NumericContract; bets: Bet[] }) => {
         bets={bets}
         fullHeight={250}
         mobileHeight={150}
+        betPoints={[]}
       />
     </Col>
   )
 }
 
-const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
-  const { contract, bets } = props
+const BinaryOverview = (props: {
+  contract: BinaryContract
+  bets: Bet[]
+  betPoints: BetPoint[]
+}) => {
+  const { contract, bets, betPoints } = props
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-1 px-2">
@@ -115,6 +123,7 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         bets={bets}
         fullHeight={250}
         mobileHeight={150}
+        betPoints={betPoints}
       />
       <Row className="items-center justify-between gap-4 xl:hidden">
         {tradingAllowed(contract) && (
@@ -156,6 +165,7 @@ const ChoiceOverview = (props: {
           bets={bets}
           fullHeight={350}
           mobileHeight={250}
+          betPoints={[]}
         />
       )}
     </Col>
@@ -165,8 +175,9 @@ const ChoiceOverview = (props: {
 const PseudoNumericOverview = (props: {
   contract: PseudoNumericContract
   bets: Bet[]
+  betPoints: BetPoint[]
 }) => {
-  const { contract, bets } = props
+  const { contract, bets, betPoints } = props
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-3 px-2 sm:gap-4">
@@ -194,6 +205,7 @@ const PseudoNumericOverview = (props: {
         bets={bets}
         fullHeight={250}
         mobileHeight={150}
+        betPoints={betPoints}
       />
     </Col>
   )
@@ -202,15 +214,24 @@ const PseudoNumericOverview = (props: {
 export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
+  betPoints: BetPoint[]
 }) => {
-  const { contract, bets } = props
+  const { betPoints, contract, bets } = props
   switch (contract.outcomeType) {
     case 'BINARY':
-      return <BinaryOverview contract={contract} bets={bets} />
+      return (
+        <BinaryOverview betPoints={betPoints} contract={contract} bets={bets} />
+      )
     case 'NUMERIC':
       return <NumericOverview contract={contract} bets={bets} />
     case 'PSEUDO_NUMERIC':
-      return <PseudoNumericOverview contract={contract} bets={bets} />
+      return (
+        <PseudoNumericOverview
+          contract={contract}
+          bets={bets}
+          betPoints={betPoints}
+        />
+      )
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return <ChoiceOverview contract={contract} bets={bets} />
