@@ -42,7 +42,6 @@ export type User = {
   referredByUserId?: string
   referredByContractId?: string
   referredByGroupId?: string
-  lastPingTime?: number
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
