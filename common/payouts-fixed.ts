@@ -33,11 +33,15 @@ export const getStandardFixedPayouts = (
   bets: Bet[],
   liquidities: LiquidityProvision[]
 ) => {
-  const winningBets = bets.filter((bet) => bet.outcome === outcome)
+  const winningBets = bets.filter(
+    (bet) =>
+      bet.outcome === outcome ||
+      (bet.sharesByOutcome && bet.sharesByOutcome[outcome])
+  )
 
-  const payouts = winningBets.map(({ userId, shares }) => ({
+  const payouts = winningBets.map(({ userId, shares, sharesByOutcome }) => ({
     userId,
-    payout: shares,
+    payout: sharesByOutcome ? sharesByOutcome[outcome] ?? 0 : shares,
   }))
 
   const { collectedFees } = contract
