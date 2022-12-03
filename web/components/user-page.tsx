@@ -38,7 +38,6 @@ import {
   DOMAIN,
   ENV_CONFIG,
 } from 'common/envs/constants'
-import { BadgeDisplay } from 'web/components/badge-display'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
@@ -48,6 +47,7 @@ import { buttonClass } from './buttons/button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { BotBadge, CoreBadge, PostBanBadge } from './widgets/user-link'
 import Link from 'next/link'
+import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -119,7 +119,6 @@ export function UserPage(props: { user: User }) {
                 </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
-                  <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
               <Row
@@ -329,7 +328,7 @@ export function ProfilePublicStats(props: { user: User; className?: string }) {
       <FollowersButton user={user} className={className} />
       {/* <ReferralsButton user={user} className={className} /> */}
       <GroupsButton user={user} className={className} />
-      {/* <UserLikesButton user={user} className={className} /> */}
+      <UserLikedContractsButton user={user} className={className} />
     </Row>
   )
 }

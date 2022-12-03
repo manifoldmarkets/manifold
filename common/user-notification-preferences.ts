@@ -47,13 +47,13 @@ export type notification_preferences = {
 
   // General
   tagged_user: notification_destination_types[]
+  user_liked_your_content: notification_destination_types[]
   on_new_follow: notification_destination_types[]
   contract_from_followed_user: notification_destination_types[]
   trending_markets: notification_destination_types[]
   profit_loss_updates: notification_destination_types[]
   onboarding_flow: notification_destination_types[]
   thank_you_for_purchases: notification_destination_types[]
-  badges_awarded: notification_destination_types[]
   opt_out_all: notification_destination_types[]
   // When adding a new notification preference, use add-new-notification-preference.ts to existing users
 }
@@ -156,9 +156,9 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     probability_updates_on_watched_markets: constructPref(true, false, true),
     thank_you_for_purchases: constructPref(false, false, false),
     onboarding_flow: constructPref(true, true, false),
+    user_liked_your_content: constructPref(true, false, false),
 
     opt_out_all: [],
-    badges_awarded: constructPref(true, false, false),
   }
   return defaults
 }

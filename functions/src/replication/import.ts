@@ -7,7 +7,7 @@ import {
 import { SupabaseClient } from '@supabase/supabase-js'
 import { chunk } from 'lodash'
 
-import { createSupabaseClient, run } from './utils'
+import { createSupabaseClient, runWithRetries } from './utils'
 import { log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 import { DocumentKind } from '../../../common/transaction-log'
@@ -19,23 +19,10 @@ import { DocumentKind } from '../../../common/transaction-log'
 // 4. read collection C from firestore with effective timestamp T1 and send supabase writes
 // 5. supabase should be caught up
 
-type SupabaseRow = { [k: string]: any }
-
 async function getServerTimestamp() {
   // firestore doesn't seem to have an API to just ask for the time, so we do this kludge
   const result = await admin.firestore().collection('temp').doc('time').get()
   return result.readTime.toDate()
-}
-
-async function upsertBatched(
-  client: SupabaseClient,
-  table: string,
-  rows: SupabaseRow[],
-  batchSize = 100
-) {
-  for (const rs of chunk(rows, batchSize)) {
-    await run(client.from(table).upsert(rs))
-  }
 }
 
 function getWriteRow(
@@ -55,55 +42,84 @@ function getWriteRow(
 async function importCollection(
   client: SupabaseClient,
   source: CollectionReference,
-  docKind: DocumentKind
+  docKind: DocumentKind,
+  batchSize: number
 ) {
+  log(`Preparing to import ${docKind} documents.`)
   const t1 = await getServerTimestamp()
-  log(`Import kind: ${docKind}. Effective timestamp: ${t1.toISOString()}.`)
+  const n = (await source.count().get()).data().count
+  log(`Documents to import: ${n}. Timestamp: ${t1.toISOString()}.`)
+
   const snaps = await source.get()
   log(`Loaded ${snaps.size} documents.`)
-  const rows = snaps.docs.map((d) => getWriteRow(d, docKind, t1))
-  await upsertBatched(client, 'incoming_writes', rows)
+  for (const batch of chunk(snaps.docs, batchSize)) {
+    const rows = batch.map((d) => getWriteRow(d, docKind, t1))
+    await runWithRetries(client.from('incoming_writes').insert(rows))
+    log(`Processed ${rows.length} documents.`)
+  }
   log(`Imported ${snaps.size} documents.`)
 }
 
 async function importCollectionGroup(
   client: SupabaseClient,
   source: CollectionGroup,
-  partitions: number,
-  docKind: DocumentKind
+  docKind: DocumentKind,
+  predicate: (d: QueryDocumentSnapshot) => boolean,
+  batchSize: number
 ) {
+  log(`Preparing to import ${docKind} documents.`)
   const t1 = await getServerTimestamp()
-  log(`Import kind: ${docKind}. Effective timestamp: ${t1.toISOString()}.`)
+  const n = (await source.count().get()).data().count
+  log(`Documents to import: ${n}. Timestamp: ${t1.toISOString()}.`)
+
+  // partitions are different sizes so be conservative
+  const partitions = Math.ceil(n / batchSize) * 2
   await processPartitioned(source, partitions, async (docs) => {
-    const rows = docs.map((d) => getWriteRow(d, docKind, t1))
-    await upsertBatched(client, 'incoming_writes', rows)
+    const rows = docs.filter(predicate).map((d) => getWriteRow(d, docKind, t1))
+    await runWithRetries(client.from('incoming_writes').insert(rows))
   })
 }
 
-async function importDatabase() {
+async function importDatabase(kinds?: string[]) {
   const firestore = admin.firestore()
   const client = createSupabaseClient()
-  await importCollection(client, firestore.collection('txns'), 'txn')
-  await importCollection(client, firestore.collection('groups'), 'group')
-  await importCollection(client, firestore.collection('users'), 'user')
-  await importCollection(client, firestore.collection('contracts'), 'contract')
-  await importCollectionGroup(
-    client,
-    firestore.collectionGroup('bets'),
-    100,
-    'contractBet'
-  )
-  await importCollectionGroup(
-    client,
-    firestore.collectionGroup('comments'),
-    10,
-    'contractComment'
-  )
+  const shouldImport = (k: DocumentKind) => kinds == null || kinds.includes(k)
+
+  if (shouldImport('txn'))
+    await importCollection(client, firestore.collection('txns'), 'txn', 1000)
+  if (shouldImport('group'))
+    await importCollection(client, firestore.collection('groups'), 'group', 100)
+  if (shouldImport('user'))
+    await importCollection(client, firestore.collection('users'), 'user', 100)
+  if (shouldImport('contract'))
+    await importCollection(
+      client,
+      firestore.collection('contracts'),
+      'contract',
+      100
+    )
+  if (shouldImport('contractBet'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('bets'),
+      'contractBet',
+      (_) => true,
+      1000
+    )
+  if (shouldImport('contractComment'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('comments'),
+      'contractComment',
+      (c) => c.get('commentType') === 'contract',
+      100
+    )
 }
 
 if (require.main === module) {
   initAdmin()
-  importDatabase()
+  const args = process.argv.slice(2)
+  importDatabase(args.length > 0 ? args : undefined)
     .then(() => {
       log('Finished importing.')
     })

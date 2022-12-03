@@ -103,3 +103,14 @@ export const DESTINY_GROUP_SLUGS = [
   'eto',
   'mumbowl-stonks',
 ]
+
+export const HOME_BLOCKED_GROUP_SLUGS = [
+  'fun',
+  'selfresolving',
+  'experimental',
+  'trading-bots',
+  'gambling',
+  'free-money',
+  'whale-watching',
+  'spam',
+]

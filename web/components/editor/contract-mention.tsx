@@ -1,25 +1,20 @@
 import Mention from '@tiptap/extension-mention'
-import {
-  mergeAttributes,
-  NodeViewWrapper,
-  ReactNodeViewRenderer,
-} from '@tiptap/react'
-import clsx from 'clsx'
-import { ContractMention } from 'web/components/contract/contract-mention'
+import { ContractMention as LoadedContractMention } from 'web/components/contract/contract-mention'
 import Link from 'next/link'
 import { contractMentionSuggestion } from './contract-mention-suggestion'
 import { useContract } from 'web/hooks/use-contracts'
+import { mergeAttributes } from '@tiptap/core'
 
 const name = 'contract-mention-component'
 
-const ContractMentionComponent = (props: any) => {
-  const { label, id } = props.node.attrs
+const ContractMention = (attrs: any) => {
+  const { label, id } = attrs
   const contract = useContract(id)
 
   return (
-    <NodeViewWrapper className={clsx(name, 'not-prose inline')}>
+    <span className="not-prose">
       {contract ? (
-        <ContractMention contract={contract} />
+        <LoadedContractMention contract={contract} />
       ) : label ? (
         <Link
           href={label}
@@ -30,7 +25,7 @@ const ContractMentionComponent = (props: any) => {
       ) : (
         '[loading...]'
       )}
-    </NodeViewWrapper>
+    </span>
   )
 }
 
@@ -41,15 +36,12 @@ const ContractMentionComponent = (props: any) => {
  */
 export const DisplayContractMention = Mention.extend({
   name: 'contract-mention',
-  parseHTML: () => [{ tag: `a[data-type="${name}"]` }],
-  renderHTML: ({ HTMLAttributes: { 'data-label': slug } }) => [
-    'a',
-    mergeAttributes({
-      'data-type': name,
-      href: slug,
-      class: 'hover:bg-indigo-50 focus:bg-indigo-50',
-    }),
-    slug,
+  parseHTML: () => [{ tag: 'name' }, { tag: `a[data-type="${name}"]` }],
+  renderHTML: ({ HTMLAttributes }) => [
+    name,
+    mergeAttributes(HTMLAttributes),
+    0,
   ],
-  addNodeView: () => ReactNodeViewRenderer(ContractMentionComponent),
+
+  renderReact: (attrs: any) => <ContractMention {...attrs} />,
 }).configure({ suggestion: contractMentionSuggestion })
