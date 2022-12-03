@@ -35,7 +35,7 @@ export function FilterSelectUsers(props: {
       setFilteredUsers(
         users.filter((user: User) => {
           return (
-            !selectedUsers.some(({name}) => name === user.name) &&
+            !selectedUsers.some(({ name }) => name === user.name) &&
             !ignoreUserIds.includes(user.id) &&
             searchInAny(query, user.name, user.username)
           )
