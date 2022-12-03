@@ -10,8 +10,6 @@ import {
   notification_preference,
 } from 'common/user-notification-preferences'
 import { usePrivateUser } from 'web/hooks/use-user'
-import EnvelopeClosedIcon from 'web/lib/icons/envelope-closed-icon'
-import EnvelopeOpenIcon from 'web/lib/icons/envelope-open-icon'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Spacer } from '../layout/spacer'
 import {
@@ -19,11 +17,7 @@ import {
   getUsersSavedPreference,
   notificationIsNecessary,
 } from '../notification-settings'
-import {
-  getHighlightClass,
-  markNotificationAsSeen,
-  markNotificationAsUnseen,
-} from './notification-helpers'
+import { getHighlightClass } from './notification-helpers'
 
 export default function NotificationDropdown(props: {
   notification: Notification
@@ -80,8 +74,8 @@ function useNotificationPreferenceItem(notification: Notification) {
     return [
       {
         name: inAppEnabled
-          ? 'Turn OFF this type of notification'
-          : 'Turn ON this type of notification',
+          ? 'Turn off this type of notification'
+          : 'Turn on this type of notification',
         icon: inAppEnabled ? (
           <MinusCircleIcon className="h-5 w-5" />
         ) : (

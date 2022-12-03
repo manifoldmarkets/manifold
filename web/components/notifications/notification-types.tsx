@@ -10,6 +10,7 @@ import { formatMoney } from 'common/util/format'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
 import { IncomeNotificationItem } from 'web/components/notifications/income-summary-notifications'
 import {
   BinaryOutcomeLabel,
@@ -27,8 +28,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
-import { useUser } from 'web/hooks/use-user'
 
 export function NotificationItem(props: {
   notification: Notification

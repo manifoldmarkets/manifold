@@ -222,9 +222,6 @@ function NotificationGroupItem(props: {
   const { notifications } = notificationGroup
   const groupHighlighted = notifications.some((n) => !n.isSeen)
   const { sourceTitle, sourceContractTitle } = notifications[0]
-  const [highlighted, setHighlighted] = useState(
-    notifications.some((n) => !n.isSeen)
-  )
   const combinedNotifs = combineReactionNotifications(
     notifications.filter((n) =>
       ReactionNotificationTypes.includes(n.sourceType)
