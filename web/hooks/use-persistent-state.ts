@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useStateCheckEquality } from './use-state-check-equality'
 import { NextRouter, useRouter } from 'next/router'
+import { useHasLoaded } from './use-has-loaded'
 
 export type PersistenceOptions<T> = { key: string; store: PersistentStore<T> }
 
@@ -106,9 +107,15 @@ export const usePersistentState = <T>(
 ) => {
   const store = persist?.store
   const key = persist?.key
-  // note that it's important in some cases to get the state correct during the
-  // first render, or scroll restoration won't take into account the saved state
-  const savedValue = key != null && store != null ? store.get(key) : undefined
+  const hasLoaded = useHasLoaded()
+
+  // Note that it's important in some cases to get the state correct during the
+  // first render, or scroll restoration won't take into account the saved state.
+  // However, if this is the first server render, we don't want to read from the store,
+  // because it could cause a hydration error.
+  const savedValue =
+    hasLoaded && key != null && store != null ? store.get(key) : undefined
+
   const [state, setState] = useStateCheckEquality(savedValue ?? initial)
   useEffect(() => {
     if (key != null && store != null) {
