@@ -11,10 +11,7 @@ import { ProfitBadge } from '../profit-badge'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ENV_CONFIG } from 'common/envs/constants'
 
-export function BetsSummary(props: {
-  contract: Contract
-  className?: string
-}) {
+export function BetsSummary(props: { contract: Contract; className?: string }) {
   const { contract, className } = props
   const { resolution, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
