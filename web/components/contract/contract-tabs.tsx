@@ -42,11 +42,11 @@ import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetric } from 'common/contract-metric'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
 import { shortFormatNumber } from 'common/util/format'
+import { useBets } from 'web/hooks/use-bets'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
-  userBets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
   answerResponse?: Answer | undefined
@@ -60,7 +60,6 @@ export function ContractTabs(props: {
   const {
     contract,
     bets,
-    userBets,
     answerResponse,
     onCancelAnswerResponse,
     blockedUserIds,
@@ -83,6 +82,14 @@ export function ContractTabs(props: {
     comments.length === 0
       ? 'Comments'
       : `${shortFormatNumber(comments.length)} Comments`
+
+  const user = useUser()
+  const userBets =
+    useBets({
+      contractId: contract.id,
+      userId: user?.id ?? '_',
+      filterAntes: true,
+    }) ?? []
 
   const betsTitle =
     totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`

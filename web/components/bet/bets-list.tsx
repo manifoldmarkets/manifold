@@ -372,7 +372,6 @@ function ContractBets(props: {
           <BetsSummary
             className="mt-8 mr-5 flex-1 sm:mr-8"
             contract={contract}
-            userBets={bets}
           />
 
           {isYourBets &&

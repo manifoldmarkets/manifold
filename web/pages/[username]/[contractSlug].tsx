@@ -212,12 +212,6 @@ export function ContractPageContent(
 
   const creator = useUserById(contract.creatorId) ?? null
 
-  const userBets = useBets({
-    contractId: contract.id,
-    userId: user?.id ?? '_',
-    filterAntes: true,
-  })
-
   const { isResolved, question, outcomeType } = contract
 
   const allowTrade = tradingAllowed(contract)
@@ -330,11 +324,7 @@ export function ContractPageContent(
           </>
         )}
 
-        <BetsSummary
-          className="mb-4 px-2"
-          contract={contract}
-          userBets={userBets}
-        />
+        <BetsSummary className="mb-4 px-2" contract={contract} />
 
         <div ref={tabsContainerRef}>
           <ContractTabs
@@ -342,7 +332,6 @@ export function ContractPageContent(
             contract={contract}
             bets={bets}
             totalBets={totalBets}
-            userBets={userBets ?? []}
             comments={comments}
             userPositionsByOutcome={userPositionsByOutcome}
             answerResponse={answerResponse}

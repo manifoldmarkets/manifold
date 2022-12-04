@@ -40,7 +40,6 @@ import { Tooltip } from '../widgets/tooltip'
 import { Card } from '../widgets/card'
 import { useContract } from 'web/hooks/use-contracts'
 import { memo, ReactNode } from 'react'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
@@ -420,8 +419,7 @@ export function ContractMetricsFooter(props: {
   const { contract, showDailyProfit } = props
 
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
-  const metrics = useSavedContractMetrics(contract, userBets)
+  const metrics = useSavedContractMetrics(contract)
 
   return user && metrics && metrics.hasShares ? (
     <LoadedMetricsFooter

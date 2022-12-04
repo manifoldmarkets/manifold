@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 
-import { Bet } from 'web/lib/firebase/bets'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
@@ -14,15 +13,13 @@ import { ENV_CONFIG } from 'common/envs/constants'
 
 export function BetsSummary(props: {
   contract: Contract
-  userBets: Bet[] | undefined
   className?: string
 }) {
   const { contract, className } = props
   const { resolution, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
-  const bets = props.userBets?.filter((b) => !b.isAnte)
-  const metrics = useSavedContractMetrics(contract, bets)
+  const metrics = useSavedContractMetrics(contract)
 
   if (!metrics) return <></>
 
