@@ -135,7 +135,13 @@ export default function WorldCup(props: {
   playerRatings: Contract[]
   generalMarkets: Contract[]
 }) {
-  const { groupWinners, groupRunnerups, playerRatings, generalMarkets } = props
+  const {
+    groupWinners,
+    groupRunnerups,
+    roundOf16,
+    playerRatings,
+    generalMarkets,
+  } = props
 
   const isMobile = useIsMobile()
 
@@ -193,33 +199,25 @@ export default function WorldCup(props: {
 
           {/* Might want to put an image or something here. */}
 
-          {/*
-          <div className="mb-2  text-3xl text-indigo-500">
-            Market of the Day
-          </div>
-
-          <div className="mb-4 text-base text-gray-500">
-            Every day we will feature a market that we think is interesting.
-            These markets will only last for 24 hours, so make sure to get your
-            bets in!
-          </div>
-
-          <div className="flex items-center justify-center">
-            {dailyMarkets.map((contract) => (
+          <div className="mb-2 text-3xl text-indigo-700">Round of 16</div>
+          <Spacer h={4} />
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {roundOf16.map((contract) => (
               <ContractCard
-                className={isMobile ? 'w-full' : 'w-1/2'}
                 key={contract.slug}
                 contract={contract}
+                hideDetails={false}
                 showImage={true}
-                hideDetails={true}
+                className="mb-4"
               />
             ))}
-          </div>
+          </Masonry>
 
-          <Spacer h={4} />
-          <Divider />
-
-          <Spacer h={8} />*/}
+          <Spacer h={8} />
 
           <div className="mb-2 text-3xl text-indigo-700">Group Stage </div>
           {isMobile && (

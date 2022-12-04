@@ -37,7 +37,6 @@ export type User = {
   nextLoanCached: number
   followerCountCached: number
 
-  followedCategories?: string[]
   homeSections?: string[]
 
   referredByUserId?: string
@@ -47,6 +46,7 @@ export type User = {
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
+  streakForgiveness: number
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
   userDeleted?: boolean

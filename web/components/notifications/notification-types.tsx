@@ -4,6 +4,7 @@ import {
   ContractResolutionData,
   getSourceUrl,
   Notification,
+  ReactionNotificationTypes,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
 import { useState } from 'react'
@@ -27,6 +28,7 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
+import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -155,6 +157,14 @@ export function NotificationItem(props: {
   } else if (sourceType === 'challenge') {
     return (
       <ChallengeNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+      />
+    )
+  } else if (ReactionNotificationTypes.includes(sourceType)) {
+    return (
+      <UserLikeNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -640,6 +650,48 @@ function TaggedUserNotification(props: {
           </span>
         )}
       </>
+    </NotificationFrame>
+  )
+}
+function UserLikeNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, isChildOfGroup } = props
+  const [open, setOpen] = useState(false)
+  const { sourceUserName, sourceType, sourceText } = notification
+  const otherRelatedNotifications: Notification[] =
+    notification.data?.otherNotifications ?? []
+  const multipleReactions = otherRelatedNotifications.length > 1
+  const reactorsText = multipleReactions
+    ? `${sourceUserName} & ${otherRelatedNotifications.length - 1} other${
+        otherRelatedNotifications.length - 1 > 1 ? 's' : ''
+      }`
+    : sourceUserName
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'❤️'} />
+      }
+      onClick={() => setOpen(true)}
+      subtitle={
+        sourceType === 'comment_like' ? <Linkify text={sourceText} /> : <></>
+      }
+    >
+      {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
+      your
+      {sourceType === 'comment_like' ? ' comment on ' : ' market '}
+      <QuestionOrGroupLink notification={notification} />
+      <MultiUserReactionModal
+        similarNotifications={otherRelatedNotifications}
+        modalLabel={'Who dunnit?'}
+        open={open}
+        setOpen={setOpen}
+      />
     </NotificationFrame>
   )
 }

@@ -8,7 +8,6 @@ type AnyTxnType =
   | UniqueBettorBonus
   | BettingStreakBonus
   | CancelUniqueBettorBonus
-  | CommentBountyRefund
   | ManaPurchase
   | SignupBonus
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
@@ -34,8 +33,6 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'UNIQUE_BETTOR_BONUS'
     | 'BETTING_STREAK_BONUS'
     | 'CANCEL_UNIQUE_BETTOR_BONUS'
-    | 'COMMENT_BOUNTY'
-    | 'REFUND_COMMENT_BOUNTY'
     | 'MANA_PURCHASE'
     | 'SIGNUP_BONUS'
 
@@ -105,35 +102,6 @@ type CancelUniqueBettorBonus = {
   }
 }
 
-type CommentBountyDeposit = {
-  fromType: 'USER'
-  toType: 'BANK'
-  category: 'COMMENT_BOUNTY'
-  data: {
-    contractId: string
-  }
-}
-
-type CommentBountyWithdrawal = {
-  fromType: 'BANK'
-  toType: 'USER'
-  category: 'COMMENT_BOUNTY'
-  data: {
-    contractId: string
-    commentId: string
-  }
-}
-
-// Not currently used
-type CommentBountyRefund = {
-  fromType: 'BANK'
-  toType: 'USER'
-  category: 'REFUND_COMMENT_BOUNTY'
-  data: {
-    contractId: string
-  }
-}
-
 type ManaPurchase = {
   fromType: 'BANK'
   toType: 'USER'
@@ -157,7 +125,5 @@ export type ReferralTxn = Txn & Referral
 export type BettingStreakBonusTxn = Txn & BettingStreakBonus
 export type UniqueBettorBonusTxn = Txn & UniqueBettorBonus
 export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus
-export type CommentBountyDepositTxn = Txn & CommentBountyDeposit
-export type CommentBountyWithdrawalTxn = Txn & CommentBountyWithdrawal
 export type ManaPurchaseTxn = Txn & ManaPurchase
 export type SignupBonusTxn = Txn & SignupBonus

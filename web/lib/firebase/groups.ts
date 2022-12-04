@@ -211,7 +211,7 @@ export async function removeContractFromGroup(
   group: Group,
   contract: Contract
 ) {
-  if (contract.groupLinks?.map((l) => l.groupId).includes(group.id)) {
+  if (contract.groupLinks?.some((l) => l.groupId === group.id)) {
     const newGroupLinks = contract.groupLinks?.filter(
       (link) => link.slug !== group.slug
     )

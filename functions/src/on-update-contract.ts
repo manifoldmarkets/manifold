@@ -88,7 +88,7 @@ async function handleContractGroupUpdated(
     // Contract was removed from a group
     const groupId = previousContract.groupLinks?.find(
       (link) =>
-        !contract.groupLinks?.map((l) => l.groupId).includes(link.groupId)
+        !contract.groupLinks?.some((l) => l.groupId === link.groupId)
     )?.groupId
     if (!groupId) throw new Error('Could not find old group id')
 

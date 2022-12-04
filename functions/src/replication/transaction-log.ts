@@ -3,9 +3,10 @@ import { CollectionReference, DocumentSnapshot } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions'
 import { Change, EventContext } from 'firebase-functions'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { chunk } from 'lodash'
+
 import { createSupabaseClient, run } from './utils'
 import { DocumentKind, TLEntry } from '../../../common/transaction-log'
-import { isProd } from '../utils'
 
 function getWriteInfo<T>(change: Change<DocumentSnapshot<T>>) {
   const { before, after } = change
@@ -72,14 +73,10 @@ export const logContractComments = logger(
   'contractComment'
 )
 
-//TODO: We don't have a supabase replica/key for prod yet
-const runtimeOpts = isProd() ? {} : { secrets: ['SUPABASE_KEY'] }
 export const replicateLogToSupabase = functions
-  .runWith(runtimeOpts)
+  .runWith({ secrets: ['SUPABASE_KEY'] })
   .firestore.document('transactionLog/{eventId}')
   .onCreate(async (doc) => {
-    //TODO: We don't have a supabase replica for prod yet
-    if (isProd()) return
     const entry = doc.data() as TLEntry
     try {
       await replicateWrites(createSupabaseClient(), entry)
@@ -100,11 +97,9 @@ export const replicateLogToSupabase = functions
   })
 
 export const replayFailedSupabaseWrites = functions
-  .runWith(runtimeOpts)
+  .runWith({ secrets: ['SUPABASE_KEY'] })
   .pubsub.schedule('every 1 minutes')
   .onRun(async () => {
-    //TODO: We don't have a supabase replica for prod yet
-    if (isProd()) return
     const firestore = admin.firestore()
     const failedWrites = firestore
       .collection('replicationState')
@@ -117,13 +112,21 @@ export const replayFailedSupabaseWrites = functions
 
     console.log(`Attempting to replay ${snap.size} write(s)...`)
     const client = createSupabaseClient()
-    const entries = snap.docs.map((d) => d.data() as TLEntry)
-    await replicateWrites(client, ...entries)
-
-    console.log(`Removing old failed writes from log...`)
     const deleter = firestore.bulkWriter({ throttling: false })
-    for (const doc of snap.docs) {
-      deleter.delete(doc.ref)
+    try {
+      for (const batch of chunk(snap.docs, 1000)) {
+        const eventRefs = snap.docs.map((d) =>
+          firestore.collection('transactionLog').doc(d.id)
+        )
+        const eventDocs = await firestore.getAll(...eventRefs)
+        const entries = eventDocs.map((d) => d.data() as TLEntry)
+        await replicateWrites(client, ...entries)
+        for (const doc of batch) {
+          deleter.delete(doc.ref)
+        }
+      }
+    } catch (e) {
+      console.error(e)
     }
     await deleter.close()
   })

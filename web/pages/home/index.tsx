@@ -4,7 +4,7 @@ import { PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
-import { sortBy, sum } from 'lodash'
+import { difference, sortBy, sum } from 'lodash'
 import { chooseRandomSubset } from 'common/util/random'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
@@ -32,7 +32,7 @@ import { getGroup, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
-import { filterDefined } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 import { getUsersBlockFacetFilters, updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
 import { Contract, CPMMBinaryContract } from 'common/contract'
@@ -68,7 +68,11 @@ import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { GroupCard } from '../groups'
-import { BACKGROUND_COLOR, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import {
+  BACKGROUND_COLOR,
+  DESTINY_GROUP_SLUGS,
+  HOME_BLOCKED_GROUP_SLUGS,
+} from 'common/envs/constants'
 import Link from 'next/link'
 import { MINUTE_MS } from 'common/util/time'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
@@ -91,13 +95,21 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   )
   const userBlockFacetFilters = useMemo(() => {
     if (!privateUser) return undefined
+    const followedGroupSlugs = followedGroupIds?.map((g) => g.slug) ?? []
 
-    return getUsersBlockFacetFilters(privateUser).concat(
-      shouldFilterDestiny
-        ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
-        : []
+    const destinyFilters = shouldFilterDestiny
+      ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
+      : []
+    const homeBlockedFilters = difference(
+      HOME_BLOCKED_GROUP_SLUGS,
+      followedGroupSlugs
+    ).map((slug) => `groupSlugs:-${slug}`)
+    return buildArray(
+      getUsersBlockFacetFilters(privateUser),
+      destinyFilters,
+      homeBlockedFilters
     )
-  }, [privateUser, shouldFilterDestiny])
+  }, [privateUser, followedGroupIds, shouldFilterDestiny])
 
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig

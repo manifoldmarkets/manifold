@@ -162,7 +162,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
       (doc) => doc.data() as { userId: string; createdTime: number }
     )
     if (
-      !groupMemberDocs.map((m) => m.userId).includes(userId) &&
+      !groupMemberDocs.some((m) => m.userId === userId) &&
       !group.anyoneCanJoin &&
       group.creatorId !== userId
     ) {
@@ -266,7 +266,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
       (doc) => doc.data() as { contractId: string; createdTime: number }
     )
 
-    if (!groupContracts.map((c) => c.contractId).includes(contractRef.id)) {
+    if (!groupContracts.some((c) => c.contractId === contractRef.id)) {
       await createGroupLinks(group, [contractRef.id], auth.uid)
 
       const groupContractRef = firestore
@@ -392,7 +392,7 @@ async function createGroupLinks(
           groupSlugs: uniq([group.slug, ...(contract?.groupSlugs ?? [])]),
         })
     }
-    if (!contract?.groupLinks?.map((gl) => gl.groupId).includes(group.id)) {
+    if (!contract?.groupLinks?.some((gl) => gl.groupId === group.id)) {
       await firestore
         .collection('contracts')
         .doc(contractId)
