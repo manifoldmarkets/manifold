@@ -61,8 +61,16 @@ const round_of_16 = [
   'who-will-be-man-of-the-match-in-fra',
   'will-england-beat-senegal',
   'who-will-be-man-of-the-match-in-eng',
-  // Mon 5th TBD
+  // Mon 5th
+  'will-croatia-eliminate-japan-687997d7af70',
+  'who-will-be-man-of-the-match-in-cro',
+  'will-brazil-eliminate-south-korea',
+  'who-will-be-man-of-the-match-in-bra',
   // Tue 6h TBD
+  'will-spain-eliminate-morocco',
+  'who-will-be-man-of-the-match-in-spa',
+  'will-portugal-eliminate-switzerland',
+  'who-will-be-man-of-the-match-in-por',
 ] as string[]
 const quarter_finals = [] as string[]
 const semifinals = [] as string[]
