@@ -55,9 +55,11 @@ export const useLiveBets = (count: number, options?: BetFilter) => {
 }
 
 export const useOpenLimitBets = (userId: string) => {
-  const openLimitBets = useBets({ userId: userId, isOpenLimitOrder: true }) as
-    | LimitBet[]
-    | undefined
+  const openLimitBets = useBets({
+    userId: userId,
+    isOpenLimitOrder: true,
+    limit: 1000,
+  }) as LimitBet[] | undefined
   const [savedBets, setSavedBets] = usePersistentState<LimitBet[] | undefined>(
     undefined,
     {
