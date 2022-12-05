@@ -27,4 +27,5 @@ export type ContractMetric = {
   userUsername: string
   userName: string
   userAvatarUrl: string
+  lastBetTime: number
 }

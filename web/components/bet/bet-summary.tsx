@@ -10,13 +10,18 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { ContractMetric } from 'common/contract-metric'
 
-export function BetsSummary(props: { contract: Contract; className?: string }) {
+export function BetsSummary(props: {
+  contract: Contract
+  initialMetrics?: ContractMetric
+  className?: string
+}) {
   const { contract, className } = props
   const { resolution, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
-  const metrics = useSavedContractMetrics(contract)
+  const metrics = useSavedContractMetrics(contract) ?? props.initialMetrics
 
   if (!metrics) return <></>
 

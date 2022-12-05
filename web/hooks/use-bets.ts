@@ -53,3 +53,24 @@ export const useLiveBets = (count: number, options?: BetFilter) => {
 
   return bets
 }
+
+export const useOpenLimitBets = (userId: string) => {
+  const openLimitBets = useBets({ userId: userId, isOpenLimitOrder: true }) as
+    | LimitBet[]
+    | undefined
+  const [savedBets, setSavedBets] = usePersistentState<LimitBet[] | undefined>(
+    undefined,
+    {
+      key: `open-limit-bets-${userId}`,
+      store: inMemoryStore(),
+    }
+  )
+
+  useEffect(() => {
+    if (openLimitBets) {
+      setSavedBets(openLimitBets)
+    }
+  }, [openLimitBets, setSavedBets])
+
+  return openLimitBets ?? savedBets
+}
