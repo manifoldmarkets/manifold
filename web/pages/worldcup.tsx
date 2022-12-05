@@ -8,8 +8,6 @@ import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Spacer } from 'web/components/layout/spacer'
-import { Tabs } from 'web/components/layout/tabs'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 const group_winners = [
   // groups A through H
@@ -43,29 +41,29 @@ const player_ratings = [
 
 const general_markets = [
   'which-team-will-win-the-2022-fifa-w',
-  'will-a-team-score-7-or-more-goals-i',
-  'will-any-national-team-captain-wear',
-  'will-germany-reach-the-world-cup-qu',
+  // 'will-a-team-score-7-or-more-goals-i',
+  // 'will-any-national-team-captain-wear',
+  // 'will-germany-reach-the-world-cup-qu',
   'will-we-have-a-messi-vs-ronaldo-fin',
 ] as string[]
 
 const round_of_16 = [
-  // Sat 3rd
-  'will-the-netherlands-beat-the-usa',
-  'who-will-be-man-of-the-match-in-the',
-  'will-argentina-beat-australia',
-  'who-will-be-man-of-the-match-in-arg',
+  // // Sat 3rd
+  // 'will-the-netherlands-beat-the-usa',
+  // 'who-will-be-man-of-the-match-in-the',
+  // 'will-argentina-beat-australia',
+  // 'who-will-be-man-of-the-match-in-arg',
 
-  // Sun 4th
-  'will-france-beat-poland',
-  'who-will-be-man-of-the-match-in-fra',
-  'will-england-beat-senegal',
-  'who-will-be-man-of-the-match-in-eng',
+  // // Sun 4th
+  // 'will-france-beat-poland',
+  // 'who-will-be-man-of-the-match-in-fra',
+  // 'will-england-beat-senegal',
+  // 'who-will-be-man-of-the-match-in-eng',
   // Mon 5th
-  'will-croatia-eliminate-japan-687997d7af70',
-  'who-will-be-man-of-the-match-in-cro',
-  'will-brazil-eliminate-south-korea',
-  'who-will-be-man-of-the-match-in-bra',
+  // 'will-croatia-eliminate-japan-687997d7af70',
+  // 'who-will-be-man-of-the-match-in-cro',
+  // 'will-brazil-eliminate-south-korea',
+  // 'who-will-be-man-of-the-match-in-bra',
   // Tue 6h TBD
   'will-spain-eliminate-morocco',
   'who-will-be-man-of-the-match-in-spa',
@@ -135,45 +133,38 @@ export default function WorldCup(props: {
   playerRatings: Contract[]
   generalMarkets: Contract[]
 }) {
-  const {
-    groupWinners,
-    groupRunnerups,
-    roundOf16,
-    playerRatings,
-    generalMarkets,
-  } = props
+  const { roundOf16, playerRatings, generalMarkets } = props
 
-  const isMobile = useIsMobile()
+  // const isMobile = useIsMobile()
+  // const groupWinnerTab = (
+  //   <>
+  //     <Spacer h={4} />
+  //     <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
+  //       {groupWinners.map((contract, index) => (
+  //         <GroupComponent
+  //           key={contract.id}
+  //           group={contract}
+  //           title={`GROUP ${String.fromCharCode(65 + index)} (1st Place)`}
+  //         />
+  //       ))}
+  //     </div>
+  //   </>
+  // )
 
-  const groupWinnerTab = (
-    <>
-      <Spacer h={4} />
-      <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
-        {groupWinners.map((contract, index) => (
-          <GroupComponent
-            key={contract.id}
-            group={contract}
-            title={`GROUP ${String.fromCharCode(65 + index)} (1st Place)`}
-          />
-        ))}
-      </div>
-    </>
-  )
-
-  const groupRunnerupTab = (
-    <>
-      <Spacer h={4} />
-      <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
-        {groupRunnerups.map((contract, index) => (
-          <GroupComponent
-            key={contract.id}
-            group={contract}
-            title={`GROUP ${String.fromCharCode(65 + index)} (2nd Place)`}
-          />
-        ))}
-      </div>
-    </>
-  )
+  // const groupRunnerupTab = (
+  //   <>
+  //     <Spacer h={4} />
+  //     <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
+  //       {groupRunnerups.map((contract, index) => (
+  //         <GroupComponent
+  //           key={contract.id}
+  //           group={contract}
+  //           title={`GROUP ${String.fromCharCode(65 + index)} (2nd Place)`}
+  //         />
+  //       ))}
+  //     </div>
+  //   </>
+  // )
 
   return (
     <Page className="">
@@ -217,7 +208,7 @@ export default function WorldCup(props: {
             ))}
           </Masonry>
 
-          <Spacer h={8} />
+          {/* <Spacer h={8} />
 
           <div className="mb-2 text-3xl text-indigo-700">Group Stage </div>
           {isMobile && (
@@ -241,7 +232,7 @@ export default function WorldCup(props: {
                 className: 'w-full',
               },
             ]}
-          />
+          /> */}
 
           <Spacer h={16} />
 
@@ -381,7 +372,7 @@ export default function WorldCup(props: {
   )
 }
 
-function GroupComponent(props: { group: Contract; title: string }) {
+export function GroupComponent(props: { group: Contract; title: string }) {
   const { group, title } = props
   return (
     <Col>
