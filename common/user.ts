@@ -84,6 +84,7 @@ export type PrivateUser = {
     botEnabled?: boolean
     needsRelinking?: boolean
   }
+  destinySubClaimed?: boolean
   pushToken?: string
   rejectedPushNotificationsOn?: number
   interestedInPushNotifications?: boolean

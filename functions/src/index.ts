@@ -57,6 +57,7 @@ export * from './update-comment-bounty'
 export * from './add-subsidy'
 export * from './test-scheduled-function'
 export * from './validate-iap'
+export * from './claim-destiny-sub'
 
 import { health } from './health'
 import { transact } from './transact'

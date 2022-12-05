@@ -30,6 +30,10 @@ export function createAnswer(params: any) {
   return call(getFunctionUrl('createanswer'), 'POST', params)
 }
 
+export function claimDestinySub(params: any) {
+  return call(getFunctionUrl('claimdestinysub'), 'POST', params)
+}
+
 export function transact(params: any) {
   return call(getFunctionUrl('transact'), 'POST', params)
 }
