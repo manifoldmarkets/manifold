@@ -203,7 +203,14 @@ export const notificationReasonToSubscriptionType: Partial<
   resolution_on_contract_with_users_comment: 'resolutions_on_watched_markets',
   reply_to_users_answer: 'all_replies_to_my_answers_on_watched_markets',
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
-  loan_income: 'loan_income',
+}
+
+export function getNotificationPreference(
+  reason: notification_reason_types | notification_preference
+) {
+  return (notificationReasonToSubscriptionType[
+    reason as notification_reason_types
+  ] ?? reason) as notification_preference
 }
 
 export const getNotificationDestinationsForUser = (
@@ -214,18 +221,8 @@ export const getNotificationDestinationsForUser = (
   const notificationSettings = privateUser.notificationPreferences
   const unsubscribeEndpoint = getFunctionUrl('unsubscribe')
   try {
-    let destinations
-    let subscriptionType: notification_preference | undefined
-    if (Object.keys(notificationSettings).includes(reason)) {
-      subscriptionType = reason as notification_preference
-      destinations = notificationSettings[subscriptionType]
-    } else {
-      const key = reason as notification_reason_types
-      subscriptionType = notificationReasonToSubscriptionType[key]
-      destinations = subscriptionType
-        ? notificationSettings[subscriptionType]
-        : []
-    }
+    const subscriptionType = getNotificationPreference(reason)
+    const destinations = notificationSettings[subscriptionType] ?? []
     const optOutOfAllSettings = notificationSettings.opt_out_all
     // Your market closure notifications are high priority, opt-out doesn't affect their delivery
     const optedOutOfEmail =

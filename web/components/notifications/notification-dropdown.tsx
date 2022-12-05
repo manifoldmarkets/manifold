@@ -5,10 +5,7 @@ import {
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Notification, notification_reason_types } from 'common/notification'
-import {
-  notificationReasonToSubscriptionType,
-  notification_preference,
-} from 'common/user-notification-preferences'
+import { getNotificationPreference } from 'common/user-notification-preferences'
 import { usePrivateUser } from 'web/hooks/use-user'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Spacer } from '../layout/spacer'
@@ -51,24 +48,19 @@ function useNotificationPreferenceItem(notification: Notification) {
     return []
   }
   const reason = notification.reason as notification_reason_types
-  const subType = notificationReasonToSubscriptionType[
-    reason
-  ] as notification_preference
-  if (!subType) {
-    return []
-  }
+  const subType = getNotificationPreference(reason)
   const destinations = getUsersSavedPreference(subType, privateUser)
 
   const inAppEnabled = destinations.includes('browser')
   const emailEnabled = destinations.includes('email')
 
-  const canBeTurnedOff = !notificationIsNecessary(
-    'browser',
-    subType,
-    emailEnabled,
-    false,
-    inAppEnabled
-  )
+  const canBeTurnedOff = !notificationIsNecessary({
+    setting: 'browser',
+    subscriptionTypeKey: subType,
+    emailEnabled: emailEnabled,
+    newValue: !inAppEnabled,
+    inAppEnabled: inAppEnabled,
+  })
 
   if (canBeTurnedOff) {
     return [
@@ -82,13 +74,12 @@ function useNotificationPreferenceItem(notification: Notification) {
           <PlusCircleIcon className="h-5 w-5" />
         ),
         onClick: () => {
-          changeSetting(
-            'browser',
-            !inAppEnabled,
-            privateUser,
-            subType,
-            destinations
-          )
+          changeSetting({
+            setting: 'browser',
+            newValue: !inAppEnabled,
+            privateUser: privateUser,
+            subscriptionTypeKey: subType,
+          })
         },
       },
     ]
