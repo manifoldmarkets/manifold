@@ -71,7 +71,7 @@ export const getBetsQuery = (options?: BetFilter) => {
     q = query(
       q,
       where('isFilled', '==', false),
-      where('isCancelled', '==', false),
+      where('isCancelled', '==', false)
       // where('limitProb', '>=', 0)
     )
   }
