@@ -6,6 +6,7 @@ import * as admin from 'firebase-admin'
 
 import { GroupContractDoc } from '../../common/group'
 import { isEqual } from 'lodash'
+import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
 
 export const onUpdateContract = functions
   .runWith({ secrets: ['API_SECRET'] })
@@ -18,6 +19,11 @@ export const onUpdateContract = functions
 
     if (!isEqual(previousContract.groupSlugs, contract.groupSlugs)) {
       await handleContractGroupUpdated(previousContract, contract)
+    }
+
+    // Handle resolved market contract update:
+    if (contract.isResolved && !previousContract.isResolved) {
+      await updateContractMetricsForUsers(contract)
     }
 
     // No need to notify users of resolution, that's handled in resolve-market
@@ -87,8 +93,7 @@ async function handleContractGroupUpdated(
   if (prevLength > newLength) {
     // Contract was removed from a group
     const groupId = previousContract.groupLinks?.find(
-      (link) =>
-        !contract.groupLinks?.some((l) => l.groupId === link.groupId)
+      (link) => !contract.groupLinks?.some((l) => l.groupId === link.groupId)
     )?.groupId
     if (!groupId) throw new Error('Could not find old group id')
 
