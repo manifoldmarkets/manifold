@@ -35,6 +35,7 @@ import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
 import { WebViewErrorEvent } from 'react-native-webview/lib/WebViewTypes'
+import { BackButton } from '@components/back-button'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -73,23 +74,25 @@ const App = () => {
   // Auth
   const [showAuthModal, setShowAuthModal] = useState(false)
 
-  // Url mangement
-  const [currentHostStatus, setCurrentHostStatus] = useState<{
+  // Url management
+  const [currentNavState, setCurrentNavState] = useState<{
     previousHomeUrl: string
     previousUrl: string
     url: string
     loading: boolean
+    canGoBack: boolean
   }>({
     previousHomeUrl: homeUri,
     previousUrl: homeUri,
     url: homeUri,
     loading: true,
+    canGoBack: false,
   })
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
   const isVisitingOtherSite =
-    !currentHostStatus.url.startsWith(homeUri) ||
-    (currentHostStatus.loading &&
-      !currentHostStatus.previousUrl.startsWith(homeUri))
+    !currentNavState.url.startsWith(homeUri) ||
+    (currentNavState.loading &&
+      !currentNavState.previousUrl.startsWith(homeUri))
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     Platform.OS === 'ios' ? LinkingManager.default : null
@@ -437,7 +440,7 @@ const App = () => {
             <Pressable
               style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
               onPress={() => {
-                const { previousHomeUrl } = currentHostStatus
+                const { previousHomeUrl } = currentNavState
                 // In order to make the webview load a new url manually it has to be different from the previous one
                 const back = !previousHomeUrl.includes('?')
                   ? `${previousHomeUrl}?ignoreThisQuery=true`
@@ -451,7 +454,7 @@ const App = () => {
               style={styles.toolBarIcon}
               onPress={async () => {
                 await Share.share({
-                  message: currentHostStatus.url,
+                  message: currentNavState.url,
                 })
               }}
             >
@@ -460,22 +463,22 @@ const App = () => {
             <Pressable
               style={[styles.toolBarIcon, { justifyContent: 'flex-end' }]}
               onPress={async () => {
-                if (currentHostStatus.loading) {
+                if (currentNavState.loading) {
                   webview.current?.stopLoading()
-                  setCurrentHostStatus({
-                    ...currentHostStatus,
+                  setCurrentNavState({
+                    ...currentNavState,
                     loading: false,
                   })
                 } else {
                   webview.current?.reload()
-                  setCurrentHostStatus({
-                    ...currentHostStatus,
+                  setCurrentNavState({
+                    ...currentNavState,
                     loading: true,
                   })
                 }
               }}
             >
-              {currentHostStatus.loading ? (
+              {currentNavState.loading ? (
                 <Feather name="x" size={24} color="black" />
               ) : (
                 <AntDesign name="reload1" size={24} color="black" />
@@ -483,6 +486,7 @@ const App = () => {
             </Pressable>
           </View>
         </View>
+        <BackButton webView={webview} canGoBack={currentNavState.canGoBack} />
         <WebView
           style={styles.webView}
           mediaPlaybackRequiresUserAction={true}
@@ -494,7 +498,7 @@ const App = () => {
           allowsBackForwardNavigationGestures={true}
           onLoadEnd={() => {
             hasWebViewLoaded.current = true
-            setCurrentHostStatus({ ...currentHostStatus, loading: false })
+            setCurrentNavState({ ...currentNavState, loading: false })
           }}
           sharedCookiesEnabled={true}
           source={{ uri: urlToLoad }}
@@ -513,17 +517,18 @@ const App = () => {
             tellWebviewToSetNativeFlag()
           }}
           onLoadStart={() => {
-            setCurrentHostStatus({ ...currentHostStatus, loading: true })
+            setCurrentNavState({ ...currentNavState, loading: true })
           }}
           onNavigationStateChange={(navState) => {
-            const { url, loading } = navState
-            setCurrentHostStatus({
+            const { url, loading, canGoBack } = navState
+            setCurrentNavState({
               loading,
               url,
               previousHomeUrl: url.startsWith(homeUri)
                 ? url
-                : currentHostStatus.previousHomeUrl,
-              previousUrl: currentHostStatus.url,
+                : currentNavState.previousHomeUrl,
+              previousUrl: currentNavState.url,
+              canGoBack,
             })
             tellWebviewToSetNativeFlag()
           }}

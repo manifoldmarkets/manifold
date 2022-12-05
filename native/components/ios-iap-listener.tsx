@@ -60,7 +60,7 @@ export const IosIapListener = (props: {
   }, [currentPurchaseError, initConnectionError])
 
   useEffect(() => {
-    if (availablePurchases) {
+    if (availablePurchases.length > 0) {
       console.log('availablePurchases', availablePurchases)
       Sentry.Native.captureException('got available purchases', {
         extra: {
