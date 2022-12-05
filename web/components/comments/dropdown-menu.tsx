@@ -6,14 +6,19 @@ import { Row } from 'web/components/layout/row'
 
 export default function DropdownMenu(props: {
   Items: { name: string; icon: ReactNode; onClick: () => void }[]
+  Icon?: ReactNode
+  MenuWidth?: string
 }) {
-  const { Items } = props
+  const { Items, Icon, MenuWidth } = props
+  const icon = Icon ?? (
+    <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
+  )
   return (
     <Menu as="div" className="relative inline-block text-left">
       <div>
         <Menu.Button className="flex items-center rounded-full text-gray-400 hover:text-gray-600">
           <span className="sr-only">Open options</span>
-          <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
+          {icon}
         </Menu.Button>
       </div>
 
@@ -26,7 +31,12 @@ export default function DropdownMenu(props: {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute right-0 z-10 mt-2 w-32 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <Menu.Items
+          className={clsx(
+            'absolute right-0 z-10 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none',
+            MenuWidth ?? 'w-32'
+          )}
+        >
           <div className="py-1">
             {Items.map((item) => (
               <Menu.Item key={item.name}>
@@ -35,12 +45,12 @@ export default function DropdownMenu(props: {
                     onClick={item.onClick}
                     className={clsx(
                       active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                      'z-20 block px-4 py-2 text-sm'
+                      'z-20 block w-full px-4 py-2 text-sm'
                     )}
                   >
                     <Row className={'gap-2'}>
-                      {item.icon}
-                      {item.name}
+                      <div className="w-5">{item.icon}</div>
+                      <div className="text-left">{item.name}</div>
                     </Row>
                   </button>
                 )}

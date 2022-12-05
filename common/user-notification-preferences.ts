@@ -168,7 +168,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
 // subscription type, i.e. 'comment_on_contract_you_follow' and 'comment_on_contract_with_users_answer' both map to
 // 'all_comments_on_watched_markets' subscription type
 // TODO: perhaps better would be to map notification_subscription_types to arrays of notification_reason_types
-const notificationReasonToSubscriptionType: Partial<
+export const notificationReasonToSubscriptionType: Partial<
   Record<notification_reason_types, notification_preference>
 > = {
   you_referred_user: 'referral_bonuses',
@@ -205,6 +205,14 @@ const notificationReasonToSubscriptionType: Partial<
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
 }
 
+export function getNotificationPreference(
+  reason: notification_reason_types | notification_preference
+) {
+  return (notificationReasonToSubscriptionType[
+    reason as notification_reason_types
+  ] ?? reason) as notification_preference
+}
+
 export const getNotificationDestinationsForUser = (
   privateUser: PrivateUser,
   // TODO: accept reasons array from most to least important and work backwards
@@ -213,18 +221,8 @@ export const getNotificationDestinationsForUser = (
   const notificationSettings = privateUser.notificationPreferences
   const unsubscribeEndpoint = getFunctionUrl('unsubscribe')
   try {
-    let destinations
-    let subscriptionType: notification_preference | undefined
-    if (Object.keys(notificationSettings).includes(reason)) {
-      subscriptionType = reason as notification_preference
-      destinations = notificationSettings[subscriptionType]
-    } else {
-      const key = reason as notification_reason_types
-      subscriptionType = notificationReasonToSubscriptionType[key]
-      destinations = subscriptionType
-        ? notificationSettings[subscriptionType]
-        : []
-    }
+    const subscriptionType = getNotificationPreference(reason)
+    const destinations = notificationSettings[subscriptionType] ?? []
     const optOutOfAllSettings = notificationSettings.opt_out_all
     // Your market closure notifications are high priority, opt-out doesn't affect their delivery
     const optedOutOfEmail =
