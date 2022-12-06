@@ -33,7 +33,7 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
+                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -97,7 +97,7 @@ service cloud.firestore {
                          .hasOnly(['blockedByUserIds'])
                        && request.resource.data.blockedByUserIds.toSet().difference(resource.data.blockedByUserIds.toSet()).hasOnly([request.auth.uid]);
 
-      allow delete: if (userId == request.auth.uid || isAdmin());              
+      allow delete: if (userId == request.auth.uid || isAdmin());
     }
 
     match /private-users/{userId}/views/{viewId} {
