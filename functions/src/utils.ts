@@ -15,7 +15,6 @@ import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
 import { Post } from '../../common/post'
-import { getFunctionUrl } from '../../common/api'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -30,25 +29,6 @@ export const logMemory = () => {
 
 export function htmlToRichText(html: string) {
   return generateJSON(html, stringParseExts)
-}
-
-export const invokeFunction = async (name: string, body?: unknown) => {
-  const response = await fetch(getFunctionUrl(name), {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-    body: JSON.stringify(body ?? {}),
-  })
-
-  const json = await response.json()
-  if (response.ok) {
-    return json
-  } else {
-    throw new Error(
-      `${response.status} invoking ${name}: ${JSON.stringify(json)}`
-    )
-  }
 }
 
 export const revalidateStaticProps = async (
