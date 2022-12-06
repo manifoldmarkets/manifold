@@ -1,6 +1,6 @@
 import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
-import { groupBy, map, partition } from 'lodash'
+import { groupBy, map } from 'lodash'
 import { useMemo } from 'react'
 import { listenForNotifications } from 'web/lib/firebase/notifications'
 import { useStore } from './use-store'
@@ -10,7 +10,7 @@ export type NotificationGroup = {
   groupedById: string
   isSeen: boolean
   timePeriod: string
-  type: 'income' | 'normal'
+  // type: 'income' | 'normal'
 }
 
 function useNotifications(privateUser: PrivateUser) {
@@ -50,23 +50,23 @@ function groupNotifications(notifications: Notification[]) {
 
   Object.keys(notificationGroupsByDay).forEach((day) => {
     const notificationsGroupedByDay = notificationGroupsByDay[day]
-    const [incomeNotifications, normalNotificationsGroupedByDay] = partition(
-      notificationsGroupedByDay,
-      (notification) =>
-        incomeSourceTypes.includes(notification.sourceType ?? '')
-    )
-    if (incomeNotifications.length > 0) {
-      notificationGroups = notificationGroups.concat({
-        notifications: incomeNotifications,
-        groupedById: 'income' + day,
-        isSeen: incomeNotifications[0].isSeen,
-        timePeriod: day,
-        type: 'income',
-      })
-    }
+    // const [incomeNotifications, normalNotificationsGroupedByDay] = partition(
+    //   notificationsGroupedByDay,
+    //   (notification) =>
+    //     incomeSourceTypes.includes(notification.sourceType ?? '')
+    // )
+    // if (incomeNotifications.length > 0) {
+    //   notificationGroups = notificationGroups.concat({
+    //     notifications: incomeNotifications,
+    //     groupedById: 'income' + day,
+    //     isSeen: incomeNotifications[0].isSeen,
+    //     timePeriod: day,
+    //     type: 'income',
+    //   })
+    // }
     // Group notifications by contract, filtering out bonuses:
     const groupedNotificationsByContractId = groupBy(
-      normalNotificationsGroupedByDay,
+      notificationsGroupedByDay,
       (notification) => {
         return notification.sourceContractId
       }
@@ -84,7 +84,7 @@ function groupNotifications(notifications: Notification[]) {
           groupedById: contractId,
           isSeen: notificationsForContractId.some((n) => !n.isSeen),
           timePeriod: day,
-          type: 'normal',
+          // type: 'normal',
         }
         return notificationGroup
       })

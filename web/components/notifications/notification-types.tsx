@@ -32,13 +32,19 @@ import {
 export function NotificationItem(props: {
   notification: Notification
   isChildOfGroup?: boolean
-  isIncomeNotification?: boolean
 }) {
-  const { notification, isChildOfGroup, isIncomeNotification } = props
+  const { notification, isChildOfGroup } = props
   const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted, setHighlighted] = useState(!notification.isSeen)
-
+  const incomeSourceTypes = [
+    'bonus',
+    'tip',
+    'loan',
+    'betting_streak_bonus',
+    'tip_and_like',
+  ]
+const isIncomeNotification = incomeSourceTypes.includes(sourceType)
   if (isIncomeNotification) {
     return (
       <IncomeNotificationItem

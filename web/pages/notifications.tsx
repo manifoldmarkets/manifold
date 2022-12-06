@@ -12,7 +12,9 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
-import { IncomeNotificationGroupItem } from 'web/components/notifications/income-summary-notifications'
+import {
+  combineNotificationsByAddingNumericSourceTexts,
+} from 'web/components/notifications/income-summary-notifications'
 import {
   combineReactionNotifications,
   markNotificationsAsSeen,
@@ -36,6 +38,7 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser } from 'web/hooks/use-user'
+import { sortBy } from 'lodash'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
@@ -115,20 +118,13 @@ function RenderNotificationGroups(props: {
   notificationGroups: NotificationGroup[]
 }) {
   const { notificationGroups } = props
+
   const grayLine = <hr className="mx-auto w-[calc(100%-1rem)] bg-gray-400" />
   return (
     <>
       {notificationGroups.map((notification) => (
         <Fragment key={notification.groupedById + notification.timePeriod}>
-          {notification.type === 'income' ? (
-            <>
-              <IncomeNotificationGroupItem
-                notificationGroup={notification}
-                key={notification.groupedById + notification.timePeriod}
-              />
-              {grayLine}
-            </>
-          ) : notification.notifications.length === 1 ? (
+          {notification.notifications.length === 1 ? (
             <>
               <NotificationItem
                 notification={notification.notifications[0]}
@@ -221,15 +217,25 @@ function NotificationGroupItem(props: {
   const { notifications } = notificationGroup
   const groupHighlighted = notifications.some((n) => !n.isSeen)
   const { sourceTitle, sourceContractTitle } = notifications[0]
-  const combinedNotifs = combineReactionNotifications(
+  const incomeTypesToSum = [
+    'bonus',
+    'tip',
+    'tip_and_like',
+  ]
+  const combinedNotifs = sortBy(combineReactionNotifications(
     notifications.filter((n) =>
       ReactionNotificationTypes.includes(n.sourceType)
     )
   ).concat(
     notifications.filter(
-      (n) => !ReactionNotificationTypes.includes(n.sourceType)
+      (n) => !ReactionNotificationTypes.includes(n.sourceType) && !incomeTypesToSum.includes(n.sourceType)
     )
-  )
+  ).concat(
+    combineNotificationsByAddingNumericSourceTexts(
+      notifications.filter((n) => incomeTypesToSum.includes(n.sourceType))
+    ))
+
+    , 'createdTime').reverse()
   const header = (
     <ParentNotificationHeader
       header={
@@ -260,10 +266,9 @@ function NotificationGroupItem(props: {
 export function NotificationGroupItemComponent(props: {
   notifications: Notification[]
   header: ReactNode
-  isIncomeNotification?: boolean
   className?: string
 }) {
-  const { notifications, className, header, isIncomeNotification } = props
+  const { notifications, className, header } = props
   const numNotifications = notifications.length
 
   const needsExpanding = numNotifications > NUM_SUMMARY_LINES
@@ -286,7 +291,6 @@ export function NotificationGroupItemComponent(props: {
               notification={notification}
               key={notification.id}
               isChildOfGroup={true}
-              isIncomeNotification={isIncomeNotification}
             />
           )
         })}
