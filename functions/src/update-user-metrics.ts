@@ -58,7 +58,7 @@ export async function updateUserMetrics() {
 
   const now = Date.now()
   const monthAgo = now - DAY_MS * 30
-  const writer = firestore.bulkWriter({ throttling: false })
+  const writer = firestore.bulkWriter()
 
   // we need to update metrics for contracts that resolved up through a month ago,
   // for the purposes of computing the daily/weekly/monthly profit on them

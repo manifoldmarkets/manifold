@@ -55,7 +55,7 @@ export async function updateGroupMetrics() {
   log(`Loaded ${contractIds.length} contracts.`)
 
   log('Computing metric updates...')
-  const writer = firestore.bulkWriter({ throttling: false })
+  const writer = firestore.bulkWriter()
   await batchedWaitAll(
     groups.docs.map((doc) => async () => {
       const contractIds = contractIdsByGroupId[doc.id] ?? []
