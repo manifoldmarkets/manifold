@@ -172,7 +172,7 @@ export const useUserRecommendedMarkets = (userId = '_', count = 500) => {
   const recommendedContracts = useRecommendedContracts(
     contractsRelatedToUser,
     userId,
-    500,
+    100,
     contractsRelatedToUser
   )
 
@@ -208,7 +208,7 @@ const getSimilarBettorIds = (
     (bettorId) => bettorId
   )
 
-  // sort by number of times they appear with at least 2 appearances
+  // sort by number of times they appear with at least 1 appearance
   const sortedBettorIds = Object.entries(bettorIdsToCounts)
     .sort((a, b) => b[1] - a[1])
     .filter((bettorId) => bettorId[1] > 0)
@@ -265,6 +265,20 @@ const getSimilarBettorsMarkets = async (
   return sortedContractsInSimilarBettorsBets
 }
 
+const sampleArraysUntilMaxCount = (
+  currentArray: any[],
+  sampleArrays: any[][],
+  maxCount: number
+) => {
+  if (currentArray.length >= maxCount) return currentArray
+  for (const sampleArray of sampleArrays) {
+    currentArray.push(
+      ...sampleSize(sampleArray, maxCount - currentArray.length)
+    )
+    if (currentArray.length >= maxCount) return currentArray
+  }
+}
+
 const useRecommendedContracts = (
   similarToContractIds: string[],
   excludeBettorId: string,
@@ -286,22 +300,22 @@ const useRecommendedContracts = (
     )
     const creatorIds = uniq(contracts.map((contract) => contract.creatorId))
     const groupSlugs = filterDefined(
-      uniq(contracts.map((contract) => contract.groupSlugs?.[0]))
+      uniq(contracts.map((contract) => contract.groupSlugs)).flat()
     )
 
     const creatorContractsQuery = query(
       collection(db, 'contracts'),
       where('isResolved', '==', false),
       where('creatorId', 'in', creatorIds),
-      orderBy('popularityScore', 'desc'),
+      orderBy('createdTime', 'desc'),
       limit(maxCount)
     )
     const creatorContracts = await getValues<Contract>(creatorContractsQuery)
     const groupContractsQuery = query(
       collection(db, 'contracts'),
-      where('groupSlugs', 'array-contains-any', groupSlugs),
+      where('groupSlugs', 'array-contains-any', sampleSize(groupSlugs, 10)),
       where('isResolved', '==', false),
-      orderBy('popularityScore', 'desc'),
+      orderBy('createdTime', 'desc'),
       limit(maxCount)
     )
     const groupContracts = await getValues<Contract>(groupContractsQuery)
@@ -332,9 +346,12 @@ const useRecommendedContracts = (
 
     // sort randomly
     const chosen = shuffle(combined).slice(0, maxCount)
-    // if (chosen.length < count)
-    //   chosen.push(...chooseRandomSubset(betOnContracts, count - chosen.length))
-    return chosen
+    const fullArray = sampleArraysUntilMaxCount(
+      chosen,
+      [groupContracts, creatorContracts, similarBettorsContracts],
+      maxCount
+    )
+    return fullArray
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     similarToContractIds.length,
