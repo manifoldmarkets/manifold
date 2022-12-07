@@ -318,6 +318,8 @@ export function BuyPanel(props: {
     mobileView &&
     (user?.createdTime ?? 0) > Date.now() - 7 * 24 * 60 * 60 * 1000
 
+  const displayError = !!outcome
+
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <YesNoSelector
@@ -399,7 +401,7 @@ export function BuyPanel(props: {
           inputClassName="w-full max-w-none"
           amount={betAmount}
           onChange={onBetChange}
-          error={error}
+          error={displayError ? error : undefined}
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}
