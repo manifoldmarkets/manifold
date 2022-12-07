@@ -63,7 +63,7 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
     log(
-      `Loaded user ${user.username} and contract ${contract.slug} - auth ${auth.uid}.`
+      `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
     )
 
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
@@ -107,8 +107,11 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
           limitProb = Math.round(limitProb * 100) / 100
         }
 
+        log(
+          `Checking for limit orders in placebet for user ${auth.uid} on contract id ${contractId}.`
+        )
         const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc)
+          await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
 
         return getBinaryCpmmBetInfo(
           outcome,
@@ -234,7 +237,8 @@ const getUnfilledBetsQuery = (contractDoc: DocumentReference) => {
 
 export const getUnfilledBetsAndUserBalances = async (
   trans: Transaction,
-  contractDoc: DocumentReference
+  contractDoc: DocumentReference,
+  bettorId: string
 ) => {
   const unfilledBetsSnap = await trans.get(getUnfilledBetsQuery(contractDoc))
   const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
@@ -245,7 +249,12 @@ export const getUnfilledBetsAndUserBalances = async (
     userIds.length === 0
       ? []
       : await trans.getAll(
-          ...userIds.map((userId) => firestore.doc(`users/${userId}`))
+          ...userIds.map((userId) => {
+            log(
+              `Bettor ${bettorId} is checking balance of user ${userId} that has limit order on contract ${contractDoc.id}`
+            )
+            return firestore.doc(`users/${userId}`)
+          })
         )
   const users = filterDefined(userDocs.map((doc) => doc.data() as User))
   const balanceByUserId = Object.fromEntries(
