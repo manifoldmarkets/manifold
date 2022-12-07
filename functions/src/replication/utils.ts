@@ -2,10 +2,8 @@ import {
   createClient,
   PostgrestResponse,
   PostgrestSingleResponse,
+  SupabaseClientOptions,
 } from '@supabase/supabase-js'
-import { Agent as HttpAgent } from 'http'
-import { Agent as HttpsAgent } from 'https'
-import fetch, { RequestInfo, RequestInit } from 'node-fetch'
 
 import { DEV_CONFIG } from '../../../common/envs/dev'
 import { PROD_CONFIG } from '../../../common/envs/prod'
@@ -19,26 +17,7 @@ type RetryPolicy = {
   retries: number
 }
 
-const httpAgent = new HttpAgent({ keepAlive: true })
-const httpsAgent = new HttpsAgent({ keepAlive: true })
-
-const pooledFetch = (url: RequestInfo, options: RequestInit = {}) => {
-  return fetch(url, {
-    agent: (parsedURL) => {
-      switch (parsedURL.protocol) {
-        case 'http':
-          return httpAgent
-        case 'https':
-          return httpsAgent
-        default:
-          return undefined
-      }
-    },
-    ...options,
-  })
-}
-
-export function createSupabaseClient() {
+export function createSupabaseClient(opts?: SupabaseClientOptions<'public'>) {
   const url =
     process.env.SUPABASE_URL ??
     (isProd() ? PROD_CONFIG.supabaseUrl : DEV_CONFIG.supabaseUrl)
@@ -51,7 +30,7 @@ export function createSupabaseClient() {
   if (!key) {
     throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
   }
-  return createClient(url, key, { global: { fetch: pooledFetch as any } })
+  return createClient(url, key, opts)
 }
 
 export async function run<T extends QueryResponse = QueryResponse>(

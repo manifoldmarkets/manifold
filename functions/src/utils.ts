@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
-import fetch from 'node-fetch'
+import { Agent } from 'http'
+import fetch, { RequestInfo, RequestInit } from 'node-fetch'
 import {
   CollectionGroup,
   DocumentData,
@@ -305,4 +306,13 @@ export const getContractPath = (contract: Contract) => {
 
 export function contractUrl(contract: Contract) {
   return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
+}
+
+export const pooledFetch = (agents: { [k: string]: Agent }) => {
+  return (url: RequestInfo, options: RequestInit = {}) => {
+    return fetch(url, {
+      agent: (parsedURL) => agents[parsedURL.protocol],
+      ...options,
+    })
+  }
 }
