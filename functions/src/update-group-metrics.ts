@@ -1,34 +1,24 @@
-import * as functions from 'firebase-functions'
+import { onSchedule } from 'firebase-functions/v2/scheduler'
 import * as admin from 'firebase-admin'
 import { groupBy, sumBy, mapValues, uniq } from 'lodash'
 
 import { log } from './utils'
 import { Contract } from '../../common/contract'
 import { batchedWaitAll } from '../../common/util/promise'
-import { newEndpointNoAuth } from './api'
-import { invokeFunction } from './utils'
-const firestore = admin.firestore()
 
-export const scheduleUpdateGroupMetrics = functions.pubsub
-  .schedule('every 15 minutes')
-  .onRun(async () => {
-    try {
-      console.log(await invokeFunction('updategroupmetrics'))
-    } catch (e) {
-      console.error(e)
-    }
-  })
-
-export const updategroupmetrics = newEndpointNoAuth(
-  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
-  async (_req) => {
-    await updateGroupMetrics()
-    return { success: true }
-  }
+export const updategroupmetrics = onSchedule(
+  {
+    schedule: 'every 15 minutes',
+    timeoutSeconds: 2000,
+    memory: '8GiB',
+    minInstances: 0,
+  },
+  updateGroupMetrics
 )
 
 export async function updateGroupMetrics() {
   log('Loading groups...')
+  const firestore = admin.firestore()
   const groups = await firestore.collection('groups').select().get()
   log(`Loaded ${groups.size} groups.`)
 
@@ -112,6 +102,7 @@ async function scoreTraders(contractIds: string[]) {
 }
 
 async function scoreUsersByContract(contractId: string) {
+  const firestore = admin.firestore()
   const userContractMetrics = await firestore
     .collectionGroup('contract-metrics')
     .where('contractId', '==', contractId)
@@ -144,6 +135,7 @@ const topUserScores = (scores: { [userId: string]: number }) => {
 }
 
 async function loadContracts(contractIds: string[]) {
+  const firestore = admin.firestore()
   const refs = contractIds.map((c) => firestore.collection('contracts').doc(c))
   const contractDocs = await firestore.getAll(...refs)
   return contractDocs.map((d) => d.data() as Contract)

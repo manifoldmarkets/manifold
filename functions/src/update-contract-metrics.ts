@@ -1,9 +1,9 @@
-import * as functions from 'firebase-functions'
+import { onSchedule } from 'firebase-functions/v2/scheduler'
 import * as admin from 'firebase-admin'
 import { CollectionReference } from 'firebase-admin/firestore'
 import { sumBy } from 'lodash'
 
-import { getValues, invokeFunction, log } from './utils'
+import { getValues, log } from './utils'
 import { Bet, LimitBet } from '../../common/bet'
 import { Contract, CPMM } from '../../common/contract'
 import { DAY_MS } from '../../common/util/time'
@@ -11,29 +11,20 @@ import { computeElasticity } from '../../common/calculate-metrics'
 import { getProbability } from '../../common/calculate'
 import { batchedWaitAll } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
-import { newEndpointNoAuth } from './api'
 
-const firestore = admin.firestore()
-export const scheduleUpdateContractMetrics = functions.pubsub
-  .schedule('every 15 minutes')
-  .onRun(async () => {
-    try {
-      console.log(await invokeFunction('updatecontractmetrics'))
-    } catch (e) {
-      console.error(e)
-    }
-  })
-
-export const updatecontractmetrics = newEndpointNoAuth(
-  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
-  async (_req) => {
-    await updateContractMetrics()
-    return { success: true }
-  }
+export const updatecontractmetrics = onSchedule(
+  {
+    schedule: 'every 15 minutes',
+    timeoutSeconds: 2000,
+    memory: '8GiB',
+    minInstances: 0,
+  },
+  updateContractMetrics
 )
 
 export async function updateContractMetrics() {
   log('Loading contracts...')
+  const firestore = admin.firestore()
   const contracts = await getValues<Contract>(firestore.collection('contracts'))
   log(`Loaded ${contracts.length} contracts.`)
 
@@ -135,6 +126,7 @@ export const getProbAt = async (
 }
 
 async function getBetsAroundTime(contractId: string, when: number) {
+  const firestore = admin.firestore()
   const bets = firestore
     .collection('contracts')
     .doc(contractId)
@@ -152,6 +144,7 @@ async function getBetsAroundTime(contractId: string, when: number) {
 }
 
 async function getUniqueBettors(contractId: string, since: number) {
+  const firestore = admin.firestore()
   return (
     await firestore
       .collectionGroup('contract-metrics')
