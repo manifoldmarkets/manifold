@@ -84,7 +84,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     question,
     tags,
     slug,
-    pool,
     outcomeType,
     mechanism,
     volume,
@@ -120,7 +119,8 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     question,
     tags,
     url: `https://${DOMAIN}/${creatorUsername}/${slug}`,
-    pool,
+    // TODO(James): Fix for binary-set mechanism.
+    pool: 'pool' in contract ? contract.pool : {},
     probability,
     p,
     totalLiquidity,

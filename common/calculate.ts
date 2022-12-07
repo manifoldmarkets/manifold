@@ -4,6 +4,8 @@ import {
   getCpmmProbability,
   getCpmmOutcomeProbabilityAfterBet,
   calculateCpmmPurchase,
+  getBinarySetBuyYes,
+  getBinarySetBuyNo,
 } from './calculate-cpmm'
 import { buy, getProb } from './calculate-cpmm-multi'
 import {
@@ -52,6 +54,8 @@ export function getOutcomeProbability(contract: Contract, outcome: string) {
       : 1 - getCpmmProbability(contract.pool, contract.p)
     : contract.mechanism === 'cpmm-2'
     ? getProb(contract.pool, outcome)
+    : contract.mechanism === 'binary-set'
+    ? getCpmmProbability(contract.pools[+outcome], contract.p)
     : getDpmOutcomeProbability(contract.totalShares, outcome)
 }
 
@@ -60,11 +64,18 @@ export function getOutcomeProbabilityAfterBet(
   outcome: string,
   bet: number
 ) {
-  const { mechanism, pool } = contract
+  const { mechanism } = contract
   return mechanism === 'cpmm-1'
     ? getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
     : mechanism === 'cpmm-2'
-    ? getProb(buy(pool, outcome, bet).newPool, outcome)
+    ? getProb(buy(contract.pool, outcome, bet).newPool, outcome)
+    : mechanism === 'binary-set'
+    ? getCpmmProbability(
+        getBinarySetBuyYes(contract.pools, contract.p, outcome, bet).newPools[
+          +outcome
+        ],
+        contract.p
+      )
     : getDpmOutcomeProbabilityAfterBet(contract.totalShares, outcome, bet)
 }
 
@@ -73,11 +84,15 @@ export function calculateSharesBought(
   outcome: string,
   amount: number
 ) {
-  const { mechanism, pool } = contract
+  const { mechanism } = contract
   return mechanism === 'cpmm-1'
     ? calculateCpmmPurchase(contract, amount, outcome).shares
     : mechanism === 'cpmm-2'
-    ? buy(pool, outcome, amount).shares
+    ? buy(contract.pool, outcome, amount).shares
+    : mechanism === 'binary-set'
+    ? outcome === 'YES'
+      ? getBinarySetBuyYes(contract.pools, contract.p, outcome, amount).shares
+      : getBinarySetBuyNo(contract.pools, contract.p, outcome, amount).shares
     : calculateDpmShares(contract.totalShares, amount, outcome)
 }
 

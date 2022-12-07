@@ -1,4 +1,4 @@
-import { groupBy, mapValues, sumBy } from 'lodash'
+import { groupBy, mapValues, sum, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
@@ -285,4 +285,153 @@ export function getUserLiquidityShares(
   const userWeight = weights[userId] ?? 0
 
   return mapValues(pool, (shares) => userWeight * shares)
+}
+
+export function getBinarySetBuyYes(
+  pools: { [outcome: string]: number }[],
+  p: number,
+  answer: string,
+  bet: number
+) {
+  const maxProb = Math.max(...pools.map((pool) => getCpmmProbability(pool, p)))
+  const maxNoShares = bet / (1 - maxProb)
+  const noShares = binarySearch(0, maxNoShares, (noShares) => {
+    const noAmounts = pools.map((pool) =>
+      calculateAmountToBuyShares({ pool, p }, noShares, 'NO', [], {})
+    )
+    const totalNoAmount = sum(noAmounts)
+
+    const resultingPools = noAmounts.map((noAmount, i) => {
+      return calculateCpmmPurchase({ pool: pools[i], p }, noAmount, 'NO')
+        .newPool
+    })
+
+    const redeemedAmount = noShares * (pools.length - 1)
+    const yesBetAmount = bet - totalNoAmount + redeemedAmount
+    const index = +answer
+    const { newPool } = calculateCpmmPurchase(
+      { pool: resultingPools[index], p },
+      yesBetAmount,
+      'YES'
+    )
+    const newPools = [...resultingPools]
+    newPools[index] = newPool
+
+    const diff = 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, p))
+    return diff
+  })
+
+  const noAmounts = pools.map((pool) =>
+    calculateAmountToBuyShares({ pool, p }, noShares, 'NO', [], {})
+  )
+  const totalNoAmount = sum(noAmounts)
+
+  const resultingPools = noAmounts.map((noAmount, i) => {
+    return calculateCpmmPurchase({ pool: pools[i], p }, noAmount, 'NO').newPool
+  })
+
+  const redeemedAmount = noShares * (pools.length - 1)
+  const yesBetAmount = bet - totalNoAmount + redeemedAmount
+  const index = +answer
+  const { newPool, shares } = calculateCpmmPurchase(
+    { pool: resultingPools[index], p },
+    yesBetAmount,
+    'YES'
+  )
+  const newPools = [...resultingPools]
+  newPools[index] = newPool
+
+  console.log(
+    'getBinaryBuyYes before',
+    pools,
+    pools.map((pool) => getCpmmProbability(pool, p)),
+    p,
+    'bet:',
+    answer,
+    bet
+  )
+  console.log(
+    'getBinaryBuyYes after',
+    newPools,
+    newPools.map((pool) => getCpmmProbability(pool, p)),
+    sumBy(newPools, (pool) => getCpmmProbability(pool, p)),
+    'no shares',
+    noShares,
+    'yes shares',
+    shares
+  )
+  return { newPools, shares }
+}
+
+export function getBinarySetBuyNo(
+  pools: { [outcome: string]: number }[],
+  p: number,
+  answer: string,
+  bet: number
+) {
+  const minProb = Math.min(...pools.map((pool) => getCpmmProbability(pool, p)))
+  const maxYesShares = bet / (1 - minProb)
+  const yesShares = binarySearch(0, maxYesShares, (yesShares) => {
+    const yesAmounts = pools.map((pool) =>
+      calculateAmountToBuyShares({ pool, p }, yesShares, 'YES', [], {})
+    )
+    const totalYesAmount = sum(yesAmounts)
+    const resultingPools = yesAmounts.map((noAmount, i) => {
+      return calculateCpmmPurchase({ pool: pools[i], p }, noAmount, 'YES')
+        .newPool
+    })
+
+    const redeemedAmount = yesShares
+    const yesBetAmount = bet - totalYesAmount + redeemedAmount
+    const index = +answer
+    const { newPool } = calculateCpmmPurchase(
+      { pool: resultingPools[index], p },
+      yesBetAmount,
+      'NO'
+    )
+    const newPools = [...resultingPools]
+    newPools[index] = newPool
+
+    return 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, p))
+  })
+
+  const noAmounts = pools.map((pool) =>
+    calculateAmountToBuyShares({ pool, p }, yesShares, 'NO', [], {})
+  )
+  const totalNoAmount = sum(noAmounts)
+
+  const resultingPools = noAmounts.map((noAmount, i) => {
+    return calculateCpmmPurchase({ pool: pools[i], p }, noAmount, 'NO').newPool
+  })
+
+  const redeemedAmount = yesShares * (pools.length - 1)
+  const yesBetAmount = bet - totalNoAmount + redeemedAmount
+  const index = +answer
+  const { newPool, shares } = calculateCpmmPurchase(
+    { pool: resultingPools[index], p },
+    yesBetAmount,
+    'YES'
+  )
+  const newPools = [...resultingPools]
+  newPools[index] = newPool
+
+  console.log(
+    'getBinaryBuyNo before',
+    pools,
+    pools.map((pool) => getCpmmProbability(pool, p)),
+    p,
+    'bet:',
+    answer,
+    bet
+  )
+  console.log(
+    'getBinaryBuyNo after',
+    newPools,
+    newPools.map((pool) => getCpmmProbability(pool, p)),
+    'no shares',
+    yesShares,
+    'yes shares',
+    shares
+  )
+  return { newPools, shares }
 }

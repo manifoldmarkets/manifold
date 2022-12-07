@@ -1,6 +1,7 @@
 import { range } from 'lodash'
 import {
   Binary,
+  BinarySet,
   Contract,
   CPMM,
   CPMM2,
@@ -37,6 +38,7 @@ export function getNewContract(
 
   // for multiple choice
   answers: string[],
+
   visibility: visibility,
 
   // twitch
@@ -52,7 +54,7 @@ export function getNewContract(
       : outcomeType === 'NUMERIC'
       ? getNumericProps(ante, bucketCount, min, max)
       : outcomeType === 'MULTIPLE_CHOICE'
-      ? getDpmMultipleChoiceProps(ante, answers)
+      ? getMultipleChoiceBinarySetProps(id, creator, answers, createdTime, ante)
       : getFreeAnswerProps(ante)
 
   const contract: Contract = removeUndefinedProps({
@@ -91,7 +93,7 @@ export function getNewContract(
     isTwitchContract,
   })
 
-  return contract as Contract
+  return contract
 }
 
 /*
@@ -165,7 +167,48 @@ const getFreeAnswerProps = (ante: number) => {
   return system
 }
 
-const getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
+const getMultipleChoiceBinarySetProps = (
+  contractId: string,
+  creator: User,
+  answers: string[],
+  createdTime: number,
+  ante: number
+) => {
+  const { username, name, avatarUrl } = creator
+
+  const answerObjects = answers.map((answer, i) => ({
+    id: i.toString(),
+    number: i,
+    contractId,
+    createdTime,
+    userId: creator.id,
+    username,
+    name,
+    avatarUrl,
+    text: answer,
+  }))
+
+  const p = 1 / answers.length
+  const antePerAnswer = ante / answers.length
+
+  const pools = answers.map(() => ({
+    YES: antePerAnswer,
+    NO: antePerAnswer,
+  }))
+
+  const system: BinarySet & MultipleChoice = {
+    mechanism: 'binary-set',
+    pools,
+    outcomeType: 'MULTIPLE_CHOICE',
+    answers: answerObjects,
+    p,
+  }
+
+  return system
+}
+
+// TODO (James): Remove.
+const _getDpmMultipleChoiceProps = (ante: number, answers: string[]) => {
   const numAnswers = answers.length
   const betAnte = ante / numAnswers
   const betShares = Math.sqrt(ante ** 2 / numAnswers)

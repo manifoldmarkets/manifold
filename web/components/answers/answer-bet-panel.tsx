@@ -28,6 +28,7 @@ import {
 } from 'common/calculate'
 import { getProb, shortSell } from 'common/calculate-cpmm-multi'
 import { removeUndefinedProps } from 'common/util/object'
+import { getBinarySetBuyNo, getCpmmProbability } from 'common/calculate-cpmm'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -209,14 +210,29 @@ const getSimulatedBetInfo = (
   contract: FreeResponseContract | MultipleChoiceContract
 ) => {
   if (mode === 'short-sell') {
-    const { newPool, gainedShares } = shortSell(
-      contract.pool,
-      answerId,
-      betAmount
-    )
-    const resultProb = getProb(newPool, answerId)
-    const maxPayout = Math.max(...Object.values(gainedShares))
-    return { resultProb, maxPayout, gainedShares }
+    if (contract.mechanism === 'cpmm-2') {
+      const { newPool, gainedShares } = shortSell(
+        contract.pool,
+        answerId,
+        betAmount
+      )
+      const resultProb = getProb(newPool, answerId)
+      const maxPayout = Math.max(...Object.values(gainedShares))
+      return { resultProb, maxPayout, gainedShares }
+    }
+
+    if (contract.mechanism === 'binary-set') {
+      const { newPools, shares } = getBinarySetBuyNo(
+        contract.pools,
+        contract.p,
+        answerId,
+        betAmount
+      )
+      const resultProb = getCpmmProbability(newPools[+answerId], contract.p)
+      const maxPayout = shares
+      const gainedShares = shares
+      return { resultProb, maxPayout, gainedShares }
+    }
   }
 
   const resultProb = getOutcomeProbabilityAfterBet(

@@ -153,6 +153,9 @@ export const getPayoutsMultiOutcome = (
   contract: FreeResponseContract | MultipleChoiceContract,
   bets: Bet[]
 ) => {
+  if (contract.mechanism === 'binary-set') {
+    throw new Error('Binary set payouts not implemented')
+  }
   const poolTotal = sum(Object.values(contract.pool))
   const winningBets = bets.filter((bet) => resolutions[bet.outcome])
 

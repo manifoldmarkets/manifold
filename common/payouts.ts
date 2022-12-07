@@ -1,12 +1,7 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
-import {
-  Contract,
-  CPMM2Contract,
-  CPMMContract,
-  DPMContract,
-} from './contract'
+import { Contract, CPMM2Contract, CPMMContract, DPMContract } from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -70,6 +65,9 @@ export const getPayouts = (
       resolutions,
       resolutionProbability
     )
+  }
+  if (contract.mechanism === 'binary-set') {
+    throw new Error('Binary set payouts not implemented')
   }
   return getDpmPayouts(
     outcome,

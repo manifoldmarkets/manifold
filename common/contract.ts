@@ -3,7 +3,7 @@ import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 
-export type AnyMechanism = DPM | CPMM | CPMM2
+export type AnyMechanism = DPM | CPMM | CPMM2 | BinarySet
 export type AnyOutcomeType =
   | Binary
   | MultipleChoice
@@ -19,6 +19,7 @@ export type AnyContractType =
   | (DPM & Numeric)
   | (DPM & MultipleChoice)
   | (CPMM2 & MultipleChoice)
+  | (BinarySet & MultipleChoice)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -81,12 +82,15 @@ export type CPMM2Contract = Contract & CPMM2
 export type BinaryContract = Contract & Binary
 export type DPMBinaryContract = BinaryContract & DPM
 export type CPMMBinaryContract = BinaryContract & CPMM
+export type BinarySetContract = Contract & BinarySet
 export type PseudoNumericContract = Contract & PseudoNumeric
 export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
 export type MultipleChoiceContract = Contract & MultipleChoice
 export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
 export type CPMMMultipleChoiceContract = Contract & MultipleChoice & CPMM2
+export type MultipleChoiceBinarySetContract = Contract & MultipleChoice & BinarySet
+
 
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
@@ -127,6 +131,12 @@ export type Binary = {
   initialProbability: number
   resolutionProbability?: number // Used for BINARY markets resolved to MKT
   resolution?: resolution
+}
+
+export type BinarySet = {
+  mechanism: 'binary-set'
+  pools: { [outcome: string]: number }[]
+  p: number
 }
 
 export type PseudoNumeric = {

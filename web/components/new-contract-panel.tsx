@@ -91,6 +91,8 @@ export function NewContractPanel(props: {
       ? FIXED_ANTE
       : outcomeType === 'PSEUDO_NUMERIC'
       ? FIXED_ANTE * 5
+      : outcomeType === 'MULTIPLE_CHOICE'
+      ? FIXED_ANTE * (answers.length - 1)
       : FIXED_ANTE * 2
 
   // If params.closeTime is set, extract out the specified date and time
