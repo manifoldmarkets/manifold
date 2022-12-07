@@ -32,12 +32,7 @@ import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
-import {
-  BOT_USERNAMES,
-  CORE_USERNAMES,
-  DOMAIN,
-  ENV_CONFIG,
-} from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
@@ -45,7 +40,7 @@ import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-about'
 import { buttonClass } from './buttons/button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
-import { BotBadge, CoreBadge, PostBanBadge } from './widgets/user-link'
+import { PostBanBadge, UserBadge } from './widgets/user-link'
 import Link from 'next/link'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 
@@ -113,8 +108,7 @@ export function UserPage(props: { user: User }) {
                   <span className="break-anywhere text-lg font-bold sm:text-2xl">
                     {user.name}
                   </span>
-                  {BOT_USERNAMES.includes(user.username) && <BotBadge />}
-                  {CORE_USERNAMES.includes(user.username) && <CoreBadge />}
+                  {<UserBadge username={user.username} />}
                   {user.isBannedFromPosting && <PostBanBadge />}
                 </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">

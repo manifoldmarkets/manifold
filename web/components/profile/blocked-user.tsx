@@ -5,8 +5,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UserFollowButton } from 'web/components/buttons/follow-button'
-import { BOT_USERNAMES } from 'common/envs/constants'
-import { BotBadge, PostBanBadge } from 'web/components/widgets/user-link'
+import { PostBanBadge, UserBadge } from 'web/components/widgets/user-link'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { PrivateUser } from 'common/user'
 
@@ -36,7 +35,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
                 <span className="break-anywhere text-lg font-bold sm:text-2xl">
                   {user.name}
                   {' (Blocked) '}
-                  {BOT_USERNAMES.includes(user.username) && <BotBadge />}
+                  {<UserBadge username={user.username} />}
                   {user.isBannedFromPosting && <PostBanBadge />}
                 </span>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
