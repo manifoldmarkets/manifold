@@ -7,12 +7,12 @@ import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
-import { ProbabilitySelector } from './probability-selector'
 import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
 import { BETTOR, BETTORS, PAST_BETS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { capitalize } from 'lodash'
+import { ProbabilityInput } from './widgets/probability-input'
 
 export function ResolutionPanel(props: {
   isAdmin: boolean
@@ -30,7 +30,9 @@ export function ResolutionPanel(props: {
 
   const [outcome, setOutcome] = useState<resolution | undefined>()
 
-  const [prob, setProb] = useState(getProbability(contract) * 100)
+  const [prob, setProb] = useState<number | undefined>(
+    Math.round(getProbability(contract) * 100)
+  )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -100,9 +102,10 @@ export function ResolutionPanel(props: {
               {capitalize(PAST_BETS)} will be paid out at the probability you
               specify:
             </div>
-            <ProbabilitySelector
-              probabilityInt={Math.round(prob)}
-              setProbabilityInt={setProb}
+            <ProbabilityInput
+              prob={prob}
+              onChange={setProb}
+              inputClassName="w-28"
             />
             {/* You will earn {earnedFees}. */}
           </Col>

@@ -371,6 +371,7 @@ function ContractSearchControls(props: {
       <Row className="mt-px items-center gap-1 sm:gap-2">
         <Input
           type="text"
+          inputMode="search"
           value={query}
           onChange={(e) => updateQuery(e.target.value)}
           onBlur={trackCallback('search', { query: query })}
