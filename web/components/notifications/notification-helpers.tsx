@@ -329,7 +329,7 @@ export function combineReactionNotifications(notifications: Notification[]) {
         ...mostRecentNotification,
         data: {
           ...mostRecentNotification.data,
-          otherNotifications: notifications,
+          relatedNotifications: notifications,
         },
       }
     }
