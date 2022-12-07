@@ -46,6 +46,7 @@ service cloud.firestore {
                           // && (get(/databases/$(database)/documents/users/$(request.resource.data.referredByUserId)).referredByUserId == resource.data.id);
       match /events/{eventId} {
         allow create: if (request.auth == null && userId == 'NO_USER') || userId == request.auth.uid;
+        allow read: if userId == request.auth.uid;
       }
     }
 
