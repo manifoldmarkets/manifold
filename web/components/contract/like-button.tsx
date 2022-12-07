@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useState } from 'react'
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
 import { useIsLiked } from 'web/hooks/use-likes'
 import { react, unReact } from 'web/lib/firebase/reactions'
@@ -8,6 +8,7 @@ import { Contract } from 'common/contract'
 import { debounce } from 'lodash'
 import { ReactionContentTypes, ReactionTypes } from 'common/reaction'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import useLongPress from 'web/hooks/use-longpress'
 
 const ButtonReactionType = 'like' as ReactionTypes
 export const LikeButton = memo(function LikeButton(props: {
@@ -56,7 +57,7 @@ export const LikeButton = memo(function LikeButton(props: {
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedOnLike = useMemo(() => debounce(onLike, 1000), [user])
+  const debouncedOnLike = useMemo(() => debounce(onLike, 500), [user])
 
   // Handle changes from our useLike hook
   useEffect(() => {
@@ -71,48 +72,52 @@ export const LikeButton = memo(function LikeButton(props: {
     setLiked(liked)
     setTotalLikes((prev) => (liked ? prev + 1 : prev - 1))
     debouncedOnLike(liked)
+    onLike(liked)
   }
 
+  const onClick = useCallback(() => {
+    handleLiked(!liked)
+  }, [])
+
+  const onLongClick = useCallback(() => {
+    console.log('looonggg!')
+  }, [])
+
+  const likeLongPress = useLongPress(onLongClick, onClick, 500)
+
   return (
-    <Tooltip
-      text={userLiked ? 'Unlike' : 'Like'}
-      placement="bottom"
-      noTap
-      noFade
+    <button
+      disabled={disabled}
+      className={clsx(
+        'px-2 py-1 text-xs', //2xs button
+        'text-gray-500 transition-transform disabled:cursor-not-allowed',
+        !disabled ? 'hover:text-gray-600' : ''
+      )}
+      // onMouseOver={() => {
+      //   if (!disabled) {
+      //     setHover(true)
+      //   }
+      // }}
+      // onMouseLeave={() => setHover(false)}
+      {...likeLongPress}
+      // onClick={onClick}
     >
-      {' '}
-      <button
-        onClick={() => handleLiked(!liked)}
-        disabled={disabled}
-        className={clsx(
-          'px-2 py-1 text-xs', //2xs button
-          'text-gray-500 transition-transform disabled:cursor-not-allowed',
-          !disabled ? 'hover:text-gray-600' : ''
-        )}
-        onMouseOver={() => {
-          if (!disabled) {
-            setHover(true)
-          }
-        }}
-        onMouseLeave={() => setHover(false)}
-      >
-        <div className="relative">
-          <div
-            className={clsx(
-              totalLikes > 0 ? 'bg-gray-500' : '',
-              ' absolute -bottom-1.5 -right-1.5 min-w-[15px] rounded-full p-[1.5px] text-center text-[10px] leading-3 text-white'
-            )}
-          >
-            {totalLikes > 0 ? totalLikes : ''}
-          </div>
-          <HeartIcon
-            className={clsx(
-              'h-5 w-5',
-              showRed ? 'fill-red-400 stroke-red-400' : ''
-            )}
-          />
+      <div className="relative">
+        <div
+          className={clsx(
+            totalLikes > 0 ? 'bg-gray-500' : '',
+            ' absolute -bottom-1.5 -right-1.5 min-w-[15px] rounded-full p-[1.5px] text-center text-[10px] leading-3 text-white'
+          )}
+        >
+          {totalLikes > 0 ? totalLikes : ''}
         </div>
-      </button>
-    </Tooltip>
+        <HeartIcon
+          className={clsx(
+            'h-5 w-5',
+            showRed ? 'fill-red-400 stroke-red-400' : ''
+          )}
+        />
+      </div>
+    </button>
   )
 })

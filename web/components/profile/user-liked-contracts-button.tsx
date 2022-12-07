@@ -1,5 +1,5 @@
 import { User } from 'common/user'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { TextButton } from 'web/components/buttons/text-button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -11,6 +11,7 @@ import { unReact } from 'web/lib/firebase/reactions'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { useContracts } from 'web/hooks/use-contracts'
 import { filterDefined } from 'common/util/array'
+import useLongPress from 'web/hooks/use-longpress'
 
 export function UserLikedContractsButton(props: {
   user: User
@@ -24,6 +25,15 @@ export function UserLikedContractsButton(props: {
     useContracts(likes?.map((l) => l.contentId) ?? [])
   )
 
+  const onClick = useCallback(() => {
+    console.log('liked!')
+  }, [])
+
+  const onLongClick = useCallback(() => {
+    console.log('looonggg!')
+  }, [])
+
+  const backspaceLongPress = useLongPress(onLongClick, onClick, 500)
   return (
     <>
       <TextButton onClick={() => setIsOpen(true)} className={className}>
