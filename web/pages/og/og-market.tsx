@@ -160,7 +160,7 @@ function ResolutionDiv(props: OgCardProps) {
   return (
     <div className={`flex flex-col ${color}`}>
       <div className="flex text-center text-8xl">{text}</div>
-      <div className="flex w-full justify-end text-4xl">
+      <div className="flex w-full justify-center text-4xl">
         {resolution === 'CANCEL' ? '' : 'resolved'}
       </div>
     </div>
