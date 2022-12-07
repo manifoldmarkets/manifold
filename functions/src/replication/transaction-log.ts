@@ -74,24 +74,36 @@ export const logContractComments = logger(
   'contractComment'
 )
 
-export const replicatelogtosupabase = onMessagePublished<TLEntry>(
+export const replicatelogtofirestore = onMessagePublished<TLEntry>(
   {
     topic: 'firestoreWrite',
-    secrets: ['SUPABASE_KEY'],
     cpu: 2,
-    minInstances: 2,
+    minInstances: 1,
     concurrency: 1000,
     memory: '2GiB',
   },
   async (event) => {
     const entry = event.data.message.json
     const db = admin.firestore()
+    await db.collection('transactionLog').doc(entry.eventId).create(entry)
+  }
+)
+
+export const replicatelogtosupabase = onMessagePublished<TLEntry>(
+  {
+    topic: 'firestoreWrite',
+    secrets: ['SUPABASE_KEY'],
+    cpu: 2,
+    minInstances: 1,
+    concurrency: 1000,
+    memory: '2GiB',
+  },
+  async (event) => {
+    const entry = event.data.message.json
     try {
-      await Promise.all([
-        db.collection('transactionLog').doc(entry.eventId).create(entry),
-        replicateWrites(createSupabaseClient(), entry),
-      ])
+      await replicateWrites(createSupabaseClient(), entry)
     } catch (e) {
+      const db = admin.firestore()
       await db
         .collection('replicationState')
         .doc('supabase')
