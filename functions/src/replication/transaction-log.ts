@@ -1,12 +1,16 @@
 import * as admin from 'firebase-admin'
-import { CollectionReference, DocumentSnapshot } from 'firebase-admin/firestore'
+import { DocumentSnapshot } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions'
 import { Change, EventContext } from 'firebase-functions'
+import { onMessagePublished } from 'firebase-functions/v2/pubsub'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { PubSub } from '@google-cloud/pubsub'
 import { chunk } from 'lodash'
 
 import { createSupabaseClient, run } from './utils'
 import { DocumentKind, TLEntry } from '../../../common/transaction-log'
+
+const pubSubClient = new PubSub()
 
 function getWriteInfo<T>(change: Change<DocumentSnapshot<T>>) {
   const { before, after } = change
@@ -39,13 +43,10 @@ function getTLEntry<T>(
 }
 
 function logger(path: string, docKind: DocumentKind) {
-  const handler = (change: Change<DocumentSnapshot>, ctx: EventContext) => {
-    const db = admin.firestore()
-    const tl = db.collection('transactionLog') as CollectionReference<TLEntry>
+  return functions.firestore.document(path).onWrite((change, ctx) => {
     const entry = getTLEntry(change, ctx, docKind)
-    return tl.doc(ctx.eventId).create(entry)
-  }
-  return functions.firestore.document(path).onWrite(handler)
+    pubSubClient.topic('firestoreWrite').publishMessage({ json: entry })
+  })
 }
 
 async function replicateWrites(client: SupabaseClient, ...entries: TLEntry[]) {
@@ -73,28 +74,38 @@ export const logContractComments = logger(
   'contractComment'
 )
 
-export const replicateLogToSupabase = functions
-  .runWith({ secrets: ['SUPABASE_KEY'] })
-  .firestore.document('transactionLog/{eventId}')
-  .onCreate(async (doc) => {
-    const entry = doc.data() as TLEntry
+export const replicateLogToSupabase = onMessagePublished(
+  {
+    topic: 'firestoreWrite',
+    secrets: ['SUPABASE_KEY'],
+    cpu: 2,
+    minInstances: 2,
+    concurrency: 1000,
+    memory: '2GiB',
+  },
+  async (event) => {
+    const entry = event.data.message.json() as TLEntry
+    const db = admin.firestore()
     try {
-      await replicateWrites(createSupabaseClient(), entry)
+      await Promise.all([
+        db.collection('transactionLog').doc(entry.eventId).create(entry),
+        replicateWrites(createSupabaseClient(), entry),
+      ])
     } catch (e) {
-      const firestore = admin.firestore()
-      await firestore
+      await db
         .collection('replicationState')
         .doc('supabase')
         .collection('failedWrites')
         .doc(entry.eventId)
-        .create({ eventId: entry.eventId })
+        .create(entry)
       console.error(
         `Failed to replicate ${entry.docKind} ${entry.docId}. \
         Logging failed write: ${entry.eventId}.`,
         e
       )
     }
-  })
+  }
+)
 
 export const replayFailedSupabaseWrites = functions
   .runWith({ secrets: ['SUPABASE_KEY'] })
@@ -115,11 +126,7 @@ export const replayFailedSupabaseWrites = functions
     const deleter = firestore.bulkWriter({ throttling: false })
     try {
       for (const batch of chunk(snap.docs, 1000)) {
-        const eventRefs = snap.docs.map((d) =>
-          firestore.collection('transactionLog').doc(d.id)
-        )
-        const eventDocs = await firestore.getAll(...eventRefs)
-        const entries = eventDocs.map((d) => d.data() as TLEntry)
+        const entries = snap.docs.map((d) => d.data() as TLEntry)
         await replicateWrites(client, ...entries)
         for (const doc of batch) {
           deleter.delete(doc.ref)
