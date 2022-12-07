@@ -10,7 +10,6 @@ export type NotificationGroup = {
   groupedById: string
   isSeen: boolean
   timePeriod: string
-  // type: 'income' | 'normal'
 }
 
 function useNotifications(privateUser: PrivateUser) {
@@ -40,31 +39,10 @@ function groupNotifications(notifications: Notification[]) {
   const notificationGroupsByDay = groupBy(notifications, (notification) =>
     new Date(notification.createdTime).toDateString()
   )
-  const incomeSourceTypes = [
-    'bonus',
-    'tip',
-    'loan',
-    'betting_streak_bonus',
-    'tip_and_like',
-  ]
 
   Object.keys(notificationGroupsByDay).forEach((day) => {
     const notificationsGroupedByDay = notificationGroupsByDay[day]
-    // const [incomeNotifications, normalNotificationsGroupedByDay] = partition(
-    //   notificationsGroupedByDay,
-    //   (notification) =>
-    //     incomeSourceTypes.includes(notification.sourceType ?? '')
-    // )
-    // if (incomeNotifications.length > 0) {
-    //   notificationGroups = notificationGroups.concat({
-    //     notifications: incomeNotifications,
-    //     groupedById: 'income' + day,
-    //     isSeen: incomeNotifications[0].isSeen,
-    //     timePeriod: day,
-    //     type: 'income',
-    //   })
-    // }
-    // Group notifications by contract, filtering out bonuses:
+    // Group notifications by contract
     const groupedNotificationsByContractId = groupBy(
       notificationsGroupedByDay,
       (notification) => {
@@ -84,7 +62,6 @@ function groupNotifications(notifications: Notification[]) {
           groupedById: contractId,
           isSeen: notificationsForContractId.some((n) => !n.isSeen),
           timePeriod: day,
-          // type: 'normal',
         }
         return notificationGroup
       })

@@ -44,8 +44,7 @@ export function NotificationItem(props: {
     'betting_streak_bonus',
     'tip_and_like',
   ]
-const isIncomeNotification = incomeSourceTypes.includes(sourceType)
-  if (isIncomeNotification) {
+  if (incomeSourceTypes.includes(sourceType)) {
     return (
       <IncomeNotificationItem
         notification={notification}

@@ -12,9 +12,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
-import {
-  combineNotificationsByAddingNumericSourceTexts,
-} from 'web/components/notifications/income-summary-notifications'
+import { combineAndSumIncomeNotifications } from 'web/components/notifications/income-summary-notifications'
 import {
   combineReactionNotifications,
   markNotificationsAsSeen,
@@ -217,25 +215,28 @@ function NotificationGroupItem(props: {
   const { notifications } = notificationGroup
   const groupHighlighted = notifications.some((n) => !n.isSeen)
   const { sourceTitle, sourceContractTitle } = notifications[0]
-  const incomeTypesToSum = [
-    'bonus',
-    'tip',
-    'tip_and_like',
-  ]
-  const combinedNotifs = sortBy(combineReactionNotifications(
-    notifications.filter((n) =>
-      ReactionNotificationTypes.includes(n.sourceType)
+  const incomeTypesToSum = ['bonus', 'tip', 'tip_and_like']
+  const combinedNotifs = sortBy(
+    combineReactionNotifications(
+      notifications.filter((n) =>
+        ReactionNotificationTypes.includes(n.sourceType)
+      )
     )
-  ).concat(
-    notifications.filter(
-      (n) => !ReactionNotificationTypes.includes(n.sourceType) && !incomeTypesToSum.includes(n.sourceType)
-    )
-  ).concat(
-    combineNotificationsByAddingNumericSourceTexts(
-      notifications.filter((n) => incomeTypesToSum.includes(n.sourceType))
-    ))
+      .concat(
+        notifications.filter(
+          (n) =>
+            !ReactionNotificationTypes.includes(n.sourceType) &&
+            !incomeTypesToSum.includes(n.sourceType)
+        )
+      )
+      .concat(
+        combineAndSumIncomeNotifications(
+          notifications.filter((n) => incomeTypesToSum.includes(n.sourceType))
+        )
+      ),
 
-    , 'createdTime').reverse()
+    'createdTime'
+  ).reverse()
   const header = (
     <ParentNotificationHeader
       header={

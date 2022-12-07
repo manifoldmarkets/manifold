@@ -2,8 +2,7 @@ import {
   BETTING_STREAK_BONUS_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { groupPath } from 'common/group'
-import { getSourceIdForLinkComponent, Notification } from 'common/notification'
+import { Notification } from 'common/notification'
 import { formatMoney } from 'common/util/format'
 import { groupBy, uniqBy } from 'lodash'
 import { useState } from 'react'
@@ -23,7 +22,7 @@ import {
 } from './notification-helpers'
 
 // Loop through the contracts and combine the notification items into one
-export function combineNotificationsByAddingNumericSourceTexts(
+export function combineAndSumIncomeNotifications(
   notifications: Notification[]
 ) {
   const newNotifications: Notification[] = []
@@ -285,30 +284,7 @@ export function LoanIncomeNotification(props: {
   )
 }
 
-export function getIncomeSourceUrl(notification: Notification) {
-  const {
-    sourceId,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
-    sourceSlug,
-    sourceType,
-    sourceUserUsername,
-  } = notification
-  if (sourceType === 'tip' && sourceContractSlug)
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
-  if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
-  if (sourceType === 'challenge') return `${sourceSlug}`
-  if (sourceType === 'betting_streak_bonus')
-    return `/${sourceUserUsername}/?show=betting-streak`
-  if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loans`
-  if (sourceContractCreatorUsername && sourceContractSlug)
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
-      sourceId ?? '',
-      sourceType
-    )}`
-}
-
-export function IncomeNotificationLabel(props: { notification: Notification }) {
+function IncomeNotificationLabel(props: { notification: Notification }) {
   const { notification } = props
   const { sourceText } = notification
   return sourceText ? (
