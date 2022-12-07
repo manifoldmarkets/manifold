@@ -1,8 +1,8 @@
-import { onSchedule } from 'firebase-functions/v2/scheduler'
+import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy } from 'lodash'
 
-import { getValues, log, revalidateStaticProps } from './utils'
+import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
@@ -16,23 +16,37 @@ import {
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
+import { newEndpointNoAuth } from './api'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
 
-export const updateusermetrics = onSchedule(
+const firestore = admin.firestore()
+
+export const scheduleUpdateUserMetrics = functions.pubsub
+  .schedule('every 15 minutes')
+  .onRun(async () => {
+    try {
+      console.log(await invokeFunction('updateusermetrics'))
+    } catch (e) {
+      console.error(e)
+    }
+  })
+
+export const updateusermetrics = newEndpointNoAuth(
   {
-    schedule: 'every 15 minutes',
     timeoutSeconds: 2000,
     memory: '16GiB',
     minInstances: 0,
     secrets: ['API_SECRET'],
   },
-  updateUserMetrics
+  async (_req) => {
+    await updateUserMetrics()
+    return { success: true }
+  }
 )
 
 export async function updateUserMetrics() {
   log('Loading users...')
-  const firestore = admin.firestore()
   const users = await getValues<User>(firestore.collection('users'))
   log(`Loaded ${users.length} users.`)
 
@@ -150,12 +164,12 @@ export async function updateUserMetrics() {
 
   log('Committing writes...')
   await writer.close()
+
   await revalidateStaticProps('/leaderboards')
   log('Done.')
 }
 
 const loadUserContractBets = async (userId: string, contractIds: string[]) => {
-  const firestore = admin.firestore()
   const betDocs = await batchedWaitAll(
     contractIds.map((c) => async () => {
       return await firestore
@@ -174,7 +188,6 @@ const loadUserContractBets = async (userId: string, contractIds: string[]) => {
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {
-  const firestore = admin.firestore()
   const query = firestore
     .collection('users')
     .doc(userId)

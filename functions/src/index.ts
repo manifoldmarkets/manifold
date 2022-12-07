@@ -9,10 +9,10 @@ export * from './on-create-user'
 export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
 export * from './on-create-comment-on-post'
-export * from './update-contract-metrics'
-export * from './update-user-metrics'
-export * from './update-group-metrics'
-export * from './update-loans'
+export { scheduleUpdateContractMetrics } from './update-contract-metrics'
+export { scheduleUpdateUserMetrics } from './update-user-metrics'
+export { scheduleUpdateGroupMetrics } from './update-group-metrics'
+export { scheduleUpdateLoans } from './update-loans'
 export * from './update-stats'
 export * from './backup-db'
 export * from './market-close-notifications'
@@ -80,6 +80,10 @@ import { getcurrentuser } from './get-current-user'
 import { acceptchallenge } from './accept-challenge'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
+import { updatecontractmetrics } from './update-contract-metrics'
+import { updateusermetrics } from './update-user-metrics'
+import { updategroupmetrics } from './update-group-metrics'
+import { updateloans } from './update-loans'
 import { addsubsidy } from './add-subsidy'
 import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from './validate-iap'
@@ -111,6 +115,10 @@ const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
 const testScheduledFunction = toCloudFunction(testscheduledfunction)
+const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
+const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
+const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
+const updateLoansFunction = toCloudFunction(updateloans)
 const validateIAPFunction = toCloudFunction(validateiap)
 
 export {
@@ -138,5 +146,9 @@ export {
   saveTwitchCredentials as savetwitchcredentials,
   createCommentFunction as createcomment,
   testScheduledFunction as testscheduledfunction,
+  updateContractMetricsFunction as updatecontractmetrics,
+  updateUserMetricsFunction as updateusermetrics,
+  updateGroupMetricsFunction as updategroupmetrics,
+  updateLoansFunction as updateloans,
   validateIAPFunction as validateiap,
 }

@@ -1,30 +1,41 @@
-import { onSchedule } from 'firebase-functions/v2/scheduler'
+import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy, keyBy, sortBy } from 'lodash'
-import { getValues, log, payUser, writeAsync } from './utils'
+import { getValues, invokeFunction, log, payUser, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
 import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
 import { createLoanIncomeNotification } from './create-notification'
 import { filterDefined } from '../../common/util/array'
+import { newEndpointNoAuth } from './api'
 import { batchedWaitAll } from '../../common/util/promise'
 
-export const updateloans = onSchedule(
-  {
-    schedule: '0 0 * * *', // Run every day at midnight.
-    timeZone: 'America/Los_Angeles',
-    timeoutSeconds: 2000,
-    memory: '8GiB',
-    minInstances: 0,
-  },
-  updateLoansCore
+const firestore = admin.firestore()
+
+export const scheduleUpdateLoans = functions.pubsub
+  // Run every day at midnight.
+  .schedule('0 0 * * *')
+  .timeZone('America/Los_Angeles')
+  .onRun(async () => {
+    try {
+      console.log(await invokeFunction('updateloans'))
+    } catch (e) {
+      console.error(e)
+    }
+  })
+
+export const updateloans = newEndpointNoAuth(
+  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
+  async (_req) => {
+    await updateLoansCore()
+    return { success: true }
+  }
 )
 
 async function updateLoansCore() {
   log('Updating loans...')
 
-  const firestore = admin.firestore()
   const [users, contracts] = await Promise.all([
     getValues<User>(firestore.collection('users')),
     getValues<Contract>(
