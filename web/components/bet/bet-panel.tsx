@@ -309,7 +309,7 @@ export function BuyPanel(props: {
         )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
           user?.balance ?? 0
         )}`
-      : (betAmount ?? 0) > 10 && probChange >= 0.3 && bankrollFraction <= 1
+      : (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
       ? `Are you sure you want to move the market by ${displayedDifference}?`
       : undefined
 
