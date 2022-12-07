@@ -37,6 +37,7 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { User } from 'common/user'
+import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -212,6 +213,7 @@ export const resolveMarket = async (
 
   console.log('contract ', contractId, 'resolved to:', outcome)
 
+  await updateContractMetricsForUsers(contract, bets)
   await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
   await revalidateStaticProps(getContractPath(contract))
 

@@ -31,7 +31,7 @@ import { addHouseSubsidy } from './helpers/add-house-subsidy'
 import { BOT_USERNAMES } from '../../common/envs/constants'
 import { addUserToContractFollowers } from './follow-market'
 import { handleReferral } from './helpers/handle-referral'
-import { calculateMetricsByContract } from '../../common/calculate-metrics'
+import { calculateUserMetrics } from '../../common/calculate-metrics'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -317,14 +317,10 @@ const updateContractMetrics = async (contract: Contract, user: User) => {
     .get()
 
   const bets = betSnap.docs.map((doc) => doc.data() as Bet)
-  const newMetrics = calculateMetricsByContract(
-    { [contract.id]: bets },
-    { [contract.id]: contract },
-    user
-  )
+  const newMetrics = calculateUserMetrics(contract, bets, user)
 
   await firestore
     .collection(`users/${user.id}/contract-metrics`)
     .doc(contract.id)
-    .set(newMetrics[0])
+    .set(newMetrics)
 }
