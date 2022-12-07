@@ -45,7 +45,7 @@ function getTLEntry<T>(
 function logger(path: string, docKind: DocumentKind) {
   return functions.firestore.document(path).onWrite((change, ctx) => {
     const entry = getTLEntry(change, ctx, docKind)
-    pubSubClient.topic('firestoreWrite').publishMessage({ json: entry })
+    return pubSubClient.topic('firestoreWrite').publishMessage({ json: entry })
   })
 }
 
@@ -74,7 +74,7 @@ export const logContractComments = logger(
   'contractComment'
 )
 
-export const replicateLogToSupabase = onMessagePublished(
+export const replicatelogtosupabase = onMessagePublished<TLEntry>(
   {
     topic: 'firestoreWrite',
     secrets: ['SUPABASE_KEY'],
@@ -84,7 +84,7 @@ export const replicateLogToSupabase = onMessagePublished(
     memory: '2GiB',
   },
   async (event) => {
-    const entry = event.data.message.json() as TLEntry
+    const entry = event.data.message.json
     const db = admin.firestore()
     try {
       await Promise.all([
