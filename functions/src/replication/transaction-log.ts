@@ -108,7 +108,7 @@ export const replicatelogtosupabase = onMessagePublished<TLEntry>(
 )
 
 export const replayFailedSupabaseWrites = functions
-  .runWith({ secrets: ['SUPABASE_KEY'] })
+  .runWith({ secrets: ['SUPABASE_KEY'], timeoutSeconds: 540 })
   .pubsub.schedule('every 1 minutes')
   .onRun(async () => {
     const firestore = admin.firestore()
