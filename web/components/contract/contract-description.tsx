@@ -95,6 +95,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
           color="gray"
           size="2xs"
           onClick={() => {
+            console.log('json', editor?.getJSON())
             setEditing(true)
             editor?.commands.focus('end')
           }}

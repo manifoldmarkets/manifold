@@ -35,6 +35,11 @@ import { generateReact, insertContent } from '../editor/utils'
 import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { DisplaySpoiler } from '../editor/spoiler'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
+import Collaboration from '@tiptap/extension-collaboration'
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
+import * as Y from 'yjs'
+import { HocuspocusProvider } from '@hocuspocus/provider'
+import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -106,6 +111,11 @@ export function useTextEditor(props: {
     '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, embeds
   )
 
+  // Check whether we're on server or client
+  const isClient = typeof window !== 'undefined'
+  console.log('isClient', isClient)
+  console.log('provider', provider)
+
   const editor = useEditor({
     editorProps: {
       attributes: { class: editorClass, spellcheck: simple ? 'true' : 'false' },
@@ -119,6 +129,13 @@ export function useTextEditor(props: {
           'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
       }),
       CharacterCount.configure({ limit: max }),
+      Collaboration.configure({
+        document: ydoc,
+      }),
+      CollaborationCursor.configure({
+        provider,
+        user: { name: 'John Doe', color: '#ffcc00' },
+      }),
     ],
     content: defaultValue ?? (key && content ? content : ''),
   })
@@ -165,6 +182,18 @@ const getImages = (data: DataTransfer | null) =>
 function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
 }
+
+// TODO: Separate file for collab?
+const ydoc = new Y.Doc()
+
+const provider =
+  typeof window !== 'undefined'
+    ? new HocuspocusProvider({
+        url: 'ws://127.0.0.1',
+        name: 'example-document',
+        document: ydoc,
+      })
+    : null
 
 export function TextEditor(props: {
   editor: Editor | null
