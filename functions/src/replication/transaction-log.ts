@@ -5,9 +5,9 @@ import { Change, EventContext } from 'firebase-functions'
 import { onMessagePublished } from 'firebase-functions/v2/pubsub'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { PubSub } from '@google-cloud/pubsub'
-import { chunk } from 'lodash'
 
 import { createSupabaseClient, run } from './utils'
+import { processPaginated } from '../utils'
 import { DocumentKind, TLEntry } from '../../../common/transaction-log'
 
 const pubSubClient = new PubSub()
@@ -116,24 +116,18 @@ export const replayFailedSupabaseWrites = functions
       .collection('replicationState')
       .doc('supabase')
       .collection('failedWrites')
-    const snap = await failedWrites.get()
-    if (snap.size === 0) {
-      return
-    }
-
-    console.log(`Attempting to replay ${snap.size} write(s)...`)
     const client = createSupabaseClient()
     const deleter = firestore.bulkWriter({ throttling: false })
-    try {
-      for (const batch of chunk(snap.docs, 1000)) {
-        const entries = snap.docs.map((d) => d.data() as TLEntry)
+    await processPaginated(failedWrites, 1000, async (snaps) => {
+      if (snaps.size > 0) {
+        console.log(`Attempting to replay ${snaps.size} write(s)...`)
+        const entries = snaps.docs.map((d) => d.data() as TLEntry)
         await replicateWrites(client, ...entries)
-        for (const doc of batch) {
+        for (const doc of snaps.docs) {
           deleter.delete(doc.ref)
         }
       }
-    } catch (e) {
-      console.error(e)
-    }
+      await deleter.flush()
+    })
     await deleter.close()
   })
