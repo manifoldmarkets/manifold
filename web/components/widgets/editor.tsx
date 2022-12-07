@@ -75,7 +75,8 @@ export const proseClass = (size: 'sm' | 'md' | 'lg') =>
     size !== 'lg' && 'prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0',
     '[&>p]:prose-li:my-0',
     'text-gray-900 prose-blockquote:text-gray-600',
-    'prose-a:font-light prose-blockquote:font-light font-light'
+    'prose-a:font-light prose-blockquote:font-light font-light',
+    'break-anywhere'
   )
 
 export function useTextEditor(props: {
