@@ -77,8 +77,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     })
   )
 
+  // Get all bets made by each user
   const usersToBetsInLastWeek: { [userId: string]: Bet[] } = {}
-  // get all bets made by each user
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (user) => {
       usersToBetsInLastWeek[user.id] = await getValues<Bet>(
@@ -90,8 +90,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     })
   )
 
-  const usersToContractsCreated: { [userId: string]: Contract[] } = {}
   // Get all contracts created by each user
+  const usersToContractsCreated: { [userId: string]: Contract[] } = {}
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (user) => {
       usersToContractsCreated[user.id] = await getValues<Contract>(
@@ -130,8 +130,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     })
   )
 
+  // Get all contract metrics for each user
   const usersToContractMetrics: { [userId: string]: ContractMetric[] } = {}
-  // get all bets made by each user
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (user) => {
       const topProfits = await getValues<ContractMetric>(
