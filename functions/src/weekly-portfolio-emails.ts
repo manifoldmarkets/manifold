@@ -13,16 +13,17 @@ import {
 } from './utils'
 import { filterDefined } from '../../common/util/array'
 import { DAY_MS } from '../../common/util/time'
-import { partition, sortBy, sum, uniq } from 'lodash'
+import { partition, sortBy, uniq } from 'lodash'
 import { Bet } from '../../common/bet'
-import { computeInvestmentValueCustomProb } from '../../common/calculate-metrics'
 import { sendWeeklyPortfolioUpdateEmail } from './emails'
 import { contractUrl } from './utils'
 import { Txn } from '../../common/txn'
 import { formatMoney } from '../../common/util/format'
-import { getContractBetMetrics } from '../../common/calculate'
+import { Reaction, ReactionTypes } from '../../common/reaction'
+import { ContractMetric } from '../../common/contract-metric'
 
 const USERS_TO_EMAIL = 600
+const WEEKLY_MOVERS_TO_SEND = 6
 // This should(?) work until we have ~70k users (500 * 120)
 export const weeklyPortfolioUpdateEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB', timeoutSeconds: 540 })
@@ -76,15 +77,16 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     })
   )
 
-  const usersBets: { [userId: string]: Bet[] } = {}
+  const userBetsInLastWeek: { [userId: string]: Bet[] } = {}
   // get all bets made by each user
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (user) => {
-      return getValues<Bet>(
-        firestore.collectionGroup('bets').where('userId', '==', user.id)
-      ).then((bets) => {
-        usersBets[user.id] = bets
-      })
+      userBetsInLastWeek[user.id] = await getValues<Bet>(
+        firestore
+          .collectionGroup('bets')
+          .where('userId', '==', user.id)
+          .where('createdTime', '>=', Date.now() - 7 * DAY_MS)
+      )
     })
   )
 
@@ -92,14 +94,12 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
   // Get all contracts created by each user
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (user) => {
-      return getValues<Contract>(
+      usersToContractsCreated[user.id] = await getValues<Contract>(
         firestore
           .collection('contracts')
           .where('creatorId', '==', user.id)
           .where('createdTime', '>', Date.now() - 7 * DAY_MS)
-      ).then((contracts) => {
-        usersToContractsCreated[user.id] = contracts
-      })
+      )
     })
   )
 
@@ -107,23 +107,55 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
   const usersToTxnsReceived: { [userId: string]: Txn[] } = {}
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (user) => {
-      return getValues<Txn>(
+      usersToTxnsReceived[user.id] = await getValues<Txn>(
         firestore
           .collection(`txns`)
           .where('toId', '==', user.id)
           .where('createdTime', '>', Date.now() - 7 * DAY_MS)
-      ).then((txn) => {
-        usersToTxnsReceived[user.id] = txn
-      })
+      )
     })
   )
 
-  // Get a flat map of all the bets that users made to get the contracts they bet on
+  // Get all likes the users received over the past week
+  const usersToLikesReceived: { [userId: string]: Reaction[] } = {}
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (user) => {
+      usersToLikesReceived[user.id] = await getValues<Reaction>(
+        firestore
+          .collectionGroup(`reactions`)
+          .where('contentOwnerId', '==', user.id)
+          .where('type', '==', 'like' as ReactionTypes)
+          .where('createdTime', '>', Date.now() - 7 * DAY_MS)
+      )
+    })
+  )
+
+  const userContractMetrics: { [userId: string]: ContractMetric[] } = {}
+  // get all bets made by each user
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (user) => {
+      const topProfits = await getValues<ContractMetric>(
+        firestore
+          .collection(`users/${user.id}/contract-metrics`)
+          .orderBy('from.week.profit', 'desc')
+          .limit(Math.round(WEEKLY_MOVERS_TO_SEND / 2))
+      )
+      const topLosses = await getValues<ContractMetric>(
+        firestore
+          .collection(`users/${user.id}/contract-metrics`)
+          .orderBy('from.week.profit', 'asc')
+          .limit(Math.round(WEEKLY_MOVERS_TO_SEND / 2))
+      )
+      userContractMetrics[user.id] = [...topProfits, ...topLosses]
+    })
+  )
+
+  // Get a flat map of all the contracts that users have metrics for
   const contractsUsersBetOn = filterDefined(
     await Promise.all(
       uniq(
-        Object.values(usersBets).flatMap((bets) =>
-          bets.map((bet) => bet.contractId)
+        Object.values(userContractMetrics).flatMap((cms) =>
+          cms.map((cm) => cm.contractId)
         )
       ).map((contractId) =>
         getValue<Contract>(firestore.collection('contracts').doc(contractId))
@@ -137,20 +169,9 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       const user = await getUser(privateUser.id)
       // Don't send to a user unless they're over 5 days old
       if (!user || user.createdTime > Date.now() - 5 * DAY_MS) return
-      const userBets = usersBets[privateUser.id] as Bet[]
-      const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
-        userBets.some((bet) => bet.contractId === contract.id)
-      )
       const contractsBetOnInLastWeek = uniq(
-        userBets
-          .filter((bet) => bet.createdTime > Date.now() - 7 * DAY_MS)
-          .map((bet) => bet.contractId)
-      )
-      const totalTips = sum(
-        usersToTxnsReceived[privateUser.id]
-          .filter((txn) => txn.category === 'TIP')
-          .map((txn) => txn.amount)
-      )
+        userBetsInLastWeek[privateUser.id].map((bet) => bet.contractId)
+      ).length
       const greenBg = 'rgba(0,160,0,0.2)'
       const redBg = 'rgba(160,0,0,0.2)'
       const clearBg = 'rgba(255,255,255,0)'
@@ -165,61 +186,40 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         }`,
         markets_created:
           usersToContractsCreated[privateUser.id].length.toString(),
-        tips_received: formatMoney(totalTips),
+        likes_received: usersToLikesReceived[privateUser.id].length.toString(),
         unique_bettors: usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
           .length.toString(),
-        markets_traded: contractsBetOnInLastWeek.length.toString(),
+        markets_traded: contractsBetOnInLastWeek.toString(),
         prediction_streak:
           (user.currentBettingStreak?.toString() ?? '0') + ' days',
         // More options: bonuses, tips given,
       } as OverallPerformanceData
 
+      const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
+        userContractMetrics[user.id].some((cm) => cm.contractId === contract.id)
+      )
       const investmentValueDifferences = sortBy(
         filterDefined(
           contractsUserBetOn.map((contract) => {
             const cpmmContract = contract as CPMMContract
-            if (cpmmContract === undefined || cpmmContract.prob === undefined)
-              return
-            const bets = userBets.filter(
-              (bet) => bet.contractId === contract.id
-            )
-            const previousBets = bets.filter(
-              (b) => b.createdTime < Date.now() - 7 * DAY_MS
-            )
-
-            const betsInLastWeek = bets.filter(
-              (b) => b.createdTime >= Date.now() - 7 * DAY_MS
-            )
-
-            const marketProbabilityAWeekAgo =
+            const marketProbAWeekAgo =
               cpmmContract.prob - cpmmContract.probChanges.week
-            const currentMarketProbability = cpmmContract.prob
 
-            const betsMadeAWeekAgoValue = computeInvestmentValueCustomProb(
-              previousBets,
-              contract,
-              marketProbabilityAWeekAgo
-            )
-            const currentBetsMadeAWeekAgoValue =
-              computeInvestmentValueCustomProb(
-                previousBets,
-                contract,
-                currentMarketProbability
-              )
-            const betsMadeInLastWeekProfit = getContractBetMetrics(
-              contract,
-              betsInLastWeek
-            ).profit
-            const profit =
-              betsMadeInLastWeekProfit +
-              (currentBetsMadeAWeekAgoValue - betsMadeAWeekAgoValue)
+            const cm = userContractMetrics[user.id].filter(
+              (cm) => cm.contractId === contract.id
+            )[0]
+            if (!cm || !cm.from) return undefined
+            const fromWeek = cm.from.week
+            const profit = fromWeek.profit
+            const currentValue = cm.payout
+
             return {
-              currentValue: currentBetsMadeAWeekAgoValue,
-              pastValue: betsMadeAWeekAgoValue,
+              currentValue,
+              pastValue: fromWeek.prevValue,
               profit,
               contractSlug: contract.slug,
-              marketProbAWeekAgo: marketProbabilityAWeekAgo,
+              marketProbAWeekAgo,
               questionTitle: contract.question,
               questionUrl: contractUrl(contract),
               questionProb: cpmmContract.resolution
@@ -243,11 +243,11 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         }
       )
       // pick 3 winning investments and 3 losing investments
-      const topInvestments = winningInvestments.slice(0, 2)
-      const worstInvestments = losingInvestments.slice(0, 2)
+      const topInvestments = winningInvestments.slice(0, 3)
+      const worstInvestments = losingInvestments.slice(0, 3)
       // if no bets in the last week ANd no market movers AND no markets created, don't send email
       if (
-        contractsBetOnInLastWeek.length === 0 &&
+        contractsBetOnInLastWeek === 0 &&
         topInvestments.length === 0 &&
         worstInvestments.length === 0 &&
         usersToContractsCreated[privateUser.id].length === 0
@@ -258,7 +258,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         user,
         privateUser,
         topInvestments.concat(worstInvestments) as PerContractInvestmentsData[],
-        performanceData
+        performanceData,
+        WEEKLY_MOVERS_TO_SEND
       )
       sent++
       log(`emails sent: ${sent}/${USERS_TO_EMAIL}`)
@@ -281,7 +282,7 @@ export type OverallPerformanceData = {
   prediction_streak: string
   markets_traded: string
   profit_style: string
-  tips_received: string
+  likes_received: string
   markets_created: string
   unique_bettors: string
 }
