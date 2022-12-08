@@ -1,10 +1,7 @@
-import {
-  ChevronDoubleDownIcon,
-  ChevronDoubleUpIcon,
-} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Notification, ReactionNotificationTypes } from 'common/notification'
 import { PrivateUser } from 'common/user'
+import { sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -25,6 +22,7 @@ import {
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
+import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
@@ -36,7 +34,6 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { sortBy } from 'lodash'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
@@ -296,28 +293,12 @@ export function NotificationGroupItemComponent(props: {
           )
         })}
         {needsExpanding && (
-          <Row
-            className={clsx(
-              'text my-1 w-full items-center justify-end gap-1 text-indigo-700'
-            )}
-            onClick={onExpandHandler}
-          >
-            {!expanded && (
-              <>
-                <div>
-                  {numNotifications > NUM_SUMMARY_LINES
-                    ? 'See ' + (numNotifications - NUM_SUMMARY_LINES) + ' more'
-                    : ''}
-                </div>
-                <ChevronDoubleDownIcon className="h-4 w-4" />
-              </>
-            )}
-            {expanded && (
-              <>
-                <div>See Less</div>
-                <ChevronDoubleUpIcon className="h-4 w-4" />
-              </>
-            )}
+          <Row className={clsx('w-full items-center justify-end gap-1')}>
+            <ShowMoreLessButton
+              onClick={onExpandHandler}
+              isCollapsed={!expanded}
+              howManyMore={numNotifications - NUM_SUMMARY_LINES}
+            />
           </Row>
         )}
       </div>
