@@ -22,23 +22,27 @@ export function ShowMoreLessButton(props: {
   onClick: () => void
   isCollapsed: boolean
   className?: string
+  howManyMore?: number
   moreWhat?: string
 }) {
-  const { onClick, isCollapsed, className, moreWhat = '' } = props
+  const { onClick, isCollapsed, className, howManyMore, moreWhat = '' } = props
+  const howManyMoreText = howManyMore ? howManyMore + ' ' : ''
 
   return (
     <Button
-      color={'gray-white'}
+      color={'indigo-text-only'}
       className={clsx('z-10 select-none bg-white text-sm', className)}
       onClick={onClick}
     >
-      <Row className="items-center gap-0.5 text-indigo-700 drop-shadow-2xl">
+      <Row className="items-center gap-0.5">
         {isCollapsed ? (
           <ChevronDoubleDownIcon className="h-4 w-4" />
         ) : (
           <ChevronDoubleUpIcon className="h-4 w-4" />
         )}
-        {isCollapsed ? `Show More ${moreWhat}` : `Show Less ${moreWhat}`}
+        {isCollapsed
+          ? `Show ${howManyMoreText}More ${moreWhat}`
+          : `Show Less ${moreWhat}`}
       </Row>
     </Button>
   )
