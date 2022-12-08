@@ -438,7 +438,10 @@ function MarketResolvedNotification(props: {
       setHighlighted={setHighlighted}
       subtitle={subtitle}
       icon={
-        <AvatarNotificationIcon notification={notification} symbol={'☑️'} />
+        <AvatarNotificationIcon
+          notification={notification}
+          symbol={sourceText === 'CANCEL' ? '🚫' : '☑️'}
+        />
       }
       link={getSourceUrl(notification)}
     >
