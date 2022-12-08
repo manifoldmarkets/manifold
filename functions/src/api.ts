@@ -1,9 +1,10 @@
 import * as admin from 'firebase-admin'
+import { z } from 'zod'
 import { Request, RequestHandler, Response } from 'express'
 import { error } from 'firebase-functions/logger'
-import { HttpsOptions } from 'firebase-functions/v2/https'
+import { HttpsOptions, onRequest } from 'firebase-functions/v2/https'
+
 import { log } from './utils'
-import { z } from 'zod'
 import { APIError } from '../../common/api'
 import { PrivateUser } from '../../common/user'
 import {
@@ -146,6 +147,11 @@ export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
       }
     },
   } as EndpointDefinition
+}
+
+export const cloudFunction = (endpointOpts: EndpointOptions, fn: Handler) => {
+  const { opts, handler } = newEndpoint(endpointOpts, fn)
+  return onRequest(opts, handler as any)
 }
 
 export const newEndpointNoAuth = (
