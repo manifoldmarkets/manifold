@@ -110,6 +110,7 @@ export const CHECK_USERNAMES = [
   'LivInTheLookingGlass',
   'LarsDoucet',
   'Conflux',
+  'GavrielK',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
