@@ -463,8 +463,9 @@ export const notificationIsNecessary = (props: {
   } = props
   const necessaryError =
     'This notification type is necessary. At least one destination must be enabled.'
+  // Fall back to false for old deprecated reason types. They won't be able to change the setting though :(
   const necessarySetting =
-    NOTIFICATION_DESCRIPTIONS[subscriptionTypeKey].necessary
+    NOTIFICATION_DESCRIPTIONS[subscriptionTypeKey]?.necessary ?? false
   if (necessarySetting && setting === 'browser' && !emailEnabled && !newValue) {
     if (setError) {
       setError(necessaryError)
