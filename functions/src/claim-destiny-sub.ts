@@ -36,14 +36,12 @@ export const claimdestinysub = cloudFunction(
       if (user.balance < DESTINY_SUB_COST)
         throw new APIError(400, 'Insufficient balance.')
 
-      // TODO: Get destiny user id from username
-
       const response = await fetch(
         'https://www.destiny.gg/api/mm/award-sub?privatekey=' +
           process.env.DESTINY_API_KEY,
         {
           method: 'post',
-          body: JSON.stringify({ userId: destinyUsername }),
+          body: JSON.stringify({ username: destinyUsername }),
           headers: { 'Content-Type': 'application/json' },
         }
       )
@@ -68,7 +66,6 @@ export const claimdestinysub = cloudFunction(
         userId: user.id,
         username: user.username,
         destinyUsername,
-        destinyId: destinyUsername,
       }
 
       trans.create(subDoc, sub)

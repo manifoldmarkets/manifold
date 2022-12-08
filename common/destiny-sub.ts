@@ -4,7 +4,6 @@ export type DestinySub = {
   userId: string
   username: string
   destinyUsername: string
-  destinyId: string
   cost: number
   destinySubId: string
 }
