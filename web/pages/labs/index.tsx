@@ -96,6 +96,12 @@ export default function LabsPage() {
             href="/tournaments"
           />
 
+          <LabCard
+            title="🎨 Design system"
+            description="For us, mostly"
+            href="/styles"
+          />
+
           <LabCard title="🐮 Cowp" description="???" href="/cowp" />
         </Masonry>
       </Col>
