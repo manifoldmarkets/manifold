@@ -5,12 +5,17 @@ import { Change, EventContext } from 'firebase-functions'
 import { onMessagePublished } from 'firebase-functions/v2/pubsub'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { PubSub } from '@google-cloud/pubsub'
+import { Agent as HttpAgent } from 'http'
+import { Agent as HttpsAgent } from 'https'
 
 import { createSupabaseClient, run } from './utils'
-import { processPaginated } from '../utils'
+import { pooledFetch, processPaginated } from '../utils'
 import { DocumentKind, TLEntry } from '../../../common/transaction-log'
 
 const pubSubClient = new PubSub()
+const httpAgent = new HttpAgent({ keepAlive: true })
+const httpsAgent = new HttpsAgent({ keepAlive: true })
+const fetch = pooledFetch({ http: httpAgent, https: httpsAgent })
 
 function getWriteInfo<T>(change: Change<DocumentSnapshot<T>>) {
   const { before, after } = change
@@ -101,7 +106,7 @@ export const replicatelogtosupabase = onMessagePublished<TLEntry>(
   async (event) => {
     const entry = event.data.message.json
     try {
-      await replicateWrites(createSupabaseClient(), entry)
+      await replicateWrites(createSupabaseClient(fetch as any), entry)
     } catch (e) {
       const db = admin.firestore()
       await db
