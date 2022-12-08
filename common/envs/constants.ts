@@ -109,6 +109,9 @@ export const CHECK_USERNAMES = [
   'MartinRandall',
   'LivInTheLookingGlass',
   'LarsDoucet',
+  'Conflux',
+  'GavrielK',
+  'NcyRocks',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
