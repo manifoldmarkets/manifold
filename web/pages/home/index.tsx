@@ -1,81 +1,80 @@
-import React, { memo, ReactNode, useEffect, useMemo } from 'react'
-import Router from 'next/router'
-import { PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
+import { DotsVerticalIcon, PencilAltIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { toast } from 'react-hot-toast'
-import { difference, sortBy, sum } from 'lodash'
-import { chooseRandomSubset } from 'common/util/random'
-import { Page } from 'web/components/layout/page'
-import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
-import { useTracking } from 'web/hooks/use-tracking'
-import { track } from 'web/lib/service/analytics'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { Sort } from 'web/components/contract-search'
-import { Group, groupPath } from 'common/group'
-import { SiteLink } from 'web/components/widgets/site-link'
-import {
-  usePrivateUser,
-  useUser,
-  useUserContractMetricsByProfit,
-} from 'web/hooks/use-user'
-import {
-  useGroups,
-  useMemberGroupsIdsAndSlugs,
-  useTrendingGroups,
-} from 'web/hooks/use-group'
-import { Button, buttonClass } from 'web/components/buttons/button'
-import { Row } from 'web/components/layout/row'
-import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
-import { getGroup, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { PillButton } from 'web/components/buttons/pill-button'
-import { buildArray, filterDefined } from 'common/util/array'
-import { getUsersBlockFacetFilters, updateUser } from 'web/lib/firebase/users'
-import { isArray, keyBy } from 'lodash'
 import { Contract, CPMMBinaryContract } from 'common/contract'
-import {
-  useContractsByDailyScore,
-  useContractsByDailyScoreGroups,
-  useTrendingContracts,
-  useNewContracts,
-} from 'web/hooks/use-contracts'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Input } from 'web/components/widgets/input'
-import { PinnedItems } from 'web/components/groups/group-about'
-import {
-  getGlobalConfig,
-  updateGlobalConfig,
-} from 'web/lib/firebase/globalConfig'
-import { getPost } from 'web/lib/firebase/posts'
-import { PostCard } from 'web/components/posts/post-card'
-import { getContractFromId } from 'web/lib/firebase/contracts'
-import { ContractCard } from 'web/components/contract/contract-card'
-import { Post } from 'common/post'
-import { useAllPosts } from 'web/hooks/use-post'
-import { useGlobalConfig } from 'web/hooks/use-global-config'
-import { useAdmin } from 'web/hooks/use-admin'
-import { GlobalConfig } from 'common/globalConfig'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { ActivityLog } from 'web/components/activity-log'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import GoToIcon from 'web/lib/icons/go-to-icon'
-import { DailyStats } from 'web/components/daily-stats'
-import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
-import { GroupCard } from '../groups'
 import {
   BACKGROUND_COLOR,
   DESTINY_GROUP_SLUGS,
   HOME_BLOCKED_GROUP_SLUGS,
 } from 'common/envs/constants'
-import Link from 'next/link'
+import { GlobalConfig } from 'common/globalConfig'
+import { Group, groupPath } from 'common/group'
+import { Post } from 'common/post'
+import { User } from 'common/user'
+import { buildArray, filterDefined } from 'common/util/array'
+import { chooseRandomSubset } from 'common/util/random'
 import { MINUTE_MS } from 'common/util/time'
+import { difference, isArray, keyBy, sortBy, sum } from 'lodash'
+import Router, { SingletonRouter } from 'next/router'
+import { memo, ReactNode, useEffect, useMemo } from 'react'
+import { toast } from 'react-hot-toast'
+import { ActivityLog } from 'web/components/activity-log'
+import { Button } from 'web/components/buttons/button'
+import { PillButton } from 'web/components/buttons/pill-button'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { Sort } from 'web/components/contract-search'
+import { ContractCard } from 'web/components/contract/contract-card'
+import { ContractsGrid } from 'web/components/contract/contracts-grid'
+import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
+import { DailyStats } from 'web/components/daily-stats'
+import { PinnedItems } from 'web/components/groups/group-about'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { PostCard } from 'web/components/posts/post-card'
+import { Input } from 'web/components/widgets/input'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { SiteLink } from 'web/components/widgets/site-link'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import { useAdmin } from 'web/hooks/use-admin'
+import {
+  useContractsByDailyScore,
+  useContractsByDailyScoreGroups,
+  useNewContracts,
+  useTrendingContracts,
+} from 'web/hooks/use-contracts'
+import { useGlobalConfig } from 'web/hooks/use-global-config'
+import {
+  useGroups,
+  useMemberGroupsIdsAndSlugs,
+  useTrendingGroups,
+} from 'web/hooks/use-group'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { useAllPosts } from 'web/hooks/use-post'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useTracking } from 'web/hooks/use-tracking'
+import {
+  usePrivateUser,
+  useUser,
+  useUserContractMetricsByProfit,
+} from 'web/hooks/use-user'
+import { getContractFromId } from 'web/lib/firebase/contracts'
+import {
+  getGlobalConfig,
+  updateGlobalConfig,
+} from 'web/lib/firebase/globalConfig'
+import { getGroup, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import { getPost } from 'web/lib/firebase/posts'
+import { getUsersBlockFacetFilters, updateUser } from 'web/lib/firebase/users'
+import GoToIcon from 'web/lib/icons/go-to-icon'
+import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
+import { track } from 'web/lib/service/analytics'
+import { GroupCard } from '../groups'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -226,21 +225,21 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
   return (
     <Page>
-      <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
-        <Row
-          className={'mb-2 w-full items-center justify-between gap-2 sm:gap-8'}
-        >
-          <Row className="md:w-3/4">
-            <Input
-              type="text"
-              placeholder={'Search Manifold'}
-              className="w-full"
-              onClick={() => Router.push('/search')}
-              onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
-            />
-            <CustomizeButton className="ml-1" />
+      <Col className="pm:mx-10 gap-4 p-2 pb-8">
+        <Row className={'z-30 mb-2 w-full items-center gap-4'}>
+          <Input
+            type="text"
+            placeholder={'Search'}
+            className="flex min-w-0 grow"
+            onClick={() => Router.push('/search')}
+            onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
+          />
+          <Row className=" items-center gap-4">
+            <DailyStats user={user} />
+            <div className="mr-2">
+              <CustomizeButton router={Router} />
+            </div>
           </Row>
-          <DailyStats user={user} />
         </Row>
 
         {isLoading ? (
@@ -699,14 +698,24 @@ export const TrendingGroupsSection = memo(
   }
 )
 
-function CustomizeButton(props: { className?: string }) {
-  const { className } = props
+function CustomizeButton(props: {
+  router: SingletonRouter
+  className?: string
+}) {
+  const { router, className } = props
   return (
-    <Link
-      className={clsx(className, buttonClass('xs', 'gray-white'))}
-      href="/home/edit"
-    >
-      <HomeSettingsIcon className="h-7 w-7 text-gray-400" aria-hidden />
-    </Link>
+    <DropdownMenu
+      Items={[
+        {
+          name: 'Customize Home',
+          icon: <HomeSettingsIcon className="h-5 w-5" />,
+          onClick: () => {
+            router.push('/home/edit')
+          },
+        },
+      ]}
+      Icon={<DotsVerticalIcon className={clsx('my-1 h-4 w-4', className)} />}
+      MenuWidth="w-44"
+    />
   )
 }
