@@ -93,22 +93,15 @@ export function ResolutionPanel(props: {
           </>
         ) : outcome === 'CANCEL' ? (
           <>
-            All {PAST_BETS} will be returned. Unique {BETTOR} bonuses will be
+            All {PRESENT_BETS} will be returned. Unique {BETTOR} bonuses will be
             withdrawn from your account
           </>
         ) : outcome === 'MKT' ? (
-          <Col className="items-center gap-6">
-            <div>
-              {capitalize(PAST_BETS)} will be paid out at the probability you
-              specify:
-            </div>
-            <ProbabilityInput
-              prob={prob}
-              onChange={setProb}
-              inputClassName="w-28"
-            />
+          <>
+            {capitalize(PRESENT_BETS)} will be paid out at the probability you
+            specify:
             {/* You will earn {earnedFees}. */}
-          </Col>
+          </>
         ) : (
           <>Resolving this market will immediately pay out {BETTORS}.</>
         )}
@@ -116,6 +109,13 @@ export function ResolutionPanel(props: {
       <Spacer h={4} />
       {!!error && <div className="text-scarlet-500">{error}</div>}
       <Row className={'justify-center'}>
+        {outcome === 'MKT' && (
+          <ProbabilityInput
+            prob={prob}
+            onChange={setProb}
+            inputClassName="w-28 mr-3 !h-11"
+          />
+        )}
         <ResolveConfirmationButton
           color={
             outcome === 'YES'
