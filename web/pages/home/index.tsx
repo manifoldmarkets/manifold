@@ -1,6 +1,6 @@
 import React, { memo, ReactNode, useEffect, useMemo } from 'react'
-import Router from 'next/router'
-import { PencilAltIcon } from '@heroicons/react/solid'
+import Router, { useRouter } from 'next/router'
+import { DotsVerticalIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
@@ -76,6 +76,7 @@ import {
 import Link from 'next/link'
 import { MINUTE_MS } from 'common/util/time'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -226,21 +227,19 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
   return (
     <Page>
-      <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
-        <Row
-          className={'mb-2 w-full items-center justify-between gap-2 sm:gap-8'}
-        >
-          <Row className="md:w-3/4">
-            <Input
-              type="text"
-              placeholder={'Search Manifold'}
-              className="w-full"
-              onClick={() => Router.push('/search')}
-              onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
-            />
+      <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4">
+        <Row className={'z-30 mb-2 w-full items-center gap-8'}>
+          <Input
+            type="text"
+            placeholder={'Search Manifold'}
+            className="flex grow"
+            onClick={() => Router.push('/search')}
+            onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
+          />
+          <Row className="items-center gap-4">
+            <DailyStats user={user} />
             <CustomizeButton className="ml-1" />
           </Row>
-          <DailyStats user={user} />
         </Row>
 
         {isLoading ? (
@@ -701,12 +700,20 @@ export const TrendingGroupsSection = memo(
 
 function CustomizeButton(props: { className?: string }) {
   const { className } = props
+  const router = useRouter()
   return (
-    <Link
-      className={clsx(className, buttonClass('xs', 'gray-white'))}
-      href="/home/edit"
-    >
-      <HomeSettingsIcon className="h-7 w-7 text-gray-400" aria-hidden />
-    </Link>
+    <DropdownMenu
+      Items={[
+        {
+          name: 'Customize Home',
+          icon: <HomeSettingsIcon className="h-5 w-5" />,
+          onClick: () => {
+            router.push('/home/edit')
+          },
+        },
+      ]}
+      Icon={<DotsVerticalIcon className={clsx('my-1 h-4 w-4')} />}
+      MenuWidth="w-52"
+    />
   )
 }
