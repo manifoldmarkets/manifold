@@ -11,14 +11,12 @@ import {
   mergeAttributes,
   useEditor,
 } from '@tiptap/react'
-import { generateHTML } from '@tiptap/html'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import { ReactNode, useCallback, useMemo } from 'react'
+import React, { ReactNode, useCallback, useMemo } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention'
 import { DisplayMention } from '../editor/mention'
 import GridComponent from '../editor/tiptap-grid-cards'
-import StaticReactEmbedComponent from '../editor/tiptap-static-react-embed'
 import { Linkify } from './linkify'
 import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
@@ -31,10 +29,12 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { FloatingFormatMenu } from '../editor/floating-format-menu'
 import { StickyFormatMenu } from '../editor/sticky-format-menu'
-import TiptapTweet from '../editor/tiptap-tweet'
+import { DisplayTweet } from '../editor/tweet'
 import { Upload, useUploadMutation } from '../editor/upload-extension'
-import { insertContent } from '../editor/utils'
+import { generateReact, insertContent } from '../editor/utils'
 import { EmojiExtension } from '../editor/emoji/emoji-extension'
+import { DisplaySpoiler } from '../editor/spoiler'
+import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -45,33 +45,27 @@ const DisplayImage = Image.configure({
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
     delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
-    return [
-      'a',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
-      0,
-    ]
+    return ['a', mergeAttributes(HTMLAttributes, { class: linkClass }), 0]
   },
-}).configure({ HTMLAttributes: { class: linkClass } })
+})
 
-export const editorExtensions = (simple = false): Extensions => [
-  StarterKit.configure({
-    heading: simple ? false : { levels: [1, 2, 3] },
-    horizontalRule: simple ? false : {},
-  }),
-  simple ? DisplayImage : Image,
-  EmojiExtension,
-  DisplayLink,
-  DisplayMention,
-  DisplayContractMention,
-  GridComponent,
-  StaticReactEmbedComponent,
-  Iframe,
-  TiptapTweet,
-  TiptapSpoiler.configure({
-    spoilerOpenClass: 'rounded-sm bg-gray-200',
-  }),
-  Upload,
-]
+export const editorExtensions = (simple = false): Extensions =>
+  nodeViewMiddleware([
+    StarterKit.configure({
+      heading: simple ? false : { levels: [1, 2, 3] },
+      horizontalRule: simple ? false : {},
+    }),
+    simple ? DisplayImage : Image,
+    EmojiExtension,
+    DisplayLink,
+    DisplayMention,
+    DisplayContractMention,
+    GridComponent,
+    Iframe,
+    DisplayTweet,
+    TiptapSpoiler.configure({ class: 'rounded-sm bg-gray-200' }),
+    Upload,
+  ])
 
 export const proseClass = (size: 'sm' | 'md' | 'lg') =>
   clsx(
@@ -81,7 +75,8 @@ export const proseClass = (size: 'sm' | 'md' | 'lg') =>
     size !== 'lg' && 'prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0',
     '[&>p]:prose-li:my-0',
     'text-gray-900 prose-blockquote:text-gray-600',
-    'prose-a:font-light prose-blockquote:font-light font-light'
+    'prose-a:font-light prose-blockquote:font-light font-light',
+    'break-anywhere'
   )
 
 export function useTextEditor(props: {
@@ -107,9 +102,7 @@ export function useTextEditor(props: {
 
   const editorClass = clsx(
     proseClass(size),
-    simple ? 'min-h-[4.25em]' : 'min-h-[7.5em]', // 1 em padding + 13/8 em * line count
-    'max-h-[69vh] overflow-auto',
-    'outline-none py-[.5em] px-4',
+    'outline-none py-[.5em] px-4 h-full',
     'prose-img:select-auto',
     '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, embeds
   )
@@ -184,7 +177,14 @@ export function TextEditor(props: {
     // matches input styling
     <div className="w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
       <FloatingFormatMenu editor={editor} advanced={!children} />
-      <EditorContent editor={editor} />
+      <div
+        className={clsx(
+          children ? 'min-h-[4.25em]' : 'min-h-[7.5em]', // 1 em padding + line height (1.625) * line count
+          'grid max-h-[69vh] overflow-auto'
+        )}
+      >
+        <EditorContent editor={editor} />
+      </div>
       <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
     </div>
   )
@@ -197,38 +197,32 @@ function RichContent(props: {
 }) {
   const { className, content, size = 'md' } = props
 
-  const html = useMemo(
+  const jsxContent = useMemo(
     () =>
-      generateHTML(content, [
+      generateReact(content, [
         StarterKit,
         size === 'sm' ? DisplayImage : Image,
         DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
         DisplayMention,
         DisplayContractMention,
         GridComponent,
-        StaticReactEmbedComponent,
         Iframe,
-        TiptapTweet,
-        TiptapSpoiler.configure({
-          // TODO: actually add different class when clicked on instead of using selection
-          spoilerCloseClass:
-            'rounded-sm bg-gray-600 text-transparent [&_strong]:text-transparent [&_a]:text-transparent cursor-pointer select-all selection:text-gray-900 selection:bg-gray-200',
-        }),
+        DisplayTweet,
+        DisplaySpoiler,
       ]),
     [content, size]
   )
-
-  // TODO: sanitize
 
   return (
     <div className={className}>
       <div
         className={clsx(
           proseClass(size),
-          `empty:prose-p:after:content-["\\00a0"]` // make empty paragraphs have height
+          String.raw`empty:prose-p:after:content-["\00a0"]` // make empty paragraphs have height
         )}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      >
+        {jsxContent}
+      </div>
     </div>
   )
 }

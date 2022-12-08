@@ -8,31 +8,6 @@ import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Spacer } from 'web/components/layout/spacer'
-import { Tabs } from 'web/components/layout/tabs'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-
-const group_winners = [
-  // groups A through H
-  'which-team-will-win-group-a',
-  'which-team-will-win-group-b',
-  'which-team-will-win-group-c',
-  'which-team-will-win-group-d',
-  'which-team-will-win-group-e',
-  'which-team-will-win-group-f',
-  'which-team-will-win-group-g',
-  'which-team-will-win-group-h',
-]
-
-const group_runnerups = [
-  'which-team-will-finish-2nd-in-group',
-  'which-team-will-finish-2nd-in-group-4dfb5e86a538',
-  'which-team-will-finish-2nd-in-group-9a6a9ce8c548',
-  'which-team-will-finish-2nd-in-group-ca47ae80f852',
-  'which-team-will-finish-2nd-in-group-f244b90960d0',
-  'which-team-will-finish-2nd-in-group-17b7655095d7',
-  'which-team-will-finish-2nd-in-group-98fd8698c4d3',
-  'which-team-will-finish-2nd-in-group-87644ea5dc4b',
-]
 
 const player_ratings = [
   'which-player-will-win-the-golden-bo',
@@ -43,32 +18,94 @@ const player_ratings = [
 
 const general_markets = [
   'which-team-will-win-the-2022-fifa-w',
-  'will-a-team-score-7-or-more-goals-i',
-  'will-any-national-team-captain-wear',
-  'will-germany-reach-the-world-cup-qu',
+  // 'will-a-team-score-7-or-more-goals-i',
+  // 'will-germany-reach-the-world-cup-qu',
   'will-we-have-a-messi-vs-ronaldo-fin',
 ] as string[]
 
-const round_of_16 = [] as string[]
-const quarter_finals = [] as string[]
-const semifinals = [] as string[]
+const br_cr = [
+  'will-brazil-eliminate-croatia',
+  'who-will-be-man-of-the-match-in-bra-a88c0ce11214',
+  'will-neymar-score-from-a-penalty-du',
+]
+const nl_arg = [
+  'will-the-netherlands-eliminate-arge-b00886164a20',
+  'who-will-be-man-of-the-match-in-the-5241d79a9b88',
+  'will-messi-score-before-depay',
+]
+
+const mor_por = [
+  'will-morocco-eliminate-portugal',
+  'who-will-be-man-of-the-match-in-mor',
+  'will-moroccos-goalkeeper-save-a-pen',
+]
+const uk_fr = [
+  'will-england-eliminate-france',
+  'who-will-be-man-of-the-match-in-eng-b3b33c0ee202',
+  'will-england-or-france-keep-a-clean',
+]
 const final = [] as string[]
-const daily_markets = ['will-either-brazil-or-argentina-win'] as string[]
+
+// const group_winners = [
+//   // groups A through H
+//   'which-team-will-win-group-a',
+//   'which-team-will-win-group-b',
+//   'which-team-will-win-group-c',
+//   'which-team-will-win-group-d',
+//   'which-team-will-win-group-e',
+//   'which-team-will-win-group-f',
+//   'which-team-will-win-group-g',
+//   'which-team-will-win-group-h',
+// ]
+
+// const group_runnerups = [
+//   'which-team-will-finish-2nd-in-group',
+//   'which-team-will-finish-2nd-in-group-4dfb5e86a538',
+//   'which-team-will-finish-2nd-in-group-9a6a9ce8c548',
+//   'which-team-will-finish-2nd-in-group-ca47ae80f852',
+//   'which-team-will-finish-2nd-in-group-f244b90960d0',
+//   'which-team-will-finish-2nd-in-group-17b7655095d7',
+//   'which-team-will-finish-2nd-in-group-98fd8698c4d3',
+//   'which-team-will-finish-2nd-in-group-87644ea5dc4b',
+// ]
+
+// const round_of_16 = [
+//   // // Sat 3rd
+//   'will-the-netherlands-beat-the-usa',
+//   'who-will-be-man-of-the-match-in-the',
+//   'will-argentina-beat-australia',
+//   'who-will-be-man-of-the-match-in-arg',
+//   // // Sun 4th
+//   'will-france-beat-poland',
+//   'who-will-be-man-of-the-match-in-fra',
+//   'will-england-beat-senegal',
+//   'who-will-be-man-of-the-match-in-eng',
+//   // Mon 5th
+//   'will-croatia-eliminate-japan-687997d7af70',
+//   'who-will-be-man-of-the-match-in-cro',
+//   'will-brazil-eliminate-south-korea',
+//   'who-will-be-man-of-the-match-in-bra',
+//   // Tue 6h TBD
+//   'will-spain-eliminate-morocco',
+//   'who-will-be-man-of-the-match-in-spa',
+//   'will-portugal-eliminate-switzerland',
+//   'who-will-be-man-of-the-match-in-por',
+// ]
 
 export async function getStaticProps() {
-  const groupWinners = await getContractsFromSlugs(group_winners)
+  // const groupWinners = await getContractsFromSlugs(group_winners)
+  // const groupRunnerups = await getContractsFromSlugs(group_runnerups)
+  // const roundOf16 = await getContractsFromSlugs(round_of_16)
 
-  const groupRunnerups = await getContractsFromSlugs(group_runnerups)
+  const nlArg = await getContractsFromSlugs(nl_arg)
 
-  const roundOf16 = await getContractsFromSlugs(round_of_16)
+  const brCr = await getContractsFromSlugs(br_cr)
 
-  const quarterFinals = await getContractsFromSlugs(quarter_finals)
+  const morPor = await getContractsFromSlugs(mor_por)
 
-  const semiFinals = await getContractsFromSlugs(semifinals)
+  const ukFr = await getContractsFromSlugs(uk_fr)
 
   const finals = await getContractsFromSlugs(final)
-
-  const dailyMarkets = await getContractsFromSlugs(daily_markets)
 
   const playerRatings = await getContractsFromSlugs(player_ratings)
 
@@ -76,15 +113,13 @@ export async function getStaticProps() {
 
   return {
     props: {
-      groupWinners,
-      groupRunnerups,
-      roundOf16,
-      quarterFinals,
-      semiFinals,
+      nlArg,
+      morPor,
+      ukFr,
       finals,
-      dailyMarkets,
       playerRatings,
       generalMarkets,
+      brCr,
     },
     revalidate: 60, // regenerate after a minute
   }
@@ -103,49 +138,46 @@ const getContractsFromSlugs = async (slugs: string[]) => {
 }
 
 export default function WorldCup(props: {
-  groupWinners: Contract[]
-  groupRunnerups: Contract[]
-  roundOf16: Contract[]
-  quarterFinals: Contract[]
-  semiFinals: Contract[]
+  nlArg: Contract[]
+  ukFr: Contract[]
+  brCr: Contract[]
+  morPor: Contract[]
   finals: Contract[]
-  dailyMarkets: Contract[]
   playerRatings: Contract[]
   generalMarkets: Contract[]
 }) {
-  const { groupWinners, groupRunnerups, playerRatings, generalMarkets } = props
+  const { playerRatings, generalMarkets, nlArg, brCr, morPor, ukFr } = props
 
-  const isMobile = useIsMobile()
+  // const isMobile = useIsMobile()
+  // const groupWinnerTab = (
+  //   <>
+  //     <Spacer h={4} />
+  //     <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
+  //       {groupWinners.map((contract, index) => (
+  //         <GroupComponent
+  //           key={contract.id}
+  //           group={contract}
+  //           title={`GROUP ${String.fromCharCode(65 + index)} (1st Place)`}
+  //         />
+  //       ))}
+  //     </div>
+  //   </>
+  // )
 
-  const groupWinnerTab = (
-    <>
-      <Spacer h={4} />
-      <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
-        {groupWinners.map((contract, index) => (
-          <GroupComponent
-            key={contract.id}
-            group={contract}
-            title={`GROUP ${String.fromCharCode(65 + index)} (1st Place)`}
-          />
-        ))}
-      </div>
-    </>
-  )
-
-  const groupRunnerupTab = (
-    <>
-      <Spacer h={4} />
-      <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
-        {groupRunnerups.map((contract, index) => (
-          <GroupComponent
-            key={contract.id}
-            group={contract}
-            title={`GROUP ${String.fromCharCode(65 + index)} (2nd Place)`}
-          />
-        ))}
-      </div>
-    </>
-  )
+  // const groupRunnerupTab = (
+  //   <>
+  //     <Spacer h={4} />
+  //     <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
+  //       {groupRunnerups.map((contract, index) => (
+  //         <GroupComponent
+  //           key={contract.id}
+  //           group={contract}
+  //           title={`GROUP ${String.fromCharCode(65 + index)} (2nd Place)`}
+  //         />
+  //       ))}
+  //     </div>
+  //   </>
+  // )
 
   return (
     <Page className="">
@@ -171,33 +203,79 @@ export default function WorldCup(props: {
 
           {/* Might want to put an image or something here. */}
 
-          {/*
-          <div className="mb-2  text-3xl text-indigo-500">
-            Market of the Day
-          </div>
-
-          <div className="mb-4 text-base text-gray-500">
-            Every day we will feature a market that we think is interesting.
-            These markets will only last for 24 hours, so make sure to get your
-            bets in!
-          </div>
-
-          <div className="flex items-center justify-center">
-            {dailyMarkets.map((contract) => (
+          <div className="mb-2 text-3xl text-indigo-700">Brazil vs Croatia</div>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {brCr?.map((contract, i) => (
               <ContractCard
-                className={isMobile ? 'w-full' : 'w-1/2'}
                 key={contract.slug}
                 contract={contract}
-                showImage={true}
-                hideDetails={true}
+                hideDetails={false}
+                showImage={i == 0}
+                className="mb-4"
               />
             ))}
+          </Masonry>
+
+          <div className="my-4 text-3xl text-indigo-700">
+            The Netherlands vs Argentina
           </div>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {nlArg?.map((contract, i) => (
+              <ContractCard
+                key={contract.slug}
+                contract={contract}
+                hideDetails={false}
+                showImage={i == 0}
+                className="mb-4"
+              />
+            ))}
+          </Masonry>
 
-          <Spacer h={4} />
-          <Divider />
+          <div className="my-4 text-3xl text-indigo-700">
+            Morocco vs Portugal
+          </div>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {morPor?.map((contract, i) => (
+              <ContractCard
+                key={contract.slug}
+                contract={contract}
+                hideDetails={false}
+                showImage={i == 0}
+                className="mb-4"
+              />
+            ))}
+          </Masonry>
 
-          <Spacer h={8} />*/}
+          <div className="my-4 text-3xl text-indigo-700">England vs France</div>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {ukFr?.map((contract, i) => (
+              <ContractCard
+                key={contract.slug}
+                contract={contract}
+                hideDetails={false}
+                showImage={i == 0}
+                className="mb-4"
+              />
+            ))}
+          </Masonry>
+
+          {/* <Spacer h={8} />
 
           <div className="mb-2 text-3xl text-indigo-700">Group Stage </div>
           {isMobile && (
@@ -221,7 +299,7 @@ export default function WorldCup(props: {
                 className: 'w-full',
               },
             ]}
-          />
+          /> */}
 
           <Spacer h={16} />
 
@@ -361,7 +439,7 @@ export default function WorldCup(props: {
   )
 }
 
-function GroupComponent(props: { group: Contract; title: string }) {
+export function GroupComponent(props: { group: Contract; title: string }) {
   const { group, title } = props
   return (
     <Col>

@@ -90,6 +90,12 @@ export default function LabsPage() {
             href="/dream"
           />
 
+          <LabCard
+            title="🏆 Tournaments"
+            description="Ongoing and past prediction tournaments"
+            href="/tournaments"
+          />
+
           <LabCard title="🐮 Cowp" description="???" href="/cowp" />
         </Masonry>
       </Col>

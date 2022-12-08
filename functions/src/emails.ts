@@ -208,36 +208,6 @@ https://manifold.markets
   )
 }
 
-export const sendOneWeekBonusEmail = async (
-  user: User,
-  privateUser: PrivateUser
-) => {
-  if (!privateUser || !privateUser.email) return
-
-  const { name } = user
-  const firstName = name.split(' ')[0]
-
-  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
-    privateUser,
-    'onboarding_flow'
-  )
-  if (!sendToEmail) return
-
-  return await sendTemplateEmail(
-    privateUser.email,
-    'Manifold Markets one week anniversary gift',
-    'one-week',
-    {
-      name: firstName,
-      unsubscribeUrl,
-      manalink: 'https://manifold.markets/link/lj4JbBvE',
-    },
-    {
-      from: 'David from Manifold <david@manifold.markets>',
-    }
-  )
-}
-
 export const sendCreatorGuideEmail = async (
   user: User,
   privateUser: PrivateUser,

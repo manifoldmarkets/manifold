@@ -4,7 +4,7 @@ import {
 } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
-import { useRef, useState } from 'react'
+import { MouseEventHandler, useRef, useState } from 'react'
 import { Row } from '../layout/row'
 import { Content } from './editor'
 import { Button } from 'web/components/buttons/button'
@@ -19,26 +19,31 @@ const COLLAPSIBLE_HEIGHT = 45
 const SHOW_COLLAPSE_TRESHOLD = 180
 
 export function ShowMoreLessButton(props: {
-  onClick: () => void
+  onClick?: MouseEventHandler<any> | undefined
   isCollapsed: boolean
   className?: string
+  howManyMore?: number
   moreWhat?: string
 }) {
-  const { onClick, isCollapsed, className, moreWhat = '' } = props
+  const { onClick, isCollapsed, className, howManyMore, moreWhat = '' } = props
+  const howManyMoreText = howManyMore ? howManyMore + ' ' : ''
 
   return (
     <Button
-      color={'gray-white'}
+      color={'indigo-text-only'}
       className={clsx('z-10 select-none bg-white text-sm', className)}
       onClick={onClick}
+      size={'xs'}
     >
-      <Row className="items-center gap-0.5 text-indigo-700 drop-shadow-2xl">
+      <Row className="items-center gap-0.5">
         {isCollapsed ? (
           <ChevronDoubleDownIcon className="h-4 w-4" />
         ) : (
           <ChevronDoubleUpIcon className="h-4 w-4" />
         )}
-        {isCollapsed ? `Show More ${moreWhat}` : `Show Less ${moreWhat}`}
+        {isCollapsed
+          ? `Show ${howManyMoreText}More ${moreWhat}`
+          : `Show Less ${moreWhat}`}
       </Row>
     </Button>
   )

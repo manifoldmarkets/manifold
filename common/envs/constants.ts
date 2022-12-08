@@ -87,6 +87,28 @@ export const CORE_USERNAMES = [
   'DavidChee',
   'mqp',
   'IngaWei',
+  'ManifoldMarkets',
+]
+
+export const CHECK_USERNAMES = [
+  'EliezerYudkowsky',
+  'memestiny',
+  'ScottAlexander',
+  'Aella',
+  'BTE',
+  'jack',
+  'Yev',
+  'ZviMowshowitz',
+  'NathanpmYoung',
+  'kolotom99',
+  'SneakySly',
+  'IsaacKing',
+  'MattP',
+  'egroj',
+  'dreev',
+  'MartinRandall',
+  'LivInTheLookingGlass',
+  'LarsDoucet',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -102,4 +124,18 @@ export const DESTINY_GROUP_SLUGS = [
   'destinygg-stocks',
   'eto',
   'mumbowl-stonks',
+]
+
+export const HOME_BLOCKED_GROUP_SLUGS = [
+  'fun',
+  'selfresolving',
+  'experimental',
+  'trading-bots',
+  'gambling',
+  'free-money',
+  'whale-watching',
+  'spam',
+  'test',
+  'private-markets',
+  'proofniks',
 ]

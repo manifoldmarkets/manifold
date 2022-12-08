@@ -1,9 +1,12 @@
 import * as admin from 'firebase-admin'
-import fetch from 'node-fetch'
+import { Agent } from 'http'
+import fetch, { RequestInfo, RequestInit } from 'node-fetch'
 import {
   CollectionGroup,
   DocumentData,
   FieldValue,
+  Query,
+  QuerySnapshot,
   QueryDocumentSnapshot,
   Transaction,
 } from 'firebase-admin/firestore'
@@ -96,6 +99,28 @@ export const writeAsync = async (
   }
 }
 
+export const processPaginated = async <T extends DocumentData, U>(
+  q: Query<T>,
+  batchSize: number,
+  fn: (ts: QuerySnapshot<T>) => Promise<U>
+) => {
+  const results = []
+  let prev: QuerySnapshot<T> | undefined
+  let processed = 0
+  for (let i = 0; prev == null || prev.size > 0; i++) {
+    log(`Loading next page.`)
+    prev = await (prev == null
+      ? q.limit(batchSize)
+      : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
+    ).get()
+    log(`Loaded ${prev.size} documents.`)
+    processed += prev.size
+    results.push(await fn(prev))
+    log(`Processed ${prev.size} documents. Total: ${processed}`)
+  }
+  return results
+}
+
 export const processPartitioned = async <T extends DocumentData, U>(
   group: CollectionGroup<T>,
   partitions: number,
@@ -106,11 +131,13 @@ export const processPartitioned = async <T extends DocumentData, U>(
   let processed = 0
   for await (const part of parts) {
     const i = results.length
-    log(`[${i + 1}/${partitions}] Loading partition.`)
+    const tag = `${i + 1}/${partitions}`
+    log(`[${tag}] Loading partition.`)
     const ts = await part.toQuery().get()
-    processed += ts.size
-    log(`[${i + 1}/${partitions}] Loaded = ${ts.size}. Total = ${processed}.`)
+    log(`[${tag}] Loaded ${ts.size} documents.`)
     results.push(await fn(ts.docs))
+    processed += ts.size
+    log(`[${tag}] Processed ${ts.size} documents. Total: ${processed}`)
   }
   return results
 }
@@ -279,4 +306,13 @@ export const getContractPath = (contract: Contract) => {
 
 export function contractUrl(contract: Contract) {
   return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
+}
+
+export const pooledFetch = (agents: { [k: string]: Agent }) => {
+  return (url: RequestInfo, options: RequestInit = {}) => {
+    return fetch(url, {
+      agent: (parsedURL) => agents[parsedURL.protocol],
+      ...options,
+    })
+  }
 }

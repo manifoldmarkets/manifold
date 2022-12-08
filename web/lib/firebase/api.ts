@@ -50,14 +50,6 @@ export function addSubsidy(params: any) {
   return call(getFunctionUrl('addsubsidy'), 'POST', params)
 }
 
-export function addCommentBounty(params: any) {
-  return call(getFunctionUrl('addcommentbounty'), 'POST', params)
-}
-
-export function awardCommentBounty(params: any) {
-  return call(getFunctionUrl('awardcommentbounty'), 'POST', params)
-}
-
 export function createMarket(params: any) {
   return call(getFunctionUrl('createmarket'), 'POST', params)
 }

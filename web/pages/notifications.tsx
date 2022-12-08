@@ -1,10 +1,7 @@
-import {
-  ChevronDoubleDownIcon,
-  ChevronDoubleUpIcon,
-} from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Notification } from 'common/notification'
+import { Notification, ReactionNotificationTypes } from 'common/notification'
 import { PrivateUser } from 'common/user'
+import { sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -12,8 +9,9 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
-import { IncomeNotificationGroupItem } from 'web/components/notifications/income-summary-notifications'
+import { combineAndSumIncomeNotifications } from 'web/components/notifications/income-summary-notifications'
 import {
+  combineReactionNotifications,
   markNotificationsAsSeen,
   NOTIFICATIONS_PER_PAGE,
   NUM_SUMMARY_LINES,
@@ -24,9 +22,11 @@ import {
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
+import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
   NotificationGroup,
   useGroupedNotifications,
@@ -40,8 +40,8 @@ export default function Notifications() {
   const router = useRouter()
   const [navigateToSection, setNavigateToSection] = useState<string>()
   const [activeIndex, setActiveIndex] = useState(0)
-
   useRedirectIfSignedOut()
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const query = { ...router.query }
@@ -56,46 +56,52 @@ export default function Notifications() {
   return (
     <Page>
       <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
-        <Title text={'Notifications'} className={'hidden md:block'} />
+        <Row
+          className={clsx('w-full justify-between', isMobile ? 'hidden' : '')}
+        >
+          <Title text={'Notifications'} className="grow" />
+        </Row>
         <SEO title="Notifications" description="Manifold user notifications" />
 
         {privateUser && router.isReady && (
-          <div className="relative">
-            <ControlledTabs
-              currentPageForAnalytics={'notifications'}
-              labelClassName={'pb-2 pt-1 '}
-              className={'mb-0 sm:mb-2'}
-              activeIndex={activeIndex}
-              onClick={(title, i) => {
-                router.replace(
-                  {
-                    query: {
-                      ...router.query,
-                      tab: title.toLowerCase(),
-                      section: '',
+          <div className="relative h-full w-full">
+            <div className="relative">
+              <ControlledTabs
+                currentPageForAnalytics={'notifications'}
+                labelClassName={'pb-2 pt-1 '}
+                className={'mb-0 sm:mb-2'}
+                activeIndex={activeIndex}
+                onClick={(title, i) => {
+                  router.replace(
+                    {
+                      query: {
+                        ...router.query,
+                        tab: title.toLowerCase(),
+                        section: '',
+                      },
                     },
+                    undefined,
+                    { shallow: true }
+                  )
+                  setActiveIndex(i)
+                }}
+                tabs={[
+                  {
+                    title: 'Notifications',
+                    content: <NotificationsList privateUser={privateUser} />,
                   },
-                  undefined,
-                  { shallow: true }
-                )
-                setActiveIndex(i)
-              }}
-              tabs={[
-                {
-                  title: 'Notifications',
-                  content: <NotificationsList privateUser={privateUser} />,
-                },
-                {
-                  title: 'Settings',
-                  content: (
-                    <NotificationSettings
-                      navigateToSection={navigateToSection}
-                      privateUser={privateUser}
-                    />
-                  ),
-                },
-              ]}
-            />
+                  {
+                    title: 'Settings',
+                    content: (
+                      <NotificationSettings
+                        navigateToSection={navigateToSection}
+                        privateUser={privateUser}
+                      />
+                    ),
+                  },
+                ]}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -107,20 +113,13 @@ function RenderNotificationGroups(props: {
   notificationGroups: NotificationGroup[]
 }) {
   const { notificationGroups } = props
+
   const grayLine = <hr className="mx-auto w-[calc(100%-1rem)] bg-gray-400" />
   return (
     <>
       {notificationGroups.map((notification) => (
         <Fragment key={notification.groupedById + notification.timePeriod}>
-          {notification.type === 'income' ? (
-            <>
-              <IncomeNotificationGroupItem
-                notificationGroup={notification}
-                key={notification.groupedById + notification.timePeriod}
-              />
-              {grayLine}
-            </>
-          ) : notification.notifications.length === 1 ? (
+          {notification.notifications.length === 1 ? (
             <>
               <NotificationItem
                 notification={notification.notifications[0]}
@@ -145,10 +144,10 @@ function RenderNotificationGroups(props: {
 
 function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
+  const allGroupedNotifications = useGroupedNotifications(privateUser)
 
   const [page, setPage] = useState(0)
 
-  const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
     if (!allGroupedNotifications) return undefined
 
@@ -211,14 +210,34 @@ function NotificationGroupItem(props: {
 }) {
   const { notificationGroup } = props
   const { notifications } = notificationGroup
-  const { sourceContractTitle } = notifications[0]
-  const [highlighted, setHighlighted] = useState(
-    notifications.some((n) => !n.isSeen)
-  )
+  const groupHighlighted = notifications.some((n) => !n.isSeen)
+  const { sourceTitle, sourceContractTitle } = notifications[0]
+  const incomeTypesToSum = ['bonus', 'tip', 'tip_and_like']
+  const combinedNotifs = sortBy(
+    combineReactionNotifications(
+      notifications.filter((n) =>
+        ReactionNotificationTypes.includes(n.sourceType)
+      )
+    )
+      .concat(
+        notifications.filter(
+          (n) =>
+            !ReactionNotificationTypes.includes(n.sourceType) &&
+            !incomeTypesToSum.includes(n.sourceType)
+        )
+      )
+      .concat(
+        combineAndSumIncomeNotifications(
+          notifications.filter((n) => incomeTypesToSum.includes(n.sourceType))
+        )
+      ),
+
+    'createdTime'
+  ).reverse()
   const header = (
     <ParentNotificationHeader
       header={
-        sourceContractTitle ? (
+        sourceTitle || sourceContractTitle ? (
           <>
             Activity on{' '}
             <QuestionOrGroupLink
@@ -230,15 +249,13 @@ function NotificationGroupItem(props: {
           <span>Other Activity</span>
         )
       }
-      highlighted={highlighted}
+      highlighted={groupHighlighted}
     />
   )
 
   return (
     <NotificationGroupItemComponent
-      notifications={notifications}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
+      notifications={combinedNotifs}
       header={header}
     />
   )
@@ -246,81 +263,42 @@ function NotificationGroupItem(props: {
 
 export function NotificationGroupItemComponent(props: {
   notifications: Notification[]
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
   header: ReactNode
-  isIncomeNotification?: boolean
   className?: string
 }) {
-  const {
-    notifications,
-    className,
-    setHighlighted,
-    header,
-    isIncomeNotification,
-  } = props
+  const { notifications, className, header } = props
+  const numNotifications = notifications.length
 
-  const needsExpanding = notifications.length > NUM_SUMMARY_LINES
-  const [expanded, setExpanded] = useState(
-    notifications.length <= NUM_SUMMARY_LINES
-  )
+  const needsExpanding = numNotifications > NUM_SUMMARY_LINES
+  const [expanded, setExpanded] = useState(false)
   const onExpandHandler = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.ctrlKey || event.metaKey) return
     setExpanded(!expanded)
   }
 
-  useEffect(() => {
-    if (expanded) setHighlighted(false)
-  }, [expanded, setHighlighted])
-
+  const shownNotifications = expanded
+    ? notifications
+    : notifications.slice(0, NUM_SUMMARY_LINES)
   return (
     <div className={clsx(PARENT_NOTIFICATION_STYLE, className)}>
       {header}
       <div className={clsx(' whitespace-pre-line')}>
-        {notifications
-          .slice(
-            0,
-            needsExpanding
-              ? expanded
-                ? notifications.length
-                : NUM_SUMMARY_LINES
-              : notifications.length
+        {shownNotifications.map((notification) => {
+          return (
+            <NotificationItem
+              notification={notification}
+              key={notification.id}
+              isChildOfGroup={true}
+            />
           )
-          .map((notification) => {
-            return (
-              <NotificationItem
-                notification={notification}
-                key={notification.id}
-                isChildOfGroup={true}
-                isIncomeNotification={isIncomeNotification}
-              />
-            )
-          })}
+        })}
         {needsExpanding && (
-          <Row
-            className={clsx(
-              'text my-1 w-full items-center justify-end gap-1 text-indigo-700'
-            )}
-            onClick={onExpandHandler}
-          >
-            {!expanded && (
-              <>
-                <div>
-                  {notifications.length - NUM_SUMMARY_LINES > 0
-                    ? 'See ' +
-                      (notifications.length - NUM_SUMMARY_LINES) +
-                      ' more'
-                    : ''}
-                </div>
-                <ChevronDoubleDownIcon className="h-4 w-4" />
-              </>
-            )}
-            {expanded && (
-              <>
-                <div>See Less</div>
-                <ChevronDoubleUpIcon className="h-4 w-4" />
-              </>
-            )}
+          <Row className={clsx('w-full items-center justify-end gap-1')}>
+            <ShowMoreLessButton
+              onClick={onExpandHandler}
+              isCollapsed={!expanded}
+              howManyMore={numNotifications - NUM_SUMMARY_LINES}
+            />
           </Row>
         )}
       </div>

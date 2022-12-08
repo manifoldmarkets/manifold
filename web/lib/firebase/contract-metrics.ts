@@ -17,6 +17,15 @@ export const CONTRACT_METRICS_SORTED_INDICES = ['YES', 'NO']
 
 export type ContractMetricsByOutcome = Record<string, ContractMetric[]>
 
+export async function getUserContractMetrics(userId: string) {
+  const q = query(
+    collection(db, 'users', userId, 'contract-metrics'),
+    orderBy('lastBetTime', 'desc')
+  ) as Query<ContractMetrics>
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map((d) => d.data())
+}
+
 export function getUserContractMetricsQuery(
   userId: string,
   count: number,

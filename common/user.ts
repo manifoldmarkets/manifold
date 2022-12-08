@@ -1,6 +1,5 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { MarketCreatorBadge, ProvenCorrectBadge, StreakerBadge } from './badge'
 
 export type User = {
   id: string
@@ -38,30 +37,17 @@ export type User = {
   nextLoanCached: number
   followerCountCached: number
 
-  followedCategories?: string[]
   homeSections?: string[]
 
   referredByUserId?: string
   referredByContractId?: string
   referredByGroupId?: string
-  lastPingTime?: number
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
+  streakForgiveness: number
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
-
-  achievements: {
-    provenCorrect?: {
-      badges: ProvenCorrectBadge[]
-    }
-    marketCreator?: {
-      badges: MarketCreatorBadge[]
-    }
-    streaker?: {
-      badges: StreakerBadge[]
-    }
-  }
   userDeleted?: boolean
 }
 

@@ -30,10 +30,12 @@ export * from './weekly-markets-emails'
 export * from './reset-betting-streaks'
 export * from './reset-weekly-emails-flags'
 export * from './on-update-contract-follow'
-export * from './on-update-like'
 export * from './weekly-portfolio-emails'
 export * from './drizzle-liquidity'
 export * from './check-push-notification-receipts'
+export * from './on-update-reaction'
+export * from './replication/transaction-log'
+export * from './increment-streak-forgiveness'
 
 // v2
 export * from './health'
@@ -53,7 +55,6 @@ export * from './unsubscribe'
 export * from './stripe'
 export * from './mana-signup-bonus'
 export * from './close-market'
-export * from './update-comment-bounty'
 export * from './add-subsidy'
 export * from './test-scheduled-function'
 export * from './validate-iap'
@@ -71,7 +72,6 @@ import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
 import { createcomment } from './create-comment'
-import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { closemarket } from './close-market'
@@ -104,9 +104,7 @@ const sellSharesFunction = toCloudFunction(sellshares)
 const claimManalinkFunction = toCloudFunction(claimmanalink)
 const createMarketFunction = toCloudFunction(createmarket)
 const addSubsidyFunction = toCloudFunction(addsubsidy)
-const addCommentBounty = toCloudFunction(addcommentbounty)
 const createCommentFunction = toCloudFunction(createcomment)
-const awardCommentBounty = toCloudFunction(awardcommentbounty)
 const createGroupFunction = toCloudFunction(creategroup)
 const resolveMarketFunction = toCloudFunction(resolvemarket)
 const closeMarketFunction = toCloudFunction(closemarket)
@@ -148,8 +146,6 @@ export {
   createPostFunction as createpost,
   saveTwitchCredentials as savetwitchcredentials,
   createCommentFunction as createcomment,
-  addCommentBounty as addcommentbounty,
-  awardCommentBounty as awardcommentbounty,
   testScheduledFunction as testscheduledfunction,
   updateContractMetricsFunction as updatecontractmetrics,
   updateUserMetricsFunction as updateusermetrics,

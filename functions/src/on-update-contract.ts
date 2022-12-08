@@ -20,7 +20,6 @@ export const onUpdateContract = functions
       await handleContractGroupUpdated(previousContract, contract)
     }
 
-    // No need to notify users of resolution, that's handled in resolve-market
     if (
       (previousContract.closeTime !== closeTime ||
         previousContract.question !== question) &&
@@ -87,8 +86,7 @@ async function handleContractGroupUpdated(
   if (prevLength > newLength) {
     // Contract was removed from a group
     const groupId = previousContract.groupLinks?.find(
-      (link) =>
-        !contract.groupLinks?.map((l) => l.groupId).includes(link.groupId)
+      (link) => !contract.groupLinks?.some((l) => l.groupId === link.groupId)
     )?.groupId
     if (!groupId) throw new Error('Could not find old group id')
 

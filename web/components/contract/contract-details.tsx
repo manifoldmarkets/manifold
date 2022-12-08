@@ -34,7 +34,6 @@ import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { GroupLink, groupPath } from 'common/group'
 import { Subtitle } from '../widgets/subtitle'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Input } from '../widgets/input'
 import { editorExtensions } from '../widgets/editor'
 
@@ -226,8 +225,6 @@ function MarketGroups(props: { contract: Contract; disabled?: boolean }) {
     <>
       {/* Put after market action icons on mobile, but before them on desktop*/}
       <Row className="order-last w-full flex-wrap items-end gap-1 sm:order-[unset]">
-        {!disabled && <BountiedContractSmallBadge contract={contract} />}
-
         {groupsToDisplay.map((group) => (
           <GroupDisplay
             key={group.groupId}
