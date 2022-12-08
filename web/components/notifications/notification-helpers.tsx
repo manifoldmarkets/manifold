@@ -131,7 +131,7 @@ export function AvatarNotificationIcon(props: {
           size={NOTIFICATION_ICON_SIZE}
           noLink={true}
         />
-        <div className="absolute -bottom-2 -right-1">{symbol}</div>
+        <div className="absolute -bottom-2 -right-1 text-lg">{symbol}</div>
       </Link>
     </div>
   )
