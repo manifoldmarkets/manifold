@@ -62,20 +62,20 @@ export function ResolutionPanel(props: {
   }
 
   return (
-    <Col className={clsx('relative rounded-md bg-white px-8 py-6', className)}>
+    <Col className={clsx('relative rounded-md py-6', className)}>
       {isAdmin && !isCreator && (
         <span className="bg-scarlet-50 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
           ADMIN
         </span>
       )}
-      <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
+      <div className="mb-6">Resolve your market</div>
       <YesNoCancelSelector
         className="mx-auto my-2"
         selected={outcome}
         onSelect={setOutcome}
       />
       <Spacer h={4} />
-      <div>
+      <div className="text-sm">
         {outcome === 'YES' ? (
           <>
             Winnings will be paid out to {BETTORS} who bought YES.

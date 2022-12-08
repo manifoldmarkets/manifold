@@ -215,6 +215,8 @@ export function ContractPageContent(
   const { isResolved, question, outcomeType } = contract
 
   const allowTrade = tradingAllowed(contract)
+  const isAdmin = useAdmin()
+  const allowResolve = !isResolved && (isCreator || isAdmin) && !!user
 
   const ogCardProps = getOpenGraphProps(contract)
 
@@ -243,14 +245,7 @@ export function ContractPageContent(
     <Page
       rightSidebar={
         user || user === null ? (
-          <>
-            <ContractPageSidebar contract={contract} />
-            {isCreator && (
-              <Col className={'xl:hidden'}>
-                <RecommendedContractsWidget contract={contract} />
-              </Col>
-            )}
-          </>
+          <ContractPageSidebar contract={contract} />
         ) : (
           <div />
         )
@@ -311,6 +306,25 @@ export function ContractPageContent(
           <NumericBetPanel className="xl:hidden" contract={contract} />
         )}
 
+        {allowResolve &&
+          (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
+            <NumericResolutionPanel
+              isAdmin={isAdmin}
+              creator={user}
+              isCreator={isCreator}
+              contract={contract}
+            />
+          ) : (
+            outcomeType === 'BINARY' && (
+              <ResolutionPanel
+                isAdmin={isAdmin}
+                creator={user}
+                isCreator={isCreator}
+                contract={contract}
+              />
+            )
+          ))}
+
         {isResolved && (
           <>
             <ContractLeaderboard
@@ -342,7 +356,7 @@ export function ContractPageContent(
           />
         </div>
       </Col>
-      {!isCreator && <RecommendedContractsWidget contract={contract} />}
+      <RecommendedContractsWidget contract={contract} />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
@@ -373,22 +387,6 @@ function ContractPageSidebar(props: { contract: Contract }) {
           <BetPanel
             className="hidden xl:flex"
             contract={contract as CPMMBinaryContract}
-          />
-        ))}
-      {allowResolve &&
-        (isNumeric || isPseudoNumeric ? (
-          <NumericResolutionPanel
-            isAdmin={isAdmin}
-            creator={user}
-            isCreator={isCreator}
-            contract={contract}
-          />
-        ) : (
-          <ResolutionPanel
-            isAdmin={isAdmin}
-            creator={user}
-            isCreator={isCreator}
-            contract={contract}
           />
         ))}
     </Col>

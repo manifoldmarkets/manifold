@@ -80,7 +80,7 @@ export function YesNoCancelSelector(props: {
     'px-0 !py-2 flex-1 border-2 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none'
 
   return (
-    <Row className="gap-[2px]">
+    <Row className="gap-1">
       {/* Should ideally use a radio group instead of buttons */}
       <Button
         color={selected === 'YES' ? 'green' : 'gray'}
