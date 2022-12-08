@@ -10,7 +10,7 @@ export type MultiUserLinkInfo = {
   name: string
   username: string
   avatarUrl: string | undefined
-  amount: number
+  amount?: number
 }
 
 export function MultiUserTransactionLink(props: {
@@ -59,9 +59,11 @@ export function MultiUserTransactionModal(props: {
             key={userInfo.username + 'list'}
             className="w-full items-center gap-2"
           >
-            <span className="min-w-[3.5rem] text-teal-500">
-              +{formatMoney(userInfo.amount)}
-            </span>
+            {userInfo.amount && (
+              <span className="min-w-[3.5rem] text-teal-500">
+                +{formatMoney(userInfo.amount)}
+              </span>
+            )}
             <Avatar
               username={userInfo.username}
               avatarUrl={userInfo.avatarUrl}

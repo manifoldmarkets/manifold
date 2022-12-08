@@ -11,7 +11,7 @@ import { unReact } from 'web/lib/firebase/reactions'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { useContracts } from 'web/hooks/use-contracts'
 import { filterDefined } from 'common/util/array'
-import useLongPress from 'web/hooks/use-longpress'
+import useLongPress from 'web/hooks/use-long-touch'
 
 export function UserLikedContractsButton(props: {
   user: User
