@@ -1,5 +1,8 @@
 import { ReactNode, useState } from 'react'
 import { CheckmarkIcon } from 'react-hot-toast'
+import Link from 'next/link'
+import { ChartBarIcon } from '@heroicons/react/solid'
+
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -21,11 +24,8 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { claimDestinySub } from 'web/lib/firebase/api'
 import { ManaExplainer, PredictionMarketExplainer } from '.'
-import { ChartBarIcon } from '@heroicons/react/solid'
-import Link from 'next/link'
 import { Modal } from 'web/components/layout/modal'
 import GoToIcon from 'web/lib/icons/go-to-icon'
-import { SiteLink } from 'web/components/widgets/site-link'
 
 export default function DestinyLandingPage() {
   useSaveReferral()
