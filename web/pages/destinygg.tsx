@@ -23,7 +23,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { claimDestinySub } from 'web/lib/firebase/api'
-import { ManaExplainer, PredictionMarketExplainer } from '.'
+import { ManaExplainer } from '.'
 import { Modal } from 'web/components/layout/modal'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { getTotalSubs } from 'web/lib/firebase/utils'
@@ -143,11 +143,10 @@ export default function DestinyLandingPage(props: { subCount: number }) {
               text="What is Mana?"
               modal={<ManaExplainer />}
             />
-            <InfoCard
+            <ExternalInfoCard
               link="https://manifold.markets/group/destinygg"
               icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
               text="All Dgg Markets"
-              modal={<PredictionMarketExplainer />}
             />
           </Row>
         </Col>
