@@ -324,7 +324,7 @@ export function ContractPageContent(
           </>
         )}
 
-        <BetsSummary className="mb-4 px-2" contract={contract} />
+        <BetsSummary className="mt-4 mb-2 px-2" contract={contract} />
 
         <div ref={tabsContainerRef}>
           <ContractTabs
