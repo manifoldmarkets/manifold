@@ -20,7 +20,7 @@ export function NumericResolutionPanel(props: {
   className?: string
 }) {
   const { contract, className, isAdmin, isCreator } = props
-  const { min, max, outcomeType } = contract
+  const { min, max, outcomeType, question } = contract
 
   const [outcomeMode, setOutcomeMode] = useState<
     'NUMBER' | 'CANCEL' | undefined
@@ -123,7 +123,9 @@ export function NumericResolutionPanel(props: {
         isSubmitting={isSubmitting}
         openModalButtonClass={clsx('w-full mt-2')}
         color={outcomeMode === 'CANCEL' ? 'yellow' : 'indigo'}
-        disabled={outcomeMode === undefined}
+        label={outcomeMode === 'CANCEL' ? 'N/A' : String(value)}
+        marketTitle={question}
+        disabled={outcomeMode === undefined || value === undefined}
       />
     </Col>
   )

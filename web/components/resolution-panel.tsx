@@ -9,7 +9,7 @@ import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
-import { BETTOR, BETTORS, PAST_BETS } from 'common/user'
+import { BETTOR, BETTORS, PAST_BETS, PRESENT_BETS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { capitalize } from 'lodash'
 import { ProbabilityInput } from './widgets/probability-input'
@@ -69,7 +69,6 @@ export function ResolutionPanel(props: {
         </span>
       )}
       <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
-      <div className="mb-3 text-sm text-gray-500">Outcome</div>
       <YesNoCancelSelector
         className="mx-auto my-2"
         selected={outcome}
@@ -128,6 +127,14 @@ export function ResolutionPanel(props: {
               ? 'blue'
               : 'indigo'
           }
+          label={
+            outcome === 'CANCEL'
+              ? 'N/A'
+              : outcome === 'MKT'
+              ? `${prob}%`
+              : outcome ?? ''
+          }
+          marketTitle={contract.question}
           disabled={!outcome}
           onResolve={resolve}
           isSubmitting={isSubmitting}
