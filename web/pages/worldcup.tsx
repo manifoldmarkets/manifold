@@ -9,29 +9,6 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Spacer } from 'web/components/layout/spacer'
 
-const group_winners = [
-  // groups A through H
-  // 'which-team-will-win-group-a',
-  //'which-team-will-win-group-b',
-  //'which-team-will-win-group-c',
-  //'which-team-will-win-group-d',
-  //'which-team-will-win-group-e',
-  //'which-team-will-win-group-f',
-  //'which-team-will-win-group-g',
-  //'which-team-will-win-group-h',
-]
-
-const group_runnerups = [
-  // 'which-team-will-finish-2nd-in-group',
-  // 'which-team-will-finish-2nd-in-group-4dfb5e86a538',
-  // 'which-team-will-finish-2nd-in-group-9a6a9ce8c548',
-  //'which-team-will-finish-2nd-in-group-ca47ae80f852',
-  //'which-team-will-finish-2nd-in-group-f244b90960d0',
-  //'which-team-will-finish-2nd-in-group-17b7655095d7',
-  //'which-team-will-finish-2nd-in-group-98fd8698c4d3',
-  // 'which-team-will-finish-2nd-in-group-87644ea5dc4b',
-]
-
 const player_ratings = [
   'which-player-will-win-the-golden-bo',
   'which-goalkeeper-will-win-the-golde',
@@ -46,28 +23,6 @@ const general_markets = [
   'will-we-have-a-messi-vs-ronaldo-fin',
 ] as string[]
 
-const round_of_16 = [
-  // // Sat 3rd
-  // 'will-the-netherlands-beat-the-usa',
-  // 'who-will-be-man-of-the-match-in-the',
-  // 'will-argentina-beat-australia',
-  // 'who-will-be-man-of-the-match-in-arg',
-  // // Sun 4th
-  // 'will-france-beat-poland',
-  // 'who-will-be-man-of-the-match-in-fra',
-  // 'will-england-beat-senegal',
-  // 'who-will-be-man-of-the-match-in-eng',
-  // Mon 5th
-  // 'will-croatia-eliminate-japan-687997d7af70',
-  // 'who-will-be-man-of-the-match-in-cro',
-  // 'will-brazil-eliminate-south-korea',
-  // 'who-will-be-man-of-the-match-in-bra',
-  // Tue 6h TBD
-  //'will-spain-eliminate-morocco',
-  //'who-will-be-man-of-the-match-in-spa',
-  //'will-portugal-eliminate-switzerland',
-  //'who-will-be-man-of-the-match-in-por',
-] as string[]
 const br_cr = [
   'will-brazil-eliminate-croatia',
   'who-will-be-man-of-the-match-in-bra-a88c0ce11214',
@@ -91,12 +46,56 @@ const uk_fr = [
 ]
 const final = [] as string[]
 
+// const group_winners = [
+//   // groups A through H
+//   'which-team-will-win-group-a',
+//   'which-team-will-win-group-b',
+//   'which-team-will-win-group-c',
+//   'which-team-will-win-group-d',
+//   'which-team-will-win-group-e',
+//   'which-team-will-win-group-f',
+//   'which-team-will-win-group-g',
+//   'which-team-will-win-group-h',
+// ]
+
+// const group_runnerups = [
+//   'which-team-will-finish-2nd-in-group',
+//   'which-team-will-finish-2nd-in-group-4dfb5e86a538',
+//   'which-team-will-finish-2nd-in-group-9a6a9ce8c548',
+//   'which-team-will-finish-2nd-in-group-ca47ae80f852',
+//   'which-team-will-finish-2nd-in-group-f244b90960d0',
+//   'which-team-will-finish-2nd-in-group-17b7655095d7',
+//   'which-team-will-finish-2nd-in-group-98fd8698c4d3',
+//   'which-team-will-finish-2nd-in-group-87644ea5dc4b',
+// ]
+
+// const round_of_16 = [
+//   // // Sat 3rd
+//   'will-the-netherlands-beat-the-usa',
+//   'who-will-be-man-of-the-match-in-the',
+//   'will-argentina-beat-australia',
+//   'who-will-be-man-of-the-match-in-arg',
+//   // // Sun 4th
+//   'will-france-beat-poland',
+//   'who-will-be-man-of-the-match-in-fra',
+//   'will-england-beat-senegal',
+//   'who-will-be-man-of-the-match-in-eng',
+//   // Mon 5th
+//   'will-croatia-eliminate-japan-687997d7af70',
+//   'who-will-be-man-of-the-match-in-cro',
+//   'will-brazil-eliminate-south-korea',
+//   'who-will-be-man-of-the-match-in-bra',
+//   // Tue 6h TBD
+//   'will-spain-eliminate-morocco',
+//   'who-will-be-man-of-the-match-in-spa',
+//   'will-portugal-eliminate-switzerland',
+//   'who-will-be-man-of-the-match-in-por',
+// ]
+
 export async function getStaticProps() {
-  const groupWinners = await getContractsFromSlugs(group_winners)
-
-  const groupRunnerups = await getContractsFromSlugs(group_runnerups)
-
-  const roundOf16 = await getContractsFromSlugs(round_of_16)
+  // const groupWinners = await getContractsFromSlugs(group_winners)
+  // const groupRunnerups = await getContractsFromSlugs(group_runnerups)
+  // const roundOf16 = await getContractsFromSlugs(round_of_16)
 
   const nlArg = await getContractsFromSlugs(nl_arg)
 
@@ -114,9 +113,6 @@ export async function getStaticProps() {
 
   return {
     props: {
-      groupWinners,
-      groupRunnerups,
-      roundOf16,
       nlArg,
       morPor,
       ukFr,
@@ -142,10 +138,8 @@ const getContractsFromSlugs = async (slugs: string[]) => {
 }
 
 export default function WorldCup(props: {
-  groupWinners: Contract[]
-  groupRunnerups: Contract[]
-  roundOf16: Contract[]
   nlArg: Contract[]
+  ukFr: Contract[]
   brCr: Contract[]
   morPor: Contract[]
   finals: Contract[]
@@ -210,7 +204,6 @@ export default function WorldCup(props: {
           {/* Might want to put an image or something here. */}
 
           <div className="mb-2 text-3xl text-indigo-700">Brazil vs Croatia</div>
-          <Spacer h={4} />
           <Masonry
             breakpointCols={{ default: 2, 768: 1 }}
             className="-ml-4 flex w-auto"
@@ -226,10 +219,10 @@ export default function WorldCup(props: {
               />
             ))}
           </Masonry>
-          <div className="mb-2 text-3xl text-indigo-700">
+
+          <div className="my-4 text-3xl text-indigo-700">
             The Netherlands vs Argentina
           </div>
-          <Spacer h={4} />
           <Masonry
             breakpointCols={{ default: 2, 768: 1 }}
             className="-ml-4 flex w-auto"
@@ -246,10 +239,9 @@ export default function WorldCup(props: {
             ))}
           </Masonry>
 
-          <div className="mb-2 text-3xl text-indigo-700">
+          <div className="my-4 text-3xl text-indigo-700">
             Morocco vs Portugal
           </div>
-          <Spacer h={4} />
           <Masonry
             breakpointCols={{ default: 2, 768: 1 }}
             className="-ml-4 flex w-auto"
@@ -266,8 +258,7 @@ export default function WorldCup(props: {
             ))}
           </Masonry>
 
-          <div className="mb-2 text-3xl text-indigo-700">England vs France</div>
-          <Spacer h={4} />
+          <div className="my-4 text-3xl text-indigo-700">England vs France</div>
           <Masonry
             breakpointCols={{ default: 2, 768: 1 }}
             className="-ml-4 flex w-auto"
