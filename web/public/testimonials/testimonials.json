@@ -13,6 +13,13 @@
       "credit": "AI Researcher",
       "icon": "testimonials/eliezerYudkowsky.jpeg",
       "src": "https://twitter.com/ESYudkowsky"
+    },
+    {
+      "testimonial": "My viewers have been using this site to track in-community humor for a while now and all of them love how simple it is to use.",
+      "name": "Destiny",
+      "credit": "Live Streamer",
+      "icon": "testimonials/destinyicon.jpeg",
+      "src": "https://www.youtube.com/@destiny"
     }
   ]
 }

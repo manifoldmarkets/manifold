@@ -115,11 +115,10 @@ export default function DestinyLandingPage() {
               text="What is Mana?"
               modal={<ManaExplainer />}
             />
-            <InfoCard
+            <ExternalInfoCard
               link="https://manifold.markets/group/destinygg"
               icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
               text="All Dgg Markets"
-              modal={<PredictionMarketExplainer />}
             />
           </Row>
         </Col>
