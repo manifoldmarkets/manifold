@@ -568,7 +568,8 @@ export const sendWeeklyPortfolioUpdateEmail = async (
   user: User,
   privateUser: PrivateUser,
   investments: PerContractInvestmentsData[],
-  overallPerformance: OverallPerformanceData
+  overallPerformance: OverallPerformanceData,
+  moversToSend: number
 ) => {
   if (!privateUser || !privateUser.email) return
 
@@ -586,21 +587,23 @@ export const sendWeeklyPortfolioUpdateEmail = async (
     unsubscribeUrl,
     ...overallPerformance,
   }
-  investments.forEach((investment, i) => {
-    templateData[`question${i + 1}Title`] = investment.questionTitle
-    templateData[`question${i + 1}Url`] = investment.questionUrl
-    templateData[`question${i + 1}Prob`] = investment.questionProb
-    templateData[`question${i + 1}Change`] = formatMoney(investment.profit)
-    templateData[`question${i + 1}ChangeStyle`] = investment.profitStyle
-  })
+  for (let i = 0; i < moversToSend; i++) {
+    const investment = investments[i]
+    if (investment) {
+      templateData[`question${i + 1}Title`] = investment.questionTitle
+      templateData[`question${i + 1}Url`] = investment.questionUrl
+      templateData[`question${i + 1}Prob`] = investment.questionProb
+      templateData[`question${i + 1}Change`] = formatMoney(investment.profit)
+      templateData[`question${i + 1}ChangeStyle`] = investment.profitStyle
+      templateData[`question${i + 1}Display`] = 'display: table-row'
+    } else templateData[`question${i + 1}Display`] = 'display: none'
+  }
 
   await sendTemplateEmail(
     privateUser.email,
     // 'iansphilips@gmail.com',
     `Here's your weekly portfolio update!`,
-    investments.length === 0
-      ? 'portfolio-update-no-movers'
-      : 'portfolio-update',
+    'portfolio-update',
     templateData
   )
   log('Sent portfolio update email to', privateUser.email)
