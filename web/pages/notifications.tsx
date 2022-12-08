@@ -37,6 +37,7 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { sortBy } from 'lodash'
+import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
@@ -296,28 +297,12 @@ export function NotificationGroupItemComponent(props: {
           )
         })}
         {needsExpanding && (
-          <Row
-            className={clsx(
-              'text my-1 w-full items-center justify-end gap-1 text-indigo-700'
-            )}
-            onClick={onExpandHandler}
-          >
-            {!expanded && (
-              <>
-                <div>
-                  {numNotifications > NUM_SUMMARY_LINES
-                    ? 'See ' + (numNotifications - NUM_SUMMARY_LINES) + ' more'
-                    : ''}
-                </div>
-                <ChevronDoubleDownIcon className="h-4 w-4" />
-              </>
-            )}
-            {expanded && (
-              <>
-                <div>See Less</div>
-                <ChevronDoubleUpIcon className="h-4 w-4" />
-              </>
-            )}
+          <Row className={clsx('w-full items-center justify-end gap-1')}>
+            <ShowMoreLessButton
+              onClick={onExpandHandler}
+              isCollapsed={!expanded}
+              howManyMore={numNotifications - NUM_SUMMARY_LINES}
+            />
           </Row>
         )}
       </div>

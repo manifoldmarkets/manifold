@@ -4,7 +4,7 @@ import {
 } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
-import { useRef, useState } from 'react'
+import { MouseEventHandler, useRef, useState } from 'react'
 import { Row } from '../layout/row'
 import { Content } from './editor'
 import { Button } from 'web/components/buttons/button'
@@ -19,7 +19,7 @@ const COLLAPSIBLE_HEIGHT = 45
 const SHOW_COLLAPSE_TRESHOLD = 180
 
 export function ShowMoreLessButton(props: {
-  onClick: () => void
+  onClick?: MouseEventHandler<any> | undefined
   isCollapsed: boolean
   className?: string
   howManyMore?: number
@@ -33,6 +33,7 @@ export function ShowMoreLessButton(props: {
       color={'indigo-text-only'}
       className={clsx('z-10 select-none bg-white text-sm', className)}
       onClick={onClick}
+      size={'xs'}
     >
       <Row className="items-center gap-0.5">
         {isCollapsed ? (
