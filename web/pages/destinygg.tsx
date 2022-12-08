@@ -21,13 +21,27 @@ import TestimonialsPanel from './testimonials-panel'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { usePrivateUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { claimDestinySub } from 'web/lib/firebase/api'
 import { ManaExplainer, PredictionMarketExplainer } from '.'
 import { Modal } from 'web/components/layout/modal'
 import GoToIcon from 'web/lib/icons/go-to-icon'
+import { getTotalSubs } from 'web/lib/firebase/utils'
 
-export default function DestinyLandingPage() {
+export async function getStaticProps() {
+  const subCount = await getTotalSubs()
+
+  return {
+    props: {
+      subCount,
+    },
+    revalidate: 60, // regenerate after a minute
+  }
+}
+
+export default function DestinyLandingPage(props: { subCount: number }) {
+  const { subCount } = props
+
   useSaveReferral()
   useTracking('view destiny landing page')
 
@@ -37,9 +51,11 @@ export default function DestinyLandingPage() {
 
   const [destinyUsername, setDestinyUsername] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState('')
 
   const privateUser = usePrivateUser()
+  const user = useUser()
 
   const destinySubClaimed = privateUser?.destinySubClaimed ?? false
 
@@ -49,11 +65,15 @@ export default function DestinyLandingPage() {
     setIsSubmitting(true)
     setError('')
 
-    await claimDestinySub({ destinyUsername }).catch((err) => {
-      setError(err.message)
-      setIsSubmitting(false)
-    })
+    await claimDestinySub({ destinyUsername })
+      .then(() => setIsSuccess(true))
+      .catch((err) => {
+        setError(err.message)
+        setIsSubmitting(false)
+      })
   }
+
+  const disabled = isSubmitting || !privateUser || !user || user.balance < 1000
 
   return (
     <Page>
@@ -80,13 +100,13 @@ export default function DestinyLandingPage() {
               type="text"
               placeholder="Destiny.gg account name"
               className="mr-4 w-[50%]"
-              disabled={isSubmitting || !privateUser}
+              disabled={disabled}
               value={destinyUsername}
               onChange={(e) => setDestinyUsername(e.target.value)}
             />
             <Button
               color="gradient-pink"
-              disabled={isSubmitting || !privateUser}
+              disabled={disabled}
               loading={isSubmitting}
               onClick={submit}
             >
@@ -95,10 +115,18 @@ export default function DestinyLandingPage() {
           </Row>
         )}
         {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
+
+        {!destinySubClaimed && (
+          <div className="mt-4 pt-6 sm:mt-0">
+            Once you have the required balance, simply enter the destiny.gg
+            account name you want the sub gifted to. You may only claim one sub.
+          </div>
+        )}
+
         <div className="mt-4 pt-6 sm:mt-0">
-          Once you have the required balance, simply enter the destiny.gg
-          account name you want the sub gifted to. You may only claim one sub.
+          Total subs claimed: {subCount + (isSuccess ? 1 : 0)} / 1,000
         </div>
+
         <Spacer h={2} />
         <Subtitle text="New to Manifold Markets?" />
         <Col className=" max-w-3xl gap-4 px-4">

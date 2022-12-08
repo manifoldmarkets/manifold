@@ -22,6 +22,10 @@ service cloud.firestore {
       allow read;
     }
 
+     match /destiny-subs/{sub} {
+      allow read;
+    }
+
     match /globalConfig/globalConfig {
       allow read;
       allow update: if isAdmin()
