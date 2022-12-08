@@ -77,11 +77,11 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     })
   )
 
-  const userBetsInLastWeek: { [userId: string]: Bet[] } = {}
+  const usersToBetsInLastWeek: { [userId: string]: Bet[] } = {}
   // get all bets made by each user
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (user) => {
-      userBetsInLastWeek[user.id] = await getValues<Bet>(
+      usersToBetsInLastWeek[user.id] = await getValues<Bet>(
         firestore
           .collectionGroup('bets')
           .where('userId', '==', user.id)
@@ -130,7 +130,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     })
   )
 
-  const userContractMetrics: { [userId: string]: ContractMetric[] } = {}
+  const usersToContractMetrics: { [userId: string]: ContractMetric[] } = {}
   // get all bets made by each user
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (user) => {
@@ -146,15 +146,15 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           .orderBy('from.week.profit', 'asc')
           .limit(Math.round(WEEKLY_MOVERS_TO_SEND / 2))
       )
-      userContractMetrics[user.id] = [...topProfits, ...topLosses]
+      usersToContractMetrics[user.id] = [...topProfits, ...topLosses]
     })
   )
 
   // Get a flat map of all the contracts that users have metrics for
-  const contractsUsersBetOn = filterDefined(
+  const allWeeklyMoversContracts = filterDefined(
     await Promise.all(
       uniq(
-        Object.values(userContractMetrics).flatMap((cms) =>
+        Object.values(usersToContractMetrics).flatMap((cms) =>
           cms.map((cm) => cm.contractId)
         )
       ).map((contractId) =>
@@ -169,8 +169,10 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       const user = await getUser(privateUser.id)
       // Don't send to a user unless they're over 5 days old
       if (!user || user.createdTime > Date.now() - 5 * DAY_MS) return
-      const contractsBetOnInLastWeek = uniq(
-        userBetsInLastWeek[privateUser.id].map((bet) => bet.contractId)
+
+      // Compute fun auxiliary stats
+      const totalContractsUserBetOnInLastWeek = uniq(
+        usersToBetsInLastWeek[privateUser.id].map((bet) => bet.contractId)
       ).length
       const greenBg = 'rgba(0,160,0,0.2)'
       const redBg = 'rgba(160,0,0,0.2)'
@@ -190,23 +192,29 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         unique_bettors: usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
           .length.toString(),
-        markets_traded: contractsBetOnInLastWeek.toString(),
+        markets_traded: totalContractsUserBetOnInLastWeek.toString(),
         prediction_streak:
           (user.currentBettingStreak?.toString() ?? '0') + ' days',
         // More options: bonuses, tips given,
       } as OverallPerformanceData
 
-      const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
-        userContractMetrics[user.id].some((cm) => cm.contractId === contract.id)
+      const weeklyMoverContracts = filterDefined(
+        usersToContractMetrics[user.id]
+          .map((cm) => cm.contractId)
+          .map((contractId) =>
+            allWeeklyMoversContracts.find((c) => c.id === contractId)
+          )
       )
+
+      // Compute weekly movers stats
       const investmentValueDifferences = sortBy(
         filterDefined(
-          contractsUserBetOn.map((contract) => {
+          weeklyMoverContracts.map((contract) => {
             const cpmmContract = contract as CPMMContract
             const marketProbAWeekAgo =
               cpmmContract.prob - cpmmContract.probChanges.week
 
-            const cm = userContractMetrics[user.id].filter(
+            const cm = usersToContractMetrics[user.id].filter(
               (cm) => cm.contractId === contract.id
             )[0]
             if (!cm || !cm.from) return undefined
@@ -242,12 +250,12 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           return investmentsData.profit > 0
         }
       )
-      // pick 3 winning investments and 3 losing investments
+      // Pick 3 winning investments and 3 losing investments
       const topInvestments = winningInvestments.slice(0, 3)
       const worstInvestments = losingInvestments.slice(0, 3)
-      // if no bets in the last week ANd no market movers AND no markets created, don't send email
+      // If no bets in the last week ANd no market movers AND no markets created, don't send email
       if (
-        contractsBetOnInLastWeek === 0 &&
+        totalContractsUserBetOnInLastWeek === 0 &&
         topInvestments.length === 0 &&
         worstInvestments.length === 0 &&
         usersToContractsCreated[privateUser.id].length === 0
