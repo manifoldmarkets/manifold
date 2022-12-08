@@ -136,7 +136,7 @@ export function AnswerResolvePanel(props: {
               resolveOption === 'CANCEL'
                 ? 'N/A'
                 : resolveOption === 'CHOOSE'
-                ? answers[0]
+                ? contract.answers[+answers[0]].text
                 : `${answers.length} answers`
             }
             marketTitle={contract.question}
