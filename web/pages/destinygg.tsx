@@ -80,13 +80,13 @@ export default function DestinyLandingPage() {
               type="text"
               placeholder="Destiny.gg account name"
               className="mr-4 w-[50%]"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !privateUser}
               value={destinyUsername}
               onChange={(e) => setDestinyUsername(e.target.value)}
             />
             <Button
               color="gradient-pink"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !privateUser}
               loading={isSubmitting}
               onClick={submit}
             >
@@ -115,7 +115,7 @@ export default function DestinyLandingPage() {
               text="What is Mana?"
               modal={<ManaExplainer />}
             />
-            <ExternalInfoCard
+            <InfoCard
               link="https://manifold.markets/group/destinygg"
               icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
               text="All Dgg Markets"
