@@ -340,15 +340,22 @@ function MarketResolvedNotification(props: {
   const profit = userPayout - userInvestment
   const profitable = profit >= 0
   const subtitle =
-    sourceText === 'CANCEL' ? (
-      <>Your {formatMoney(userInvestment)} invested has been returned to you</>
-    ) : profitable ? (
-      <>
-        Your {formatMoney(userInvestment)} investment won{' '}
-        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit!
-      </>
+    userInvestment > 0 ? (
+      sourceText === 'CANCEL' ? (
+        <>
+          Your {formatMoney(userInvestment)} invested has been returned to you
+        </>
+      ) : profitable ? (
+        <>
+          Your {formatMoney(userInvestment)} investment won{' '}
+          <span className="text-teal-600">+{formatMoney(profit)}</span> in
+          profit!
+        </>
+      ) : (
+        <>You lost {formatMoney(Math.abs(profit))}</>
+      )
     ) : (
-      <>You lost {formatMoney(Math.abs(profit))} ... Better luck next time!</>
+      <></>
     )
 
   const resolutionDescription = () => {
@@ -431,7 +438,10 @@ function MarketResolvedNotification(props: {
       setHighlighted={setHighlighted}
       subtitle={subtitle}
       icon={
-        <AvatarNotificationIcon notification={notification} symbol={'☑️'} />
+        <AvatarNotificationIcon
+          notification={notification}
+          symbol={sourceText === 'CANCEL' ? '🚫' : '☑️'}
+        />
       }
       link={getSourceUrl(notification)}
     >
