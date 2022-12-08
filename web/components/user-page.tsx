@@ -43,6 +43,7 @@ import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-
 import { PostBanBadge, UserBadge } from './widgets/user-link'
 import Link from 'next/link'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -87,11 +88,15 @@ export function UserPage(props: { user: User }) {
 
       <Col className="relative">
         <Row className="relative px-4 pt-4">
-          <Avatar
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-            size={24}
-            className="bg-white shadow-sm shadow-indigo-300"
+          <ImageWithBlurredShadow
+            image={
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size={24}
+                className="bg-white"
+              />
+            }
           />
           {isCurrentUser && (
             <div className="absolute ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
