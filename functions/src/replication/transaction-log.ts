@@ -98,8 +98,9 @@ export const replicatelogtosupabase = onMessagePublished<TLEntry>(
   {
     topic: 'firestoreWrite',
     secrets: ['SUPABASE_KEY'],
-    cpu: 2,
+    cpu: 4,
     minInstances: 1,
+    maxInstances: 10,
     concurrency: 1000,
     memory: '2GiB',
   },
@@ -108,6 +109,11 @@ export const replicatelogtosupabase = onMessagePublished<TLEntry>(
     try {
       await replicateWrites(createSupabaseClient(fetch as any), entry)
     } catch (e) {
+      console.error(
+        `Failed to replicate ${entry.docKind} ${entry.docId}. \
+        Logging failed write: ${entry.eventId}.`,
+        e
+      )
       const db = admin.firestore()
       await db
         .collection('replicationState')
@@ -115,11 +121,6 @@ export const replicatelogtosupabase = onMessagePublished<TLEntry>(
         .collection('failedWrites')
         .doc(entry.eventId)
         .create(entry)
-      console.error(
-        `Failed to replicate ${entry.docKind} ${entry.docId}. \
-        Logging failed write: ${entry.eventId}.`,
-        e
-      )
     }
   }
 )
