@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { sortBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { ContractMetrics } from 'common/calculate-metrics'
