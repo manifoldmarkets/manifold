@@ -108,6 +108,17 @@ export default function ContractEmbedPage(props: {
       obj: { userAvatarUrl: bet.userAvatarUrl },
     })) ?? []
   )
+
+  useEffect(() => {
+    if (contract?.id)
+      track('view market embed', {
+        slug: contract.slug,
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        hostname: window.location.hostname,
+      })
+  }, [contract?.creatorId, contract?.id, contract?.slug])
+
   if (!contract) {
     return <Custom404 />
   }
@@ -115,35 +126,6 @@ export default function ContractEmbedPage(props: {
   // Check ?graphColor=hex&textColor=hex from router
   const graphColor = router.query.graphColor as string
   const textColor = router.query.textColor as string
-  const embedProps = {
-    contract,
-    bets,
-    graphColor,
-    textColor,
-    betPoints,
-  }
-
-  return <ContractEmbed {...embedProps} />
-}
-
-interface EmbedProps {
-  contract: Contract
-  bets: Bet[]
-  betPoints: HistoryPoint<Partial<Bet>>[]
-  graphColor?: string
-  textColor?: string
-}
-
-export function ContractEmbed(props: EmbedProps) {
-  const { contract } = props
-  useEffect(() => {
-    track('view market embed', {
-      slug: contract.slug,
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-      hostname: window.location.hostname,
-    })
-  }, [contract.creatorId, contract.id, contract.slug])
 
   const user = useUser()
 
@@ -160,7 +142,13 @@ export function ContractEmbed(props: EmbedProps) {
         />
       </div>
       <div className="hidden [@media(min-height:250px)]:contents">
-        <ContractSmolView {...props} />
+        <ContractSmolView
+          contract={contract}
+          bets={bets}
+          betPoints={betPoints}
+          graphColor={graphColor}
+          textColor={textColor}
+        />
       </div>
     </>
   )
@@ -190,13 +178,14 @@ const ContractChart = (props: {
   }
 }
 
-function ContractSmolView({
-  contract,
-  bets,
-  graphColor,
-  textColor,
-  betPoints,
-}: EmbedProps) {
+function ContractSmolView(props: {
+  contract: Contract
+  bets: Bet[]
+  graphColor: string
+  textColor: string
+  betPoints: HistoryPoint<Partial<Bet>>[]
+}) {
+  const { contract, bets, betPoints, graphColor, textColor } = props
   const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
