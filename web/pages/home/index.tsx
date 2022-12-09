@@ -230,11 +230,11 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
           <Input
             type="text"
             placeholder={'Search'}
-            className="flex min-w-0 grow"
+            className="flex w-1/3 min-w-0 grow justify-between sm:w-max sm:justify-start"
             onClick={() => Router.push('/search')}
             onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
           />
-          <Row className=" items-center gap-4">
+          <Row className="items-center gap-4">
             <DailyStats user={user} />
             <div className="mr-2">
               <CustomizeButton router={Router} />
