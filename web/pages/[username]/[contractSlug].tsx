@@ -212,7 +212,7 @@ export function ContractPageContent(
 
   const creator = useUserById(contract.creatorId) ?? null
 
-  const { isResolved, question, outcomeType } = contract
+  const { isResolved, question, outcomeType, resolution } = contract
 
   const allowTrade = tradingAllowed(contract)
   const isAdmin = useAdmin()
@@ -325,7 +325,7 @@ export function ContractPageContent(
             )
           ))}
 
-        {isResolved && contract.resolution !== 'CANCEL' && (
+        {isResolved && resolution !== 'CANCEL' && (
           <>
             <ContractLeaderboard
               topContractMetrics={topContractMetrics.filter(
@@ -338,7 +338,9 @@ export function ContractPageContent(
           </>
         )}
 
-        <BetsSummary className="mt-4 mb-2 px-2" contract={contract} />
+        {resolution !== 'CANCEL' && (
+          <BetsSummary className="mt-4 mb-2 px-2" contract={contract} />
+        )}
 
         <div ref={tabsContainerRef}>
           <ContractTabs
