@@ -35,12 +35,7 @@ import { generateReact, insertContent } from '../editor/utils'
 import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { DisplaySpoiler } from '../editor/spoiler'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
-
-const DisplayImage = Image.configure({
-  HTMLAttributes: {
-    class: 'max-h-96',
-  },
-})
+import { DisplayImage } from '../editor/image'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {

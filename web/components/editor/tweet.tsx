@@ -6,10 +6,6 @@ import { TwitterTweetEmbed } from 'react-twitter-embed'
 
 export const DisplayTweet = TiptapTweet.extend({
   renderReact: (attrs: any) => <TweetComponent {...attrs} />,
-
-  addNodeView() {
-    return ReactNodeViewRenderer(NodeView)
-  },
 })
 
 function NodeView(props: {
