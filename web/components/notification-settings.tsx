@@ -74,8 +74,6 @@ export function NotificationSettings(props: {
 
     // 'referral_bonuses',
     // 'on_new_follow',
-    // 'tips_on_your_markets',
-    // 'tips_on_your_comments',
     // maybe the following?
     // 'probability_updates_on_watched_markets',
     // 'limit_order_fills',
@@ -138,7 +136,6 @@ export function NotificationSettings(props: {
       'all_comments_on_my_markets',
       'all_answers_on_my_markets',
       'subsidized_your_market',
-      'tips_on_your_markets',
     ],
   }
   const bonuses: SectionData = {
@@ -151,11 +148,7 @@ export function NotificationSettings(props: {
   }
   const otherBalances: SectionData = {
     label: 'Other',
-    subscriptionTypes: [
-      'loan_income',
-      'limit_order_fills',
-      'tips_on_your_comments',
-    ],
+    subscriptionTypes: ['loan_income', 'limit_order_fills'],
   }
   const userInteractions: SectionData = {
     label: 'Users',
