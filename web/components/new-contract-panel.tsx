@@ -33,7 +33,7 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Input } from 'web/components/widgets/input'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV, ENV_CONFIG } from 'common/envs/constants'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -258,7 +258,9 @@ export function NewContractPanel(props: {
                   {
                     FREE_RESPONSE:
                       'Users can submit their own answers to this market.',
-                    CERT: 'Tradeable shares of a stock. WARNING: EXPERIMENTAL.',
+                    PSEUDO_NUMERIC:
+                      '[EXPERIMENTAL] Predict the value of a number.',
+                    CERT: '[EXPERIMENTAL] Tradeable shares of a stock',
                   }[choice] ?? ''
                 setMarketInfoText(text)
                 setOutcomeType(choice as outcomeType)
@@ -268,7 +270,8 @@ export function NewContractPanel(props: {
                 'Multiple choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
-                Cert: 'CERT',
+                // Only show cert option in dev, for now
+                ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
               }}
               isSubmitting={isSubmitting}
               className={'col-span-4'}
