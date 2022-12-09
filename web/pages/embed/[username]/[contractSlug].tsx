@@ -26,6 +26,7 @@ import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 import { OrderByDirection } from 'firebase/firestore'
+import { useUser } from 'web/hooks/use-user'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
@@ -142,6 +143,8 @@ export function ContractEmbed(props: EmbedProps) {
     })
   }, [contract.creatorId, contract.id, contract.slug])
 
+  const user = useUser()
+
   // return (height < 250px) ? Card : SmolView
   return (
     <>
@@ -151,6 +154,7 @@ export function ContractEmbed(props: EmbedProps) {
           className="h-screen"
           noLinkAvatar
           newTab
+          hideQuickBet={!user}
         />
       </div>
       <div className="hidden [@media(min-height:250px)]:contents">
