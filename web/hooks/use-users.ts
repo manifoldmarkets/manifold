@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PrivateUser, User } from 'common/user'
 import { groupBy, sortBy, difference } from 'lodash'
-import { getContractsOfUserBets } from 'web/lib/firebase/bets'
+import { getUserBetContracts } from 'web/lib/firebase/contracts'
 import { useFollows } from './use-follows'
 import { useUser } from './use-user'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
@@ -35,7 +35,7 @@ export const useDiscoverUsers = (userId: string | null | undefined) => {
 
   useEffect(() => {
     if (userId)
-      getContractsOfUserBets(userId).then((contracts) => {
+      getUserBetContracts(userId).then((contracts) => {
         const creatorCounts = Object.entries(
           groupBy(contracts, 'creatorId')
         ).map(([id, contracts]) => [id, contracts.length] as const)
