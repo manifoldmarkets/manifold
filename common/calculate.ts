@@ -77,6 +77,8 @@ export function calculateSharesBought(
   outcome: string,
   amount: number
 ) {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('calculateSharesBought not implemented')
   const { mechanism, pool } = contract
   return mechanism === 'cpmm-1'
     ? calculateCpmmPurchase(contract, amount, outcome).shares
