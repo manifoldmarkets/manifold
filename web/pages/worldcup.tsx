@@ -24,24 +24,24 @@ const general_markets = [
 ] as string[]
 
 const br_cr = [
-  'will-brazil-eliminate-croatia',
   'who-will-be-man-of-the-match-in-bra-a88c0ce11214',
+  'will-brazil-eliminate-croatia',
   'will-neymar-score-from-a-penalty-du',
 ]
 const nl_arg = [
-  'will-the-netherlands-eliminate-arge-b00886164a20',
   'who-will-be-man-of-the-match-in-the-5241d79a9b88',
+  'will-the-netherlands-eliminate-arge-b00886164a20',
   'will-messi-score-before-depay',
 ]
 
 const mor_por = [
-  'will-morocco-eliminate-portugal',
   'who-will-be-man-of-the-match-in-mor',
+  'will-morocco-eliminate-portugal',
   'will-moroccos-goalkeeper-save-a-pen',
 ]
 const uk_fr = [
-  'will-england-eliminate-france',
   'who-will-be-man-of-the-match-in-eng-b3b33c0ee202',
+  'will-england-eliminate-france',
   'will-england-or-france-keep-a-clean',
 ]
 const final = [] as string[]
@@ -214,7 +214,7 @@ export default function WorldCup(props: {
                 key={contract.slug}
                 contract={contract}
                 hideDetails={false}
-                showImage={i == 0}
+                showImage={i == 1}
                 className="mb-4"
               />
             ))}
@@ -233,7 +233,7 @@ export default function WorldCup(props: {
                 key={contract.slug}
                 contract={contract}
                 hideDetails={false}
-                showImage={i == 0}
+                showImage={i == 1}
                 className="mb-4"
               />
             ))}
@@ -252,7 +252,7 @@ export default function WorldCup(props: {
                 key={contract.slug}
                 contract={contract}
                 hideDetails={false}
-                showImage={i == 0}
+                showImage={i == 1}
                 className="mb-4"
               />
             ))}
@@ -269,7 +269,7 @@ export default function WorldCup(props: {
                 key={contract.slug}
                 contract={contract}
                 hideDetails={false}
-                showImage={i == 0}
+                showImage={i == 1}
                 className="mb-4"
               />
             ))}
