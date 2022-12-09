@@ -25,7 +25,6 @@ import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
 import { Modal } from './layout/modal'
 import { Tabs } from './layout/tabs'
-import { genHash } from 'common/util/random'
 import { QueryUncontrolledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments/comments-list'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
@@ -309,19 +308,6 @@ export function UserPage(props: { user: User }) {
       </Col>
     </Page>
   )
-}
-
-// Assign each user to a random default banner based on the hash of userId
-// TODO: Consider handling banner uploads using our own storage bucket, like user avatars.
-export function defaultBannerUrl(userId: string) {
-  const defaultBanner = [
-    'https://images.unsplash.com/photo-1501523460185-2aa5d2a0f981?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2131&q=80',
-    'https://images.unsplash.com/photo-1458682625221-3a45f8a844c7?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1974&q=80',
-    'https://images.unsplash.com/photo-1558517259-165ae4b10f7f?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2080&q=80',
-    'https://images.unsplash.com/photo-1563260797-cb5cd70254c8?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2069&q=80',
-    'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
-  ]
-  return defaultBanner[genHash(userId)() % defaultBanner.length]
 }
 
 type FollowsDialogTab = 'following' | 'followers'
