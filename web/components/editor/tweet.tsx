@@ -1,4 +1,3 @@
-import { ReactNodeViewRenderer } from '@tiptap/react'
 import { TiptapTweet } from 'common/util/tiptap-tweet'
 
 import { NodeViewWrapper } from '@tiptap/react'
