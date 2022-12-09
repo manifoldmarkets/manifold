@@ -54,12 +54,12 @@ import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { HistoryPoint } from 'web/components/charts/generic-charts'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
   filterChallenges: true,
 }
-export type BetPoint = { x: number; y: number; bet?: Partial<Bet> }
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -88,10 +88,10 @@ export async function getStaticPropz(props: {
           removeUndefinedProps({
             x: bet.createdTime,
             y: bet.probAfter,
-            bet: includeAvatar
+            obj: includeAvatar
               ? { userAvatarUrl: bet.userAvatarUrl }
               : undefined,
-          }) as BetPoint
+          }) as HistoryPoint<Partial<Bet>>
       )
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
@@ -131,7 +131,7 @@ export default function ContractPage(props: {
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
-  betPoints: BetPoint[]
+  betPoints: HistoryPoint<Partial<Bet>>[]
   totalBets: number
   topContractMetrics: ContractMetric[]
   totalPositions: number
@@ -200,14 +200,11 @@ export function ContractPageContent(
   const totalBets = props.totalBets + (newBets?.length ?? 0)
   const bets = props.bets.concat(newBets ?? [])
   const betPoints = props.betPoints.concat(
-    newBets?.map(
-      (bet) =>
-        ({
-          x: bet.createdTime,
-          y: bet.probAfter,
-          bet: { userAvatarUrl: bet.userAvatarUrl },
-        } as BetPoint)
-    ) ?? []
+    newBets?.map((bet) => ({
+      x: bet.createdTime,
+      y: bet.probAfter,
+      obj: { userAvatarUrl: bet.userAvatarUrl },
+    })) ?? []
   )
 
   const creator = useUserById(contract.creatorId) ?? null

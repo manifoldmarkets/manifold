@@ -1,6 +1,12 @@
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { ContractChart } from 'web/components/charts/contract'
+import {
+  BinaryContractChart,
+  ChoiceContractChart,
+  NumericContractChart,
+  PseudoNumericContractChart,
+} from 'web/components/charts/contract'
+import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../widgets/linkify'
@@ -24,7 +30,6 @@ import {
 import { ContractDetails } from './contract-details'
 import { ContractReportResolution } from './contract-report-resolution'
 import { SizedContainer } from 'web/components/sized-container'
-import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -44,31 +49,8 @@ const BetWidget = (props: { contract: CPMMContract }) => {
   )
 }
 
-const SizedContractChart = (props: {
-  contract: Contract
-  bets: Bet[]
-  fullHeight: number
-  mobileHeight: number
-  betPoints: BetPoint[]
-}) => {
-  const { fullHeight, betPoints, mobileHeight, contract, bets } = props
-  return (
-    <SizedContainer fullHeight={fullHeight} mobileHeight={mobileHeight}>
-      {(width, height) => (
-        <ContractChart
-          width={width}
-          height={height}
-          contract={contract}
-          bets={bets}
-          betPoints={betPoints}
-        />
-      )}
-    </SizedContainer>
-  )
-}
-
-const NumericOverview = (props: { contract: NumericContract; bets: Bet[] }) => {
-  const { contract, bets } = props
+const NumericOverview = (props: { contract: NumericContract }) => {
+  const { contract } = props
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-3 px-2 sm:gap-4">
@@ -85,23 +67,20 @@ const NumericOverview = (props: { contract: NumericContract; bets: Bet[] }) => {
           contract={contract}
         />
       </Col>
-      <SizedContractChart
-        contract={contract}
-        bets={bets}
-        fullHeight={250}
-        mobileHeight={150}
-        betPoints={[]}
-      />
+      <SizedContainer fullHeight={250} mobileHeight={150}>
+        {(w, h) => (
+          <NumericContractChart width={w} height={h} contract={contract} />
+        )}
+      </SizedContainer>
     </Col>
   )
 }
 
 const BinaryOverview = (props: {
   contract: BinaryContract
-  bets: Bet[]
-  betPoints: BetPoint[]
+  betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
-  const { contract, bets, betPoints } = props
+  const { contract, betPoints } = props
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-1 px-2">
@@ -118,13 +97,16 @@ const BinaryOverview = (props: {
           </Row>
         </Row>
       </Col>
-      <SizedContractChart
-        contract={contract}
-        bets={bets}
-        fullHeight={250}
-        mobileHeight={150}
-        betPoints={betPoints}
-      />
+      <SizedContainer fullHeight={250} mobileHeight={150}>
+        {(w, h) => (
+          <BinaryContractChart
+            width={w}
+            height={h}
+            betPoints={betPoints}
+            contract={contract}
+          />
+        )}
+      </SizedContainer>
       <Row className="items-center justify-between gap-4 xl:hidden">
         {tradingAllowed(contract) && (
           <BinaryMobileBetting contract={contract} />
@@ -160,13 +142,16 @@ const ChoiceOverview = (props: {
         )}
       </Col>
       {!hideGraph && (
-        <SizedContractChart
-          contract={contract}
-          bets={bets}
-          fullHeight={350}
-          mobileHeight={250}
-          betPoints={[]}
-        />
+        <SizedContainer fullHeight={350} mobileHeight={250}>
+          {(w, h) => (
+            <ChoiceContractChart
+              width={w}
+              height={h}
+              bets={bets}
+              contract={contract}
+            />
+          )}
+        </SizedContainer>
       )}
     </Col>
   )
@@ -174,10 +159,9 @@ const ChoiceOverview = (props: {
 
 const PseudoNumericOverview = (props: {
   contract: PseudoNumericContract
-  bets: Bet[]
-  betPoints: BetPoint[]
+  betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
-  const { contract, bets, betPoints } = props
+  const { contract, betPoints } = props
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-3 px-2 sm:gap-4">
@@ -200,13 +184,16 @@ const PseudoNumericOverview = (props: {
           {tradingAllowed(contract) && <BetWidget contract={contract} />}
         </Row>
       </Col>
-      <SizedContractChart
-        contract={contract}
-        bets={bets}
-        fullHeight={250}
-        mobileHeight={150}
-        betPoints={betPoints}
-      />
+      <SizedContainer fullHeight={250} mobileHeight={150}>
+        {(w, h) => (
+          <PseudoNumericContractChart
+            width={w}
+            height={h}
+            betPoints={betPoints}
+            contract={contract}
+          />
+        )}
+      </SizedContainer>
     </Col>
   )
 }
@@ -214,24 +201,16 @@ const PseudoNumericOverview = (props: {
 export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
-  betPoints: BetPoint[]
+  betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
   const { betPoints, contract, bets } = props
   switch (contract.outcomeType) {
     case 'BINARY':
-      return (
-        <BinaryOverview betPoints={betPoints} contract={contract} bets={bets} />
-      )
+      return <BinaryOverview betPoints={betPoints} contract={contract} />
     case 'NUMERIC':
-      return <NumericOverview contract={contract} bets={bets} />
+      return <NumericOverview contract={contract} />
     case 'PSEUDO_NUMERIC':
-      return (
-        <PseudoNumericOverview
-          contract={contract}
-          bets={bets}
-          betPoints={betPoints}
-        />
-      )
+      return <PseudoNumericOverview contract={contract} betPoints={betPoints} />
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return <ChoiceOverview contract={contract} bets={bets} />
