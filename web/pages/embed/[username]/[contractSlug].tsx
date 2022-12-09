@@ -122,6 +122,8 @@ export default function ContractEmbedPage(props: {
       })
   }, [contract?.creatorId, contract?.id, contract?.slug])
 
+  const user = useUser()
+
   if (!contract) {
     return <Custom404 />
   }
@@ -129,8 +131,6 @@ export default function ContractEmbedPage(props: {
   // Check ?graphColor=hex&textColor=hex from router
   const graphColor = router.query.graphColor as string
   const textColor = router.query.textColor as string
-
-  const user = useUser()
 
   // return (height < 250px) ? Card : SmolView
   return (
