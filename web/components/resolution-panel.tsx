@@ -74,40 +74,43 @@ export function ResolutionPanel(props: {
         selected={outcome}
         onSelect={setOutcome}
       />
-      <Spacer h={4} />
-      <div className="text-sm">
-        {outcome === 'YES' ? (
-          <>
-            Winnings will be paid out to {BETTORS} who bought YES.
-            {/* <br />
-            <br />
-            You will earn {earnedFees}. */}
-          </>
-        ) : outcome === 'NO' ? (
-          <>
-            Winnings will be paid out to {BETTORS} who bought NO.
-            {/* <br />
-            <br />
-            You will earn {earnedFees}. */}
-          </>
-        ) : outcome === 'CANCEL' ? (
-          <>
-            All {PRESENT_BETS} will be returned. Unique {BETTOR} bonuses will be
-            withdrawn from your account
-          </>
-        ) : outcome === 'MKT' ? (
-          <>
-            {capitalize(PRESENT_BETS)} will be paid out at the probability you
-            specify:
-            {/* You will earn {earnedFees}. */}
-          </>
-        ) : (
-          <>Resolving this market will immediately pay out {BETTORS}.</>
-        )}
-      </div>
+
       <Spacer h={4} />
       {!!error && <div className="text-scarlet-500">{error}</div>}
-      <Row className={'justify-center'}>
+
+      <Row className={'items-center justify-between'}>
+        <div className="text-sm">
+          {outcome === 'YES' ? (
+            <>
+              Winnings will be paid out to {BETTORS} who bought YES.
+              {/* <br />
+            <br />
+            You will earn {earnedFees}. */}
+            </>
+          ) : outcome === 'NO' ? (
+            <>
+              Winnings will be paid out to {BETTORS} who bought NO.
+              {/* <br />
+            <br />
+            You will earn {earnedFees}. */}
+            </>
+          ) : outcome === 'CANCEL' ? (
+            <>
+              All {PRESENT_BETS} will be returned. Unique {BETTOR} bonuses will
+              be withdrawn from your account
+            </>
+          ) : outcome === 'MKT' ? (
+            <>
+              {capitalize(PRESENT_BETS)} will be paid out at the probability you
+              specify:
+              {/* You will earn {earnedFees}. */}
+            </>
+          ) : (
+            <span className="text-gray-500">
+              Resolving this market will immediately pay out {BETTORS}.
+            </span>
+          )}
+        </div>
         {outcome === 'MKT' && (
           <ProbabilityInput
             prob={prob}
