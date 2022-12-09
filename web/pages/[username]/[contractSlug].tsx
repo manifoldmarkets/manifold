@@ -325,7 +325,7 @@ export function ContractPageContent(
             )
           ))}
 
-        {isResolved && (
+        {isResolved && contract.resolution !== 'CANCEL' && (
           <>
             <ContractLeaderboard
               topContractMetrics={topContractMetrics.filter(
