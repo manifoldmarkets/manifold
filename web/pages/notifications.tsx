@@ -12,13 +12,13 @@ import { NotificationSettings } from 'web/components/notification-settings'
 import { combineAndSumIncomeNotifications } from 'web/components/notifications/income-summary-notifications'
 import {
   combineReactionNotifications,
-  markNotificationsAsSeen,
   NOTIFICATIONS_PER_PAGE,
   NUM_SUMMARY_LINES,
   ParentNotificationHeader,
   PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
+import { markAllNotificationsAsSeen } from 'web/lib/firebase/notifications'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
@@ -161,13 +161,9 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
   // Mark all notifications as seen.
   useEffect(() => {
     if (isPageVisible && allGroupedNotifications) {
-      const notifications = allGroupedNotifications
-        .flat()
-        .flatMap((g) => g.notifications)
-
-      markNotificationsAsSeen(notifications)
+      markAllNotificationsAsSeen(privateUser.id)
     }
-  }, [isPageVisible, allGroupedNotifications])
+  }, [privateUser.id, isPageVisible, allGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />

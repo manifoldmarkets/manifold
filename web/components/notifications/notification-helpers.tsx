@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { getSourceUrl, Notification } from 'common/notification'
-import { doc, updateDoc } from 'firebase/firestore'
 import Link from 'next/link'
 import { ReactNode } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -8,7 +7,6 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { db } from 'web/lib/firebase/init'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
@@ -271,29 +269,6 @@ export function NotificationFrame(props: {
       {frameEnd}
     </Row>
   )
-}
-
-export const markNotificationsAsSeen = async (
-  notifications: Notification[]
-) => {
-  const unseenNotifications = notifications.filter((n) => !n.isSeen)
-  return await Promise.all(
-    unseenNotifications.map((n) => {
-      return markNotificationAsSeen(n)
-    })
-  )
-}
-
-export async function markNotificationAsSeen(notification: Notification) {
-  const notificationDoc = doc(
-    db,
-    `users/${notification.userId}/notifications/`,
-    notification.id
-  )
-  return updateDoc(notificationDoc, {
-    isSeen: true,
-    viewTime: new Date(),
-  })
 }
 
 export function ParentNotificationHeader(props: {
