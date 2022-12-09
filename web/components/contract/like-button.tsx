@@ -16,6 +16,7 @@ import {
 } from '../multi-user-transaction-link'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
+import { UserLink } from '../widgets/user-link'
 export const LIKES_SHOWN = 3
 
 const ButtonReactionType = 'like' as ReactionTypes
@@ -151,9 +152,12 @@ export const LikeButton = memo(function LikeButton(props: {
       {likedUserInfo && (
         <MultiUserTransactionModal
           userInfos={likedUserInfo}
-          modalLabel={`Liked this ${contentType}`}
+          modalLabel={`💖 Liked this ${
+            contentType === 'contract' ? 'market' : contentType
+          }`}
           open={modalOpen}
           setOpen={setModalOpen}
+          short={true}
         />
       )}
     </>
@@ -183,24 +187,22 @@ function UserLikedList(props: {
   }
   return (
     <Col
-      className="items-start px-2"
+      className="min-w-24 items-start"
       onMouseEnter={() => setToolTipHover(true)}
       onMouseLeave={() => setToolTipHover(false)}
     >
-      <div className="mb-1 font-bold">Liked by</div>
+      <div className="mb-1 font-bold">Like</div>
       {userInfo.slice(0, LIKES_SHOWN).map((u) => {
         return <UserLikedItem userInfo={u} />
       })}
-      <Row>
-        {length > LIKES_SHOWN && (
-          <div
-            className="w-full cursor-pointer self-end text-indigo-300 hover:text-indigo-200"
-            onClick={setModalOpen}
-          >
-            & {length - LIKES_SHOWN} more
-          </div>
-        )}
-      </Row>
+      {length > LIKES_SHOWN && (
+        <div
+          className="w-full cursor-pointer text-left text-indigo-300 hover:text-indigo-200"
+          onClick={setModalOpen}
+        >
+          & {length - LIKES_SHOWN} more
+        </div>
+      )}
     </Col>
   )
 }
@@ -208,13 +210,17 @@ function UserLikedList(props: {
 function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
   const { userInfo } = props
   return (
-    <Row className="items-center gap-2">
+    <Row className="items-center gap-1.5">
       <Avatar
         username={userInfo.username}
         avatarUrl={userInfo.avatarUrl}
         size="xxs"
       />
-      <div className="cursor-default">{userInfo.name}</div>
+      <UserLink
+        name={userInfo.name}
+        username={userInfo.username}
+        short={true}
+      />
     </Row>
   )
 }
