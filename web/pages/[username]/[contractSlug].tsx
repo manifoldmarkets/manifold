@@ -335,9 +335,7 @@ export function ContractPageContent(
           </>
         )}
 
-        {resolution !== 'CANCEL' && (
-          <BetsSummary className="mt-4 mb-2 px-2" contract={contract} />
-        )}
+        <BetsSummary className="mt-4 mb-2 px-2" contract={contract} />
 
         <div ref={tabsContainerRef}>
           <ContractTabs
