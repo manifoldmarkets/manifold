@@ -303,11 +303,7 @@ export function ParentNotificationHeader(props: {
   const { header, highlighted } = props
   const highlightedClass = getHighlightClass(highlighted)
   return (
-    <Row
-      className={clsx(
-        'mx-2 items-center justify-start text-sm text-gray-900 md:text-base'
-      )}
-    >
+    <Row className={clsx('mx-2 items-center justify-start text-gray-900')}>
       <div className={clsx(highlightedClass, 'line-clamp-3')}>{header}</div>
     </Row>
   )
