@@ -40,6 +40,7 @@ export function UserLink(props: {
         className,
         noLink && 'pointer-events-none'
       )}
+      followsLinkClass
     >
       <div className="inline-flex flex-row items-center gap-1">
         {shortName}
