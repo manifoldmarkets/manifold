@@ -31,7 +31,7 @@ export const usePrivateUsers = () => {
 }
 
 export const useDiscoverUsers = (userId: string | null | undefined) => {
-  const [discoverUserIds, setDiscoverUserIds] = useState<string[]>([])
+  const [discoverUserIds, setDiscoverUserIds] = useState<string[] | undefined>()
 
   useEffect(() => {
     if (userId)
@@ -50,7 +50,10 @@ export const useDiscoverUsers = (userId: string | null | undefined) => {
 
   const user = useUser()
   const followedUserIds = useFollows(user?.id)
-  const nonSuggestions = [user?.id ?? '', ...(followedUserIds ?? [])]
-
-  return difference(discoverUserIds, nonSuggestions).slice(0, 50)
+  if (discoverUserIds != null) {
+    const nonSuggestions = [user?.id ?? '', ...(followedUserIds ?? [])]
+    return difference(discoverUserIds, nonSuggestions).slice(0, 50)
+  } else {
+    return undefined
+  }
 }

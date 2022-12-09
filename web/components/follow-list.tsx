@@ -6,10 +6,11 @@ import { FollowButton } from './buttons/follow-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
+import { LoadingIndicator } from './widgets/loading-indicator'
 
 export function FollowList(props: {
-  userIds: string[]
-  myFollowedIds: string[]
+  userIds?: string[]
+  myFollowedIds?: string[]
 }) {
   const { userIds, myFollowedIds } = props
   const currentUser = useUser()
@@ -21,6 +22,10 @@ export function FollowList(props: {
   const onUnfollow = (userId: string) => {
     if (!currentUser) return
     unfollow(currentUser.id, userId)
+  }
+
+  if (userIds == null || myFollowedIds == null) {
+    return <LoadingIndicator className="py-4" />
   }
 
   return (

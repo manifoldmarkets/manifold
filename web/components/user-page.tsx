@@ -356,8 +356,8 @@ function ProfilePublicStats(props: { user: User; className?: string }) {
       <FollowsDialog
         user={user}
         defaultTab={followsTab}
-        followingIds={followingIds ?? []}
-        followerIds={followerIds ?? []}
+        followingIds={followingIds}
+        followerIds={followerIds}
         isOpen={isOpen}
         setIsOpen={setIsOpen}
       />
@@ -370,8 +370,8 @@ function ProfilePublicStats(props: { user: User; className?: string }) {
 
 function FollowsDialog(props: {
   user: User
-  followingIds: string[]
-  followerIds: string[]
+  followingIds: string[] | undefined
+  followerIds: string[] | undefined
   defaultTab: FollowsDialogTab
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
@@ -380,12 +380,16 @@ function FollowsDialog(props: {
     props
 
   const currentUser = useUser()
-  const myFollowedIds = useFollows(currentUser?.id) ?? []
+  const myFollowedIds = useFollows(currentUser?.id)
 
   // mqp: this is a ton of work, don't fetch it unless someone looks.
   // if you want it to be faster, then you gotta precompute stuff for it somewhere
   const discoverUserIds = useDiscoverUsers(isOpen ? user.id : undefined)
-  usePrefetchUsers([...followerIds, ...followingIds, ...discoverUserIds])
+  usePrefetchUsers([
+    ...(followerIds ?? []),
+    ...(followingIds ?? []),
+    ...(discoverUserIds ?? []),
+  ])
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
