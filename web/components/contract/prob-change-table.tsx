@@ -131,11 +131,7 @@ export function ProbOrNumericChange(props: {
 
   if (Math.abs(change * 100) >= 1) {
     return (
-      <div
-        className={clsx(
-          'mr-1 flex  items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold '
-        )}
-      >
+      <div className="mr-1 flex items-center justify-center whitespace-nowrap rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">
         {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
       </div>
     )
