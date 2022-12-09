@@ -10,7 +10,6 @@ import {
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
-import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
 import {
   BinaryContractChart,
@@ -32,6 +31,7 @@ import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { OrderByDirection } from 'firebase/firestore'
 import { useUser } from 'web/hooks/use-user'
+import { HistoryPoint } from 'web/components/charts/generic-charts'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
@@ -59,10 +59,13 @@ export async function getStaticPropz(props: {
     : []
   // We could include avatars in the embed, but not sure it's worth it
   const betPoints = useBetPoints
-    ? bets.map((bet) => ({
-        x: bet.createdTime,
-        y: bet.probAfter,
-      }))
+    ? bets.map(
+        (bet) =>
+          ({
+            x: bet.createdTime,
+            y: bet.probAfter,
+          } as HistoryPoint<Partial<Bet>>)
+      )
     : []
 
   return {

@@ -83,12 +83,15 @@ export async function getStaticPropz(props: {
     : []
   const includeAvatar = totalBets < 1000
   const betPoints = useBetPoints
-    ? bets.map((bet) =>
-        removeUndefinedProps({
-          x: bet.createdTime,
-          y: bet.probAfter,
-          obj: includeAvatar ? { userAvatarUrl: bet.userAvatarUrl } : undefined,
-        })
+    ? bets.map(
+        (bet) =>
+          removeUndefinedProps({
+            x: bet.createdTime,
+            y: bet.probAfter,
+            obj: includeAvatar
+              ? { userAvatarUrl: bet.userAvatarUrl }
+              : undefined,
+          }) as HistoryPoint<Partial<Bet>>
       )
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
