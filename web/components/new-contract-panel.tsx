@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import { Spacer } from 'web/components/layout/spacer'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
-import { ANTES, FIXED_ANTE, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { ANTES, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Row } from 'web/components/layout/row'
 import {
