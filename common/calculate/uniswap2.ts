@@ -8,7 +8,6 @@ export function calculateShares(
 ) {
   // Calculate shares purchasable with this amount of mana
   // Holding the Uniswapv2 constant of k = mana * shares
-  // TODO: Should this be done in log space for precision?
   return pool['SHARE'] - afterSwap(pool, 'M$', mana)['SHARE']
 }
 
@@ -21,10 +20,16 @@ export function afterSwap(
 ) {
   const k = pool['M$'] * pool['SHARE']
   const other = token === 'M$' ? 'SHARE' : 'M$'
-  return {
+  const newPool = {
     [token]: pool[token] + amount,
+    // TODO: Should this be done in log space for precision?
     [other]: k / (pool[token] + amount),
   }
+  // If any of the values in the new pool are invalid (infinite or NaN), throw an error
+  if (Object.values(newPool).some((v) => !isFinite(v))) {
+    throw new Error('Invalid new pool values: ' + JSON.stringify(newPool))
+  }
+  return newPool
 }
 
 export function calculatePriceAfterBuy(

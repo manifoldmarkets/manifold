@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "verify": "(cd .. && yarn verify)",
-    "verify:dir": "npx eslint . --max-warnings 0"
+    "verify:dir": "npx eslint . --max-warnings 0",
+    "test": "jest"
   },
   "sideEffects": false,
   "dependencies": {
@@ -17,6 +18,9 @@
     "lodash": "4.17.21"
   },
   "devDependencies": {
-    "@types/lodash": "4.14.178"
+    "@types/jest": "29.2.4",
+    "@types/lodash": "4.14.178",
+    "jest": "29.3.1",
+    "ts-jest": "29.0.3"
   }
 }
