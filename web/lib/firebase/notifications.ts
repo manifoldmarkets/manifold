@@ -20,26 +20,6 @@ import { listenForValues } from './utils'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 
-export function getNotificationsQuery(
-  userId: string,
-  unseenOnlyOptions?: { unseenOnly: boolean; limit: number }
-) {
-  const notifsCollection = collection(db, `/users/${userId}/notifications`)
-  if (unseenOnlyOptions?.unseenOnly)
-    return query(
-      notifsCollection,
-      where('isSeen', '==', false),
-      orderBy('createdTime', 'desc'),
-      limit(unseenOnlyOptions.limit)
-    )
-  return query(
-    notifsCollection,
-    orderBy('createdTime', 'desc'),
-    // Nobody's going through 10 pages of notifications, right?
-    limit(NOTIFICATIONS_PER_PAGE * 10)
-  )
-}
-
 export const setPushToken = async (userId: string, pushToken: string) => {
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
@@ -91,8 +71,26 @@ export function listenForNotifications(
   userId: string,
   setNotifictions: (notifications: Notification[]) => void
 ) {
-  return listenForValues<Notification>(
-    getNotificationsQuery(userId),
-    setNotifictions
+  const notifsCollection = collection(db, `/users/${userId}/notifications`)
+  const q = query(
+    notifsCollection,
+    orderBy('createdTime', 'desc'),
+    // Nobody's going through 10 pages of notifications, right?
+    limit(NOTIFICATIONS_PER_PAGE * 10)
   )
+  return listenForValues<Notification>(q, setNotifictions)
+}
+
+export function listenForUnseenNotifications(
+  userId: string,
+  setNotifictions: (notifications: Notification[]) => void
+) {
+  const notifsCollection = collection(db, `/users/${userId}/notifications`)
+  const q = query(
+    notifsCollection,
+    orderBy('createdTime', 'desc'),
+    where('isSeen', '==', false),
+    limit(NOTIFICATIONS_PER_PAGE * 10)
+  )
+  return listenForValues<Notification>(q, setNotifictions)
 }
