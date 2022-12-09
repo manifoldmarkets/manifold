@@ -48,12 +48,5 @@ export const useDiscoverUsers = (userId: string | null | undefined) => {
       })
   }, [userId])
 
-  const user = useUser()
-  const followedUserIds = useFollows(user?.id)
-  if (discoverUserIds != null) {
-    const nonSuggestions = [user?.id ?? '', ...(followedUserIds ?? [])]
-    return difference(discoverUserIds, nonSuggestions).slice(0, 50)
-  } else {
-    return undefined
-  }
+  return discoverUserIds
 }

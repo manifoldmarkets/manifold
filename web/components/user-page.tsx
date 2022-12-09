@@ -9,6 +9,7 @@ import {
   DocumentIcon,
 } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
+import { difference } from 'lodash'
 
 import { User } from 'web/lib/firebase/users'
 import { useUser, useUserById, usePrefetchUsers } from 'web/hooks/use-user'
@@ -371,10 +372,20 @@ function FollowsDialog(props: {
   // mqp: this is a ton of work, don't fetch it unless someone looks.
   // if you want it to be faster, then you gotta precompute stuff for it somewhere
   const discoverUserIds = useDiscoverUsers(isOpen ? user.id : undefined)
+  const nonSuggestions = [
+    user?.id ?? '',
+    currentUser?.id ?? '',
+    ...(myFollowedIds ?? []),
+  ]
+  const suggestedUserIds =
+    discoverUserIds == null
+      ? undefined
+      : difference(discoverUserIds, nonSuggestions).slice(0, 50)
+
   usePrefetchUsers([
     ...(followerIds ?? []),
     ...(followingIds ?? []),
-    ...(discoverUserIds ?? []),
+    ...(suggestedUserIds ?? []),
   ])
 
   return (
@@ -406,7 +417,7 @@ function FollowsDialog(props: {
               title: 'Similar',
               content: (
                 <FollowList
-                  userIds={discoverUserIds}
+                  userIds={suggestedUserIds}
                   myFollowedIds={myFollowedIds}
                 />
               ),
