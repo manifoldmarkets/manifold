@@ -71,6 +71,7 @@ export function MultiUserTransactionModal(props: {
             <UserLink name={userInfo.name} username={userInfo.username} />
           </Row>
         ))}
+        {userInfos.length < 1 && <div className="font-thin">No one yet...</div>}
       </Col>
     </Modal>
   )

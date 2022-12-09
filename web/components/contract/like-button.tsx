@@ -1,24 +1,22 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { User } from 'common/user'
-import {
-  useIsLiked,
-  useLikesOnContent,
-  useUserLikes,
-} from 'web/hooks/use-likes'
-import { react, unReact } from 'web/lib/firebase/reactions'
-import clsx from 'clsx'
 import { HeartIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { debounce } from 'lodash'
 import { ReactionContentTypes, ReactionTypes } from 'common/reaction'
+import { User } from 'common/user'
+import { debounce, partition } from 'lodash'
+import { memo, useEffect, useMemo, useState } from 'react'
+import { useIsLiked, useLikesOnContent } from 'web/hooks/use-likes'
 import useLongTouch from 'web/hooks/use-long-touch'
-import DropdownMenu from '../comments/dropdown-menu'
-import { MultiUserReactionModal } from '../multi-user-reaction-link'
+import { react, unReact } from 'web/lib/firebase/reactions'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import {
-  MultiUserTransactionLink,
-  MultiUserTransactionModal,
   MultiUserLinkInfo,
+  MultiUserTransactionModal,
 } from '../multi-user-transaction-link'
+import { Avatar } from '../widgets/avatar'
+import { Tooltip } from '../widgets/tooltip'
+export const LIKES_SHOWN = 3
 
 const ButtonReactionType = 'like' as ReactionTypes
 export const LikeButton = memo(function LikeButton(props: {
@@ -40,10 +38,9 @@ export const LikeButton = memo(function LikeButton(props: {
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
-  const [hover, setHover] = useState(false)
   const [liked, setLiked] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  const showRed = liked || (!liked && hover)
+  const showPink = liked
   const [totalLikes, setTotalLikes] = useState(props.totalLikes)
 
   useEffect(() => {
@@ -95,85 +92,129 @@ export const LikeButton = memo(function LikeButton(props: {
     }
   )
 
-  // const likedUsers = useLikesOnContent(contentType, contentId)
-  // const likedUserInfo = likedUsers
-  //   ? likedUsers.map((reaction) => {
-  //       return {
-  //         name: reaction.userDisplayName,
-  //         username: reaction.userUsername,
-  //         avatarUrl: reaction.userAvatarUrl,
-  //       } as MultiUserLinkInfo
-  //     })
-  //   : undefined
+  const likedUsers = useLikesOnContent(contentType, contentId)
+  const likedUserInfo = likedUsers
+    ? likedUsers.map((reaction) => {
+        return {
+          name: reaction.userDisplayName,
+          username: reaction.userUsername,
+          avatarUrl: reaction.userAvatarUrl,
+        } as MultiUserLinkInfo
+      })
+    : undefined
 
-  console.log(useUserLikes(user?.id, 'contract'))
+  const [tooltipHover, setTooltipHover] = useState(false)
+
   return (
     <>
-      <button
-        disabled={disabled}
-        className={clsx(
-          'my-auto px-2 py-1 text-xs', //2xs button
-          'text-gray-500 transition-transform disabled:cursor-not-allowed',
-          !disabled ? 'hover:text-gray-600' : ''
-        )}
-        // onMouseOver={() => {
-        //   if (!disabled) {
-        //     setHover(true)
-        //   }
-        // }}
-        // onMouseLeave={() => setHover(false)}
-        {...likeLongPress}
-        // onClick={onClick}
-      >
-        <div className="relative">
-          <div
-            className={clsx(
-              totalLikes > 0 ? 'bg-gray-500' : '',
-              ' absolute -bottom-1.5 -right-1.5 min-w-[15px] rounded-full p-[1.5px] text-center text-[10px] leading-3 text-white'
-            )}
-          >
-            {totalLikes > 0 ? totalLikes : ''}
-          </div>
-          <HeartIcon
-            className={clsx(
-              'h-5 w-5',
-              showRed ? 'fill-pink-400 stroke-pink-400' : ''
-            )}
+      <Tooltip
+        text={
+          <UserLikedList
+            likedUserInfo={likedUserInfo}
+            setToolTipHover={setTooltipHover}
+            setModalOpen={() => setModalOpen(true)}
+            user={user}
+            userLiked={userLiked}
           />
-        </div>
-      </button>
-      {/* {likedUserInfo && (
+        }
+        placement={'bottom'}
+        noTap
+        externalOpen={tooltipHover}
+      >
+        <button
+          disabled={disabled}
+          className={clsx(
+            'my-auto px-2 py-1 text-xs', //2xs button
+            'text-gray-500 transition-transform disabled:cursor-not-allowed',
+            !disabled ? 'hover:text-gray-600' : ''
+          )}
+          {...likeLongPress}
+        >
+          <div className="relative">
+            <div
+              className={clsx(
+                totalLikes > 0 ? 'bg-gray-500' : '',
+                ' absolute -bottom-1.5 -right-1.5 min-w-[15px] rounded-full p-[1.5px] text-center text-[10px] leading-3 text-white'
+              )}
+            >
+              {totalLikes > 0 ? totalLikes : ''}
+            </div>
+            <HeartIcon
+              className={clsx(
+                'h-5 w-5',
+                showPink ? 'fill-pink-400 stroke-pink-400' : ''
+              )}
+            />
+          </div>
+        </button>
+      </Tooltip>
+      {likedUserInfo && (
         <MultiUserTransactionModal
           userInfos={likedUserInfo}
           modalLabel={`Liked this ${contentType}`}
           open={modalOpen}
           setOpen={setModalOpen}
         />
-      )} */}
+      )}
     </>
   )
 })
 
-// function getWhoLikedThisContract(
-//   contentType: ReactionContentTypes,
-//   contentId: string
-// ) {
-//   const whoLikedThisContract = useLikesOnContent(contentType, contentId)
-//   console.log(whoLikedThisContract)
-// }
-// function WhoLikedThisContractDesktop(props: {
-//   contentType: ReactionContentTypes
-//   contentId: string
-// }) {
-//   const { contentType, contentId } = props
-//   return <DropdownMenu Items={[
-//     {
-//       name: 'hi',
-//       icon: <div className="h-5 w-5 bg-white"/>,
-//       onClick:()=>void
-//     }]
-//   }/>
-//   const whoLikedThisContract = useLikesOnContent(contentType, contentId)
-//   console.log(whoLikedThisContract)
-//   return <div>hi</div>
-// }
+function UserLikedList(props: {
+  likedUserInfo: MultiUserLinkInfo[] | undefined
+  setToolTipHover: (hover: boolean) => void
+  setModalOpen: () => void
+  user?: User | null
+  userLiked?: boolean
+}) {
+  const { likedUserInfo, user, setToolTipHover, setModalOpen, userLiked } =
+    props
+  const length = likedUserInfo?.length
+  if (!likedUserInfo || !length || length <= 0) {
+    return <div className="cursor-default">Like</div>
+  }
+  let userInfo = likedUserInfo
+  if (userLiked && user) {
+    const [youLiked, otherUsersLiked] = partition(
+      likedUserInfo,
+      (u) => u.username === user?.username
+    )
+    userInfo = youLiked.concat(otherUsersLiked)
+  }
+  return (
+    <Col
+      className="items-start px-2"
+      onMouseEnter={() => setToolTipHover(true)}
+      onMouseLeave={() => setToolTipHover(false)}
+    >
+      <div className="mb-1 font-bold">Liked by</div>
+      {userInfo.slice(0, LIKES_SHOWN).map((u) => {
+        return <UserLikedItem userInfo={u} />
+      })}
+      <Row>
+        {length > LIKES_SHOWN && (
+          <div
+            className="w-full cursor-pointer self-end text-indigo-300 hover:text-indigo-200"
+            onClick={setModalOpen}
+          >
+            & {length - LIKES_SHOWN} more
+          </div>
+        )}
+      </Row>
+    </Col>
+  )
+}
+
+function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
+  const { userInfo } = props
+  return (
+    <Row className="items-center gap-2">
+      <Avatar
+        username={userInfo.username}
+        avatarUrl={userInfo.avatarUrl}
+        size="xxs"
+      />
+      <div className="cursor-default">{userInfo.name}</div>
+    </Row>
+  )
+}

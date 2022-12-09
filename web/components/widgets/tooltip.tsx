@@ -16,14 +16,15 @@ import { ReactNode, useRef, useState } from 'react'
 // See https://floating-ui.com/docs/react-dom
 
 export function Tooltip(props: {
-  text: string | false | undefined | null
+  text: string | false | undefined | null | ReactNode
   children: ReactNode
   className?: string
   placement?: Placement
   noTap?: boolean
   noFade?: boolean
+  externalOpen?: boolean
 }) {
-  const { text, children, className, noTap, noFade } = props
+  const { text, children, className, noTap, noFade, externalOpen } = props
 
   const arrowRef = useRef(null)
 
@@ -39,7 +40,7 @@ export function Tooltip(props: {
     context,
     placement,
   } = useFloating({
-    open,
+    open: open,
     onOpenChange: setOpen,
     whileElementsMounted: autoUpdate,
     placement: props.placement ?? 'top',
@@ -72,11 +73,17 @@ export function Tooltip(props: {
       </span>
       {/* conditionally render tooltip and fade in/out */}
       <Transition
-        show={open}
+        show={externalOpen ? externalOpen : open}
         enter="transition ease-out duration-50"
         enterFrom="opacity-0"
         enterTo="opacity-100"
-        leave={noFade ? '' : 'transition ease-in duration-150'}
+        leave={
+          noFade
+            ? ''
+            : externalOpen != undefined
+            ? 'transition ease-in duration-150 delay-100'
+            : 'transition ease-in duration-150'
+        }
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
         // div attributes

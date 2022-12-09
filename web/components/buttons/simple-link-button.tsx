@@ -19,7 +19,7 @@ export const SimpleLinkButton = (props: {
       text={tooltip ?? 'Copy link to market'}
       placement="bottom"
       noTap
-      noFade
+      // noFade
     >
       <IconButton
         size="2xs"
