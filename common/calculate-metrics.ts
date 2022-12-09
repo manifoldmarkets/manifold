@@ -1,8 +1,9 @@
-import { Dictionary, last, partition, sum, sumBy, uniq } from 'lodash'
+import { Dictionary, partition, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
   Contract,
+  CPMM2Contract,
   CPMMBinaryContract,
   CPMMContract,
   DPMContract,
@@ -12,6 +13,9 @@ import { DAY_MS } from './util/time'
 import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
+import { buy, getProb, shortSell } from './calculate-cpmm-multi'
+import { average } from './util/math'
+import { ContractMetric } from 'common/contract-metric'
 
 const computeInvestmentValue = (
   bets: Bet[],
@@ -22,7 +26,19 @@ const computeInvestmentValue = (
     if (!contract || contract.isResolved) return 0
     if (bet.sale || bet.isSold) return 0
 
-    const payout = calculatePayout(contract, bet, 'MKT')
+    let payout
+    try {
+      payout = calculatePayout(contract, bet, 'MKT')
+    } catch (e) {
+      console.log(
+        'contract',
+        contract.question,
+        contract.mechanism,
+        contract.id
+      )
+      console.error(e)
+      payout = 0
+    }
     const value = payout - (bet.loanAmount ?? 0)
     if (isNaN(value)) return 0
     return value
@@ -55,6 +71,8 @@ export const computeElasticity = (
   switch (contract.mechanism) {
     case 'cpmm-1':
       return computeBinaryCpmmElasticity(unfilledBets, contract, betAmount)
+    case 'cpmm-2':
+      return computeCPMM2Elasticity(contract, betAmount)
     case 'dpm-2':
       return computeDpmElasticity(contract, betAmount)
     default: // there are some contracts on the dev DB with crazy mechanisms
@@ -137,73 +155,31 @@ export const computeBinaryCpmmElasticityFromAnte = (
   return safeYes - safeNo
 }
 
+export const computeCPMM2Elasticity = (
+  contract: CPMM2Contract,
+  betAmount: number
+) => {
+  const { pool, answers } = contract
+
+  const probDiffs = answers.map((a) => {
+    const { newPool: buyPool } = buy(pool, a.id, betAmount)
+    const { newPool: sellPool } = shortSell(pool, a.id, betAmount)
+
+    const buyProb = getProb(buyPool, a.id)
+    const sellProb = getProb(sellPool, a.id)
+    const safeBuy = Number.isFinite(buyProb) ? buyProb : 1
+    const safeSell = Number.isFinite(sellProb) ? sellProb : 0
+    return safeBuy - safeSell
+  })
+
+  return average(probDiffs)
+}
+
 export const computeDpmElasticity = (
   contract: DPMContract,
   betAmount: number
 ) => {
   return getNewMultiBetInfo('', 2 * betAmount, contract).newBet.probAfter
-}
-
-const computeTotalPool = (userContracts: Contract[], startTime = 0) => {
-  const periodFilteredContracts = userContracts.filter(
-    (contract) => contract.createdTime >= startTime
-  )
-  return sum(
-    periodFilteredContracts.map((contract) => sum(Object.values(contract.pool)))
-  )
-}
-
-export const computeVolume = (contractBets: Bet[], since: number) => {
-  return sumBy(contractBets, (b) =>
-    b.createdTime > since && !b.isRedemption && !b.isAnte
-      ? Math.abs(b.amount)
-      : 0
-  )
-}
-
-export const calculateProbChange = (
-  prob: number,
-  descendingBets: Bet[],
-  since: number,
-  resolutionTime: number | undefined
-) => {
-  if (resolutionTime && since >= resolutionTime) return 0
-
-  const newestBet = descendingBets[0]
-  if (!newestBet) return 0
-
-  const betBeforeSince = descendingBets.find((b) => b.createdTime < since)
-
-  if (!betBeforeSince) {
-    const oldestBet = last(descendingBets) ?? newestBet
-    return prob - oldestBet.probBefore
-  }
-
-  return prob - betBeforeSince.probAfter
-}
-
-export const calculateCreatorVolume = (userContracts: Contract[]) => {
-  const allTimeCreatorVolume = computeTotalPool(userContracts, 0)
-  const monthlyCreatorVolume = computeTotalPool(
-    userContracts,
-    Date.now() - 30 * DAY_MS
-  )
-  const weeklyCreatorVolume = computeTotalPool(
-    userContracts,
-    Date.now() - 7 * DAY_MS
-  )
-
-  const dailyCreatorVolume = computeTotalPool(
-    userContracts,
-    Date.now() - 1 * DAY_MS
-  )
-
-  return {
-    daily: dailyCreatorVolume,
-    weekly: weeklyCreatorVolume,
-    monthly: monthlyCreatorVolume,
-    allTime: allTimeCreatorVolume,
-  }
 }
 
 export const calculateCreatorTraders = (userContracts: Contract[]) => {
@@ -281,25 +257,42 @@ export const calculateNewProfit = (
 
 export const calculateMetricsByContract = (
   betsByContractId: Dictionary<Bet[]>,
-  contractsById: Dictionary<Contract>
+  contractsById: Dictionary<Contract>,
+  user?: User
 ) => {
   return Object.entries(betsByContractId).map(([contractId, bets]) => {
-    const contract = contractsById[contractId]
-    const current = getContractBetMetrics(contract, bets)
-
-    let periodMetrics
-    if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
-      const periods = ['day', 'week', 'month'] as const
-      periodMetrics = Object.fromEntries(
-        periods.map((period) => [
-          period,
-          calculatePeriodProfit(contract, bets, period),
-        ])
-      )
-    }
-
-    return removeUndefinedProps({ contractId, ...current, from: periodMetrics })
+    const contract: Contract = contractsById[contractId]
+    return calculateUserMetrics(contract, bets, user)
   })
+}
+
+export const calculateUserMetrics = (
+  contract: Contract,
+  bets: Bet[],
+  user?: User
+) => {
+  const current = getContractBetMetrics(contract, bets)
+
+  let periodMetrics
+  if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
+    const periods = ['day', 'week', 'month'] as const
+    periodMetrics = Object.fromEntries(
+      periods.map((period) => [
+        period,
+        calculatePeriodProfit(contract, bets, period),
+      ])
+    )
+  }
+
+  return removeUndefinedProps({
+    contractId: contract.id,
+    ...current,
+    from: periodMetrics,
+    userName: user?.name,
+    userId: user?.id,
+    userUsername: user?.username,
+    userAvatarUrl: user?.avatarUrl,
+  } as ContractMetric)
 }
 
 export type ContractMetrics = ReturnType<

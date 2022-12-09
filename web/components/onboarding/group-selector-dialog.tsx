@@ -2,7 +2,7 @@ import React, { useRef } from 'react'
 
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
-import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
+import { useAllGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
@@ -19,7 +19,7 @@ export default function GroupSelectorDialog(props: {
 }) {
   const { open, setOpen } = props
 
-  const groups = useGroups()
+  const groups = useAllGroups()
   const user = useUser()
   const memberGroupIds = useMemberGroupIds(user) || []
   const cachedGroups = useRef<Group[]>()

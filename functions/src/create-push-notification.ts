@@ -9,7 +9,7 @@ import { PushTicket } from '../../common/push-ticket'
 
 const firestore = admin.firestore()
 type ExpoPushMessageWithNotification = ExpoPushMessage & {
-  data: { notification: Notification }
+  data: Notification
 }
 
 export const createPushNotification = async (
@@ -41,7 +41,7 @@ export const createPushNotification = async (
       sound: 'default',
       title,
       body,
-      data: { notification: notification },
+      data: notification,
     })
   }
   const tickets = await expo.sendPushNotificationsAsync(messages)

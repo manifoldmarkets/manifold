@@ -5,7 +5,6 @@ import { sum } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
-import { SiteLink } from 'web/components/widgets/site-link'
 import {
   usePrivateUser,
   useUserContractMetricsByProfit,
@@ -17,8 +16,9 @@ import {
   hasCompletedStreakToday,
 } from 'web/components/profile/betting-streak-modal'
 import { LoansModal } from 'web/components/profile/loans-modal'
+import Link from 'next/link'
 
-const dailyStatsHeaderClass = 'text-gray-500 text-xs sm:text-sm'
+const dailyStatsHeaderClass = 'text-gray-500 text-xs font-thin'
 const dailyStatsClass = 'items-center text-lg'
 
 export function DailyStats(props: {
@@ -97,20 +97,18 @@ export function DailyStats(props: {
 export function DailyProfit(props: { user: User | null | undefined }) {
   const { user } = props
 
-  const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_'
-  )
+  const contractMetricsByProfit = useUserContractMetricsByProfit(user?.id)
   const profit = sum(
     contractMetricsByProfit?.metrics.map((m) =>
       m.from ? m.from.day.profit : 0
     ) ?? []
   )
   return (
-    <SiteLink className="flex flex-col hover:no-underline" href="/daily-movers">
+    <Link className="flex flex-col" href="/daily-movers">
       <div className={dailyStatsHeaderClass}>Daily profit</div>
       <Row className={dailyStatsClass}>
         <span>{formatMoney(profit)}</span>{' '}
       </Row>
-    </SiteLink>
+    </Link>
   )
 }

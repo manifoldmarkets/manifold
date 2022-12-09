@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 
 import { User } from '../../common/user'
 import { Txn } from '../../common/txn'
@@ -59,14 +60,9 @@ export async function runTxn(
   // TODO: Track payments received by charities, bank, contracts too.
   if (toType === 'USER') {
     const toDoc = firestore.doc(`users/${toId}`)
-    const toSnap = await fbTransaction.get(toDoc)
-    if (!toSnap.exists) {
-      return { status: 'error', message: 'User not found' }
-    }
-    const toUser = toSnap.data() as User
     fbTransaction.update(toDoc, {
-      balance: toUser.balance + amount,
-      totalDeposits: toUser.totalDeposits + amount,
+      balance: FieldValue.increment(amount),
+      totalDeposits: FieldValue.increment(amount),
     })
   }
 
@@ -74,8 +70,8 @@ export async function runTxn(
   const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...data }
   fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
   fbTransaction.update(fromDoc, {
-    balance: fromUser.balance - amount,
-    totalDeposits: fromUser.totalDeposits - amount,
+    balance: FieldValue.increment(-amount),
+    totalDeposits: FieldValue.increment(-amount),
   })
 
   return { status: 'success', txn }

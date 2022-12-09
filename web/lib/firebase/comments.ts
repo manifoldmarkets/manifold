@@ -36,7 +36,6 @@ export async function createCommentOnContract(
   contractId: string,
   content: JSONContent,
   user: User,
-  onContractWithBounty: boolean,
   answerOutcome?: string,
   replyToCommentId?: string
 ) {
@@ -52,8 +51,7 @@ export async function createCommentOnContract(
     content,
     user,
     ref,
-    replyToCommentId,
-    onContractWithBounty
+    replyToCommentId
   )
 }
 export async function createCommentOnGroup(
@@ -98,8 +96,7 @@ async function createComment(
   content: JSONContent,
   user: User,
   ref: DocumentReference<DocumentData>,
-  replyToCommentId?: string,
-  onContractWithBounty?: boolean
+  replyToCommentId?: string
 ) {
   const comment = removeUndefinedProps({
     id: ref.id,
@@ -119,10 +116,6 @@ async function createComment(
       commentId: ref.id,
       surfaceId,
       replyToCommentId: replyToCommentId,
-      onContractWithBounty:
-        extraFields.commentType === 'contract'
-          ? onContractWithBounty
-          : undefined,
     })
   )
   return await setDoc(ref, comment)

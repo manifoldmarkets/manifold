@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Modal, Text, View, StyleSheet } from 'react-native'
+import { View } from 'react-native'
 import {
   isIosStorekit2,
   PurchaseError,
@@ -16,7 +16,9 @@ export const IosIapListener = (props: {
   communicateWithWebview: (type: string, data: object | string) => void
 }) => {
   const { checkoutAmount, setCheckoutAmount, communicateWithWebview } = props
-
+  const [didGetPurchaseError, setDidGetPurchaseError] = useState<string | null>(
+    null
+  )
   const {
     connected,
     products,
@@ -24,18 +26,51 @@ export const IosIapListener = (props: {
     currentPurchaseError,
     initConnectionError,
     finishTransaction,
+    getAvailablePurchases,
+    availablePurchases,
     getProducts,
   } = useIAP()
 
   useEffect(() => {
     if (currentPurchaseError || initConnectionError) {
-      Sentry.Native.captureException(currentPurchaseError, {
-        extra: { message: 'currentPurchaseError' },
+      console.log('error with products:', products)
+      if (currentPurchaseError) {
+        console.log('current purchase error', currentPurchaseError)
+        console.log('currentPurchase:', currentPurchase)
+        setDidGetPurchaseError('currentPurchaseError')
+      } else if (initConnectionError) {
+        console.log('init connection error', initConnectionError)
+        setDidGetPurchaseError('initConnectionError')
+      }
+
+      getAvailablePurchases()
+      Sentry.Native.captureException('error on purchase or connection', {
+        extra: {
+          message: currentPurchaseError
+            ? 'currentPurchaseError'
+            : 'initConnectionError',
+          products,
+          currentPurchase,
+          currentPurchaseError,
+          initConnectionError,
+        },
       })
-      console.log('initConnectionError', initConnectionError)
       communicateWithWebview('iapError', {})
     }
   }, [currentPurchaseError, initConnectionError])
+
+  useEffect(() => {
+    if (availablePurchases) {
+      console.log('availablePurchases', availablePurchases)
+      Sentry.Native.captureException('got available purchases', {
+        extra: {
+          message: `available purchases after error? ${didGetPurchaseError}`,
+          didGetPurchaseError,
+          availablePurchases,
+        },
+      })
+    }
+  }, [availablePurchases])
 
   useEffect(() => {
     const checkCurrentPurchase = async () => {
@@ -50,6 +85,16 @@ export const IosIapListener = (props: {
           })
           const receipt = currentPurchase.transactionReceipt
           console.log('finishTransaction receipt', receipt)
+          if (didGetPurchaseError) {
+            Sentry.Native.captureException(
+              'receipt received after error on purchase or connection',
+              {
+                extra: {
+                  message: `receipt received after ${didGetPurchaseError}`,
+                },
+              }
+            )
+          }
 
           communicateWithWebview('iapReceipt', { receipt })
         }
@@ -81,11 +126,14 @@ export const IosIapListener = (props: {
   }
 
   useEffect(() => {
-    console.log('products available:', products)
+    console.log(
+      'products available:',
+      products.map((p) => p.productId)
+    )
   }, [products])
 
   useEffect(() => {
-    console.log('connected', connected)
+    console.log('iap connected', connected)
     if (connected) {
       getProducts({
         skus: SKUS,
@@ -105,6 +153,7 @@ export const IosIapListener = (props: {
     console.log('usdAmount', usdAmount)
     const sku = products.find((p) => p.price === usdAmount)
     if (sku) {
+      console.log('found sku', sku)
       handleBuyProduct(sku.productId)
     }
     setCheckoutAmount(null)

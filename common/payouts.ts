@@ -1,12 +1,7 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
-import {
-  Contract,
-  CPMMBinaryContract,
-  DPMContract,
-  PseudoNumericContract,
-} from './contract'
+import { Contract, CPMM2Contract, CPMMContract, DPMContract } from './contract'
 import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
@@ -63,16 +58,13 @@ export const getPayouts = (
 ): PayoutInfo => {
   if (contract.mechanism === 'uniswap-2')
     throw new Error('getPayouts not implemented')
-  if (
-    contract.mechanism === 'cpmm-1' &&
-    (contract.outcomeType === 'BINARY' ||
-      contract.outcomeType === 'PSEUDO_NUMERIC')
-  ) {
+  if (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-2') {
     return getFixedPayouts(
       outcome,
       contract,
       bets,
       liquidities,
+      resolutions,
       resolutionProbability
     )
   }
@@ -87,9 +79,12 @@ export const getPayouts = (
 
 export const getFixedPayouts = (
   outcome: string | undefined,
-  contract: CPMMBinaryContract | PseudoNumericContract,
+  contract: CPMMContract | CPMM2Contract,
   bets: Bet[],
   liquidities: LiquidityProvision[],
+  resolutions?: {
+    [outcome: string]: number
+  },
   resolutionProbability?: number
 ) => {
   switch (outcome) {
@@ -101,6 +96,7 @@ export const getFixedPayouts = (
         contract,
         bets,
         liquidities,
+        resolutions,
         resolutionProbability
       )
     default:

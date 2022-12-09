@@ -1,86 +1,125 @@
+import Masonry from 'react-masonry-css'
+
 import { Contract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { Row } from 'web/components/layout/row'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Spacer } from 'web/components/layout/spacer'
-import { Card } from 'web/components/widgets/card'
-import { Tabs } from 'web/components/layout/tabs'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
-import { Button } from 'web/components/buttons/button'
-import { useState } from 'react'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import Masonry from 'react-masonry-css'
 
-const group_winners = [
-  'which-country-will-win-group-a-of-t-506d1ab4e4ec',
-  'which-country-will-win-group-b-of-t',
-  'which-country-will-win-group-c-of-t',
-  'which-country-will-win-group-d-of-t',
-  'httpsenwikipediaorgwiki2022fifaworl',
-  'which-country-will-win-group-f-of-t',
-  'which-country-will-win-group-g-of-t',
-  'which-country-will-win-group-h-of-t',
-]
-
-const group_runnerups = [
-  'which-country-will-win-group-a-of-t-506d1ab4e4ec',
-  'which-country-will-win-group-b-of-t',
-  'which-country-will-win-group-c-of-t',
-  'which-country-will-win-group-d-of-t',
-  'httpsenwikipediaorgwiki2022fifaworl',
-  'which-country-will-win-group-f-of-t',
-  'which-country-will-win-group-g-of-t',
-  'which-country-will-win-group-h-of-t',
-]
-
-const round_of_16 = [] as string[]
-const quarter_finals = [] as string[]
-const semifinals = [] as string[]
-const final = [] as string[]
-const daily_markets = ['will-either-brazil-or-argentina-win'] as string[]
-const general_markets = [
-  'which-country-will-win-the-2022-fif',
-  'will-a-team-score-7-or-more-goals-i',
-  'will-luis-suarez-bite-another-playe',
-  'will-a-nation-outside-of-europe-or',
-  'will-iran-be-removed-from-the-world',
-  'what-countries-will-make-it-to-the-b27d5c3e5461',
-  'will-any-player-in-the-2022-fifa-wo',
-  'will-the-total-number-of-goals-scor',
+const player_ratings = [
+  'which-player-will-win-the-golden-bo',
+  'which-goalkeeper-will-win-the-golde',
+  'which-player-will-win-the-golden-ba-7f5df675c9b0',
+  'which-player-will-win-the-fifa-youn',
 ] as string[]
 
+const general_markets = [
+  'which-team-will-win-the-2022-fifa-w',
+  // 'will-a-team-score-7-or-more-goals-i',
+  // 'will-germany-reach-the-world-cup-qu',
+  'will-we-have-a-messi-vs-ronaldo-fin',
+] as string[]
+
+const br_cr = [
+  'who-will-be-man-of-the-match-in-bra-a88c0ce11214',
+  'will-brazil-eliminate-croatia',
+  'will-neymar-score-from-a-penalty-du',
+]
+const nl_arg = [
+  'who-will-be-man-of-the-match-in-the-5241d79a9b88',
+  'will-the-netherlands-eliminate-arge-b00886164a20',
+  'will-messi-score-before-depay',
+]
+
+const mor_por = [
+  'who-will-be-man-of-the-match-in-mor',
+  'will-morocco-eliminate-portugal',
+  'will-moroccos-goalkeeper-save-a-pen',
+]
+const uk_fr = [
+  'who-will-be-man-of-the-match-in-eng-b3b33c0ee202',
+  'will-england-eliminate-france',
+  'will-england-or-france-keep-a-clean',
+]
+const final = [] as string[]
+
+// const group_winners = [
+//   // groups A through H
+//   'which-team-will-win-group-a',
+//   'which-team-will-win-group-b',
+//   'which-team-will-win-group-c',
+//   'which-team-will-win-group-d',
+//   'which-team-will-win-group-e',
+//   'which-team-will-win-group-f',
+//   'which-team-will-win-group-g',
+//   'which-team-will-win-group-h',
+// ]
+
+// const group_runnerups = [
+//   'which-team-will-finish-2nd-in-group',
+//   'which-team-will-finish-2nd-in-group-4dfb5e86a538',
+//   'which-team-will-finish-2nd-in-group-9a6a9ce8c548',
+//   'which-team-will-finish-2nd-in-group-ca47ae80f852',
+//   'which-team-will-finish-2nd-in-group-f244b90960d0',
+//   'which-team-will-finish-2nd-in-group-17b7655095d7',
+//   'which-team-will-finish-2nd-in-group-98fd8698c4d3',
+//   'which-team-will-finish-2nd-in-group-87644ea5dc4b',
+// ]
+
+// const round_of_16 = [
+//   // // Sat 3rd
+//   'will-the-netherlands-beat-the-usa',
+//   'who-will-be-man-of-the-match-in-the',
+//   'will-argentina-beat-australia',
+//   'who-will-be-man-of-the-match-in-arg',
+//   // // Sun 4th
+//   'will-france-beat-poland',
+//   'who-will-be-man-of-the-match-in-fra',
+//   'will-england-beat-senegal',
+//   'who-will-be-man-of-the-match-in-eng',
+//   // Mon 5th
+//   'will-croatia-eliminate-japan-687997d7af70',
+//   'who-will-be-man-of-the-match-in-cro',
+//   'will-brazil-eliminate-south-korea',
+//   'who-will-be-man-of-the-match-in-bra',
+//   // Tue 6h TBD
+//   'will-spain-eliminate-morocco',
+//   'who-will-be-man-of-the-match-in-spa',
+//   'will-portugal-eliminate-switzerland',
+//   'who-will-be-man-of-the-match-in-por',
+// ]
+
 export async function getStaticProps() {
-  const groupWinners = await getContractsFromSlugs(group_winners)
+  // const groupWinners = await getContractsFromSlugs(group_winners)
+  // const groupRunnerups = await getContractsFromSlugs(group_runnerups)
+  // const roundOf16 = await getContractsFromSlugs(round_of_16)
 
-  const groupRunnerups = await getContractsFromSlugs(group_runnerups)
+  const nlArg = await getContractsFromSlugs(nl_arg)
 
-  const roundOf16 = await getContractsFromSlugs(round_of_16)
+  const brCr = await getContractsFromSlugs(br_cr)
 
-  const quarterFinals = await getContractsFromSlugs(quarter_finals)
+  const morPor = await getContractsFromSlugs(mor_por)
 
-  const semiFinals = await getContractsFromSlugs(semifinals)
+  const ukFr = await getContractsFromSlugs(uk_fr)
 
   const finals = await getContractsFromSlugs(final)
 
-  const dailyMarkets = await getContractsFromSlugs(daily_markets)
+  const playerRatings = await getContractsFromSlugs(player_ratings)
 
   const generalMarkets = await getContractsFromSlugs(general_markets)
 
   return {
     props: {
-      groupWinners,
-      groupRunnerups,
-      roundOf16,
-      quarterFinals,
-      semiFinals,
+      nlArg,
+      morPor,
+      ukFr,
       finals,
-      dailyMarkets,
+      playerRatings,
       generalMarkets,
+      brCr,
     },
     revalidate: 60, // regenerate after a minute
   }
@@ -98,106 +137,147 @@ const getContractsFromSlugs = async (slugs: string[]) => {
   return contracts ?? []
 }
 
-const App = (props: {
-  groupWinners: Contract[]
-  groupRunnerups: Contract[]
-  roundOf16: Contract[]
-  quarterFinals: Contract[]
-  semiFinals: Contract[]
+export default function WorldCup(props: {
+  nlArg: Contract[]
+  ukFr: Contract[]
+  brCr: Contract[]
+  morPor: Contract[]
   finals: Contract[]
-  dailyMarkets: Contract[]
+  playerRatings: Contract[]
   generalMarkets: Contract[]
-}) => {
-  const {
-    groupWinners,
-    groupRunnerups,
-    dailyMarkets /*roundOf16, quarterFinals, semiFinals, finals*/,
-    generalMarkets,
-  } = props
+}) {
+  const { playerRatings, generalMarkets, nlArg, brCr, morPor, ukFr } = props
 
-  const [hideRoundOf16, setHideRoundOf16] = useState(true)
-  const [hideQuarterFinals, setHideQuarterFinals] = useState(true)
-  const [hideSemiFinals, setHideSemiFinals] = useState(true)
-  const [hideFinals, setHideFinals] = useState(true)
+  // const isMobile = useIsMobile()
+  // const groupWinnerTab = (
+  //   <>
+  //     <Spacer h={4} />
+  //     <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
+  //       {groupWinners.map((contract, index) => (
+  //         <GroupComponent
+  //           key={contract.id}
+  //           group={contract}
+  //           title={`GROUP ${String.fromCharCode(65 + index)} (1st Place)`}
+  //         />
+  //       ))}
+  //     </div>
+  //   </>
+  // )
 
-  const isMobile = useIsMobile()
-
-  const groupWinnerTab = (
-    <>
-      <Spacer h={4} />
-      <div className="row-span-full grid grid-rows-1 gap-1 sm:grid-cols-2	">
-        {groupWinners.map((group, index) => (
-          <GroupComponent
-            group={groupWinners[index]}
-            title={`GROUP ${String.fromCharCode(65 + index)} (1st Place)`}
-          />
-        ))}
-      </div>
-    </>
-  )
-
-  const groupRunnerupTab = (
-    <>
-      <Spacer h={4} />
-      <div className="row-span-full grid grid-rows-1 gap-1 sm:grid-cols-2	">
-        {groupRunnerups.map((group, index) => (
-          <GroupComponent
-            group={groupRunnerups[index]}
-            title={`GROUP ${String.fromCharCode(65 + index)} (2nd Place)`}
-          />
-        ))}
-      </div>
-    </>
-  )
+  // const groupRunnerupTab = (
+  //   <>
+  //     <Spacer h={4} />
+  //     <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
+  //       {groupRunnerups.map((contract, index) => (
+  //         <GroupComponent
+  //           key={contract.id}
+  //           group={contract}
+  //           title={`GROUP ${String.fromCharCode(65 + index)} (2nd Place)`}
+  //         />
+  //       ))}
+  //     </div>
+  //   </>
+  // )
 
   return (
     <Page className="">
       <div className={'relative p-1 px-4 pt-0'}>
         <Col className="mx-auto max-w-7xl">
-          <SEO title="World Cup 2022 " description="Wc 2022." image="" />
+          <SEO
+            title="World Cup 2022"
+            description="Manifold's 2022 FIFA World Cup forecast. Place your bets and win up to $500 USD in our tournament."
+            image="" // TODO: Add image for preview
+          />
 
-          <div className="mb-2  text-5xl text-indigo-700">
-            FIFA World Cup 2022 Tournament
-          </div>
+          <div className="mb-2 text-5xl text-indigo-700">World Cup 2022</div>
 
-          <div className="mb-2 text-base text-gray-500">
-            Manifold's World Cup forecast. Bet on results and{' '}
-            <SiteLink href="/group/us-2022-midterms/about">
-              win up to $1,000 USD in our tournament
+          <div className="my-4 text-base text-gray-500">
+            Manifold's 2022 FIFA World Cup forecast. Place your bets and{' '}
+            <SiteLink href="#rules">
+              win up to $500 USD in our tournament
             </SiteLink>
-            . Only the markets shown in this page will be considered for the
-            tournament.
-          </div>
-          <Divider />
-          <Spacer h={8} />
-
-          <div className="mb-2  text-3xl text-indigo-500">
-            Market of the Day
-          </div>
-
-          <div className="mb-4 text-base text-gray-500">
-            Every day we will feature a market that we think is interesting.
-            These markets will only last for 24 hours, so make sure to get your
-            bets in!
-          </div>
-
-          <div className="flex items-center justify-center">
-            {dailyMarkets.map((contract) => (
-              <ContractCard
-                className={isMobile ? 'w-full' : 'w-1/2'}
-                key={contract.slug}
-                contract={contract}
-                showImage={true}
-                hideDetails={true}
-              />
-            ))}
+            .
           </div>
 
           <Spacer h={4} />
-          <Divider />
 
-          <Spacer h={8} />
-          <div className="mb-2  text-3xl text-indigo-500">Group Stage </div>
+          {/* Might want to put an image or something here. */}
+
+          <div className="mb-2 text-3xl text-indigo-700">Brazil vs Croatia</div>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {brCr?.map((contract, i) => (
+              <ContractCard
+                key={contract.slug}
+                contract={contract}
+                hideDetails={false}
+                showImage={i == 1}
+                className="mb-4"
+              />
+            ))}
+          </Masonry>
+
+          <div className="my-4 text-3xl text-indigo-700">
+            The Netherlands vs Argentina
+          </div>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {nlArg?.map((contract, i) => (
+              <ContractCard
+                key={contract.slug}
+                contract={contract}
+                hideDetails={false}
+                showImage={i == 1}
+                className="mb-4"
+              />
+            ))}
+          </Masonry>
+
+          <div className="my-4 text-3xl text-indigo-700">
+            Morocco vs Portugal
+          </div>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {morPor?.map((contract, i) => (
+              <ContractCard
+                key={contract.slug}
+                contract={contract}
+                hideDetails={false}
+                showImage={i == 1}
+                className="mb-4"
+              />
+            ))}
+          </Masonry>
+
+          <div className="my-4 text-3xl text-indigo-700">England vs France</div>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {ukFr?.map((contract, i) => (
+              <ContractCard
+                key={contract.slug}
+                contract={contract}
+                hideDetails={false}
+                showImage={i == 1}
+                className="mb-4"
+              />
+            ))}
+          </Masonry>
+
+          {/* <Spacer h={8} />
+
+          <div className="mb-2 text-3xl text-indigo-700">Group Stage </div>
           {isMobile && (
             <div className="mb-2  text-xl text-indigo-400">
               Pick the winner and runner-up of each group
@@ -219,165 +299,35 @@ const App = (props: {
                 className: 'w-full',
               },
             ]}
-          />
+          /> */}
 
+          <Spacer h={16} />
+
+          <div className="mb-2 text-3xl text-indigo-700">
+            Player Performance
+          </div>
           <Spacer h={4} />
-          <div className="mb-2  text-3xl text-indigo-500">Round of 16 </div>
-          {hideRoundOf16 ? (
-            <div className="flex-start flex">
-              <Button
-                className="text-xl"
-                color="gray-white"
-                onClick={() => setHideRoundOf16(false)}
-              >
-                <ChevronDownIcon className="h-5 w-5" />
-                Show Round of 16
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mb-2  text-xl text-indigo-400">
-                Pick the winner of each match{' '}
-              </div>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className="-ml-4 flex w-auto"
+            columnClassName="pl-4 bg-clip-padding"
+          >
+            {playerRatings.map((contract) => (
+              <ContractCard
+                key={contract.slug}
+                contract={contract}
+                hideDetails={false}
+                showImage={true}
+                className="mb-4"
+              />
+            ))}
+          </Masonry>
 
-              <Spacer h={4} />
-
-              <div className="row-span-full grid  grid-rows-1 gap-1 sm:grid-cols-2	">
-                <MatchComponent match={undefined} title="TBD - Match 49" />
-                <MatchComponent match={undefined} title="TBD - Match 50" />
-                <MatchComponent match={undefined} title="TBD - Match 51" />
-                <MatchComponent match={undefined} title="TBD - Match 52" />
-                <MatchComponent match={undefined} title="TBD - Match 53" />
-                <MatchComponent match={undefined} title="TBD - Match 54" />
-                <MatchComponent match={undefined} title="TBD - Match 55" />
-                <MatchComponent match={undefined} title="TBD - Match 56" />
-              </div>
-              <Row className="mt-4 ">
-                <Button
-                  color="gray-white"
-                  onClick={() => setHideRoundOf16(true)}
-                >
-                  <ChevronUpIcon className="h-5 w-5" />
-                  Hide Round of 16
-                </Button>
-              </Row>
-            </>
-          )}
-
-          <Spacer h={4} />
-          <div className="mb-2  text-3xl text-indigo-500">Quarter-Finals </div>
-          {hideQuarterFinals ? (
-            <div className="flex-start flex">
-              <Button
-                className="text-xl"
-                color="gray-white"
-                onClick={() => setHideQuarterFinals(false)}
-              >
-                <ChevronDownIcon className="h-5 w-5" />
-                Show Quarter-Finals
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mb-2  text-xl text-indigo-400">
-                Pick the winner of each match{' '}
-              </div>
-
-              <Spacer h={4} />
-
-              <div className="row-span-full grid  grid-rows-1 gap-1 sm:grid-cols-2	">
-                <MatchComponent match={undefined} title="TBD - Match 57" />
-                <MatchComponent match={undefined} title="TBD - Match 58" />
-                <MatchComponent match={undefined} title="TBD - Match 59" />
-                <MatchComponent match={undefined} title="TBD - Match 60" />
-              </div>
-              <Row className="mt-4 ">
-                <Button
-                  color="gray-white"
-                  onClick={() => setHideQuarterFinals(true)}
-                >
-                  <ChevronUpIcon className="h-5 w-5" />
-                  Hide Quarter-Finals
-                </Button>
-              </Row>
-            </>
-          )}
-
-          <Spacer h={4} />
-          <div className="mb-2  text-3xl text-indigo-500">Semi-Finals </div>
-          {hideSemiFinals ? (
-            <div className="flex-start flex">
-              <Button
-                className="text-xl"
-                color="gray-white"
-                onClick={() => setHideFinals(false)}
-              >
-                <ChevronDownIcon className="h-5 w-5" />
-                Show Semi-Finals
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mb-2  text-xl text-indigo-400">
-                Pick the winner of each match{' '}
-              </div>
-
-              <Spacer h={4} />
-
-              <div className="row-span-full grid  grid-rows-1 gap-1 sm:grid-cols-2	">
-                <MatchComponent match={undefined} title="TBD - Match 61" />
-                <MatchComponent match={undefined} title="TBD - Match 62" />
-              </div>
-              <Row className="mt-4 ">
-                <Button
-                  color="gray-white"
-                  onClick={() => setHideSemiFinals(true)}
-                >
-                  <ChevronUpIcon className="h-5 w-5" />
-                  Hide Semi-Finals
-                </Button>
-              </Row>
-            </>
-          )}
-
-          <Spacer h={4} />
-          <div className="mb-2  text-3xl text-indigo-500">Final</div>
-          {hideFinals ? (
-            <div className="flex-start flex">
-              <Button
-                className="text-xl"
-                color="gray-white"
-                onClick={() => setHideFinals(false)}
-              >
-                <ChevronDownIcon className="h-5 w-5" />
-                Show Final
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mb-2  text-xl text-indigo-400">
-                Pick the winner of the final
-              </div>
-
-              <Spacer h={4} />
-
-              <Row className="mb-4 min-h-[100px] gap-2">
-                <MatchComponent match={undefined} title="TBD - Match 63" />
-              </Row>
-              <Row className="mt-4 ">
-                <Button color="gray-white" onClick={() => setHideFinals(true)}>
-                  <ChevronUpIcon className="h-5 w-5" />
-                  Hide Final
-                </Button>
-              </Row>
-            </>
-          )}
-          <Spacer h={4} />
-
-          <Divider />
           <Spacer h={8} />
 
-          <div className="mb-2  text-5xl text-indigo-700">General Markets</div>
+          <Spacer h={16} />
+
+          <div className="mb-2 text-3xl text-indigo-700">General markets</div>
           <Spacer h={4} />
           <Masonry
             breakpointCols={{ default: 2, 768: 1 }}
@@ -388,17 +338,108 @@ const App = (props: {
               <ContractCard
                 key={contract.slug}
                 contract={contract}
-                hideDetails={true}
+                hideDetails={false}
+                showImage={true}
+                className="mb-4"
               />
             ))}
           </Masonry>
+
+          <Spacer h={8} />
+
+          <div className="mb-2 text-3xl text-indigo-700" id="rules">
+            Tournament rules
+          </div>
+          <Spacer h={4} />
+
+          <div className="mb-4 text-base text-gray-700">
+            Manifold is sponsoring a tournament on the 2022 World Cup with a{' '}
+            <strong>$500 USD prize</strong> {''}
+            pool. Show off your soccer/football knowledge, and win real USD if
+            you're correct.
+          </div>
+
+          <div className="mb-4 text-base text-gray-700">
+            Only markets on this page will count towards the{' '}
+            <SiteLink
+              href="group/fifa-2022-world-cup-1000-competitio/leaderboards"
+              className="font-semibold"
+            >
+              tournament leaderboard
+            </SiteLink>
+            . Visit the{' '}
+            <SiteLink href="#group/2022-fifa-world-cup">
+              2022 Fifa World Cup group
+            </SiteLink>
+            &nbsp;to view all the other user-created World Cup markets.
+          </div>
+          <div className="mb-4 text-base text-gray-700">
+            A couple of new markets will be added weekly in addition to the
+            existing collection.
+          </div>
+
+          <div className="mb-4 text-base text-gray-700">
+            Trading will cease at half-time for markets predicting the result of
+            a match. This is to allow some live trading while ensuring users who
+            are predicting in advance aren’t significantly disadvantaged by
+            people who are on the site 24/7.
+          </div>
+
+          <ol className="list-decimal space-y-4 px-4 text-base text-gray-700">
+            <li>
+              <p>
+                USD prizes will be awarded to the top 5 traders on the
+                leaderboard in proportion to profit earned in this group
+                (excluding members of the Manifold team).
+              </p>
+            </li>
+            <li>
+              <p>Only 1 account per person can trade in this market.</p>
+            </li>
+            <li>
+              <p>
+                Don't collude with other people to inflate your or their
+                profits.
+              </p>
+              <ul>
+                <li>
+                  <p>
+                    E.g. don't transfer money to your friends account via
+                    betting a market artificially high/low and having them
+                    correct it.
+                  </p>
+                </li>
+              </ul>
+            </li>
+            <li>
+              <p>
+                All forms of trading are allowed (including API, limit orders).
+              </p>
+            </li>
+            <li>
+              <p>
+                Manifold reserves the right to modify rules, exclude
+                participants, and other changes necessary to abide by the spirit
+                of this tournament.
+              </p>
+            </li>
+            <li>
+              <p>
+                Markets may occasionally be sourced from users, Manifold will
+                make sure these markets are resolved correctly. If users wish to
+                maintain full autonomy over their markets they may request their
+                market removed from the tournament before a resolution is met.
+              </p>
+            </li>
+          </ol>
+          <Spacer h={8} />
         </Col>
       </div>
     </Page>
   )
 }
 
-function GroupComponent(props: { group: Contract; title: string }) {
+export function GroupComponent(props: { group: Contract; title: string }) {
   const { group, title } = props
   return (
     <Col>
@@ -416,39 +457,3 @@ function GroupComponent(props: { group: Contract; title: string }) {
     </Col>
   )
 }
-
-function MatchComponent(props: {
-  match: Contract | undefined
-  title?: string
-}) {
-  const { match, title } = props
-
-  if (!match) {
-    return (
-      <Col className="relative min-h-[100px] w-[100%]">
-        <div className="text-black-500 absolute top-0 left-0 right-0 bottom-0 text-xl">
-          <Card className="h-full w-full">
-            <div className="flex h-full items-center justify-center bg-gray-100">
-              <div className="text-xl text-gray-500">{title ?? 'TBD'}</div>
-            </div>
-          </Card>
-        </div>
-      </Col>
-    )
-  }
-  return (
-    <ContractCard
-      contract={match}
-      showImage={true}
-      noLinkAvatar={true}
-      hideGroupLink={true}
-      hideDetails={true}
-    />
-  )
-}
-
-function Divider() {
-  return <div className="mb-4 border-t-2 border-gray-300" />
-}
-
-export default App

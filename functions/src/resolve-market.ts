@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { mapValues, groupBy, sumBy, uniqBy } from 'lodash'
+import { mapValues, groupBy, sumBy, uniqBy, sum } from 'lodash'
 
 import {
   Contract,
@@ -37,6 +37,7 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { User } from 'common/user'
+import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -81,7 +82,7 @@ const pseudoNumericSchema = z.union([
   }),
 ])
 
-const opts = { secrets: ['MAILGUN_KEY'] }
+const opts = { secrets: ['MAILGUN_KEY', 'API_SECRET'] }
 
 export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
@@ -120,6 +121,13 @@ export const resolveMarket = async (
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
 
+  const resolutionProbs = resolutions
+    ? (() => {
+        const total = sum(Object.values(resolutions))
+        return mapValues(resolutions, (p) => p / total)
+      })()
+    : undefined
+
   const resolutionTime = Date.now()
   const newCloseTime = closeTime
     ? Math.min(closeTime, resolutionTime)
@@ -149,7 +157,7 @@ export const resolveMarket = async (
     contract,
     bets,
     liquidities,
-    resolutions,
+    resolutionProbs,
     resolutionProbability
   )
 
@@ -205,6 +213,7 @@ export const resolveMarket = async (
 
   console.log('contract ', contractId, 'resolved to:', outcome)
 
+  await updateContractMetricsForUsers(contract, bets)
   await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
   await revalidateStaticProps(getContractPath(contract))
 

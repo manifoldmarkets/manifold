@@ -1,21 +1,9 @@
 import Mention from '@tiptap/extension-mention'
-import {
-  mergeAttributes,
-  NodeViewWrapper,
-  ReactNodeViewRenderer,
-} from '@tiptap/react'
+import { mergeAttributes } from '@tiptap/react'
 import { Linkify } from '../widgets/linkify'
 import { mentionSuggestion } from './mention-suggestion'
 
 const name = 'mention-component'
-
-const MentionComponent = (props: any) => {
-  return (
-    <NodeViewWrapper className={name}>
-      <Linkify text={'@' + props.node.attrs.label} />
-    </NodeViewWrapper>
-  )
-}
 
 /**
  *  Mention extension that renders React. See:
@@ -23,8 +11,11 @@ const MentionComponent = (props: any) => {
  *  https://tiptap.dev/guide/node-views/react#render-a-react-component
  */
 export const DisplayMention = Mention.extend({
-  parseHTML: () => [{ tag: name }],
-  renderHTML: ({ HTMLAttributes }) => [name, mergeAttributes(HTMLAttributes)],
-  addNodeView: () =>
-    ReactNodeViewRenderer(MentionComponent, { className: 'inline-block' }),
+  parseHTML: () => [{ tag: name }, { tag: `a[data-type="${name}"]` }],
+  renderHTML: ({ HTMLAttributes }) => [
+    name,
+    mergeAttributes({ HTMLAttributes }),
+    0,
+  ],
+  renderReact: (attrs: any) => <Linkify text={'@' + attrs.label} />,
 }).configure({ suggestion: mentionSuggestion })

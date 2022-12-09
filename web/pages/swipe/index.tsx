@@ -11,12 +11,24 @@ import { useUserSwipes } from 'web/hooks/use-user-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
 import { logSwipe } from 'web/lib/firebase/views'
-import {
-  getBinaryProbPercent,
-  getTrendingContracts,
-} from 'web/lib/firebase/contracts'
+import { contractPath, getTrendingContracts } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { fromNow } from 'web/lib/util/time'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { Button } from 'web/components/buttons/button'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
+import HorizontalArrows from 'web/lib/icons/horizontal-arrows'
+import clsx from 'clsx'
+import { getBinaryProb } from 'common/contract-details'
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+  MinusIcon,
+  PlusIcon,
+} from '@heroicons/react/solid'
+import { Page } from 'web/components/layout/page'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(
@@ -32,7 +44,6 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   const { contracts } = props
 
   const old = useUserSwipes()
-  console.log(old)
   const newToMe = useMemo(
     () => contracts.filter((c) => !old.includes(c.id)),
     [contracts, old]
@@ -45,45 +56,80 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   )
 
   // resize height manually for iOS
-  const { height } = useWindowSize()
+  const { height, width = 600 } = useWindowSize()
 
-  if (!contracts) return <></>
-
-  //TODO: log in prompt if !user
+  //show log in prompt if user not logged in
+  const user = useUser()
+  if (!user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Button onClick={firebaseLogin} color="gradient" size="2xl">
+          Log in to use Manifold Swipe
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <main
-      className="h-screen overflow-hidden overscroll-none bg-gray-50 lg:py-6"
-      style={{ height }}
-    >
-      <div className="relative mx-auto h-full max-w-lg">
-        {cards.map((c) => (
-          <Card
-            contract={c}
-            onLeave={() => setIndex((i) => i + 1)}
-            key={c.id}
-          />
-        ))}
+    <Page>
+      <div
+        className="absolute inset-0 flex justify-center overflow-hidden overscroll-none pb-[58px] lg:pb-0"
+        style={{ height }}
+      >
+        <div className="relative max-w-lg grow">
+          {cards.map((c) => (
+            <Card
+              contract={c}
+              onLeave={() => setIndex((i) => i + 1)}
+              threshold={Math.min(128, width * 0.15)}
+              key={c.id}
+            />
+          ))}
+          {/* TODO: users should never run out of cards */}
+          {!cards.length && (
+            <div className="flex h-full w-full flex-col items-center justify-center">
+              No more cards!
+              <SiteLink href="/home" className="text-indigo-700">
+                Return home
+              </SiteLink>
+            </div>
+          )}
+        </div>
       </div>
-    </main>
+    </Page>
   )
 }
 
-const betTapAdd = 10
-// const betHoldAdd = 100
+type Direction = 'middle' | 'up' | 'right' | 'down' | 'left'
 
-const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
-  const { contract, onLeave } = props
+const betTapAdd = 10
+
+const Card = (props: {
+  contract: BinaryContract
+  onLeave?: () => void
+  threshold: number
+}) => {
+  const { contract, onLeave, threshold } = props
   const { question, description, coverImageUrl, id: contractId } = contract
 
   const userId = useUser()?.id
 
   const [amount, setAmount] = useState(10)
-  const onClickMoney = () => setAmount?.((amount) => amount + betTapAdd)
+  const addMoney = () => setAmount?.((amount) => amount + betTapAdd)
+  const subMoney = () => {
+    if (amount <= betTapAdd) {
+      setDir('up')
+    } else {
+      setAmount?.((amount) => amount - betTapAdd)
+    }
+  }
 
   const image =
     coverImageUrl ??
     `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
+
+  const [dir, setDir] = useState<Direction>('middle')
+  const [swiping, setSwiping] = useState(false)
 
   const [peek, setPeek] = useState(false)
 
@@ -92,6 +138,13 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
       {peek && <Peek contract={contract} onClose={() => setPeek(false)} />}
       <TinderCard
         onSwipe={async (direction) => {
+          if (direction === 'down') {
+            setPeek(true)
+            return
+          }
+
+          setSwiping(true)
+
           if (direction === 'left' || direction === 'right') {
             const outcome = direction === 'left' ? 'NO' : 'YES'
             await placeBet({ amount, outcome, contractId })
@@ -103,9 +156,6 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
               outcome,
             })
           }
-          if (direction === 'down') {
-            setPeek(true)
-          }
           if (direction === 'up') {
             track('swipe skip', { slug: contract.slug, contractId })
             userId && logSwipe({ outcome: 'SKIP', contractId, userId })
@@ -113,7 +163,14 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
         }}
         onCardLeftScreen={onLeave}
         preventSwipe={['down']}
-        className={'absolute inset-2 cursor-grab [&>*]:last:scale-100'}
+        swipeRequirementType="position"
+        swipeThreshold={threshold}
+        onSwipeRequirementFulfilled={setDir}
+        onSwipeRequirementUnfulfilled={() => setDir('middle')}
+        className={clsx(
+          'absolute inset-2 cursor-grab [&>*]:last:scale-100',
+          swiping && 'pointer-events-none'
+        )}
       >
         <div className="h-full scale-95 overflow-hidden rounded-2xl transition-transform">
           {/* background */}
@@ -129,27 +186,74 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
             <div className="line-clamp-4 mx-8 mt-auto mb-4 text-2xl text-white [text-shadow:black_1px_1px_4px] ">
               {question}
             </div>
-            <Percents contract={contract} amount={amount} />
+            <Percent
+              contract={contract}
+              amount={amount}
+              outcome={
+                dir === 'left' ? 'NO' : dir === 'right' ? 'YES' : undefined
+              }
+            />
             {/* TODO: use editor excluding widgets */}
             <div className="prose prose-invert prose-sm line-clamp-3 mx-8 text-gray-50">
               {typeof description === 'string'
                 ? description
                 : richTextToString(description)}
             </div>
-            <div className="mb-4 flex flex-col items-center gap-2 self-center text-yellow-100">
-              Swipe ⭤ to bet
-              <button
-                onClick={onClickMoney}
-                onTouchStart={onClickMoney}
-                className="rounded-full border border-yellow-400 px-12 py-4 font-bold text-yellow-300 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-              >
-                {formatMoney(amount)}
-              </button>
+            <div className="mb-4 flex flex-col items-center gap-2 self-center">
+              <SwipeStatus direction={dir} />
+              <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
+                <button
+                  onClick={subMoney}
+                  onTouchStart={subMoney}
+                  className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+                >
+                  <MinusIcon className="h-4" />
+                </button>
+                <span className="mx-1 py-4">{formatMoney(amount)}</span>
+                <button
+                  onClick={addMoney}
+                  onTouchStart={addMoney}
+                  className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+                >
+                  <PlusIcon className="h-4" />
+                </button>
+              </span>
             </div>
           </div>
         </div>
       </TinderCard>
     </>
+  )
+}
+
+const SwipeStatus = (props: { direction: Direction }) => {
+  const { direction } = props
+
+  if (direction === 'up') {
+    return (
+      <div className="flex gap-1 text-indigo-100">
+        Swipe <ArrowUpIcon className="h-5" /> to skip
+      </div>
+    )
+  }
+  if (direction === 'left') {
+    return (
+      <div className="text-scarlet-100 flex gap-1">
+        <ArrowLeftIcon className="h-5" /> Bet NO
+      </div>
+    )
+  }
+  if (direction === 'right') {
+    return (
+      <div className="flex gap-1 text-teal-100">
+        Bet YES <ArrowRightIcon className="h-5" />
+      </div>
+    )
+  }
+  return (
+    <div className="flex gap-1 text-yellow-100">
+      Swipe <HorizontalArrows /> to bet
+    </div>
   )
 }
 
@@ -172,25 +276,40 @@ const CornerDetails = (props: { contract: Contract }) => {
   )
 }
 
-const Percents = (props: { contract: BinaryContract; amount: number }) => {
-  const { contract, amount } = props
-  const percent = getBinaryProbPercent(contract)
+function Percent(props: {
+  contract: BinaryContract
+  amount: number
+  outcome?: 'NO' | 'YES'
+}) {
+  const { contract, amount, outcome } = props
+  const percent =
+    outcome === 'NO'
+      ? 1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount)
+      : outcome === 'YES'
+      ? getOutcomeProbabilityAfterBet(contract, 'YES', amount)
+      : getBinaryProb(contract)
 
   return (
-    <div className="flex items-center justify-evenly text-2xl font-semibold">
-      <div className="text-scarlet-200 text-center [text-shadow:#991600_4px_-2px]">
-        {formatPercent(
-          1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount)
-        )}{' '}
-        ←
-      </div>
-      <div className="text-7xl text-white [text-shadow:#4337c9_0_6px]">
-        {percent}
-      </div>{' '}
-      <div className="text-center text-teal-200 [text-shadow:#0f766e_-4px_2px]">
-        →{' '}
-        {formatPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))}
-      </div>
+    <div
+      className={clsx(
+        'transition-color flex items-center self-center font-bold',
+        !outcome && 'text-white',
+        outcome === 'YES' && 'text-teal-100',
+        outcome === 'NO' && 'text-scarlet-100'
+      )}
+    >
+      <span
+        className={clsx(
+          'text-8xl transition-all',
+          !outcome && '[text-shadow:#4337c9_0_8px]',
+          outcome === 'YES' &&
+            '[text-shadow:#14b8a6_-6px_4px,#0f766e_-12px_8px]',
+          outcome === 'NO' && '[text-shadow:#FF2400_6px_4px,#991600_12px_8px]'
+        )}
+      >
+        {formatPercent(percent).slice(0, -1)}
+      </span>
+      <span className="pt-2 text-2xl">%</span>
     </div>
   )
 }
@@ -204,10 +323,14 @@ const Peek = (props: { contract: BinaryContract; onClose: () => void }) => {
       <button className="h-40 shrink-0" onClick={onClose} />
       <div className="h-6 shrink-0 rounded-t-3xl bg-white" />
       <div className="grow overflow-auto bg-white px-4">
-        <h1 className="mb-8 text-lg font-semibold text-indigo-700">
-          {question}
-        </h1>
+        <h1 className="mb-8 text-lg font-semibold">{question}</h1>
         <Content size="sm" content={description} />
+        <SiteLink
+          href={contractPath(contract)}
+          className="flex justify-center gap-2 text-indigo-700"
+        >
+          More details <ExternalLinkIcon className="my-px h-5 w-5" />
+        </SiteLink>
       </div>
     </section>
   )

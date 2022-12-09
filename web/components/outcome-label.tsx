@@ -43,7 +43,7 @@ export function OutcomeLabel(props: {
       contract={contract}
       resolution={outcome}
       truncate={truncate}
-      answerClassName={'font-bold text-base-400'}
+      answerClassName={'font-bold text-base-400 !break-normal'}
     />
   )
 }
@@ -103,45 +103,45 @@ export function FreeResponseOutcomeLabel(props: {
 }
 
 export function YesLabel() {
-  return <span className="text-teal-500">YES</span>
+  return <span className="text-teal-600">YES</span>
 }
 
 export function HigherLabel() {
-  return <span className="text-teal-500">HIGHER</span>
+  return <span className="text-teal-600">HIGHER</span>
 }
 
 export function LowerLabel() {
-  return <span className="text-scarlet-400">LOWER</span>
+  return <span className="text-scarlet-600">LOWER</span>
 }
 
 export function NoLabel() {
-  return <span className="text-scarlet-400">NO</span>
+  return <span className="text-scarlet-600">NO</span>
 }
 
 export function CancelLabel() {
-  return <span className="text-yellow-400">N/A</span>
+  return <span className="text-yellow-600">N/A</span>
 }
 
 export function ProbLabel() {
-  return <span className="text-blue-400">PROB</span>
+  return <span className="text-blue-600">PROB</span>
 }
 
 export function MultiLabel() {
-  return <span className="text-blue-400">MANY</span>
+  return <span className="text-blue-600">MANY</span>
 }
 
 export function ProbPercentLabel(props: { prob: number }) {
   const { prob } = props
-  return <span className="text-blue-400">{formatPercent(prob)}</span>
+  return <span className="text-blue-600">{formatPercent(prob)}</span>
 }
 
 export function NumericValueLabel(props: { value: number }) {
   const { value } = props
-  return <span className="text-blue-400">{formatLargeNumber(value)}</span>
+  return <span className="text-blue-600">{formatLargeNumber(value)}</span>
 }
 
 export function AnswerNumberLabel(props: { number: string }) {
-  return <span className="text-teal-500">#{props.number}</span>
+  return <span className="text-teal-600">#{props.number}</span>
 }
 
 export function AnswerLabel(props: {

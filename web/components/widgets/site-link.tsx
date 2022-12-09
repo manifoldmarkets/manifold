@@ -3,41 +3,26 @@ import { ReactNode } from 'react'
 import Link from 'next/link'
 
 export const linkClass =
-  'z-10 break-anywhere hover:underline hover:decoration-indigo-400 hover:decoration-2'
+  'break-anywhere hover:underline hover:decoration-indigo-400 hover:decoration-2'
 
 export const SiteLink = (props: {
   href: string | undefined
   children?: ReactNode
-  onClick?: () => void
+  onClick?: (event?: any) => void
   className?: string
+  followsLinkClass?: boolean
 }) => {
-  const { href, children, onClick, className } = props
+  const { href, children, onClick, className, followsLinkClass } = props
 
   if (!href) return <>{children}</>
 
   return (
-    <MaybeLink href={href}>
-      <a
-        className={clsx(linkClass, className)}
-        href={href}
-        target={href.startsWith('http') ? '_blank' : undefined}
-        onClick={(e) => {
-          e.stopPropagation()
-          if (onClick) onClick()
-        }}
-      >
-        {children}
-      </a>
-    </MaybeLink>
-  )
-}
-
-function MaybeLink(props: { href: string; children: ReactNode }) {
-  const { href, children } = props
-  return href.startsWith('http') ? (
-    <>{children}</>
-  ) : (
-    <Link href={href} legacyBehavior>
+    <Link
+      href={href}
+      className={clsx(followsLinkClass ? linkClass : '', className)}
+      target={href.startsWith('http') ? '_blank' : undefined}
+      onClick={onClick}
+    >
       {children}
     </Link>
   )

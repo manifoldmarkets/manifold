@@ -1,8 +1,3 @@
-export type View = {
-  contractId: string
-  timestamp: number
-}
-
 export type UserEvent = ClickEvent
 
 export type ClickEvent = {

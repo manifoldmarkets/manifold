@@ -9,7 +9,6 @@ export * from './on-create-user'
 export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
 export * from './on-create-comment-on-post'
-export * from './on-view'
 export { scheduleUpdateContractMetrics } from './update-contract-metrics'
 export { scheduleUpdateUserMetrics } from './update-user-metrics'
 export { scheduleUpdateGroupMetrics } from './update-group-metrics'
@@ -24,7 +23,6 @@ export * from './on-follow-user'
 export * from './on-unfollow-user'
 export * from './on-create-liquidity-provision'
 export * from './on-update-group'
-export * from './on-update-user'
 export * from './on-create-txn'
 export * from './on-delete-group'
 export * from './score-contracts'
@@ -32,10 +30,12 @@ export * from './weekly-markets-emails'
 export * from './reset-betting-streaks'
 export * from './reset-weekly-emails-flags'
 export * from './on-update-contract-follow'
-export * from './on-update-like'
 export * from './weekly-portfolio-emails'
 export * from './drizzle-liquidity'
 export * from './check-push-notification-receipts'
+export * from './on-update-reaction'
+export * from './replication/transaction-log'
+export * from './increment-streak-forgiveness'
 
 // v2
 export * from './health'
@@ -53,12 +53,12 @@ export * from './create-group'
 export * from './resolve-market'
 export * from './unsubscribe'
 export * from './stripe'
-export * from './mana-bonus-email'
+export * from './mana-signup-bonus'
 export * from './close-market'
-export * from './update-comment-bounty'
 export * from './add-subsidy'
 export * from './test-scheduled-function'
 export * from './validate-iap'
+export * from './claim-destiny-sub'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -72,7 +72,6 @@ import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
 import { createcomment } from './create-comment'
-import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { closemarket } from './close-market'
@@ -105,9 +104,7 @@ const sellSharesFunction = toCloudFunction(sellshares)
 const claimManalinkFunction = toCloudFunction(claimmanalink)
 const createMarketFunction = toCloudFunction(createmarket)
 const addSubsidyFunction = toCloudFunction(addsubsidy)
-const addCommentBounty = toCloudFunction(addcommentbounty)
 const createCommentFunction = toCloudFunction(createcomment)
-const awardCommentBounty = toCloudFunction(awardcommentbounty)
 const createGroupFunction = toCloudFunction(creategroup)
 const resolveMarketFunction = toCloudFunction(resolvemarket)
 const closeMarketFunction = toCloudFunction(closemarket)
@@ -149,8 +146,6 @@ export {
   createPostFunction as createpost,
   saveTwitchCredentials as savetwitchcredentials,
   createCommentFunction as createcomment,
-  addCommentBounty as addcommentbounty,
-  awardCommentBounty as awardcommentbounty,
   testScheduledFunction as testscheduledfunction,
   updateContractMetricsFunction as updatecontractmetrics,
   updateUserMetricsFunction as updateusermetrics,

@@ -12,7 +12,6 @@ import { Col } from '../layout/col'
 import {
   BinaryContract,
   Contract,
-  CPMMBinaryContract,
   CPMMContract,
   FreeResponseContract,
   MultipleChoiceContract,
@@ -41,12 +40,12 @@ import { Tooltip } from '../widgets/tooltip'
 import { Card } from '../widgets/card'
 import { useContract } from 'web/hooks/use-contracts'
 import { memo, ReactNode } from 'react'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
 import { ContractMetrics } from 'common/calculate-metrics'
+import Image from 'next/image'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -84,7 +83,7 @@ export const ContractCard = memo(function ContractCard(props: {
     numAnswersFR,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
-  const { isResolved, createdTime } = contract
+  const { isResolved, createdTime, featuredLabel } = contract
   const { question, outcomeType } = contract
   const { resolution } = contract
 
@@ -103,7 +102,7 @@ export const ContractCard = memo(function ContractCard(props: {
   return (
     <Card
       className={clsx(
-        'font-readex-pro group relative flex w-full leading-normal',
+        'group relative flex w-full leading-normal',
         hasImage ? 'ub-cover-image' : '',
         className
       )}
@@ -111,9 +110,13 @@ export const ContractCard = memo(function ContractCard(props: {
       <Col className="relative flex-1 gap-1 pt-2">
         {!hideDetails && (
           <Row className="justify-between px-4 ">
-            <AvatarDetails contract={contract} noLink={noLinkAvatar} />
+            <AvatarDetails
+              contract={contract}
+              noLink={noLinkAvatar}
+              className="z-10"
+            />
             <Row className="gap-1">
-              {pinned && <FeaturedPill />}
+              {pinned && <FeaturedPill label={featuredLabel} />}
               {/* {isNew && <NewContractBadge />} */}
             </Row>
           </Row>
@@ -121,10 +124,15 @@ export const ContractCard = memo(function ContractCard(props: {
         {/* overlay question on image */}
         {hasImage && !hideQuestion && (
           <div className="relative mb-2">
-            <img
-              className="h-80 w-full object-cover "
-              src={contract.coverImageUrl}
-            />
+            <div className="relative h-80">
+              <Image
+                fill
+                alt={contract.question}
+                sizes="100vw"
+                className="object-cover"
+                src={contract.coverImageUrl ?? ''}
+              />
+            </div>
             <div className="absolute bottom-0 w-full">
               <div
                 className={clsx(
@@ -182,14 +190,15 @@ export const ContractCard = memo(function ContractCard(props: {
           href={contractPath(contract)}
           onClick={(e) => {
             // Let the browser handle the link click (opens in new tab).
-            if (e.ctrlKey || e.metaKey) return
-
-            e.preventDefault()
-            track('click market card' + (trackingPostfix ?? ''), {
-              slug: contract.slug,
-              contractId: contract.id,
-            })
-            onClick()
+            if (e.ctrlKey || e.metaKey) {
+              track('click market card' + (trackingPostfix ?? ''), {
+                slug: contract.slug,
+                contractId: contract.id,
+              })
+            } else {
+              e.preventDefault()
+              onClick()
+            }
           }}
         />
       ) : (
@@ -391,58 +400,45 @@ export function PseudoNumericResolutionOrExpectation(props: {
   )
 }
 
-export const ContractCardWithPosition = memo(
-  function ContractCardWithPosition(props: {
+export const ContractCardWithPosition = memo(function ContractCardWithPosition(
+  props: {
     contract: CPMMContract
-    noLinkAvatar?: boolean
     showDailyProfit?: boolean
-    onClick?: () => void
-    className?: string
-    showImage?: boolean
-    showTime?: ShowTime
-  }) {
-    const {
-      noLinkAvatar,
-      showDailyProfit,
-      className,
-      showImage,
-      showTime,
-      onClick,
-    } = props
-    const contract = (useContract(props.contract.id) ??
-      props.contract) as CPMMBinaryContract
+  } & Parameters<typeof ContractCard>[0]
+) {
+  const { contract, showDailyProfit, ...contractCardProps } = props
 
-    const user = useUser()
-    const userBets = useUserContractBets(user?.id, contract.id)
-    const metrics = useSavedContractMetrics(contract, userBets)
-
-    return (
-      <ContractCard
+  return (
+    <ContractCard contract={contract} {...contractCardProps}>
+      <ContractMetricsFooter
         contract={contract}
-        noLinkAvatar={noLinkAvatar}
-        showImage={showImage}
-        showTime={showTime}
-        onClick={onClick}
-        className={clsx(
-          className,
-          'mb-4 break-inside-avoid-column overflow-hidden'
-        )}
-      >
-        {user && metrics && metrics.hasShares ? (
-          <MetricsFooter
-            contract={contract}
-            metrics={metrics}
-            showDailyProfit={showDailyProfit}
-          />
-        ) : (
-          <Spacer h={2} />
-        )}
-      </ContractCard>
-    )
-  }
-)
+        showDailyProfit={showDailyProfit}
+      />
+    </ContractCard>
+  )
+})
 
-function MetricsFooter(props: {
+export function ContractMetricsFooter(props: {
+  contract: CPMMContract
+  showDailyProfit?: boolean
+}) {
+  const { contract, showDailyProfit } = props
+
+  const user = useUser()
+  const metrics = useSavedContractMetrics(contract)
+
+  return user && metrics && metrics.hasShares ? (
+    <LoadedMetricsFooter
+      contract={contract}
+      metrics={metrics}
+      showDailyProfit={showDailyProfit}
+    />
+  ) : (
+    <Spacer h={2} />
+  )
+}
+
+function LoadedMetricsFooter(props: {
   contract: CPMMContract
   metrics: ContractMetrics
   showDailyProfit?: boolean
@@ -496,10 +492,11 @@ function MetricsFooter(props: {
   )
 }
 
-export function FeaturedPill() {
+export function FeaturedPill(props: { label?: string }) {
+  const label = props.label ?? 'Featured'
   return (
     <div className="rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-xs text-white">
-      Featured
+      {label}
     </div>
   )
 }

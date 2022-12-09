@@ -6,7 +6,7 @@ import { contractPath } from 'web/lib/firebase/contracts'
 import { Avatar } from '../widgets/avatar'
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
-const M = forwardRef((props: SuggestionProps<Contract>, ref) => {
+const MentionList = forwardRef((props: SuggestionProps<Contract>, ref) => {
   const { items: contracts, command } = props
 
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -44,7 +44,7 @@ const M = forwardRef((props: SuggestionProps<Contract>, ref) => {
   return (
     <div className="w-42 absolute z-10 overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
       {!contracts.length ? (
-        <span className="m-1 whitespace-nowrap">No results...</span>
+        <span className="m-1 whitespace-nowrap">No results found yet</span>
       ) : (
         contracts.map((contract, i) => (
           <button
@@ -65,4 +65,4 @@ const M = forwardRef((props: SuggestionProps<Contract>, ref) => {
 })
 
 // Just to keep the formatting pretty
-export { M as MentionList }
+export { MentionList }

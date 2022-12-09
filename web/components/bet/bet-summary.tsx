@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 
-import { Bet } from 'web/lib/firebase/bets'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
@@ -10,18 +9,19 @@ import { getProbability } from 'common/calculate'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { ContractMetric } from 'common/contract-metric'
 
 export function BetsSummary(props: {
   contract: Contract
-  userBets: Bet[] | undefined
+  initialMetrics?: ContractMetric
   className?: string
 }) {
   const { contract, className } = props
   const { resolution, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
-  const bets = props.userBets?.filter((b) => !b.isAnte)
-  const metrics = useSavedContractMetrics(contract, bets)
+  const metrics = useSavedContractMetrics(contract) ?? props.initialMetrics
 
   if (!metrics) return <></>
 
@@ -54,7 +54,7 @@ export function BetsSummary(props: {
             <div className="whitespace-nowrap text-sm text-gray-500">
               Position{' '}
               <InfoTooltip
-                text={`Number of shares you own on net. 1 ${exampleOutcome} share = M$1 if the market resolves ${exampleOutcome}.`}
+                text={`Number of shares you own on net. 1 ${exampleOutcome} share = ${ENV_CONFIG.moneyMoniker}1 if the market resolves ${exampleOutcome}.`}
               />
             </div>
             <div className="whitespace-nowrap">

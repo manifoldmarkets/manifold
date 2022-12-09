@@ -1,3 +1,4 @@
+import { ENV_CONFIG } from 'common/envs/constants'
 import Image from 'next/image'
 
 import { Col } from './layout/col'
@@ -17,8 +18,8 @@ export function MarketIntroPanel() {
       />
 
       <div className="mb-4 text-sm">
-        Manifold Markets is a play-money prediction market platform where you
-        can forecast anything.
+        Manifold Markets lets you predict on any question using mana (
+        {ENV_CONFIG.moneyMoniker}), our play-money currency.
       </div>
 
       <BetSignUpPrompt />

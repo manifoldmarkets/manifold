@@ -29,8 +29,6 @@ Operations with complicated contracts (e.g. buying shares) are provided in a sep
   works, most of that's in here (it gets called from the `placeBet` and `sellBet` endpoints in `functions/`.) Also
   contains in `common/envs` configuration for the different environments (i.e. prod, dev, Manifold for Teams instances.)
 
-- `og-image/`: The OpenGraph image generator; creates the preview images shown on Twitter/social media.
-
 - `docs/`: Manifold's public documentation that lives at https://docs.manifold.markets.
 
 ## Contributing

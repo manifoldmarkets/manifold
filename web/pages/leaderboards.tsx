@@ -1,10 +1,13 @@
 import { Col } from 'web/components/layout/col'
 import { Leaderboard } from 'web/components/leaderboard'
+import { zip } from 'lodash'
 import { Page } from 'web/components/layout/page'
 import {
+  getCreatorRank,
+  getProfitRank,
   getTopCreators,
-  getTopTraders,
   getTopFollowed,
+  getTopTraders,
   Period,
   User,
 } from 'web/lib/firebase/users'
@@ -16,18 +19,8 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
-import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 
 export async function getStaticProps() {
-  const props = await fetchProps()
-
-  return {
-    props,
-    revalidate: 60, // regenerate after a minute
-  }
-}
-
-const fetchProps = async () => {
   const [allTime, monthly, weekly, daily] = await Promise.all([
     queryLeaderboardUsers('allTime'),
     queryLeaderboardUsers('monthly'),
@@ -35,13 +28,15 @@ const fetchProps = async () => {
     queryLeaderboardUsers('daily'),
   ])
   const topFollowed = await getTopFollowed()
-
   return {
-    allTime,
-    monthly,
-    weekly,
-    daily,
-    topFollowed,
+    props: {
+      allTime,
+      monthly,
+      weekly,
+      daily,
+      topFollowed,
+    },
+    revalidate: 60, // regenerate after a minute
   }
 }
 
@@ -51,7 +46,7 @@ const queryLeaderboardUsers = async (period: Period) => {
     getTopCreators(period),
   ])
   return {
-    topTraders: topTraders.filter((t) => t.username !== HOUSE_BOT_USERNAME),
+    topTraders,
     topCreators,
   }
 }
@@ -60,64 +55,81 @@ type leaderboard = {
   topTraders: User[]
   topCreators: User[]
 }
-
-export default function Leaderboards(_props: {
+type ranking = {
+  profit: number
+  traders: number
+}
+export default function Leaderboards(props: {
   allTime: leaderboard
   monthly: leaderboard
   weekly: leaderboard
   daily: leaderboard
   topFollowed: User[]
 }) {
-  const [props, setProps] = useState<Parameters<typeof Leaderboards>[0]>(_props)
+  const [myRanks, setMyRanks] = useState<
+    Record<Period, ranking | undefined> | undefined
+  >()
+
   const user = useUser()
+
   useEffect(() => {
-    fetchProps().then((props) => {
-      if (!user || !user.profitRankCached) {
-        setProps(props)
-        return
-      }
-      const { allTime, monthly, weekly, daily, topFollowed } = props
-      let leaderboards = [allTime, monthly, weekly, daily]
-      leaderboards = leaderboards.map((leaderboard) => {
-        const { topTraders, topCreators } = leaderboard
-        // We're only caching users' profits for now
-        if (!topTraders.find((u) => u.id === user?.id)) {
-          topTraders.push(user)
+    if (!user?.profitCached) {
+      return
+    }
+    const periods = ['allTime', 'monthly', 'weekly', 'daily'] as const
+    Promise.all(
+      periods.map(async (period) => {
+        const rankings = {} as ranking
+        const myProfit = user.profitCached?.[period]
+        if (myProfit != null) {
+          rankings.profit = await getProfitRank(myProfit, period)
         }
-        return { topTraders, topCreators }
+        const myTraders = user.creatorTraders?.[period]
+        if (myTraders != null) {
+          rankings.traders = await getCreatorRank(myTraders, period)
+        }
+        return rankings
       })
-      setProps({
-        allTime: leaderboards[0],
-        monthly: leaderboards[1],
-        weekly: leaderboards[2],
-        daily: leaderboards[3],
-        topFollowed,
-      })
+    ).then((results) => {
+      setMyRanks(Object.fromEntries(zip(periods, results)))
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    user?.profitRankCached?.allTime,
-    user?.profitRankCached?.monthly,
-    user?.profitRankCached?.weekly,
-    user?.profitRankCached?.daily,
-  ])
+  }, [user?.creatorTraders, user?.profitCached])
 
   const { topFollowed } = props
 
-  const LeaderboardWithPeriod = (period: Period) => {
+  const LeaderboardWithPeriod = (period: Period, myRank?: ranking) => {
     const { topTraders, topCreators } = props[period]
+
     const user = useUser()
+    const topTraderEntries = topTraders.map((user, i) => ({
+      ...user,
+      rank: i + 1,
+    }))
+    const topCreatorEntries = topCreators.map((user, i) => ({
+      ...user,
+      rank: i + 1,
+    }))
+    if (user && myRank != null) {
+      if (
+        myRank.profit != null &&
+        !topTraderEntries.find((x) => x.id === user.id)
+      ) {
+        topTraderEntries.push({ ...user, rank: myRank.profit })
+      }
+      if (
+        myRank.traders != null &&
+        !topCreatorEntries.find((x) => x.id === user.id)
+      ) {
+        topCreatorEntries.push({ ...user, rank: myRank.traders })
+      }
+    }
 
     return (
       <>
         <Col className="mx-4 items-center gap-10 lg:flex-row lg:items-start">
           <Leaderboard
             title={`🏅 Top ${BETTORS}`}
-            // We're only caching profitRank for now
-            entries={topTraders.map((user) => ({
-              ...user,
-              rank: user.profitRankCached?.[period],
-            }))}
+            entries={topTraderEntries}
             columns={[
               {
                 header: 'Total profit',
@@ -129,10 +141,10 @@ export default function Leaderboards(_props: {
 
           <Leaderboard
             title="🏅 Top creators"
-            entries={topCreators}
+            entries={topCreatorEntries}
             columns={[
               {
-                header: 'Number of traders',
+                header: 'Traders',
                 renderCell: (user) => user.creatorTraders[period],
               },
             ]}
@@ -177,19 +189,19 @@ export default function Leaderboards(_props: {
         tabs={[
           {
             title: 'Daily',
-            content: LeaderboardWithPeriod('daily'),
+            content: LeaderboardWithPeriod('daily', myRanks?.['daily']),
           },
           {
             title: 'Weekly',
-            content: LeaderboardWithPeriod('weekly'),
+            content: LeaderboardWithPeriod('weekly', myRanks?.['weekly']),
           },
           {
             title: 'Monthly',
-            content: LeaderboardWithPeriod('monthly'),
+            content: LeaderboardWithPeriod('monthly', myRanks?.['monthly']),
           },
           {
             title: 'All Time',
-            content: LeaderboardWithPeriod('allTime'),
+            content: LeaderboardWithPeriod('allTime', myRanks?.['allTime']),
           },
         ]}
       />

@@ -1,30 +1,19 @@
-import { useQueryClient } from 'react-query'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { useEffect, useState } from 'react'
 import {
   Bet,
+  USER_BET_FILTER,
   getSwipes,
-  getUserBets,
-  getUserBetsQuery,
+  getBetsQuery,
   listenForBets,
 } from 'web/lib/firebase/bets'
-import { MINUTE_MS, sleep } from 'common/util/time'
 import { useUser } from './use-user'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
-
-export const usePrefetchUserBets = (userId: string) => {
-  const queryClient = useQueryClient()
-  return queryClient.prefetchQuery(
-    ['bets', userId],
-    () => sleep(1000).then(() => getUserBets(userId)),
-    { staleTime: MINUTE_MS }
-  )
-}
 
 export const useUserBets = (userId: string) => {
   const result = useFirestoreQueryData(
     ['bets', userId],
-    getUserBetsQuery(userId)
+    getBetsQuery({ userId, ...USER_BET_FILTER })
   )
   return result.data
 }
@@ -37,11 +26,10 @@ export const useUserContractBets = (
 
   useEffect(() => {
     if (userId && contractId)
-      return listenForBets(
-        contractId,
-        (bets) => setBets(bets.sort((b) => b.createdTime)),
-        { userId: userId }
-      )
+      return listenForBets(setBets, {
+        contractId: contractId,
+        userId: userId,
+      })
   }, [userId, contractId])
 
   return bets
@@ -72,6 +60,7 @@ export const useUserSwipes = () => {
   useEffect(() => {
     if (user)
       getSwipes(user.id).then((s) => setSwipes(s.map((swipe: any) => swipe.id)))
-  }, [user, setSwipes])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!user, getSwipes])
   return swipes
 }

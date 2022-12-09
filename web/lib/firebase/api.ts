@@ -30,6 +30,10 @@ export function createAnswer(params: any) {
   return call(getFunctionUrl('createanswer'), 'POST', params)
 }
 
+export function claimDestinySub(params: any) {
+  return call(getFunctionUrl('claimdestinysub'), 'POST', params)
+}
+
 export function transact(params: any) {
   return call(getFunctionUrl('transact'), 'POST', params)
 }
@@ -44,14 +48,6 @@ export function changeUserInfo(params: any) {
 
 export function addSubsidy(params: any) {
   return call(getFunctionUrl('addsubsidy'), 'POST', params)
-}
-
-export function addCommentBounty(params: any) {
-  return call(getFunctionUrl('addcommentbounty'), 'POST', params)
-}
-
-export function awardCommentBounty(params: any) {
-  return call(getFunctionUrl('awardcommentbounty'), 'POST', params)
 }
 
 export function createMarket(params: any) {

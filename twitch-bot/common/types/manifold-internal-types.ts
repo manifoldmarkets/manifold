@@ -139,7 +139,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   volume: number;
   volume24Hours: number;
-  volume7Days: number;
   elasticity: number;
 
   collectedFees: Fees;
@@ -270,13 +269,6 @@ export type User = {
     allTime: number;
   };
 
-  creatorVolumeCached: {
-    daily: number;
-    weekly: number;
-    monthly: number;
-    allTime: number;
-  };
-
   fractionResolvedCorrectly: number;
 
   nextLoanCached: number;
@@ -288,7 +280,6 @@ export type User = {
   referredByUserId?: string;
   referredByContractId?: string;
   referredByGroupId?: string;
-  lastPingTime?: number;
   shouldShowWelcome?: boolean;
   lastBetTime?: number;
   currentBettingStreak?: number;

@@ -26,7 +26,35 @@ import {
 } from 'web/lib/twitch/link-twitch-account'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { formatMoney } from 'common/util/format'
-import { STARTING_BALANCE } from 'common/economy'
+import { REFERRAL_AMOUNT, STARTING_BALANCE } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+
+export default function TwitchLandingPage() {
+  useSaveReferral()
+  useTracking('view twitch landing page')
+
+  const user = useUser()
+  const privateUser = usePrivateUser()
+
+  return (
+    <Page>
+      <SEO
+        title="Manifold Markets on Twitch"
+        description="Get more out of Twitch with play-money betting markets."
+      />
+      <div className="px-4 pt-2 md:mt-0 lg:hidden">
+        <ManifoldLogo />
+      </div>
+
+      <Col className="max-w-3xl gap-8 rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
+        <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
+        <TwitchChatCommands />
+        <SetUpBot user={user} privateUser={privateUser} />
+      </Col>
+    </Page>
+  )
+}
 
 function ButtonGetStarted(props: {
   user?: User | null
@@ -146,10 +174,11 @@ function TwitchPlaysManifoldMarkets(props: {
           receive their profit.
         </div>
         <div>
-          Instead of Twitch channel points we use our own play money, mana (M$).
-          All viewers start with {formatMoney(STARTING_BALANCE)} and can earn
-          more for free by betting well. Just like channel points, mana cannot
-          be converted to real money.
+          Instead of Twitch channel points we use our own play money, mana (
+          {ENV_CONFIG.moneyMoniker}). All viewers start with{' '}
+          {formatMoney(STARTING_BALANCE)} and can earn more for free by betting
+          well. Just like channel points, mana cannot be converted to real
+          money.
         </div>
       </Col>
     </div>
@@ -180,11 +209,11 @@ function TwitchChatCommands() {
         <Subtitle text="For Chat" />
         <Command
           command="y#"
-          desc="Bets # amount of M$ on yes, for example !y20 would bet M$20 on yes."
+          desc={`Bets # amount of ${ENV_CONFIG.moneyMoniker} on yes, for example !y20 would bet ${ENV_CONFIG.moneyMoniker}20 on yes.`}
         />
         <Command
           command="n#"
-          desc="Bets # amount of M$ on no, for example !n30 would bet M$30 on no."
+          desc={`Bets # amount of ${ENV_CONFIG.moneyMoniker} on no, for example !n30 would bet ${ENV_CONFIG.moneyMoniker}30 on no.`}
         />
         <Command
           command="sell"
@@ -196,7 +225,10 @@ function TwitchChatCommands() {
           command="position"
           desc="Shows how many shares you own in the current market and what your fixed payout is."
         />
-        <Command command="balance" desc="Shows how much M$ your account has." />
+        <Command
+          command="balance"
+          desc={`Shows how much ${ENV_CONFIG.moneyMoniker} your account has.`}
+        />
 
         <div className="mb-4" />
 
@@ -259,7 +291,7 @@ function BotSetupStep(props: {
   )
 }
 
-function CopyLinkButton(props: { link: string; text: string }) {
+function CopyButton(props: { link: string; text: string }) {
   const { link, text } = props
   const toastTheme = {
     className: '!bg-teal-600 !text-white',
@@ -393,7 +425,7 @@ function SetUpBot(props: {
             <BotSetupStep
               stepNum={2}
               overrideButton={
-                <CopyLinkButton
+                <CopyButton
                   link={getOverlayURLForUser(privateUser)}
                   text={'Overlay link'}
                 />
@@ -406,7 +438,7 @@ function SetUpBot(props: {
             <BotSetupStep
               stepNum={3}
               overrideButton={
-                <CopyLinkButton
+                <CopyButton
                   link={getDockURLForUser(privateUser)}
                   text={'Control dock link'}
                 />
@@ -429,33 +461,20 @@ function SetUpBot(props: {
           Need help? Contact SirSalty#5770 in Discord or email
           david@manifold.markets
         </div>
+        {user && (
+          <Col className="mb-8 p-4">
+            <div className="mb-2 text-base text-gray-700">
+              Share your markets! Earn a {formatMoney(REFERRAL_AMOUNT)} referral
+              bonus if a new user signs up and places a trade using the link.
+            </div>
+
+            <CopyLinkButton
+              url={'https://manifold.markets/twitch?referrer=' + user?.username}
+              tracking="copy share link"
+            />
+          </Col>
+        )}
       </Col>
     </>
-  )
-}
-
-export default function TwitchLandingPage() {
-  useSaveReferral()
-  useTracking('view twitch landing page')
-
-  const user = useUser()
-  const privateUser = usePrivateUser()
-
-  return (
-    <Page>
-      <SEO
-        title="Manifold Markets on Twitch"
-        description="Get more out of Twitch with play-money betting markets."
-      />
-      <div className="px-4 pt-2 md:mt-0 lg:hidden">
-        <ManifoldLogo />
-      </div>
-
-      <Col className="max-w-3xl gap-8 rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
-        <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
-        <TwitchChatCommands />
-        <SetUpBot user={user} privateUser={privateUser} />
-      </Col>
-    </Page>
   )
 }

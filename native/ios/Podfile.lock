@@ -110,7 +110,7 @@ PODS:
     - ExpoModulesCore
     - React-Core
   - EXStructuredHeaders (2.2.1)
-  - EXUpdates (0.14.6):
+  - EXUpdates (0.14.7):
     - ASN1Decoder (~> 1.8)
     - EASClient
     - EXManifests
@@ -635,7 +635,7 @@ SPEC CHECKSUMS:
   ExpoWebBrowser: 5804ac42a8269d0e534bc4461993005f72535649
   EXSplashScreen: 799bece80089219b2c989c1082d70f3b00995cda
   EXStructuredHeaders: 5d86829469399370a9fc7cb1e4391b09de87681d
-  EXUpdates: 8afd5cff44d3936e08be0e1688f0ed118134433f
+  EXUpdates: 7a705a119c7551d50fbcdd8e3b5b414c4fefadb8
   EXUpdatesInterface: 2bbc11815dfa2ec3fc02e5534c7592c6b42b5327
   FBLazyVector: 739d2f9719faecb463c7aa191591af31c8c94182
   FBReactNativeSpec: 957de82f66e31f2f14bbec34e37242282fdd26de
@@ -674,6 +674,6 @@ SPEC CHECKSUMS:
   Sentry: 30b51086ca9aac23337880152e95538f7e177f7f
   Yoga: 75bf4b0131cfb46a659cd0c13309b79a6fcff66d
 
-PODFILE CHECKSUM: 81fdeb970bee766b51a7265fc2c3f02a30d1b5fe
+PODFILE CHECKSUM: 31f57af6ba301465a7ede9bf59fc7ba6b1956b23
 
 COCOAPODS: 1.11.3

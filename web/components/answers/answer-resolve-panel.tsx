@@ -132,6 +132,14 @@ export function AnswerResolvePanel(props: {
                 ? 'blue'
                 : 'indigo'
             }
+            label={
+              resolveOption === 'CANCEL'
+                ? 'N/A'
+                : resolveOption === 'CHOOSE'
+                ? contract.answers[+answers[0]].text
+                : `${answers.length} answers`
+            }
+            marketTitle={contract.question}
             disabled={
               !resolveOption ||
               (resolveOption === 'CHOOSE' && !answers.length) ||

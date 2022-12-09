@@ -1,6 +1,5 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { MarketCreatorBadge, ProvenCorrectBadge, StreakerBadge } from './badge'
 
 export type User = {
   id: string
@@ -8,7 +7,7 @@ export type User = {
 
   name: string
   username: string
-  avatarUrl?: string
+  avatarUrl: string
 
   // For their user page
   bio?: string
@@ -20,20 +19,6 @@ export type User = {
   totalDeposits: number
 
   profitCached: {
-    daily: number
-    weekly: number
-    monthly: number
-    allTime: number
-  }
-
-  profitRankCached?: {
-    daily: number
-    weekly: number
-    monthly: number
-    allTime: number
-  }
-
-  creatorVolumeCached: {
     daily: number
     weekly: number
     monthly: number
@@ -52,30 +37,17 @@ export type User = {
   nextLoanCached: number
   followerCountCached: number
 
-  followedCategories?: string[]
   homeSections?: string[]
 
   referredByUserId?: string
   referredByContractId?: string
   referredByGroupId?: string
-  lastPingTime?: number
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
+  streakForgiveness: number
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
-
-  achievements: {
-    provenCorrect?: {
-      badges: ProvenCorrectBadge[]
-    }
-    marketCreator?: {
-      badges: MarketCreatorBadge[]
-    }
-    streaker?: {
-      badges: StreakerBadge[]
-    }
-  }
   userDeleted?: boolean
 }
 
@@ -84,9 +56,10 @@ export type PrivateUser = {
   username: string // denormalized from User
 
   email?: string
+  // TODO: move these to non-optional in a couple weeks so we can include them in a fb query
   weeklyTrendingEmailSent?: boolean
   weeklyPortfolioUpdateEmailSent?: boolean
-  manaBonusEmailSent?: boolean
+  manaBonusSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string
   apiKey?: string
@@ -97,6 +70,7 @@ export type PrivateUser = {
     botEnabled?: boolean
     needsRelinking?: boolean
   }
+  destinySubClaimed?: boolean
   pushToken?: string
   rejectedPushNotificationsOn?: number
   interestedInPushNotifications?: boolean
@@ -125,7 +99,7 @@ export const BETTOR = ENV_CONFIG.bettor ?? 'trader'
 export const BETTORS = ENV_CONFIG.bettor + 's' ?? 'traders'
 export const PRESENT_BET = ENV_CONFIG.presentBet ?? 'trade'
 export const PRESENT_BETS = ENV_CONFIG.presentBet + 's' ?? 'trades'
-export const PAST_BET = ENV_CONFIG.pastBet ?? 'trade'
+export const PAST_BET = ENV_CONFIG.pastBet ?? 'traded'
 export const PAST_BETS = ENV_CONFIG.pastBet + 's' ?? 'trades'
 
 export type UserAndPrivateUser = { user: User; privateUser: PrivateUser }

@@ -13,7 +13,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { partition, uniq, uniqBy } from 'lodash'
-import { Group, GROUP_CHAT_SLUG, GroupLink } from 'common/group'
+import { Group, GroupLink } from 'common/group'
 import {
   coll,
   getValue,
@@ -34,19 +34,6 @@ export const groupContracts = (groupId: string) =>
 const openGroupsQuery = query(groups, where('anyoneCanJoin', '==', true))
 export const memberGroupsQuery = (userId: string) =>
   query(collectionGroup(db, 'groupMembers'), where('userId', '==', userId))
-
-export function groupPath(
-  groupSlug: string,
-  subpath?:
-    | 'edit'
-    | 'markets'
-    | 'about'
-    | typeof GROUP_CHAT_SLUG
-    | 'leaderboards'
-    | 'posts'
-) {
-  return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
-}
 
 export type GroupContractDoc = { contractId: string; createdTime: number }
 export type GroupMemberDoc = { userId: string; createdTime: number }
@@ -73,6 +60,11 @@ export async function listGroups(groupSlugs: string[]) {
 
 export function listenForGroups(setGroups: (groups: Group[]) => void) {
   return listenForValues(groups, setGroups)
+}
+
+export async function getGroupContractIds(groupId: string) {
+  const docs = await getValues<GroupContractDoc>(groupContracts(groupId))
+  return docs.map((d) => d.contractId)
 }
 
 export function listenForGroupContractDocs(
@@ -219,7 +211,7 @@ export async function removeContractFromGroup(
   group: Group,
   contract: Contract
 ) {
-  if (contract.groupLinks?.map((l) => l.groupId).includes(group.id)) {
+  if (contract.groupLinks?.some((l) => l.groupId === group.id)) {
     const newGroupLinks = contract.groupLinks?.filter(
       (link) => link.slug !== group.slug
     )

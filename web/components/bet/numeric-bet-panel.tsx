@@ -3,10 +3,7 @@ import { useState } from 'react'
 
 import { getNumericBetsInfo } from 'common/new-bet'
 import { Bet } from 'common/bet'
-import {
-  calculatePayoutAfterCorrectBet,
-  getOutcomeProbability,
-} from 'common/calculate'
+import { getOutcomeProbability } from 'common/calculate'
 import { NumericContract } from 'common/contract'
 import { formatPercent, formatMoney } from 'common/util/format'
 
@@ -21,6 +18,7 @@ import { Spacer } from '../layout/spacer'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
+import { calculateDpmPayoutAfterCorrectBet } from 'common/calculate-dpm'
 
 export function NumericBetPanel(props: {
   contract: NumericContract
@@ -126,7 +124,7 @@ function NumericBuyPanel(props: {
 
   const currentPayout =
     betAmount && bucketChoice
-      ? calculatePayoutAfterCorrectBet(
+      ? calculateDpmPayoutAfterCorrectBet(
           {
             ...contract,
             pool: newPool,
@@ -145,6 +143,8 @@ function NumericBuyPanel(props: {
     betAmount && bucketChoice ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
+  const displayError = !!bucketChoice
+
   return (
     <>
       <div className="my-3 text-left text-sm text-gray-500">
@@ -162,7 +162,7 @@ function NumericBuyPanel(props: {
         inputClassName="w-full max-w-none"
         amount={betAmount}
         onChange={onBetChange}
-        error={error}
+        error={displayError ? error : undefined}
         setError={setError}
         disabled={isSubmitting}
       />

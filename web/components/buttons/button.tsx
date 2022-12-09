@@ -14,6 +14,7 @@ export type ColorType =
   | 'gradient'
   | 'gradient-pink'
   | 'gray-white'
+  | 'indigo-text-only'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -27,7 +28,7 @@ const sizeClasses = {
 
 export function buttonClass(size: SizeType, color: ColorType | 'override') {
   return clsx(
-    'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed',
+    'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed text-center',
     sizeClasses[size],
     color === 'green' &&
       'disabled:bg-gray-200 bg-teal-500 text-white hover:bg-teal-500',
@@ -48,7 +49,9 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'gradient-pink' &&
       'disabled:bg-gray-200 enabled:bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white',
     color === 'gray-white' &&
-      'text-gray-600 hover:bg-gray-200 shadow-none disabled:opacity-50'
+      'text-gray-600 hover:bg-gray-200 shadow-none disabled:opacity-50',
+    color === 'indigo-text-only' &&
+      'text-indigo-500 hover:text-indigo-700 shadow-none disabled:text-gray-400 bg-inherit'
   )
 }
 
@@ -82,7 +85,7 @@ export function Button(props: {
     >
       {loading && (
         <LoadingIndicator
-          className="mr-2 w-fit self-stretch"
+          className="mr-4 w-fit self-stretch"
           spinnerClassName="!h-full !w-[unset] aspect-square"
         />
       )}

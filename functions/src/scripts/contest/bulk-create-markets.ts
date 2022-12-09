@@ -71,8 +71,6 @@ function makeDescription(submission: CEPSubmission) {
                 attrs: {
                   target: '_blank',
                   href: link,
-                  class:
-                    'no-underline !text-indigo-700 z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2',
                 },
                 type: 'link',
               },
@@ -88,8 +86,6 @@ function makeDescription(submission: CEPSubmission) {
               {
                 attrs: {
                   target: '_blank',
-                  class:
-                    'no-underline !text-indigo-700 z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2',
                   href: 'https://forum.effectivealtruism.org/posts/8hvmvrgcxJJ2pYR4X/announcing-a-contest-ea-criticism-and-red-teaming',
                 },
                 type: 'link',

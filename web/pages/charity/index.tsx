@@ -17,7 +17,6 @@ import { Title } from 'web/components/widgets/title'
 import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { manaToUSD } from 'common/util/format'
 import { quadraticMatches } from 'common/quadratic-funding'
-import { Txn } from 'common/txn'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
@@ -25,6 +24,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -35,7 +35,7 @@ export async function getStaticProps() {
   )
   const totalRaised = sum(Object.values(totals))
   const sortedCharities = sortBy(charities, [
-    (charity) => (charity.tags?.includes('Featured') ? 0 : 1),
+    (charity) => (charity.tags?.includes('New') ? 0 : 1),
     (charity) => -totals[charity.id],
   ])
   const matches = quadraticMatches(txns, totalRaised)
@@ -48,7 +48,6 @@ export async function getStaticProps() {
       totalRaised,
       charities: sortedCharities,
       matches,
-      txns,
       numDonors,
       mostRecentDonor,
       mostRecentCharity,
@@ -93,7 +92,6 @@ export default function Charity(props: {
   totalRaised: number
   charities: CharityType[]
   matches: { [charityId: string]: number }
-  txns: Txn[]
   numDonors: number
   mostRecentDonor?: User | null
   mostRecentCharity?: string
@@ -150,7 +148,8 @@ export default function Charity(props: {
             !
           </span> */}
           <span className="text-gray-600">
-            Convert your M$ earnings into real charitable donations.
+            Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
+            donations.
           </span>
           <DonatedStats
             stats={[
@@ -197,11 +196,11 @@ export default function Charity(props: {
         <div className="mt-10 w-full rounded-xl bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-5">
           <iframe
             height="405"
-            src="https://manifold.markets/ManifoldMarkets/how-much-will-be-donated-through-ma"
-            title="Total donations for Manifold for Charity this May (in USD)"
+            src="https://manifold.markets/Austin/how-many-will-be-donated-through-ma"
+            title="How many $ will be donated through Manifold's Giving Tuesday?"
             frameBorder="0"
             className="w-full rounded-xl bg-white p-10"
-          ></iframe>
+          />
         </div>
 
         <div className="prose mt-10 max-w-none text-gray-500">
@@ -214,15 +213,12 @@ export default function Charity(props: {
               </a>
               !
             </li>
-            <li>
-              Manifold is not affiliated with non-Featured charities; we're just
-              fans of their work.
-            </li>
+            <li>Manifold is not affiliated with any charities.</li>
             <li>
               As Manifold itself is a for-profit entity, your contributions will
               not be tax deductible.
             </li>
-            <li>Donations + matches are wired once each quarter.</li>
+            <li>Donations are wired once each quarter.</li>
           </ul>
         </div>
       </Col>

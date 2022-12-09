@@ -1,14 +1,14 @@
 import { debounce, sortBy } from 'lodash'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
-import { Group } from 'common/group'
+import { Group, groupPath } from 'common/group'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
-import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
+import { useAllGroups, useMemberGroupIds } from 'web/hooks/use-group'
+import { listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, getUserAndPrivateUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
 import { SiteLink } from 'web/components/widgets/site-link'
@@ -21,8 +21,7 @@ import { GetServerSideProps } from 'next'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useUser } from 'web/hooks/use-user'
 import { Input } from 'web/components/widgets/input'
-import { track } from '@amplitude/analytics-browser'
-import { CardHighlightOptions } from 'web/components/contract/contracts-grid'
+import { track } from 'web/lib/service/analytics'
 import { Card } from 'web/components/widgets/card'
 import { FeaturedPill } from 'web/components/contract/contract-card'
 
@@ -49,7 +48,7 @@ export default function Groups(props: {
   //TODO: do we really need the creatorsDict?
   const [creatorsDict, setCreatorsDict] = useState(props.creatorsDict)
   const serverUser = props.auth?.user
-  const groups = useGroups() ?? props.groups
+  const groups = useAllGroups() ?? props.groups
   const user = useUser() ?? serverUser
   const memberGroupIds = useMemberGroupIds(user) || []
 
@@ -182,7 +181,7 @@ export function GroupCard(props: {
   isMember?: boolean
   className?: string
   onGroupClick?: (group: Group) => void
-  highlightOptions?: CardHighlightOptions
+  highlightCards?: string[]
   pinned?: boolean
 }) {
   const {
@@ -192,17 +191,17 @@ export function GroupCard(props: {
     isMember,
     className,
     onGroupClick,
-    highlightOptions,
+    highlightCards,
     pinned,
   } = props
   const { totalContracts } = group
-  const { itemIds: itemIds, highlightClassName } = highlightOptions || {}
   return (
     <Card
       className={clsx(
         'relative min-w-[20rem]  gap-1 rounded-xl bg-white p-6  hover:bg-gray-100',
         className,
-        itemIds?.includes(group.id) && highlightClassName
+        highlightCards?.includes(group.id) &&
+          '!bg-indigo-100 outline outline-2 outline-indigo-500'
       )}
       onClick={(e) => {
         if (!onGroupClick) return

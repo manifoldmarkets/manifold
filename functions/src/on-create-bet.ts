@@ -3,16 +3,8 @@ import * as admin from 'firebase-admin'
 import { keyBy, uniq } from 'lodash'
 
 import { Bet, LimitBet } from '../../common/bet'
+import { getUser, getValues, isProd, log } from './utils'
 import {
-  getContractPath,
-  getUser,
-  getValues,
-  isProd,
-  log,
-  revalidateStaticProps,
-} from './utils'
-import {
-  createBadgeAwardedNotification,
   createBetFillNotification,
   createBettingStreakBonusNotification,
   createUniqueBettorBonusNotification,
@@ -24,6 +16,7 @@ import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
   BETTING_STREAK_RESET_HOUR,
+  MAX_TRADERS_FOR_BONUS,
   UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_LIQUIDITY,
 } from '../../common/economy'
@@ -31,17 +24,14 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
-import { APIError } from '../../common/api'
 import { User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
 import { addHouseSubsidy } from './helpers/add-house-subsidy'
-import {
-  hasNoBadgeWithCurrentOrGreaterPropertyNumber,
-  StreakerBadge,
-  streakerBadgeRarityThresholds,
-} from '../../common/badge'
 import { BOT_USERNAMES } from '../../common/envs/constants'
+import { addUserToContractFollowers } from './follow-market'
+import { handleReferral } from './helpers/handle-referral'
+import { calculateUserMetrics } from '../../common/calculate-metrics'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -63,11 +53,11 @@ export const onCreateBet = functions
       .doc(contractId)
       .update({ lastBetTime, lastUpdatedTime: Date.now() })
 
-    const userContractSnap = await firestore
+    const contractSnap = await firestore
       .collection(`contracts`)
       .doc(contractId)
       .get()
-    const contract = userContractSnap.data() as Contract
+    const contract = contractSnap.data() as Contract
 
     if (!contract) {
       log(`Could not find contract ${contractId}`)
@@ -83,11 +73,16 @@ export const onCreateBet = functions
       userUsername: bettor.username,
     })
 
+    // They may be selling out of a position completely, so only add them if they're buying
+    if (bet.amount > 0 && !bet.isSold)
+      await addUserToContractFollowers(contractId, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
-    await updateBettingStreak(bettor, bet, contract, eventId)
-
-    await revalidateStaticProps(getContractPath(contract))
+    await updateContractMetrics(contract, bettor)
+    // Referrals should always be handled before the betting streak bc they both use lastBetTime
+    handleReferral(bettor, eventId).then(async () => {
+      await updateBettingStreak(bettor, bet, contract, eventId)
+    })
   })
 
 const updateBettingStreak = async (
@@ -162,7 +157,6 @@ const updateBettingStreak = async (
       newBettingStreak,
       eventId
     )
-    await handleBettingStreakBadgeAward(user, newBettingStreak)
   }
 }
 
@@ -176,11 +170,10 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       const contractDoc = firestore.collection(`contracts`).doc(oldContract.id)
       const contract = (await trans.get(contractDoc)).data() as Contract
       let previousUniqueBettorIds = contract.uniqueBettorIds
-
-      const betsSnap = await trans.get(
-        firestore.collection(`contracts/${contract.id}/bets`)
-      )
       if (!previousUniqueBettorIds) {
+        const betsSnap = await trans.get(
+          firestore.collection(`contracts/${contract.id}/bets`)
+        )
         const contractBets = betsSnap.docs.map((doc) => doc.data() as Bet)
 
         if (contractBets.length === 0) {
@@ -216,7 +209,8 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     }
   )
 
-  if (!newUniqueBettorIds) return
+  if (!newUniqueBettorIds || newUniqueBettorIds.length > MAX_TRADERS_FOR_BONUS)
+    return
 
   // exclude bots from bonuses
   if (BOT_USERNAMES.includes(bettor.username)) return
@@ -232,14 +226,10 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-  const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
-  if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
-
-  const fromUser = fromSnap.data() as User
 
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
-      fromId: fromUser.id,
+      fromId: fromUserId,
       fromType: 'BANK',
       toId: oldContract.creatorId,
       toType: 'USER',
@@ -320,38 +310,17 @@ const currentDateBettingStreakResetTime = () => {
   return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
 }
 
-async function handleBettingStreakBadgeAward(
-  user: User,
-  newBettingStreak: number
-) {
-  const deservesBadge = hasNoBadgeWithCurrentOrGreaterPropertyNumber(
-    user.achievements.streaker?.badges,
-    'totalBettingStreak',
-    newBettingStreak
-  )
-  if (!deservesBadge) return
+const updateContractMetrics = async (contract: Contract, user: User) => {
+  const betSnap = await firestore
+    .collection(`contracts/${contract.id}/bets`)
+    .where('userId', '==', user.id)
+    .get()
 
-  if (streakerBadgeRarityThresholds.includes(newBettingStreak)) {
-    const badge = {
-      type: 'STREAKER',
-      name: 'Streaker',
-      data: {
-        totalBettingStreak: newBettingStreak,
-      },
-      createdTime: Date.now(),
-    } as StreakerBadge
-    // update user
-    await firestore
-      .collection('users')
-      .doc(user.id)
-      .update({
-        achievements: {
-          ...user.achievements,
-          streaker: {
-            badges: [...(user.achievements?.streaker?.badges ?? []), badge],
-          },
-        },
-      })
-    await createBadgeAwardedNotification(user, badge)
-  }
+  const bets = betSnap.docs.map((doc) => doc.data() as Bet)
+  const newMetrics = calculateUserMetrics(contract, bets, user)
+
+  await firestore
+    .collection(`users/${user.id}/contract-metrics`)
+    .doc(contract.id)
+    .set(newMetrics)
 }

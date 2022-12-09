@@ -1,10 +1,11 @@
 import { CHALLENGES_ENABLED } from 'common/challenge'
-import { DOMAIN } from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
+import Link from 'next/link'
 import Masonry from 'react-masonry-css'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { SiteLink } from 'web/components/widgets/site-link'
+import { Card } from 'web/components/widgets/card'
 import { Title } from 'web/components/widgets/title'
 import { getNativePlatform } from 'web/lib/native/is-native'
 
@@ -25,18 +26,23 @@ export default function LabsPage() {
           className="-ml-4 flex w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
-          {!isNative ||
-            (isNative && platform !== 'ios' && (
-              <LabCard
-                title="🫀 Charity"
-                description="Turn your M$ earnings into real donations to causes you care about"
-                href="/charity"
-              />
-            ))}
+          <LabCard
+            title="🔥 Swipe"
+            description="High frequency trading tool"
+            href="/swipe"
+          />
+
+          {(!isNative || (isNative && platform !== 'ios')) && (
+            <LabCard
+              title="🫀 Charity"
+              description={`Turn ${ENV_CONFIG.moneyMoniker} into real donations to causes you care about`}
+              href="/charity"
+            />
+          )}
 
           {CHALLENGES_ENABLED && (
             <LabCard
-              title="💥 Challenges"
+              title="⚔️ Challenges"
               description="One-on-one bets between friends"
               href="/challenges"
             />
@@ -44,7 +50,7 @@ export default function LabsPage() {
 
           <LabCard
             title="💸 Manalinks"
-            description="Send M$ to anyone"
+            description={`Send ${ENV_CONFIG.moneyMoniker} to anyone`}
             href="/links"
           />
 
@@ -61,21 +67,39 @@ export default function LabsPage() {
           />
 
           <LabCard
-            title="⚡ Live feed"
-            description="See trades and comments in real time"
-            href="/live"
+            title="✏ Posts"
+            description="Go long on longform"
+            href="/latestposts"
           />
 
           <LabCard
-            title="🔥 Swipe"
-            description="High frequency trading tool"
-            href="/swipe"
+            title="🇺🇸 2022 US Midterm Elections"
+            description="Manifold's midterm forecast"
+            href="/midterms"
           />
 
           <LabCard
             title="🎲 Magic the Guessering"
             description="Match MTG card names to their art"
             href={`https://${DOMAIN}/mtg/index.html`}
+          />
+
+          <LabCard
+            title="💭 Dream"
+            description="Ask our AI to generate a custom image"
+            href="/dream"
+          />
+
+          <LabCard
+            title="🏆 Tournaments"
+            description="Ongoing and past prediction tournaments"
+            href="/tournaments"
+          />
+
+          <LabCard
+            title="🎨 Design system"
+            description="For us, mostly"
+            href="/styles"
           />
 
           <LabCard title="🐮 Cowp" description="???" href="/cowp" />
@@ -92,14 +116,11 @@ const LabCard = (props: {
 }) => {
   const { title, description, href } = props
   return (
-    <SiteLink
-      href={href}
-      className="group mb-4 flex flex-col gap-2 rounded-lg bg-white p-4 shadow-md transition-shadow duration-200 hover:no-underline hover:shadow-lg"
-    >
-      <h3 className="text-lg font-semibold group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2">
-        {title}
-      </h3>
-      <p className="text-gray-600">{description}</p>
-    </SiteLink>
+    <Link href={href} className="mb-4 block">
+      <Card className="flex flex-col gap-2 px-4 py-3">
+        <h3 className="text-lg font-semibold">{title}</h3>
+        <p className="text-gray-600">{description}</p>
+      </Card>
+    </Link>
   )
 }

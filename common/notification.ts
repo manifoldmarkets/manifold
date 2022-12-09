@@ -1,4 +1,6 @@
 import { notification_preference } from './user-notification-preferences'
+import { groupPath } from './group'
+import { PAST_BET } from './user'
 
 export type Notification = {
   id: string
@@ -9,14 +11,16 @@ export type Notification = {
   viewTime?: number
   isSeen: boolean
 
-  sourceId?: string
-  sourceType?: notification_source_types
+  sourceId: string
+  sourceType: notification_source_types
   sourceUpdateType?: notification_source_update_types
+
+  // sourceContractId is used to group notifications on the same contract together
   sourceContractId?: string
-  sourceUserName?: string
-  sourceUserUsername?: string
-  sourceUserAvatarUrl?: string
-  sourceText?: string
+  sourceUserName: string
+  sourceUserUsername: string
+  sourceUserAvatarUrl: string
+  sourceText: string
   data?: { [key: string]: any }
 
   sourceContractTitle?: string
@@ -44,9 +48,11 @@ export type notification_source_types =
   | 'challenge'
   | 'betting_streak_bonus'
   | 'loan'
-  | 'like'
   | 'tip_and_like'
   | 'badge'
+  | 'signup_bonus'
+  | 'comment_like'
+  | 'contract_like'
 
 export type notification_source_update_types =
   | 'created'
@@ -144,9 +150,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'All market updates made by the creator',
   },
   market_updates_on_watched_markets_with_shares_in: {
-    simple: "Only creator updates on markets that you're invested in",
-    detailed:
-      "Only updates made by the creator on markets that you're invested in",
+    simple: `Only creator updates on markets that you've ${PAST_BET}`,
+    detailed: `Only updates made by the creator on markets that you've ${PAST_BET}`,
   },
   on_new_follow: {
     simple: 'A user followed you',
@@ -173,9 +178,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: "All resolutions on markets that you're watching",
   },
   resolutions_on_watched_markets_with_shares_in: {
-    simple: "Only market resolutions that you're invested in",
-    detailed:
-      "Only resolutions of markets you're watching and that you're invested in",
+    simple: `Only market resolutions that you've ${PAST_BET}`,
+    detailed: `Only resolutions of markets you're watching and that you've ${PAST_BET}`,
   },
   subsidized_your_market: {
     simple: 'Your market was subsidized',
@@ -219,8 +223,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'All new comments on markets you follow',
   },
   all_comments_on_contracts_with_shares_in_on_watched_markets: {
-    simple: `Only on markets you're invested in`,
-    detailed: `Comments on markets that you're watching and you're invested in`,
+    simple: `Only on markets you've ${PAST_BET}`,
+    detailed: `Comments on markets that you're watching and you've ${PAST_BET}`,
   },
   all_replies_to_my_comments_on_watched_markets: {
     simple: 'Only replies to your comments',
@@ -235,17 +239,17 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: "All new answers on markets you're watching",
   },
   all_answers_on_contracts_with_shares_in_on_watched_markets: {
-    simple: `Only on markets you're invested in`,
-    detailed: `Answers on markets that you're watching and that you're invested in`,
-  },
-  badges_awarded: {
-    simple: 'New badges awarded',
-    detailed: 'New badges you have earned',
+    simple: `Only on markets you've ${PAST_BET}`,
+    detailed: `Answers on markets that you're watching and that you've ${PAST_BET}`,
   },
   opt_out_all: {
     simple: 'Opt out of all notifications (excludes when your markets close)',
     detailed:
       'Opt out of all notifications excluding your own market closure notifications',
+  },
+  user_liked_your_content: {
+    simple: 'A user liked your content',
+    detailed: 'A user liked your comment, market, or other content',
   },
 }
 
@@ -268,3 +272,65 @@ export type ContractResolutionData = {
   userPayout: number
   userInvestment: number
 }
+
+export function getSourceIdForLinkComponent(
+  sourceId: string,
+  sourceType?: notification_source_types
+) {
+  switch (sourceType) {
+    case 'answer':
+      return `answer-${sourceId}`
+    case 'comment':
+      return sourceId
+    case 'contract':
+      return ''
+    case 'bet':
+      return ''
+    default:
+      return sourceId
+  }
+}
+
+export function getSourceUrl(notification: Notification) {
+  const {
+    sourceType,
+    sourceId,
+    sourceUserUsername,
+    sourceContractCreatorUsername,
+    sourceContractSlug,
+    sourceSlug,
+  } = notification
+  if (sourceType === 'follow') return `/${sourceUserUsername}`
+  if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
+  // User referral via contract:
+  if (
+    sourceContractCreatorUsername &&
+    sourceContractSlug &&
+    sourceType === 'user'
+  )
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
+  // User referral:
+  if (sourceType === 'user' && !sourceContractSlug)
+    return `/${sourceUserUsername}`
+  if (
+    sourceType === 'challenge' ||
+    ReactionNotificationTypes.includes(sourceType)
+  )
+    return `${sourceSlug}`
+  if (sourceContractCreatorUsername && sourceContractSlug)
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
+      sourceId ?? '',
+      sourceType
+    )}`
+  else if (sourceSlug)
+    return `${
+      sourceSlug.startsWith('/') ? sourceSlug : '/' + sourceSlug
+    }#${getSourceIdForLinkComponent(sourceId ?? '', sourceType)}`
+
+  return ''
+}
+
+export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
+  'comment_like',
+  'contract_like',
+]

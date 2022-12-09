@@ -2,7 +2,6 @@ import { Editor } from '@tiptap/react'
 import { DOMAIN } from 'common/envs/constants'
 import { useState } from 'react'
 import { Button } from '../buttons/button'
-import { RichContent } from '../widgets/editor'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -120,8 +119,8 @@ export function EmbedModal(props: {
           onChange={(e) => setInput(e.target.value)}
         />
 
-        {/* Preview the embed if it's valid */}
-        {embed ? <RichContent content={embed} /> : <Spacer h={2} />}
+        {/* TODO: preview embed */}
+        <Spacer h={2} />
 
         <Row className="gap-2">
           <Button

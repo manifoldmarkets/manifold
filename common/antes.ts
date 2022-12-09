@@ -5,8 +5,9 @@ import {
   CPMMBinaryContract,
   DPMBinaryContract,
   FreeResponseContract,
-  MultipleChoiceContract,
   NumericContract,
+  CPMM2Contract,
+  DpmMultipleChoiceContract,
 } from './contract'
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
@@ -28,7 +29,7 @@ export function getCpmmInitialLiquidity(
   anteId: string,
   amount: number
 ) {
-  const { createdTime, p } = contract
+  const { createdTime } = contract
 
   const lp: LiquidityProvision = {
     id: anteId,
@@ -39,11 +40,79 @@ export function getCpmmInitialLiquidity(
 
     amount: amount,
     liquidity: amount,
-    p: p,
     pool: { YES: 0, NO: 0 },
   }
 
   return lp
+}
+
+export function getCpmm2InitialLiquidity(
+  providerId: string,
+  contract: CPMM2Contract,
+  anteId: string,
+  amount: number
+) {
+  const { createdTime, pool } = contract
+
+  const lp: LiquidityProvision = {
+    id: anteId,
+    userId: providerId,
+    contractId: contract.id,
+    createdTime,
+    isAnte: true,
+
+    amount: amount,
+    liquidity: amount,
+    pool,
+  }
+
+  return lp
+}
+
+export function getMultipleChoiceAntes(
+  creator: User,
+  contract: DpmMultipleChoiceContract,
+  answers: string[],
+  betDocIds: string[]
+) {
+  const { totalBets, totalShares } = contract
+  const amount = totalBets['0']
+  const shares = totalShares['0']
+  const p = 1 / answers.length
+
+  const { createdTime } = contract
+
+  const bets: NormalizedBet[] = answers.map((answer, i) => ({
+    id: betDocIds[i],
+    userId: creator.id,
+    contractId: contract.id,
+    amount,
+    shares,
+    outcome: i.toString(),
+    probBefore: p,
+    probAfter: p,
+    createdTime,
+    isAnte: true,
+    isRedemption: false,
+    isChallenge: false,
+    fees: noFees,
+  }))
+
+  const { username, name, avatarUrl } = creator
+
+  const answerObjects: Answer[] = answers.map((answer, i) => ({
+    id: i.toString(),
+    number: i,
+    contractId: contract.id,
+    createdTime,
+    userId: creator.id,
+    username,
+    name,
+    avatarUrl,
+    text: answer,
+  }))
+
+  return { bets, answerObjects }
 }
 
 export function getAnteBets(
@@ -67,8 +136,10 @@ export function getAnteBets(
     probBefore: p,
     probAfter: p,
     createdTime,
-    isAnte: true,
     fees: noFees,
+    isAnte: true,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   const noBet: NormalizedBet = {
@@ -81,8 +152,10 @@ export function getAnteBets(
     probBefore: p,
     probAfter: p,
     createdTime,
-    isAnte: true,
     fees: noFees,
+    isAnte: true,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return { yesBet, noBet }
@@ -109,55 +182,13 @@ export function getFreeAnswerAnte(
     probBefore: 0,
     probAfter: 1,
     createdTime,
-    isAnte: true,
     fees: noFees,
+    isAnte: true,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return anteBet
-}
-
-export function getMultipleChoiceAntes(
-  creator: User,
-  contract: MultipleChoiceContract,
-  answers: string[],
-  betDocIds: string[]
-) {
-  const { totalBets, totalShares } = contract
-  const amount = totalBets['0']
-  const shares = totalShares['0']
-  const p = 1 / answers.length
-
-  const { createdTime } = contract
-
-  const bets: NormalizedBet[] = answers.map((answer, i) => ({
-    id: betDocIds[i],
-    userId: creator.id,
-    contractId: contract.id,
-    amount,
-    shares,
-    outcome: i.toString(),
-    probBefore: p,
-    probAfter: p,
-    createdTime,
-    isAnte: true,
-    fees: noFees,
-  }))
-
-  const { username, name, avatarUrl } = creator
-
-  const answerObjects: Answer[] = answers.map((answer, i) => ({
-    id: i.toString(),
-    number: i,
-    contractId: contract.id,
-    createdTime,
-    userId: creator.id,
-    username,
-    name,
-    avatarUrl,
-    text: answer,
-  }))
-
-  return { bets, answerObjects }
 }
 
 export function getNumericAnte(
@@ -192,8 +223,10 @@ export function getNumericAnte(
     probBefore: 0,
     probAfter: 1 / bucketCount,
     createdTime,
-    isAnte: true,
     fees: noFees,
+    isAnte: true,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return anteBet

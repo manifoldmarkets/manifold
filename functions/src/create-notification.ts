@@ -6,25 +6,17 @@ import {
   Notification,
   notification_reason_types,
 } from '../../common/notification'
-import {
-  MANIFOLD_AVATAR_URL,
-  MANIFOLD_USER_NAME,
-  MANIFOLD_USER_USERNAME,
-  PrivateUser,
-  User,
-} from '../../common/user'
+import { PrivateUser, User } from '../../common/user'
 import { Contract } from '../../common/contract'
-import { getPrivateUser, getValues } from './utils'
+import { getPrivateUser, getValues, log } from './utils'
 import { Comment } from '../../common/comment'
 import { groupBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from '../../common/bet'
 import { Answer } from '../../common/answer'
-import { getContractBetMetrics } from '../../common/calculate'
 import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
 import { Group } from '../../common/group'
 import { Challenge } from '../../common/challenge'
-import { Like } from '../../common/like'
 import {
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
@@ -39,8 +31,9 @@ import {
   userIsBlocked,
 } from '../../common/user-notification-preferences'
 import { ContractFollow } from '../../common/follow'
-import { Badge } from '../../common/badge'
 import { createPushNotification } from './create-push-notification'
+import { Reaction } from 'common/reaction'
+
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -167,8 +160,10 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   const contractFollowersSnap = await firestore
     .collection(`contracts/${sourceContract.id}/follows`)
     .get()
-  const contractFollowersIds = contractFollowersSnap.docs.map(
-    (doc) => doc.data().id
+
+  const contractFollowersIds: { [key: string]: boolean } = {}
+  contractFollowersSnap.docs.map(
+    (doc) => (contractFollowersIds[(doc.data() as ContractFollow).id] = true)
   )
 
   const createBrowserNotification = async (
@@ -203,7 +198,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 
   const needNotFollowContractReasons = ['tagged_user']
   const stillFollowingContract = (userId: string) => {
-    return contractFollowersIds.includes(userId)
+    // Should be better performance than includes
+    return contractFollowersIds[userId] !== undefined
   }
 
   const sendNotificationsIfSettingsPermit = async (
@@ -262,18 +258,20 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyContractFollowers = async () => {
-    for (const userId of contractFollowersIds) {
-      await sendNotificationsIfSettingsPermit(
-        userId,
-        sourceType === 'answer'
-          ? 'answer_on_contract_you_follow'
-          : sourceType === 'comment'
-          ? 'comment_on_contract_you_follow'
-          : sourceUpdateType === 'updated'
-          ? 'update_on_contract_you_follow'
-          : 'resolution_on_contract_you_follow'
+    await Promise.all(
+      Object.keys(contractFollowersIds).map((userId) =>
+        sendNotificationsIfSettingsPermit(
+          userId,
+          sourceType === 'answer'
+            ? 'answer_on_contract_you_follow'
+            : sourceType === 'comment'
+            ? 'comment_on_contract_you_follow'
+            : sourceUpdateType === 'updated'
+            ? 'update_on_contract_you_follow'
+            : 'resolution_on_contract_you_follow'
+        )
       )
-    }
+    )
   }
 
   const notifyContractCreator = async () => {
@@ -334,21 +332,10 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyBettorsOnContract = async () => {
-    const betsSnap = await firestore
-      .collection(`contracts/${sourceContract.id}/bets`)
-      .get()
-    const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-    // filter bets for only users that have an amount invested still
-    const recipientUserIds = uniq(bets.map((bet) => bet.userId)).filter(
-      (userId) => {
-        return (
-          getContractBetMetrics(
-            sourceContract,
-            bets.filter((bet) => bet.userId === userId)
-          ).invested > 0
-        )
-      }
-    )
+    // We don't need to filter by shares in bc they auto unfollow a market upon selling out of it
+    // Unhandled case sacrificed for performance: they bet in a market, sold out,
+    // then re-followed it - their notification reason should not include 'with_shares_in'
+    const recipientUserIds = sourceContract.uniqueBettorIds ?? []
     await Promise.all(
       recipientUserIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
@@ -414,14 +401,22 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   //TODO: store all possible reasons why the user might be getting the notification
   // and choose the most lenient that they have enabled so they will unsubscribe
   // from the least important notifications
+  log('notifying replies')
   await notifyRepliedUser()
+  log('notifying tagged users')
   await notifyTaggedUsers()
+  log('notifying creator')
   await notifyContractCreator()
+  log('notifying answerers')
   await notifyOtherAnswerersOnContract()
+  log('notifying lps')
   await notifyLiquidityProviders()
+  log('notifying bettors')
   await notifyBettorsOnContract()
+  log('notifying commenters')
   await notifyOtherCommentersOnContract()
   // if they weren't notified previously, notify them now
+  log('notifying followers')
   await notifyContractFollowers()
 }
 
@@ -604,7 +599,7 @@ export const createLoanIncomeNotification = async (
     userId: toUser.id,
     reason: 'loan_income',
     createdTime: Date.now(),
-    isSeen: false,
+    isSeen: true,
     sourceId: idempotencyKey,
     sourceType: 'loan',
     sourceUpdateType: 'updated',
@@ -707,50 +702,42 @@ export const createBettingStreakBonusNotification = async (
   return await notificationRef.set(removeUndefinedProps(notification))
 }
 
-export const createLikeNotification = async (
-  fromUser: User,
-  toUser: User,
-  like: Like,
-  idempotencyKey: string,
-  contract: Contract,
-  tip?: TipTxn
-) => {
-  const privateUser = await getPrivateUser(toUser.id)
+export const createLikeNotification = async (reaction: Reaction) => {
+  const privateUser = await getPrivateUser(reaction.contentOwnerId)
   if (!privateUser) return
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
-    'liked_and_tipped_your_contract'
+    'user_liked_your_content'
   )
   if (!sendToBrowser) return
 
-  // not handling just likes, must include tip
-  if (!tip) return
-
+  // Reaction ids are constructed via contentId-reactionType, so this ensures idempotency
+  const id = `${reaction.userId}-${reaction.id}`
   const notificationRef = firestore
-    .collection(`/users/${toUser.id}/notifications`)
-    .doc(idempotencyKey)
+    .collection(`/users/${reaction.contentOwnerId}/notifications`)
+    .doc(id)
   const notification: Notification = {
-    id: idempotencyKey,
-    userId: toUser.id,
-    reason: 'liked_and_tipped_your_contract',
+    id,
+    userId: reaction.contentOwnerId,
+    reason: 'user_liked_your_content',
     createdTime: Date.now(),
     isSeen: false,
-    sourceId: like.id,
-    sourceType: tip ? 'tip_and_like' : 'like',
+    sourceId: reaction.id,
+    sourceType:
+      reaction.contentType === 'contract' ? 'contract_like' : 'comment_like',
     sourceUpdateType: 'created',
-    sourceUserName: fromUser.name,
-    sourceUserUsername: fromUser.username,
-    sourceUserAvatarUrl: fromUser.avatarUrl,
-    sourceText: tip?.amount.toString(),
-    sourceContractCreatorUsername: contract.creatorUsername,
-    sourceContractTitle: contract.question,
-    sourceContractSlug: contract.slug,
-    sourceSlug: contract.slug,
-    sourceTitle: contract.question,
+    sourceUserName: reaction.userDisplayName,
+    sourceUserUsername: reaction.userUsername,
+    sourceUserAvatarUrl: reaction.userAvatarUrl,
+    sourceContractId:
+      reaction.contentType === 'contract'
+        ? reaction.contentId
+        : reaction.contentParentId,
+    sourceText: reaction.text,
+    sourceSlug: reaction.slug,
+    sourceTitle: reaction.title,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
-
-  // TODO send email notification
 }
 
 export const createUniqueBettorBonusNotification = async (
@@ -1010,7 +997,7 @@ export const createContractResolvedNotifications = async (
     }
 
     // Emails notifications
-    if (sendToEmail)
+    if (sendToEmail && !contract.isTwitchContract)
       await sendMarketResolutionEmail(
         reason,
         privateUser,
@@ -1057,87 +1044,6 @@ export const createContractResolvedNotifications = async (
       )
     )
   )
-}
-
-export const createBountyNotification = async (
-  fromUser: User,
-  toUserId: string,
-  amount: number,
-  idempotencyKey: string,
-  contract: Contract,
-  commentId?: string
-) => {
-  const privateUser = await getPrivateUser(toUserId)
-  if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'tip_received'
-  )
-  if (!sendToBrowser) return
-
-  const slug = commentId
-  const notificationRef = firestore
-    .collection(`/users/${toUserId}/notifications`)
-    .doc(idempotencyKey)
-  const notification: Notification = {
-    id: idempotencyKey,
-    userId: toUserId,
-    reason: 'tip_received',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: commentId ? commentId : contract.id,
-    sourceType: 'tip',
-    sourceUpdateType: 'created',
-    sourceUserName: fromUser.name,
-    sourceUserUsername: fromUser.username,
-    sourceUserAvatarUrl: fromUser.avatarUrl,
-    sourceText: amount.toString(),
-    sourceContractCreatorUsername: contract.creatorUsername,
-    sourceContractTitle: contract.question,
-    sourceContractSlug: contract.slug,
-    sourceSlug: slug,
-    sourceTitle: contract.question,
-  }
-  return await notificationRef.set(removeUndefinedProps(notification))
-}
-
-export const createBadgeAwardedNotification = async (
-  user: User,
-  badge: Badge
-) => {
-  const privateUser = await getPrivateUser(user.id)
-  if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'badges_awarded'
-  )
-  if (!sendToBrowser) return
-
-  const notificationRef = firestore
-    .collection(`/users/${user.id}/notifications`)
-    .doc()
-  const notification: Notification = {
-    id: notificationRef.id,
-    userId: user.id,
-    reason: 'badges_awarded',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: badge.type,
-    sourceType: 'badge',
-    sourceUpdateType: 'created',
-    sourceUserName: MANIFOLD_USER_NAME,
-    sourceUserUsername: MANIFOLD_USER_USERNAME,
-    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-    sourceText: `You earned a new ${badge.name} badge!`,
-    sourceSlug: `/${user.username}?show=badges&badge=${badge.type}`,
-    sourceTitle: badge.name,
-    data: {
-      badge,
-    },
-  }
-  return await notificationRef.set(removeUndefinedProps(notification))
-
-  // TODO send email notification
 }
 
 export const createMarketClosedNotification = async (

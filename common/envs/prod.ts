@@ -2,6 +2,7 @@ export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
   amplitudeApiKey?: string
+  supabaseUrl?: string
   twitchBotEndpoint?: string
   sprigEnvironmentId?: string
 
@@ -16,7 +17,7 @@ export type EnvConfig = {
   visibility: 'PRIVATE' | 'PUBLIC'
 
   // Branding
-  moneyMoniker: string // e.g. 'M$'
+  moneyMoniker: string // e.g. 'Ṁ'
   bettor?: string // e.g. 'bettor' or 'predictor'
   presentBet?: string // e.g. 'bet' or 'predict'
   pastBet?: string // e.g. 'bet' or 'prediction'
@@ -45,7 +46,7 @@ export type Economy = {
   BETTING_STREAK_BONUS_MAX?: number
   BETTING_STREAK_RESET_HOUR?: number
   FREE_MARKETS_PER_USER_MAX?: number
-  COMMENT_BOUNTY_AMOUNT?: number
+  STARTING_BONUS?: number
 }
 
 type FirebaseConfig = {
@@ -62,6 +63,7 @@ type FirebaseConfig = {
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
+  supabaseUrl: 'https://pxidrgkatumlvfqaxcll.supabase.co',
   sprigEnvironmentId: 'sQcrq9TDqkib',
 
   firebaseConfig: {
@@ -90,9 +92,9 @@ export const PROD_CONFIG: EnvConfig = {
   ],
   visibility: 'PUBLIC',
 
-  moneyMoniker: 'M$',
+  moneyMoniker: 'Ṁ',
   bettor: 'trader',
-  pastBet: 'trade',
+  pastBet: 'traded',
   presentBet: 'trade',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',

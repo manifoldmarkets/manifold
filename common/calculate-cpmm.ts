@@ -150,7 +150,7 @@ function calculateAmountToBuyShares(
   balanceByUserId: { [userId: string]: number }
 ) {
   // Search for amount between bounds (0, shares).
-  // Min share price is M$0, and max is M$1 each.
+  // Min share price is Ṁ0, and max is Ṁ1 each.
   return binarySearch(0, shares, (amount) => {
     const { takers } = computeFills(
       outcome,
@@ -200,7 +200,7 @@ export function calculateCpmmSale(
     ...taker,
     // You bought opposite shares, which combine with existing shares, removing them.
     shares: -taker.shares,
-    // Opposite shares combine with shares you are selling for M$ of shares.
+    // Opposite shares combine with shares you are selling for Ṁ of shares.
     // You paid taker.amount for the opposite shares.
     // Take the negative because this is money you gain.
     amount: -(taker.shares - taker.amount),
@@ -278,11 +278,11 @@ export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
 
 export function getUserLiquidityShares(
   userId: string,
-  state: CpmmState,
+  pool: { [outcome: string]: number },
   liquidities: LiquidityProvision[]
 ) {
   const weights = getCpmmLiquidityPoolWeights(liquidities)
   const userWeight = weights[userId] ?? 0
 
-  return mapValues(state.pool, (shares) => userWeight * shares)
+  return mapValues(pool, (shares) => userWeight * shares)
 }

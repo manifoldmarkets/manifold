@@ -5,12 +5,12 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react'
-import type { EmojiItem } from '@tiptap-pro/extension-emoji'
 import type { SuggestionProps } from '@tiptap/suggestion'
+import { EmojiData } from './emoji-suggestion'
 
 // copied from https://tiptap.dev/api/nodes/mention#usage and https://tiptap.dev/api/nodes/emoji
 export const EmojiList = forwardRef(
-  (props: SuggestionProps<EmojiItem>, ref) => {
+  (props: SuggestionProps<EmojiData>, ref) => {
     const { items, command } = props
 
     const [selectedIndex, setSelectedIndex] = useState(0)
@@ -59,10 +59,10 @@ export const EmojiList = forwardRef(
                   ? 'bg-indigo-500 text-white'
                   : 'text-gray-900'
               )}
-              key={item.shortcodes[0]}
+              key={item.codePoint}
               onClick={() => selectItem(i)}
             >
-              {item.emoji} {item.name}
+              {item.character} {item.shortcodes[0]}
             </button>
           ))
         )}

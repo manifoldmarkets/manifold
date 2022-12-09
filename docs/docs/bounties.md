@@ -17,6 +17,13 @@ Our community is the beating heart of Manifold; your individual contributions ar
 
 ## Awarded bounties
 
+👾 *Awarded on 2022-11-16*
+
+**[legolas](https://manifold.markets/legolas) + team: M$20,000**
+**[miaz](https://manifold.markets/jack): M$10,000**
+
+- For building out live stock exchanges for the Destiny.gg community: https://www.dgg.exchange/, https://dggexchange.miaz.xyz/
+
 💥 *Awarded on 2022-10-31*
 
 **[Matt Kempster](https://github.com/manifoldmarkets/manifold/issues/1119): M$5,000**

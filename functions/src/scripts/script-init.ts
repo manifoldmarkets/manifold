@@ -74,6 +74,7 @@ export const initAdmin = (env?: string) => {
     return admin.initializeApp({
       projectId: serviceAccount.project_id,
       credential: admin.credential.cert(serviceAccount),
+      storageBucket: `${serviceAccount.project_id}.appspot.com`,
     })
   } catch (err) {
     console.error(err)

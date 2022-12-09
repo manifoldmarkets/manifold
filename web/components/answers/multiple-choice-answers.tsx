@@ -25,7 +25,7 @@ export function MultipleChoiceAnswers(props: {
   return (
     <Col>
       {answers.map((answer, i) => (
-        <Row className="mb-2 items-center gap-2 align-middle">
+        <Row className="mb-2 items-center gap-2 align-middle" key={i}>
           {i + 1}.{' '}
           <ExpandingInput
             value={answer}

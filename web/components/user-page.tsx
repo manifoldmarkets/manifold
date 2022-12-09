@@ -32,16 +32,18 @@ import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
-import { BOT_USERNAMES, DOMAIN } from 'common/envs/constants'
-import { BadgeDisplay } from 'web/components/badge-display'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-about'
-import { Button } from './buttons/button'
-import { BotBadge } from './widgets/user-link'
-import { BlockUserButton } from 'web/components/buttons/block-user-button'
+import { buttonClass } from './buttons/button'
+import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { PostBanBadge, UserBadge } from './widgets/user-link'
+import Link from 'next/link'
+import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -86,30 +88,36 @@ export function UserPage(props: { user: User }) {
 
       <Col className="relative">
         <Row className="relative px-4 pt-4">
-          <Avatar
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-            size={24}
-            className="bg-white shadow-sm shadow-indigo-300"
+          <ImageWithBlurredShadow
+            image={
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size={24}
+                className="bg-white"
+              />
+            }
           />
           {isCurrentUser && (
             <div className="absolute ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
-              <SiteLink href="/profile">
-                <PencilIcon className="h-5" />{' '}
-              </SiteLink>
+              <Link href="/profile">
+                <PencilIcon className="h-5" />
+              </Link>
             </div>
           )}
 
           <Col className="w-full gap-4 pl-5">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
               <Col>
-                <span className="break-anywhere text-lg font-bold sm:text-2xl">
-                  {user.name}{' '}
-                  {BOT_USERNAMES.includes(user.username) && <BotBadge />}
-                </span>
+                <div className="inline-flex flex-row items-center gap-1">
+                  <span className="break-anywhere text-lg font-bold sm:text-2xl">
+                    {user.name}
+                  </span>
+                  {<UserBadge username={user.username} />}
+                  {user.isBannedFromPosting && <PostBanBadge />}
+                </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
-                  <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
               <Row
@@ -119,7 +127,7 @@ export function UserPage(props: { user: User }) {
               >
                 {isCurrentUser && <DailyStats user={user} showLoans />}
                 {!isCurrentUser && <UserFollowButton userId={user.id} />}
-                {!isCurrentUser && <BlockUserButton user={user} />}
+                {!isCurrentUser && <MoreOptionsUserButton user={user} />}
               </Row>
             </div>
             <ProfilePublicStats
@@ -214,7 +222,7 @@ export function UserPage(props: { user: User }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    Earn M$250 per friend referred
+                    Earn {ENV_CONFIG.moneyMoniker}250 per friend referred
                   </Row>
                 </div>
               )}
@@ -230,7 +238,7 @@ export function UserPage(props: { user: User }) {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <CreatorContractsList user={currentUser} creator={user} />
+                    <CreatorContractsList creator={user} />
                   </>
                 ),
               },
@@ -254,24 +262,17 @@ export function UserPage(props: { user: User }) {
                     <Spacer h={4} />
 
                     <Row className="flex items-center justify-between">
-                      <Col>
-                        <SectionHeader label={'Posts'} href={''} />
-                      </Col>
-                      <Col>
-                        {currentUser && (
-                          <SiteLink
-                            className="mb-3 text-xl"
-                            href={'/create-post'}
-                            onClick={() =>
-                              track('home click create post', {
-                                section: 'create-post',
-                              })
-                            }
-                          >
-                            <Button>Create Post</Button>
-                          </SiteLink>
-                        )}
-                      </Col>
+                      <SectionHeader label={'Posts'} href={''} />
+
+                      {currentUser && (
+                        <Link
+                          className={clsx('mb-3', buttonClass('md', 'indigo'))}
+                          href={'/create-post'}
+                          onClick={() => track('profile click create post')}
+                        >
+                          Create Post
+                        </Link>
+                      )}
                     </Row>
 
                     <Col>
@@ -326,7 +327,7 @@ export function ProfilePublicStats(props: { user: User; className?: string }) {
       <FollowersButton user={user} className={className} />
       {/* <ReferralsButton user={user} className={className} /> */}
       <GroupsButton user={user} className={className} />
-      {/* <UserLikesButton user={user} className={className} /> */}
+      <UserLikedContractsButton user={user} className={className} />
     </Row>
   )
 }

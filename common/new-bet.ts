@@ -16,6 +16,7 @@ import {
 } from './calculate-cpmm'
 import {
   CPMMBinaryContract,
+  CPMMMultipleChoiceContract,
   DPMBinaryContract,
   DPMContract,
   NumericContract,
@@ -29,6 +30,7 @@ import {
   floatingGreaterEqual,
   floatingLesserEqual,
 } from './util/math'
+import { buy, getProb, shortSell } from './calculate-cpmm-multi'
 
 export type CandidateBet<T extends Bet = Bet> = Omit<
   T,
@@ -251,6 +253,9 @@ export const getBinaryCpmmBetInfo = (
     loanAmount: 0,
     createdTime: Date.now(),
     fees: totalFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   })
 
   const { liquidityFee } = totalFees
@@ -335,6 +340,9 @@ export const getNewBinaryDpmBetInfo = (
     probAfter,
     createdTime: Date.now(),
     fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
@@ -371,9 +379,52 @@ export const getNewMultiBetInfo = (
     probAfter,
     createdTime: Date.now(),
     fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
+}
+
+export const getNewMultiCpmmBetInfo = (
+  contract: CPMMMultipleChoiceContract,
+  outcome: string,
+  amount: number,
+  shouldShortSell: boolean
+) => {
+  const { pool } = contract
+
+  let newPool: { [outcome: string]: number }
+  let gainedShares: { [outcome: string]: number } | undefined = undefined
+  let shares: number | undefined
+
+  if (shouldShortSell)
+    ({ newPool, gainedShares } = shortSell(pool, outcome, amount))
+  else ({ newPool, shares } = buy(pool, outcome, amount))
+
+  shares = gainedShares ? gainedShares[outcome] ?? 0 : shares
+
+  const probBefore = getProb(pool, outcome)
+  const probAfter = getProb(newPool, outcome)
+
+  const newBet: CandidateBet = removeUndefinedProps({
+    contractId: contract.id,
+    amount,
+    loanAmount: 0,
+    shares: shares as number,
+    sharesByOutcome: gainedShares,
+    outcome,
+    probBefore,
+    probAfter,
+    createdTime: Date.now(),
+    fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
+  })
+
+  return { newBet, newPool }
 }
 
 export const getNumericBetsInfo = (
@@ -414,6 +465,9 @@ export const getNumericBetsInfo = (
     probAfter,
     createdTime: Date.now(),
     fees: noFees,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }

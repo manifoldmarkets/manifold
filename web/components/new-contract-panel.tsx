@@ -19,8 +19,8 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { getGroup, groupPath } from 'web/lib/firebase/groups'
-import { Group } from 'common/group'
+import { getGroup } from 'web/lib/firebase/groups'
+import { Group, groupPath } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
@@ -28,12 +28,12 @@ import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { MINUTE_MS } from 'common/util/time'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Input } from 'web/components/widgets/input'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -374,9 +374,9 @@ export function NewContractPanel(props: {
               options={{ showSelector: showGroupSelector, showLabel: true }}
             />
             {showGroupSelector && selectedGroup && (
-              <SiteLink href={groupPath(selectedGroup.slug)}>
+              <a target="_blank" href={groupPath(selectedGroup.slug)}>
                 <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
-              </SiteLink>
+              </a>
             )}
           </Row>
 
@@ -471,7 +471,7 @@ export function NewContractPanel(props: {
                 color="green"
                 onClick={() => setFundsModalOpen(true)}
               >
-                Get M$
+                Get {ENV_CONFIG.moneyMoniker}
               </Button>
               <AddFundsModal
                 open={fundsModalOpen}

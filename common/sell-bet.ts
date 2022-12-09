@@ -45,12 +45,12 @@ export const getSellBetInfo = (bet: Bet, contract: DPMContract) => {
   const saleAmount = deductDpmFees(amount, adjShareValue)
 
   console.log(
-    'SELL M$',
+    'SELL Mana',
     amount,
     outcome,
-    'for M$',
+    'for M',
     saleAmount,
-    'creator fee: M$',
+    'creator fee: M',
     creatorFee
   )
 
@@ -68,6 +68,9 @@ export const getSellBetInfo = (bet: Bet, contract: DPMContract) => {
     },
     fees,
     loanAmount: -(loanAmount ?? 0),
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return {
@@ -89,13 +92,8 @@ export const getCpmmSellBetInfo = (
 ) => {
   const { pool, p } = contract
 
-  const { saleValue, cpmmState, fees, makers, takers, ordersToCancel } = calculateCpmmSale(
-    contract,
-    shares,
-    outcome,
-    unfilledBets,
-    balanceByUserId,
-  )
+  const { saleValue, cpmmState, fees, makers, takers, ordersToCancel } =
+    calculateCpmmSale(contract, shares, outcome, unfilledBets, balanceByUserId)
 
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -104,12 +102,12 @@ export const getCpmmSellBetInfo = (
   const takerShares = sumBy(takers, 'shares')
 
   console.log(
-    'SELL M$',
+    'SELL ',
     shares,
     outcome,
-    'for M$',
+    'for M',
     saleValue,
-    'creator fee: M$',
+    'creator fee: M',
     fees.creatorFee
   )
 
@@ -127,6 +125,9 @@ export const getCpmmSellBetInfo = (
     isFilled: true,
     isCancelled: false,
     orderAmount: takerAmount,
+    isAnte: false,
+    isRedemption: false,
+    isChallenge: false,
   }
 
   return {
@@ -136,6 +137,6 @@ export const getCpmmSellBetInfo = (
     fees,
     makers,
     takers,
-    ordersToCancel
+    ordersToCancel,
   }
 }

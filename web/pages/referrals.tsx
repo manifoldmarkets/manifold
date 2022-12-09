@@ -28,7 +28,7 @@ export default function ReferralsPage() {
         description={`Invite new users to Manifold and get ${formatMoney(
           REFERRAL_AMOUNT
         )} if they
-            sign up!`}
+            sign up and place a trade!`}
         url="/referrals"
       />
 
@@ -44,15 +44,10 @@ export default function ReferralsPage() {
 
           <div className={'mb-4'}>
             Invite new users to Manifold and get {formatMoney(REFERRAL_AMOUNT)}{' '}
-            if they sign up!
+            if they sign up and place a trade!
           </div>
 
-          <CopyLinkButton
-            url={url}
-            tracking="copy referral link"
-            buttonClassName="rounded-l-none"
-            toastClassName={'-left-28 mt-1'}
-          />
+          <CopyLinkButton url={url} tracking="copy referral link" />
 
           <QRCode url={url} className="mt-4 self-center" />
 

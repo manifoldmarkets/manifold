@@ -38,7 +38,7 @@ export const usePrefetchUsers = (userIds: string[]) => {
 }
 
 // Note: we don't filter out blocked contracts/users/groups here like we do in unbet-on contracts
-export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
+export const useUserContractMetricsByProfit = (userId = '_', count = 50) => {
   const positiveResult = useFirestoreQueryData<ContractMetrics>(
     ['contract-metrics-descending', userId, count],
     getUserContractMetricsQuery(userId, count, 'desc')
@@ -48,9 +48,12 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
     getUserContractMetricsQuery(userId, count, 'asc')
   )
 
-  const metrics = buildArray(positiveResult.data, negativeResult.data)
+  const metrics = buildArray(positiveResult.data, negativeResult.data).filter(
+    (m) => m.from && Math.abs(m.from.day.profit) >= 1
+  )
+
   const contractIds = sortBy(metrics.map((m) => m.contractId))
-  const contracts = useContracts(contractIds)
+  const contracts = useContracts(contractIds, { loadOnce: true })
 
   const isReady =
     positiveResult.data &&
@@ -73,6 +76,8 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
     : savedResult.current
 
   useEffectCheckEquality(() => {
+    if (userId === '_') return
+
     const key = `user-contract-metrics-${userId}`
     if (isReady) {
       safeLocalStorage()?.setItem(key, JSON.stringify(result))
@@ -89,9 +94,9 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
   const filteredContracts = filterDefined(
     result.contracts
   ) as CPMMBinaryContract[]
-  const filteredMetrics = result.metrics
-    .filter((m) => m.from && Math.abs(m.from.day.profit) >= 1)
-    .filter((m) => filteredContracts.find((c) => c.id === m.contractId))
+  const filteredMetrics = result.metrics.filter((m) =>
+    filteredContracts.find((c) => c.id === m.contractId)
+  )
 
   return { contracts: filteredContracts, metrics: filteredMetrics }
 }

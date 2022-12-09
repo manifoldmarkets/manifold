@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
 import { useUnseenNotificationCount } from 'web/hooks/use-notifications'
-import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 import { PrivateUser } from 'common/user'
+import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
 
 export default function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()

@@ -4,19 +4,21 @@ import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import { uniq } from 'lodash'
 import { toast } from 'react-hot-toast'
+import { Contract } from 'common/contract'
 
-export function BlockMarketButton(props: { contractId: string }) {
-  const { contractId } = props
-  const user = usePrivateUser()
-  if (!user) return null
-  const isBlocked = user.blockedContractIds?.includes(contractId)
+export function BlockMarketButton(props: { contract: Contract }) {
+  const { contract } = props
+  const privateUser = usePrivateUser()
+  if (!privateUser || (privateUser && privateUser.id === contract.creatorId))
+    return <div />
+  const isBlocked = privateUser.blockedContractIds?.includes(contract.id)
 
   const onBlock = async () => {
     await toast.promise(
-      updatePrivateUser(user.id, {
+      updatePrivateUser(privateUser.id, {
         blockedContractIds: uniq([
-          ...(user.blockedContractIds ?? []),
-          contractId,
+          ...(privateUser.blockedContractIds ?? []),
+          contract.id,
         ]),
       }),
       {
@@ -27,9 +29,10 @@ export function BlockMarketButton(props: { contractId: string }) {
     )
   }
   const onUnblock = async () => {
-    await updatePrivateUser(user.id, {
+    await updatePrivateUser(privateUser.id, {
       blockedContractIds:
-        user.blockedContractIds?.filter((id) => id !== contractId) ?? [],
+        privateUser.blockedContractIds?.filter((id) => id !== contract.id) ??
+        [],
     })
   }
 

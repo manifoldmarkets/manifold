@@ -18,8 +18,16 @@ import { Follow } from '../../common/follow'
 import { countBy, uniq, uniqBy } from 'lodash'
 import { sendInterestingMarketsEmail } from './emails'
 
+const GROUP_SLUGS_TO_IGNORE_IN_TRENDING = [
+  'manifold-features',
+  'manifold-6748e065087e',
+  'destinygg',
+]
+const USERS_TO_EMAIL = 500
+
+// This should(?) work until we have ~60k users (500 * 120)
 export const weeklyMarketsEmails = functions
-  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB' })
+  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB', timeoutSeconds: 540 })
   // every minute on Monday for 2 hours starting at 12pm PT (UTC -07:00)
   .pubsub.schedule('* 19-20 * * 1')
   .timeZone('Etc/UTC')
@@ -55,9 +63,24 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
     .filter(
       (user) =>
         user.notificationPreferences.trending_markets.includes('email') &&
-        !user.weeklyTrendingEmailSent
+        !user.notificationPreferences.opt_out_all.includes('email') &&
+        !user.weeklyTrendingEmailSent &&
+        user.email
     )
-    .slice(0, 90) // Send the emails out in batches
+    .slice(0, USERS_TO_EMAIL) // Send the emails out in batches
+
+  if (privateUsersToSendEmailsTo.length === 0) {
+    log('No users to send trending markets emails to')
+    return
+  }
+
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (privateUser) => {
+      await firestore.collection('private-users').doc(privateUser.id).update({
+        weeklyTrendingEmailSent: true,
+      })
+    })
+  )
 
   // For testing different users on prod: (only send ian an email though)
   // const privateUsersToSendEmailsTo = filterDefined([
@@ -80,8 +103,9 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
           contract.question.toLowerCase().includes('president')
         ) &&
         (contract?.closeTime ?? 0) > Date.now() + DAY_MS &&
-        !contract.groupSlugs?.includes('manifold-features') &&
-        !contract.groupSlugs?.includes('manifold-6748e065087e')
+        !contract.groupSlugs?.some((slug) =>
+          GROUP_SLUGS_TO_IGNORE_IN_TRENDING.includes(slug)
+        )
     )
     .slice(0, 50)
 
@@ -91,12 +115,10 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
     true
   ).slice(0, 20)
 
+  let sent = 0
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (privateUser) => {
-      if (!privateUser.email) {
-        log(`No email for ${privateUser.username}`)
-        return
-      }
+      if (!privateUser.email) return
 
       const unbetOnFollowedMarkets = await getUserUnBetOnFollowsMarkets(
         privateUser.id
@@ -151,9 +173,6 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
           'not enough new, unbet-on contracts to send to user',
           privateUser.id
         )
-        await firestore.collection('private-users').doc(privateUser.id).update({
-          weeklyTrendingEmailSent: true,
-        })
         return
       }
       // choose random subset of contracts to send to user
@@ -164,16 +183,9 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
 
       const user = await getUser(privateUser.id)
       if (!user) return
-
-      log(
-        'sending contracts:',
-        contractsToSend.map((c) => c.question + ' ' + c.popularityScore)
-      )
-      // if they don't have enough markets, find user bets and get the other bettor ids who most overlap on those markets, then do the same thing as above for them
       await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
-      await firestore.collection('private-users').doc(user.id).update({
-        weeklyTrendingEmailSent: true,
-      })
+      sent++
+      log(`emails sent: ${sent}/${USERS_TO_EMAIL}`)
     })
   )
 }
@@ -314,6 +326,9 @@ const getSimilarBettorsMarkets = async (
     firestore
       .collection('contracts')
       .where('uniqueBettorIds', 'array-contains', userId)
+      // Favor more recently created markets
+      .orderBy('createdTime', 'desc')
+      .limit(100)
   )
   if (contractsUserHasBetOn.length === 0) return []
   // count the number of times each unique bettor id appears on those contracts
@@ -431,7 +446,7 @@ const removeSimilarQuestions = (
   // )
 
   const returnContracts = contractsToFilter.filter(
-    (cf) => !contractsToRemove.map((c) => c.id).includes(cf.id)
+    (cf) => !contractsToRemove.some((c) => c.id === cf.id)
   )
 
   return returnContracts

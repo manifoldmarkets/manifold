@@ -1,3 +1,31 @@
+export type RetryPolicy = {
+  initialBackoffSec: number
+  retries: number
+}
+
+export const delay = (ms: number) => {
+  return new Promise<void>((resolve) => setTimeout(() => resolve(), ms))
+}
+
+export async function withRetries<T>(q: PromiseLike<T>, policy?: RetryPolicy) {
+  let err: any
+  let delaySec = policy?.initialBackoffSec ?? 5
+  const maxRetries = policy?.retries ?? 5
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await q
+    } catch (e) {
+      err = e
+      if (i < maxRetries) {
+        console.debug(`Error: ${e?.toString()} - Retrying in ${delaySec}s.`)
+        await delay(delaySec * 1000)
+        delaySec *= 2
+      }
+    }
+  }
+  throw err
+}
+
 export const batchedWaitAll = async <T>(
   createPromises: (() => Promise<T>)[],
   batchSize = 10

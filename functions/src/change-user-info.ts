@@ -1,9 +1,14 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+import { uniq } from 'lodash'
 
-import { getUser } from './utils'
+import { getUser, getUserByUsername } from './utils'
 import { Bet } from '../../common/bet'
-import { Contract } from '../../common/contract'
+import {
+  Contract,
+  FreeResponseContract,
+  MultipleChoiceContract,
+} from '../../common/contract'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
 import {
@@ -13,6 +18,9 @@ import {
 import { removeUndefinedProps } from '../../common/util/object'
 import { Answer } from '../../common/answer'
 import { APIError, newEndpoint, validate } from './api'
+import { ContractMetric } from '../../common/contract-metric'
+
+type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
 const bodySchema = z.object({
   username: z.string().optional(),
@@ -25,9 +33,26 @@ export const changeuserinfo = newEndpoint({}, async (req, auth) => {
 
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(400, 'User not found')
+  const cleanedUsername = username ? cleanUsername(username) : undefined
 
-  await changeUser(user, { username, name, avatarUrl })
-  return { message: 'Successfully changed user info.' }
+  if (username) {
+    if (!cleanedUsername) throw new APIError(400, 'Invalid username')
+    const otherUserExists = await getUserByUsername(cleanedUsername)
+    if (otherUserExists) throw new APIError(400, 'Username already taken')
+  }
+
+  // TODO not sure about denying duplicate display names
+  try {
+    await changeUser(user, {
+      username: cleanedUsername,
+      name,
+      avatarUrl,
+    })
+    return { message: 'Successfully changed user info.' }
+  } catch (e) {
+    console.error(e)
+    throw new APIError(500, 'update failed, please revert changes')
+  }
 })
 
 export const changeUser = async (
@@ -38,13 +63,16 @@ export const changeUser = async (
     avatarUrl?: string
   }
 ) => {
+  if (update.username) update.username = cleanUsername(update.username)
+  if (update.name) update.name = cleanDisplayName(update.name)
+
   // Update contracts, comments, and answers outside of a transaction to avoid contention.
   // Using bulkWriter to supports >500 writes at a time
-  const contractsRef = firestore
+  const contractSnap = await firestore
     .collection('contracts')
     .where('creatorId', '==', user.id)
-
-  const contracts = await contractsRef.get()
+    .select()
+    .get()
 
   const contractUpdate: Partial<Contract> = removeUndefinedProps({
     creatorName: update.name,
@@ -54,7 +82,8 @@ export const changeUser = async (
 
   const commentSnap = await firestore
     .collectionGroup('comments')
-    .where('userUsername', '==', user.username)
+    .where('userId', '==', user.id)
+    .select()
     .get()
 
   const commentUpdate: Partial<Comment> = removeUndefinedProps({
@@ -63,15 +92,10 @@ export const changeUser = async (
     userAvatarUrl: update.avatarUrl,
   })
 
-  const answerSnap = await firestore
-    .collectionGroup('answers')
-    .where('username', '==', user.username)
-    .get()
-  const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
-
   const betsSnap = await firestore
     .collectionGroup('bets')
     .where('userId', '==', user.id)
+    .select()
     .get()
   const betsUpdate: Partial<Bet> = removeUndefinedProps({
     userName: update.name,
@@ -79,38 +103,58 @@ export const changeUser = async (
     userAvatarUrl: update.avatarUrl,
   })
 
+  const contractMetricsSnap = await firestore
+    .collection(`users/${user.id}/contract-metrics`)
+    .get()
+
+  const contractMetricsUpdate: Partial<ContractMetric> = removeUndefinedProps({
+    userName: update.name,
+    userUsername: update.username,
+    userAvatarUrl: update.avatarUrl,
+  })
+
   const bulkWriter = firestore.bulkWriter()
+  const userRef = firestore.collection('users').doc(user.id)
+  bulkWriter.update(userRef, removeUndefinedProps(update))
   commentSnap.docs.forEach((d) => bulkWriter.update(d.ref, commentUpdate))
-  answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
-  contracts.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
+  contractSnap.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
   betsSnap.docs.forEach((d) => bulkWriter.update(d.ref, betsUpdate))
+  contractMetricsSnap.docs.forEach((d) =>
+    bulkWriter.update(d.ref, contractMetricsUpdate)
+  )
+
+  const answerSnap = await firestore
+    .collectionGroup('answers')
+    .where('userId', '==', user.id)
+    .get()
+  const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
+  answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
+
+  const answerContractIds = uniq(
+    answerSnap.docs.map((a) => a.get('contractId') as string)
+  )
+
+  const docRefs = answerContractIds.map((c) =>
+    firestore.collection('contracts').doc(c)
+  )
+  // firestore.getall() will fail with zero params, so add this check
+  if (docRefs.length > 0) {
+    const answerContracts = await firestore.getAll(...docRefs)
+    for (const doc of answerContracts) {
+      const contract = doc.data() as ChoiceContract
+      for (const a of contract.answers) {
+        if (a.userId === user.id) {
+          a.username = update.username ?? a.username
+          a.avatarUrl = update.avatarUrl ?? a.avatarUrl
+          a.name = update.name ?? a.name
+        }
+      }
+      bulkWriter.update(doc.ref, { answers: contract.answers })
+    }
+  }
+
   await bulkWriter.flush()
   console.log('Done writing!')
-
-  // Update the username inside a transaction
-  return await firestore.runTransaction(async (transaction) => {
-    if (update.username) {
-      update.username = cleanUsername(update.username)
-      if (!update.username) {
-        throw new APIError(400, 'Invalid username')
-      }
-
-      const sameNameUser = await transaction.get(
-        firestore.collection('users').where('username', '==', update.username)
-      )
-      if (!sameNameUser.empty) {
-        throw new APIError(400, 'Username already exists')
-      }
-    }
-
-    if (update.name) {
-      update.name = cleanDisplayName(update.name)
-    }
-
-    const userRef = firestore.collection('users').doc(user.id)
-    const userUpdate: Partial<User> = removeUndefinedProps(update)
-    transaction.update(userRef, userUpdate)
-  })
 }
 
 const firestore = admin.firestore()

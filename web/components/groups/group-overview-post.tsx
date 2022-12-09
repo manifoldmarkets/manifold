@@ -5,14 +5,13 @@ import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
 import { Group } from 'common/group'
 import { deleteFieldFromGroup, updateGroup } from 'web/lib/firebase/groups'
-import PencilIcon from '@heroicons/react/solid/PencilIcon'
 import { PlusIcon, TrashIcon } from '@heroicons/react/solid'
 import { createPost } from 'web/lib/firebase/api'
 import { Post } from 'common/post'
 import { deletePost, updatePost } from 'web/lib/firebase/posts'
 import { useState } from 'react'
 import { usePost } from 'web/hooks/use-post'
-import { Col } from '../layout/col'
+import { RichEditPost } from 'web/pages/post/[...slugs]'
 
 export function GroupOverviewPost(props: {
   group: Group
@@ -25,7 +24,7 @@ export function GroupOverviewPost(props: {
   return (
     <div className="rounded-md bg-white p-4 ">
       {isEditable && <RichEditGroupAboutPost group={group} post={post} />}
-      {!isEditable && post && <Content content={post.content} />}
+      {!isEditable && post && <Content content={post.content} size="lg" />}
     </div>
   )
 }
@@ -37,6 +36,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
   const editor = useTextEditor({
     key: `about ${group.id}`,
     defaultValue: post?.content,
+    size: 'lg',
   })
 
   async function savePost() {
@@ -96,31 +96,17 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
           </Button>
         </div>
       ) : (
-        <Col>
-          <Content content={post.content} />
-          <Row className="place-content-end">
-            <Button
-              color="gray-white"
-              size="2xs"
-              onClick={() => {
-                setEditing(true)
-                editor?.commands.focus('end')
-              }}
-            >
-              <PencilIcon className="inline h-5 w-5" />
-            </Button>
-
-            <Button
-              color="gray-white"
-              size="2xs"
-              onClick={() => {
-                deleteGroupAboutPost()
-              }}
-            >
-              <TrashIcon className="text-scarlet-500 inline h-5 w-5" />
-            </Button>
-          </Row>
-        </Col>
+        <RichEditPost post={post} canEdit={true}>
+          <Button
+            color="gray-white"
+            size="2xs"
+            onClick={() => {
+              deleteGroupAboutPost()
+            }}
+          >
+            <TrashIcon className="text-scarlet-500 inline h-5 w-5" />
+          </Button>
+        </RichEditPost>
       )}
     </>
   )

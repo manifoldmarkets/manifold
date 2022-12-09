@@ -18,7 +18,7 @@ export const getGroupForMarket = async (question: string) => {
   let response
   try {
     response = await openai.createCompletion({
-      model: 'text-davinci-002',
+      model: 'text-davinci-003',
       prompt: `Categories:\n\n${groupsList}\n\nQuestion: ${question}\nSelected category:`,
       temperature: 0.4,
       max_tokens: 3,

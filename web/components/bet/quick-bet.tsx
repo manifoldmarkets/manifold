@@ -98,7 +98,7 @@ export function SignedOutQuickBet(props: {
   }
   return (
     <div className="relative">
-      <Row className={clsx(className, 'absolute inset-0')}>
+      <Row className={clsx(className, 'absolute inset-0 justify-between')}>
         <BinaryQuickBetButton
           onClick={withTracking(firebaseLogin, 'landing page button click')}
           direction="DOWN"
@@ -240,7 +240,7 @@ function SignedInQuickBet(props: {
 
   return (
     <div className="relative">
-      <Row className={clsx(className, 'absolute inset-0')}>
+      <Row className={clsx(className, 'absolute inset-0 justify-between')}>
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('DOWN')}
           direction="DOWN"
@@ -273,6 +273,7 @@ function BinaryQuickBetButton(props: {
   onMouseLeave: () => void
   hasInvestment?: boolean
   invested?: number
+  className?: string
 }) {
   const {
     onClick,
@@ -288,59 +289,89 @@ function BinaryQuickBetButton(props: {
   return (
     <Row
       className={clsx(
-        'w-[50%] items-center gap-2',
+        'items-center gap-2 sm:w-[50%]',
         direction === 'UP' && 'flex-row-reverse'
       )}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={onClick}
     >
-      {direction === 'DOWN' && (
-        <EquilateralLeftTriangle
-          className={clsx(
-            'mx-2 h-6 w-6 drop-shadow-md transition-all',
-            shouldFocus
-              ? 'animate-bounce-left text-indigo-600'
-              : hasInvestment
-              ? 'text-indigo-500'
-              : 'text-indigo-300'
-          )}
+      <Row
+        className={clsx(
+          'items-center gap-2 sm:w-full',
+          direction === 'UP' && 'flex-row-reverse'
+        )}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
+      >
+        {direction === 'DOWN' && (
+          <EquilateralLeftTriangle
+            className={clsx(
+              'mx-2 h-6 w-6 drop-shadow-md transition-all',
+              shouldFocus
+                ? 'animate-bounce-left text-indigo-600'
+                : hasInvestment
+                ? 'text-indigo-500'
+                : 'text-indigo-300'
+            )}
+          />
+        )}
+        {direction === 'UP' && (
+          <EquilateralRightTriangle
+            className={clsx(
+              'mx-2 h-6 w-6 drop-shadow-md transition-all',
+              shouldFocus
+                ? 'sm:animate-bounce-right text-indigo-600'
+                : hasInvestment
+                ? 'text-indigo-500'
+                : 'text-indigo-300'
+            )}
+          />
+        )}
+        {!isMobile && (
+          <QuickBetAmount
+            hasInvestment={hasInvestment}
+            invested={invested}
+            shouldFocus={shouldFocus}
+          />
+        )}
+      </Row>
+      {isMobile && (
+        <QuickBetAmount
+          hasInvestment={hasInvestment}
+          invested={invested}
+          shouldFocus={shouldFocus}
         />
-      )}
-      {direction === 'UP' && (
-        <EquilateralRightTriangle
-          className={clsx(
-            'mx-2 h-6 w-6 drop-shadow-md transition-all',
-            shouldFocus
-              ? 'sm:animate-bounce-right text-indigo-600'
-              : hasInvestment
-              ? 'text-indigo-500'
-              : 'text-indigo-300'
-          )}
-        />
-      )}
-      {hasInvestment && invested != null ? (
-        <span
-          className={clsx(
-            'text-sm font-light',
-            shouldFocus ? 'text-indigo-600' : 'text-gray-400'
-          )}
-        >
-          {shouldFocus
-            ? formatMoney(invested + BET_SIZE)
-            : formatMoney(invested)}
-        </span>
-      ) : (
-        <span
-          className={clsx(
-            'my-auto text-sm font-light text-indigo-600 transition-opacity',
-            shouldFocus ? 'opacity-100' : 'opacity-0'
-          )}
-        >
-          {formatMoney(BET_SIZE)}
-        </span>
       )}
     </Row>
+  )
+}
+
+function QuickBetAmount(props: {
+  hasInvestment: boolean | undefined
+  invested: number | undefined
+  shouldFocus: boolean
+}) {
+  const { hasInvestment, invested, shouldFocus } = props
+  if (hasInvestment && invested != null) {
+    return (
+      <span
+        className={clsx(
+          'text-sm font-light',
+          shouldFocus ? 'text-indigo-600' : 'text-gray-400'
+        )}
+      >
+        {shouldFocus ? formatMoney(invested + BET_SIZE) : formatMoney(invested)}
+      </span>
+    )
+  }
+  return (
+    <span
+      className={clsx(
+        'my-auto text-sm font-light text-indigo-600 transition-opacity',
+        shouldFocus ? 'opacity-100' : 'opacity-0'
+      )}
+    >
+      {formatMoney(BET_SIZE)}
+    </span>
   )
 }
 
@@ -370,8 +401,8 @@ export function QuickOutcomeView(props: {
 }) {
   const { contract, previewProb, numAnswersFR } = props
   const { outcomeType } = contract
-  const prob = previewProb ?? getProb(contract)
-
+  const isMobile = useIsMobile()
+  const prob = isMobile ? getProb(contract) : previewProb ?? getProb(contract)
   const textColor = getTextColor(contract)
 
   if (outcomeType != 'FREE_RESPONSE' && outcomeType != 'MULTIPLE_CHOICE') {
@@ -383,14 +414,17 @@ export function QuickOutcomeView(props: {
         )}
       >
         <div
-          className={clsx('h-full transition-all', getBarColor(contract))}
+          className={clsx(
+            'h-full rounded-r-md transition-all',
+            getBarColor(contract)
+          )}
           style={{ width: `${100 * prob}%` }}
           aria-hidden
         />
         <div
           className={`absolute inset-0 flex items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
         >
-          {cardText(contract, previewProb)}
+          {cardText(contract, isMobile ? undefined : previewProb)}
         </div>
       </div>
     )
@@ -501,45 +535,36 @@ function ContractCardAnswer(props: {
   const { contract, answer, answersArray, type } = props
   const prob = getOutcomeProbability(contract, answer.id)
   const display = formatPercent(getOutcomeProbability(contract, answer.id))
-  const color = getAnswerColor(answer, answersArray)
   const isClosed = (contract.closeTime ?? Infinity) < Date.now()
+  const answerColor = getAnswerColor(answer, answersArray)
+  const color =
+    type === 'loser' || (isClosed && type === 'contender')
+      ? '#D8D8EB'
+      : answerColor
   return (
     <div
       className={clsx(
-        type === 'winner'
-          ? '-mx-[1.5px] -my-[1.5px] rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 px-[1.5px] py-[1.5px]'
-          : ''
+        'relative h-7 overflow-hidden rounded-md bg-gray-100',
+        type === 'winner' && 'ring-[1.5px] ring-purple-500'
       )}
     >
-      <Row
-        className={clsx(
-          'z-50 justify-between rounded-md px-4 py-0.5 transition-all'
-        )}
+      <div
+        className={'h-full rounded-r-md transition-all'}
         style={{
-          background: `linear-gradient(to right, ${
-            type === 'loser' || (isClosed && type === 'contender')
-              ? '#D8D8EB'
-              : `${color}`
-          } ${100 * prob}%, ${'#F4F4FB'} ${100 * prob}%)`,
+          backgroundColor: color,
+          width: `${100 * prob}%`,
         }}
+      />
+      <span
+        className={clsx(
+          'text-md',
+          type === 'loser' ? 'text-gray-500' : 'text-gray-900',
+          'absolute inset-0 flex items-center justify-between px-4'
+        )}
       >
-        <AnswerLabel
-          className={clsx(
-            'text-md',
-            type === 'loser' ? 'text-gray-500' : 'text-gray-900'
-          )}
-          answer={answer}
-          truncate="medium"
-        />
-        <div
-          className={clsx(
-            'text-md font-semibold',
-            type === 'loser' ? 'text-gray-500' : 'text-gray-900'
-          )}
-        >
-          {display}
-        </div>
-      </Row>
+        <AnswerLabel answer={answer} truncate={'short'} />
+        <div className="font-semibold">{display}</div>
+      </span>
     </div>
   )
 }
@@ -572,7 +597,7 @@ function getNumericScale(contract: NumericContract) {
 const OUTCOME_TO_COLOR_BAR = {
   YES: 'bg-teal-200',
   NO: 'bg-scarlet-200',
-  CANCEL: 'bg-gray-100',
+  CANCEL: 'bg-gray-200',
   MKT: 'bg-sky-200',
 }
 
@@ -580,14 +605,14 @@ export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-50'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-100'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
     return 'bg-slate-200'
   }
 
-  return 'bg-indigo-50'
+  return 'bg-indigo-100'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
@@ -601,14 +626,12 @@ export function getBgColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-gray-50'
+    return (
+      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-gray-100'
+    )
   }
 
-  // if ((contract.closeTime ?? Infinity) < Date.now()) {
-  //   return 'bg-gray-100'
-  // }
-
-  return 'bg-gray-50'
+  return 'bg-gray-100'
 }
 
 const OUTCOME_TO_COLOR_TEXT = {

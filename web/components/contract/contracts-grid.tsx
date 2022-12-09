@@ -2,7 +2,7 @@ import { Contract } from 'web/lib/firebase/contracts'
 import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../widgets/site-link'
-import { ContractCard, ContractCardWithPosition } from './contract-card'
+import { ContractCard, ContractMetricsFooter } from './contract-card'
 import { ShowTime } from './contract-details'
 import { ContractSearch } from '../contract-search'
 import { useCallback } from 'react'
@@ -10,12 +10,6 @@ import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import Masonry from 'react-masonry-css'
-import { CPMMBinaryContract } from 'common/contract'
-
-export type CardHighlightOptions = {
-  itemIds?: string[]
-  highlightClassName?: string
-}
 
 export function ContractsGrid(props: {
   contracts: Contract[] | undefined
@@ -27,7 +21,7 @@ export function ContractsGrid(props: {
     hideGroupLink?: boolean
     noLinkAvatar?: boolean
   }
-  highlightOptions?: CardHighlightOptions
+  highlightCards?: string[]
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
   showImageOnTopContract?: boolean
@@ -38,12 +32,11 @@ export function ContractsGrid(props: {
     loadMore,
     onContractClick,
     cardUIOptions,
-    highlightOptions,
+    highlightCards,
     trackingPostfix,
     showImageOnTopContract,
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
-  const { itemIds: contractIds, highlightClassName } = highlightOptions || {}
   const onVisibilityUpdated = useCallback(
     (visible: boolean) => {
       if (visible && loadMore) {
@@ -83,44 +76,32 @@ export function ContractsGrid(props: {
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
-        {contracts.map((contract, index) =>
-          contract.mechanism === 'cpmm-1' ? (
-            <ContractCardWithPosition
-              key={contract.id}
-              onClick={
-                onContractClick ? () => onContractClick(contract) : undefined
-              }
-              contract={contract as CPMMBinaryContract}
-              showTime={showTime}
-              showImage={
-                showImageOnTopContract && (index == 0 || index === lastIndex)
-              }
-              className={clsx(
-                contractIds?.includes(contract.id) && highlightClassName
-              )}
-            />
-          ) : (
-            <ContractCard
-              contract={contract}
-              key={contract.id}
-              showTime={showTime}
-              showImage={
-                showImageOnTopContract && (index == 0 || index === lastIndex)
-              }
-              onClick={
-                onContractClick ? () => onContractClick(contract) : undefined
-              }
-              noLinkAvatar={noLinkAvatar}
-              hideQuickBet={hideQuickBet}
-              hideGroupLink={hideGroupLink}
-              trackingPostfix={trackingPostfix}
-              className={clsx(
-                'mb-4 break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
-                contractIds?.includes(contract.id) && highlightClassName
-              )}
-            />
-          )
-        )}
+        {contracts.map((contract, index) => (
+          <ContractCard
+            contract={contract}
+            key={contract.id}
+            showTime={showTime}
+            showImage={
+              showImageOnTopContract && (index == 0 || index === lastIndex)
+            }
+            onClick={
+              onContractClick ? () => onContractClick(contract) : undefined
+            }
+            noLinkAvatar={noLinkAvatar}
+            hideQuickBet={hideQuickBet}
+            hideGroupLink={hideGroupLink}
+            trackingPostfix={trackingPostfix}
+            className={clsx(
+              'mb-4 transition-all',
+              highlightCards?.includes(contract.id) &&
+                'bg-gradient-to-b from-indigo-50 via-white to-white outline outline-2 outline-indigo-400'
+            )}
+          >
+            {contract.mechanism === 'cpmm-1' ? (
+              <ContractMetricsFooter contract={contract} />
+            ) : undefined}
+          </ContractCard>
+        ))}
       </Masonry>
       {loadMore && (
         <VisibilityObserver
@@ -132,16 +113,12 @@ export function ContractsGrid(props: {
   )
 }
 
-export function CreatorContractsList(props: {
-  user: User | null | undefined
-  creator: User
-}) {
-  const { user, creator } = props
+export function CreatorContractsList(props: { creator: User }) {
+  const { creator } = props
 
   return (
     <ContractSearch
       headerClassName="sticky"
-      user={user}
       defaultSort="newest"
       defaultFilter="all"
       additionalFilter={{

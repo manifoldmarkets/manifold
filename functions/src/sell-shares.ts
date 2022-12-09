@@ -30,6 +30,9 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
+    log(
+      `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
+    )
     const [
       [contractSnap, userSnap],
       userBetsSnap,
@@ -37,7 +40,7 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     ] = await Promise.all([
       transaction.getAll(contractDoc, userDoc),
       transaction.get(betsQ),
-      getUnfilledBetsAndUserBalances(transaction, contractDoc),
+      getUnfilledBetsAndUserBalances(transaction, contractDoc, auth.uid),
     ])
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
@@ -140,14 +143,16 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
       })
     }
 
-    return { newBet, makers, maxShares, soldShares }
+    return { newBet, makers, maxShares, soldShares, contract }
   })
 
-  if (result.maxShares === result.soldShares) {
+  const { makers, maxShares, soldShares, contract } = result
+
+  if (floatingEqual(maxShares, soldShares)) {
     await removeUserFromContractFollowers(contractId, auth.uid)
   }
-  const userIds = uniq(result.makers.map((maker) => maker.bet.userId))
-  await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
+  const userIds = uniq(makers.map((maker) => maker.bet.userId))
+  await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
   log('Share redemption transaction finished.')
 
   return { status: 'success' }

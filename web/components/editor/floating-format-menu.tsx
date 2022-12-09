@@ -87,6 +87,7 @@ export function FloatingFormatMenu(props: {
         <>
           <input
             type="text"
+            inputMode="url"
             className="h-5 border-0 bg-inherit text-sm !shadow-none !ring-0"
             placeholder="Type or paste a link"
             onChange={(e) => setUrl(e.target.value)}
@@ -111,7 +112,7 @@ const IconButton = (props: {
 }) => {
   const { icon: Icon, onClick, isActive, className } = props
   return (
-    <button onClick={onClick}>
+    <button onClick={onClick} type="button">
       <Icon className={clsx('h-5', isActive && 'text-indigo-200', className)} />
     </button>
   )

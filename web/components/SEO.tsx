@@ -18,6 +18,8 @@ export function SEO(props: {
     ? buildCardUrl(ogCardProps)
     : undefined
 
+  const absUrl = 'https://manifold.markets' + url
+
   return (
     <Head>
       <title>{`${title} | Manifold Markets`}</title>
@@ -36,11 +38,12 @@ export function SEO(props: {
         key="description2"
       />
 
+      {url && <meta property="og:url" content={absUrl} key="url" />}
+
       {url && (
         <meta
-          property="og:url"
-          content={'https://manifold.markets' + url}
-          key="url"
+          name="apple-itunes-app"
+          content={'app-id=6444136749, app-argument=' + absUrl}
         />
       )}
 

@@ -8,8 +8,8 @@ type AnyTxnType =
   | UniqueBettorBonus
   | BettingStreakBonus
   | CancelUniqueBettorBonus
-  | CommentBountyRefund
   | ManaPurchase
+  | SignupBonus
   | CertMint
   | CertTransfer
   | CertPayMana
@@ -38,9 +38,8 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'UNIQUE_BETTOR_BONUS'
     | 'BETTING_STREAK_BONUS'
     | 'CANCEL_UNIQUE_BETTOR_BONUS'
-    | 'COMMENT_BOUNTY'
-    | 'REFUND_COMMENT_BOUNTY'
     | 'MANA_PURCHASE'
+    | 'SIGNUP_BONUS'
     | 'CERT_MINT' // Create a new cert
     | 'CERT_TRANSFER' // Transfer cert ownership
     | 'CERT_PAY_MANA' // Transfer mana for a cert
@@ -154,35 +153,6 @@ type CancelUniqueBettorBonus = {
   }
 }
 
-type CommentBountyDeposit = {
-  fromType: 'USER'
-  toType: 'BANK'
-  category: 'COMMENT_BOUNTY'
-  data: {
-    contractId: string
-  }
-}
-
-type CommentBountyWithdrawal = {
-  fromType: 'BANK'
-  toType: 'USER'
-  category: 'COMMENT_BOUNTY'
-  data: {
-    contractId: string
-    commentId: string
-  }
-}
-
-// Not currently used
-type CommentBountyRefund = {
-  fromType: 'BANK'
-  toType: 'USER'
-  category: 'REFUND_COMMENT_BOUNTY'
-  data: {
-    contractId: string
-  }
-}
-
 type ManaPurchase = {
   fromType: 'BANK'
   toType: 'USER'
@@ -193,6 +163,12 @@ type ManaPurchase = {
   }
 }
 
+type SignupBonus = {
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'SIGNUP_BONUS'
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -200,9 +176,8 @@ export type ReferralTxn = Txn & Referral
 export type BettingStreakBonusTxn = Txn & BettingStreakBonus
 export type UniqueBettorBonusTxn = Txn & UniqueBettorBonus
 export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus
-export type CommentBountyDepositTxn = Txn & CommentBountyDeposit
-export type CommentBountyWithdrawalTxn = Txn & CommentBountyWithdrawal
 export type ManaPurchaseTxn = Txn & ManaPurchase
+export type SignupBonusTxn = Txn & SignupBonus
 export type CertTxn = Txn & CertId
 export type CertMintTxn = CertTxn & CertMint
 export type CertTransferTxn = CertTxn & CertTransfer

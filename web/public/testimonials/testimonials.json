@@ -1,0 +1,32 @@
+{
+  "testimonials": [
+    {
+      "testimonial": "I and many of my friends visit their site daily or at least weekly, and I often link them on Mantic Mondays.",
+      "name": "Scott Alexander",
+      "credit": "Astral Codex Ten",
+      "icon": "testimonials/astralCodexTen.png",
+      "src": "https://astralcodexten.substack.com/"
+    },
+    {
+      "testimonial": "Manifold is engaging, great for testing out my predictions, and ultimately a ton of fun to play with!",
+      "name": "Anthony Giovannetti",
+      "credit": "Slay the Spire",
+      "icon": "testimonials/snecko.jpeg",
+      "src": "https://manifold.markets/SneakySly"
+    },
+    {
+      "testimonial": "I've now been seriously using manifold.markets for like a couple of weeks and I would slay anybody who tried to stop me",
+      "name": "Eliezer Yudkowsky",
+      "credit": "AI Researcher",
+      "icon": "testimonials/eliezerYudkowsky.jpeg",
+      "src": "https://twitter.com/ESYudkowsky"
+    },
+    {
+      "testimonial": "My viewers have been using this site to track in-community humor for a while now and all of them love how simple it is to use.",
+      "name": "Destiny",
+      "credit": "Live Streamer",
+      "icon": "testimonials/destinyicon.jpg",
+      "src": "https://www.youtube.com/@destiny"
+    }
+  ]
+}

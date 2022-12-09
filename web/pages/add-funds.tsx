@@ -14,6 +14,7 @@ import {
   FundsSelector,
   OtherWaysToGetMana,
 } from 'web/components/add-funds-modal'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const WEB_PRICES = {
   [formatMoney(1000)]: 1000,
@@ -47,7 +48,8 @@ export default function AddFundsPage() {
           <Title className="!mt-0" text="Get Mana" />
 
           <div className="mb-6">
-            Buy mana (M$) to trade in your favorite markets.
+            Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
+            markets.
             <div className="italic">Not redeemable for cash.</div>
           </div>
 

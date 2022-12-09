@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, isEqual, mapValues, sortBy } from 'lodash'
+import { groupBy } from 'lodash'
 
 import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
@@ -9,13 +9,13 @@ import { PortfolioMetrics, User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
 import {
-  calculateCreatorVolume,
   calculateNewPortfolioMetrics,
   calculateNewProfit,
-  calculateMetricsByContract,
   calculateCreatorTraders,
+  calculateMetricsByContract,
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
+import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
@@ -33,7 +33,12 @@ export const scheduleUpdateUserMetrics = functions.pubsub
   })
 
 export const updateusermetrics = newEndpointNoAuth(
-  { timeoutSeconds: 2000, memory: '16GiB', minInstances: 0 },
+  {
+    timeoutSeconds: 2000,
+    memory: '16GiB',
+    minInstances: 0,
+    secrets: ['API_SECRET'],
+  },
   async (_req) => {
     await updateUserMetrics()
     return { success: true }
@@ -53,7 +58,7 @@ export async function updateUserMetrics() {
 
   const now = Date.now()
   const monthAgo = now - DAY_MS * 30
-  const writer = firestore.bulkWriter({ throttling: false })
+  const writer = firestore.bulkWriter()
 
   // we need to update metrics for contracts that resolved up through a month ago,
   // for the purposes of computing the daily/weekly/monthly profit on them
@@ -73,7 +78,6 @@ export async function updateUserMetrics() {
           .map((c) => c.id)
       )
       const portfolioHistory = await loadPortfolioHistory(user.id, now)
-      const newCreatorVolume = calculateCreatorVolume(userContracts)
       const newCreatorTraders = calculateCreatorTraders(userContracts)
 
       const newPortfolio = calculateNewPortfolioMetrics(
@@ -97,7 +101,8 @@ export async function updateUserMetrics() {
 
       const metricsByContract = calculateMetricsByContract(
         metricRelevantBetsByContract,
-        contractsById
+        contractsById,
+        user
       )
 
       const contractRatios = userContracts
@@ -137,10 +142,10 @@ export async function updateUserMetrics() {
       for (const metrics of metricsByContract) {
         writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
       }
+
       return {
         user: user,
         fields: {
-          creatorVolumeCached: newCreatorVolume,
           creatorTraders: newCreatorTraders,
           profitCached: newProfit,
           nextLoanCached: nextLoanPayout ?? 0,
@@ -151,33 +156,9 @@ export async function updateUserMetrics() {
     100
   )
 
-  const periods = ['daily', 'weekly', 'monthly', 'allTime'] as const
-  const periodRanksByUserId = periods.map((period) => {
-    const rankedUpdates = sortBy(
-      userUpdates,
-      ({ fields }) => -fields.profitCached[period]
-    )
-    return Object.fromEntries(
-      rankedUpdates.map((update, i) => [update.user.id, i + 1])
-    )
-  })
-
   for (const { user, fields } of userUpdates) {
-    const profitRankCached = Object.fromEntries(
-      periods.map((period, i) => {
-        return [period, periodRanksByUserId[i][user.id]]
-      })
-    )
-    const update = { profitRankCached, ...fields }
-    const currValues = mapValues(
-      update,
-      (_, key: keyof typeof update) => user[key]
-    )
-
-    // Skip writing if nothing changed.
-    if (!isEqual(currValues, update)) {
-      const userDoc = firestore.collection('users').doc(user.id)
-      writer.update(userDoc, update)
+    if (hasChanges(user, fields)) {
+      writer.update(firestore.collection('users').doc(user.id), fields)
     }
   }
 

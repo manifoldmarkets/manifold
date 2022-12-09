@@ -1,17 +1,16 @@
-import clsx from 'clsx'
 import { useState } from 'react'
 import { ArrangeHome } from 'web/components/arrange-home'
-import { Button } from 'web/components/buttons/button'
+import { buttonClass } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { getHomeItems } from '.'
+import Link from 'next/link'
 
 export default function Home() {
   const user = useUser()
@@ -44,19 +43,14 @@ export default function Home() {
   )
 }
 
-function DoneButton(props: { className?: string }) {
-  const { className } = props
-
+function DoneButton() {
   return (
-    <SiteLink href="/home">
-      <Button
-        size="lg"
-        color="blue"
-        className={clsx(className, 'flex whitespace-nowrap')}
-        onClick={() => track('done editing home')}
-      >
-        Done
-      </Button>
-    </SiteLink>
+    <Link
+      href="/home"
+      className={buttonClass('lg', 'blue')}
+      onClick={() => track('done editing home')}
+    >
+      Done
+    </Link>
   )
 }
