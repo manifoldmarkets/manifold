@@ -230,7 +230,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
           <Input
             type="text"
             placeholder={'Search'}
-            className="flex w-1/2 min-w-0 grow sm:w-max"
+            className="flex w-1/3 min-w-0 grow justify-between sm:w-max sm:justify-start"
             onClick={() => Router.push('/search')}
             onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
           />
