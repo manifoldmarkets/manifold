@@ -89,7 +89,9 @@ export const LikeButton = memo(function LikeButton(props: {
       setModalOpen(true)
     },
     () => {
-      handleLiked(!liked)
+      if (!disabled) {
+        handleLiked(!liked)
+      }
     }
   )
 
@@ -104,15 +106,12 @@ export const LikeButton = memo(function LikeButton(props: {
       })
     : undefined
 
-  const [tooltipHover, setTooltipHover] = useState(false)
-
   return (
     <>
       <Tooltip
         text={
           <UserLikedList
             likedUserInfo={likedUserInfo}
-            setToolTipHover={setTooltipHover}
             setModalOpen={() => setModalOpen(true)}
             user={user}
             userLiked={userLiked}
@@ -120,7 +119,6 @@ export const LikeButton = memo(function LikeButton(props: {
         }
         placement={'bottom'}
         noTap
-        externalOpen={tooltipHover}
       >
         <button
           disabled={disabled}
@@ -166,13 +164,11 @@ export const LikeButton = memo(function LikeButton(props: {
 
 function UserLikedList(props: {
   likedUserInfo: MultiUserLinkInfo[] | undefined
-  setToolTipHover: (hover: boolean) => void
   setModalOpen: () => void
   user?: User | null
   userLiked?: boolean
 }) {
-  const { likedUserInfo, user, setToolTipHover, setModalOpen, userLiked } =
-    props
+  const { likedUserInfo, user, setModalOpen, userLiked } = props
   const length = likedUserInfo?.length
   if (!likedUserInfo || !length || length <= 0) {
     return <div className="cursor-default">Like</div>
@@ -186,14 +182,12 @@ function UserLikedList(props: {
     userInfo = youLiked.concat(otherUsersLiked)
   }
   return (
-    <Col
-      className="min-w-24 items-start"
-      onMouseEnter={() => setToolTipHover(true)}
-      onMouseLeave={() => setToolTipHover(false)}
-    >
+    <Col className="min-w-24 items-start">
       <div className="mb-1 font-bold">Like</div>
       {userInfo.slice(0, LIKES_SHOWN).map((u) => {
-        return <UserLikedItem userInfo={u} />
+        return (
+          <UserLikedItem key={u.avatarUrl + u.username + u.name} userInfo={u} />
+        )
       })}
       {length > LIKES_SHOWN && (
         <div

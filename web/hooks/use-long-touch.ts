@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 
 /**
  * Function to for dual functionality of button, on touch and on long touch (ms)
@@ -13,7 +13,7 @@ export default function useLongTouch(
 ) {
   const [startLongTouch, setStartLongTouch] = useState(false)
   const [mouseState, setMouseState] = useState<
-    null | 'startPress' | 'endPress' | 'startTouch' | 'endTouch'
+    null | 'startPress' | 'endPress' | 'startTouch' | 'endTouch' | 'leaveTouch'
   >(null)
   const [timerId, setTimerId] = useState<
     ReturnType<typeof setTimeout> | undefined
@@ -28,6 +28,8 @@ export default function useLongTouch(
         onClick()
       }
       setStartLongTouch(false)
+    } else if (mouseState === 'leaveTouch') {
+      clearTimeout(timerId)
     } else if (mouseState === 'startTouch') {
       setTimerId(
         setTimeout(() => {
@@ -36,6 +38,7 @@ export default function useLongTouch(
         }, ms)
       )
     }
+    return clearTimeout(timerId)
   }, [mouseState])
 
   return {
@@ -47,6 +50,11 @@ export default function useLongTouch(
     onMouseUp: () => {
       if (mouseState === 'startPress') {
         setMouseState('endPress')
+      }
+    },
+    onMouseLeave: () => {
+      if (mouseState === 'startTouch') {
+        setMouseState('leaveTouch')
       }
     },
     onTouchStart: () => {

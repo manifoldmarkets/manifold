@@ -4,6 +4,7 @@ import {
   flip,
   offset,
   Placement,
+  safePolygon,
   shift,
   useFloating,
   useHover,
@@ -22,9 +23,9 @@ export function Tooltip(props: {
   placement?: Placement
   noTap?: boolean
   noFade?: boolean
-  externalOpen?: boolean
+  // externalOpen?: boolean
 }) {
-  const { text, children, className, noTap, noFade, externalOpen } = props
+  const { text, children, className, noTap, noFade } = props
 
   const arrowRef = useRef(null)
 
@@ -55,7 +56,7 @@ export function Tooltip(props: {
   const { x: arrowX, y: arrowY } = middlewareData.arrow ?? {}
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
-    useHover(context, { mouseOnly: noTap }),
+    useHover(context, { mouseOnly: noTap, handleClose: safePolygon() }),
     useRole(context, { role: 'tooltip' }),
   ])
   // which side of tooltip arrow is on. like: if tooltip is top-left, arrow is on bottom of tooltip
@@ -73,17 +74,11 @@ export function Tooltip(props: {
       </span>
       {/* conditionally render tooltip and fade in/out */}
       <Transition
-        show={externalOpen ? externalOpen : open}
+        show={open}
         enter="transition ease-out duration-50"
         enterFrom="opacity-0"
         enterTo="opacity-100"
-        leave={
-          noFade
-            ? ''
-            : externalOpen != undefined
-            ? 'transition ease-in duration-150 delay-100'
-            : 'transition ease-in duration-150'
-        }
+        leave={noFade ? '' : 'transition ease-in duration-150'}
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
         // div attributes

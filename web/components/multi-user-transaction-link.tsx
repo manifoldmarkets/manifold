@@ -57,7 +57,7 @@ export function MultiUserTransactionModal(props: {
       <Col className="relative items-start gap-4 rounded-md bg-white p-6">
         <span className={'sticky top-0 text-xl'}>{modalLabel}</span>
         {hasUsers && (
-          <Col className="max-h-96 w-full gap-4 overflow-y-scroll">
+          <Col className="max-h-96 w-full gap-4 overflow-y-auto">
             {userInfos.map((userInfo) => (
               <Row
                 key={userInfo.username + 'list'}
