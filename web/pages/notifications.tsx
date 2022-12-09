@@ -115,7 +115,7 @@ function RenderNotificationGroups(props: {
   const { notificationGroups } = props
 
   const grayLine = (
-    <div className="mx-auto my-0.5 h-[1.5px] w-[calc(100%-1rem)] bg-gray-300" />
+    <div className="mx-auto h-[1.5px] w-[calc(100%-1rem)] bg-gray-300" />
   )
   return (
     <>
