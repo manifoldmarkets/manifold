@@ -13,7 +13,7 @@ import {
 } from './utils'
 import { filterDefined } from '../../common/util/array'
 import { DAY_MS } from '../../common/util/time'
-import { partition, sortBy, uniq } from 'lodash'
+import { partition, sortBy, uniq, uniqBy } from 'lodash'
 import { Bet } from '../../common/bet'
 import { sendWeeklyPortfolioUpdateEmail } from './emails'
 import { contractUrl } from './utils'
@@ -146,7 +146,10 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           .orderBy('from.week.profit', 'asc')
           .limit(Math.round(WEEKLY_MOVERS_TO_SEND / 2))
       )
-      usersToContractMetrics[user.id] = [...topProfits, ...topLosses]
+      usersToContractMetrics[user.id] = uniqBy(
+        [...topProfits, ...topLosses],
+        (cm) => cm.contractId
+      )
     })
   )
 
@@ -242,10 +245,9 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         (differences) => Math.abs(differences.profit)
       ).reverse()
 
+      // Don't show markets with abs profit < 1
       const [winningInvestments, losingInvestments] = partition(
-        investmentValueDifferences.filter(
-          (diff) => diff.pastValue > 0.01 && Math.abs(diff.profit) > 1
-        ),
+        investmentValueDifferences.filter((diff) => Math.abs(diff.profit) > 1),
         (investmentsData: PerContractInvestmentsData) => {
           return investmentsData.profit > 0
         }
