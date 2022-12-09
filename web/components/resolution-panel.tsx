@@ -96,14 +96,12 @@ export function ResolutionPanel(props: {
             </>
           ) : outcome === 'CANCEL' ? (
             <>
-              All {PRESENT_BETS} will be returned. Unique {BETTOR} bonuses will
-              be withdrawn from your account
+              Cancel all trades and return money back to traders.
             </>
           ) : outcome === 'MKT' ? (
             <>
               {capitalize(PRESENT_BETS)} will be paid out at the probability you
               specify:
-              {/* You will earn {earnedFees}. */}
             </>
           ) : (
             <span className="text-gray-500">
