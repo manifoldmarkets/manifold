@@ -58,15 +58,15 @@ export const BinaryContractChart = (props: {
   )
   const data = useMemo(() => {
     return [
-      { x: new Date(start), y: startP },
+      { x: start, y: startP },
       ...betPoints,
-      { x: new Date(end ?? Date.now() + DAY_MS), y: endP },
+      { x: end ?? Date.now() + DAY_MS, y: endP },
     ]
   }, [start, startP, end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(
     end,
-    last(betPoints)?.x?.getTime(),
+    last(betPoints)?.x,
     Date.now()
   )
   const visibleRange = [start, rightmostDate]

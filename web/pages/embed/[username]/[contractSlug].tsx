@@ -38,8 +38,6 @@ const CONTRACT_BET_LOADING_OPTS = {
   filterChallenges: true,
 }
 
-type BetPoint = { x: number; y: number; obj?: { userAvatarUrl?: string } }
-
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
@@ -84,7 +82,7 @@ export async function getStaticPaths() {
 export default function ContractEmbedPage(props: {
   contract: Contract | null
   bets: Bet[]
-  betPoints: BetPoint[]
+  betPoints: HistoryPoint<Partial<Bet>>[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -103,18 +101,13 @@ export default function ContractEmbedPage(props: {
     afterTime: lastBetTime,
   })
   const bets = props.bets.concat(newBets ?? [])
-  const betPoints = props.betPoints
-    .map((p) => ({
-      x: new Date(p.x),
-      y: p.y,
-    }))
-    .concat(
-      newBets?.map((bet) => ({
-        x: new Date(bet.createdTime),
-        y: bet.probAfter,
-        obj: { userAvatarUrl: bet.userAvatarUrl },
-      })) ?? []
-    )
+  const betPoints = props.betPoints.concat(
+    newBets?.map((bet) => ({
+      x: bet.createdTime,
+      y: bet.probAfter,
+      obj: { userAvatarUrl: bet.userAvatarUrl },
+    })) ?? []
+  )
   if (!contract) {
     return <Custom404 />
   }

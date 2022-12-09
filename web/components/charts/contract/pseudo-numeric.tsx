@@ -86,15 +86,15 @@ export const PseudoNumericContractChart = (props: {
   )
   const data = useMemo(
     () => [
-      { x: new Date(start), y: startP },
+      { x: start, y: startP },
       ...betPoints,
-      { x: new Date(end ?? Date.now() + DAY_MS), y: endP },
+      { x: end ?? Date.now() + DAY_MS, y: endP },
     ],
     [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(
     end,
-    last(betPoints)?.x?.getTime(),
+    last(betPoints)?.x,
     Date.now()
   )
   const visibleRange = [start, rightmostDate]
