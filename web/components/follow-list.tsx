@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { useFollows } from 'web/hooks/use-follows'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
 import { Avatar } from './widgets/avatar'
@@ -8,10 +7,12 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 
-export function FollowList(props: { userIds: string[] }) {
-  const { userIds } = props
+export function FollowList(props: {
+  userIds: string[]
+  myFollowedIds: string[]
+}) {
+  const { userIds, myFollowedIds } = props
   const currentUser = useUser()
-  const followedUserIds = useFollows(currentUser?.id)
 
   const onFollow = (userId: string) => {
     if (!currentUser) return
@@ -31,9 +32,7 @@ export function FollowList(props: { userIds: string[] }) {
         <UserFollowItem
           key={userId}
           userId={userId}
-          isFollowing={
-            followedUserIds ? followedUserIds.includes(userId) : false
-          }
+          isFollowing={myFollowedIds ? myFollowedIds.includes(userId) : false}
           onFollow={() => onFollow(userId)}
           onUnfollow={() => onUnfollow(userId)}
           hideFollowButton={userId === currentUser?.id}

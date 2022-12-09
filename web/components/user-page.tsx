@@ -11,7 +11,9 @@ import {
 import toast from 'react-hot-toast'
 
 import { User } from 'web/lib/firebase/users'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser, useUserById, usePrefetchUsers } from 'web/hooks/use-user'
+import { useDiscoverUsers } from 'web/hooks/use-users'
+import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './layout/page'
@@ -21,13 +23,15 @@ import { Col } from './layout/col'
 import { Linkify } from './widgets/linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
+import { Modal } from './layout/modal'
+import { Tabs } from './layout/tabs'
 import { genHash } from 'common/util/random'
 import { QueryUncontrolledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments/comments-list'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { BetsList } from './bet/bets-list'
-import { FollowersButton, FollowingButton } from './buttons/following-button'
 import { UserFollowButton } from './buttons/follow-button'
+import { FollowList } from './follow-list'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { copyToClipboard } from 'web/lib/util/copy'
@@ -44,6 +48,7 @@ import { PostBanBadge, UserBadge } from './widgets/user-link'
 import Link from 'next/link'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
+import { TextButton } from 'web/components/buttons/text-button'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -319,15 +324,107 @@ export function defaultBannerUrl(userId: string) {
   return defaultBanner[genHash(userId)() % defaultBanner.length]
 }
 
-export function ProfilePublicStats(props: { user: User; className?: string }) {
+type FollowsDialogTab = 'following' | 'followers'
+
+function ProfilePublicStats(props: { user: User; className?: string }) {
   const { user, className } = props
+  const [isOpen, setIsOpen] = useState(false)
+  const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
+  const followingIds = useFollows(user.id)
+  const followerIds = useFollowers(user.id)
+
+  const openDialog = (tabName: FollowsDialogTab) => {
+    setIsOpen(true)
+    setFollowsTab(tabName)
+  }
+
   return (
-    <Row className={'flex-wrap items-center gap-3'}>
-      <FollowingButton user={user} className={className} />
-      <FollowersButton user={user} className={className} />
+    <Row className="flex-wrap items-center gap-3">
+      <TextButton onClick={() => openDialog('following')} className={className}>
+        <span className={clsx('font-semibold')}>
+          {followingIds?.length ?? ''}
+        </span>{' '}
+        Following
+      </TextButton>
+      <TextButton onClick={() => openDialog('followers')} className={className}>
+        <span className={clsx('font-semibold')}>
+          {followerIds?.length ?? ''}
+        </span>{' '}
+        Followers
+      </TextButton>
+
+      <FollowsDialog
+        user={user}
+        defaultTab={followsTab}
+        followingIds={followingIds ?? []}
+        followerIds={followerIds ?? []}
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+      />
       {/* <ReferralsButton user={user} className={className} /> */}
       <GroupsButton user={user} className={className} />
       <UserLikedContractsButton user={user} className={className} />
     </Row>
+  )
+}
+
+function FollowsDialog(props: {
+  user: User
+  followingIds: string[]
+  followerIds: string[]
+  defaultTab: FollowsDialogTab
+  isOpen: boolean
+  setIsOpen: (isOpen: boolean) => void
+}) {
+  const { user, followingIds, followerIds, defaultTab, isOpen, setIsOpen } =
+    props
+
+  const currentUser = useUser()
+  const myFollowedIds = useFollows(currentUser?.id) ?? []
+
+  // mqp: this is a ton of work, don't fetch it unless someone looks.
+  // if you want it to be faster, then you gotta precompute stuff for it somewhere
+  const discoverUserIds = useDiscoverUsers(isOpen ? user.id : undefined)
+  usePrefetchUsers([...followerIds, ...followingIds, ...discoverUserIds])
+
+  return (
+    <Modal open={isOpen} setOpen={setIsOpen}>
+      <Col className="max-h-[90vh] rounded bg-white p-6 pb-2">
+        <div className="p-2 pb-1 text-xl">{user.name}</div>
+        <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
+        <Tabs
+          tabs={[
+            {
+              title: 'Following',
+              content: (
+                <FollowList
+                  userIds={followingIds}
+                  myFollowedIds={myFollowedIds}
+                />
+              ),
+            },
+            {
+              title: 'Followers',
+              content: (
+                <FollowList
+                  userIds={followerIds}
+                  myFollowedIds={myFollowedIds}
+                />
+              ),
+            },
+            {
+              title: 'Similar',
+              content: (
+                <FollowList
+                  userIds={discoverUserIds}
+                  myFollowedIds={myFollowedIds}
+                />
+              ),
+            },
+          ]}
+          defaultIndex={defaultTab === 'following' ? 0 : 1}
+        />
+      </Col>
+    </Modal>
   )
 }
