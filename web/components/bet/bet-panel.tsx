@@ -309,7 +309,7 @@ export function BuyPanel(props: {
         )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
           user?.balance ?? 0
         )}`
-      : (betAmount ?? 0) > 10 && probChange >= 0.3 && bankrollFraction <= 1
+      : (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
       ? `Are you sure you want to move the market by ${displayedDifference}?`
       : undefined
 
@@ -317,6 +317,8 @@ export function BuyPanel(props: {
   const hideInput =
     mobileView &&
     (user?.createdTime ?? 0) > Date.now() - 7 * 24 * 60 * 60 * 1000
+
+  const displayError = !!outcome
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
@@ -399,7 +401,7 @@ export function BuyPanel(props: {
           inputClassName="w-full max-w-none"
           amount={betAmount}
           onChange={onBetChange}
-          error={error}
+          error={displayError ? error : undefined}
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}

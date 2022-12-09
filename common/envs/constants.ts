@@ -87,6 +87,31 @@ export const CORE_USERNAMES = [
   'DavidChee',
   'mqp',
   'IngaWei',
+  'ManifoldMarkets',
+]
+
+export const CHECK_USERNAMES = [
+  'EliezerYudkowsky',
+  'memestiny',
+  'ScottAlexander',
+  'Aella',
+  'BTE',
+  'jack',
+  'Yev',
+  'ZviMowshowitz',
+  'NathanpmYoung',
+  'kolotom99',
+  'SneakySly',
+  'IsaacKing',
+  'MattP',
+  'egroj',
+  'dreev',
+  'MartinRandall',
+  'LivInTheLookingGlass',
+  'LarsDoucet',
+  'Conflux',
+  'GavrielK',
+  'NcyRocks',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

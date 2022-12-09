@@ -73,14 +73,14 @@ export function YesNoCancelSelector(props: {
   selected: resolution | undefined
   onSelect: (selected: resolution) => void
   className?: string
-  btnClassName?: string
 }) {
   const { selected, onSelect } = props
 
-  const btnClassName = clsx('px-6 flex-1 rounded-3xl', props.btnClassName)
+  const btnClassName =
+    'px-0 !py-2 flex-1 border-2 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none'
 
   return (
-    <Col className="gap-2">
+    <Row className="gap-1">
       {/* Should ideally use a radio group instead of buttons */}
       <Button
         color={selected === 'YES' ? 'green' : 'gray'}
@@ -113,7 +113,7 @@ export function YesNoCancelSelector(props: {
       >
         N/A
       </Button>
-    </Col>
+    </Row>
   )
 }
 

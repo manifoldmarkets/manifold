@@ -54,12 +54,12 @@ import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { HistoryPoint } from 'web/components/charts/generic-charts'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
   filterChallenges: true,
 }
-export type BetPoint = { x: number; y: number; bet?: Partial<Bet> }
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -88,10 +88,10 @@ export async function getStaticPropz(props: {
           removeUndefinedProps({
             x: bet.createdTime,
             y: bet.probAfter,
-            bet: includeAvatar
+            obj: includeAvatar
               ? { userAvatarUrl: bet.userAvatarUrl }
               : undefined,
-          }) as BetPoint
+          }) as HistoryPoint<Partial<Bet>>
       )
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
@@ -131,7 +131,7 @@ export default function ContractPage(props: {
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
-  betPoints: BetPoint[]
+  betPoints: HistoryPoint<Partial<Bet>>[]
   totalBets: number
   topContractMetrics: ContractMetric[]
   totalPositions: number
@@ -200,21 +200,20 @@ export function ContractPageContent(
   const totalBets = props.totalBets + (newBets?.length ?? 0)
   const bets = props.bets.concat(newBets ?? [])
   const betPoints = props.betPoints.concat(
-    newBets?.map(
-      (bet) =>
-        ({
-          x: bet.createdTime,
-          y: bet.probAfter,
-          bet: { userAvatarUrl: bet.userAvatarUrl },
-        } as BetPoint)
-    ) ?? []
+    newBets?.map((bet) => ({
+      x: bet.createdTime,
+      y: bet.probAfter,
+      obj: { userAvatarUrl: bet.userAvatarUrl },
+    })) ?? []
   )
 
   const creator = useUserById(contract.creatorId) ?? null
 
-  const { isResolved, question, outcomeType } = contract
+  const { isResolved, question, outcomeType, resolution } = contract
 
   const allowTrade = tradingAllowed(contract)
+  const isAdmin = useAdmin()
+  const allowResolve = !isResolved && (isCreator || isAdmin) && !!user
 
   const ogCardProps = getOpenGraphProps(contract)
 
@@ -243,14 +242,7 @@ export function ContractPageContent(
     <Page
       rightSidebar={
         user || user === null ? (
-          <>
-            <ContractPageSidebar contract={contract} />
-            {isCreator && (
-              <Col className={'xl:hidden'}>
-                <RecommendedContractsWidget contract={contract} />
-              </Col>
-            )}
-          </>
+          <ContractPageSidebar contract={contract} />
         ) : (
           <div />
         )
@@ -311,7 +303,26 @@ export function ContractPageContent(
           <NumericBetPanel className="xl:hidden" contract={contract} />
         )}
 
-        {isResolved && (
+        {allowResolve &&
+          (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
+            <NumericResolutionPanel
+              isAdmin={isAdmin}
+              creator={user}
+              isCreator={isCreator}
+              contract={contract}
+            />
+          ) : (
+            outcomeType === 'BINARY' && (
+              <ResolutionPanel
+                isAdmin={isAdmin}
+                creator={user}
+                isCreator={isCreator}
+                contract={contract}
+              />
+            )
+          ))}
+
+        {isResolved && resolution !== 'CANCEL' && (
           <>
             <ContractLeaderboard
               topContractMetrics={topContractMetrics.filter(
@@ -324,7 +335,7 @@ export function ContractPageContent(
           </>
         )}
 
-        <BetsSummary className="mb-4 px-2" contract={contract} />
+        <BetsSummary className="mt-4 mb-2 px-2" contract={contract} />
 
         <div ref={tabsContainerRef}>
           <ContractTabs
@@ -342,7 +353,7 @@ export function ContractPageContent(
           />
         </div>
       </Col>
-      {!isCreator && <RecommendedContractsWidget contract={contract} />}
+      <RecommendedContractsWidget contract={contract} />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
@@ -373,22 +384,6 @@ function ContractPageSidebar(props: { contract: Contract }) {
           <BetPanel
             className="hidden xl:flex"
             contract={contract as CPMMBinaryContract}
-          />
-        ))}
-      {allowResolve &&
-        (isNumeric || isPseudoNumeric ? (
-          <NumericResolutionPanel
-            isAdmin={isAdmin}
-            creator={user}
-            isCreator={isCreator}
-            contract={contract}
-          />
-        ) : (
-          <ResolutionPanel
-            isAdmin={isAdmin}
-            creator={user}
-            isCreator={isCreator}
-            contract={contract}
           />
         ))}
     </Col>

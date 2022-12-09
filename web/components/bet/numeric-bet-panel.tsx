@@ -143,6 +143,8 @@ function NumericBuyPanel(props: {
     betAmount && bucketChoice ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
+  const displayError = !!bucketChoice
+
   return (
     <>
       <div className="my-3 text-left text-sm text-gray-500">
@@ -160,7 +162,7 @@ function NumericBuyPanel(props: {
         inputClassName="w-full max-w-none"
         amount={betAmount}
         onChange={onBetChange}
-        error={error}
+        error={displayError ? error : undefined}
         setError={setError}
         disabled={isSubmitting}
       />

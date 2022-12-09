@@ -32,14 +32,19 @@ import {
 export function NotificationItem(props: {
   notification: Notification
   isChildOfGroup?: boolean
-  isIncomeNotification?: boolean
 }) {
-  const { notification, isChildOfGroup, isIncomeNotification } = props
+  const { notification, isChildOfGroup } = props
   const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted, setHighlighted] = useState(!notification.isSeen)
-
-  if (isIncomeNotification) {
+  const incomeSourceTypes = [
+    'bonus',
+    'tip',
+    'loan',
+    'betting_streak_bonus',
+    'tip_and_like',
+  ]
+  if (incomeSourceTypes.includes(sourceType)) {
     return (
       <IncomeNotificationItem
         notification={notification}
@@ -335,15 +340,22 @@ function MarketResolvedNotification(props: {
   const profit = userPayout - userInvestment
   const profitable = profit >= 0
   const subtitle =
-    sourceText === 'CANCEL' ? (
-      <>Your {formatMoney(userInvestment)} invested has been returned to you</>
-    ) : profitable ? (
-      <>
-        Your {formatMoney(userInvestment)} investment won{' '}
-        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit!
-      </>
+    userInvestment > 0 ? (
+      sourceText === 'CANCEL' ? (
+        <>
+          Your {formatMoney(userInvestment)} invested has been returned to you
+        </>
+      ) : profitable ? (
+        <>
+          Your {formatMoney(userInvestment)} investment won{' '}
+          <span className="text-teal-600">+{formatMoney(profit)}</span> in
+          profit!
+        </>
+      ) : (
+        <>You lost {formatMoney(Math.abs(profit))}</>
+      )
     ) : (
-      <>You lost {formatMoney(Math.abs(profit))} ... Better luck next time!</>
+      <></>
     )
 
   const resolutionDescription = () => {
@@ -387,8 +399,7 @@ function MarketResolvedNotification(props: {
           username={sourceUserUsername || ''}
           className={'relative flex-shrink-0 hover:text-indigo-500'}
         />{' '}
-        cancelled
-        {isChildOfGroup && <span>the question</span>}
+        cancelled {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
           <span>
             {' '}
@@ -427,7 +438,10 @@ function MarketResolvedNotification(props: {
       setHighlighted={setHighlighted}
       subtitle={subtitle}
       icon={
-        <AvatarNotificationIcon notification={notification} symbol={'☑️'} />
+        <AvatarNotificationIcon
+          notification={notification}
+          symbol={sourceText === 'CANCEL' ? '🚫' : '☑️'}
+        />
       }
       link={getSourceUrl(notification)}
     >
@@ -703,12 +717,12 @@ function UserLikeNotification(props: {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
   const [open, setOpen] = useState(false)
   const { sourceUserName, sourceType, sourceText } = notification
-  const otherRelatedNotifications: Notification[] =
-    notification.data?.otherNotifications ?? []
-  const multipleReactions = otherRelatedNotifications.length > 1
+  const relatedNotifications: Notification[] = notification.data
+    ?.relatedNotifications ?? [notification]
+  const multipleReactions = relatedNotifications.length > 1
   const reactorsText = multipleReactions
-    ? `${sourceUserName} & ${otherRelatedNotifications.length - 1} other${
-        otherRelatedNotifications.length - 1 > 1 ? 's' : ''
+    ? `${sourceUserName} & ${relatedNotifications.length - 1} other${
+        relatedNotifications.length > 2 ? 's' : ''
       }`
     : sourceUserName
   return (
@@ -730,7 +744,7 @@ function UserLikeNotification(props: {
       {sourceType === 'comment_like' ? ' comment on ' : ' market '}
       <QuestionOrGroupLink notification={notification} />
       <MultiUserReactionModal
-        similarNotifications={otherRelatedNotifications}
+        similarNotifications={relatedNotifications}
         modalLabel={'Who dunnit?'}
         open={open}
         setOpen={setOpen}

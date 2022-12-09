@@ -68,9 +68,9 @@ const getDpmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
 
     if (topN != null && answers.length > topN) {
       const y = [...probs.slice(0, topN), sum(probs.slice(topN))]
-      points.push({ x: new Date(bet.createdTime), y, obj: bet })
+      points.push({ x: bet.createdTime, y, obj: bet })
     } else {
-      points.push({ x: new Date(bet.createdTime), y: probs, obj: bet })
+      points.push({ x: bet.createdTime, y: probs, obj: bet })
     }
   }
   return points
@@ -92,9 +92,9 @@ const getCpmmBetPoints = (answers: Answer[], bets: Bet[], topN?: number) => {
 
     if (topN != null && probs.length > topN) {
       const y = [...probs.slice(0, topN), sum(probs.slice(topN))]
-      points.push({ x: new Date(bet.createdTime), y, obj: bet })
+      points.push({ x: bet.createdTime, y, obj: bet })
     } else {
-      points.push({ x: new Date(bet.createdTime), y: probs, obj: bet })
+      points.push({ x: bet.createdTime, y: probs, obj: bet })
     }
   }
   return points
@@ -161,10 +161,10 @@ export const ChoiceContractChart = (props: {
         ? [...endProbs.slice(0, topN), sum(endProbs.slice(topN))]
         : endProbs
     return [
-      { x: new Date(start), y: startY },
+      { x: start, y: startY },
       ...betPoints,
       {
-        x: new Date(end ?? Date.now() + DAY_MS),
+        x: end ?? Date.now() + DAY_MS,
         y: endY,
       },
     ]
@@ -172,7 +172,7 @@ export const ChoiceContractChart = (props: {
 
   const rightmostDate = getRightmostVisibleDate(
     end,
-    last(betPoints)?.x?.getTime(),
+    last(betPoints)?.x,
     Date.now()
   )
   const visibleRange = [start, rightmostDate]

@@ -35,10 +35,6 @@ export default function Analytics() {
             title: 'Market Stats',
             content: <WasabiCharts />,
           },
-          {
-            title: 'Google Analytics',
-            content: <FirebaseAnalytics />,
-          },
         ]}
       />
     </Page>
@@ -394,26 +390,6 @@ export function CustomAnalytics(props: Stats) {
       />
       <Spacer h={8} />
     </Col>
-  )
-}
-
-export function FirebaseAnalytics() {
-  // Edit dashboard at https://datastudio.google.com/u/0/reporting/faeaf3a4-c8da-4275-b157-98dad017d305/page/Gg3/edit
-
-  return (
-    <>
-      <p className="text-gray-500">
-        Less accurate; includes all viewers (not just signed-in users).
-      </p>
-      <Spacer h={4} />
-      <iframe
-        className="w-full border-0"
-        height={2200}
-        src="https://datastudio.google.com/embed/reporting/faeaf3a4-c8da-4275-b157-98dad017d305/page/Gg3"
-        frameBorder="0"
-        allowFullScreen
-      />
-    </>
   )
 }
 

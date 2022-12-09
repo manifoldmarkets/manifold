@@ -42,7 +42,6 @@ export type User = {
   referredByUserId?: string
   referredByContractId?: string
   referredByGroupId?: string
-  lastPingTime?: number
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
@@ -71,6 +70,7 @@ export type PrivateUser = {
     botEnabled?: boolean
     needsRelinking?: boolean
   }
+  destinySubClaimed?: boolean
   pushToken?: string
   rejectedPushNotificationsOn?: number
   interestedInPushNotifications?: boolean

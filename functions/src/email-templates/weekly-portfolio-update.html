@@ -62,6 +62,9 @@
         td.probs{
             text-align: right; padding-left: 10px; min-width: 115px
         }
+        th.labels{
+            width:190px;
+        }
     </style>
     <!--[if mso]>
       <noscript>
@@ -264,7 +267,7 @@
                                                 style="border-collapse:collapse;border-spacing:0px; ">
                                                 <tbody>
                                                     <tr>
-                                                      <th style='width: 170px'>
+                                                      <th class='labels'>
                                                         🔥 Prediction streak
                                                       </th>
                                                     <td>
@@ -273,10 +276,10 @@
                                                     </tr>
                                                     <tr>
                                                       <th>
-                                                        💸 Tips received
+                                                        ❤️ Likes received
                                                       </th>
                                                     <td>
-                                                        {{tips_received}}
+                                                        {{likes_received}}
                                                     </td>
                                                     </tr>
                                                     <tr>
@@ -297,8 +300,8 @@
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <th style='width: 55px'>
-                                                      🥳 Traders attracted
+                                                    <th>
+                                                      👯 Market participants
                                                     </th>
                                                   <td>
                                                     {{unique_bettors}}
@@ -311,7 +314,7 @@
                                         </td>
                                     </tr>
 
-                                    <tr>
+                                    <tr style='{{question1Display}}'>
                                         <td align="left"
                                             style="font-size:0px;padding:10px 25px;padding-top:20px;padding-bottom:0px;word-break:break-word;">
                                             <div
@@ -330,7 +333,7 @@
                                             style="font-size:0; padding-left:10px;padding-top:10px;padding-bottom:0;word-break:break-word;">
                                             <table  role="presentation">
                                                 <tbody>
-                                                <tr>
+                                                <tr style='{{question1Display}}'>
                                                     <td class='question'>
                                                         <a class='question' href='{{question1Url}}'>
                                                         {{question1Title}}
@@ -347,7 +350,8 @@
                                                         </p>
                                                         </p>
                                                     </td>
-                                                </tr><tr>
+                                                </tr>
+                                                <tr style='{{question2Display}}'>
                                                     <td class='question'>
                                                         <a class='question' href='{{question2Url}}'>
                                                         {{question2Title}}
@@ -364,7 +368,8 @@
                                                         </p>
                                                         </p>
                                                     </td>
-                                                </tr><tr>
+                                                </tr>
+                                                <tr style='{{question3Display}}'>
 <!--                                                    <td style="{{investment_value_style}}">-->
                                                     <td class='question'>
                                                         <a class='question' href='{{question3Url}}'>
@@ -382,7 +387,8 @@
                                                         </p>
                                                         </p>
                                                     </td>
-                                                </tr><tr>
+                                                </tr>
+                                                <tr style='{{question4Display}}'>
 <!--                                                    <td style="{{investment_value_style}}">-->
                                                     <td class='question'>
                                                         <a class='question' href='{{question4Url}}'>
@@ -397,6 +403,37 @@
                                                         <p class='change' style='{{question4ChangeStyle}}'>
                                                         {{question4Change}}
 <!--                                                            +17%-->
+                                                        </p>
+                                                        </p>
+                                                    </td>
+                                                </tr>
+
+                                                <tr style='{{question5Display}}'>
+                                                    <td class='question'>
+                                                        <a class='question' href='{{question5Url}}'>
+                                                        {{question5Title}}
+                                                        </a>
+                                                    </td>
+                                                    <td class='probs'>
+                                                      <p class='prob'>
+                                                        {{question5Prob}}
+                                                        <p class='change' style='{{question5ChangeStyle}}'>
+                                                        {{question5Change}}
+                                                        </p>
+                                                        </p>
+                                                    </td>
+                                                </tr>
+                                                <tr style='{{question6Display}}'>
+                                                    <td class='question'>
+                                                        <a class='question' href='{{question6Url}}'>
+                                                        {{question6Title}}
+                                                        </a>
+                                                    </td>
+                                                    <td class='probs'>
+                                                      <p class='prob'>
+                                                        {{question6Prob}}
+                                                        <p class='change' style='{{question6ChangeStyle}}'>
+                                                        {{question6Change}}
                                                         </p>
                                                         </p>
                                                     </td>

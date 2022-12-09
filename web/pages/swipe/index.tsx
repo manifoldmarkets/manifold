@@ -28,6 +28,7 @@ import {
   MinusIcon,
   PlusIcon,
 } from '@heroicons/react/solid'
+import { Page } from 'web/components/layout/page'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(
@@ -70,30 +71,32 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   }
 
   return (
-    <main
-      className="h-screen overflow-hidden overscroll-none bg-gray-50 lg:py-6"
-      style={{ height }}
-    >
-      <div className="relative mx-auto h-full max-w-lg">
-        {cards.map((c) => (
-          <Card
-            contract={c}
-            onLeave={() => setIndex((i) => i + 1)}
-            threshold={Math.min(128, width * 0.15)}
-            key={c.id}
-          />
-        ))}
-        {/* TODO: users should never run out of cards */}
-        {!cards.length && (
-          <div className="flex h-full w-full flex-col items-center justify-center">
-            No more cards!
-            <SiteLink href="/home" className="text-indigo-700">
-              Return home
-            </SiteLink>
-          </div>
-        )}
+    <Page>
+      <div
+        className="absolute inset-0 flex justify-center overflow-hidden overscroll-none pb-[58px] lg:pb-0"
+        style={{ height }}
+      >
+        <div className="relative max-w-lg grow">
+          {cards.map((c) => (
+            <Card
+              contract={c}
+              onLeave={() => setIndex((i) => i + 1)}
+              threshold={Math.min(128, width * 0.15)}
+              key={c.id}
+            />
+          ))}
+          {/* TODO: users should never run out of cards */}
+          {!cards.length && (
+            <div className="flex h-full w-full flex-col items-center justify-center">
+              No more cards!
+              <SiteLink href="/home" className="text-indigo-700">
+                Return home
+              </SiteLink>
+            </div>
+          )}
+        </div>
       </div>
-    </main>
+    </Page>
   )
 }
 

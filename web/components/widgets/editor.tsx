@@ -35,12 +35,7 @@ import { generateReact, insertContent } from '../editor/utils'
 import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { DisplaySpoiler } from '../editor/spoiler'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
-
-const DisplayImage = Image.configure({
-  HTMLAttributes: {
-    class: 'max-h-96',
-  },
-})
+import { DisplayImage } from '../editor/image'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
@@ -75,7 +70,8 @@ export const proseClass = (size: 'sm' | 'md' | 'lg') =>
     size !== 'lg' && 'prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0',
     '[&>p]:prose-li:my-0',
     'text-gray-900 prose-blockquote:text-gray-600',
-    'prose-a:font-light prose-blockquote:font-light font-light'
+    'prose-a:font-light prose-blockquote:font-light font-light',
+    'break-anywhere'
   )
 
 export function useTextEditor(props: {

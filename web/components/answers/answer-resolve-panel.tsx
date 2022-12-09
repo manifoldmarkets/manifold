@@ -36,6 +36,11 @@ export function AnswerResolvePanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
   const [warning, setWarning] = useState<string | undefined>(undefined)
 
+  const chosenText =
+    contract.answers[
+      (contract.outcomeType === 'FREE_RESPONSE' ? -1 : 0) + parseInt(answers[0])
+    ]?.text ?? 'an answer'
+
   useEffect(() => {
     if (resolveOption === 'CANCEL') {
       setWarning(
@@ -132,6 +137,14 @@ export function AnswerResolvePanel(props: {
                 ? 'blue'
                 : 'indigo'
             }
+            label={
+              resolveOption === 'CANCEL'
+                ? 'N/A'
+                : resolveOption === 'CHOOSE'
+                ? chosenText
+                : `${answers.length} answers`
+            }
+            marketTitle={contract.question}
             disabled={
               !resolveOption ||
               (resolveOption === 'CHOOSE' && !answers.length) ||

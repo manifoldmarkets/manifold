@@ -87,6 +87,7 @@ export function FloatingFormatMenu(props: {
         <>
           <input
             type="text"
+            inputMode="url"
             className="h-5 border-0 bg-inherit text-sm !shadow-none !ring-0"
             placeholder="Type or paste a link"
             onChange={(e) => setUrl(e.target.value)}

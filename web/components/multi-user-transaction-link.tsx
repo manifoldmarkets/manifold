@@ -1,10 +1,10 @@
 import { formatMoney } from 'common/util/format'
-import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
+import { Notification } from 'common/notification'
 
 export type MultiUserLinkInfo = {
   name: string
@@ -41,7 +41,6 @@ export function MultiUserTransactionLink(props: {
       />
     </span>
   )
-}
 
 export function MultiUserTransactionModal(props: {
   userInfos: MultiUserLinkInfo[]

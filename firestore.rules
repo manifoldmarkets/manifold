@@ -22,6 +22,10 @@ service cloud.firestore {
       allow read;
     }
 
+     match /destiny-subs/{sub} {
+      allow read;
+    }
+
     match /globalConfig/globalConfig {
       allow read;
       allow update: if isAdmin()
@@ -33,7 +37,7 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
+                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -46,6 +50,7 @@ service cloud.firestore {
                           // && (get(/databases/$(database)/documents/users/$(request.resource.data.referredByUserId)).referredByUserId == resource.data.id);
       match /events/{eventId} {
         allow create: if (request.auth == null && userId == 'NO_USER') || userId == request.auth.uid;
+        allow read: if userId == request.auth.uid;
       }
     }
 
@@ -101,7 +106,7 @@ service cloud.firestore {
                          .hasOnly(['blockedByUserIds'])
                        && request.resource.data.blockedByUserIds.toSet().difference(resource.data.blockedByUserIds.toSet()).hasOnly([request.auth.uid]);
 
-      allow delete: if (userId == request.auth.uid || isAdmin());              
+      allow delete: if (userId == request.auth.uid || isAdmin());
     }
 
     match /private-users/{userId}/views/{viewId} {
