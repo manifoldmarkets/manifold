@@ -44,24 +44,22 @@ export function combineAndSumIncomeNotifications(
 
       let sum = 0
       notificationsForSourceTitle.forEach(
-        (notification) => (sum = parseInt(notification.sourceText ?? '0') + sum)
+        (notification) => (sum = parseInt(notification.sourceText) + sum)
       )
       const uniqueUsers = uniqBy(
         notificationsForSourceTitle.map((notification) => {
-          let thisSum = 0
+          let sum = 0
           notificationsForSourceTitle
             .filter(
               (n) => n.sourceUserUsername === notification.sourceUserUsername
             )
-            .forEach((n) => (thisSum = parseInt(n.sourceText ?? '0') + thisSum))
+            .forEach((n) => (sum = parseInt(n.sourceText) + sum))
           return {
-            username: notification.sourceUserUsername,
-            name: notification.sourceUserName,
-            avatarUrl: notification.sourceUserAvatarUrl,
-            amount: thisSum,
+            ...notification,
+            sum,
           } as MultiUserLinkInfo
         }),
-        (n) => n.username
+        (n) => n.sourceUserUsername
       )
 
       const newNotification = {
@@ -169,7 +167,9 @@ export function BonusIncomeNotification(props: {
 }) {
   const { notification, highlighted, setHighlighted } = props
   const { sourceText, data } = notification
-  const userLinks: MultiUserLinkInfo[] = data?.uniqueUsers ?? []
+  const userLinks: MultiUserLinkInfo[] = data?.uniqueUsers ?? [
+    { ...notification, sum: parseInt(sourceText) },
+  ]
   const [open, setOpen] = useState(false)
   return (
     <NotificationFrame
