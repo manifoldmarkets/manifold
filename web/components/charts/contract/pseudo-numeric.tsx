@@ -4,6 +4,7 @@ import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
 import { DAY_MS } from 'common/util/time'
+import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'
@@ -17,7 +18,6 @@ import {
 import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
@@ -34,16 +34,19 @@ const getScaleP = (min: number, max: number, isLogScale: boolean) => {
       : p * (max - min) + min
 }
 
-const getBetPoints = (bets: BetPoint[], scaleP: (p: number) => number) => {
-  return sortBy(bets, (b) => b.x).map((b) => ({
-    x: new Date(b.x),
-    y: scaleP(b.y),
-    obj: b,
+const getBetPoints = (
+  bets: HistoryPoint<Partial<Bet>>[],
+  scaleP: (p: number) => number
+) => {
+  return sortBy(bets, (b) => b.x).map((pt) => ({
+    x: pt.x,
+    y: scaleP(pt.y),
+    obj: pt.obj,
   }))
 }
 
 const PseudoNumericChartTooltip = (
-  props: TooltipProps<Date, HistoryPoint<BetPoint>>
+  props: TooltipProps<Date, HistoryPoint<Partial<Bet>>>
 ) => {
   const { prev, x, xScale } = props
   const [start, end] = xScale.domain()
@@ -51,8 +54,8 @@ const PseudoNumericChartTooltip = (
   if (!prev) return null
   return (
     <Row className="items-center gap-2">
-      {prev.obj?.bet?.userAvatarUrl && (
-        <Avatar size="xs" avatarUrl={prev.obj.bet?.userAvatarUrl} />
+      {prev.obj?.userAvatarUrl && (
+        <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
       )}{' '}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
       <span className="text-gray-600">{formatLargeNumber(prev.y)}</span>
@@ -62,11 +65,11 @@ const PseudoNumericChartTooltip = (
 
 export const PseudoNumericContractChart = (props: {
   contract: PseudoNumericContract
-  betPoints: BetPoint[]
+  betPoints: HistoryPoint<Partial<Bet>>[]
   width: number
   height: number
   color?: string
-  onMouseOver?: (p: HistoryPoint<BetPoint> | undefined) => void
+  onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
 }) => {
   const { contract, width, height, color, onMouseOver } = props
   const { min, max, isLogScale } = contract

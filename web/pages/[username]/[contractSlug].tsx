@@ -59,7 +59,8 @@ const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
   filterChallenges: true,
 }
-export type BetPoint = { x: number; y: number; bet?: Partial<Bet> }
+
+type BetPoint = { x: number; y: number; obj?: { userAvatarUrl?: string } }
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -83,15 +84,12 @@ export async function getStaticPropz(props: {
     : []
   const includeAvatar = totalBets < 1000
   const betPoints = useBetPoints
-    ? bets.map(
-        (bet) =>
-          removeUndefinedProps({
-            x: bet.createdTime,
-            y: bet.probAfter,
-            bet: includeAvatar
-              ? { userAvatarUrl: bet.userAvatarUrl }
-              : undefined,
-          }) as BetPoint
+    ? bets.map((bet) =>
+        removeUndefinedProps({
+          x: bet.createdTime,
+          y: bet.probAfter,
+          obj: includeAvatar ? { userAvatarUrl: bet.userAvatarUrl } : undefined,
+        })
       )
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
@@ -199,16 +197,19 @@ export function ContractPageContent(
   })
   const totalBets = props.totalBets + (newBets?.length ?? 0)
   const bets = props.bets.concat(newBets ?? [])
-  const betPoints = props.betPoints.concat(
-    newBets?.map(
-      (bet) =>
-        ({
-          x: bet.createdTime,
-          y: bet.probAfter,
-          bet: { userAvatarUrl: bet.userAvatarUrl },
-        } as BetPoint)
-    ) ?? []
-  )
+  const betPoints = props.betPoints
+    .map((p) => ({
+      x: new Date(p.x),
+      y: p.y,
+      obj: p.obj,
+    }))
+    .concat(
+      newBets?.map((bet) => ({
+        x: new Date(bet.createdTime),
+        y: bet.probAfter,
+        obj: { userAvatarUrl: bet.userAvatarUrl },
+      })) ?? []
+    )
 
   const creator = useUserById(contract.creatorId) ?? null
 
