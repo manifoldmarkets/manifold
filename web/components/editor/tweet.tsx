@@ -7,20 +7,6 @@ export const DisplayTweet = TiptapTweet.extend({
   renderReact: (attrs: any) => <TweetComponent {...attrs} />,
 })
 
-function NodeView(props: {
-  node: {
-    attrs: {
-      tweetId: string
-    }
-  }
-}): JSX.Element {
-  return (
-    <NodeViewWrapper className="tiptap-tweet">
-      <TweetComponent {...props.node.attrs} />
-    </NodeViewWrapper>
-  )
-}
-
 function TweetComponent(attrs: any) {
   // Remove the leading 't' from the tweet id
   const tweetId = attrs.tweetId.slice(1)
