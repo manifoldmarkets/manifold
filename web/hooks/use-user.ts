@@ -25,6 +25,8 @@ import { listenForValue } from 'web/lib/firebase/utils'
 import { db } from 'web/lib/firebase/init'
 import { getValues } from 'web/lib/firebase/utils'
 import { ContractMetric } from 'common/contract-metric'
+import { HOME_BLOCKED_GROUP_SLUGS } from 'common/envs/constants'
+
 export const useUser = () => {
   const authUser = useContext(AuthContext)
   return authUser ? authUser.user : authUser
@@ -167,12 +169,13 @@ export const useUserRecommendedMarkets = (userId = '_', count = 500) => {
       ...sampleSize(allSeenContractIds, 10 - contractsRelatedToUser.length)
     )
   }
+
   // get recommended contracts with count inversely proportional to the unique contract ids,
   // with the goal of getting 500 unique contracts
   const recommendedContracts = useRecommendedContracts(
     contractsRelatedToUser,
     userId,
-    100,
+    count,
     contractsRelatedToUser
   )
 
@@ -288,6 +291,8 @@ const useRecommendedContracts = (
   const [recommendedContracts, setRecommendedContracts] = useState<
     Contract[] | undefined
   >(undefined)
+
+  const privateUser = usePrivateUser()
   // get creators markets from the user's viewed markets
   // get markets from groups that the user has viewed
   // get markets that have similar bettors that the user has viewed
@@ -323,6 +328,7 @@ const useRecommendedContracts = (
       excludeBettorId,
       contracts
     )
+
     const filterContracts = (contracts: Contract[]) =>
       uniqBy(
         contracts.filter(
@@ -330,7 +336,15 @@ const useRecommendedContracts = (
             !contract.uniqueBettorIds?.includes(excludeBettorId) &&
             !excludingContractIds.includes(contract.id) &&
             contract.closeTime &&
-            contract.closeTime > Date.now()
+            contract.closeTime > Date.now() &&
+            !contract.groupSlugs?.some((slug) =>
+              HOME_BLOCKED_GROUP_SLUGS.includes(slug)
+            ) &&
+            !privateUser?.blockedContractIds.includes(contract.id) &&
+            !privateUser?.blockedUserIds.includes(contract.creatorId) &&
+            !contract.groupSlugs?.some((slug) =>
+              privateUser?.blockedGroupSlugs.includes(slug)
+            )
         ),
         (contract) => contract.id
       )
