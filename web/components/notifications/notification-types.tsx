@@ -732,7 +732,7 @@ function UserLikeNotification(props: {
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       icon={
-        <AvatarNotificationIcon notification={notification} symbol={'❤️'} />
+        <AvatarNotificationIcon notification={notification} symbol={'💖'} />
       }
       onClick={() => setOpen(true)}
       subtitle={

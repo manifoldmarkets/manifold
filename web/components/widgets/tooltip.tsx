@@ -4,6 +4,7 @@ import {
   flip,
   offset,
   Placement,
+  safePolygon,
   shift,
   useFloating,
   useHover,
@@ -16,7 +17,7 @@ import { ReactNode, useRef, useState } from 'react'
 // See https://floating-ui.com/docs/react-dom
 
 export function Tooltip(props: {
-  text: string | false | undefined | null
+  text: string | false | undefined | null | ReactNode
   children: ReactNode
   className?: string
   placement?: Placement
@@ -39,7 +40,7 @@ export function Tooltip(props: {
     context,
     placement,
   } = useFloating({
-    open,
+    open: open,
     onOpenChange: setOpen,
     whileElementsMounted: autoUpdate,
     placement: props.placement ?? 'top',
@@ -54,7 +55,7 @@ export function Tooltip(props: {
   const { x: arrowX, y: arrowY } = middlewareData.arrow ?? {}
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
-    useHover(context, { mouseOnly: noTap }),
+    useHover(context, { mouseOnly: noTap, handleClose: safePolygon() }),
     useRole(context, { role: 'tooltip' }),
   ])
   // which side of tooltip arrow is on. like: if tooltip is top-left, arrow is on bottom of tooltip
