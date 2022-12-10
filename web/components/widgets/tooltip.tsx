@@ -23,7 +23,6 @@ export function Tooltip(props: {
   placement?: Placement
   noTap?: boolean
   noFade?: boolean
-  // externalOpen?: boolean
 }) {
   const { text, children, className, noTap, noFade } = props
 
