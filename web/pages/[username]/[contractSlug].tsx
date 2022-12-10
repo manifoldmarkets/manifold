@@ -61,6 +61,8 @@ const CONTRACT_BET_FILTER = {
   filterChallenges: true,
 }
 
+type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
+
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
@@ -110,10 +112,12 @@ export async function getStaticPropz(props: {
   return {
     props: {
       contract,
-      bets: useBetPoints ? bets.slice(0, 100) : bets,
+      historyData: {
+        bets: useBetPoints ? bets.slice(0, 100) : bets,
+        points: betPoints,
+      },
       comments,
       userPositionsByOutcome,
-      betPoints,
       totalBets,
       topContractMetrics,
       totalPositions,
@@ -128,20 +132,18 @@ export async function getStaticPaths() {
 
 export default function ContractPage(props: {
   contract: Contract | null
-  bets: Bet[]
+  historyData: HistoryData
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
-  betPoints: HistoryPoint<Partial<Bet>>[]
   totalBets: number
   topContractMetrics: ContractMetric[]
   totalPositions: number
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
-    bets: [],
+    historyData: { bets: [], points: [] },
     comments: [],
     userPositionsByOutcome: {},
-    betPoints: [],
     totalBets: 0,
     topContractMetrics: [],
     totalPositions: 0,
@@ -191,15 +193,15 @@ export function ContractPageContent(
   )
 
   // Static props load bets in descending order by time
-  const lastBetTime = first(props.bets)?.createdTime
+  const lastBetTime = first(props.historyData.bets)?.createdTime
   const newBets = useBets({
     contractId: contract.id,
     afterTime: lastBetTime,
     ...CONTRACT_BET_FILTER,
   })
   const totalBets = props.totalBets + (newBets?.length ?? 0)
-  const bets = props.bets.concat(newBets ?? [])
-  const betPoints = props.betPoints.concat(
+  const bets = props.historyData.bets.concat(newBets ?? [])
+  const betPoints = props.historyData.points.concat(
     newBets?.map((bet) => ({
       x: bet.createdTime,
       y: bet.probAfter,
