@@ -43,16 +43,24 @@ import { Post } from 'common/post'
 import { usePost, usePosts } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
 import { track } from 'web/lib/service/analytics'
-import { ArrowLeftIcon } from '@heroicons/react/solid'
+import { ArrowLeftIcon, DotsVerticalIcon } from '@heroicons/react/solid'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
-import { BETTORS } from 'common/user'
+import { BETTORS, PrivateUser } from 'common/user'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { GroupAbout } from 'web/components/groups/group-about'
-import { HideGroupButton } from 'web/components/buttons/hide-group-button'
+import { getBlockGroupDropdownItem } from 'web/components/buttons/hide-group-button'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
-
+import { Title } from 'web/components/widgets/title'
+import Image from 'next/image'
+import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import clsx from 'clsx'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import { BanIcon } from '@heroicons/react/outline'
+import { GroupOptions } from 'web/components/groups/group-options'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -180,34 +188,58 @@ export default function GroupPage(props: {
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
   const chatEmbed = <ChatEmbed group={group} />
+  const isMobile = useIsMobile()
 
   return (
-    <Page logoSubheading={group.name} rightSidebar={chatEmbed}>
+    <Page rightSidebar={chatEmbed}>
       <SEO
         title={group.name}
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-      <TopGroupNavBar
-        group={group}
-        isMember={isMember}
-        isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
-      />
-      <div className="relative hidden justify-self-end lg:flex">
-        <Row className="absolute right-0 top-0 z-50 items-center gap-4">
-          <SimpleLinkButton
-            getUrl={() => groupUrl}
-            tooltip={`Copy link to ${group.name}`}
-          />
-
-          <JoinOrAddQuestionsButtons
-            group={group}
-            user={user}
-            isMember={!!isMember}
-            isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
-          />
+      {isMobile && (
+        <TopGroupNavBar
+          group={group}
+          isMember={isMember}
+          groupUrl={groupUrl}
+          privateUser={privateUser}
+          isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
+        />
+      )}
+      <figure className="relative h-60 w-full sm:h-80 ">
+        <Image
+          src={'/default_cover.jpeg'}
+          alt=""
+          fill
+          // objectFit=""
+        />
+        <Row className="absolute bottom-0 w-full justify-between bg-white bg-opacity-80 px-4">
+          <Title text={group.name} />
+          <Row className="items-center gap-2">
+            {isMobile && (
+              <JoinOrLeaveGroupButton
+                group={group}
+                isMember={isMember}
+                user={user}
+              />
+            )}
+            {!isMobile && (
+              <>
+                <JoinOrLeaveGroupButton
+                  group={group}
+                  isMember={isMember}
+                  user={user}
+                />
+                <GroupOptions
+                  group={group}
+                  groupUrl={groupUrl}
+                  privateUser={privateUser}
+                />
+              </>
+            )}
+          </Row>
         </Row>
-      </div>
+      </figure>
       <div className={'relative p-1 pt-0'}>
         <ControlledTabs
           activeIndex={activeIndex}
@@ -286,13 +318,15 @@ export default function GroupPage(props: {
 export function TopGroupNavBar(props: {
   group: Group
   isMember: boolean | undefined
+  groupUrl: string
+  privateUser: PrivateUser | undefined | null
   isBlocked?: boolean
 }) {
-  const { group, isMember, isBlocked } = props
+  const { group, isMember, groupUrl, privateUser, isBlocked } = props
   const user = useUser()
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 lg:hidden">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200">
       <Row className="items-center justify-between gap-2 bg-white px-2">
         <div className="flex flex-1">
           <Link
@@ -306,12 +340,19 @@ export function TopGroupNavBar(props: {
           {props.group.name}
         </h1>
         <div className="flex flex-1 justify-end">
-          <JoinOrAddQuestionsButtons
-            group={group}
-            user={user}
-            isMember={isMember}
-            isBlocked={isBlocked}
-          />
+          <Row className="items-center gap-2">
+            <JoinOrLeaveGroupButton
+              group={group}
+              isMember={isMember}
+              user={user}
+              isMobile={true}
+            />
+            <GroupOptions
+              group={group}
+              groupUrl={groupUrl}
+              privateUser={privateUser}
+            />
+          </Row>
         </div>
       </Row>
     </header>
@@ -337,27 +378,6 @@ function ChatEmbed(props: { group: Group }) {
     )
   }
   return null
-}
-
-function JoinOrAddQuestionsButtons(props: {
-  group: Group
-  user: User | null | undefined
-  isMember: boolean | undefined
-  isBlocked?: boolean
-}) {
-  const { group, user, isMember, isBlocked } = props
-
-  if (user === undefined || isMember === undefined) return <div />
-
-  return isBlocked ? (
-    <HideGroupButton groupSlug={group.slug} />
-  ) : user && isMember ? (
-    <AddContractButton group={group} user={user} />
-  ) : group.anyoneCanJoin ? (
-    <JoinGroupButton group={group} user={user} />
-  ) : (
-    <div />
-  )
 }
 
 function GroupLeaderboard(props: {
@@ -440,30 +460,6 @@ function AddContractButton(props: { group: Group; user: User }) {
         }}
       />
     </>
-  )
-}
-
-function JoinGroupButton(props: {
-  group: Group
-  user: User | null | undefined
-}) {
-  const { group, user } = props
-
-  const follow = async () => {
-    track('join group')
-    if (!user) return await firebaseLogin()
-
-    toast.promise(joinGroup(group, user.id), {
-      loading: 'Following group...',
-      success: 'Followed',
-      error: "Couldn't follow group, try again?",
-    })
-  }
-
-  return (
-    <div>
-      <Button onClick={follow}>Follow</Button>
-    </div>
   )
 }
 

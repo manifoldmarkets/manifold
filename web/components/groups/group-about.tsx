@@ -40,7 +40,6 @@ import { useUser } from 'web/hooks/use-user'
 import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
-import { HideGroupButton } from 'web/components/buttons/hide-group-button'
 import { Spacer } from '../layout/spacer'
 
 export function GroupAbout(props: {
@@ -56,7 +55,7 @@ export function GroupAbout(props: {
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
       <Row className={'justify-between'}>
-        <HideGroupButton groupSlug={group.slug} />
+        {/* <HideGroupButton groupSlug={group.slug} /> */}
         {isMember && (
           <JoinOrLeaveGroupButton
             group={group}
