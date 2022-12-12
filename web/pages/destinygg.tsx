@@ -85,10 +85,9 @@ export default function DestinyLandingPage(props: { subCount: number }) {
       <Col className="max-w-3xl rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
         <Title>Claim a free Destiny tier-1 subscription!</Title>
         <div>
-          Support Destiny by trading in our markets to earn {formatMoney(1000)}{' '}
-          and claim your sub. It's free and you can sign up with google
-          instantly. For each subscription, Manifold Markets will pay Destiny
-          $5.00 on your behalf!
+          Support Destiny by trading in our markets. Claim a sub for you or a
+          friend for {formatMoney(1000)}. For each subscription, Manifold
+          Markets will pay Destiny $5.00 on your behalf!
         </div>
         {destinySubClaimed ? (
           <Row className="my-4 items-center self-center text-xl">
@@ -110,18 +109,11 @@ export default function DestinyLandingPage(props: { subCount: number }) {
               loading={isSubmitting}
               onClick={submit}
             >
-              Claim now
+              Claim sub for {formatMoney(1000)}
             </Button>
           </Row>
         )}
         {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
-
-        {!destinySubClaimed && (
-          <div className="mt-4 pt-6 sm:mt-0">
-            Once you have the required balance, simply enter the destiny.gg
-            account name you want the sub gifted to. You may only claim one sub.
-          </div>
-        )}
 
         <div className="mt-4 pt-6 sm:mt-0">
           Total subs claimed: {subCount + (isSuccess ? 1 : 0)} / 1,000

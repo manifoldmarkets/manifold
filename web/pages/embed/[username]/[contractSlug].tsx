@@ -11,7 +11,12 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
-import { ContractChart } from 'web/components/charts/contract'
+import {
+  BinaryContractChart,
+  ChoiceContractChart,
+  NumericContractChart,
+  PseudoNumericContractChart,
+} from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
@@ -24,8 +29,9 @@ import { useContract } from 'web/hooks/use-contracts'
 import { useBets } from 'web/hooks/use-bets'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
-import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 import { OrderByDirection } from 'firebase/firestore'
+import { useUser } from 'web/hooks/use-user'
+import { HistoryPoint } from 'web/components/charts/generic-charts'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
@@ -53,10 +59,13 @@ export async function getStaticPropz(props: {
     : []
   // We could include avatars in the embed, but not sure it's worth it
   const betPoints = useBetPoints
-    ? bets.map((bet) => ({
-        x: bet.createdTime,
-        y: bet.probAfter,
-      }))
+    ? bets.map(
+        (bet) =>
+          ({
+            x: bet.createdTime,
+            y: bet.probAfter,
+          } as HistoryPoint<Partial<Bet>>)
+      )
     : []
 
   return {
@@ -76,7 +85,7 @@ export async function getStaticPaths() {
 export default function ContractEmbedPage(props: {
   contract: Contract | null
   bets: Bet[]
-  betPoints: BetPoint[]
+  betPoints: HistoryPoint<Partial<Bet>>[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -96,15 +105,25 @@ export default function ContractEmbedPage(props: {
   })
   const bets = props.bets.concat(newBets ?? [])
   const betPoints = props.betPoints.concat(
-    newBets?.map(
-      (bet) =>
-        ({
-          x: bet.createdTime,
-          y: bet.probAfter,
-          bet: { userAvatarUrl: bet.userAvatarUrl },
-        } as BetPoint)
-    ) ?? []
+    newBets?.map((bet) => ({
+      x: bet.createdTime,
+      y: bet.probAfter,
+      obj: { userAvatarUrl: bet.userAvatarUrl },
+    })) ?? []
   )
+
+  useEffect(() => {
+    if (contract?.id)
+      track('view market embed', {
+        slug: contract.slug,
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        hostname: window.location.hostname,
+      })
+  }, [contract?.creatorId, contract?.id, contract?.slug])
+
+  const user = useUser()
+
   if (!contract) {
     return <Custom404 />
   }
@@ -112,35 +131,6 @@ export default function ContractEmbedPage(props: {
   // Check ?graphColor=hex&textColor=hex from router
   const graphColor = router.query.graphColor as string
   const textColor = router.query.textColor as string
-  const embedProps = {
-    contract,
-    bets,
-    graphColor,
-    textColor,
-    betPoints,
-  }
-
-  return <ContractEmbed {...embedProps} />
-}
-
-interface EmbedProps {
-  contract: Contract
-  bets: Bet[]
-  betPoints: BetPoint[]
-  graphColor?: string
-  textColor?: string
-}
-
-export function ContractEmbed(props: EmbedProps) {
-  const { contract } = props
-  useEffect(() => {
-    track('view market embed', {
-      slug: contract.slug,
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-      hostname: window.location.hostname,
-    })
-  }, [contract.creatorId, contract.id, contract.slug])
 
   // return (height < 250px) ? Card : SmolView
   return (
@@ -151,22 +141,54 @@ export function ContractEmbed(props: EmbedProps) {
           className="h-screen"
           noLinkAvatar
           newTab
+          hideQuickBet={!user}
         />
       </div>
       <div className="hidden [@media(min-height:250px)]:contents">
-        <ContractSmolView {...props} />
+        <ContractSmolView
+          contract={contract}
+          bets={bets}
+          betPoints={betPoints}
+          graphColor={graphColor}
+          textColor={textColor}
+        />
       </div>
     </>
   )
 }
 
-function ContractSmolView({
-  contract,
-  bets,
-  graphColor,
-  textColor,
-  betPoints,
-}: EmbedProps) {
+const ContractChart = (props: {
+  contract: Contract
+  bets: Bet[]
+  betPoints: HistoryPoint<Partial<Bet>>[] // used in binary & numeric charts
+  width: number
+  height: number
+  color?: string
+}) => {
+  const { contract } = props
+  switch (contract.outcomeType) {
+    case 'BINARY':
+      return <BinaryContractChart {...{ ...props, contract }} />
+    case 'PSEUDO_NUMERIC':
+      return <PseudoNumericContractChart {...{ ...props, contract }} />
+    case 'FREE_RESPONSE':
+    case 'MULTIPLE_CHOICE':
+      return <ChoiceContractChart {...{ ...props, contract }} />
+    case 'NUMERIC':
+      return <NumericContractChart {...{ ...props, contract }} />
+    default:
+      return null
+  }
+}
+
+function ContractSmolView(props: {
+  contract: Contract
+  bets: Bet[]
+  graphColor: string
+  textColor: string
+  betPoints: HistoryPoint<Partial<Bet>>[]
+}) {
+  const { contract, bets, betPoints, graphColor, textColor } = props
   const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'

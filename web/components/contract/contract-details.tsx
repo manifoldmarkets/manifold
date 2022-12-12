@@ -454,21 +454,23 @@ function EditableCloseDate(props: {
           )}
         </Col>
       </Modal>
-      <DateTimeTooltip
-        text={
-          isClient && closeTime <= Date.now()
-            ? 'Trading ended:'
-            : 'Trading ends:'
-        }
-        time={closeTime}
-        placement="bottom-start"
+
+      <Row
+        className={clsx(
+          'items-center gap-1',
+          !disabled && isCreator ? 'cursor-pointer' : ''
+        )}
+        onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
       >
-        <Row
-          className={clsx(
-            'items-center gap-1',
-            !disabled && isCreator ? 'cursor-pointer' : ''
-          )}
-          onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
+        <DateTimeTooltip
+          text={
+            isClient && closeTime <= Date.now()
+              ? 'Trading ended:'
+              : 'Trading ends:'
+          }
+          time={closeTime}
+          placement="bottom-start"
+          noFade
         >
           <span>{dayjs().isBefore(closeTime) ? 'closes' : 'closed'} </span>
           {isSameDay && isClient ? (
@@ -478,9 +480,9 @@ function EditableCloseDate(props: {
           ) : (
             dayJsCloseTime.format('MMM D, YYYY')
           )}
-          {isCreator && !disabled && <PencilIcon className="h-4 w-4" />}
-        </Row>
-      </DateTimeTooltip>
+        </DateTimeTooltip>
+        {isCreator && !disabled && <PencilIcon className="h-4 w-4" />}
+      </Row>
     </>
   )
 }

@@ -2,7 +2,10 @@ import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { groupBy, map } from 'lodash'
 import { useMemo } from 'react'
-import { listenForNotifications } from 'web/lib/firebase/notifications'
+import {
+  listenForNotifications,
+  listenForUnseenNotifications,
+} from 'web/lib/firebase/notifications'
 import { useStore } from './use-store'
 
 export type NotificationGroup = {
@@ -18,6 +21,12 @@ function useNotifications(privateUser: PrivateUser) {
   })
 }
 
+function useUnseenNotifications(privateUser: PrivateUser) {
+  return useStore(privateUser.id, listenForUnseenNotifications, {
+    prefix: 'unseen-notifications',
+  })
+}
+
 export function useGroupedNotifications(privateUser: PrivateUser) {
   const notifications = useNotifications(privateUser)
   return useMemo(() => {
@@ -25,12 +34,10 @@ export function useGroupedNotifications(privateUser: PrivateUser) {
   }, [notifications])
 }
 
-export function useUnseenNotificationCount(privateUser: PrivateUser) {
-  const notifications = useNotifications(privateUser)
+export function useGroupedUnseenNotifications(privateUser: PrivateUser) {
+  const notifications = useUnseenNotifications(privateUser)
   return useMemo(() => {
-    if (!notifications) return undefined
-    const unseen = notifications.filter((n) => !n.isSeen)
-    return groupNotifications(unseen).length
+    return notifications ? groupNotifications(notifications) : undefined
   }, [notifications])
 }
 

@@ -1,4 +1,4 @@
-import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
+import { PlusCircleIcon } from '@heroicons/react/outline'
 import { DotsVerticalIcon, PencilAltIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
@@ -9,18 +9,17 @@ import {
   HOME_BLOCKED_GROUP_SLUGS,
 } from 'common/envs/constants'
 import { GlobalConfig } from 'common/globalConfig'
-import { Group, groupPath } from 'common/group'
+import { Group } from 'common/group'
 import { Post } from 'common/post'
 import { User } from 'common/user'
 import { buildArray, filterDefined } from 'common/util/array'
 import { chooseRandomSubset } from 'common/util/random'
 import { MINUTE_MS } from 'common/util/time'
-import { difference, isArray, keyBy, sortBy, sum } from 'lodash'
+import { difference, isArray, keyBy } from 'lodash'
 import Router, { SingletonRouter } from 'next/router'
 import { memo, ReactNode, useEffect, useMemo } from 'react'
 import { toast } from 'react-hot-toast'
 import { ActivityLog } from 'web/components/activity-log'
-import { Button } from 'web/components/buttons/button'
 import { PillButton } from 'web/components/buttons/pill-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Sort } from 'web/components/contract-search'
@@ -40,13 +39,11 @@ import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useAdmin } from 'web/hooks/use-admin'
 import {
   useContractsByDailyScore,
-  useContractsByDailyScoreGroups,
   useNewContracts,
   useTrendingContracts,
 } from 'web/hooks/use-contracts'
 import { useGlobalConfig } from 'web/hooks/use-global-config'
 import {
-  useGroups,
   useMemberGroupsIdsAndSlugs,
   useTrendingGroups,
 } from 'web/hooks/use-group'
@@ -62,6 +59,7 @@ import {
   usePrivateUser,
   useUser,
   useUserContractMetricsByProfit,
+  useUserRecommendedMarkets,
 } from 'web/hooks/use-user'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import {
@@ -88,7 +86,7 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const followedGroupIds = useMemberGroupsIdsAndSlugs(user)
+  const followedGroupIds = useMemberGroupsIdsAndSlugs(user?.id)
   const shouldFilterDestiny = !followedGroupIds?.find((g) =>
     DESTINY_GROUP_SLUGS.includes(g.slug)
   )
@@ -206,23 +204,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     !globalConfig ||
     !pinned
 
-  const [hasViewedBottom, setHasViewedBottom] = usePersistentState(false, {
-    key: 'has-viewed-bottom',
-    store: inMemoryStore(),
-  })
-
-  const groupContracts =
-    useContractsByDailyScoreGroups(
-      followedGroupIds?.map((g) => g.slug),
-      4,
-      userBlockFacetFilters,
-      !!userBlockFacetFilters
-    ) ?? {}
-
-  const groups = filterDefined(
-    useGroups(followedGroupIds?.map((g) => g.id) ?? [])
-  )
-
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 p-2 pb-8">
@@ -259,22 +240,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               contractMetricsByProfit
             )}
 
-            <VisibilityObserver
-              className="relative -top-[300px] h-1"
-              onVisibilityUpdated={(visible) =>
-                visible && setHasViewedBottom(true)
-              }
-            />
-
-            {hasViewedBottom ? (
-              <GroupSections
-                user={user}
-                groups={groups}
-                groupContracts={groupContracts}
-              />
-            ) : (
-              <LoadingIndicator />
-            )}
+            <YourFeedSection user={user} />
           </>
         )}
       </Col>
@@ -390,48 +356,51 @@ export function renderSections(
   )
 }
 
-const GroupSections = memo(function GroupSections(props: {
-  user: User
-  groups: Group[]
-  groupContracts: Record<string, CPMMBinaryContract[]>
-}) {
-  const { user, groups, groupContracts } = props
-  const filteredGroups = groups.filter((g) => groupContracts[g.slug])
-  const orderedGroups = sortBy(filteredGroups, (g) =>
-    // Sort by sum of top two daily scores.
-    sum(
-      sortBy(groupContracts[g.slug].map((c) => c.dailyScore))
-        .reverse()
-        .slice(0, 2)
-    )
-  ).reverse()
+const YourFeedSection = (props: { user: User }) => {
+  const { user } = props
 
-  const previouslySeenContracts = new Set<string>()
+  const [hasViewedBottom, setHasViewedBottom] = usePersistentState(false, {
+    key: 'has-viewed-bottom',
+    store: inMemoryStore(),
+  })
 
   return (
-    <>
-      {orderedGroups.map((group) => {
-        const contracts = groupContracts[group.slug].filter(
-          (c) =>
-            Math.abs(c.probChanges.day) >= 0.01 &&
-            !previouslySeenContracts.has(c.id)
-        )
-        if (contracts.length === 0) return null
+    <Col>
+      <HomeSectionHeader label="Your feed" href="/your-feed" icon={'📖'} />
+      <VisibilityObserver
+        className="relative -top-[300px] h-1"
+        onVisibilityUpdated={(visible) => visible && setHasViewedBottom(true)}
+      />
 
-        contracts.forEach((c) => previouslySeenContracts.add(c.id))
-
-        return (
-          <GroupSection
-            key={group.id}
-            group={group}
-            user={user}
-            contracts={contracts}
-          />
-        )
-      })}
-    </>
+      {hasViewedBottom ? (
+        <YourFeed user={user} count={100} />
+      ) : (
+        <LoadingIndicator />
+      )}
+    </Col>
   )
-})
+}
+
+export const YourFeed = (props: { user: User; count: number }) => {
+  const { user, count } = props
+
+  const [savedContracts, setSavedContracts] = usePersistentState<
+    Contract[] | undefined
+  >(undefined, { key: 'home-your-feed' + count, store: inMemoryStore() })
+
+  const computedContracts = useUserRecommendedMarkets(user.id, count)
+
+  useEffect(() => {
+    if (computedContracts && !savedContracts)
+      setSavedContracts(computedContracts)
+  }, [computedContracts, savedContracts, setSavedContracts])
+
+  // Show only the first loaded batch of contracts, so users can come back to them.
+  const contracts = savedContracts ?? computedContracts
+
+  if (!contracts) return <LoadingIndicator />
+  return <ContractsGrid contracts={contracts} />
+}
 
 function HomeSectionHeader(props: {
   label: string
@@ -549,42 +518,6 @@ export function FeaturedSection(props: {
         onSubmit={onSubmit}
         modalMessage={'Pin posts or markets to the overview of this group.'}
         groups={groups}
-      />
-    </Col>
-  )
-}
-
-function GroupSection(props: {
-  group: Group
-  user: User
-  contracts: CPMMBinaryContract[]
-}) {
-  const { group, user, contracts } = props
-
-  return (
-    <Col>
-      <HomeSectionHeader label={group.name} href={groupPath(group.slug)}>
-        <Button
-          color="gray-white"
-          onClick={() => {
-            const homeSections = (user.homeSections ?? []).filter(
-              (id) => id !== group.id
-            )
-            updateUser(user.id, { homeSections })
-
-            toast.promise(leaveGroup(group, user.id), {
-              loading: 'Unfollowing group...',
-              success: `Unfollowed ${group.name}`,
-              error: "Couldn't unfollow group, try again?",
-            })
-          }}
-        >
-          <XCircleIcon className={'h-5 w-5 flex-shrink-0'} aria-hidden="true" />
-        </Button>
-      </HomeSectionHeader>
-      <ContractsGrid
-        contracts={contracts.slice(0, 4)}
-        showImageOnTopContract={true}
       />
     </Col>
   )

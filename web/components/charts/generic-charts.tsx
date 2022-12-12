@@ -22,7 +22,6 @@ import {
 import { range } from 'lodash'
 
 import {
-  ContinuousScale,
   Margin,
   SVGChart,
   AreaPath,
@@ -37,8 +36,8 @@ import {
 import { useEvent } from 'web/hooks/use-event'
 import { formatMoneyNumber } from 'common/util/format'
 
-export type MultiPoint<T = unknown> = Point<Date, number[], T>
-export type HistoryPoint<T = unknown> = Point<Date, number, T>
+export type MultiPoint<T = unknown> = Point<number, number[], T>
+export type HistoryPoint<T = unknown> = Point<number, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
 export type ValueKind = 'Ṁ' | 'percent' | 'amount'
 
@@ -128,9 +127,9 @@ const getTickValues = (min: number, max: number, n: number) => {
   return [min, ...range(1, n - 1).map((i) => min + step * i), max]
 }
 
-const dataAtPointSelector = <X, Y, P extends Point<X, Y>>(
+const dataAtTimeSelector = <Y, P extends Point<number, Y>>(
   data: P[],
-  xScale: ContinuousScale<X>
+  xScale: ScaleTime<number, number>
 ) => {
   const bisect = bisector((p: P) => p.x)
   return (posX: number) => {
@@ -152,12 +151,9 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   curve?: CurveFactory
-  onMouseOver?: (p: P | undefined) => void
-  Tooltip?: TooltipComponent<number, P>
 }) => {
-  const { data, w, h, color, margin, yScale, curve, Tooltip } = props
+  const { data, w, h, color, margin, yScale, curve } = props
 
-  const [ttParams, setTTParams] = useState<TooltipParams<P>>()
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -171,22 +167,6 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     const yAxis = axisRight<number>(yScale).tickFormat((n) => formatPct(n, 2))
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
-
-  const selector = dataAtPointSelector(data, xScale)
-  const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
-    const p = selector(mouseX)
-    props.onMouseOver?.(p.prev)
-    if (p.prev) {
-      setTTParams({ ...p, x: mouseX, y: mouseY })
-    } else {
-      setTTParams(undefined)
-    }
-  })
-
-  const onMouseLeave = useEvent(() => {
-    props.onMouseOver?.(undefined)
-    setTTParams(undefined)
-  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -206,11 +186,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
       margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
-      ttParams={ttParams}
       onSelect={onSelect}
-      onMouseOver={onMouseOver}
-      onMouseLeave={onMouseLeave}
-      Tooltip={Tooltip}
     >
       <AreaWithTopStroke
         color={color}
@@ -274,7 +250,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     return d3Stack(data)
   }, [data])
 
-  const selector = dataAtPointSelector(data, xScale)
+  const selector = dataAtTimeSelector(data, xScale)
   const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)
@@ -379,7 +355,7 @@ export const ControllableSingleValueHistoryChart = <
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
-  const selector = dataAtPointSelector(data, xScale)
+  const selector = dataAtTimeSelector(data, xScale)
   const onMouseOver = useEvent((mouseX: number) => {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)

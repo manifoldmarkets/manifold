@@ -9,6 +9,7 @@ export function DateTimeTooltip(props: {
   className?: string
   children: ReactNode
   noTap?: boolean
+  noFade?: boolean
   placement?: Placement
 }) {
   const { time, text, ...rest } = props

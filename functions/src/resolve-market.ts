@@ -112,11 +112,11 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
 })
 
 export const resolveMarket = async (
-  contract: Contract,
+  unresolvedContract: Contract,
   creator: User,
   { value, resolutions, probabilityInt, outcome }: ResolutionParams
 ) => {
-  const { creatorId, closeTime, id: contractId } = contract
+  const { creatorId, closeTime, id: contractId } = unresolvedContract
 
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
@@ -154,15 +154,15 @@ export const resolveMarket = async (
     collectedFees,
   } = getPayouts(
     outcome,
-    contract,
+    unresolvedContract,
     bets,
     liquidities,
     resolutionProbs,
     resolutionProbability
   )
 
-  const updatedContract = {
-    ...contract,
+  const contract = {
+    ...unresolvedContract,
     ...removeUndefinedProps({
       isResolved: true,
       resolution: outcome,
@@ -174,7 +174,7 @@ export const resolveMarket = async (
       collectedFees,
     }),
     subsidyPool: 0,
-  }
+  } as Contract
 
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
   const loanPayouts = getLoanPayouts(openBets)
@@ -204,11 +204,11 @@ export const resolveMarket = async (
   if (userCount <= 499) {
     await firestore.runTransaction(async (transaction) => {
       payUsers(transaction, payouts)
-      transaction.update(contractDoc, updatedContract)
+      transaction.update(contractDoc, contract)
     })
   } else {
     await payUsersMultipleTransactions(payouts)
-    await contractDoc.update(updatedContract)
+    await contractDoc.update(contract)
   }
 
   console.log('contract ', contractId, 'resolved to:', outcome)
@@ -243,7 +243,7 @@ export const resolveMarket = async (
     }
   )
 
-  return updatedContract
+  return contract
 }
 
 function getResolutionParams(contract: Contract, body: string) {

@@ -129,7 +129,7 @@ export function useMemberGroupsSubscription(user: User | null | undefined) {
   return groups
 }
 
-export function useMemberGroupsIdsAndSlugs(user: User | null | undefined) {
+export function useMemberGroupsIdsAndSlugs(userId: string | null | undefined) {
   const [groupIdsAndSlugs, setGroupIdsAndSlugs] = usePersistentState<
     { id: string; slug: string }[] | undefined
   >(undefined, {
@@ -137,7 +137,6 @@ export function useMemberGroupsIdsAndSlugs(user: User | null | undefined) {
     store: storageStore(safeLocalStorage()),
   })
 
-  const userId = user?.id
   useEffect(() => {
     if (userId) {
       return listenForMemberGroupIds(userId, (groupIds) => {
