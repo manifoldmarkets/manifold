@@ -245,7 +245,7 @@ function ContractSmolView(props: {
 }
 
 const Details = (props: { contract: Contract }) => {
-  const { creatorAvatarUrl, creatorUsername, uniqueBettorCount } =
+  const { creatorAvatarUrl, creatorUsername, creatorName, uniqueBettorCount } =
     props.contract
 
   return (
@@ -257,7 +257,7 @@ const Details = (props: { contract: Contract }) => {
           username={creatorUsername}
           noLink
         />
-        {creatorUsername}
+        {creatorName}
       </span>
       <CloseOrResolveTime contract={props.contract} isCreator disabled />
       <span>{uniqueBettorCount} traders</span>
