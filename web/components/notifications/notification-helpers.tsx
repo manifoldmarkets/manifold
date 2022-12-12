@@ -9,7 +9,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
-import { RelativeTimestamp } from '../relative-timestamp'
+import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import { truncateLengthType, truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
@@ -187,10 +187,9 @@ export function NotificationFrame(props: {
             <div className="mt-1 text-xs md:text-sm">{subtitle}</div>
             {isMobile && (
               <div className="-mt-0.5 w-fit md:-mt-1">
-                <RelativeTimestamp
+                <RelativeTimestampNoTooltip
                   time={notification.createdTime}
                   className="-ml-1 text-xs font-light text-gray-900"
-                  placement={'right-start'}
                 />
               </div>
             )}
@@ -198,10 +197,9 @@ export function NotificationFrame(props: {
         </Row>
         {!isMobile && (
           <Row className="mx-1 w-40 justify-end">
-            <RelativeTimestamp
+            <RelativeTimestampNoTooltip
               time={notification.createdTime}
               className="text-xs font-light text-gray-900"
-              placement={'top'}
             />
           </Row>
         )}
@@ -210,7 +208,7 @@ export function NotificationFrame(props: {
   )
 
   const frameEnd = (
-    <Row className={clsx('group')}>
+    <Row>
       <Col
         className={clsx(
           'justify-start text-gray-500 transition-colors group-hover:text-gray-900'
@@ -232,6 +230,7 @@ export function NotificationFrame(props: {
   return (
     <Row
       className={clsx(
+        'group',
         isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE
       )}
     >
@@ -239,7 +238,7 @@ export function NotificationFrame(props: {
         <Col className={clsx(getHighlightClass(highlighted), 'w-full')}>
           <SiteLink
             href={link}
-            className={clsx('group flex w-full flex-col')}
+            className={clsx('flex w-full flex-col')}
             followsLinkClass={false}
             onClick={() => {
               if (highlighted) {
@@ -253,7 +252,7 @@ export function NotificationFrame(props: {
       )}
       {!link && (
         <Col
-          className={clsx('group w-full', getHighlightClass(highlighted))}
+          className={clsx('w-full', getHighlightClass(highlighted))}
           onClick={() => {
             if (highlighted) {
               setHighlighted(false)

@@ -20,3 +20,12 @@ export function RelativeTimestamp(props: {
     </DateTimeTooltip>
   )
 }
+
+export function RelativeTimestampNoTooltip(props: {
+  time: number
+  className?: string
+}) {
+  const { time, className } = props
+  const isClient = useIsClient()
+  return <span className={className}>{isClient && fromNow(time)}</span>
+}
