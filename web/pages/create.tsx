@@ -56,11 +56,6 @@ export default function Create() {
           </div>
 
           <NewContractPanel params={params} creator={user} />
-
-          {/* <div className="mb-4 text-xs text-gray-700 ">
-            <LightBulbIcon className="inline-flex h-5 w-5 mb-1" /> Don't worry if the
-            details aren't perfect. You'll be able to edit everything later.
-          </div> */}
         </div>
       </div>
     </Page>

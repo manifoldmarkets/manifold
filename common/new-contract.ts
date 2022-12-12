@@ -1,6 +1,7 @@
 import { range } from 'lodash'
 import {
   Binary,
+  Cert,
   Contract,
   CPMM,
   CPMM2,
@@ -10,6 +11,7 @@ import {
   Numeric,
   outcomeType,
   PseudoNumeric,
+  Uniswap2,
   visibility,
 } from './contract'
 import { User } from './user'
@@ -53,6 +55,8 @@ export function getNewContract(
       ? getNumericProps(ante, bucketCount, min, max)
       : outcomeType === 'MULTIPLE_CHOICE'
       ? getDpmMultipleChoiceProps(ante, answers)
+      : outcomeType === 'CERT'
+      ? getCertProps(ante)
       : getFreeAnswerProps(ante)
 
   const contract: Contract = removeUndefinedProps({
@@ -149,6 +153,20 @@ const getPseudoNumericCpmmProps = (
     isLogScale,
   }
 
+  return system
+}
+
+const getCertProps = (ante: number) => {
+  const system: Uniswap2 & Cert = {
+    mechanism: 'uniswap-2',
+    outcomeType: 'CERT',
+    pool: {
+      SHARE: ante,
+      M$: ante,
+    },
+    // TODO: Update price in the cert when trades happen
+    price: 1,
+  }
   return system
 }
 

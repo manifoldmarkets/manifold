@@ -19,7 +19,7 @@ import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 import { getContract, htmlToRichText } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
-import { FIXED_ANTE } from '../../common/economy'
+import { ANTES } from '../../common/economy'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
@@ -34,6 +34,7 @@ import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { getCloseDate, getGroupForMarket } from './helpers/openai-utils'
 import { marked } from 'marked'
+import { mintAndPoolCert } from './helpers/cert-txns'
 import { Bet } from 'common/bet'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
@@ -196,12 +197,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     descriptionJson = htmlToRichText('<p> </p>')
   }
 
-  const ante =
-    outcomeType === 'BINARY'
-      ? FIXED_ANTE
-      : outcomeType === 'PSEUDO_NUMERIC'
-      ? FIXED_ANTE * 5
-      : FIXED_ANTE * 2
+  const ante = ANTES[outcomeType]
 
   const user = await firestore.runTransaction(async (trans) => {
     const userDoc = await trans.get(firestore.collection('users').doc(userId))
@@ -351,6 +347,11 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     )
 
     await anteBetDoc.set(anteBet)
+  } else if (outcomeType === 'CERT') {
+    const DEFAULT_SHARES = 10_000
+    // Unlike other contracts which initializing info into the contract's doc or subcollection,
+    // certs have the mint and pool specified in txn
+    await mintAndPoolCert(providerId, contract.id, DEFAULT_SHARES, ante)
   }
 
   return contract
