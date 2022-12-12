@@ -43,7 +43,11 @@ import { Post } from 'common/post'
 import { usePost, usePosts } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
 import { track } from 'web/lib/service/analytics'
-import { ArrowLeftIcon, DotsVerticalIcon } from '@heroicons/react/solid'
+import {
+  ArrowLeftIcon,
+  DotsVerticalIcon,
+  UserGroupIcon,
+} from '@heroicons/react/solid'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS, PrivateUser } from 'common/user'
 import { Page } from 'web/components/layout/page'
@@ -60,6 +64,9 @@ import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { BanIcon } from '@heroicons/react/outline'
 import { GroupOptions } from 'web/components/groups/group-options'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { GroupMembersList } from 'web/pages/groups'
+import OpenDoorIcon from 'web/lib/icons/open-door-icon'
+import ClosedDoorIcon from 'web/lib/icons/closed-door-icon'
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -213,33 +220,63 @@ export default function GroupPage(props: {
           fill
           // objectFit=""
         />
-        <Row className="absolute bottom-0 w-full justify-between bg-white bg-opacity-80 px-4">
-          <Title text={group.name} />
-          <Row className="items-center gap-2">
-            {isMobile && (
-              <JoinOrLeaveGroupButton
-                group={group}
-                isMember={isMember}
-                user={user}
-              />
-            )}
-            {!isMobile && (
-              <>
+        <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
+          <Row className="mt-4 w-full justify-between">
+            <div className="text-2xl font-normal text-gray-900 sm:text-3xl">
+              {group.name}
+            </div>
+            <Row className="items-center gap-2">
+              {isMobile && (
                 <JoinOrLeaveGroupButton
                   group={group}
                   isMember={isMember}
                   user={user}
                 />
-                <GroupOptions
-                  group={group}
-                  groupUrl={groupUrl}
-                  privateUser={privateUser}
-                />
-              </>
-            )}
+              )}
+              {!isMobile && (
+                <>
+                  <JoinOrLeaveGroupButton
+                    group={group}
+                    isMember={isMember}
+                    user={user}
+                  />
+                  <GroupOptions
+                    group={group}
+                    groupUrl={groupUrl}
+                    privateUser={privateUser}
+                  />
+                </>
+              )}
+            </Row>
           </Row>
-        </Row>
+          <Row className="mb-2 gap-4">
+            <Row className="items-center gap-1 text-sm text-gray-700">
+              <UserGroupIcon className="h-4 w-4" />
+              <span>{group.totalMembers} members</span>
+            </Row>
+            <Row className="items-center gap-1 text-sm text-gray-700">
+              {group.anyoneCanJoin && (
+                <>
+                  <OpenDoorIcon className="h-4 w-4" />
+                  <span>Open</span>
+                </>
+              )}
+              {!group.anyoneCanJoin && (
+                <>
+                  <ClosedDoorIcon className="h-4 w-4" />
+                  <span>Closed</span>
+                </>
+              )}
+            </Row>
+          </Row>
+        </Col>
       </figure>
+      {group.about.length > 0 && (
+        <Col className="my-4 w-full gap-2 rounded bg-white px-4 py-4">
+          <b>About</b>
+          <div className="font-thin">{group.about}</div>
+        </Col>
+      )}
       <div className={'relative p-1 pt-0'}>
         <ControlledTabs
           activeIndex={activeIndex}

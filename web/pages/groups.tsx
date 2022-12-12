@@ -263,7 +263,7 @@ export function GroupCard(props: {
   )
 }
 
-function GroupMembersList(props: { group: Group }) {
+export function GroupMembersList(props: { group: Group }) {
   const { group } = props
   const { totalMembers } = group
   if (totalMembers === 1) return <div />
