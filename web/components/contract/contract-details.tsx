@@ -470,7 +470,7 @@ function EditableCloseDate(props: {
           }
           time={closeTime}
           placement="bottom-start"
-          noFade
+          noTap
         >
           <span>{dayjs().isBefore(closeTime) ? 'closes' : 'closed'} </span>
           {isSameDay && isClient ? (
