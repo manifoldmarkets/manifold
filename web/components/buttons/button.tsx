@@ -31,7 +31,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed text-center',
     sizeClasses[size],
     color === 'green' &&
-      'disabled:bg-gray-200 bg-teal-500 text-white hover:bg-teal-500',
+      'disabled:bg-gray-200 bg-teal-500 text-white hover:bg-teal-600',
     color === 'red' &&
       'disabled:bg-gray-200 bg-scarlet-300 text-white hover:bg-scarlet-400',
     color === 'yellow' &&
@@ -41,7 +41,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'indigo' &&
       'disabled:bg-gray-200 bg-indigo-500 text-white hover:bg-indigo-600',
     color === 'gray' &&
-      'bg-gray-50 text-gray-600 hover:bg-gray-200 disabled:opacity-50',
+      'bg-gray-200 text-gray-600 enabled:hover:bg-gray-300 enabled:hover:text-gray-700 disabled:opacity-50',
     color === 'gray-outline' &&
       'ring-2 ring-gray-500 text-gray-500 enabled:hover:bg-gray-500 enabled:hover:text-white disabled:opacity-50',
     color === 'gradient' &&

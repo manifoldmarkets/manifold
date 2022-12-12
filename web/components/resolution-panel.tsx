@@ -95,7 +95,7 @@ export function ResolutionPanel(props: {
             You will earn {earnedFees}. */}
             </>
           ) : outcome === 'CANCEL' ? (
-            <>Cancel all trades and return money back to traders.</>
+            <>Cancel all trades and return money back to {BETTORS}.</>
           ) : outcome === 'MKT' ? (
             <>
               {capitalize(PRESENT_BETS)} will be paid out at the probability you
