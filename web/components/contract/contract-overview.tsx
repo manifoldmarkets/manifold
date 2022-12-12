@@ -31,7 +31,6 @@ import { ContractDetails } from './contract-details'
 import { ContractReportResolution } from './contract-report-resolution'
 import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
-import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
