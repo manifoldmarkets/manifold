@@ -26,7 +26,7 @@ import { FeaturedPill } from 'web/components/contract/contract-card'
 export const getStaticProps = async () => {
   const groups = await listAllGroups().catch((_) => [])
 
-  return { props: { groups } }
+  return { props: { groups }, revalidate: 60 }
 }
 
 export default function Groups(props: { groups: Group[] }) {
