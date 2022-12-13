@@ -41,7 +41,7 @@ import {
   nativeToWebMessageType,
   webToNativeMessage,
 } from 'common/native-message'
-
+import { useFonts, ReadexPro_400Regular } from '@expo-google-fonts/readex-pro'
 console.log('using', ENV, 'env')
 console.log(
   'env not switching? run `npx expo start --clear` and then try again'
@@ -79,7 +79,6 @@ export type NavigationState = {
   scrollEvent: NativeScrollEvent | undefined
   isOnContractPage: boolean
 }
-
 const App = () => {
   // Init
   const hasWebViewLoaded = useRef(false)
@@ -87,6 +86,7 @@ const App = () => {
   const isIOS = Platform.OS === 'ios'
   const webview = useRef<WebView | undefined>()
   const notificationResponseListener = useRef<Subscription | undefined>()
+  useFonts({ ReadexPro_400Regular })
 
   // Auth
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -431,148 +431,150 @@ const App = () => {
         />
       )}
       <SafeAreaView style={styles.container}>
-        <StatusBar
-          animated={true}
-          backgroundColor="white"
-          style={'dark'}
-          hideTransitionAnimation={'none'}
-          hidden={false}
-        />
-        <View style={styles.otherSiteToolbar}>
-          <View style={styles.row}>
-            <Pressable
-              style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
-              onPress={() => {
-                const { previousHomeUrl } = currentNavState
-                // In order to make the webview load a new url manually it has to be different from the previous one
-                const back = !previousHomeUrl.includes('?')
-                  ? `${previousHomeUrl}?ignoreThisQuery=true`
-                  : `${previousHomeUrl}&ignoreThisQuery=true`
-                setUrlToLoad(back)
-              }}
-            >
-              <Text style={styles.toolBarText}>Done</Text>
-            </Pressable>
-            <Pressable
-              style={styles.toolBarIcon}
-              onPress={async () => {
-                await Share.share({
-                  message: currentNavState.url,
-                })
-              }}
-            >
-              <Feather name="share" size={24} color="black" />
-            </Pressable>
-            <Pressable
-              style={[styles.toolBarIcon, { justifyContent: 'flex-end' }]}
-              onPress={async () => {
-                if (currentNavState.loading) {
-                  webview.current?.stopLoading()
-                  setCurrentNavState({
-                    ...currentNavState,
-                    loading: false,
+        <View style={[styles.container, { position: 'relative' }]}>
+          <StatusBar
+            animated={true}
+            backgroundColor="white"
+            style={'dark'}
+            hideTransitionAnimation={'none'}
+            hidden={false}
+          />
+          <View style={styles.otherSiteToolbar}>
+            <View style={styles.row}>
+              <Pressable
+                style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
+                onPress={() => {
+                  const { previousHomeUrl } = currentNavState
+                  // In order to make the webview load a new url manually it has to be different from the previous one
+                  const back = !previousHomeUrl.includes('?')
+                    ? `${previousHomeUrl}?ignoreThisQuery=true`
+                    : `${previousHomeUrl}&ignoreThisQuery=true`
+                  setUrlToLoad(back)
+                }}
+              >
+                <Text style={styles.toolBarText}>Done</Text>
+              </Pressable>
+              <Pressable
+                style={styles.toolBarIcon}
+                onPress={async () => {
+                  await Share.share({
+                    message: currentNavState.url,
                   })
-                } else {
-                  webview.current?.reload()
-                  setCurrentNavState({
-                    ...currentNavState,
-                    loading: true,
-                  })
-                }
-              }}
-            >
-              {currentNavState.loading ? (
-                <Feather name="x" size={24} color="black" />
-              ) : (
-                <AntDesign name="reload1" size={24} color="black" />
-              )}
-            </Pressable>
+                }}
+              >
+                <Feather name="share" size={24} color="black" />
+              </Pressable>
+              <Pressable
+                style={[styles.toolBarIcon, { justifyContent: 'flex-end' }]}
+                onPress={async () => {
+                  if (currentNavState.loading) {
+                    webview.current?.stopLoading()
+                    setCurrentNavState({
+                      ...currentNavState,
+                      loading: false,
+                    })
+                  } else {
+                    webview.current?.reload()
+                    setCurrentNavState({
+                      ...currentNavState,
+                      loading: true,
+                    })
+                  }
+                }}
+              >
+                {currentNavState.loading ? (
+                  <Feather name="x" size={24} color="black" />
+                ) : (
+                  <AntDesign name="reload1" size={24} color="black" />
+                )}
+              </Pressable>
+            </View>
           </View>
+          <BackButton webView={webview} navState={currentNavState} />
+          <WebView
+            pullToRefreshEnabled={true}
+            onScroll={(e) =>
+              setCurrentNavState({
+                ...currentNavState,
+                scrollEvent: e.nativeEvent,
+              })
+            }
+            style={styles.webView}
+            mediaPlaybackRequiresUserAction={true}
+            allowsInlineMediaPlayback={true}
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+            overScrollMode={'never'}
+            decelerationRate={'normal'}
+            allowsBackForwardNavigationGestures={true}
+            // Load start and end is for whole website loading, not navigations within manifold
+            onLoadEnd={() => {
+              hasWebViewLoaded.current = true
+              setCurrentNavState({ ...currentNavState, loading: false })
+            }}
+            sharedCookiesEnabled={true}
+            source={{ uri: urlToLoad }}
+            //@ts-ignore
+            ref={webview}
+            onError={(e) => handleWebviewError(e)}
+            renderError={(e) => {
+              // Renders this view while we resolve the error
+              return (
+                <View style={{ height, width }}>
+                  <SplashLoading
+                    height={height}
+                    width={width}
+                    source={require('./assets/splash.png')}
+                  />
+                </View>
+              )
+            }}
+            onTouchStart={() => {
+              tellWebviewToSetNativeFlag()
+            }}
+            // Load start and end is for whole website loading, not navigations within manifold
+            onLoadStart={() => {
+              setCurrentNavState({ ...currentNavState, loading: true })
+            }}
+            // On navigation state change changes on every url change, it doesn't update loading
+            onNavigationStateChange={(navState) => {
+              const { url, canGoBack } = navState
+              setCurrentNavState({
+                ...currentNavState,
+                url,
+                previousHomeUrl: url.startsWith(homeUri)
+                  ? url
+                  : currentNavState.previousHomeUrl,
+                previousUrl: currentNavState.url,
+                canGoBack,
+                isOnContractPage: false,
+              })
+              tellWebviewToSetNativeFlag()
+            }}
+            onRenderProcessGone={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent
+              console.warn(
+                'Content process terminated, reloading android',
+                nativeEvent.didCrash
+              )
+              webview.current?.reload()
+            }}
+            onContentProcessDidTerminate={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent
+              console.warn(
+                'Content process terminated, reloading ios ',
+                nativeEvent
+              )
+              webview.current?.reload()
+            }}
+            onMessage={handleMessageFromWebview}
+          />
+          <AuthModal
+            showModal={showAuthModal}
+            setShowModal={setShowAuthModal}
+            webview={webview}
+          />
         </View>
-        <BackButton webView={webview} navState={currentNavState} />
-        <WebView
-          pullToRefreshEnabled={true}
-          onScroll={(e) =>
-            setCurrentNavState({
-              ...currentNavState,
-              scrollEvent: e.nativeEvent,
-            })
-          }
-          style={styles.webView}
-          mediaPlaybackRequiresUserAction={true}
-          allowsInlineMediaPlayback={true}
-          showsHorizontalScrollIndicator={false}
-          showsVerticalScrollIndicator={false}
-          overScrollMode={'never'}
-          decelerationRate={'normal'}
-          allowsBackForwardNavigationGestures={true}
-          // Load start and end is for whole website loading, not navigations within manifold
-          onLoadEnd={() => {
-            hasWebViewLoaded.current = true
-            setCurrentNavState({ ...currentNavState, loading: false })
-          }}
-          sharedCookiesEnabled={true}
-          source={{ uri: urlToLoad }}
-          //@ts-ignore
-          ref={webview}
-          onError={(e) => handleWebviewError(e)}
-          renderError={(e) => {
-            // Renders this view while we resolve the error
-            return (
-              <View style={{ height, width }}>
-                <SplashLoading
-                  height={height}
-                  width={width}
-                  source={require('./assets/splash.png')}
-                />
-              </View>
-            )
-          }}
-          onTouchStart={() => {
-            tellWebviewToSetNativeFlag()
-          }}
-          // Load start and end is for whole website loading, not navigations within manifold
-          onLoadStart={() => {
-            setCurrentNavState({ ...currentNavState, loading: true })
-          }}
-          // On navigation state change changes on every url change, it doesn't update loading
-          onNavigationStateChange={(navState) => {
-            const { url, canGoBack } = navState
-            setCurrentNavState({
-              ...currentNavState,
-              url,
-              previousHomeUrl: url.startsWith(homeUri)
-                ? url
-                : currentNavState.previousHomeUrl,
-              previousUrl: currentNavState.url,
-              canGoBack,
-              isOnContractPage: false,
-            })
-            tellWebviewToSetNativeFlag()
-          }}
-          onRenderProcessGone={(syntheticEvent) => {
-            const { nativeEvent } = syntheticEvent
-            console.warn(
-              'Content process terminated, reloading android',
-              nativeEvent.didCrash
-            )
-            webview.current?.reload()
-          }}
-          onContentProcessDidTerminate={(syntheticEvent) => {
-            const { nativeEvent } = syntheticEvent
-            console.warn(
-              'Content process terminated, reloading ios ',
-              nativeEvent
-            )
-            webview.current?.reload()
-          }}
-          onMessage={handleMessageFromWebview}
-        />
-        <AuthModal
-          showModal={showAuthModal}
-          setShowModal={setShowAuthModal}
-          webview={webview}
-        />
       </SafeAreaView>
     </>
   )
