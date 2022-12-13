@@ -45,6 +45,7 @@ import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
 import { ContractMetrics } from 'common/calculate-metrics'
+import Image from 'next/image'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -123,10 +124,15 @@ export const ContractCard = memo(function ContractCard(props: {
         {/* overlay question on image */}
         {hasImage && !hideQuestion && (
           <div className="relative mb-2">
-            <img
-              className="h-80 w-full object-cover "
-              src={contract.coverImageUrl}
-            />
+            <div className="relative h-80">
+              <Image
+                fill
+                alt={contract.question}
+                sizes="100vw"
+                className="object-cover"
+                src={contract.coverImageUrl ?? ''}
+              />
+            </div>
             <div className="absolute bottom-0 w-full">
               <div
                 className={clsx(

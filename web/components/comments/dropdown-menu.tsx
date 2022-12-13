@@ -8,19 +8,23 @@ export default function DropdownMenu(props: {
   Items: { name: string; icon: ReactNode; onClick: () => void }[]
   Icon?: ReactNode
   MenuWidth?: string
+  buttonClass?: string
 }) {
-  const { Items, Icon, MenuWidth } = props
+  const { Items, Icon, MenuWidth, buttonClass } = props
   const icon = Icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
   )
   return (
     <Menu as="div" className="relative inline-block text-left">
-      <div>
-        <Menu.Button className="flex items-center rounded-full text-gray-400 hover:text-gray-600">
-          <span className="sr-only">Open options</span>
-          {icon}
-        </Menu.Button>
-      </div>
+      <Menu.Button
+        className={clsx(
+          'flex items-center rounded-full text-gray-400 hover:text-gray-600',
+          buttonClass
+        )}
+      >
+        <span className="sr-only">Open options</span>
+        {icon}
+      </Menu.Button>
 
       <Transition
         as={Fragment}

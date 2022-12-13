@@ -35,12 +35,7 @@ import { generateReact, insertContent } from '../editor/utils'
 import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { DisplaySpoiler } from '../editor/spoiler'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
-
-const DisplayImage = Image.configure({
-  HTMLAttributes: {
-    class: 'max-h-96',
-  },
-})
+import { DisplayImage } from '../editor/image'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
@@ -75,7 +70,8 @@ export const proseClass = (size: 'sm' | 'md' | 'lg') =>
     size !== 'lg' && 'prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0',
     '[&>p]:prose-li:my-0',
     'text-gray-900 prose-blockquote:text-gray-600',
-    'prose-a:font-light prose-blockquote:font-light font-light'
+    'prose-a:font-light prose-blockquote:font-light font-light',
+    'break-anywhere'
   )
 
 export function useTextEditor(props: {
@@ -101,9 +97,7 @@ export function useTextEditor(props: {
 
   const editorClass = clsx(
     proseClass(size),
-    simple ? 'min-h-[4.25em]' : 'min-h-[7.5em]', // 1 em padding + 13/8 em * line count
-    'max-h-[69vh] overflow-auto',
-    'outline-none py-[.5em] px-4',
+    'outline-none py-[.5em] px-4 h-full',
     'prose-img:select-auto',
     '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, embeds
   )
@@ -178,7 +172,14 @@ export function TextEditor(props: {
     // matches input styling
     <div className="w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
       <FloatingFormatMenu editor={editor} advanced={!children} />
-      <EditorContent editor={editor} />
+      <div
+        className={clsx(
+          children ? 'min-h-[4.25em]' : 'min-h-[7.5em]', // 1 em padding + line height (1.625) * line count
+          'grid max-h-[69vh] overflow-auto'
+        )}
+      >
+        <EditorContent editor={editor} />
+      </div>
       <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
     </div>
   )

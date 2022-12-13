@@ -7,12 +7,12 @@ import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
-import { ProbabilitySelector } from './probability-selector'
 import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
-import { BETTOR, BETTORS, PAST_BETS } from 'common/user'
+import { BETTORS, PRESENT_BETS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { capitalize } from 'lodash'
+import { ProbabilityInput } from './widgets/probability-input'
 
 export function ResolutionPanel(props: {
   isAdmin: boolean
@@ -30,7 +30,9 @@ export function ResolutionPanel(props: {
 
   const [outcome, setOutcome] = useState<resolution | undefined>()
 
-  const [prob, setProb] = useState(getProbability(contract) * 100)
+  const [prob, setProb] = useState<number | undefined>(
+    Math.round(getProbability(contract) * 100)
+  )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -60,59 +62,58 @@ export function ResolutionPanel(props: {
   }
 
   return (
-    <Col className={clsx('relative rounded-md bg-white px-8 py-6', className)}>
+    <Col className={clsx('relative rounded-md py-6', className)}>
       {isAdmin && !isCreator && (
         <span className="bg-scarlet-50 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
           ADMIN
         </span>
       )}
-      <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
-      <div className="mb-3 text-sm text-gray-500">Outcome</div>
+      <div className="mb-6">Resolve your market</div>
       <YesNoCancelSelector
         className="mx-auto my-2"
         selected={outcome}
         onSelect={setOutcome}
       />
-      <Spacer h={4} />
-      <div>
-        {outcome === 'YES' ? (
-          <>
-            Winnings will be paid out to {BETTORS} who bought YES.
-            {/* <br />
-            <br />
-            You will earn {earnedFees}. */}
-          </>
-        ) : outcome === 'NO' ? (
-          <>
-            Winnings will be paid out to {BETTORS} who bought NO.
-            {/* <br />
-            <br />
-            You will earn {earnedFees}. */}
-          </>
-        ) : outcome === 'CANCEL' ? (
-          <>
-            All {PAST_BETS} will be returned. Unique {BETTOR} bonuses will be
-            withdrawn from your account
-          </>
-        ) : outcome === 'MKT' ? (
-          <Col className="items-center gap-6">
-            <div>
-              {capitalize(PAST_BETS)} will be paid out at the probability you
-              specify:
-            </div>
-            <ProbabilitySelector
-              probabilityInt={Math.round(prob)}
-              setProbabilityInt={setProb}
-            />
-            {/* You will earn {earnedFees}. */}
-          </Col>
-        ) : (
-          <>Resolving this market will immediately pay out {BETTORS}.</>
-        )}
-      </div>
+
       <Spacer h={4} />
       {!!error && <div className="text-scarlet-500">{error}</div>}
-      <Row className={'justify-center'}>
+
+      <Row className={'items-center justify-between'}>
+        <div className="text-sm">
+          {outcome === 'YES' ? (
+            <>
+              Winnings will be paid out to {BETTORS} who bought YES.
+              {/* <br />
+            <br />
+            You will earn {earnedFees}. */}
+            </>
+          ) : outcome === 'NO' ? (
+            <>
+              Winnings will be paid out to {BETTORS} who bought NO.
+              {/* <br />
+            <br />
+            You will earn {earnedFees}. */}
+            </>
+          ) : outcome === 'CANCEL' ? (
+            <>Cancel all trades and return money back to {BETTORS}.</>
+          ) : outcome === 'MKT' ? (
+            <>
+              {capitalize(PRESENT_BETS)} will be paid out at the probability you
+              specify:
+            </>
+          ) : (
+            <span className="text-gray-500">
+              Resolving this market will immediately pay out {BETTORS}.
+            </span>
+          )}
+        </div>
+        {outcome === 'MKT' && (
+          <ProbabilityInput
+            prob={prob}
+            onChange={setProb}
+            inputClassName="w-28 mr-3 !h-11"
+          />
+        )}
         <ResolveConfirmationButton
           color={
             outcome === 'YES'
@@ -125,6 +126,14 @@ export function ResolutionPanel(props: {
               ? 'blue'
               : 'indigo'
           }
+          label={
+            outcome === 'CANCEL'
+              ? 'N/A'
+              : outcome === 'MKT'
+              ? `${prob}%`
+              : outcome ?? ''
+          }
+          marketTitle={contract.question}
           disabled={!outcome}
           onResolve={resolve}
           isSubmitting={isSubmitting}

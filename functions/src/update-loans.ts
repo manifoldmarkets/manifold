@@ -90,39 +90,35 @@ async function updateLoansCore() {
     return { user, result }
   })
 
-  const betUpdates = userUpdates.map((u) => u.result.updates).flat()
-  log(`${betUpdates.length} bet updates.`)
-
-  const betDocUpdates = betUpdates.map((update) => ({
-    doc: firestore
-      .collection('contracts')
-      .doc(update.contractId)
-      .collection('bets')
-      .doc(update.betId),
-    fields: {
-      loanAmount: update.loanTotal,
-    },
-  }))
-
-  await writeAsync(firestore, betDocUpdates)
-
-  log(`${userUpdates.length} user payouts`)
-
-  await Promise.all(
-    userUpdates.map(({ user, result: { payout } }) => payUser(user.id, payout))
-  )
-
   const today = new Date().toDateString().replace(' ', '-')
   const key = `loan-notifications-${today}`
-  await Promise.all(
-    userUpdates
-      // Don't send a notification if the payout is < Ṁ1,
-      // because a Ṁ0 loan is confusing.
-      .filter(({ result: { payout } }) => payout >= 1)
-      .map(({ user, result: { payout } }) =>
-        createLoanIncomeNotification(user, key, payout)
-      )
+
+  await batchedWaitAll(
+    userUpdates.map(({ user, result }) => async () => {
+      const { updates, payout } = result
+
+      const betUpdates = updates.map((update) => ({
+        doc: firestore
+          .collection('contracts')
+          .doc(update.contractId)
+          .collection('bets')
+          .doc(update.betId),
+        fields: {
+          loanAmount: update.loanTotal,
+        },
+      }))
+
+      await writeAsync(firestore, betUpdates)
+      await payUser(user.id, payout)
+
+      if (payout >= 1) {
+        // Don't send a notification if the payout is < Ṁ1,
+        // because a Ṁ0 loan is confusing.
+        await createLoanIncomeNotification(user, key, payout)
+      }
+    }),
+    100
   )
 
-  log('Notifications sent!')
+  log(`${userUpdates.length} user loans paid out!`)
 }

@@ -4,7 +4,7 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Notification, notification_reason_types } from 'common/notification'
+import { Notification } from 'common/notification'
 import { getNotificationPreference } from 'common/user-notification-preferences'
 import { usePrivateUser } from 'web/hooks/use-user'
 import DropdownMenu from '../comments/dropdown-menu'
@@ -47,7 +47,7 @@ function useNotificationPreferenceItem(notification: Notification) {
   if (!privateUser) {
     return []
   }
-  const reason = notification.reason as notification_reason_types
+  const reason = notification.reason
   const subType = getNotificationPreference(reason)
   const destinations = getUsersSavedPreference(subType, privateUser)
 

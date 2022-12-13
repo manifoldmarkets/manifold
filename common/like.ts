@@ -1,3 +1,4 @@
+/** @deprecated - see reaction.ts with type === 'like' **/
 export type Like = {
   id: string // will be id of the object liked, i.e. contract.id
   userId: string

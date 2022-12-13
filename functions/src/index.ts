@@ -58,6 +58,7 @@ export * from './close-market'
 export * from './add-subsidy'
 export * from './test-scheduled-function'
 export * from './validate-iap'
+export * from './claim-destiny-sub'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -87,6 +88,8 @@ import { updateloans } from './update-loans'
 import { addsubsidy } from './add-subsidy'
 import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from './validate-iap'
+import { swapcert } from './swap-cert'
+import { dividendcert } from './dividend-cert'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -120,6 +123,8 @@ const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 const updateLoansFunction = toCloudFunction(updateloans)
 const validateIAPFunction = toCloudFunction(validateiap)
+const swapCertFunction = toCloudFunction(swapcert)
+const dividendCertFunction = toCloudFunction(dividendcert)
 
 export {
   healthFunction as health,
@@ -151,4 +156,6 @@ export {
   updateGroupMetricsFunction as updategroupmetrics,
   updateLoansFunction as updateloans,
   validateIAPFunction as validateiap,
+  swapCertFunction as swapcert,
+  dividendCertFunction as dividendcert,
 }

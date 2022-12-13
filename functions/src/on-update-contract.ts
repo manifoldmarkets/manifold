@@ -6,7 +6,6 @@ import * as admin from 'firebase-admin'
 
 import { GroupContractDoc } from '../../common/group'
 import { isEqual } from 'lodash'
-import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
 
 export const onUpdateContract = functions
   .runWith({ secrets: ['API_SECRET'] })
@@ -21,12 +20,6 @@ export const onUpdateContract = functions
       await handleContractGroupUpdated(previousContract, contract)
     }
 
-    // Handle resolved market contract update:
-    if (contract.isResolved && !previousContract.isResolved) {
-      await updateContractMetricsForUsers(contract)
-    }
-
-    // No need to notify users of resolution, that's handled in resolve-market
     if (
       (previousContract.closeTime !== closeTime ||
         previousContract.question !== question) &&

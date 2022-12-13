@@ -16,7 +16,7 @@ const MARGIN_Y = MARGIN.top + MARGIN.bottom
 const getPoints = (startDate: number, dailyValues: number[]) => {
   const startDateDayJs = dayjs(startDate)
   return dailyValues.map((y, i) => ({
-    x: startDateDayJs.add(i, 'day').toDate(),
+    x: startDateDayJs.add(i, 'day').toDate().valueOf(),
     y: y,
   }))
 }

@@ -2,31 +2,27 @@ import {
   BETTING_STREAK_BONUS_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { groupPath } from 'common/group'
-import { getSourceIdForLinkComponent, Notification } from 'common/notification'
+import { Notification } from 'common/notification'
 import { formatMoney } from 'common/util/format'
-import { groupBy, sum, uniqBy } from 'lodash'
+import { groupBy, uniqBy } from 'lodash'
 import { useState } from 'react'
 import {
   MultiUserLinkInfo,
   MultiUserTransactionModal,
 } from 'web/components/multi-user-transaction-link'
-import { NotificationGroup } from 'web/hooks/use-notifications'
 import { useUser } from 'web/hooks/use-user'
-import { NotificationGroupItemComponent } from 'web/pages/notifications'
 import { BettingStreakModal } from '../profile/betting-streak-modal'
 import { LoansModal } from '../profile/loans-modal'
 import {
   AvatarNotificationIcon,
   NotificationFrame,
   NotificationIcon,
-  ParentNotificationHeader,
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
 
 // Loop through the contracts and combine the notification items into one
-function combineNotificationsByAddingNumericSourceTexts(
+export function combineAndSumIncomeNotifications(
   notifications: Notification[]
 ) {
   const newNotifications: Notification[] = []
@@ -48,21 +44,21 @@ function combineNotificationsByAddingNumericSourceTexts(
 
       let sum = 0
       notificationsForSourceTitle.forEach(
-        (notification) => (sum = parseInt(notification.sourceText ?? '0') + sum)
+        (notification) => (sum = parseInt(notification.sourceText) + sum)
       )
       const uniqueUsers = uniqBy(
         notificationsForSourceTitle.map((notification) => {
-          let thisSum = 0
+          let sum = 0
           notificationsForSourceTitle
             .filter(
               (n) => n.sourceUserUsername === notification.sourceUserUsername
             )
-            .forEach((n) => (thisSum = parseInt(n.sourceText ?? '0') + thisSum))
+            .forEach((n) => (sum = parseInt(n.sourceText) + sum))
           return {
-            username: notification.sourceUserUsername,
             name: notification.sourceUserName,
+            username: notification.sourceUserUsername,
             avatarUrl: notification.sourceUserAvatarUrl,
-            amount: thisSum,
+            amount: sum,
           } as MultiUserLinkInfo
         }),
         (n) => n.username
@@ -78,52 +74,6 @@ function combineNotificationsByAddingNumericSourceTexts(
     }
   }
   return newNotifications
-}
-
-export function IncomeNotificationGroupItem(props: {
-  notificationGroup: NotificationGroup
-}) {
-  const { notificationGroup } = props
-  const { notifications } = notificationGroup
-
-  const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
-    notifications.filter((n) => n.sourceType !== 'betting_streak_bonus')
-  )
-  const [highlighted, _setHighlighted] = useState(
-    notifications.some((n) => !n.isSeen)
-  )
-  const totalIncome = sum(
-    notifications.map((notification) =>
-      notification.sourceText ? parseInt(notification.sourceText) : 0
-    )
-  )
-  // Because the server's reset time will never align with the client's, we may
-  // erroneously sum 2 betting streak bonuses, therefore just show the most recent
-  const mostRecentBettingStreakBonus = notifications
-    .filter((n) => n.sourceType === 'betting_streak_bonus')
-    .sort((a, b) => a.createdTime - b.createdTime)
-    .pop()
-  if (mostRecentBettingStreakBonus)
-    combinedNotifs.unshift(mostRecentBettingStreakBonus)
-  const header = (
-    <ParentNotificationHeader
-      header={
-        <div>
-          {'Daily Income: '}
-          <span className={'text-teal-600'}>{formatMoney(totalIncome)}</span>
-        </div>
-      }
-      highlighted={highlighted}
-    />
-  )
-
-  return (
-    <NotificationGroupItemComponent
-      notifications={combinedNotifs}
-      header={header}
-      isIncomeNotification={true}
-    />
-  )
 }
 
 export function IncomeNotificationItem(props: {
@@ -219,7 +169,9 @@ export function BonusIncomeNotification(props: {
 }) {
   const { notification, highlighted, setHighlighted } = props
   const { sourceText, data } = notification
-  const userLinks: MultiUserLinkInfo[] = data?.uniqueUsers ?? []
+  const userLinks: MultiUserLinkInfo[] = data?.uniqueUsers ?? [
+    { ...notification, sum: parseInt(sourceText) },
+  ]
   const [open, setOpen] = useState(false)
   return (
     <NotificationFrame
@@ -334,30 +286,7 @@ export function LoanIncomeNotification(props: {
   )
 }
 
-export function getIncomeSourceUrl(notification: Notification) {
-  const {
-    sourceId,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
-    sourceSlug,
-    sourceType,
-    sourceUserUsername,
-  } = notification
-  if (sourceType === 'tip' && sourceContractSlug)
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
-  if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
-  if (sourceType === 'challenge') return `${sourceSlug}`
-  if (sourceType === 'betting_streak_bonus')
-    return `/${sourceUserUsername}/?show=betting-streak`
-  if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loans`
-  if (sourceContractCreatorUsername && sourceContractSlug)
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
-      sourceId ?? '',
-      sourceType
-    )}`
-}
-
-export function IncomeNotificationLabel(props: { notification: Notification }) {
+function IncomeNotificationLabel(props: { notification: Notification }) {
   const { notification } = props
   const { sourceText } = notification
   return sourceText ? (

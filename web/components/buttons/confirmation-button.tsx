@@ -100,11 +100,20 @@ export function ResolveConfirmationButton(props: {
   onResolve: () => void
   isSubmitting: boolean
   openModalButtonClass?: string
-  color?: ColorType
+  marketTitle: string
+  label: string
+  color: ColorType
   disabled?: boolean
 }) {
-  const { onResolve, isSubmitting, openModalButtonClass, color, disabled } =
-    props
+  const {
+    onResolve,
+    isSubmitting,
+    openModalButtonClass,
+    color,
+    marketTitle,
+    label,
+    disabled,
+  } = props
   return (
     <ConfirmationButton
       openModalBtn={{
@@ -118,13 +127,16 @@ export function ResolveConfirmationButton(props: {
         label: 'Back',
       }}
       submitBtn={{
-        label: 'Resolve',
+        label: `Resolve to ${label}`,
         color: color,
         isSubmitting,
       }}
       onSubmit={onResolve}
     >
-      <p>Are you sure you want to resolve this market?</p>
+      <p>
+        Are you sure you want to resolve "{marketTitle}" to <b>{label}</b>?
+        <br />
+      </p>
     </ConfirmationButton>
   )
 }

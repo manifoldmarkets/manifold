@@ -1,10 +1,7 @@
-import {
-  ChevronDoubleDownIcon,
-  ChevronDoubleUpIcon,
-} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Notification, ReactionNotificationTypes } from 'common/notification'
 import { PrivateUser } from 'common/user'
+import { sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import React, { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -12,19 +9,20 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
-import { IncomeNotificationGroupItem } from 'web/components/notifications/income-summary-notifications'
+import { combineAndSumIncomeNotifications } from 'web/components/notifications/income-summary-notifications'
 import {
   combineReactionNotifications,
-  markNotificationsAsSeen,
   NOTIFICATIONS_PER_PAGE,
   NUM_SUMMARY_LINES,
   ParentNotificationHeader,
   PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
+import { markAllNotificationsAsSeen } from 'web/lib/firebase/notifications'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
+import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
@@ -115,20 +113,15 @@ function RenderNotificationGroups(props: {
   notificationGroups: NotificationGroup[]
 }) {
   const { notificationGroups } = props
-  const grayLine = <hr className="mx-auto w-[calc(100%-1rem)] bg-gray-400" />
+
+  const grayLine = (
+    <div className="mx-auto h-[1.5px] w-[calc(100%-1rem)] bg-gray-300" />
+  )
   return (
     <>
       {notificationGroups.map((notification) => (
         <Fragment key={notification.groupedById + notification.timePeriod}>
-          {notification.type === 'income' ? (
-            <>
-              <IncomeNotificationGroupItem
-                notificationGroup={notification}
-                key={notification.groupedById + notification.timePeriod}
-              />
-              {grayLine}
-            </>
-          ) : notification.notifications.length === 1 ? (
+          {notification.notifications.length === 1 ? (
             <>
               <NotificationItem
                 notification={notification.notifications[0]}
@@ -170,13 +163,9 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
   // Mark all notifications as seen.
   useEffect(() => {
     if (isPageVisible && allGroupedNotifications) {
-      const notifications = allGroupedNotifications
-        .flat()
-        .flatMap((g) => g.notifications)
-
-      markNotificationsAsSeen(notifications)
+      markAllNotificationsAsSeen(privateUser.id)
     }
-  }, [isPageVisible, allGroupedNotifications])
+  }, [privateUser.id, isPageVisible, allGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
@@ -221,15 +210,28 @@ function NotificationGroupItem(props: {
   const { notifications } = notificationGroup
   const groupHighlighted = notifications.some((n) => !n.isSeen)
   const { sourceTitle, sourceContractTitle } = notifications[0]
-  const combinedNotifs = combineReactionNotifications(
-    notifications.filter((n) =>
-      ReactionNotificationTypes.includes(n.sourceType)
+  const incomeTypesToSum = ['bonus', 'tip', 'tip_and_like']
+  const combinedNotifs = sortBy(
+    combineReactionNotifications(
+      notifications.filter((n) =>
+        ReactionNotificationTypes.includes(n.sourceType)
+      )
     )
-  ).concat(
-    notifications.filter(
-      (n) => !ReactionNotificationTypes.includes(n.sourceType)
-    )
-  )
+      .concat(
+        notifications.filter(
+          (n) =>
+            !ReactionNotificationTypes.includes(n.sourceType) &&
+            !incomeTypesToSum.includes(n.sourceType)
+        )
+      )
+      .concat(
+        combineAndSumIncomeNotifications(
+          notifications.filter((n) => incomeTypesToSum.includes(n.sourceType))
+        )
+      ),
+
+    'createdTime'
+  ).reverse()
   const header = (
     <ParentNotificationHeader
       header={
@@ -260,10 +262,9 @@ function NotificationGroupItem(props: {
 export function NotificationGroupItemComponent(props: {
   notifications: Notification[]
   header: ReactNode
-  isIncomeNotification?: boolean
   className?: string
 }) {
-  const { notifications, className, header, isIncomeNotification } = props
+  const { notifications, className, header } = props
   const numNotifications = notifications.length
 
   const needsExpanding = numNotifications > NUM_SUMMARY_LINES
@@ -286,33 +287,16 @@ export function NotificationGroupItemComponent(props: {
               notification={notification}
               key={notification.id}
               isChildOfGroup={true}
-              isIncomeNotification={isIncomeNotification}
             />
           )
         })}
         {needsExpanding && (
-          <Row
-            className={clsx(
-              'text my-1 w-full items-center justify-end gap-1 text-indigo-700'
-            )}
-            onClick={onExpandHandler}
-          >
-            {!expanded && (
-              <>
-                <div>
-                  {numNotifications > NUM_SUMMARY_LINES
-                    ? 'See ' + (numNotifications - NUM_SUMMARY_LINES) + ' more'
-                    : ''}
-                </div>
-                <ChevronDoubleDownIcon className="h-4 w-4" />
-              </>
-            )}
-            {expanded && (
-              <>
-                <div>See Less</div>
-                <ChevronDoubleUpIcon className="h-4 w-4" />
-              </>
-            )}
+          <Row className={clsx('w-full items-center justify-end gap-1')}>
+            <ShowMoreLessButton
+              onClick={onExpandHandler}
+              isCollapsed={!expanded}
+              howManyMore={numNotifications - NUM_SUMMARY_LINES}
+            />
           </Row>
         )}
       </div>

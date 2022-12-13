@@ -9,9 +9,12 @@ import {
   DocumentIcon,
 } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
+import { difference } from 'lodash'
 
 import { User } from 'web/lib/firebase/users'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser, useUserById, usePrefetchUsers } from 'web/hooks/use-user'
+import { useDiscoverUsers } from 'web/hooks/use-users'
+import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './layout/page'
@@ -21,23 +24,19 @@ import { Col } from './layout/col'
 import { Linkify } from './widgets/linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
-import { genHash } from 'common/util/random'
+import { Modal } from './layout/modal'
+import { Tabs } from './layout/tabs'
 import { QueryUncontrolledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments/comments-list'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { BetsList } from './bet/bets-list'
-import { FollowersButton, FollowingButton } from './buttons/following-button'
 import { UserFollowButton } from './buttons/follow-button'
+import { FollowList } from './follow-list'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
-import {
-  BOT_USERNAMES,
-  CORE_USERNAMES,
-  DOMAIN,
-  ENV_CONFIG,
-} from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
@@ -45,9 +44,11 @@ import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-about'
 import { buttonClass } from './buttons/button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
-import { BotBadge, CoreBadge, PostBanBadge } from './widgets/user-link'
+import { PostBanBadge, UserBadge } from './widgets/user-link'
 import Link from 'next/link'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
+import { TextButton } from 'web/components/buttons/text-button'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -92,11 +93,15 @@ export function UserPage(props: { user: User }) {
 
       <Col className="relative">
         <Row className="relative px-4 pt-4">
-          <Avatar
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-            size={24}
-            className="bg-white shadow-sm shadow-indigo-300"
+          <ImageWithBlurredShadow
+            image={
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size={24}
+                className="bg-white"
+              />
+            }
           />
           {isCurrentUser && (
             <div className="absolute ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
@@ -113,8 +118,7 @@ export function UserPage(props: { user: User }) {
                   <span className="break-anywhere text-lg font-bold sm:text-2xl">
                     {user.name}
                   </span>
-                  {BOT_USERNAMES.includes(user.username) && <BotBadge />}
-                  {CORE_USERNAMES.includes(user.username) && <CoreBadge />}
+                  {<UserBadge username={user.username} />}
                   {user.isBannedFromPosting && <PostBanBadge />}
                 </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
@@ -307,28 +311,121 @@ export function UserPage(props: { user: User }) {
   )
 }
 
-// Assign each user to a random default banner based on the hash of userId
-// TODO: Consider handling banner uploads using our own storage bucket, like user avatars.
-export function defaultBannerUrl(userId: string) {
-  const defaultBanner = [
-    'https://images.unsplash.com/photo-1501523460185-2aa5d2a0f981?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2131&q=80',
-    'https://images.unsplash.com/photo-1458682625221-3a45f8a844c7?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1974&q=80',
-    'https://images.unsplash.com/photo-1558517259-165ae4b10f7f?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2080&q=80',
-    'https://images.unsplash.com/photo-1563260797-cb5cd70254c8?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2069&q=80',
-    'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
-  ]
-  return defaultBanner[genHash(userId)() % defaultBanner.length]
-}
+type FollowsDialogTab = 'following' | 'followers'
 
-export function ProfilePublicStats(props: { user: User; className?: string }) {
+function ProfilePublicStats(props: { user: User; className?: string }) {
   const { user, className } = props
+  const [isOpen, setIsOpen] = useState(false)
+  const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
+  const followingIds = useFollows(user.id)
+  const followerIds = useFollowers(user.id)
+
+  const openDialog = (tabName: FollowsDialogTab) => {
+    setIsOpen(true)
+    setFollowsTab(tabName)
+  }
+
   return (
-    <Row className={'flex-wrap items-center gap-3'}>
-      <FollowingButton user={user} className={className} />
-      <FollowersButton user={user} className={className} />
+    <Row className="flex-wrap items-center gap-3">
+      <TextButton onClick={() => openDialog('following')} className={className}>
+        <span className={clsx('font-semibold')}>
+          {followingIds?.length ?? ''}
+        </span>{' '}
+        Following
+      </TextButton>
+      <TextButton onClick={() => openDialog('followers')} className={className}>
+        <span className={clsx('font-semibold')}>
+          {followerIds?.length ?? ''}
+        </span>{' '}
+        Followers
+      </TextButton>
+
+      <FollowsDialog
+        user={user}
+        defaultTab={followsTab}
+        followingIds={followingIds}
+        followerIds={followerIds}
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+      />
       {/* <ReferralsButton user={user} className={className} /> */}
       <GroupsButton user={user} className={className} />
       <UserLikedContractsButton user={user} className={className} />
     </Row>
+  )
+}
+
+function FollowsDialog(props: {
+  user: User
+  followingIds: string[] | undefined
+  followerIds: string[] | undefined
+  defaultTab: FollowsDialogTab
+  isOpen: boolean
+  setIsOpen: (isOpen: boolean) => void
+}) {
+  const { user, followingIds, followerIds, defaultTab, isOpen, setIsOpen } =
+    props
+
+  const currentUser = useUser()
+  const myFollowedIds = useFollows(currentUser?.id)
+
+  // mqp: this is a ton of work, don't fetch it unless someone looks.
+  // if you want it to be faster, then you gotta precompute stuff for it somewhere
+  const discoverUserIds = useDiscoverUsers(isOpen ? user.id : undefined)
+  const nonSuggestions = [
+    user?.id ?? '',
+    currentUser?.id ?? '',
+    ...(myFollowedIds ?? []),
+  ]
+  const suggestedUserIds =
+    discoverUserIds == null
+      ? undefined
+      : difference(discoverUserIds, nonSuggestions).slice(0, 50)
+
+  usePrefetchUsers([
+    ...(followerIds ?? []),
+    ...(followingIds ?? []),
+    ...(suggestedUserIds ?? []),
+  ])
+
+  return (
+    <Modal open={isOpen} setOpen={setIsOpen}>
+      <Col className="max-h-[90vh] rounded bg-white p-6 pb-2">
+        <div className="p-2 pb-1 text-xl">{user.name}</div>
+        <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
+        <Tabs
+          tabs={[
+            {
+              title: 'Following',
+              content: (
+                <FollowList
+                  userIds={followingIds}
+                  myFollowedIds={myFollowedIds}
+                />
+              ),
+            },
+            {
+              title: 'Followers',
+              content: (
+                <FollowList
+                  userIds={followerIds}
+                  myFollowedIds={myFollowedIds}
+                />
+              ),
+            },
+            {
+              title: 'Similar',
+              content: (
+                <FollowList
+                  userIds={suggestedUserIds}
+                  myFollowedIds={myFollowedIds}
+                />
+              ),
+            },
+          ]}
+          defaultIndex={defaultTab === 'following' ? 0 : 1}
+        />
+      </Col>
+    </Modal>
   )
 }

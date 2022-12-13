@@ -87,7 +87,7 @@ export function BetsList(props: { user: User }) {
     )
   )
 
-  const loadingContracts = useContracts(contractIds)
+  const loadingContracts = useContracts(contractIds.slice(0, 1000))
 
   const [sort, setSort] = usePersistentState<BetSort>('newest', {
     key: 'bets-list-sort',

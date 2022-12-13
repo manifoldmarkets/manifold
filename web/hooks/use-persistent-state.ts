@@ -118,11 +118,11 @@ export const usePersistentState = <T>(
 
   const [state, setState] = useStateCheckEquality(savedValue ?? initial)
   useEffect(() => {
-    if (key != null && store != null) {
+    if (hasLoaded && key != null && store != null) {
       store.set(key, state)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, state])
+  }, [key, state, hasLoaded])
 
   if (store?.readsUrl) {
     // On page load, router isn't ready immediately, so set state once it is.

@@ -43,7 +43,7 @@ export async function updateContractMetrics() {
   const weekAgo = now - 7 * DAY_MS
   const monthAgo = now - 30 * DAY_MS
 
-  const writer = firestore.bulkWriter({ throttling: false })
+  const writer = firestore.bulkWriter()
   await batchedWaitAll(
     contracts.map((contract) => async () => {
       const yesterdayBets = await getValues<Bet>(

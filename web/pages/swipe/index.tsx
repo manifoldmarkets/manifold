@@ -1,9 +1,21 @@
+import TinderCard from 'react-tinder-card'
+import toast from 'react-hot-toast'
+import clsx from 'clsx'
+import { useMemo, useState } from 'react'
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+  MinusIcon,
+  PlusIcon,
+} from '@heroicons/react/solid'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
+
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
 import type { BinaryContract, Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
-import { useMemo, useState } from 'react'
-import TinderCard from 'react-tinder-card'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
 import { useUser } from 'web/hooks/use-user'
@@ -17,17 +29,10 @@ import { fromNow } from 'web/lib/util/time'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
-import HorizontalArrows from 'web/lib/icons/horizontal-arrows'
-import clsx from 'clsx'
 import { getBinaryProb } from 'common/contract-details'
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  ArrowUpIcon,
-  MinusIcon,
-  PlusIcon,
-} from '@heroicons/react/solid'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { NoLabel, YesLabel } from 'web/components/outcome-label'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(1000)).filter(
@@ -41,6 +46,8 @@ export async function getStaticProps() {
 
 export default function Swipe(props: { contracts: BinaryContract[] }) {
   const { contracts } = props
+
+  const [amount, setAmount] = useState(10)
 
   const old = useUserSwipes()
   const newToMe = useMemo(
@@ -70,30 +77,34 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   }
 
   return (
-    <main
-      className="h-screen overflow-hidden overscroll-none bg-gray-50 lg:py-6"
-      style={{ height }}
-    >
-      <div className="relative mx-auto h-full max-w-lg">
-        {cards.map((c) => (
-          <Card
-            contract={c}
-            onLeave={() => setIndex((i) => i + 1)}
-            threshold={Math.min(128, width * 0.15)}
-            key={c.id}
-          />
-        ))}
-        {/* TODO: users should never run out of cards */}
-        {!cards.length && (
-          <div className="flex h-full w-full flex-col items-center justify-center">
-            No more cards!
-            <SiteLink href="/home" className="text-indigo-700">
-              Return home
-            </SiteLink>
-          </div>
-        )}
+    <Page>
+      <div
+        className="absolute inset-0 flex justify-center overflow-hidden overscroll-none pb-[58px] lg:pb-0"
+        style={{ height }}
+      >
+        <div className="relative max-w-lg grow">
+          {cards.map((c) => (
+            <Card
+              key={c.id + amount}
+              contract={c}
+              amount={amount}
+              setAmount={setAmount}
+              onLeave={() => setIndex((i) => i + 1)}
+              threshold={Math.min(128, width * 0.15)}
+            />
+          ))}
+          {/* TODO: users should never run out of cards */}
+          {!cards.length && (
+            <div className="flex h-full w-full flex-col items-center justify-center">
+              No more cards!
+              <SiteLink href="/home" className="text-indigo-700">
+                Return home
+              </SiteLink>
+            </div>
+          )}
+        </div>
       </div>
-    </main>
+    </Page>
   )
 }
 
@@ -105,19 +116,21 @@ const Card = (props: {
   contract: BinaryContract
   onLeave?: () => void
   threshold: number
+  amount: number
+  setAmount: (amount: number) => void
 }) => {
-  const { contract, onLeave, threshold } = props
+  const { contract, onLeave, threshold, amount, setAmount } = props
   const { question, description, coverImageUrl, id: contractId } = contract
 
   const userId = useUser()?.id
 
-  const [amount, setAmount] = useState(10)
-  const addMoney = () => setAmount?.((amount) => amount + betTapAdd)
+  const addMoney = () => setAmount(amount + betTapAdd)
+
   const subMoney = () => {
     if (amount <= betTapAdd) {
       setDir('up')
     } else {
-      setAmount?.((amount) => amount - betTapAdd)
+      setAmount(amount - betTapAdd)
     }
   }
 
@@ -132,7 +145,15 @@ const Card = (props: {
 
   return (
     <>
-      {peek && <Peek contract={contract} onClose={() => setPeek(false)} />}
+      {peek && (
+        <Peek
+          contract={contract}
+          onClose={() => {
+            setPeek(false)
+            setDir('middle')
+          }}
+        />
+      )}
       <TinderCard
         onSwipe={async (direction) => {
           if (direction === 'down') {
@@ -144,7 +165,25 @@ const Card = (props: {
 
           if (direction === 'left' || direction === 'right') {
             const outcome = direction === 'left' ? 'NO' : 'YES'
-            await placeBet({ amount, outcome, contractId })
+
+            const promise = placeBet({ amount, outcome, contractId }).catch(
+              (e) => {
+                toast.error(
+                  `Error placing ${formatMoney(amount)} bet on ${outcome}`,
+                  {
+                    position: 'top-center',
+                  }
+                )
+                console.error('Error placing bet', e)
+              }
+            )
+
+            toast.success(`Bet ${formatMoney(amount)} on ${outcome}`, {
+              position: 'top-center',
+            })
+
+            await promise
+
             userId && logSwipe({ amount, outcome, contractId, userId })
             track('swipe bet', {
               slug: contract.slug,
@@ -196,8 +235,10 @@ const Card = (props: {
                 ? description
                 : richTextToString(description)}
             </div>
+
+            <SwipeStatus direction={dir} />
+
             <div className="mb-4 flex flex-col items-center gap-2 self-center">
-              <SwipeStatus direction={dir} />
               <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
                 <button
                   onClick={subMoney}
@@ -228,29 +269,40 @@ const SwipeStatus = (props: { direction: Direction }) => {
 
   if (direction === 'up') {
     return (
-      <div className="flex gap-1 text-indigo-100">
+      <div className="flex justify-center gap-1 text-indigo-100">
         Swipe <ArrowUpIcon className="h-5" /> to skip
+      </div>
+    )
+  }
+  if (direction === 'down') {
+    return (
+      <div className="flex justify-center gap-1 text-indigo-100">
+        Swipe <ArrowDownIcon className="h-5" /> for more info
       </div>
     )
   }
   if (direction === 'left') {
     return (
-      <div className="text-scarlet-100 flex gap-1">
-        <ArrowLeftIcon className="h-5" /> Bet NO
+      <div className="text-scarlet-100 mr-8 flex justify-end gap-1">
+        <ArrowLeftIcon className="h-5" /> Betting NO
       </div>
     )
   }
   if (direction === 'right') {
     return (
-      <div className="flex gap-1 text-teal-100">
-        Bet YES <ArrowRightIcon className="h-5" />
+      <div className="ml-8 flex justify-start gap-1 text-teal-100">
+        Betting YES <ArrowRightIcon className="h-5" />
       </div>
     )
   }
   return (
-    <div className="flex gap-1 text-yellow-100">
-      Swipe <HorizontalArrows /> to bet
-    </div>
+    <Row className="items-center justify-center text-yellow-100">
+      <ArrowLeftIcon className="text-scarlet-600 h-8" /> <NoLabel />
+      <span className="mx-4 whitespace-nowrap text-yellow-100">
+        Swipe to bet
+      </span>
+      <YesLabel /> <ArrowRightIcon className="h-8 text-teal-600" />
+    </Row>
   )
 }
 

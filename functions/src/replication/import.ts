@@ -7,7 +7,8 @@ import {
 import { SupabaseClient } from '@supabase/supabase-js'
 import { chunk } from 'lodash'
 
-import { createSupabaseClient, runWithRetries } from './utils'
+import { withRetries } from '../../../common/util/promise'
+import { createSupabaseClient, run } from './utils'
 import { log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 import { DocumentKind } from '../../../common/transaction-log'
@@ -54,7 +55,7 @@ async function importCollection(
   log(`Loaded ${snaps.size} documents.`)
   for (const batch of chunk(snaps.docs, batchSize)) {
     const rows = batch.map((d) => getWriteRow(d, docKind, t1))
-    await runWithRetries(client.from('incoming_writes').insert(rows))
+    await withRetries(run(client.from('incoming_writes').insert(rows)))
     log(`Processed ${rows.length} documents.`)
   }
   log(`Imported ${snaps.size} documents.`)
@@ -76,7 +77,7 @@ async function importCollectionGroup(
   const partitions = Math.ceil(n / batchSize) * 2
   await processPartitioned(source, partitions, async (docs) => {
     const rows = docs.filter(predicate).map((d) => getWriteRow(d, docKind, t1))
-    await runWithRetries(client.from('incoming_writes').insert(rows))
+    await withRetries(run(client.from('incoming_writes').insert(rows)))
   })
 }
 
