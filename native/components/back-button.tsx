@@ -1,13 +1,13 @@
 import WebView from 'react-native-webview'
 import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import { AntDesign } from '@expo/vector-icons'
-import React, { useState } from 'react'
+import { RefObject } from 'react'
 import { NavigationState } from 'App'
 import { Text } from 'components/Text'
 const BACK_HEIGHT = 40
 
 export const BackButton = (props: {
-  webView: React.RefObject<WebView | undefined>
+  webView: RefObject<WebView | undefined>
   navState: NavigationState
 }) => {
   const { webView, navState } = props

@@ -16,7 +16,6 @@ import {
   Text,
   Pressable,
   Share,
-  NativeScrollEvent,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -71,7 +70,6 @@ export type NavigationState = {
   url: string
   loading: boolean
   canGoBack: boolean
-  scrollEvent: NativeScrollEvent | undefined
   isOnContractPage: boolean
 }
 const App = () => {
@@ -93,7 +91,6 @@ const App = () => {
     url: homeUri,
     loading: true,
     canGoBack: false,
-    scrollEvent: undefined,
     isOnContractPage: false,
   })
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
@@ -488,12 +485,6 @@ const App = () => {
           <BackButton webView={webview} navState={currentNavState} />
           <WebView
             pullToRefreshEnabled={true}
-            onScroll={(e) =>
-              setCurrentNavState({
-                ...currentNavState,
-                scrollEvent: e.nativeEvent,
-              })
-            }
             style={styles.webView}
             mediaPlaybackRequiresUserAction={true}
             allowsInlineMediaPlayback={true}
