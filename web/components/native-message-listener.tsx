@@ -34,7 +34,7 @@ export const NativeMessageListener = () => {
       }
     } else if (type === 'link') {
       console.log('link', data)
-      const { url } = data
+      const url = data['url'] ?? data
       const newRoute = url.startsWith('/') ? url : '/' + url
       try {
         router.push(newRoute)

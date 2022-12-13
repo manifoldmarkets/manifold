@@ -14,7 +14,7 @@ PODS:
     - ExpoModulesCore
   - EXFileSystem (14.1.0):
     - ExpoModulesCore
-  - EXFont (11.0.1):
+  - EXFont (10.2.1):
     - ExpoModulesCore
   - EXJSONUtils (0.3.0)
   - EXManifests (0.3.1):
@@ -619,7 +619,7 @@ SPEC CHECKSUMS:
   EXConstants: 7c44785d41d8e959d527d23d29444277a4d1ee73
   EXDevice: 7647ca9b1fd8b269dfd896a7643d659343358054
   EXFileSystem: 927e0a8885aa9c49e50fc38eaba2c2389f2f1019
-  EXFont: 319606bfe48c33b5b5063fb0994afdc496befe80
+  EXFont: 06df627203afcb8a3b3152ec06eb2f11f46f0cff
   EXJSONUtils: 2a74b8f40f1523cc3f92af99c91aa78201737a77
   EXManifests: b38dc61303f5eede990b4c8ecbfac32f82160e65
   EXNotifications: 9a2aa201deb19dfe1dbe0e370eeb2922de0d2422

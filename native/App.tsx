@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
-import { getAuth } from 'firebase/auth'
 import 'expo-dev-client'
-import { ENV, FIREBASE_CONFIG } from 'common/envs/constants'
+import { ENV } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -25,7 +24,6 @@ import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingMan
 import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
-import { getApp, getApps, initializeApp } from 'firebase/app'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 import { AuthModal } from 'components/auth-modal'
@@ -42,6 +40,7 @@ import {
   webToNativeMessage,
 } from 'common/native-message'
 import { useFonts, ReadexPro_400Regular } from '@expo-google-fonts/readex-pro'
+import { app, auth } from './init'
 console.log('using', ENV, 'env')
 console.log(
   'env not switching? run `npx expo start --clear` and then try again'
@@ -60,8 +59,6 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 })
-const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
-export const auth = getAuth(app)
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
@@ -429,65 +426,65 @@ const App = () => {
         />
       )}
       <SafeAreaView style={styles.container}>
-        <View style={[styles.container, { position: 'relative' }]}>
-          <StatusBar
-            animated={true}
-            backgroundColor="white"
-            style={'dark'}
-            hideTransitionAnimation={'none'}
-            hidden={false}
-          />
-          <View style={styles.otherSiteToolbar}>
-            <View style={styles.row}>
-              <Pressable
-                style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
-                onPress={() => {
-                  const { previousHomeUrl } = currentNavState
-                  // In order to make the webview load a new url manually it has to be different from the previous one
-                  const back = !previousHomeUrl.includes('?')
-                    ? `${previousHomeUrl}?ignoreThisQuery=true`
-                    : `${previousHomeUrl}&ignoreThisQuery=true`
-                  setUrlToLoad(back)
-                }}
-              >
-                <Text style={styles.toolBarText}>Done</Text>
-              </Pressable>
-              <Pressable
-                style={styles.toolBarIcon}
-                onPress={async () => {
-                  await Share.share({
-                    message: currentNavState.url,
+        <StatusBar
+          animated={true}
+          backgroundColor="white"
+          style={'dark'}
+          hideTransitionAnimation={'none'}
+          hidden={false}
+        />
+        <View style={styles.otherSiteToolbar}>
+          <View style={styles.row}>
+            <Pressable
+              style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
+              onPress={() => {
+                const { previousHomeUrl } = currentNavState
+                // In order to make the webview load a new url manually it has to be different from the previous one
+                const back = !previousHomeUrl.includes('?')
+                  ? `${previousHomeUrl}?ignoreThisQuery=true`
+                  : `${previousHomeUrl}&ignoreThisQuery=true`
+                setUrlToLoad(back)
+              }}
+            >
+              <Text style={styles.toolBarText}>Done</Text>
+            </Pressable>
+            <Pressable
+              style={styles.toolBarIcon}
+              onPress={async () => {
+                await Share.share({
+                  message: currentNavState.url,
+                })
+              }}
+            >
+              <Feather name="share" size={24} color="black" />
+            </Pressable>
+            <Pressable
+              style={[styles.toolBarIcon, { justifyContent: 'flex-end' }]}
+              onPress={async () => {
+                if (currentNavState.loading) {
+                  webview.current?.stopLoading()
+                  setCurrentNavState({
+                    ...currentNavState,
+                    loading: false,
                   })
-                }}
-              >
-                <Feather name="share" size={24} color="black" />
-              </Pressable>
-              <Pressable
-                style={[styles.toolBarIcon, { justifyContent: 'flex-end' }]}
-                onPress={async () => {
-                  if (currentNavState.loading) {
-                    webview.current?.stopLoading()
-                    setCurrentNavState({
-                      ...currentNavState,
-                      loading: false,
-                    })
-                  } else {
-                    webview.current?.reload()
-                    setCurrentNavState({
-                      ...currentNavState,
-                      loading: true,
-                    })
-                  }
-                }}
-              >
-                {currentNavState.loading ? (
-                  <Feather name="x" size={24} color="black" />
-                ) : (
-                  <AntDesign name="reload1" size={24} color="black" />
-                )}
-              </Pressable>
-            </View>
+                } else {
+                  webview.current?.reload()
+                  setCurrentNavState({
+                    ...currentNavState,
+                    loading: true,
+                  })
+                }
+              }}
+            >
+              {currentNavState.loading ? (
+                <Feather name="x" size={24} color="black" />
+              ) : (
+                <AntDesign name="reload1" size={24} color="black" />
+              )}
+            </Pressable>
           </View>
+        </View>
+        <View style={[styles.container, { position: 'relative' }]}>
           <BackButton webView={webview} navState={currentNavState} />
           <WebView
             pullToRefreshEnabled={true}
