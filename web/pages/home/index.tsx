@@ -554,27 +554,44 @@ const useYourRecommendedContracts = (
   ]
 
   const newContracts = useNewContracts(
-    6,
+    10,
     filters,
     !!userBlockFacetFilters && !!followedGroupIds
   )
   const trendingContracts = useTrendingContracts(
-    6,
+    10,
     filters,
     !!userBlockFacetFilters && !!followedGroupIds
   )
   const dailyChangedContracts = useContractsByDailyScore(
-    6,
+    10,
     filters,
     !!userBlockFacetFilters && !!followedGroupIds
   )
 
-  const computedContracts = shuffle(
+  const possibleContracts = shuffle(
     uniqBy(
       buildArray(newContracts, trendingContracts, dailyChangedContracts),
       (c) => c.id
     )
-  ).slice(0, 6)
+  )
+
+  const contractsWithUniqueGroups: Contract[] = []
+  const otherContracts: Contract[] = []
+  const seenGroups = new Set<string>()
+  for (const contract of possibleContracts) {
+    const { groupSlugs } = contract
+    if (groupSlugs && groupSlugs.some((slug) => seenGroups.has(slug))) {
+      otherContracts.push(contract)
+      continue
+    }
+    if (groupSlugs) groupSlugs.forEach((s) => seenGroups.add(s))
+    contractsWithUniqueGroups.push(contract)
+  }
+  const computedContracts = [
+    ...contractsWithUniqueGroups,
+    ...otherContracts,
+  ].slice(0, 6)
 
   const [savedContracts, setContracts] = usePersistentState<Contract[]>(
     computedContracts,
