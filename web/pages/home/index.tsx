@@ -399,7 +399,7 @@ export const YourFeed = (props: { user: User; count: number }) => {
   const contracts = savedContracts ?? computedContracts
 
   if (!contracts) return <LoadingIndicator />
-  return <ContractsGrid contracts={contracts} />
+  return <ContractsGrid contracts={contracts} showImageOnTopContract />
 }
 
 function HomeSectionHeader(props: {
