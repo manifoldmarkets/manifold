@@ -66,9 +66,7 @@ export const auth = getAuth(app)
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const homeUri =
-  ENV === 'DEV'
-    ? 'https://dev.manifold.markets/'
-    : 'https://c1cd-181-215-182-181.ngrok.io'
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 
 export type NavigationState = {
   previousHomeUrl: string
