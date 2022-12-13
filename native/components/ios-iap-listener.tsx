@@ -8,12 +8,16 @@ import {
   useIAP,
 } from 'react-native-iap'
 import * as Sentry from 'sentry-expo'
+import { nativeToWebMessageType } from 'common/native-message'
 
 const SKUS = ['mana_1000', 'mana_2500', 'mana_10000']
 export const IosIapListener = (props: {
   checkoutAmount: number | null
   setCheckoutAmount: (amount: number | null) => void
-  communicateWithWebview: (type: string, data: object | string) => void
+  communicateWithWebview: (
+    type: nativeToWebMessageType,
+    data: object | string
+  ) => void
 }) => {
   const { checkoutAmount, setCheckoutAmount, communicateWithWebview } = props
   const [didGetPurchaseError, setDidGetPurchaseError] = useState<string | null>(

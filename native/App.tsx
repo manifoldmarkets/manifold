@@ -19,6 +19,7 @@ import {
   Text,
   Pressable,
   Share,
+  NativeScrollEvent,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -35,7 +36,12 @@ import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
 import { WebViewErrorEvent } from 'react-native-webview/lib/WebViewTypes'
-import { BackButton } from '@components/back-button'
+import { BackButton } from 'components/back-button'
+import { SplashLoading } from 'components/splash-loading'
+import {
+  nativeToWebMessageType,
+  webToNativeMessage,
+} from 'common/native-message'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -61,7 +67,19 @@ export const auth = getAuth(app)
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const homeUri =
-  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+  ENV === 'DEV'
+    ? 'https://dev.manifold.markets/'
+    : 'https://c1cd-181-215-182-181.ngrok.io'
+
+export type NavigationState = {
+  previousHomeUrl: string
+  previousUrl: string
+  url: string
+  loading: boolean
+  canGoBack: boolean
+  scrollEvent: NativeScrollEvent | undefined
+  isOnContractPage: boolean
+}
 
 const App = () => {
   // Init
@@ -75,18 +93,14 @@ const App = () => {
   const [showAuthModal, setShowAuthModal] = useState(false)
 
   // Url management
-  const [currentNavState, setCurrentNavState] = useState<{
-    previousHomeUrl: string
-    previousUrl: string
-    url: string
-    loading: boolean
-    canGoBack: boolean
-  }>({
+  const [currentNavState, setCurrentNavState] = useState<NavigationState>({
     previousHomeUrl: homeUri,
     previousUrl: homeUri,
     url: homeUri,
     loading: true,
     canGoBack: false,
+    scrollEvent: undefined,
+    isOnContractPage: false,
   })
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
   const isVisitingOtherSite =
@@ -239,7 +253,7 @@ const App = () => {
 
   const handleMessageFromWebview = ({ nativeEvent }: any) => {
     const { data } = nativeEvent
-    const { type, data: payload } = JSON.parse(data)
+    const { type, data: payload } = JSON.parse(data) as webToNativeMessage
     console.log('Received nativeEvent: ', type)
     setHasSetNativeFlag(true)
     if (type === 'checkout') {
@@ -310,6 +324,11 @@ const App = () => {
           extra: { message: 'error parsing nativeEvent.data' },
         })
       }
+    } else if (type === 'isContractPage') {
+      setCurrentNavState({
+        ...currentNavState,
+        isOnContractPage: true,
+      })
     } else {
       console.log('Unhandled nativeEvent.data: ', data)
     }
@@ -320,7 +339,10 @@ const App = () => {
     communicateWithWebview('setIsNative', { platform: Platform.OS })
   }
 
-  const communicateWithWebview = (type: string, data: object | string) => {
+  const communicateWithWebview = (
+    type: nativeToWebMessageType,
+    data: object | string
+  ) => {
     webview.current?.postMessage(
       JSON.stringify({
         type,
@@ -364,18 +386,6 @@ const App = () => {
         (isVisitingOtherSite ? 40 : 0),
       marginBottom: !isIOS ? 10 : 0,
     },
-    image: {
-      height,
-      width,
-      flex: 1,
-      justifyContent: 'center',
-      resizeMode: 'cover',
-    },
-    activityIndicator: {
-      position: 'absolute',
-      left: width / 2 - 20,
-      bottom: 100,
-    },
     otherSiteToolbar: {
       position: 'absolute',
       top: 0,
@@ -406,17 +416,6 @@ const App = () => {
     },
   })
 
-  const SplashLoading = () => (
-    <>
-      <Image style={styles.image} source={require('./assets/splash.png')} />
-      <ActivityIndicator
-        style={styles.activityIndicator}
-        size={'large'}
-        color={'white'}
-      />
-    </>
-  )
-
   return (
     <>
       {Platform.OS === 'ios' && (
@@ -426,7 +425,13 @@ const App = () => {
           communicateWithWebview={communicateWithWebview}
         />
       )}
-      {!hasWebViewLoaded.current && <SplashLoading />}
+      {!hasWebViewLoaded.current && (
+        <SplashLoading
+          height={height}
+          width={width}
+          source={require('./assets/splash.png')}
+        />
+      )}
       <SafeAreaView style={styles.container}>
         <StatusBar
           animated={true}
@@ -486,8 +491,15 @@ const App = () => {
             </Pressable>
           </View>
         </View>
-        <BackButton webView={webview} canGoBack={currentNavState.canGoBack} />
+        <BackButton webView={webview} navState={currentNavState} />
         <WebView
+          pullToRefreshEnabled={true}
+          onScroll={(e) =>
+            setCurrentNavState({
+              ...currentNavState,
+              scrollEvent: e.nativeEvent,
+            })
+          }
           style={styles.webView}
           mediaPlaybackRequiresUserAction={true}
           allowsInlineMediaPlayback={true}
@@ -496,6 +508,7 @@ const App = () => {
           overScrollMode={'never'}
           decelerationRate={'normal'}
           allowsBackForwardNavigationGestures={true}
+          // Load start and end is for whole website loading, not navigations within manifold
           onLoadEnd={() => {
             hasWebViewLoaded.current = true
             setCurrentNavState({ ...currentNavState, loading: false })
@@ -509,26 +522,33 @@ const App = () => {
             // Renders this view while we resolve the error
             return (
               <View style={{ height, width }}>
-                <SplashLoading />
+                <SplashLoading
+                  height={height}
+                  width={width}
+                  source={require('./assets/splash.png')}
+                />
               </View>
             )
           }}
           onTouchStart={() => {
             tellWebviewToSetNativeFlag()
           }}
+          // Load start and end is for whole website loading, not navigations within manifold
           onLoadStart={() => {
             setCurrentNavState({ ...currentNavState, loading: true })
           }}
+          // On navigation state change changes on every url change, it doesn't update loading
           onNavigationStateChange={(navState) => {
-            const { url, loading, canGoBack } = navState
+            const { url, canGoBack } = navState
             setCurrentNavState({
-              loading,
+              ...currentNavState,
               url,
               previousHomeUrl: url.startsWith(homeUri)
                 ? url
                 : currentNavState.previousHomeUrl,
               previousUrl: currentNavState.url,
               canGoBack,
+              isOnContractPage: false,
             })
             tellWebviewToSetNativeFlag()
           }}

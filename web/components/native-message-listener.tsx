@@ -8,6 +8,7 @@ import {
 import { useRouter } from 'next/router'
 import { getIsNative, setIsNative } from 'web/lib/native/is-native'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
+import { webToNativeMessageType } from 'common/native-message'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
@@ -56,7 +57,7 @@ export const NativeMessageListener = () => {
   return <div />
 }
 
-export const postMessageToNative = (type: string, data: any) => {
+export const postMessageToNative = (type: webToNativeMessageType, data: any) => {
   const isNative = getIsNative()
   if (!isNative) return
   ;(window as any).ReactNativeWebView.postMessage(
