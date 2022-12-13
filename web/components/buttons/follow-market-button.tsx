@@ -74,16 +74,16 @@ export const FollowMarketButton = (props: {
 }
 
 export async function unfollowMarket(
-  contractid: string,
-  contractslug: string,
+  contractId: string,
+  contractSlug: string,
   user: User
 ) {
-  await unFollowContract(contractid, user.id)
+  await unFollowContract(contractId, user.id)
   toast("You'll no longer receive notifications from this market", {
     icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
   })
   track('Unwatch Market', {
-    slug: contractslug,
+    slug: contractSlug,
   })
 }
 
