@@ -47,6 +47,8 @@ export async function getStaticProps() {
 export default function Swipe(props: { contracts: BinaryContract[] }) {
   const { contracts } = props
 
+  const [amount, setAmount] = useState(10)
+
   const old = useUserSwipes()
   const newToMe = useMemo(
     () => contracts.filter((c) => !old.includes(c.id)),
@@ -83,10 +85,12 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
         <div className="relative max-w-lg grow">
           {cards.map((c) => (
             <Card
+              key={c.id + amount}
               contract={c}
+              amount={amount}
+              setAmount={setAmount}
               onLeave={() => setIndex((i) => i + 1)}
               threshold={Math.min(128, width * 0.15)}
-              key={c.id}
             />
           ))}
           {/* TODO: users should never run out of cards */}
@@ -112,19 +116,21 @@ const Card = (props: {
   contract: BinaryContract
   onLeave?: () => void
   threshold: number
+  amount: number
+  setAmount: (amount: number) => void
 }) => {
-  const { contract, onLeave, threshold } = props
+  const { contract, onLeave, threshold, amount, setAmount } = props
   const { question, description, coverImageUrl, id: contractId } = contract
 
   const userId = useUser()?.id
 
-  const [amount, setAmount] = useState(10)
-  const addMoney = () => setAmount?.((amount) => amount + betTapAdd)
+  const addMoney = () => setAmount(amount + betTapAdd)
+
   const subMoney = () => {
     if (amount <= betTapAdd) {
       setDir('up')
     } else {
-      setAmount?.((amount) => amount - betTapAdd)
+      setAmount(amount - betTapAdd)
     }
   }
 
@@ -159,11 +165,25 @@ const Card = (props: {
 
           if (direction === 'left' || direction === 'right') {
             const outcome = direction === 'left' ? 'NO' : 'YES'
-            await placeBet({ amount, outcome, contractId }).then(() =>
-              toast.success(`Bet ${formatMoney(amount)} on ${outcome}`, {
-                position: 'top-center',
-              })
+
+            const promise = placeBet({ amount, outcome, contractId }).catch(
+              (e) => {
+                toast.error(
+                  `Error placing ${formatMoney(amount)} bet on ${outcome}`,
+                  {
+                    position: 'top-center',
+                  }
+                )
+                console.error('Error placing bet', e)
+              }
             )
+
+            toast.success(`Bet ${formatMoney(amount)} on ${outcome}`, {
+              position: 'top-center',
+            })
+
+            await promise
+
             userId && logSwipe({ amount, outcome, contractId, userId })
             track('swipe bet', {
               slug: contract.slug,
