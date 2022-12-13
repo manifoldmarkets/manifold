@@ -8,6 +8,11 @@ export type nativeToWebMessageType =
   | 'notification'
   | 'link'
 
+export type nativeToWebMessage = {
+  type: nativeToWebMessageType
+  data: any
+}
+
 export type webToNativeMessage = {
   type: webToNativeMessageType
   data: any

@@ -34,7 +34,8 @@ export const NativeMessageListener = () => {
       }
     } else if (type === 'link') {
       console.log('link', data)
-      const newRoute = data.startsWith('/') ? data : '/' + data
+      const { url } = data
+      const newRoute = url.startsWith('/') ? url : '/' + url
       try {
         router.push(newRoute)
       } catch (e) {
@@ -57,7 +58,10 @@ export const NativeMessageListener = () => {
   return <div />
 }
 
-export const postMessageToNative = (type: webToNativeMessageType, data: any) => {
+export const postMessageToNative = (
+  type: webToNativeMessageType,
+  data: any
+) => {
   const isNative = getIsNative()
   if (!isNative) return
   ;(window as any).ReactNativeWebView.postMessage(

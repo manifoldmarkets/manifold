@@ -9,11 +9,9 @@ import {
   Platform,
   BackHandler,
   NativeEventEmitter,
-  ActivityIndicator,
   StyleSheet,
   SafeAreaView,
   StatusBar as RNStatusBar,
-  Image,
   Dimensions,
   View,
   Text,
@@ -39,6 +37,7 @@ import { WebViewErrorEvent } from 'react-native-webview/lib/WebViewTypes'
 import { BackButton } from 'components/back-button'
 import { SplashLoading } from 'components/splash-loading'
 import {
+  nativeToWebMessage,
   nativeToWebMessageType,
   webToNativeMessage,
 } from 'common/native-message'
@@ -175,7 +174,7 @@ const App = () => {
           queryParams
         )}`
       )
-      communicateWithWebview('link', path ? path : '/')
+      communicateWithWebview('link', { url: path ? path : '/' })
       // If we don't clear the url, we won't reopen previously opened links
       const clearUrlCacheEvent = {
         hostname: 'manifold.markets',
@@ -254,7 +253,6 @@ const App = () => {
   const handleMessageFromWebview = ({ nativeEvent }: any) => {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
-    console.log('Received nativeEvent: ', type)
     setHasSetNativeFlag(true)
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
@@ -341,13 +339,13 @@ const App = () => {
 
   const communicateWithWebview = (
     type: nativeToWebMessageType,
-    data: object | string
+    data: object
   ) => {
     webview.current?.postMessage(
       JSON.stringify({
         type,
         data,
-      })
+      } as nativeToWebMessage)
     )
   }
 
