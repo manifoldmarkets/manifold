@@ -23,7 +23,15 @@ export function FileUploadButton(props: {
         accept=".gif,.jpg,.jpeg,.png,.webp, image/*"
         multiple
         className="hidden"
-        onChange={(e) => onFiles(Array.from(e.target.files || []))}
+        onChange={(e) => {
+          const files = e.target.files
+          if (files) {
+            onFiles(Array.from(files))
+            if (ref.current) {
+              ref.current.value = '' // clear file input in case user reuploads
+            }
+          }
+        }}
       />
     </>
   )
