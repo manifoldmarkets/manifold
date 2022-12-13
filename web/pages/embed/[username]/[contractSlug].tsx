@@ -164,6 +164,8 @@ const ContractChart = (props: {
       )
     case 'NUMERIC':
       return <NumericContractChart {...rest} contract={contract} />
+    default:
+      throw new Error('Contract outcome type not supported for chart')
   }
 }
 
