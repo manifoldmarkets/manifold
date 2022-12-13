@@ -1,5 +1,6 @@
 import { PlusCircleIcon } from '@heroicons/react/outline'
 import { DotsVerticalIcon, PencilAltIcon } from '@heroicons/react/solid'
+import { difference, isArray, keyBy, shuffle, uniqBy } from 'lodash'
 import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, CPMMBinaryContract } from 'common/contract'
@@ -15,7 +16,6 @@ import { User } from 'common/user'
 import { buildArray, filterDefined } from 'common/util/array'
 import { chooseRandomSubset } from 'common/util/random'
 import { MINUTE_MS } from 'common/util/time'
-import { difference, isArray, keyBy } from 'lodash'
 import Router, { SingletonRouter } from 'next/router'
 import { memo, ReactNode, useEffect, useMemo } from 'react'
 import { toast } from 'react-hot-toast'
@@ -147,6 +147,11 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     !!userBlockFacetFilters
   )
   const contractMetricsByProfit = useUserContractMetricsByProfit(user?.id)
+  const recommendedContracts = useYourRecommendedContracts(
+    user?.id,
+    followedGroupIds,
+    userBlockFacetFilters
+  )
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
@@ -202,7 +207,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     !newContracts ||
     !dailyTrendingContracts ||
     !globalConfig ||
-    !pinned
+    !pinned ||
+    !recommendedContracts
 
   return (
     <Page>
@@ -237,7 +243,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               isAdmin,
               globalConfig,
               pinned,
-              contractMetricsByProfit
+              contractMetricsByProfit,
+              recommendedContracts
             )}
 
             <YourFeedSection user={user} />
@@ -260,6 +267,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 }
 
 const HOME_SECTIONS = [
+  { label: 'Recommended', id: 'recommended', icon: '👍' },
   { label: 'Trending', id: 'score', icon: '🔥' },
   { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   { label: 'Your daily movers', id: 'daily-movers' },
@@ -275,8 +283,8 @@ export const getHomeItems = (sections: string[]) => {
   const itemsById = keyBy(HOME_SECTIONS, 'id')
   const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
 
-  // Add unmentioned items to the end.
-  sectionItems.push(
+  // Add unmentioned items to the start.
+  sectionItems.unshift(
     ...HOME_SECTIONS.filter((item) => !sectionItems.includes(item))
   )
 
@@ -301,7 +309,8 @@ export function renderSections(
         contracts: CPMMBinaryContract[]
         metrics: ContractMetrics[]
       }
-    | undefined
+    | undefined,
+  recommendedContracts: Contract[]
 ) {
   type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
@@ -313,10 +322,15 @@ export function renderSections(
           label: string
           icon: string | undefined
         }
+        if (id === 'recommended') {
+          return (
+            <RecommendedSection key={id} contracts={recommendedContracts} />
+          )
+        }
         if (id === 'featured')
           return (
             <FeaturedSection
-              key={'featured'}
+              key={id}
               globalConfig={globalConfig}
               pinned={pinned}
               isAdmin={isAdmin}
@@ -522,6 +536,71 @@ export function FeaturedSection(props: {
     </Col>
   )
 }
+
+// Use Algolia search to filter by followed groups, markets you have not bet on, and user block list.
+// Combines Trending, New, and Daily changed, with randomness.
+const useYourRecommendedContracts = (
+  userId: string | null | undefined,
+  followedGroupIds: { id: string; slug: string }[] | undefined,
+  userBlockFacetFilters: string[] | undefined
+) => {
+  const groupFilters = (followedGroupIds ?? []).map(
+    (group) => `groupSlugs:${group.slug}`
+  )
+  const filters = [
+    groupFilters,
+    ...(userBlockFacetFilters ?? []),
+    'uniqueBettorIds:-' + userId,
+  ]
+
+  const newContracts = useNewContracts(
+    6,
+    filters,
+    !!userBlockFacetFilters && !!followedGroupIds
+  )
+  const trendingContracts = useTrendingContracts(
+    6,
+    filters,
+    !!userBlockFacetFilters && !!followedGroupIds
+  )
+  const dailyChangedContracts = useContractsByDailyScore(
+    6,
+    filters,
+    !!userBlockFacetFilters && !!followedGroupIds
+  )
+
+  const computedContracts = shuffle(
+    uniqBy(
+      buildArray(newContracts, trendingContracts, dailyChangedContracts),
+      (c) => c.id
+    )
+  ).slice(0, 6)
+
+  const [savedContracts, setContracts] = usePersistentState<Contract[]>(
+    computedContracts,
+    { key: 'recommendedContracts', store: inMemoryStore() }
+  )
+
+  useEffect(() => {
+    if (computedContracts.length > 0 && savedContracts.length === 0)
+      setContracts(computedContracts)
+  }, [computedContracts, savedContracts, setContracts])
+
+  if (savedContracts.length === 0) return undefined
+  return savedContracts
+}
+
+export const RecommendedSection = memo(function RecommendedSection(props: {
+  contracts: Contract[]
+}) {
+  const { contracts } = props
+  return (
+    <Col>
+      <HomeSectionHeader label="Recommended" icon="👍" />
+      <ContractsGrid contracts={contracts} showImageOnTopContract={true} />
+    </Col>
+  )
+})
 
 export const DailyMoversSection = memo(function DailyMoversSection(props: {
   data:
