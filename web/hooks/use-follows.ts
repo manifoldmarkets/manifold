@@ -31,9 +31,11 @@ export const useFollowers = (userId: string | undefined) => {
   return followerIds
 }
 
-export const useContractFollows = (contractId: string) => {
+export const useContractFollows = (contractId: string | undefined) => {
   const [followIds, setFollowIds] = useState<string[] | undefined>()
-
+  if (!contractId) {
+    return
+  }
   useEffect(() => {
     return listenForContractFollows(contractId, setFollowIds)
   }, [contractId])
