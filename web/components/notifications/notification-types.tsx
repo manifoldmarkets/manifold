@@ -742,7 +742,7 @@ function UserLikeNotification(props: {
       {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
       your
       {sourceType === 'comment_like' ? ' comment on ' : ' market '}
-      <QuestionOrGroupLink notification={notification} />
+      {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal
         similarNotifications={relatedNotifications}
         modalLabel={'Who dunnit?'}
