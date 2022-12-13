@@ -147,7 +147,7 @@ export default function WorldCup(props: {
   playerRatings: Contract[]
   generalMarkets: Contract[]
 }) {
-  const { playerRatings, generalMarkets, nlArg, brCr, morPor, ukFr } = props
+  const { playerRatings, nlArg, brCr, ukFr } = props
 
   // const isMobile = useIsMobile()
   // const groupWinnerTab = (
@@ -248,7 +248,7 @@ export default function WorldCup(props: {
             className="-ml-4 flex w-auto"
             columnClassName="pl-4 bg-clip-padding"
           >
-            {ukFr?.map((contract, i) => (
+            {ukFr?.map((contract) => (
               <ContractCard
                 key={contract.slug}
                 contract={contract}
