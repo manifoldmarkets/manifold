@@ -88,7 +88,7 @@ Lists all markets, ordered by creation date descending.
 
 Parameters:
 
-- `limit`: Optional. How many markets to return. The maximum and the default is 1000.
+- `limit`: Optional. How many markets to return. The maximum and the default are 1000.
 - `before`: Optional. The ID of the market before which the list will start. For
   example, if you ask for the most recent 10 markets, and then perform a second
   query for 10 more markets with `before=[the id of the 10th market]`, you will
@@ -301,7 +301,7 @@ Lists all users, ordered by creation date descending.
 
 Parameters:
 
-- `limit`: Optional. How many users to return. The maximum and the default is 1000.
+- `limit`: Optional. How many users to return. The maximum and the default are 1000.
 - `before`: Optional. The ID of the user before which the list will start. For
   example, if you ask for the most recent 10 users, and then perform a second
   query for 10 more users with `before=[the id of the 10th user]`, you will
@@ -332,6 +332,7 @@ Requires no authorization.
       "totalDeposits":10339.004780544328,
       "totalPnLCached":9376.601262721899,
     }
+  ]
   ```
 - Response type: Array of `LiteUser`
 
@@ -399,7 +400,7 @@ $ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application
 
 ### `POST /v0/bet/cancel/[id]`
 
-Cancel the limit order of a bet with the specified id. If the bet was unfilled, it will be cancelled so that no other bets will match with it. This is action irreversable.
+Cancel the limit order of a bet with the specified id. If the bet was unfilled, it will be cancelled so that no other bets will match with it. This action is irreversible.
 
 ### `POST /v0/market`
 
@@ -461,7 +462,7 @@ Adds a specified amount of liquidity into the market.
 
 Closes a market on behalf of the authorized user.
 
-- `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, the market will be closed immediately. Cannot provide close time in past.
+- `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, the market will be closed immediately. Cannot provide close time in the past.
 
 ### `POST /v0/market/[marketId]/resolve`
 
@@ -482,7 +483,7 @@ For free response or multiple choice markets:
 For numeric markets:
 
 - `outcome`: Required. One of `CANCEL`, or a `number` indicating the selected numeric bucket ID.
-- `value`: The value that the market may resolves to.
+- `value`: The value that the market resolves to.
 - `probabilityInt`: Required if `value` is present. Should be equal to
   - If log scale: `log10(value - min + 1) / log10(max - min + 1)`
   - Otherwise: `(value - min) / (max - min)`
@@ -572,7 +573,7 @@ Parameters:
 - `username`: Optional. If set, the response will include only bets created by this user.
 - `contractId`: Optional. If set, the response will only include bets on this contract.
 - `contractSlug`: Optional. If set, the response will only include bets on this contract.
-- `limit`: Optional. How many bets to return. The maximum and the default is 1000.
+- `limit`: Optional. How many bets to return. The maximum and the default are 1000.
 - `before`: Optional. The ID of the bet before which the list will start. For
   example, if you ask for the most recent 10 bets, and then perform a second
   query for 10 more bets with `before=[the id of the 10th bet]`, you will
