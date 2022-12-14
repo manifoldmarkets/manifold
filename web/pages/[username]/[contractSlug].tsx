@@ -56,6 +56,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { BackRow } from 'web/components/contract/back-row'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
@@ -260,7 +261,8 @@ export function ContractPageContent(
           ogCardProps={ogCardProps}
         />
       )}
-      <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
+      <BackRow />
+      <Col className="w-full justify-between rounded bg-white pb-6 pt-4 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         <ContractOverview
           contract={contract}
           bets={bets}
