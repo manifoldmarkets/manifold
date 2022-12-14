@@ -4,6 +4,7 @@
   "workspaces": [
     "common",
     "functions",
+    "replication",
     "web"
   ],
   "scripts": {

@@ -8,8 +8,8 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { chunk } from 'lodash'
 
 import { withRetries } from '../../../common/util/promise'
-import { createSupabaseClient, run } from './utils'
-import { log, processPartitioned } from '../utils'
+import { run } from '../../../common/supabase/utils'
+import { createSupabaseClient, log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 import { DocumentKind } from '../../../common/transaction-log'
 
