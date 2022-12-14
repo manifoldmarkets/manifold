@@ -9,6 +9,7 @@
   },
   "sideEffects": false,
   "dependencies": {
+    "@supabase/supabase-js": "2.2.0",
     "@tiptap/core": "2.0.0-beta.199",
     "@tiptap/extension-image": "2.0.0-beta.199",
     "@tiptap/extension-link": "2.0.0-beta.199",
