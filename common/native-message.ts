@@ -27,5 +27,4 @@ export type webToNativeMessageType =
   | 'promptEnablePushNotifications'
   | 'signOut'
   | 'users'
-  | 'isContractPage'
   | 'error'

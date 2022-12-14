@@ -54,7 +54,6 @@ import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
-import { postMessageToNative } from 'web/components/native-message-listener'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
 
 const CONTRACT_BET_FILTER = {
@@ -180,7 +179,6 @@ export function ContractPageContent(
     privateUser?.blockedByUserIds ?? []
   )
   const isCreator = user?.id === contract.creatorId
-  postMessageToNative('isContractPage', {})
 
   useTracking(
     'view market',

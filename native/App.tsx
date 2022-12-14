@@ -31,7 +31,6 @@ import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
 import { WebViewErrorEvent } from 'react-native-webview/lib/WebViewTypes'
-import { BackButton } from 'components/back-button'
 import { SplashLoading } from 'components/splash-loading'
 import {
   nativeToWebMessage,
@@ -70,7 +69,6 @@ export type NavigationState = {
   url: string
   loading: boolean
   canGoBack: boolean
-  isOnContractPage: boolean
 }
 const App = () => {
   // Init
@@ -100,7 +98,6 @@ const App = () => {
     url: homeUri,
     loading: true,
     canGoBack: false,
-    isOnContractPage: false,
   })
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
   const isVisitingOtherSite =
@@ -323,11 +320,6 @@ const App = () => {
           extra: { message: 'error parsing nativeEvent.data' },
         })
       }
-    } else if (type === 'isContractPage') {
-      setCurrentNavState({
-        ...currentNavState,
-        isOnContractPage: true,
-      })
     } else {
       console.log('Unhandled nativeEvent.data: ', data)
     }
@@ -499,7 +491,6 @@ const App = () => {
           </View>
         </View>
         <View style={[styles.container, { position: 'relative' }]}>
-          <BackButton webView={webview} navState={currentNavState} />
           <WebView
             pullToRefreshEnabled={true}
             style={styles.webView}
@@ -550,7 +541,6 @@ const App = () => {
                   : currentNavState.previousHomeUrl,
                 previousUrl: currentNavState.url,
                 canGoBack,
-                isOnContractPage: false,
               })
               tellWebviewToSetNativeFlag()
             }}

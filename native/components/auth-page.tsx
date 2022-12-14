@@ -176,10 +176,10 @@ export const AuthPage = (props: {
             >
               <View style={styles.googleContent}>
                 <Image
-                  source={require('../assets/btn_google_light_normal_ios.png')}
+                  source={require('../assets/square-google.png')}
                   style={{
-                    height: 48,
-                    width: 48,
+                    height: 28,
+                    width: 28,
                     resizeMode: 'contain',
                   }}
                 />
@@ -241,11 +241,12 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
   googleText: {
     color: '#4285F4',
-    fontSize: 16,
+    marginLeft: -2,
+    fontSize: 17.5,
     fontWeight: 'bold',
   },
   modalContent: {
