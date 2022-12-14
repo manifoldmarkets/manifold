@@ -10,10 +10,13 @@ import {
   QueryDocumentSnapshot,
   Transaction,
 } from 'firebase-admin/firestore'
+import { SupabaseClientOptions, createClient } from '@supabase/supabase-js'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { generateJSON } from '@tiptap/html'
 import { stringParseExts } from '../../common/util/parse'
 
+import { DEV_CONFIG } from '../../common/envs/dev'
+import { PROD_CONFIG } from '../../common/envs/prod'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
@@ -315,4 +318,20 @@ export const pooledFetch = (agents: { [k: string]: Agent }) => {
       ...options,
     })
   }
+}
+
+export function createSupabaseClient(opts?: SupabaseClientOptions<'public'>) {
+  const url =
+    process.env.SUPABASE_URL ??
+    (isProd() ? PROD_CONFIG.supabaseUrl : DEV_CONFIG.supabaseUrl)
+  if (!url) {
+    throw new Error(
+      "Can't connect to Supabase; no process.env.SUPABASE_URL and no supabaseUrl in config."
+    )
+  }
+  const key = process.env.SUPABASE_KEY
+  if (!key) {
+    throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
+  }
+  return createClient(url, key, opts)
 }

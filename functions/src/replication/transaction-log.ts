@@ -8,8 +8,8 @@ import { PubSub } from '@google-cloud/pubsub'
 import { Agent as HttpAgent } from 'http'
 import { Agent as HttpsAgent } from 'https'
 
-import { createSupabaseClient, run } from './utils'
-import { pooledFetch, processPaginated } from '../utils'
+import { run } from '../../../common/supabase/utils'
+import { createSupabaseClient, pooledFetch, processPaginated } from '../utils'
 import { DocumentKind, TLEntry } from '../../../common/transaction-log'
 
 const pubSubClient = new PubSub()
