@@ -23,11 +23,11 @@ const general_markets = [
   'will-we-have-a-messi-vs-ronaldo-fin',
 ] as string[]
 
-const br_cr = [
-  'who-will-be-man-of-the-match-in-arg-8ce9e2a53739',
-  'will-argentina-eliminate-croatia-in',
-  'will-messi-score-a-goal-vs-croatia',
-]
+// const br_cr = [
+//   'who-will-be-man-of-the-match-in-arg-8ce9e2a53739',
+//   'will-argentina-eliminate-croatia-in',
+//   'will-messi-score-a-goal-vs-croatia',
+// ]
 const nl_arg = [
   'who-will-be-man-of-the-match-in-fra-47fe2b9e0483',
   'will-france-eliminate-morocco-in-th',
@@ -100,8 +100,6 @@ export async function getStaticProps() {
 
   const nlArg = await getContractsFromSlugs(nl_arg)
 
-  const brCr = await getContractsFromSlugs(br_cr)
-
   const morPor = await getContractsFromSlugs(mor_por)
 
   const ukFr = await getContractsFromSlugs(uk_fr)
@@ -120,7 +118,6 @@ export async function getStaticProps() {
       finals,
       playerRatings,
       generalMarkets,
-      brCr,
     },
     revalidate: 60, // regenerate after a minute
   }
@@ -141,13 +138,12 @@ const getContractsFromSlugs = async (slugs: string[]) => {
 export default function WorldCup(props: {
   nlArg: Contract[]
   ukFr: Contract[]
-  brCr: Contract[]
   morPor: Contract[]
   finals: Contract[]
   playerRatings: Contract[]
   generalMarkets: Contract[]
 }) {
-  const { playerRatings, nlArg, brCr, ukFr } = props
+  const { playerRatings, nlArg, ukFr } = props
 
   // const isMobile = useIsMobile()
   // const groupWinnerTab = (
@@ -203,25 +199,6 @@ export default function WorldCup(props: {
           <Spacer h={4} />
 
           {/* Might want to put an image or something here. */}
-
-          <div className="mb-2 text-3xl text-indigo-700">
-            Argentina vs Croatia
-          </div>
-          <Masonry
-            breakpointCols={{ default: 2, 768: 1 }}
-            className="-ml-4 flex w-auto"
-            columnClassName="pl-4 bg-clip-padding"
-          >
-            {brCr?.map((contract, i) => (
-              <ContractCard
-                key={contract.slug}
-                contract={contract}
-                hideDetails={false}
-                showImage={i == 1}
-                className="mb-4"
-              />
-            ))}
-          </Masonry>
 
           <div className="mb-2 text-3xl text-indigo-700">France vs Morocco</div>
           <Masonry
