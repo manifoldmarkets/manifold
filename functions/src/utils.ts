@@ -309,3 +309,19 @@ export const getContractPath = (contract: Contract) => {
 export function contractUrl(contract: Contract) {
   return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
 }
+
+export function createSupabaseClient(opts?: SupabaseClientOptions<'public'>) {
+  const url =
+    process.env.SUPABASE_URL ??
+    (isProd() ? PROD_CONFIG.supabaseUrl : DEV_CONFIG.supabaseUrl)
+  if (!url) {
+    throw new Error(
+      "Can't connect to Supabase; no process.env.SUPABASE_URL and no supabaseUrl in config."
+    )
+  }
+  const key = process.env.SUPABASE_KEY
+  if (!key) {
+    throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
+  }
+  return createClient(url, key, opts)
+}

@@ -1,14 +1,8 @@
-import * as admin from 'firebase-admin'
 import { DocumentSnapshot } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions'
 import { Change, EventContext } from 'firebase-functions'
-import { onMessagePublished } from 'firebase-functions/v2/pubsub'
-import { SupabaseClient } from '@supabase/supabase-js'
 import { PubSub } from '@google-cloud/pubsub'
-
-import { run } from '../../../common/supabase/utils'
-import { createSupabaseClient, processPaginated } from '../utils'
-import { DocumentKind, TLEntry } from '../../../common/transaction-log'
+import { DocumentKind } from '../../common/transaction-log'
 
 const pubSubClient = new PubSub()
 
@@ -58,28 +52,3 @@ export const logContractComments = logger(
   'contracts/{ct}/comments/{co}',
   'contractComment'
 )
-
-export const replayFailedSupabaseWrites = functions
-  .runWith({ secrets: ['SUPABASE_KEY'], timeoutSeconds: 540 })
-  .pubsub.schedule('every 1 minutes')
-  .onRun(async () => {
-    const firestore = admin.firestore()
-    const failedWrites = firestore
-      .collection('replicationState')
-      .doc('supabase')
-      .collection('failedWrites')
-    const client = createSupabaseClient()
-    const deleter = firestore.bulkWriter({ throttling: false })
-    await processPaginated(failedWrites, 1000, async (snaps) => {
-      if (snaps.size > 0) {
-        console.log(`Attempting to replay ${snaps.size} write(s)...`)
-        const entries = snaps.docs.map((d) => d.data() as TLEntry)
-        await replicateWrites(client, ...entries)
-        for (const doc of snaps.docs) {
-          deleter.delete(doc.ref)
-        }
-      }
-      await deleter.flush()
-    })
-    await deleter.close()
-  })

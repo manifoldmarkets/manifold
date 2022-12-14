@@ -52,8 +52,34 @@ app.post('/', async (req, res) => {
   res.status(204).send()
 })
 
+async function replayFailedWrites() {
+  console.log('Checking for failed writes...')
+  const failedWrites = await firestore
+    .collection('replicationState')
+    .doc('supabase')
+    .collection('failedWrites')
+    .limit(1000)
+    .get()
+  const deleter = firestore.bulkWriter({ throttling: false })
+  if (failedWrites.size > 0) {
+    console.log(`Attempting to replay ${failedWrites.size} write(s)...`)
+    const entries = failedWrites.docs.map((d) => d.data() as TLEntry)
+    await replicateWrites(supabase, ...entries)
+    for (const doc of failedWrites.docs) {
+      deleter.delete(doc.ref)
+    }
+  }
+  await deleter.close()
+}
+
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
 app.listen(PORT, () =>
   console.log(`Replication server listening on port ${PORT}.`)
+)
+
+// poll and process failed writes every minute
+setInterval(
+  () => replayFailedWrites().catch((e) => console.error(e)),
+  1000 * 60
 )
