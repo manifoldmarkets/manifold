@@ -56,6 +56,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
@@ -177,6 +178,7 @@ export function ContractPageContent(
   } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
+  const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = (privateUser?.blockedUserIds ?? []).concat(
     privateUser?.blockedByUserIds ?? []
@@ -334,12 +336,17 @@ export function ContractPageContent(
               )}
               contractId={contract.id}
               currentUser={user}
+              currentUserMetrics={contractMetrics}
             />
             <Spacer h={12} />
           </>
         )}
 
-        <BetsSummary className="mt-4 mb-2 px-2" contract={contract} />
+        <BetsSummary
+          className="mt-4 mb-2 px-2"
+          contract={contract}
+          initialMetrics={contractMetrics}
+        />
 
         <div ref={tabsContainerRef}>
           <ContractTabs
