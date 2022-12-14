@@ -25,7 +25,7 @@ import { Subscription } from 'expo-modules-core'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
-import { AuthModal } from 'components/auth-modal'
+import { AuthPage } from 'components/auth-page'
 import { Feather, AntDesign } from '@expo/vector-icons'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
@@ -82,7 +82,16 @@ const App = () => {
   useFonts({ ReadexPro_400Regular })
 
   // Auth
-  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [waitingForAuth, setWaitingForAuth] = useState(true)
+  useEffect(() => {
+    // wait a couple seconds after webview has loaded to show auth modal
+    // this is to prevent the auth modal from showing up on initial load
+    // which is a bad user experience
+    const timeout = setTimeout(() => {
+      setWaitingForAuth(false)
+    }, 2000)
+    return () => clearTimeout(timeout)
+  }, [])
 
   // Url management
   const [currentNavState, setCurrentNavState] = useState<NavigationState>({
@@ -156,6 +165,7 @@ const App = () => {
     }
   }, [])
 
+  // Handle deep links
   useEffect(() => {
     if (!linkedUrl) return
 
@@ -245,6 +255,7 @@ const App = () => {
   const handleMessageFromWebview = ({ nativeEvent }: any) => {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
+    console.log('Received message from webview: ', type)
     setHasSetNativeFlag(true)
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
@@ -252,16 +263,14 @@ const App = () => {
       if (auth.currentUser) {
         try {
           // Let's start from a clean slate if the webview and native auths are out of sync
-          auth.signOut().then(() => {
-            setShowAuthModal(true)
-          })
+          auth.signOut()
         } catch (err) {
           console.log('[sign out before sign in] Error : ', err)
           Sentry.Native.captureException(err, {
             extra: { message: 'sign out before sign in' },
           })
         }
-      } else setShowAuthModal(true)
+      }
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -354,11 +363,12 @@ const App = () => {
     setUrlToLoad(homeUri)
   }
 
+  const shouldShowWebView = hasWebViewLoaded.current && auth.currentUser
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
-      display: !hasWebViewLoaded.current ? 'none' : 'flex',
+      display: shouldShowWebView ? 'flex' : 'none',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
@@ -369,7 +379,7 @@ const App = () => {
       padding: 10,
     },
     webView: {
-      display: !hasWebViewLoaded.current ? 'none' : 'flex',
+      display: shouldShowWebView ? 'flex' : 'none',
       overflow: 'hidden',
       marginTop:
         (isIOS ? 0 : RNStatusBar.currentHeight ?? 0) +
@@ -408,6 +418,19 @@ const App = () => {
 
   return (
     <>
+      {!shouldShowWebView && !auth.currentUser && waitingForAuth ? (
+        <SplashLoading
+          height={height}
+          width={width}
+          source={require('./assets/splash.png')}
+        />
+      ) : (
+        !shouldShowWebView &&
+        !waitingForAuth &&
+        !auth.currentUser && (
+          <AuthPage webview={webview} height={height} width={width} />
+        )
+      )}
       {Platform.OS === 'ios' && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
@@ -415,13 +438,7 @@ const App = () => {
           communicateWithWebview={communicateWithWebview}
         />
       )}
-      {!hasWebViewLoaded.current && (
-        <SplashLoading
-          height={height}
-          width={width}
-          source={require('./assets/splash.png')}
-        />
-      )}
+
       <SafeAreaView style={styles.container}>
         <StatusBar
           animated={true}
@@ -554,11 +571,6 @@ const App = () => {
               webview.current?.reload()
             }}
             onMessage={handleMessageFromWebview}
-          />
-          <AuthModal
-            showModal={showAuthModal}
-            setShowModal={setShowAuthModal}
-            webview={webview}
           />
         </View>
       </SafeAreaView>

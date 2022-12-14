@@ -8,6 +8,9 @@ import {
   Platform,
   TouchableWithoutFeedback,
   ActivityIndicator,
+  Image,
+  Button,
+  TouchableOpacity,
 } from 'react-native'
 import {
   AppleAuthenticationButton,
@@ -32,31 +35,18 @@ import * as Google from 'expo-auth-session/providers/google'
 import { ENV_CONFIG } from 'common/envs/constants'
 import * as Sentry from 'sentry-expo'
 
-export const AuthModal = (props: {
-  showModal: boolean
-  setShowModal: (shouldShowAuth: boolean) => void
+export const AuthPage = (props: {
   webview: React.RefObject<WebView | undefined>
+  height: number
+  width: number
 }) => {
-  const { showModal, setShowModal, webview } = props
+  const { webview, height, width } = props
   const [loading, setLoading] = useState(false)
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     // @ts-ignore
     ENV_CONFIG.expoConfig
   )
   const appleAuthAvailable = useAppleAuthentication()
-
-  useEffect(() => {
-    if (showModal) {
-      if (Platform.OS === 'ios') {
-        setShowModal(true)
-      } else {
-        promptAsync()
-      }
-    } else {
-      setShowModal(false)
-      setLoading(false)
-    }
-  }, [showModal])
 
   // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
@@ -79,7 +69,6 @@ export const AuthModal = (props: {
       })
       console.log('[google sign in] Error : ', err)
     }
-    setShowModal(false)
     setLoading(false)
   }, [response])
 
@@ -105,7 +94,6 @@ export const AuthModal = (props: {
       console.error(error)
     }
     setLoading(false)
-    setShowModal(false)
   }
 
   const loginWithApple = async () => {
@@ -156,29 +144,48 @@ export const AuthModal = (props: {
     }
   }
 
+  const computedStyles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      backgroundColor: '#4337C9',
+      height,
+      width,
+      position: 'absolute',
+      zIndex: 1000,
+    },
+  })
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={Platform.OS !== 'android' && showModal}
-      onRequestClose={() => {}}
-    >
+    <View style={computedStyles.container}>
       <View style={styles.modalContent}>
+        <Image
+          source={require('../assets/logo.png')}
+          style={{ height: 200, resizeMode: 'contain' }}
+        />
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
           <View style={styles.modalView}>
-            <FontAwesome5.Button
+            <TouchableOpacity
               style={styles.googleButton}
-              name="google"
               onPress={async () => {
                 setLoading(true)
                 await promptAsync()
                 setLoading(false)
               }}
             >
-              <Text style={styles.googleText}>Log In With Google</Text>
-            </FontAwesome5.Button>
+              <View style={styles.googleContent}>
+                <Image
+                  source={require('../assets/btn_google_light_normal_ios.png')}
+                  style={{
+                    height: 48,
+                    width: 48,
+                    resizeMode: 'contain',
+                  }}
+                />
+                <Text style={styles.googleText}>Sign in with Google</Text>
+              </View>
+            </TouchableOpacity>
 
             {appleAuthAvailable && (
               <AppleAuthenticationButton
@@ -195,15 +202,8 @@ export const AuthModal = (props: {
             )}
           </View>
         )}
-        <TouchableWithoutFeedback
-          onPress={() => {
-            setShowModal(false)
-          }}
-        >
-          <View style={styles.modalOverlay} />
-        </TouchableWithoutFeedback>
       </View>
-    </Modal>
+    </View>
   )
 }
 
@@ -231,23 +231,22 @@ function useAppleAuthentication() {
 
 const styles = StyleSheet.create({
   googleButton: {
-    backgroundColor: '#4285F4',
+    // backgroundColor: '#4285F4',
+    backgroundColor: 'white',
+    borderRadius: 5,
     width: '100%',
     height: 48,
-    paddingHorizontal: 26,
+  },
+  googleContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   googleText: {
-    color: 'white',
+    color: '#4285F4',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
     flex: 1,
@@ -255,21 +254,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalView: {
-    margin: 20,
     width: 300,
-    backgroundColor: 'white',
-    borderRadius: 20,
     padding: 35,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    zIndex: 1,
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
   button: {
     borderRadius: 20,
