@@ -1,72 +1,56 @@
-import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
-import Router from 'next/router'
-
-import { toast } from 'react-hot-toast'
+import Router, { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 
 import { Group, groupPath } from 'common/group'
-import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
-import {
-  addContractToGroup,
-  getGroupBySlug,
-  joinGroup,
-  listMemberIds,
-} from 'web/lib/firebase/groups'
-import { Row } from 'web/components/layout/row'
-import {
-  firebaseLogin,
-  getUser,
-  getUsersBlockFacetFilters,
-  User,
-} from 'web/lib/firebase/users'
+import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { Row } from 'web/components/layout/row'
+import { Leaderboard } from 'web/components/leaderboard'
+import { SEO } from 'web/components/SEO'
 import {
   useGroup,
   useGroupContractIds,
   useMemberGroupsSubscription,
 } from 'web/hooks/use-group'
-import { Leaderboard } from 'web/components/leaderboard'
-import { formatMoney } from 'common/util/format'
-import Custom404 from '../../404'
-import { SEO } from 'web/components/SEO'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-
-import { ContractSearch } from 'web/components/contract-search'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { Button } from 'web/components/buttons/button'
-import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
-import { GroupComment } from 'common/comment'
-import { getPost, listPosts } from 'web/lib/firebase/posts'
-import { Post } from 'common/post'
-import { usePost, usePosts } from 'web/hooks/use-post'
-import { useAdmin } from 'web/hooks/use-admin'
-import { track } from 'web/lib/service/analytics'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
-  ArrowLeftIcon,
-  DotsVerticalIcon,
-  UserGroupIcon,
-} from '@heroicons/react/solid'
-import { SelectMarketsModal } from 'web/components/contract-select-modal'
+  addContractToGroup,
+  getGroupBySlug,
+  listMemberIds,
+} from 'web/lib/firebase/groups'
+import {
+  getUser,
+  getUsersBlockFacetFilters,
+  User,
+} from 'web/lib/firebase/users'
+import Custom404 from '../../404'
+
+import { ArrowLeftIcon } from '@heroicons/react/solid'
+import { GroupComment } from 'common/comment'
+import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
+import Image from 'next/image'
+import { Button } from 'web/components/buttons/button'
+import { ContractSearch } from 'web/components/contract-search'
+import { SelectMarketsModal } from 'web/components/contract-select-modal'
+import { GroupAbout } from 'web/components/groups/group-about'
+import { GroupOptions } from 'web/components/groups/group-options'
+import GroupOpenClosedWidget, {
+  GroupMembersWidget,
+} from 'web/components/groups/group-page-items'
+import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
-import { GroupAbout } from 'web/components/groups/group-about'
-import { getBlockGroupDropdownItem } from 'web/components/buttons/hide-group-button'
-import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
-import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
-import { Title } from 'web/components/widgets/title'
-import Image from 'next/image'
-import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
-import clsx from 'clsx'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
-import { BanIcon } from '@heroicons/react/outline'
-import { GroupOptions } from 'web/components/groups/group-options'
+import { useAdmin } from 'web/hooks/use-admin'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { GroupMembersList } from 'web/pages/groups'
-import OpenDoorIcon from 'web/lib/icons/open-door-icon'
-import ClosedDoorIcon from 'web/lib/icons/closed-door-icon'
+import { usePost, usePosts } from 'web/hooks/use-post'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
+import { getPost, listPosts } from 'web/lib/firebase/posts'
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -187,6 +171,7 @@ export default function GroupPage(props: {
     groupId: group?.id,
   })
 
+  const isMobile = useIsMobile()
   if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
     return <Custom404 />
   }
@@ -195,7 +180,6 @@ export default function GroupPage(props: {
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
   const chatEmbed = <ChatEmbed group={group} />
-  const isMobile = useIsMobile()
 
   return (
     <Page rightSidebar={chatEmbed}>
@@ -250,30 +234,13 @@ export default function GroupPage(props: {
             </Row>
           </Row>
           <Row className="mb-2 gap-4">
-            <Row className="items-center gap-1 text-sm text-gray-700">
-              <UserGroupIcon className="h-4 w-4" />
-              <span>{group.totalMembers} members</span>
-            </Row>
-            <Row className="items-center gap-1 text-sm text-gray-700">
-              {group.anyoneCanJoin && (
-                <>
-                  <OpenDoorIcon className="h-4 w-4" />
-                  <span>Open</span>
-                </>
-              )}
-              {!group.anyoneCanJoin && (
-                <>
-                  <ClosedDoorIcon className="h-4 w-4" />
-                  <span>Closed</span>
-                </>
-              )}
-            </Row>
+            <GroupMembersWidget group={group} />
+            <GroupOpenClosedWidget group={group} />
           </Row>
         </Col>
       </figure>
       {group.about.length > 0 && (
-        <Col className="my-4 w-full gap-2 rounded bg-white px-4 py-4">
-          <b>About</b>
+        <Col className="my-2 w-full gap-2 rounded py-2 px-4 lg:px-0">
           <div className="font-thin">{group.about}</div>
         </Col>
       )}
@@ -357,9 +324,8 @@ export function TopGroupNavBar(props: {
   isMember: boolean | undefined
   groupUrl: string
   privateUser: PrivateUser | undefined | null
-  isBlocked?: boolean
 }) {
-  const { group, isMember, groupUrl, privateUser, isBlocked } = props
+  const { group, isMember, groupUrl, privateUser } = props
   const user = useUser()
 
   return (
