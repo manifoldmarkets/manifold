@@ -94,9 +94,7 @@ const App = () => {
   }, [hasWebViewLoaded.current])
 
   useEffect(() => {
-    auth.onAuthStateChanged((user) => {
-      setUser(user)
-    })
+    auth.onAuthStateChanged(setUser)
   }, [auth])
 
   // Url management
