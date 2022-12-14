@@ -79,21 +79,6 @@ export const logContractComments = logger(
   'contractComment'
 )
 
-export const replicatelogtofirestore = onMessagePublished<TLEntry>(
-  {
-    topic: 'firestoreWrite',
-    cpu: 2,
-    minInstances: 1,
-    concurrency: 1000,
-    memory: '2GiB',
-  },
-  async (event) => {
-    const entry = event.data.message.json
-    const db = admin.firestore()
-    await db.collection('transactionLog').doc(entry.eventId).create(entry)
-  }
-)
-
 export const replicatelogtosupabase = onMessagePublished<TLEntry>(
   {
     topic: 'firestoreWrite',
