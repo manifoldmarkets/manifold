@@ -25,13 +25,12 @@ import { Subscription } from 'expo-modules-core'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
-import { AuthModal } from 'components/auth-modal'
+import { AuthPage } from 'components/auth-page'
 import { Feather, AntDesign } from '@expo/vector-icons'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
 import { WebViewErrorEvent } from 'react-native-webview/lib/WebViewTypes'
-import { BackButton } from 'components/back-button'
 import { SplashLoading } from 'components/splash-loading'
 import {
   nativeToWebMessage,
@@ -70,7 +69,6 @@ export type NavigationState = {
   url: string
   loading: boolean
   canGoBack: boolean
-  isOnContractPage: boolean
 }
 const App = () => {
   // Init
@@ -82,7 +80,22 @@ const App = () => {
   useFonts({ ReadexPro_400Regular })
 
   // Auth
-  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [waitingForAuth, setWaitingForAuth] = useState(true)
+  const [user, setUser] = useState(auth.currentUser)
+  useEffect(() => {
+    // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
+    if (hasWebViewLoaded.current) {
+      console.log('webview loaded, waiting for auth')
+      const timeout = setTimeout(() => {
+        setWaitingForAuth(false)
+      }, 2000)
+      return () => clearTimeout(timeout)
+    }
+  }, [hasWebViewLoaded.current])
+
+  useEffect(() => {
+    auth.onAuthStateChanged(setUser)
+  }, [auth])
 
   // Url management
   const [currentNavState, setCurrentNavState] = useState<NavigationState>({
@@ -91,7 +104,6 @@ const App = () => {
     url: homeUri,
     loading: true,
     canGoBack: false,
-    isOnContractPage: false,
   })
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
   const isVisitingOtherSite =
@@ -156,6 +168,7 @@ const App = () => {
     }
   }, [])
 
+  // Handle deep links
   useEffect(() => {
     if (!linkedUrl) return
 
@@ -228,7 +241,7 @@ const App = () => {
       if (finalStatus !== 'granted') {
         communicateWithWebview('pushNotificationPermissionStatus', {
           status: finalStatus,
-          userId: auth.currentUser?.uid,
+          userId: user?.uid,
         })
         return null
       }
@@ -245,23 +258,22 @@ const App = () => {
   const handleMessageFromWebview = ({ nativeEvent }: any) => {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
+    console.log('Received message from webview: ', type)
     setHasSetNativeFlag(true)
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
     } else if (type === 'loginClicked') {
-      if (auth.currentUser) {
+      if (user) {
         try {
           // Let's start from a clean slate if the webview and native auths are out of sync
-          auth.signOut().then(() => {
-            setShowAuthModal(true)
-          })
+          auth.signOut()
         } catch (err) {
           console.log('[sign out before sign in] Error : ', err)
           Sentry.Native.captureException(err, {
             extra: { message: 'sign out before sign in' },
           })
         }
-      } else setShowAuthModal(true)
+      }
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -270,12 +282,12 @@ const App = () => {
           if (token)
             communicateWithWebview('pushToken', {
               token,
-              userId: auth.currentUser?.uid,
+              userId: user?.uid,
             })
         } else
           communicateWithWebview('pushNotificationPermissionStatus', {
             status,
-            userId: auth.currentUser?.uid,
+            userId: user?.uid,
           })
       })
     } else if (type === 'copyToClipboard') {
@@ -287,7 +299,7 @@ const App = () => {
         if (token)
           communicateWithWebview('pushToken', {
             token,
-            userId: auth.currentUser?.uid,
+            userId: user?.uid,
           })
       })
     } else if (type === 'signOut') {
@@ -314,11 +326,6 @@ const App = () => {
           extra: { message: 'error parsing nativeEvent.data' },
         })
       }
-    } else if (type === 'isContractPage') {
-      setCurrentNavState({
-        ...currentNavState,
-        isOnContractPage: true,
-      })
     } else {
       console.log('Unhandled nativeEvent.data: ', data)
     }
@@ -354,11 +361,12 @@ const App = () => {
     setUrlToLoad(homeUri)
   }
 
+  const shouldShowWebView = hasWebViewLoaded.current && user
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
-      display: !hasWebViewLoaded.current ? 'none' : 'flex',
+      display: shouldShowWebView ? 'flex' : 'none',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
@@ -369,7 +377,7 @@ const App = () => {
       padding: 10,
     },
     webView: {
-      display: !hasWebViewLoaded.current ? 'none' : 'flex',
+      display: shouldShowWebView ? 'flex' : 'none',
       overflow: 'hidden',
       marginTop:
         (isIOS ? 0 : RNStatusBar.currentHeight ?? 0) +
@@ -408,6 +416,18 @@ const App = () => {
 
   return (
     <>
+      {!shouldShowWebView && waitingForAuth ? (
+        <SplashLoading
+          height={height}
+          width={width}
+          source={require('./assets/splash.png')}
+        />
+      ) : (
+        !shouldShowWebView &&
+        !waitingForAuth && (
+          <AuthPage webview={webview} height={height} width={width} />
+        )
+      )}
       {Platform.OS === 'ios' && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
@@ -415,13 +435,7 @@ const App = () => {
           communicateWithWebview={communicateWithWebview}
         />
       )}
-      {!hasWebViewLoaded.current && (
-        <SplashLoading
-          height={height}
-          width={width}
-          source={require('./assets/splash.png')}
-        />
-      )}
+
       <SafeAreaView style={styles.container}>
         <StatusBar
           animated={true}
@@ -482,7 +496,6 @@ const App = () => {
           </View>
         </View>
         <View style={[styles.container, { position: 'relative' }]}>
-          <BackButton webView={webview} navState={currentNavState} />
           <WebView
             pullToRefreshEnabled={true}
             style={styles.webView}
@@ -533,7 +546,6 @@ const App = () => {
                   : currentNavState.previousHomeUrl,
                 previousUrl: currentNavState.url,
                 canGoBack,
-                isOnContractPage: false,
               })
               tellWebviewToSetNativeFlag()
             }}
@@ -554,11 +566,6 @@ const App = () => {
               webview.current?.reload()
             }}
             onMessage={handleMessageFromWebview}
-          />
-          <AuthModal
-            showModal={showAuthModal}
-            setShowModal={setShowAuthModal}
-            webview={webview}
           />
         </View>
       </SafeAreaView>
