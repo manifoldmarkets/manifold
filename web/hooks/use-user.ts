@@ -268,20 +268,6 @@ const getSimilarBettorsMarkets = async (
   return sortedContractsInSimilarBettorsBets
 }
 
-const sampleArraysUntilMaxCount = (
-  currentArray: any[],
-  sampleArrays: any[][],
-  maxCount: number
-) => {
-  if (currentArray.length >= maxCount) return currentArray
-  for (const sampleArray of sampleArrays) {
-    currentArray.push(
-      ...sampleSize(sampleArray, maxCount - currentArray.length)
-    )
-    if (currentArray.length >= maxCount) return currentArray
-  }
-}
-
 const useRecommendedContracts = (
   similarToContractIds: string[],
   excludeBettorId: string,
@@ -360,11 +346,16 @@ const useRecommendedContracts = (
 
     // sort randomly
     const chosen = shuffle(combined).slice(0, maxCount)
-    const fullArray = sampleArraysUntilMaxCount(
-      chosen,
-      [groupContracts, creatorContracts, similarBettorsContracts],
-      maxCount
-    )
+    const fullArray = uniqBy(
+      [
+        ...chosen,
+        ...shuffle(
+          buildArray(groupContracts, creatorContracts, similarBettorsContracts)
+        ),
+      ],
+      (c) => c.id
+    ).slice(0, maxCount)
+
     return fullArray
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
