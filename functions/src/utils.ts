@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin'
-import { Agent } from 'http'
-import fetch, { RequestInfo, RequestInit } from 'node-fetch'
+import fetch from 'node-fetch'
 import {
   CollectionGroup,
   DocumentData,
@@ -309,29 +308,4 @@ export const getContractPath = (contract: Contract) => {
 
 export function contractUrl(contract: Contract) {
   return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
-}
-
-export const pooledFetch = (agents: { [k: string]: Agent }) => {
-  return (url: RequestInfo, options: RequestInit = {}) => {
-    return fetch(url, {
-      agent: (parsedURL) => agents[parsedURL.protocol],
-      ...options,
-    })
-  }
-}
-
-export function createSupabaseClient(opts?: SupabaseClientOptions<'public'>) {
-  const url =
-    process.env.SUPABASE_URL ??
-    (isProd() ? PROD_CONFIG.supabaseUrl : DEV_CONFIG.supabaseUrl)
-  if (!url) {
-    throw new Error(
-      "Can't connect to Supabase; no process.env.SUPABASE_URL and no supabaseUrl in config."
-    )
-  }
-  const key = process.env.SUPABASE_KEY
-  if (!key) {
-    throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
-  }
-  return createClient(url, key, opts)
 }

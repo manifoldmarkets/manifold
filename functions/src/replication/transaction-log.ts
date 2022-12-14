@@ -5,17 +5,12 @@ import { Change, EventContext } from 'firebase-functions'
 import { onMessagePublished } from 'firebase-functions/v2/pubsub'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { PubSub } from '@google-cloud/pubsub'
-import { Agent as HttpAgent } from 'http'
-import { Agent as HttpsAgent } from 'https'
 
 import { run } from '../../../common/supabase/utils'
-import { createSupabaseClient, pooledFetch, processPaginated } from '../utils'
+import { createSupabaseClient, processPaginated } from '../utils'
 import { DocumentKind, TLEntry } from '../../../common/transaction-log'
 
 const pubSubClient = new PubSub()
-const httpAgent = new HttpAgent({ keepAlive: true })
-const httpsAgent = new HttpsAgent({ keepAlive: true })
-const fetch = pooledFetch({ http: httpAgent, https: httpsAgent })
 
 function getWriteInfo<T>(change: Change<DocumentSnapshot<T>>) {
   const { before, after } = change
@@ -54,21 +49,6 @@ function logger(path: string, docKind: DocumentKind) {
   })
 }
 
-async function replicateWrites(client: SupabaseClient, ...entries: TLEntry[]) {
-  return await run(
-    client.from('incoming_writes').insert(
-      entries.map((e) => ({
-        event_id: e.eventId,
-        doc_kind: e.docKind,
-        write_kind: e.writeKind,
-        doc_id: e.docId,
-        data: e.data,
-        ts: new Date(e.ts).toISOString(),
-      }))
-    )
-  )
-}
-
 export const logTxns = logger('txns/{g}', 'txn')
 export const logGroups = logger('groups/{g}', 'group')
 export const logUsers = logger('users/{u}', 'user')
@@ -77,37 +57,6 @@ export const logContractBets = logger('contracts/{c}/bets/{b}', 'contractBet')
 export const logContractComments = logger(
   'contracts/{ct}/comments/{co}',
   'contractComment'
-)
-
-export const replicatelogtosupabase = onMessagePublished<TLEntry>(
-  {
-    topic: 'firestoreWrite',
-    secrets: ['SUPABASE_KEY'],
-    cpu: 4,
-    minInstances: 1,
-    maxInstances: 10,
-    concurrency: 1000,
-    memory: '2GiB',
-  },
-  async (event) => {
-    const entry = event.data.message.json
-    try {
-      await replicateWrites(createSupabaseClient(fetch as any), entry)
-    } catch (e) {
-      console.error(
-        `Failed to replicate ${entry.docKind} ${entry.docId}. \
-        Logging failed write: ${entry.eventId}.`,
-        e
-      )
-      const db = admin.firestore()
-      await db
-        .collection('replicationState')
-        .doc('supabase')
-        .collection('failedWrites')
-        .doc(entry.eventId)
-        .create(entry)
-    }
-  }
 )
 
 export const replayFailedSupabaseWrites = functions
