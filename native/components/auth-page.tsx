@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import {
   Alert,
-  Modal,
   StyleSheet,
   Text,
   View,
   Platform,
-  TouchableWithoutFeedback,
   ActivityIndicator,
   Image,
-  Button,
   TouchableOpacity,
 } from 'react-native'
 import {
@@ -21,7 +18,6 @@ import {
   signInAsync,
 } from 'expo-apple-authentication'
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto'
-import { FontAwesome5 } from '@expo/vector-icons'
 import {
   GoogleAuthProvider,
   OAuthProvider,

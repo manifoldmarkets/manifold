@@ -81,15 +81,23 @@ const App = () => {
 
   // Auth
   const [waitingForAuth, setWaitingForAuth] = useState(true)
+  const [user, setUser] = useState(auth.currentUser)
   useEffect(() => {
-    // wait a couple seconds after webview has loaded to show auth modal
-    // this is to prevent the auth modal from showing up on initial load
-    // which is a bad user experience
-    const timeout = setTimeout(() => {
-      setWaitingForAuth(false)
-    }, 2000)
-    return () => clearTimeout(timeout)
-  }, [])
+    // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
+    if (hasWebViewLoaded.current) {
+      console.log('webview loaded, waiting for auth')
+      const timeout = setTimeout(() => {
+        setWaitingForAuth(false)
+      }, 2000)
+      return () => clearTimeout(timeout)
+    }
+  }, [hasWebViewLoaded.current])
+
+  useEffect(() => {
+    auth.onAuthStateChanged((user) => {
+      setUser(user)
+    })
+  }, [auth])
 
   // Url management
   const [currentNavState, setCurrentNavState] = useState<NavigationState>({
@@ -235,7 +243,7 @@ const App = () => {
       if (finalStatus !== 'granted') {
         communicateWithWebview('pushNotificationPermissionStatus', {
           status: finalStatus,
-          userId: auth.currentUser?.uid,
+          userId: user?.uid,
         })
         return null
       }
@@ -257,7 +265,7 @@ const App = () => {
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
     } else if (type === 'loginClicked') {
-      if (auth.currentUser) {
+      if (user) {
         try {
           // Let's start from a clean slate if the webview and native auths are out of sync
           auth.signOut()
@@ -276,12 +284,12 @@ const App = () => {
           if (token)
             communicateWithWebview('pushToken', {
               token,
-              userId: auth.currentUser?.uid,
+              userId: user?.uid,
             })
         } else
           communicateWithWebview('pushNotificationPermissionStatus', {
             status,
-            userId: auth.currentUser?.uid,
+            userId: user?.uid,
           })
       })
     } else if (type === 'copyToClipboard') {
@@ -293,7 +301,7 @@ const App = () => {
         if (token)
           communicateWithWebview('pushToken', {
             token,
-            userId: auth.currentUser?.uid,
+            userId: user?.uid,
           })
       })
     } else if (type === 'signOut') {
@@ -355,7 +363,7 @@ const App = () => {
     setUrlToLoad(homeUri)
   }
 
-  const shouldShowWebView = hasWebViewLoaded.current && auth.currentUser
+  const shouldShowWebView = hasWebViewLoaded.current && user
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
@@ -410,7 +418,7 @@ const App = () => {
 
   return (
     <>
-      {!shouldShowWebView && !auth.currentUser && waitingForAuth ? (
+      {!shouldShowWebView && waitingForAuth ? (
         <SplashLoading
           height={height}
           width={width}
@@ -418,8 +426,7 @@ const App = () => {
         />
       ) : (
         !shouldShowWebView &&
-        !waitingForAuth &&
-        !auth.currentUser && (
+        !waitingForAuth && (
           <AuthPage webview={webview} height={height} width={width} />
         )
       )}
