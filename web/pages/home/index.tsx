@@ -593,18 +593,24 @@ const useYourRecommendedContracts = (
     ...otherContracts,
   ].slice(0, 6)
 
-  const [savedContracts, setContracts] = usePersistentState<Contract[]>(
-    computedContracts,
-    { key: 'recommendedContracts', store: inMemoryStore() }
-  )
+  const [savedContracts, setContracts] = usePersistentState<
+    Contract[] | undefined
+  >(undefined, { key: 'recommendedContracts', store: inMemoryStore() })
+
+  const isLoading =
+    !newContracts ||
+    !trendingContracts ||
+    !dailyChangedContracts ||
+    !userBlockFacetFilters ||
+    !followedGroupIds
 
   useEffect(() => {
-    if (computedContracts.length > 0 && savedContracts.length === 0)
+    if (!isLoading && !savedContracts) {
       setContracts(computedContracts)
-  }, [computedContracts, savedContracts, setContracts])
+    }
+  }, [isLoading, computedContracts, savedContracts, setContracts])
 
-  if (savedContracts.length === 0) return undefined
-  return savedContracts
+  return isLoading ? undefined : savedContracts
 }
 
 export const RecommendedSection = memo(function RecommendedSection(props: {
