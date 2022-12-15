@@ -45,10 +45,10 @@ export function UserCommentsList(props: { user: User }) {
 
   if (pageComments.length === 0) {
     if (isStart && isEnd) {
-      return <p className="text-gray-500">No comments yet</p>
+      return <p className="mt-4 text-gray-500">No comments yet</p>
     } else {
       // this can happen if their comment count is a multiple of page size
-      return <p className="text-gray-500">No more comments to display</p>
+      return <p className="mt-4 text-gray-500">No more comments to display</p>
     }
   }
 
