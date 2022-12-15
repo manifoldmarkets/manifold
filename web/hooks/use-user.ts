@@ -27,6 +27,7 @@ import { getValues } from 'web/lib/firebase/utils'
 import { ContractMetric } from 'common/contract-metric'
 import { HOME_BLOCKED_GROUP_SLUGS } from 'common/envs/constants'
 import { ContractCardView, ContractView } from 'common/events'
+import { DAY_MS } from 'common/util/time'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -140,14 +141,16 @@ export const useUserRecommendedMarkets = (userId = '_', count = 500) => {
     viewedMarketsQuery
   )
 
+  // Filter repeatedly seen market cards within the last week
   const viewedMarketCardsQuery = query(
     collection(db, `users/${userId}/events`),
     where('name', '==', 'view market card'),
+    where('timestamp', '>', Date.now() - 7 * DAY_MS),
     orderBy('timestamp', 'desc'),
     limit(count)
   ) as Query<ContractCardView>
   const viewedMarketCardEvents = useFirestoreQueryData<ContractCardView>(
-    ['user-viewed-market-cards', userId, count],
+    ['user-recently-viewed-market-cards', userId, count],
     viewedMarketCardsQuery
   )
   const viewedMarketCardIds =
