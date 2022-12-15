@@ -50,9 +50,15 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
   log(`Inside endpoint handler for ${auth.uid}.`)
   const { amount, contractId } = validate(bodySchema, req.body)
 
-  const result = await handleBet(amount, contractId, auth.uid)
+  const { betId } = await handleBet(
+    amount,
+    contractId,
+    auth.uid,
+    undefined,
+    req.body
+  )
 
-  return { betId: result.betId }
+  return { betId }
 })
 
 const firestore = admin.firestore()
@@ -63,7 +69,7 @@ export const handleBet = async (
   contractId: string,
   userId: string,
   // must pass an outcoe or a reqBody
-  passedOutcome?: string,
+  passedOutcome?: 'YES' | 'NO',
   reqBody?: any
 ) => {
   if (!passedOutcome && !reqBody) {
@@ -238,7 +244,7 @@ export const handleBet = async (
     await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
     log(`Share redemption transaction finished - auth ${userId}.`)
   }
-  return result
+  return { betId: result.betId }
 }
 
 const getUnfilledBetsQuery = (contractDoc: DocumentReference) => {

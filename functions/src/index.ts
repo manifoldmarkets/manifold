@@ -36,6 +36,7 @@ export * from './check-push-notification-receipts'
 export * from './on-update-reaction'
 export * from './replication/transaction-log'
 export * from './increment-streak-forgiveness'
+export * from './on-create-order'
 
 // v2
 export * from './health'

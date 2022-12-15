@@ -47,6 +47,7 @@ import { Title } from '../widgets/title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
+import { createOrder } from 'web/lib/firebase/orders'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -234,41 +235,41 @@ export function BuyPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    placeBet({
-      outcome,
-      amount: betAmount,
-      contractId: contract.id,
-    })
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        setBetAmount(undefined)
-        if (onBuySuccess) onBuySuccess()
-        else {
-          toast('Trade submitted!', {
-            icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
-          })
-        }
+    try {
+      const r = await createOrder(
+        contract.id,
+        user.id,
+        outcome,
+        betAmount,
+        contract.prob
+      )
+      console.log('placed order. Result:', r)
+      setIsSubmitting(false)
+      setBetAmount(undefined)
+      if (onBuySuccess) onBuySuccess()
+      else {
+        toast('Trade submitted!', {
+          icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
+        })
+      }
+      track('bet', {
+        location: 'bet panel',
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount: betAmount,
+        outcome,
+        isLimitOrder: false,
       })
-      .catch((e) => {
-        if (e instanceof APIError) {
-          setError(e.toString())
-        } else {
-          console.error(e)
-          setError('Error placing bet')
-        }
-        setIsSubmitting(false)
-      })
-
-    track('bet', {
-      location: 'bet panel',
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      amount: betAmount,
-      outcome,
-      isLimitOrder: false,
-    })
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.toString())
+      } else {
+        console.error(e)
+        setError('Error placing bet')
+      }
+      setIsSubmitting(false)
+    }
   }
 
   const betDisabled = isSubmitting || !betAmount || !!error
