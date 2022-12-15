@@ -46,6 +46,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
 import { ContractMetrics } from 'common/calculate-metrics'
 import Image from 'next/image'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -64,6 +65,7 @@ export const ContractCard = memo(function ContractCard(props: {
   hideQuestion?: boolean
   hideDetails?: boolean
   numAnswersFR?: number
+  onViewCard?: (contract: Contract) => void
 }) {
   const {
     showTime,
@@ -81,6 +83,7 @@ export const ContractCard = memo(function ContractCard(props: {
     hideQuestion,
     hideDetails,
     numAnswersFR,
+    onViewCard,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
   const { isResolved, createdTime, featuredLabel } = contract
@@ -88,7 +91,7 @@ export const ContractCard = memo(function ContractCard(props: {
   const { resolution } = contract
 
   const user = useUser()
-
+  const { ref } = useIsVisible(() => onViewCard?.(contract))
   const marketClosed =
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
@@ -106,6 +109,7 @@ export const ContractCard = memo(function ContractCard(props: {
         hasImage ? 'ub-cover-image' : '',
         className
       )}
+      ref={ref}
     >
       <Col className="relative flex-1 gap-1 pt-2">
         {!hideDetails && (

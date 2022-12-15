@@ -73,6 +73,7 @@ import GoToIcon from 'web/lib/icons/go-to-icon'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { track } from 'web/lib/service/analytics'
 import { GroupCard } from '../groups'
+import { ContractCardView } from 'common/events'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -413,7 +414,22 @@ export const YourFeed = (props: { user: User; count: number }) => {
   const contracts = savedContracts ?? computedContracts
 
   if (!contracts) return <LoadingIndicator />
-  return <ContractsGrid contracts={contracts} showImageOnTopContract />
+  return (
+    <ContractsGrid
+      contracts={contracts}
+      showImageOnTopContract
+      onViewCard={(contract) => {
+        track('view contract card', {
+          contractId: contract.id,
+          creatorId: contract.creatorId,
+          name: contract.question,
+          slug: contract.slug,
+          groupSlugs: contract.groupSlugs,
+          timestamp: Date.now(),
+        } as ContractCardView)
+      }}
+    />
+  )
 }
 
 function HomeSectionHeader(props: {

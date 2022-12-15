@@ -25,6 +25,7 @@ export function ContractsGrid(props: {
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
   showImageOnTopContract?: boolean
+  onViewCard?: (contract: Contract) => void
 }) {
   const {
     contracts,
@@ -35,6 +36,7 @@ export function ContractsGrid(props: {
     highlightCards,
     trackingPostfix,
     showImageOnTopContract,
+    onViewCard,
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
   const onVisibilityUpdated = useCallback(
@@ -96,6 +98,7 @@ export function ContractsGrid(props: {
               highlightCards?.includes(contract.id) &&
                 'bg-gradient-to-b from-indigo-50 via-white to-white outline outline-2 outline-indigo-400'
             )}
+            onViewCard={onViewCard}
           >
             {contract.mechanism === 'cpmm-1' ? (
               <ContractMetricsFooter contract={contract} />

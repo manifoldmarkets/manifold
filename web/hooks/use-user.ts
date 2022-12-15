@@ -26,6 +26,7 @@ import { db } from 'web/lib/firebase/init'
 import { getValues } from 'web/lib/firebase/utils'
 import { ContractMetric } from 'common/contract-metric'
 import { HOME_BLOCKED_GROUP_SLUGS } from 'common/envs/constants'
+import { ContractCardView, ContractView } from 'common/events'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -126,13 +127,6 @@ export const useUserContractMetrics = (userId = '_', contractId: string) => {
   return data
 }
 
-type ContractView = {
-  name: string
-  slug: string
-  timestamp: number
-  contractId: string
-  creatorId: string
-}
 // Note: we don't filter out blocked contracts/users/groups here like we do in unbet-on contracts
 export const useUserRecommendedMarkets = (userId = '_', count = 500) => {
   const viewedMarketsQuery = query(
@@ -145,6 +139,26 @@ export const useUserRecommendedMarkets = (userId = '_', count = 500) => {
     ['user-viewed-markets', userId, count],
     viewedMarketsQuery
   )
+
+  const viewedMarketCardsQuery = query(
+    collection(db, `users/${userId}/events`),
+    where('name', '==', 'view market card'),
+    orderBy('timestamp', 'desc'),
+    limit(count)
+  ) as Query<ContractCardView>
+  const viewedMarketCardEvents = useFirestoreQueryData<ContractCardView>(
+    ['user-viewed-market-cards', userId, count],
+    viewedMarketCardsQuery
+  )
+  const viewedMarketCardIds =
+    viewedMarketCardEvents.data?.map((e) => e.contractId) ?? []
+  // get the count the number of times each market card was viewed
+  const marketCardViewCounts = countBy(viewedMarketCardIds)
+  // filter out markets that were viewed 3 times
+  const viewedMultipleTimesMarketIds = uniq(viewedMarketCardIds).filter(
+    (id) => marketCardViewCounts[id] < 3
+  )
+
   const recentBetOnContractMetrics = query(
     collection(db, `users/${userId}/contract-metrics`),
     orderBy('lastBetTime', 'desc'),
@@ -176,7 +190,7 @@ export const useUserRecommendedMarkets = (userId = '_', count = 500) => {
     contractsRelatedToUser,
     userId,
     count,
-    contractsRelatedToUser
+    contractsRelatedToUser.concat(viewedMultipleTimesMarketIds ?? [])
   )
 
   return recommendedContracts
