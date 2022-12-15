@@ -7,7 +7,7 @@ import {
   AnyExtension,
 } from '@tiptap/react'
 import { keyBy } from 'lodash'
-import React, { ReactElement, ReactNode } from 'react'
+import React, { ReactNode } from 'react'
 
 export function insertContent(editor: Editor | null, ...contents: Content[]) {
   if (!editor) {
