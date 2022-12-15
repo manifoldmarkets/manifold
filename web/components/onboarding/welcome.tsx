@@ -7,13 +7,9 @@ import {
   ExclamationCircleIcon,
 } from '@heroicons/react/solid'
 
-import { PrivateUser, User } from 'common/user'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import {
-  firebaseLogout,
-  updatePrivateUser,
-  updateUser,
-} from 'web/lib/firebase/users'
+import { User } from 'common/user'
+import { useUser } from 'web/hooks/use-user'
+import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -21,14 +17,12 @@ import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
 import { formatMoney } from 'common/util/format'
 import { STARTING_BALANCE } from 'common/economy'
-import { Button } from 'web/components/buttons/button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { getNativePlatform } from 'web/lib/native/is-native'
 
 export default function Welcome() {
   const user = useUser()
-  const privateUser = usePrivateUser()
   const [open, setOpen] = useState(true)
   const [page, setPage] = useState(0)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
@@ -41,28 +35,20 @@ export default function Welcome() {
     <Page3 />,
   ])
   const TOTAL_PAGES = availablePages.length
-  // Just making new users created after 10/31/2022 go through this for now
-  const shouldSeeEula =
-    user &&
-    privateUser &&
-    !privateUser?.hasSignedEula &&
-    user.createdTime > 1667977200000
 
   function increasePage() {
     if (page < TOTAL_PAGES - 1) {
       setPage(page + 1)
     }
   }
+
   useEffect(() => {
-    if (!open && shouldSeeEula) {
-      setOpen(true)
-    }
-    if (!open && !shouldSeeEula && user?.shouldShowWelcome) {
+    if (!open && user?.shouldShowWelcome) {
       if (user?.shouldShowWelcome)
         updateUser(user.id, { shouldShowWelcome: false })
       setGroupSelectorOpen(true)
     }
-  }, [open, shouldSeeEula, user?.id, user?.shouldShowWelcome])
+  }, [open, user?.id, user?.shouldShowWelcome])
 
   function decreasePage() {
     if (page > 0) {
@@ -70,11 +56,7 @@ export default function Welcome() {
     }
   }
 
-  if (
-    isTwitch ||
-    !user ||
-    (!user.shouldShowWelcome && !groupSelectorOpen && !shouldSeeEula)
-  )
+  if (isTwitch || !user || (!user.shouldShowWelcome && !groupSelectorOpen))
     return <></>
 
   if (groupSelectorOpen)
@@ -86,47 +68,35 @@ export default function Welcome() {
     )
 
   return (
-    <Modal
-      open={open}
-      setOpen={(toOpen) => {
-        if (shouldSeeEula) return
-        else setOpen(toOpen)
-      }}
-    >
-      {shouldSeeEula ? (
-        <Col className="h-full place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:text-lg">
-          <Eula privateUser={privateUser} />
+    <Modal open={open} setOpen={setOpen}>
+      <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
+        {availablePages[page]}
+        <Col>
+          <Row className="place-content-between">
+            <ChevronLeftIcon
+              className={clsx(
+                'h-10 w-10 text-gray-400 hover:text-gray-500',
+                page === 0 ? 'disabled invisible' : ''
+              )}
+              onClick={decreasePage}
+            />
+            <PageIndicator page={page} totalpages={TOTAL_PAGES} />
+            <ChevronRightIcon
+              className={clsx(
+                'h-10 w-10 text-indigo-500 hover:text-indigo-600',
+                page === TOTAL_PAGES - 1 ? 'disabled invisible' : ''
+              )}
+              onClick={increasePage}
+            />
+          </Row>
+          <u
+            className="self-center text-xs text-gray-500"
+            onClick={() => setOpen(false)}
+          >
+            I got the gist, exit welcome
+          </u>
         </Col>
-      ) : (
-        <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
-          {availablePages[page]}
-          <Col>
-            <Row className="place-content-between">
-              <ChevronLeftIcon
-                className={clsx(
-                  'h-10 w-10 text-gray-400 hover:text-gray-500',
-                  page === 0 ? 'disabled invisible' : ''
-                )}
-                onClick={decreasePage}
-              />
-              <PageIndicator page={page} totalpages={TOTAL_PAGES} />
-              <ChevronRightIcon
-                className={clsx(
-                  'h-10 w-10 text-indigo-500 hover:text-indigo-600',
-                  page === TOTAL_PAGES - 1 ? 'disabled invisible' : ''
-                )}
-                onClick={increasePage}
-              />
-            </Row>
-            <u
-              className="self-center text-xs text-gray-500"
-              onClick={() => setOpen(false)}
-            >
-              I got the gist, exit welcome
-            </u>
-          </Col>
-        </Col>
-      )}
+      </Col>
     </Modal>
   )
 }
@@ -251,66 +221,5 @@ function Page3() {
         </span>{' '}
       </p>
     </>
-  )
-}
-
-function Eula(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
-  const [expanded, setExpanded] = useState<'privacy' | 'tos' | null>()
-  return (
-    <Col className="mt-4 gap-2">
-      <img
-        className="h-2/3 w-2/3 place-self-center object-contain"
-        src="/welcome/manipurple.png"
-      />
-      <Title className="text-center" text="Welcome to Manifold Markets!" />
-      <div className="font-semibold">Terms of Service & Privacy Policy</div>
-      <span>
-        <span className="mt-2">
-          By using Manifold Markets, you agree to the following:
-        </span>{' '}
-        <span
-          className="cursor-pointer text-indigo-500 hover:text-indigo-600"
-          onClick={() => setExpanded(expanded === 'privacy' ? null : 'privacy')}
-        >
-          Privacy Policy
-        </span>{' '}
-        &{' '}
-        <span
-          className="cursor-pointer text-indigo-500 hover:text-indigo-600"
-          onClick={() => setExpanded(expanded === 'tos' ? null : 'tos')}
-        >
-          Terms of Service
-        </span>
-      </span>
-      <Row>
-        {expanded === 'tos' && (
-          <iframe
-            src={'https://manifold.markets/terms'}
-            className="mt-4 mb-4 h-72 w-full overflow-x-hidden overflow-y-scroll"
-          />
-        )}
-        <div className={'my-2 h-0.5 bg-gray-200'} />
-        {expanded === 'privacy' && (
-          <iframe
-            src={'https://manifold.markets/privacy'}
-            className="mt-4 mb-4 h-72 w-full overflow-x-hidden overflow-y-scroll"
-          />
-        )}
-      </Row>
-      <Row className={'justify-between'}>
-        <Button color={'gray'} onClick={() => firebaseLogout()}>
-          Cancel
-        </Button>
-        <Button
-          color={'blue'}
-          onClick={() =>
-            updatePrivateUser(privateUser.id, { hasSignedEula: true })
-          }
-        >
-          I agree
-        </Button>
-      </Row>
-    </Col>
   )
 }

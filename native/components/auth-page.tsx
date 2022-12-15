@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react'
 import {
   Alert,
   StyleSheet,
-  Text,
   View,
   Platform,
   ActivityIndicator,
   Image,
   TouchableOpacity,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native'
 import {
   AppleAuthenticationButton,
@@ -30,6 +31,7 @@ import WebView from 'react-native-webview'
 import * as Google from 'expo-auth-session/providers/google'
 import { ENV_CONFIG } from 'common/envs/constants'
 import * as Sentry from 'sentry-expo'
+import { Text } from './Text'
 
 export const AuthPage = (props: {
   webview: React.RefObject<WebView | undefined>
@@ -153,7 +155,7 @@ export const AuthPage = (props: {
   })
   return (
     <View style={computedStyles.container}>
-      <View style={styles.modalContent}>
+      <View style={styles.centerFlex}>
         <Image
           source={require('../assets/logo.png')}
           style={{ height: 200, resizeMode: 'contain' }}
@@ -161,7 +163,7 @@ export const AuthPage = (props: {
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
-          <View style={styles.modalView}>
+          <View style={styles.authContent}>
             <TouchableOpacity
               style={styles.googleButton}
               onPress={async () => {
@@ -170,7 +172,7 @@ export const AuthPage = (props: {
                 setLoading(false)
               }}
             >
-              <View style={styles.googleContent}>
+              <View style={styles.googleButtonContent}>
                 <Image
                   source={require('../assets/square-google.png')}
                   style={{
@@ -196,6 +198,7 @@ export const AuthPage = (props: {
                 onPress={triggerLoginWithApple}
               />
             )}
+            <Eula />
           </View>
         )}
       </View>
@@ -233,7 +236,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 48,
   },
-  googleContent: {
+  googleButtonContent: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,34 +248,120 @@ const styles = StyleSheet.create({
     fontSize: 17.5,
     fontWeight: 'bold',
   },
-  modalContent: {
+  centerFlex: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalView: {
+  authContent: {
     width: 300,
     padding: 35,
     alignItems: 'center',
   },
-  button: {
+  modalView: {
+    margin: 20,
+    width: 300,
+    height: 500,
+    backgroundColor: 'white',
     borderRadius: 20,
-    padding: 10,
-    elevation: 2,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    zIndex: 1,
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    flexDirection: 'column',
   },
-  buttonOpen: {
-    backgroundColor: '#F194FF',
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  buttonClose: {
-    backgroundColor: '#2196F3',
+  eulaContainer: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
   },
-  textStyle: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
+  text: { fontSize: 11 },
+  eulaText: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
-  modalText: {
-    marginBottom: 15,
-    textAlign: 'center',
+  clickable: {
+    textDecorationLine: 'underline',
   },
 })
+
+function Eula() {
+  const [expanded, setExpanded] = useState<'privacy' | 'tos' | null>()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <View style={styles.eulaContainer}>
+        <Text style={styles.text}>
+          By signing up for Manifold, you agree to
+        </Text>
+        <TouchableOpacity
+          style={{ marginRight: 5 }}
+          onPress={() => {
+            setOpen(true)
+            setExpanded('privacy')
+          }}
+        >
+          <Text style={[styles.clickable, styles.text]}>Privacy Policy,</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            setOpen(true)
+            setExpanded('tos')
+          }}
+        >
+          <Text style={[styles.clickable, styles.text]}>Terms of Service</Text>
+        </TouchableOpacity>
+      </View>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={open}
+        onRequestClose={() => setOpen(false)}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.centerFlex}>
+          <View style={styles.modalView}>
+            {expanded === 'tos' && (
+              <WebView
+                style={{ height: 500, width: 300 }}
+                source={{ uri: 'https://manifold.markets/terms' }}
+              />
+            )}
+            {expanded === 'privacy' && (
+              <WebView
+                style={{ height: 500, width: 300 }}
+                source={{ uri: 'https://manifold.markets/privacy' }}
+              />
+            )}
+          </View>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setOpen(false)
+              setExpanded(null)
+            }}
+          >
+            <View style={styles.modalOverlay} />
+          </TouchableWithoutFeedback>
+        </View>
+      </Modal>
+    </>
+  )
+}
