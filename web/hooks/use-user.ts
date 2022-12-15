@@ -134,7 +134,11 @@ type ContractView = {
   creatorId: string
 }
 // Note: we don't filter out blocked contracts/users/groups here like we do in unbet-on contracts
-export const useUserRecommendedMarkets = (userId = '_', count = 500) => {
+export const useUserRecommendedMarkets = (
+  userId = '_',
+  count = 500,
+  excludeContractIds: string[] = []
+) => {
   const viewedMarketsQuery = query(
     collection(db, `users/${userId}/events`),
     where('name', '==', 'view market'),
@@ -176,7 +180,7 @@ export const useUserRecommendedMarkets = (userId = '_', count = 500) => {
     contractsRelatedToUser,
     userId,
     count,
-    contractsRelatedToUser
+    contractsRelatedToUser.concat(excludeContractIds)
   )
 
   return recommendedContracts

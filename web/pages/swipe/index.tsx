@@ -11,7 +11,9 @@ import {
   PlusIcon,
 } from '@heroicons/react/solid'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { uniqBy } from 'lodash'
 
+import { buildArray } from 'common/util/array'
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
 import type { BinaryContract, Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
@@ -19,7 +21,6 @@ import { richTextToString } from 'common/util/parse'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
 import { useUser } from 'web/hooks/use-user'
-import { useUserSwipes } from 'web/hooks/use-user-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
 import { logSwipe } from 'web/lib/firebase/views'
@@ -33,9 +34,12 @@ import { getBinaryProb } from 'common/contract-details'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { NoLabel, YesLabel } from 'web/components/outcome-label'
+import { useSwipes } from 'web/hooks/use-swipes'
+import { useFeed } from 'web/hooks/use-feed'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export async function getStaticProps() {
-  const contracts = (await getTrendingContracts(1000)).filter(
+  const contracts = (await getTrendingContracts(200)).filter(
     (c) => c.outcomeType === 'BINARY' && (c.closeTime ?? Infinity) > Date.now()
   )
   return {
@@ -45,28 +49,38 @@ export async function getStaticProps() {
 }
 
 export default function Swipe(props: { contracts: BinaryContract[] }) {
-  const { contracts } = props
-
   const [amount, setAmount] = useState(10)
 
-  const old = useUserSwipes()
+  const old = useSwipes()
   const newToMe = useMemo(
-    () => contracts.filter((c) => !old.includes(c.id)),
-    [contracts, old]
+    () => props.contracts.filter((c) => !old.includes(c.id)),
+    [props.contracts, old]
+  )
+
+  const user = useUser()
+  const feed = useFeed(user, 200)?.filter((c) => c.outcomeType === 'BINARY') as
+    | BinaryContract[]
+    | undefined
+
+  const contracts = uniqBy(
+    buildArray(newToMe[0], feed, newToMe.slice(1)),
+    (c) => c.id
   )
 
   const [index, setIndex] = useState(0)
   const cards = useMemo(
-    () => newToMe.slice(index, index + 4).reverse(),
-    [newToMe, index]
+    () => contracts.slice(index, index + 4).reverse(),
+    [contracts, index]
   )
 
   // resize height manually for iOS
   const { height, width = 600 } = useWindowSize()
 
+  if (user === undefined) {
+    return <LoadingIndicator />
+  }
   //show log in prompt if user not logged in
-  const user = useUser()
-  if (!user) {
+  if (user === null) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
         <Button onClick={firebaseLogin} color="gradient" size="2xl">
