@@ -105,7 +105,7 @@ async function importDatabase(kinds?: string[]) {
   }
 
   if (shouldImport('txn'))
-    await importCollection(client, firestore.collection('txns'), 'txn', 5000)
+    await importCollection(client, firestore.collection('txns'), 'txn', 2500)
   if (shouldImport('group'))
     await importCollection(client, firestore.collection('groups'), 'group', 500)
   if (shouldImport('user'))
@@ -123,7 +123,7 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('bets'),
       'contractBet',
       (_) => true,
-      5000
+      2500
     )
   if (shouldImport('contractComment'))
     await importCollectionGroup(
