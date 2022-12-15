@@ -10,12 +10,13 @@
     "watch": "tsc -w"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=16.0.0"
   },
   "dependencies": {
     "express": "4.18.1",
     "firebase-admin": "11.2.0",
     "node-fetch": "2.6.7",
+    "@google-cloud/pubsub": "3.2.1",
     "@supabase/supabase-js": "2.2.0",
     "typescript": "4.9.3"
   },

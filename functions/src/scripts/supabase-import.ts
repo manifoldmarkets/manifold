@@ -81,23 +81,42 @@ async function importCollectionGroup(
   })
 }
 
+async function clearFailedWrites() {
+  const firestore = admin.firestore()
+  log('Clearing failed writes...')
+  const refs = await firestore
+    .collection('replicationState')
+    .doc('supabase')
+    .collection('failedWrites')
+    .listDocuments()
+  const deleter = firestore.bulkWriter({ throttling: false })
+  for (const ref of refs) {
+    deleter.delete(ref)
+  }
+  await deleter.close()
+}
+
 async function importDatabase(kinds?: string[]) {
   const firestore = admin.firestore()
   const client = createSupabaseClient()
   const shouldImport = (k: DocumentKind) => kinds == null || kinds.includes(k)
 
+  if (kinds == null) {
+    await clearFailedWrites()
+  }
+
   if (shouldImport('txn'))
-    await importCollection(client, firestore.collection('txns'), 'txn', 1000)
+    await importCollection(client, firestore.collection('txns'), 'txn', 5000)
   if (shouldImport('group'))
-    await importCollection(client, firestore.collection('groups'), 'group', 100)
+    await importCollection(client, firestore.collection('groups'), 'group', 500)
   if (shouldImport('user'))
-    await importCollection(client, firestore.collection('users'), 'user', 100)
+    await importCollection(client, firestore.collection('users'), 'user', 500)
   if (shouldImport('contract'))
     await importCollection(
       client,
       firestore.collection('contracts'),
       'contract',
-      100
+      500
     )
   if (shouldImport('contractBet'))
     await importCollectionGroup(
@@ -105,7 +124,7 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('bets'),
       'contractBet',
       (_) => true,
-      1000
+      5000
     )
   if (shouldImport('contractComment'))
     await importCollectionGroup(
@@ -113,7 +132,7 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('comments'),
       'contractComment',
       (c) => c.get('commentType') === 'contract',
-      100
+      500
     )
 }
 
