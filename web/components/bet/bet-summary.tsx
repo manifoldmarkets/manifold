@@ -72,7 +72,7 @@ export function BetsSummary(props: {
             </div>
           </Col>
         ) : (
-          <Col>
+          <Col className="hidden sm:inline">
             <div className="whitespace-nowrap text-sm text-gray-500">
               Expectation{''}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />
@@ -81,7 +81,7 @@ export function BetsSummary(props: {
           </Col>
         )}
 
-        <Col className="hidden sm:inline">
+        <Col>
           <div className="whitespace-nowrap text-sm text-gray-500">
             Invested{' '}
             <InfoTooltip text="Cash currently invested in this market." />
@@ -90,7 +90,7 @@ export function BetsSummary(props: {
         </Col>
 
         {isBinary && !resolution && (
-          <Col>
+          <Col className="hidden sm:inline">
             <div className="whitespace-nowrap text-sm text-gray-500">
               Expectation{' '}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />
