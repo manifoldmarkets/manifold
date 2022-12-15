@@ -68,7 +68,7 @@ export const handleBet = async (
   amount: number,
   contractId: string,
   userId: string,
-  // must pass an outcoe or a reqBody
+  // Must pass an outcome or a req.body
   passedOutcome?: 'YES' | 'NO',
   reqBody?: any
 ) => {
