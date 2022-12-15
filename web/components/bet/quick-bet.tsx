@@ -179,10 +179,15 @@ function SignedInQuickBet(props: {
       })
     }
     const shortQ = contract.question.slice(0, 20)
+
     const message =
       sellOutcome && saleAmount
-        ? `${formatMoney(Math.round(saleAmount))} sold of "${shortQ}"...`
-        : `${formatMoney(BET_SIZE)} on "${shortQ}"...`
+        ? `Sold ${formatMoney(
+            Math.round(saleAmount)
+          )} ${sellOutcome} of "${shortQ}"...`
+        : `Bet ${formatMoney(BET_SIZE)} ${
+            direction === 'UP' ? 'YES' : 'NO'
+          } on "${shortQ}"...`
 
     toast.promise(betPromise(), {
       loading: message,

@@ -180,23 +180,23 @@ const Card = (props: {
           if (direction === 'left' || direction === 'right') {
             const outcome = direction === 'left' ? 'NO' : 'YES'
 
-            const promise = placeBet({ amount, outcome, contractId }).catch(
-              (e) => {
-                toast.error(
-                  `Error placing ${formatMoney(amount)} bet on ${outcome}`,
-                  {
-                    position: 'top-center',
-                  }
-                )
-                console.error('Error placing bet', e)
-              }
+            const promise = placeBet({ amount, outcome, contractId })
+
+            const shortQ = contract.question.slice(0, 20)
+
+            const message = `Bet ${formatMoney(
+              amount
+            )} ${outcome} on "${shortQ}"...`
+
+            toast.promise(
+              promise,
+              {
+                loading: message,
+                success: message,
+                error: (err) => `Error placing bet: ${err.message}`,
+              },
+              { position: 'top-center' }
             )
-
-            toast.success(`Bet ${formatMoney(amount)} on ${outcome}`, {
-              position: 'top-center',
-            })
-
-            await promise
 
             userId && logSwipe({ amount, outcome, contractId, userId })
             track('swipe bet', {
