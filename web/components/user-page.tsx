@@ -39,7 +39,6 @@ import { track } from 'web/lib/service/analytics'
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
-import { LoadingIndicator } from './widgets/loading-indicator'
 import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-about'
 import { buttonClass } from './buttons/button'
@@ -49,15 +48,16 @@ import Link from 'next/link'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
 import { TextButton } from 'web/components/buttons/text-button'
+import { Post } from 'common/post'
 
-export function UserPage(props: { user: User }) {
+export function UserPage(props: { user: User; posts: Post[] }) {
   const user = useUserById(props.user.id) ?? props.user
 
   const router = useRouter()
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
-  const userPosts = usePostsByUser(user.id)
+  const userPosts = usePostsByUser(user.id) ?? props.posts
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -264,37 +264,32 @@ export function UserPage(props: { user: User }) {
                 stackedTabIcon: <DocumentIcon className="h-5" />,
                 content: (
                   <>
-                    <Spacer h={4} />
+                    {userPosts.length > 0 && (
+                      <>
+                        <Spacer h={4} />
 
-                    <Row className="flex items-center justify-between">
-                      <SectionHeader label={'Posts'} href={''} />
+                        <Row className="flex items-center justify-between">
+                          <SectionHeader label={'Posts'} href={''} />
 
-                      {isCurrentUser && (
-                        <Link
-                          className={clsx('mb-3', buttonClass('md', 'indigo'))}
-                          href={'/create-post'}
-                          onClick={() => track('profile click create post')}
-                        >
-                          Create Post
-                        </Link>
-                      )}
-                    </Row>
+                          {isCurrentUser && (
+                            <Link
+                              className={clsx(
+                                'mb-3',
+                                buttonClass('md', 'indigo')
+                              )}
+                              href={'/create-post'}
+                              onClick={() => track('profile click create post')}
+                            >
+                              Create Post
+                            </Link>
+                          )}
+                        </Row>
 
-                    <Col>
-                      {userPosts ? (
-                        userPosts.length > 0 ? (
-                          <PostCardList posts={userPosts} limit={6} />
-                        ) : (
-                          <div className="text-gray-500">No posts yet</div>
-                        )
-                      ) : (
-                        <div className="text-center text-gray-400">
-                          <LoadingIndicator />
-                        </div>
-                      )}
-                    </Col>
-                    <Spacer h={4} />
-                    <SectionHeader label={'Comments'} href={''} />
+                        <PostCardList posts={userPosts} limit={6} />
+                        <Spacer h={4} />
+                        <SectionHeader label={'Comments'} href={''} />
+                      </>
+                    )}
                     <Col>
                       <UserCommentsList user={user} />
                     </Col>

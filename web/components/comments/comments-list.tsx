@@ -40,7 +40,7 @@ export function UserCommentsList(props: { user: User }) {
   })
 
   if (isLoading) {
-    return <LoadingIndicator />
+    return <LoadingIndicator className="mt-4" />
   }
 
   if (pageComments.length === 0) {
