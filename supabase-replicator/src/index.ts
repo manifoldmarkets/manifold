@@ -94,6 +94,10 @@ function processSubscriptionBatched(
     }
   })
 
+  subscription.on('debug', (msg) => {
+    console.debug('Debug message from stream: ', msg)
+  })
+
   subscription.on('error', (error) => {
     console.error('Received error from subscription:', error)
   })
@@ -116,7 +120,7 @@ processSubscriptionBatched(
   writeSub,
   (msgs) => tryReplicateBatch(...msgs),
   1000,
-  250
+  100
 ).unref() // unref() means it won't keep the process running if GCP stops the webserver
 
 app.listen(PORT, () =>
