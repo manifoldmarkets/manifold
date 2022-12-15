@@ -81,6 +81,21 @@ async function importCollectionGroup(
   })
 }
 
+async function clearFailedWrites() {
+  const firestore = admin.firestore()
+  console.log('Clearing failed writes...')
+  const refs = await firestore
+    .collection('replicationState')
+    .doc('supabase')
+    .collection('failedWrites')
+    .listDocuments()
+  const deleter = firestore.bulkWriter({ throttling: false })
+  for (const ref of refs) {
+    deleter.delete(ref)
+  }
+  await deleter.close()
+}
+
 async function importDatabase(kinds?: string[]) {
   const firestore = admin.firestore()
   const client = createSupabaseClient()
@@ -120,6 +135,7 @@ async function importDatabase(kinds?: string[]) {
 if (require.main === module) {
   initAdmin()
   const args = process.argv.slice(2)
+  clearFailedWrites()
   importDatabase(args.length > 0 ? args : undefined)
     .then(() => {
       log('Finished importing.')

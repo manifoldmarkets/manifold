@@ -15,6 +15,6 @@ The `gcloud` command line tool needs to be set up and authenticated on your mach
 
 Two other things are used to tie this together:
 
-- A pub/sub push subscription that POSTs pub/sub messages to the `/` endpoint. You can see this in the GCP console, e.g. https://console.cloud.google.com/cloudpubsub/subscription/detail/supabaseReplicationSubscription?project=mantic-markets
+- A pub/sub pull subscription that the service can get writes from. You can see this in the GCP console, e.g. https://console.cloud.google.com/cloudpubsub/subscription/detail/supabaseReplicationPullSubscription?project=mantic-markets
 
 - A scheduled job that POSTs to the `replay-failed` endpoint sometimes (currently once per minute), e.g. https://console.cloud.google.com/cloudscheduler/jobs/edit/us-east4/replayFailedFirestoreWrites?project=mantic-markets

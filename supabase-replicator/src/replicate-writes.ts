@@ -22,6 +22,21 @@ export function createSupabaseClient(url: string, key: string) {
   return createClient(url, key, { global: { fetch: pooledFetch as any } })
 }
 
+export async function createFailedWrites(
+  firestore: Firestore,
+  ...entries: TLEntry[]
+) {
+  const coll = firestore
+    .collection('replicationState')
+    .doc('supabase')
+    .collection('failedWrites')
+  const creator = firestore.bulkWriter({ throttling: false })
+  for (const entry of entries) {
+    creator.create(coll.doc(), entry)
+  }
+  await creator.close()
+}
+
 export async function replayFailedWrites(
   firestore: Firestore,
   supabase: SupabaseClient,

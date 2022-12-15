@@ -1,19 +1,22 @@
 import * as express from 'express'
 import * as admin from 'firebase-admin'
+import { PubSub, Subscription, Message } from '@google-cloud/pubsub'
 import {
   createSupabaseClient,
   replicateWrites,
+  createFailedWrites,
   replayFailedWrites,
 } from './replicate-writes'
 import { TLEntry } from '../../common/transaction-log'
 import { CONFIGS } from '../../common/envs/constants'
+
+const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
 const ENV = process.env.ENVIRONMENT ?? 'DEV'
 const CONFIG = CONFIGS[ENV]
 if (CONFIG == null) {
   throw new Error(`process.env.ENVIRONMENT = ${ENV} - should be DEV or PROD.`)
 }
-
 console.log(`Running in ${ENV} environment.`)
 
 const SUPABASE_URL = CONFIG.supabaseUrl
@@ -26,40 +29,13 @@ if (!SUPABASE_KEY) {
   throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
 }
 
+const pubsub = new PubSub()
+const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
 const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+
 const app = express()
 app.use(express.json())
-
-app.post('/', async (req, res) => {
-  const data = req.body?.message?.data
-  if (data == null) {
-    return res.status(400).json({ error: 'No pub/sub message in body.' })
-  }
-  let entry: TLEntry
-  try {
-    entry = JSON.parse(Buffer.from(data, 'base64').toString()) as TLEntry
-  } catch (e) {
-    console.error(e)
-    return res.status(400).json({ error: 'Failed to parse data.' })
-  }
-  try {
-    await replicateWrites(supabase, entry)
-  } catch (e) {
-    console.error(
-      `Failed to replicate ${entry.docKind} ${entry.docId}. \
-       Logging failed write: ${entry.eventId}.`,
-      e
-    )
-    await firestore
-      .collection('replicationState')
-      .doc('supabase')
-      .collection('failedWrites')
-      .doc()
-      .create(entry)
-  }
-  return res.status(204).json({ success: true })
-})
 
 app.post('/replay-failed', async (_req, res) => {
   console.log('Checking for failed writes...')
@@ -72,7 +48,72 @@ app.post('/replay-failed', async (_req, res) => {
   }
 })
 
-const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
+async function tryReplicateBatch(...messages: Message[]) {
+  console.log(`Pushing batch of ${messages.length} message(s).`)
+  const entries = messages.map((m) => JSON.parse(m.data.toString()) as TLEntry)
+  try {
+    await replicateWrites(supabase, ...entries)
+  } catch (e) {
+    console.error(
+      `Failed to replicate ${entries.length} entries. Logging failed writes.`,
+      e
+    )
+    await createFailedWrites(firestore, ...entries)
+  }
+}
+
+function processSubscriptionBatched(
+  subscription: Subscription,
+  process: (msgs: Message[]) => Promise<void>,
+  batchSize: number,
+  batchTimeoutMs: number
+) {
+  const batch: Message[] = []
+
+  subscription.on('message', (message) => {
+    batch.push(message)
+    if (batch.length >= batchSize) {
+      const toWrite = [...batch]
+      batch.length = 0
+      try {
+        process(toWrite).then(() => {
+          for (const msg of toWrite) {
+            msg.ack()
+          }
+        })
+      } catch (e) {
+        console.error('Big error processing messages:', e)
+      }
+    }
+  })
+
+  subscription.on('error', (error) => {
+    console.error('Received error from subscription:', error)
+  })
+
+  return setInterval(() => {
+    if (batch.length > 0) {
+      const toWrite = [...batch]
+      batch.length = 0
+      try {
+        process(toWrite).then(() => {
+          for (const msg of toWrite) {
+            msg.ack()
+          }
+        })
+      } catch (e) {
+        console.error('Big error processing messages:', e)
+      }
+    }
+  }, batchTimeoutMs)
+}
+
+processSubscriptionBatched(
+  writeSub,
+  (msgs) => tryReplicateBatch(...msgs),
+  1000,
+  50
+).unref() // unref() means it won't keep the process running if GCP stops the webserver
 
 app.listen(PORT, () =>
   console.log(`Replication server listening on port ${PORT}.`)
