@@ -4,11 +4,10 @@ import {
   CollectionGroup,
   QueryDocumentSnapshot,
 } from 'firebase-admin/firestore'
-import { SupabaseClient } from '@supabase/supabase-js'
 import { chunk } from 'lodash'
 
 import { withRetries } from '../../../common/util/promise'
-import { run } from '../../../common/supabase/utils'
+import { run, SupabaseClient } from '../../../common/supabase/utils'
 import { createSupabaseClient, log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 import { DocumentKind } from '../../../common/transaction-log'
@@ -106,7 +105,7 @@ async function importDatabase(kinds?: string[]) {
   }
 
   if (shouldImport('txn'))
-    await importCollection(client, firestore.collection('txns'), 'txn', 5000)
+    await importCollection(client, firestore.collection('txns'), 'txn', 2500)
   if (shouldImport('group'))
     await importCollection(client, firestore.collection('groups'), 'group', 500)
   if (shouldImport('user'))
@@ -124,7 +123,7 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('bets'),
       'contractBet',
       (_) => true,
-      5000
+      2500
     )
   if (shouldImport('contractComment'))
     await importCollectionGroup(

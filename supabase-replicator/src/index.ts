@@ -49,10 +49,13 @@ app.post('/replay-failed', async (_req, res) => {
 })
 
 async function tryReplicateBatch(...messages: Message[]) {
-  console.log(`Pushing batch of ${messages.length} message(s).`)
   const entries = messages.map((m) => JSON.parse(m.data.toString()) as TLEntry)
   try {
+    const t0 = process.hrtime.bigint()
     await replicateWrites(supabase, ...entries)
+    const t1 = process.hrtime.bigint()
+    const ms = (t1 - t0) / 1000000n
+    console.log(`Replicated count=${entries.length}, time=${ms}ms.`)
   } catch (e) {
     console.error(
       `Failed to replicate ${entries.length} entries. Logging failed writes.`,
