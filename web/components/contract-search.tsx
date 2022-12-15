@@ -227,9 +227,7 @@ export function ContractSearch(props: {
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
       ) : renderedContracts && renderedContracts.length === 0 && profile ? (
-        <p className="mx-2 text-gray-500">
-          This creator does not yet have any markets.
-        </p>
+        <p className="mx-2 text-gray-500">No markets found</p>
       ) : (
         <ContractsGrid
           contracts={renderedContracts}
@@ -327,7 +325,9 @@ function ContractSearchControls(props: {
     : [
         ...additionalFilters,
         ...(additionalFilter?.nonQueryFacetFilters ?? []),
-        additionalFilter ? '' : 'visibility:public',
+        additionalFilter?.creatorId || additionalFilter?.groupSlug
+          ? ''
+          : 'visibility:public',
 
         filter === 'open' ? 'isResolved:false' : '',
         filter === 'closed' ? 'isResolved:false' : '',

@@ -36,7 +36,7 @@ const getY = (mode: GraphMode, p: PortfolioMetrics) =>
 
 export function getPoints(mode: GraphMode, history: PortfolioMetrics[]) {
   return history.map((p) => ({
-    x: new Date(p.timestamp),
+    x: p.timestamp,
     y: getY(mode, p),
     obj: p,
   }))

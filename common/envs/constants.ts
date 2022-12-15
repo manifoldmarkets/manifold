@@ -6,7 +6,7 @@ import { THEOREMONE_CONFIG } from './theoremone'
 export const BACKGROUND_COLOR = 'bg-gray-50'
 export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 
-const CONFIGS: { [env: string]: EnvConfig } = {
+export const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
   THEOREMONE: THEOREMONE_CONFIG,

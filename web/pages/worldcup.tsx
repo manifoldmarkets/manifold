@@ -23,15 +23,15 @@ const general_markets = [
   'will-we-have-a-messi-vs-ronaldo-fin',
 ] as string[]
 
-const br_cr = [
-  'who-will-be-man-of-the-match-in-bra-a88c0ce11214',
-  'will-brazil-eliminate-croatia',
-  'will-neymar-score-from-a-penalty-du',
-]
+// const br_cr = [
+//   'who-will-be-man-of-the-match-in-arg-8ce9e2a53739',
+//   'will-argentina-eliminate-croatia-in',
+//   'will-messi-score-a-goal-vs-croatia',
+// ]
 const nl_arg = [
-  'who-will-be-man-of-the-match-in-the-5241d79a9b88',
-  'will-the-netherlands-eliminate-arge-b00886164a20',
-  'will-messi-score-before-depay',
+  'who-will-be-man-of-the-match-in-fra-47fe2b9e0483',
+  'will-france-eliminate-morocco-in-th',
+  'will-france-vs-morocco-go-to-a-pena',
 ]
 
 const mor_por = [
@@ -40,9 +40,10 @@ const mor_por = [
   'will-moroccos-goalkeeper-save-a-pen',
 ]
 const uk_fr = [
-  'who-will-be-man-of-the-match-in-eng-b3b33c0ee202',
-  'will-england-eliminate-france',
-  'will-england-or-france-keep-a-clean',
+  'will-argentina-win-the-fifa-world-c-bf4a7e33fba8',
+  'will-croatia-win-the-fifa-world-cup',
+  'will-france-win-the-fifa-world-cup',
+  'will-morocco-win-the-fifa-world-cup',
 ]
 const final = [] as string[]
 
@@ -99,8 +100,6 @@ export async function getStaticProps() {
 
   const nlArg = await getContractsFromSlugs(nl_arg)
 
-  const brCr = await getContractsFromSlugs(br_cr)
-
   const morPor = await getContractsFromSlugs(mor_por)
 
   const ukFr = await getContractsFromSlugs(uk_fr)
@@ -119,7 +118,6 @@ export async function getStaticProps() {
       finals,
       playerRatings,
       generalMarkets,
-      brCr,
     },
     revalidate: 60, // regenerate after a minute
   }
@@ -140,13 +138,12 @@ const getContractsFromSlugs = async (slugs: string[]) => {
 export default function WorldCup(props: {
   nlArg: Contract[]
   ukFr: Contract[]
-  brCr: Contract[]
   morPor: Contract[]
   finals: Contract[]
   playerRatings: Contract[]
   generalMarkets: Contract[]
 }) {
-  const { playerRatings, generalMarkets, nlArg, brCr, morPor, ukFr } = props
+  const { playerRatings, nlArg, ukFr } = props
 
   // const isMobile = useIsMobile()
   // const groupWinnerTab = (
@@ -203,26 +200,7 @@ export default function WorldCup(props: {
 
           {/* Might want to put an image or something here. */}
 
-          <div className="mb-2 text-3xl text-indigo-700">Brazil vs Croatia</div>
-          <Masonry
-            breakpointCols={{ default: 2, 768: 1 }}
-            className="-ml-4 flex w-auto"
-            columnClassName="pl-4 bg-clip-padding"
-          >
-            {brCr?.map((contract, i) => (
-              <ContractCard
-                key={contract.slug}
-                contract={contract}
-                hideDetails={false}
-                showImage={i == 1}
-                className="mb-4"
-              />
-            ))}
-          </Masonry>
-
-          <div className="my-4 text-3xl text-indigo-700">
-            The Netherlands vs Argentina
-          </div>
+          <div className="mb-2 text-3xl text-indigo-700">France vs Morocco</div>
           <Masonry
             breakpointCols={{ default: 2, 768: 1 }}
             className="-ml-4 flex w-auto"
@@ -240,36 +218,18 @@ export default function WorldCup(props: {
           </Masonry>
 
           <div className="my-4 text-3xl text-indigo-700">
-            Morocco vs Portugal
+            Who will win the World Cup?
           </div>
           <Masonry
             breakpointCols={{ default: 2, 768: 1 }}
             className="-ml-4 flex w-auto"
             columnClassName="pl-4 bg-clip-padding"
           >
-            {morPor?.map((contract, i) => (
+            {ukFr?.map((contract) => (
               <ContractCard
                 key={contract.slug}
                 contract={contract}
                 hideDetails={false}
-                showImage={i == 1}
-                className="mb-4"
-              />
-            ))}
-          </Masonry>
-
-          <div className="my-4 text-3xl text-indigo-700">England vs France</div>
-          <Masonry
-            breakpointCols={{ default: 2, 768: 1 }}
-            className="-ml-4 flex w-auto"
-            columnClassName="pl-4 bg-clip-padding"
-          >
-            {ukFr?.map((contract, i) => (
-              <ContractCard
-                key={contract.slug}
-                contract={contract}
-                hideDetails={false}
-                showImage={i == 1}
                 className="mb-4"
               />
             ))}
@@ -326,24 +286,6 @@ export default function WorldCup(props: {
           <Spacer h={8} />
 
           <Spacer h={16} />
-
-          <div className="mb-2 text-3xl text-indigo-700">General markets</div>
-          <Spacer h={4} />
-          <Masonry
-            breakpointCols={{ default: 2, 768: 1 }}
-            className="-ml-4 flex w-auto"
-            columnClassName="pl-4 bg-clip-padding"
-          >
-            {generalMarkets.map((contract) => (
-              <ContractCard
-                key={contract.slug}
-                contract={contract}
-                hideDetails={false}
-                showImage={true}
-                className="mb-4"
-              />
-            ))}
-          </Masonry>
 
           <Spacer h={8} />
 

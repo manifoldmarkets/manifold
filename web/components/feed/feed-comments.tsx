@@ -222,6 +222,7 @@ export function CommentActions(props: {
         label={'Comment'}
       />
       <DropdownMenu
+        buttonClass="px-2 py-1"
         Items={[
           {
             name: 'Copy Link',

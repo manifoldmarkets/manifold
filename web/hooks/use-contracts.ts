@@ -31,9 +31,14 @@ export const useAllContracts = () => {
   return contracts
 }
 
+const defaultFilters: (string | string[])[] = [
+  'isResolved:false',
+  'visibility:public',
+]
+
 export const useTrendingContracts = (
   maxContracts: number,
-  additionalFilters?: string[],
+  additionalFilters?: (string | string[])[],
   active = true
 ) => {
   const { data } = useQuery(
@@ -42,9 +47,7 @@ export const useTrendingContracts = (
       !active
         ? undefined
         : trendingIndex.search<CPMMBinaryContract>('', {
-            facetFilters: ['isResolved:false', 'visibility:public'].concat(
-              additionalFilters ?? []
-            ),
+            facetFilters: defaultFilters.concat(additionalFilters ?? []),
             hitsPerPage: maxContracts,
           })
   )
@@ -54,7 +57,7 @@ export const useTrendingContracts = (
 
 export const useNewContracts = (
   maxContracts: number,
-  additionalFilters?: string[],
+  additionalFilters?: (string | string[])[],
   active = true
 ) => {
   const { data } = useQuery(
@@ -63,9 +66,7 @@ export const useNewContracts = (
       !active
         ? undefined
         : newIndex.search<CPMMBinaryContract>('', {
-            facetFilters: ['isResolved:false', 'visibility:public'].concat(
-              additionalFilters ?? []
-            ),
+            facetFilters: defaultFilters.concat(additionalFilters ?? []),
             hitsPerPage: maxContracts,
           })
   )
@@ -75,7 +76,7 @@ export const useNewContracts = (
 
 export const useContractsByDailyScore = (
   maxContracts: number,
-  additionalFilters?: string[],
+  additionalFilters?: (string | string[])[],
   active = true
 ) => {
   const { data } = useQuery(
@@ -84,9 +85,7 @@ export const useContractsByDailyScore = (
       !active
         ? undefined
         : dailyScoreIndex.search<CPMMBinaryContract>('', {
-            facetFilters: ['isResolved:false', 'visibility:public'].concat(
-              additionalFilters ?? []
-            ),
+            facetFilters: defaultFilters.concat(additionalFilters ?? []),
             hitsPerPage: maxContracts,
           })
   )

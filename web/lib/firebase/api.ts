@@ -58,6 +58,14 @@ export function resolveMarket(params: any) {
   return call(getFunctionUrl('resolvemarket'), 'POST', params)
 }
 
+export function swapCert(params: any) {
+  return call(getFunctionUrl('swapcert'), 'POST', params)
+}
+
+export function dividendCert(params: any) {
+  return call(getFunctionUrl('dividendcert'), 'POST', params)
+}
+
 export function placeBet(params: any) {
   return call(getFunctionUrl('placebet'), 'POST', params)
 }

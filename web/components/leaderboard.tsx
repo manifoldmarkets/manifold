@@ -1,11 +1,8 @@
 import clsx from 'clsx'
-import { Avatar } from './widgets/avatar'
-import { Row } from './layout/row'
-import { SiteLink } from './widgets/site-link'
 import { Table } from './widgets/table'
 import { Title } from './widgets/title'
 import { sortBy } from 'lodash'
-import { UserLink } from './widgets/user-link'
+import { UserAvatarAndBadge } from './widgets/user-link'
 
 interface LeaderboardEntry {
   username: string
@@ -61,12 +58,11 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                     {entry.rank ? entry.rank : index + 1}
                   </td>
                   <td className="max-w-[200px]">
-                    <SiteLink className="relative" href={`/${entry.username}`}>
-                      <Row className="items-center gap-4">
-                        <Avatar avatarUrl={entry.avatarUrl} size={8} />
-                        <UserLink name={entry.name} username={entry.username} />
-                      </Row>
-                    </SiteLink>
+                    <UserAvatarAndBadge
+                      name={entry.name}
+                      username={entry.username}
+                      avatarUrl={entry.avatarUrl}
+                    />
                   </td>
                   {columns.map((column) => (
                     <td key={column.header}>{column.renderCell(entry)}</td>

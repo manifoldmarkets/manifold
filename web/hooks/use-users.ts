@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PrivateUser, User } from 'common/user'
-import { groupBy, sortBy, difference } from 'lodash'
-import { getContractsOfUserBets } from 'web/lib/firebase/bets'
-import { useFollows } from './use-follows'
-import { useUser } from './use-user'
+import { groupBy, sortBy } from 'lodash'
+import { getUserBetContracts } from 'web/lib/firebase/contracts'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { DocumentData } from 'firebase/firestore'
 import { users, privateUsers, getUsers } from 'web/lib/firebase/users'
@@ -31,11 +29,11 @@ export const usePrivateUsers = () => {
 }
 
 export const useDiscoverUsers = (userId: string | null | undefined) => {
-  const [discoverUserIds, setDiscoverUserIds] = useState<string[]>([])
+  const [discoverUserIds, setDiscoverUserIds] = useState<string[] | undefined>()
 
   useEffect(() => {
     if (userId)
-      getContractsOfUserBets(userId).then((contracts) => {
+      getUserBetContracts(userId).then((contracts) => {
         const creatorCounts = Object.entries(
           groupBy(contracts, 'creatorId')
         ).map(([id, contracts]) => [id, contracts.length] as const)
@@ -48,9 +46,5 @@ export const useDiscoverUsers = (userId: string | null | undefined) => {
       })
   }, [userId])
 
-  const user = useUser()
-  const followedUserIds = useFollows(user?.id)
-  const nonSuggestions = [user?.id ?? '', ...(followedUserIds ?? [])]
-
-  return difference(discoverUserIds, nonSuggestions).slice(0, 50)
+  return discoverUserIds
 }

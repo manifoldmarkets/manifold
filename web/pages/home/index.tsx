@@ -1,5 +1,6 @@
-import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
+import { PlusCircleIcon } from '@heroicons/react/outline'
 import { DotsVerticalIcon, PencilAltIcon } from '@heroicons/react/solid'
+import { difference, isArray, keyBy, shuffle, uniqBy } from 'lodash'
 import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, CPMMBinaryContract } from 'common/contract'
@@ -9,18 +10,16 @@ import {
   HOME_BLOCKED_GROUP_SLUGS,
 } from 'common/envs/constants'
 import { GlobalConfig } from 'common/globalConfig'
-import { Group, groupPath } from 'common/group'
+import { Group } from 'common/group'
 import { Post } from 'common/post'
 import { User } from 'common/user'
 import { buildArray, filterDefined } from 'common/util/array'
 import { chooseRandomSubset } from 'common/util/random'
 import { MINUTE_MS } from 'common/util/time'
-import { difference, isArray, keyBy, sortBy, sum } from 'lodash'
 import Router, { SingletonRouter } from 'next/router'
 import { memo, ReactNode, useEffect, useMemo } from 'react'
 import { toast } from 'react-hot-toast'
 import { ActivityLog } from 'web/components/activity-log'
-import { Button } from 'web/components/buttons/button'
 import { PillButton } from 'web/components/buttons/pill-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Sort } from 'web/components/contract-search'
@@ -40,13 +39,11 @@ import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useAdmin } from 'web/hooks/use-admin'
 import {
   useContractsByDailyScore,
-  useContractsByDailyScoreGroups,
   useNewContracts,
   useTrendingContracts,
 } from 'web/hooks/use-contracts'
 import { useGlobalConfig } from 'web/hooks/use-global-config'
 import {
-  useGroups,
   useMemberGroupsIdsAndSlugs,
   useTrendingGroups,
 } from 'web/hooks/use-group'
@@ -62,6 +59,7 @@ import {
   usePrivateUser,
   useUser,
   useUserContractMetricsByProfit,
+  useUserRecommendedMarkets,
 } from 'web/hooks/use-user'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import {
@@ -88,7 +86,7 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const followedGroupIds = useMemberGroupsIdsAndSlugs(user)
+  const followedGroupIds = useMemberGroupsIdsAndSlugs(user?.id)
   const shouldFilterDestiny = !followedGroupIds?.find((g) =>
     DESTINY_GROUP_SLUGS.includes(g.slug)
   )
@@ -149,6 +147,11 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     !!userBlockFacetFilters
   )
   const contractMetricsByProfit = useUserContractMetricsByProfit(user?.id)
+  const recommendedContracts = useYourRecommendedContracts(
+    user?.id,
+    followedGroupIds,
+    userBlockFacetFilters
+  )
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
@@ -204,24 +207,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     !newContracts ||
     !dailyTrendingContracts ||
     !globalConfig ||
-    !pinned
-
-  const [hasViewedBottom, setHasViewedBottom] = usePersistentState(false, {
-    key: 'has-viewed-bottom',
-    store: inMemoryStore(),
-  })
-
-  const groupContracts =
-    useContractsByDailyScoreGroups(
-      followedGroupIds?.map((g) => g.slug),
-      4,
-      userBlockFacetFilters,
-      !!userBlockFacetFilters
-    ) ?? {}
-
-  const groups = filterDefined(
-    useGroups(followedGroupIds?.map((g) => g.id) ?? [])
-  )
+    !pinned ||
+    !recommendedContracts
 
   return (
     <Page>
@@ -256,25 +243,11 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               isAdmin,
               globalConfig,
               pinned,
-              contractMetricsByProfit
+              contractMetricsByProfit,
+              recommendedContracts
             )}
 
-            <VisibilityObserver
-              className="relative -top-[300px] h-1"
-              onVisibilityUpdated={(visible) =>
-                visible && setHasViewedBottom(true)
-              }
-            />
-
-            {hasViewedBottom ? (
-              <GroupSections
-                user={user}
-                groups={groups}
-                groupContracts={groupContracts}
-              />
-            ) : (
-              <LoadingIndicator />
-            )}
+            <YourFeedSection user={user} />
           </>
         )}
       </Col>
@@ -294,6 +267,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 }
 
 const HOME_SECTIONS = [
+  { label: 'Recommended', id: 'recommended', icon: '👍' },
   { label: 'Trending', id: 'score', icon: '🔥' },
   { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   { label: 'Your daily movers', id: 'daily-movers' },
@@ -309,8 +283,8 @@ export const getHomeItems = (sections: string[]) => {
   const itemsById = keyBy(HOME_SECTIONS, 'id')
   const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
 
-  // Add unmentioned items to the end.
-  sectionItems.push(
+  // Add unmentioned items to the start.
+  sectionItems.unshift(
     ...HOME_SECTIONS.filter((item) => !sectionItems.includes(item))
   )
 
@@ -335,7 +309,8 @@ export function renderSections(
         contracts: CPMMBinaryContract[]
         metrics: ContractMetrics[]
       }
-    | undefined
+    | undefined,
+  recommendedContracts: Contract[]
 ) {
   type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
@@ -347,10 +322,15 @@ export function renderSections(
           label: string
           icon: string | undefined
         }
+        if (id === 'recommended') {
+          return (
+            <RecommendedSection key={id} contracts={recommendedContracts} />
+          )
+        }
         if (id === 'featured')
           return (
             <FeaturedSection
-              key={'featured'}
+              key={id}
               globalConfig={globalConfig}
               pinned={pinned}
               isAdmin={isAdmin}
@@ -390,48 +370,51 @@ export function renderSections(
   )
 }
 
-const GroupSections = memo(function GroupSections(props: {
-  user: User
-  groups: Group[]
-  groupContracts: Record<string, CPMMBinaryContract[]>
-}) {
-  const { user, groups, groupContracts } = props
-  const filteredGroups = groups.filter((g) => groupContracts[g.slug])
-  const orderedGroups = sortBy(filteredGroups, (g) =>
-    // Sort by sum of top two daily scores.
-    sum(
-      sortBy(groupContracts[g.slug].map((c) => c.dailyScore))
-        .reverse()
-        .slice(0, 2)
-    )
-  ).reverse()
+const YourFeedSection = (props: { user: User }) => {
+  const { user } = props
 
-  const previouslySeenContracts = new Set<string>()
+  const [hasViewedBottom, setHasViewedBottom] = usePersistentState(false, {
+    key: 'has-viewed-bottom',
+    store: inMemoryStore(),
+  })
 
   return (
-    <>
-      {orderedGroups.map((group) => {
-        const contracts = groupContracts[group.slug].filter(
-          (c) =>
-            Math.abs(c.probChanges.day) >= 0.01 &&
-            !previouslySeenContracts.has(c.id)
-        )
-        if (contracts.length === 0) return null
+    <Col>
+      <HomeSectionHeader label="Your feed" href="/your-feed" icon={'📖'} />
+      <VisibilityObserver
+        className="relative -top-[300px] h-1"
+        onVisibilityUpdated={(visible) => visible && setHasViewedBottom(true)}
+      />
 
-        contracts.forEach((c) => previouslySeenContracts.add(c.id))
-
-        return (
-          <GroupSection
-            key={group.id}
-            group={group}
-            user={user}
-            contracts={contracts}
-          />
-        )
-      })}
-    </>
+      {hasViewedBottom ? (
+        <YourFeed user={user} count={100} />
+      ) : (
+        <LoadingIndicator />
+      )}
+    </Col>
   )
-})
+}
+
+export const YourFeed = (props: { user: User; count: number }) => {
+  const { user, count } = props
+
+  const [savedContracts, setSavedContracts] = usePersistentState<
+    Contract[] | undefined
+  >(undefined, { key: 'home-your-feed' + count, store: inMemoryStore() })
+
+  const computedContracts = useUserRecommendedMarkets(user.id, count)
+
+  useEffect(() => {
+    if (computedContracts && !savedContracts)
+      setSavedContracts(computedContracts)
+  }, [computedContracts, savedContracts, setSavedContracts])
+
+  // Show only the first loaded batch of contracts, so users can come back to them.
+  const contracts = savedContracts ?? computedContracts
+
+  if (!contracts) return <LoadingIndicator />
+  return <ContractsGrid contracts={contracts} showImageOnTopContract />
+}
 
 function HomeSectionHeader(props: {
   label: string
@@ -554,41 +537,93 @@ export function FeaturedSection(props: {
   )
 }
 
-function GroupSection(props: {
-  group: Group
-  user: User
-  contracts: CPMMBinaryContract[]
-}) {
-  const { group, user, contracts } = props
+// Use Algolia search to filter by followed groups, markets you have not bet on, and user block list.
+// Combines Trending, New, and Daily changed, with randomness.
+const useYourRecommendedContracts = (
+  userId: string | null | undefined,
+  followedGroupIds: { id: string; slug: string }[] | undefined,
+  userBlockFacetFilters: string[] | undefined
+) => {
+  const groupFilters = (followedGroupIds ?? []).map(
+    (group) => `groupSlugs:${group.slug}`
+  )
+  const filters = [
+    groupFilters,
+    ...(userBlockFacetFilters ?? []),
+    'uniqueBettorIds:-' + userId,
+  ]
 
+  const newContracts = useNewContracts(
+    10,
+    filters,
+    !!userBlockFacetFilters && !!followedGroupIds
+  )
+  const trendingContracts = useTrendingContracts(
+    10,
+    filters,
+    !!userBlockFacetFilters && !!followedGroupIds
+  )
+  const dailyChangedContracts = useContractsByDailyScore(
+    10,
+    filters,
+    !!userBlockFacetFilters && !!followedGroupIds
+  )
+
+  const possibleContracts = shuffle(
+    uniqBy(
+      buildArray(newContracts, trendingContracts, dailyChangedContracts),
+      (c) => c.id
+    )
+  )
+
+  const contractsWithUniqueGroups: Contract[] = []
+  const otherContracts: Contract[] = []
+  const seenGroups = new Set<string>()
+  for (const contract of possibleContracts) {
+    const { groupSlugs } = contract
+    if (groupSlugs && groupSlugs.some((slug) => seenGroups.has(slug))) {
+      otherContracts.push(contract)
+      continue
+    }
+    if (groupSlugs) groupSlugs.forEach((s) => seenGroups.add(s))
+    contractsWithUniqueGroups.push(contract)
+  }
+  const computedContracts = [
+    ...contractsWithUniqueGroups,
+    ...otherContracts,
+  ].slice(0, 6)
+
+  const [savedContracts, setContracts] = usePersistentState<
+    Contract[] | undefined
+  >(undefined, { key: 'recommendedContracts', store: inMemoryStore() })
+
+  const isLoading =
+    !newContracts ||
+    !trendingContracts ||
+    !dailyChangedContracts ||
+    !userBlockFacetFilters ||
+    !followedGroupIds
+
+  useEffect(() => {
+    if (!isLoading && !savedContracts) {
+      setContracts(computedContracts)
+    }
+  }, [isLoading, computedContracts, savedContracts, setContracts])
+
+  return isLoading ? undefined : savedContracts
+}
+
+export const RecommendedSection = memo(function RecommendedSection(props: {
+  contracts: Contract[]
+}) {
+  const { contracts } = props
   return (
     <Col>
-      <HomeSectionHeader label={group.name} href={groupPath(group.slug)}>
-        <Button
-          color="gray-white"
-          onClick={() => {
-            const homeSections = (user.homeSections ?? []).filter(
-              (id) => id !== group.id
-            )
-            updateUser(user.id, { homeSections })
-
-            toast.promise(leaveGroup(group, user.id), {
-              loading: 'Unfollowing group...',
-              success: `Unfollowed ${group.name}`,
-              error: "Couldn't unfollow group, try again?",
-            })
-          }}
-        >
-          <XCircleIcon className={'h-5 w-5 flex-shrink-0'} aria-hidden="true" />
-        </Button>
-      </HomeSectionHeader>
-      <ContractsGrid
-        contracts={contracts.slice(0, 4)}
-        showImageOnTopContract={true}
-      />
+      <HomeSectionHeader label="Recommended" icon="👍" />
+      <ContractsGrid contracts={contracts} showImageOnTopContract={true} />
     </Col>
   )
-}
+})
 
 export const DailyMoversSection = memo(function DailyMoversSection(props: {
   data:

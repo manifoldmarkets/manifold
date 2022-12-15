@@ -163,7 +163,7 @@ export const SVGChart = <X, TT>(props: {
   margin: Margin
   xAxis: Axis<X>
   yAxis: Axis<number>
-  ttParams: TooltipParams<TT> | undefined
+  ttParams?: TooltipParams<TT> | undefined
   onSelect?: (ev: D3BrushEvent<any>) => void
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void

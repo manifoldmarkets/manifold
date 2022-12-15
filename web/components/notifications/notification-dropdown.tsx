@@ -1,13 +1,17 @@
 import {
   DotsVerticalIcon,
+  EyeIcon,
+  EyeOffIcon,
   MinusCircleIcon,
   PlusCircleIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Notification } from 'common/notification'
 import { getNotificationPreference } from 'common/user-notification-preferences'
-import { usePrivateUser } from 'web/hooks/use-user'
-import DropdownMenu from '../comments/dropdown-menu'
+import { useContractFollows } from 'web/hooks/use-follows'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
+import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Spacer } from '../layout/spacer'
 import {
   changeSetting,
@@ -21,7 +25,7 @@ export default function NotificationDropdown(props: {
   highlighted: boolean
 }) {
   const { notification, highlighted } = props
-  const notificationDropdownItems = useNotificationPreferenceItem(notification)
+  const notificationDropdownItems = useNotificationDropdownItems(notification)
 
   if (notificationDropdownItems.length > 0) {
     return (
@@ -73,15 +77,46 @@ function useNotificationPreferenceItem(notification: Notification) {
         ) : (
           <PlusCircleIcon className="h-5 w-5" />
         ),
-        onClick: () => {
+        onClick: () =>
           changeSetting({
             setting: 'browser',
             newValue: !inAppEnabled,
             privateUser: privateUser,
             subscriptionTypeKey: subType,
-          })
-        },
-      },
+          }),
+      } as DropdownItem,
     ]
   } else return []
+}
+
+function useNotificationFollowItem(notification: Notification) {
+  const sourceContractId = notification.sourceContractId
+  const sourceContractSlug = notification.sourceContractSlug
+  const followers = useContractFollows(sourceContractId)
+  const user = useUser()
+  if (!user || !sourceContractId || !sourceContractSlug || !followers) {
+    return []
+  }
+  const isFollowing = followers?.includes(user.id)
+  return [
+    {
+      name: isFollowing ? 'Unfollow this market' : 'Follow this market',
+      icon: isFollowing ? (
+        <EyeOffIcon className="h-5 w-5" />
+      ) : (
+        <EyeIcon className="h-5 w-5" />
+      ),
+      onClick: isFollowing
+        ? () => unfollowMarket(sourceContractId, sourceContractSlug, user)
+        : () => followMarket(sourceContractId, sourceContractSlug, user),
+    } as DropdownItem,
+  ]
+}
+
+function useNotificationDropdownItems(
+  notification: Notification
+): DropdownItem[] {
+  return useNotificationFollowItem(notification).concat(
+    useNotificationPreferenceItem(notification)
+  )
 }

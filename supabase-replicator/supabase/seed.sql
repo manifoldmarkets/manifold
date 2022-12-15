@@ -58,7 +58,7 @@ create table if not exists incoming_writes (
   doc_kind text not null,
   write_kind text not null,
   doc_id text not null,
-  data jsonb not null,
+  data jsonb null, /* can be null on deletes */
   ts timestamp not null,
   processed boolean not null default false
 );
@@ -90,7 +90,6 @@ create or replace function replicate_writes_process_one(r incoming_writes)
 as
 $$
 declare dest_table text;
-declare replicated_id text;
 begin
   dest_table = get_document_table(r.doc_kind);
   if dest_table = null then
@@ -104,12 +103,12 @@ begin
        where %1$I.fs_updated_time <= %4$L
        returning id;',
       dest_table, r.doc_id, r.data, r.ts
-    ) into replicated_id;
+    );
   elsif r.write_kind = 'delete' then
     execute format(
       'delete from %1$I where id = %2$L and fs_updated_time <= %3$L',
       dest_table, r.doc_id, r.ts
-    ) into replicated_id;
+    );
   else
     raise warning 'Invalid write kind.';
     return false;

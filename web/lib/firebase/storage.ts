@@ -1,7 +1,7 @@
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
-import imageCompression from 'browser-image-compression'
 import { nanoid } from 'nanoid'
 import { storage } from './init'
+import Compressor from 'compressorjs'
 
 const ONE_YEAR_SECS = 60 * 60 * 24 * 365
 
@@ -16,13 +16,20 @@ export const uploadImage = async (
   const storageRef = ref(storage, `user-images/${username}/${filename}`)
 
   if (file.size > 20 * 1024 ** 2) {
-    return Promise.reject('File is over 20 MB.')
+    return Promise.reject('File is over 20 MB')
   }
 
+  // if  >1MB compress
   if (file.size > 1024 ** 2) {
-    file = await imageCompression(file, {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1920,
+    file = await new Promise((resolve, reject) => {
+      new Compressor(file, {
+        quality: 0.6,
+        maxHeight: 1920,
+        maxWidth: 1920,
+        convertSize: 1000000, // if result >1MB turn to jpeg
+        success: (file: File) => resolve(file),
+        error: (error) => reject(error.message),
+      })
     })
   }
 

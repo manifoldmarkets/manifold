@@ -98,10 +98,12 @@ export function ContractTabs(props: {
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
   )
+
+  const isMobile = useIsMobile()
+
   const yourBetsTitle =
-    visibleUserBets.length === 0
-      ? 'Your trades'
-      : `${visibleUserBets.length} Your trades`
+    (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
+    (isMobile ? 'You' : 'Your Trades')
 
   const outcomes = ['YES', 'NO']
   const positions =

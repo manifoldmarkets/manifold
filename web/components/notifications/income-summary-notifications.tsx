@@ -55,11 +55,13 @@ export function combineAndSumIncomeNotifications(
             )
             .forEach((n) => (sum = parseInt(n.sourceText) + sum))
           return {
-            ...notification,
-            sum,
+            name: notification.sourceUserName,
+            username: notification.sourceUserUsername,
+            avatarUrl: notification.sourceUserAvatarUrl,
+            amount: sum,
           } as MultiUserLinkInfo
         }),
-        (n) => n.sourceUserUsername
+        (n) => n.username
       )
 
       const newNotification = {

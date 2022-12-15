@@ -54,12 +54,16 @@ import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { HistoryPoint } from 'web/components/charts/generic-charts'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { BackRow } from 'web/components/contract/back-row'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
   filterChallenges: true,
 }
-export type BetPoint = { x: number; y: number; bet?: Partial<Bet> }
+
+type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -88,10 +92,10 @@ export async function getStaticPropz(props: {
           removeUndefinedProps({
             x: bet.createdTime,
             y: bet.probAfter,
-            bet: includeAvatar
+            obj: includeAvatar
               ? { userAvatarUrl: bet.userAvatarUrl }
               : undefined,
-          }) as BetPoint
+          }) as HistoryPoint<Partial<Bet>>
       )
     : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
@@ -110,10 +114,12 @@ export async function getStaticPropz(props: {
   return {
     props: {
       contract,
-      bets: useBetPoints ? bets.slice(0, 100) : bets,
+      historyData: {
+        bets: useBetPoints ? bets.slice(0, 100) : bets,
+        points: betPoints,
+      },
       comments,
       userPositionsByOutcome,
-      betPoints,
       totalBets,
       topContractMetrics,
       totalPositions,
@@ -128,20 +134,18 @@ export async function getStaticPaths() {
 
 export default function ContractPage(props: {
   contract: Contract | null
-  bets: Bet[]
+  historyData: HistoryData
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
-  betPoints: BetPoint[]
   totalBets: number
   topContractMetrics: ContractMetric[]
   totalPositions: number
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
-    bets: [],
+    historyData: { bets: [], points: [] },
     comments: [],
     userPositionsByOutcome: {},
-    betPoints: [],
     totalBets: 0,
     topContractMetrics: [],
     totalPositions: 0,
@@ -174,6 +178,7 @@ export function ContractPageContent(
   } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
+  const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = (privateUser?.blockedUserIds ?? []).concat(
     privateUser?.blockedByUserIds ?? []
@@ -191,28 +196,25 @@ export function ContractPageContent(
   )
 
   // Static props load bets in descending order by time
-  const lastBetTime = first(props.bets)?.createdTime
+  const lastBetTime = first(props.historyData.bets)?.createdTime
   const newBets = useBets({
     contractId: contract.id,
     afterTime: lastBetTime,
     ...CONTRACT_BET_FILTER,
   })
   const totalBets = props.totalBets + (newBets?.length ?? 0)
-  const bets = props.bets.concat(newBets ?? [])
-  const betPoints = props.betPoints.concat(
-    newBets?.map(
-      (bet) =>
-        ({
-          x: bet.createdTime,
-          y: bet.probAfter,
-          bet: { userAvatarUrl: bet.userAvatarUrl },
-        } as BetPoint)
-    ) ?? []
+  const bets = props.historyData.bets.concat(newBets ?? [])
+  const betPoints = props.historyData.points.concat(
+    newBets?.map((bet) => ({
+      x: bet.createdTime,
+      y: bet.probAfter,
+      obj: { userAvatarUrl: bet.userAvatarUrl },
+    })) ?? []
   )
 
   const creator = useUserById(contract.creatorId) ?? null
 
-  const { isResolved, question, outcomeType } = contract
+  const { isResolved, question, outcomeType, resolution } = contract
 
   const allowTrade = tradingAllowed(contract)
   const isAdmin = useAdmin()
@@ -259,7 +261,8 @@ export function ContractPageContent(
           ogCardProps={ogCardProps}
         />
       )}
-      <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
+      <BackRow />
+      <Col className="w-full justify-between rounded bg-white pb-6 pt-4 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         <ContractOverview
           contract={contract}
           bets={bets}
@@ -325,7 +328,7 @@ export function ContractPageContent(
             )
           ))}
 
-        {isResolved && (
+        {isResolved && resolution !== 'CANCEL' && (
           <>
             <ContractLeaderboard
               topContractMetrics={topContractMetrics.filter(
@@ -333,12 +336,17 @@ export function ContractPageContent(
               )}
               contractId={contract.id}
               currentUser={user}
+              currentUserMetrics={contractMetrics}
             />
             <Spacer h={12} />
           </>
         )}
 
-        <BetsSummary className="mt-4 mb-2 px-2" contract={contract} />
+        <BetsSummary
+          className="mt-4 mb-2 px-2"
+          contract={contract}
+          initialMetrics={contractMetrics}
+        />
 
         <div ref={tabsContainerRef}>
           <ContractTabs

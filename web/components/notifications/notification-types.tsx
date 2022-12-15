@@ -732,7 +732,7 @@ function UserLikeNotification(props: {
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       icon={
-        <AvatarNotificationIcon notification={notification} symbol={'❤️'} />
+        <AvatarNotificationIcon notification={notification} symbol={'💖'} />
       }
       onClick={() => setOpen(true)}
       subtitle={
@@ -742,7 +742,7 @@ function UserLikeNotification(props: {
       {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
       your
       {sourceType === 'comment_like' ? ' comment on ' : ' market '}
-      <QuestionOrGroupLink notification={notification} />
+      {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal
         similarNotifications={relatedNotifications}
         modalLabel={'Who dunnit?'}

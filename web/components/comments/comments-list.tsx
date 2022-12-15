@@ -40,15 +40,15 @@ export function UserCommentsList(props: { user: User }) {
   })
 
   if (isLoading) {
-    return <LoadingIndicator />
+    return <LoadingIndicator className="mt-4" />
   }
 
   if (pageComments.length === 0) {
     if (isStart && isEnd) {
-      return <p>This user hasn't made any comments yet.</p>
+      return <p className="text-gray-500">No comments yet</p>
     } else {
       // this can happen if their comment count is a multiple of page size
-      return <p>No more comments to display.</p>
+      return <p className="text-gray-500">No more comments to display</p>
     }
   }
 

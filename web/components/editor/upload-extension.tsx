@@ -24,8 +24,8 @@ export const useUploadMutation = (editor: Editor | null) =>
         })
         trans.run()
       },
-      onError() {
-        toast('Failed to upload :(')
+      onError(error: any) {
+        toast.error(error.message ?? error)
       },
     }
   )
