@@ -260,7 +260,7 @@ export function UserPage(props: { user: User }) {
                 ),
               },
               {
-                title: 'Posts',
+                title: 'Comments',
                 stackedTabIcon: <DocumentIcon className="h-5" />,
                 content: (
                   <>
@@ -269,7 +269,7 @@ export function UserPage(props: { user: User }) {
                     <Row className="flex items-center justify-between">
                       <SectionHeader label={'Posts'} href={''} />
 
-                      {currentUser && (
+                      {isCurrentUser && (
                         <Link
                           className={clsx('mb-3', buttonClass('md', 'indigo'))}
                           href={'/create-post'}
@@ -285,9 +285,7 @@ export function UserPage(props: { user: User }) {
                         userPosts.length > 0 ? (
                           <PostCardList posts={userPosts} limit={6} />
                         ) : (
-                          <div className="text-center text-gray-400">
-                            No posts yet
-                          </div>
+                          <div className="text-gray-500">No posts yet</div>
                         )
                       ) : (
                         <div className="text-center text-gray-400">
