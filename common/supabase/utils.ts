@@ -1,9 +1,15 @@
 import {
   PostgrestResponse,
   PostgrestSingleResponse,
+  SupabaseClient as SupabaseClientGeneric,
 } from '@supabase/supabase-js'
+import { Database } from './schema'
 
-type QueryResponse = PostgrestResponse<any> | PostgrestSingleResponse<any>
+export type QueryResponse =
+  | PostgrestResponse<any>
+  | PostgrestSingleResponse<any>
+
+export type SupabaseClient = SupabaseClientGeneric<Database>
 
 export async function run<T extends QueryResponse = QueryResponse>(
   q: PromiseLike<T>

@@ -12,6 +12,7 @@ import {
 import { SupabaseClientOptions, createClient } from '@supabase/supabase-js'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { generateJSON } from '@tiptap/html'
+import { SupabaseClient } from '../../common/supabase/utils'
 import { stringParseExts } from '../../common/util/parse'
 
 import { DEV_CONFIG } from '../../common/envs/dev'
@@ -323,5 +324,5 @@ export function createSupabaseClient(opts?: SupabaseClientOptions<'public'>) {
   if (!key) {
     throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
   }
-  return createClient(url, key, opts)
+  return createClient(url, key, opts) as SupabaseClient
 }
