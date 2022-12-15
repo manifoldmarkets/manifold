@@ -1,3 +1,4 @@
+import { Firestore } from 'firebase-admin/firestore'
 import fetch, { RequestInfo, RequestInit } from 'node-fetch'
 import { Agent as HttpAgent } from 'http'
 import { Agent as HttpsAgent } from 'https'
@@ -21,12 +22,39 @@ export function createSupabaseClient(url: string, key: string) {
   return createClient(url, key, { global: { fetch: pooledFetch as any } })
 }
 
+export async function replayFailedWrites(
+  firestore: Firestore,
+  supabase: SupabaseClient,
+  limit = 1000
+) {
+  const failedWrites = await firestore
+    .collection('replicationState')
+    .doc('supabase')
+    .collection('failedWrites')
+    .limit(limit)
+    .get()
+  if (failedWrites.size == 0) {
+    return 0
+  }
+
+  console.log(`Attempting to replay ${failedWrites.size} write(s)...`)
+  const deleter = firestore.bulkWriter({ throttling: false })
+  const entries = failedWrites.docs.map((d) => d.data() as TLEntry)
+  await replicateWrites(supabase, ...entries)
+  for (const doc of failedWrites.docs) {
+    deleter.delete(doc.ref)
+  }
+  await deleter.close()
+  console.log(`Successfully replayed ${failedWrites.size} write(s).`)
+  return failedWrites.size
+}
+
 export async function replicateWrites(
-  client: SupabaseClient,
+  supabase: SupabaseClient,
   ...entries: TLEntry[]
 ) {
   return await run(
-    client.from('incoming_writes').insert(
+    supabase.from('incoming_writes').insert(
       entries.map((e) => ({
         event_id: e.eventId,
         doc_kind: e.docKind,
