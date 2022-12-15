@@ -7,7 +7,7 @@ import {
   AnyExtension,
 } from '@tiptap/react'
 import { keyBy } from 'lodash'
-import React, { ReactNode } from 'react'
+import React, { ReactElement, ReactNode } from 'react'
 
 export function insertContent(editor: Editor | null, ...contents: Content[]) {
   if (!editor) {
@@ -35,13 +35,18 @@ type ProsemirrorDOM =
 const pmdToJSX = (dom: ProsemirrorDOM, children: ReactNode): ReactNode => {
   if (Array.isArray(dom)) {
     const [tag, attrs, ...content] = dom
+    const { class: className, ...rest } = attrs
 
     return React.createElement(
       tag,
-      { className: attrs.class, ...attrs },
+      { className, ...rest },
       ...content.map((c) => pmdToJSX(c, children))
     )
   } else if (dom === 0) {
+    if (Array.isArray(children)) {
+      // wrap in fragment to stop missing key warnings
+      return React.createElement(React.Fragment, {}, ...children)
+    }
     return children
   } else {
     return dom
