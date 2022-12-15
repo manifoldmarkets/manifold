@@ -63,7 +63,6 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
 
 const firestore = admin.firestore()
 
-// TODO: orders should run handleBet for binary and numeric markets
 export const handleBet = async (
   amount: number,
   contractId: string,

@@ -45,6 +45,7 @@ export * from './change-user-info'
 export * from './create-user'
 export * from './create-answer'
 export * from './place-bet'
+export * from './place-order'
 export * from './cancel-bet'
 export * from './sell-bet'
 export * from './sell-shares'
@@ -67,6 +68,8 @@ import { changeuserinfo } from './change-user-info'
 import { createuser } from './create-user'
 import { createanswer } from './create-answer'
 import { placebet } from './place-bet'
+import { placeorder } from './place-order'
+import { handleorder } from './on-create-order'
 import { cancelbet } from './cancel-bet'
 import { sellbet } from './sell-bet'
 import { sellshares } from './sell-shares'
@@ -126,6 +129,8 @@ const updateLoansFunction = toCloudFunction(updateloans)
 const validateIAPFunction = toCloudFunction(validateiap)
 const swapCertFunction = toCloudFunction(swapcert)
 const dividendCertFunction = toCloudFunction(dividendcert)
+const placeOrderFunction = toCloudFunction(placeorder)
+const handleOrderFunction = toCloudFunction(handleorder)
 
 export {
   healthFunction as health,
@@ -159,4 +164,6 @@ export {
   validateIAPFunction as validateiap,
   swapCertFunction as swapcert,
   dividendCertFunction as dividendcert,
+  placeOrderFunction as placeorder,
+  handleOrderFunction as handleorder,
 }

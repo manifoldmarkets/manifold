@@ -2,10 +2,12 @@ import { initAdmin } from 'functions/src/scripts/script-init'
 import fetch from 'node-fetch'
 
 async function placeManyBets(apiKey: string, count: number) {
-  const url = 'https://placebet-w3txbmd3ba-uc.a.run.app'
+  // const url = 'https://placebet-w3txbmd3ba-uc.a.run.app'
+  // const url = 'https://placeorder-w3txbmd3ba-uc.a.run.app'
+  const url = 'http://localhost:8088/placeorder'
 
   const betData = {
-    contractId: 'pdcWgwpzV4RsJjQGVq9v', // https://dev.manifold.markets/IanPhilips/beeeep-bop
+    contractId: 'Is0cXrWasfnt6QeqFowF', // https://dev.manifold.markets/IanPhilips/beeeep-bop
     amount: 10,
     outcome: 'NO',
   }

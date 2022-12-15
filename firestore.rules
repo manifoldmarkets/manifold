@@ -144,6 +144,7 @@ service cloud.firestore {
           }
 
       match /orders/{orderId} {
+      allow read;
         allow write: if request.auth != null && request.resource.data.userId == request.auth.uid;
       }
     }

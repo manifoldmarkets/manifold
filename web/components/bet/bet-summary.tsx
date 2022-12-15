@@ -22,7 +22,6 @@ export function BetsSummary(props: {
   const isBinary = outcomeType === 'BINARY'
 
   const metrics = useSavedContractMetrics(contract) ?? props.initialMetrics
-
   if (!metrics) return <></>
 
   const { profitPercent, payout, profit, invested, totalShares } = metrics

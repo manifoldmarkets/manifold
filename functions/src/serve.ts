@@ -32,6 +32,8 @@ import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from 'functions/src/validate-iap'
+import { placeorder } from 'functions/src/place-order'
+import { handleorder } from 'functions/src/on-create-order'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -61,6 +63,8 @@ addJsonEndpointRoute('/createcomment', createcomment)
 addJsonEndpointRoute('/swapcert', swapcert)
 addJsonEndpointRoute('/dividendcert', dividendcert)
 addJsonEndpointRoute('/placebet', placebet)
+addJsonEndpointRoute('/placeorder', placeorder)
+addJsonEndpointRoute('/handleorder', handleorder)
 addJsonEndpointRoute('/cancelbet', cancelbet)
 addJsonEndpointRoute('/sellbet', sellbet)
 addJsonEndpointRoute('/sellshares', sellshares)

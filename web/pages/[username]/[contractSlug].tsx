@@ -57,6 +57,7 @@ import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { BackRow } from 'web/components/contract/back-row'
+import { useOrders } from 'web/lib/firebase/orders'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
@@ -178,6 +179,8 @@ export function ContractPageContent(
   } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
+  const orders = useOrders(user?.id, contract.id)
+
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = (privateUser?.blockedUserIds ?? []).concat(
@@ -341,6 +344,12 @@ export function ContractPageContent(
             <Spacer h={12} />
           </>
         )}
+        <Col>
+          <div className="whitespace-nowrap text-sm text-gray-500">
+            Open Orders
+          </div>
+          <div className="whitespace-nowrap">{orders?.length ?? 0}</div>
+        </Col>
 
         <BetsSummary
           className="mt-4 mb-2 px-2"
