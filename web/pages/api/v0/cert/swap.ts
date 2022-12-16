@@ -12,7 +12,7 @@ import { Cert, Uniswap2CertContract } from 'common/contract'
 import { APIError } from 'common/api'
 import { getCertOwnershipUsers } from 'common/calculate/cert'
 import { CertTxn } from 'common/txn'
-import { User } from 'common/lib/user'
+import { User } from 'common/user'
 import { buyFromPool } from './_cert-txns'
 import { afterSwap } from 'common/calculate/uniswap2'
 
