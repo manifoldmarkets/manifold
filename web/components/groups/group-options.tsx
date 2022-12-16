@@ -2,14 +2,13 @@ import { DotsVerticalIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { PrivateUser } from 'common/user'
+import { useState } from 'react'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
-import { getBlockGroupDropdownItem } from './hide-group-item'
 import { SimpleLinkButton } from '../buttons/simple-link-button'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
-import { useState } from 'react'
 import { CreateAboutGroupModal } from './create-about-group'
-import { Post } from 'common/post'
+import { getBlockGroupDropdownItem } from './hide-group-item'
 
 export function GroupOptions(props: {
   group: Group

@@ -1,13 +1,32 @@
+import { Editor } from '@tiptap/core'
+import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { groupPath, MAX_GROUP_NAME_LENGTH } from 'common/group'
+import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { createGroup } from 'web/lib/firebase/api'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
-import { Spacer } from '../layout/spacer'
-import { Title } from '../widgets/title'
-import { User } from 'common/user'
-import { groupPath, MAX_GROUP_NAME_LENGTH } from 'common/group'
-import { createGroup } from 'web/lib/firebase/api'
+import { TextEditor, useTextEditor } from '../widgets/editor'
 import { Input } from '../widgets/input'
+import { Title } from '../widgets/title'
+import { savePost } from './group-overview-post'
+
+export function editorHasContent(editor: Editor | null) {
+  if (!editor) {
+    return false
+  }
+  const editorJSON = editor.getJSON()
+  if (!editorJSON || !editorJSON.content) {
+    return false
+  }
+  return (
+    editorJSON.content.length >= 1 &&
+    editorJSON.content.some(
+      (content) => content.attrs || content.content || content.text
+    )
+  )
+}
 
 export function CreateGroupButton(props: {
   user: User
@@ -34,6 +53,14 @@ export function CreateGroupButton(props: {
 
   const router = useRouter()
 
+  const editor = useTextEditor({
+    key: 'create a group',
+    size: 'lg',
+    placeholder: 'Tell us what your group is about',
+    defaultValue: undefined,
+    max: MAX_DESCRIPTION_LENGTH,
+  })
+
   const onSubmit = async () => {
     setIsSubmitting(true)
     const newGroup = {
@@ -53,6 +80,11 @@ export function CreateGroupButton(props: {
       return e
     })
     console.log(result.details)
+
+    if (editorHasContent(editor)) {
+      savePost(editor, result.group, null)
+    }
+    editor?.commands.clearContent(true)
 
     if (result.group) {
       if (goToGroupOnSubmit)
@@ -93,27 +125,36 @@ export function CreateGroupButton(props: {
       onOpenChanged={(isOpen) => {
         onOpenStateChange?.(isOpen)
         setName('')
+        editor?.commands.clearContent(true)
       }}
+      disabled={editor?.storage.upload.mutation.isLoading}
     >
-      <Title className="!my-0" text="Create a group" />
+      <Col className="gap-4">
+        <Title className="!my-0" text="Create a group" />
 
-      <Col className="gap-1 text-gray-500">
-        <div>You can add markets to your group after creation.</div>
+        <Col className="text-gray-500">
+          <div>You can add markets to your group after creation.</div>
+        </Col>
+        {errorText && <div className={'text-error'}>{errorText}</div>}
+
+        <div className="flex w-full flex-col">
+          <label className="mb-2 ml-1 mt-0">Group name</label>
+          <Input
+            placeholder={'Your group name'}
+            disabled={isSubmitting}
+            value={name}
+            maxLength={MAX_GROUP_NAME_LENGTH}
+            onChange={(e) => setName(e.target.value || '')}
+          />
+        </div>
+
+        <div className="flex w-full flex-col">
+          <label className="mb-2 ml-1 mt-0">
+            About <span className="text-gray-400">(optional)</span>
+          </label>
+          <TextEditor editor={editor} />
+        </div>
       </Col>
-      {errorText && <div className={'text-error'}>{errorText}</div>}
-
-      <div className="flex w-full flex-col">
-        <label className="mb-2 ml-1 mt-0">Group name</label>
-        <Input
-          placeholder={'Your group name'}
-          disabled={isSubmitting}
-          value={name}
-          maxLength={MAX_GROUP_NAME_LENGTH}
-          onChange={(e) => setName(e.target.value || '')}
-        />
-
-        <Spacer h={4} />
-      </div>
     </ConfirmationButton>
   )
 }

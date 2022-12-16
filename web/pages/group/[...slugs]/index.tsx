@@ -34,7 +34,7 @@ import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
 import Image from 'next/image'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { IconButton } from 'web/components/buttons/button'
 import { ContractSearch } from 'web/components/contract-search'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import {

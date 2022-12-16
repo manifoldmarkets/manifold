@@ -1,4 +1,4 @@
-import { ArrowsExpandIcon } from '@heroicons/react/solid'
+import { DocumentTextIcon } from '@heroicons/react/outline'
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
 import { MouseEventHandler, ReactNode, useRef, useState } from 'react'
@@ -16,8 +16,9 @@ import { Content } from './editor'
 export function ExpandButton(props: {
   onClick?: MouseEventHandler<any> | undefined
   className?: string
+  whatToRead?: string
 }) {
-  const { onClick, className } = props
+  const { onClick, className, whatToRead } = props
   return (
     <Button
       color={'indigo-text-only'}
@@ -25,9 +26,9 @@ export function ExpandButton(props: {
       onClick={onClick}
       size={'xs'}
     >
-      <Row className="items-center gap-0.5">
-        Show more
-        <ArrowsExpandIcon className="h-4 w-4" />
+      <Row className="items-center gap-1">
+        <DocumentTextIcon className="h-4 w-4" />
+        Read more{whatToRead ? ` ${whatToRead}` : ''}
       </Row>
     </Button>
   )
@@ -36,8 +37,10 @@ export function ExpandButton(props: {
 export function ExpandableContent(props: {
   content: JSONContent | string
   modalContent: ReactNode
+  whatToRead?: string
+  className?: string
 }) {
-  const { content, modalContent } = props
+  const { content, modalContent, whatToRead, className } = props
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -49,14 +52,19 @@ export function ExpandableContent(props: {
       }
     }
   }, [contentRef.current?.offsetHeight])
-  console.log(shouldAllowCollapseOfContent)
   if (shouldAllowCollapseOfContent) {
     return (
-      <ExpandsToModalContent content={content} modalContent={modalContent} />
+      <div className={className}>
+        <ExpandsToModalContent
+          content={content}
+          modalContent={modalContent}
+          whatToRead={whatToRead}
+        />
+      </div>
     )
   }
   return (
-    <div ref={contentRef}>
+    <div ref={contentRef} className={className}>
       <Content content={content} />
     </div>
   )
@@ -65,8 +73,9 @@ export function ExpandableContent(props: {
 function ExpandsToModalContent(props: {
   content: JSONContent | string
   modalContent: ReactNode
+  whatToRead?: string
 }) {
-  const { content, modalContent } = props
+  const { content, modalContent, whatToRead } = props
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -83,10 +92,11 @@ function ExpandsToModalContent(props: {
             onClick={() => {
               setOpen(true)
             }}
+            whatToRead={whatToRead}
           />
         </Row>
       </Col>
-      <Modal open={open} setOpen={setOpen} size="lg" className="overflow-auto">
+      <Modal open={open} setOpen={setOpen} size="lg">
         {modalContent}
       </Modal>
     </>
