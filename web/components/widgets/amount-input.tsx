@@ -14,7 +14,7 @@ import { binaryOutcomes } from '../bet/bet-panel'
 export function AmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
-  error: string | undefined
+  error?: string
   label: string
   disabled?: boolean
   className?: string

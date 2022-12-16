@@ -1,6 +1,8 @@
 // Based on a list of CertTxns, return the current ownership of the cert
 
+import { RadioGroup } from '@headlessui/react'
 import { ArrowRightIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import { getCertOwnership, getDividendPayouts } from 'common/calculate/cert'
 import {
   calculatePrice,
@@ -12,14 +14,13 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { CertTxn } from 'common/txn'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import Image from 'next/image'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
 import { useUser } from 'web/hooks/use-user'
 import { dividendCert, swapCert } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { AmountInput } from '../widgets/amount-input'
 import { Table } from '../widgets/table'
@@ -49,7 +50,7 @@ export function CertInfo(props: { contract: CertContract }) {
             {Object.entries(ownership).map(([id, shares]) => (
               <tr key={id}>
                 <td>{id}</td>
-                <td> {shares}</td>
+                <td>{shares}</td>
               </tr>
             ))}
           </tbody>
@@ -89,21 +90,28 @@ function PayDividendWidget(props: { contract: CertContract; txns: CertTxn[] }) {
   )
 }
 
+function formatPrice(price: number) {
+  return ENV_CONFIG.moneyMoniker + price.toFixed(2)
+}
+
 export function CertOverview(props: { contract: CertContract }) {
   const { contract } = props
   const [amount, setAmount] = useState<number | undefined>(10)
-  const shares = calculateShares(contract.pool, amount ?? 0)
-  const pricePerShare = (amount ?? 0) / shares
 
-  function formatPrice(price: number) {
-    return ENV_CONFIG.moneyMoniker + price.toFixed(2)
-  }
+  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
+  const isBuy = tradeType === 'BUY'
+
+  const realAmount = (isBuy ? 1 : -1) * (amount ?? 0)
+
+  const shares = calculateShares(contract.pool, realAmount)
 
   const price = formatPrice(calculatePrice(contract.pool))
-  const after = formatPrice(calculatePriceAfterBuy(contract.pool, amount ?? 0))
+  const after = formatPrice(calculatePriceAfterBuy(contract.pool, realAmount))
+
+  const pricePerShare = formatPrice(realAmount / shares)
 
   return (
-    <Col className="gap-2 rounded-lg p-4">
+    <Col>
       <div className="flex gap-2">
         <Image
           alt=""
@@ -118,8 +126,54 @@ export function CertOverview(props: { contract: CertContract }) {
         </div>
       </div>
       {/* TODO: tabs */}
-      <Spacer h={8} />
-      <Col className="flex-1 gap-2 rounded-md bg-gray-100 p-4">
+
+      <RadioGroup
+        value={tradeType}
+        onChange={setTradeType}
+        className="relative top-[2px] mt-8 columns-2 text-center"
+      >
+        <RadioGroup.Label className="sr-only">Type</RadioGroup.Label>
+        <RadioGroup.Option
+          value="BUY"
+          as={Fragment}
+          // className="cursor-pointer bg-teal-100 checked:bg-teal-300"
+        >
+          {({ checked }) => (
+            <div
+              className={clsx(
+                'rounded-t-lg border-2 bg-teal-100 py-2',
+                checked
+                  ? 'border-teal-300 border-b-teal-100'
+                  : 'border-b-scarlet-300 border-teal-100'
+              )}
+            >
+              Buy
+            </div>
+          )}
+        </RadioGroup.Option>
+        <RadioGroup.Option value="SELL" as={Fragment}>
+          {({ checked }) => (
+            <div
+              className={clsx(
+                'bg-scarlet-100 rounded-t-lg border-2 py-2',
+                checked
+                  ? 'border-scarlet-300 border-b-scarlet-100'
+                  : 'border-scarlet-100 border-b-teal-300'
+              )}
+            >
+              Sell
+            </div>
+          )}
+        </RadioGroup.Option>
+      </RadioGroup>
+      <Col
+        className={clsx(
+          'flex-1 gap-2 rounded-b-md border-2 p-4 transition-colors',
+          isBuy
+            ? 'border-teal-300 bg-teal-50'
+            : 'border-scarlet-300 bg-scarlet-50'
+        )}
+      >
         <Row>
           <div className="flex-1">
             <div className="text-xs text-gray-400">Shares</div>
@@ -133,14 +187,14 @@ export function CertOverview(props: { contract: CertContract }) {
                 <>
                   <ArrowRightIcon className="h-4 w-4" /> {after}
                   <span className="whitespace-nowrap">
-                    ({formatPrice(pricePerShare)} avg)
+                    ({pricePerShare} avg)
                   </span>
                 </>
               )}
             </div>
           </div>
         </Row>
-        <Row className="items-bottom justify-between">
+        <Row className="items-end justify-between">
           <div>
             <label className="text-xs text-gray-400">Amount</label>
             <AmountInput
@@ -148,16 +202,18 @@ export function CertOverview(props: { contract: CertContract }) {
               label={ENV_CONFIG.moneyMoniker}
               amount={amount}
               onChange={setAmount}
-              // Note(James): Added below prop to fix type error.
-              error={undefined}
             />
           </div>
           <Button
+            color={isBuy ? 'green' : 'red'}
+            size="xl"
+            className="w-40 transition-colors"
+            disabled={!amount}
             onClick={async () =>
-              await swapCert({ certId: contract.id, amount })
+              await swapCert({ certId: contract.id, amount: realAmount })
             }
           >
-            Buy
+            {isBuy ? 'Buy' : 'Sell'}
           </Button>
         </Row>
       </Col>
