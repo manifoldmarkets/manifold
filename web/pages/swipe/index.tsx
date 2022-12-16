@@ -240,9 +240,13 @@ const Card = (props: {
           {/* content */}
           <div className="absolute inset-0 flex select-none flex-col gap-4">
             <CornerDetails contract={contract} />
-            <div className="line-clamp-4 mx-8 mt-auto mb-4 text-2xl text-white [text-shadow:black_1px_1px_4px] ">
+            <SiteLink
+              className="line-clamp-4 mx-8 mt-auto mb-4 text-2xl text-white "
+              href={contractPath(contract)}
+              followsLinkClass
+            >
               {question}
-            </div>
+            </SiteLink>
             <Percent
               contract={contract}
               amount={amount}
