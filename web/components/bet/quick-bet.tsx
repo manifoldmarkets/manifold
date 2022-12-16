@@ -336,6 +336,7 @@ function BinaryQuickBetButton(props: {
             hasInvestment={hasInvestment}
             invested={invested}
             shouldFocus={shouldFocus}
+            isYes={direction === 'UP'}
           />
         )}
       </Row>
@@ -344,6 +345,7 @@ function BinaryQuickBetButton(props: {
           hasInvestment={hasInvestment}
           invested={invested}
           shouldFocus={shouldFocus}
+          isYes={direction === 'UP'}
         />
       )}
     </Row>
@@ -354,20 +356,10 @@ function QuickBetAmount(props: {
   hasInvestment: boolean | undefined
   invested: number | undefined
   shouldFocus: boolean
+  isYes?: boolean
 }) {
-  const { hasInvestment, invested, shouldFocus } = props
-  if (hasInvestment && invested != null) {
-    return (
-      <span
-        className={clsx(
-          'text-sm font-light',
-          shouldFocus ? 'text-indigo-600' : 'text-gray-400'
-        )}
-      >
-        {shouldFocus ? formatMoney(invested + BET_SIZE) : formatMoney(invested)}
-      </span>
-    )
-  }
+  const { shouldFocus, isYes } = props
+
   return (
     <span
       className={clsx(
@@ -375,7 +367,7 @@ function QuickBetAmount(props: {
         shouldFocus ? 'opacity-100' : 'opacity-0'
       )}
     >
-      {formatMoney(BET_SIZE)}
+      Bet {formatMoney(BET_SIZE)} {isYes ? 'YES' : 'NO'}
     </span>
   )
 }
