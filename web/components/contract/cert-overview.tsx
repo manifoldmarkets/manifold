@@ -3,7 +3,10 @@
 import { RadioGroup } from '@headlessui/react'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { getCertOwnership, getDividendPayouts } from 'common/calculate/cert'
+import {
+  getCertOwnershipUsers,
+  getDividendPayouts,
+} from 'common/calculate/cert'
 import {
   calculatePrice,
   calculatePriceAfterBuy,
@@ -13,24 +16,29 @@ import { CertContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CertTxn } from 'common/txn'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
+import { keyBy } from 'lodash'
 import Image from 'next/image'
 import { Fragment, useState } from 'react'
 import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUsersById } from 'web/hooks/use-user'
 import { dividendCert, swapCert } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { AmountInput } from '../widgets/amount-input'
+import { Avatar } from '../widgets/avatar'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
 
 export function CertInfo(props: { contract: CertContract }) {
   const { contract } = props
   const txns = useCertTxns(props.contract.id)
-  const ownership = getCertOwnership(txns)
+  const ownership = getCertOwnershipUsers(contract.creatorId, txns)
   const { SHARE: share, M$: mana } = contract.pool
+
+  const userArr = useUsersById(Object.keys(ownership))
+  const users = userArr ? keyBy(userArr, 'id') : {}
 
   return (
     <Col className="gap-1 md:gap-2">
@@ -43,16 +51,34 @@ export function CertInfo(props: { contract: CertContract }) {
           <thead>
             <tr>
               <td>User</td>
-              <td>Position</td>
+              <td>Shares</td>
             </tr>
           </thead>
-          <tbody>
-            {Object.entries(ownership).map(([id, shares]) => (
-              <tr key={id}>
-                <td>{id}</td>
-                <td>{shares}</td>
-              </tr>
-            ))}
+          <tbody className="align-center">
+            {Object.entries(ownership).map(([id, shares]) => {
+              const user = users[id] ?? {
+                username: '',
+                id,
+                name: 'Loading',
+                avatarUrl: undefined,
+              }
+
+              return (
+                <tr key={id}>
+                  <td>
+                    <div className="flex items-center gap-4">
+                      <Avatar
+                        username={user.username}
+                        avatarUrl={user.avatarUrl}
+                        size="sm"
+                      />
+                      {user.name}
+                    </div>
+                  </td>
+                  <td>{shares}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </Table>
       </div>
