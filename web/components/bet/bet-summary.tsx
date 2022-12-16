@@ -12,19 +12,27 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractMetric } from 'common/contract-metric'
 
-export function BetsSummary(props: {
+export function UserBetsSummary(props: {
   contract: Contract
   initialMetrics?: ContractMetric
   className?: string
 }) {
   const { contract, className } = props
-  const { resolution, outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-
   const metrics = useSavedContractMetrics(contract) ?? props.initialMetrics
 
   if (!metrics) return <></>
+  return (
+    <BetsSummary contract={contract} metrics={metrics} className={className} />
+  )
+}
 
+export function BetsSummary(props: {
+  contract: Contract
+  metrics: ContractMetric
+  className?: string
+}) {
+  const { contract, metrics, className } = props
+  const { resolution, outcomeType } = contract
   const { profitPercent, payout, profit, invested, totalShares } = metrics
 
   const yesWinnings = totalShares.YES ?? 0
@@ -33,6 +41,7 @@ export function BetsSummary(props: {
   const position = yesWinnings - noWinnings
   const exampleOutcome = position < 0 ? 'NO' : 'YES'
 
+  const isBinary = outcomeType === 'BINARY'
   const prob = isBinary ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
