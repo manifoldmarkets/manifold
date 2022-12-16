@@ -37,6 +37,10 @@ import { NoLabel, YesLabel } from 'web/components/outcome-label'
 import { useSwipes } from 'web/hooks/use-swipes'
 import { useFeed } from 'web/hooks/use-feed'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(200)).filter(
@@ -58,7 +62,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   )
 
   const user = useUser()
-  const feed = useFeed(user, 200)?.filter((c) => c.outcomeType === 'BINARY') as
+  const feed = useFeed(user, 400)?.filter((c) => c.outcomeType === 'BINARY') as
     | BinaryContract[]
     | undefined
 
@@ -67,7 +71,10 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
     (c) => c.id
   )
 
-  const [index, setIndex] = useState(0)
+  const [index, setIndex] = usePersistentState(0, {
+    key: 'swipe-index',
+    store: inMemoryStore(),
+  })
   const cards = useMemo(
     () => contracts.slice(index, index + 4).reverse(),
     [contracts, index]
