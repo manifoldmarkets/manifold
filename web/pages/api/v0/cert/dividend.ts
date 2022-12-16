@@ -12,7 +12,7 @@ import { Uniswap2CertContract } from 'common/contract'
 import { APIError } from 'common/api'
 import { getDividendPayouts } from 'common/calculate/cert'
 import { CertDividendTxn, CertTxn } from 'common/txn'
-import { User } from 'common/lib/user'
+import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 
 export const config = { api: { bodyParser: true } }
