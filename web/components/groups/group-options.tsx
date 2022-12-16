@@ -1,40 +1,64 @@
-import { DotsVerticalIcon } from '@heroicons/react/solid'
+import { DotsVerticalIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { PrivateUser } from 'common/user'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
-import { getBlockGroupDropdownItem } from '../buttons/hide-group-button'
+import { getBlockGroupDropdownItem } from './hide-group-item'
 import { SimpleLinkButton } from '../buttons/simple-link-button'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
+import { useState } from 'react'
+import { CreateAboutGroupModal } from './create-about-group'
+import { Post } from 'common/post'
 
 export function GroupOptions(props: {
   group: Group
   groupUrl: string
   privateUser: PrivateUser | undefined | null
+  isEditable: boolean
 }) {
-  const { group, groupUrl, privateUser } = props
+  const { group, groupUrl, privateUser, isEditable } = props
+  const [openCreateAboutModal, setOpenCreateAboutModal] = useState(false)
+  let groupOptionItems = [] as DropdownItem[]
+
+  if (privateUser) {
+    groupOptionItems = groupOptionItems.concat(
+      getBlockGroupDropdownItem({
+        groupSlug: group.slug,
+        user: privateUser,
+      })
+    )
+    if (isEditable && !group.aboutPostId) {
+      groupOptionItems = groupOptionItems.concat({
+        name: 'Create about section',
+        icon: <PlusCircleIcon className="h-5 w-5" />,
+        onClick: () => setOpenCreateAboutModal(true),
+      })
+    }
+  }
   return (
-    <Row className="items-center gap-2">
-      <SimpleLinkButton
-        getUrl={() => groupUrl}
-        tooltip={`Copy link to ${group.name}`}
-        className={groupButtonClass}
-      />
-      {privateUser && (
-        <DropdownMenu
-          Items={[
-            getBlockGroupDropdownItem({
-              groupSlug: group.slug,
-              user: privateUser,
-            }),
-          ]}
-          Icon={
-            <DotsVerticalIcon className={clsx('h-5 w-5', groupButtonClass)} />
-          }
-          MenuWidth={'w-60'}
+    <>
+      <Row className="items-center gap-2">
+        <SimpleLinkButton
+          getUrl={() => groupUrl}
+          tooltip={`Copy link to ${group.name}`}
+          className={groupButtonClass}
         />
-      )}
-    </Row>
+        {privateUser && (
+          <DropdownMenu
+            Items={groupOptionItems}
+            Icon={
+              <DotsVerticalIcon className={clsx('h-5 w-5', groupButtonClass)} />
+            }
+            MenuWidth={'w-60'}
+          />
+        )}
+      </Row>
+      <CreateAboutGroupModal
+        open={openCreateAboutModal}
+        setOpen={setOpenCreateAboutModal}
+        group={group}
+      />
+    </>
   )
 }

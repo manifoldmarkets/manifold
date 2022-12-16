@@ -29,34 +29,35 @@ export default function GroupOpenClosedWidget(props: { group: Group }) {
   )
 }
 
+//for larget groups, getting a too many outstanding requests error
 export function GroupMembersWidget(props: { group: Group }) {
   const { group } = props
   const [open, setOpen] = useState(false)
-  const groupMembers = useMembers(group.id)
-  const groupMembersItems = groupMembers
-    .filter((groupMember) => groupMember)
-    .map((groupMember) => {
-      return {
-        name: groupMember.name,
-        username: groupMember.username,
-        avatarUrl: groupMember.avatarUrl,
-      }
-    })
-  console.log(groupMembersItems)
+  //   const groupMembers = useMembers(group.id)
+  //   const groupMembersItems = groupMembers
+  //     .filter((groupMember) => groupMember)
+  //     .map((groupMember) => {
+  //       return {
+  //         name: groupMember.name,
+  //         username: groupMember.username,
+  //         avatarUrl: groupMember.avatarUrl,
+  //       }
+  //     })
   return (
     <>
-      <button onClick={() => setOpen(true)}>
-        <Row className="cursor-pointer items-center gap-1 text-sm text-gray-700">
-          <UserGroupIcon className="h-4 w-4" />
-          <span>{group.totalMembers} members</span>
-        </Row>
-      </button>
-      <MultiUserTransactionModal
+      {/* <button onClick={() => setOpen(true)}> */}
+      <Row className="cursor-pointer items-center gap-1 text-sm text-gray-700">
+        <Row className="items-center gap-1 text-sm text-gray-700"></Row>
+        <UserGroupIcon className="h-4 w-4" />
+        <span>{group.totalMembers} members</span>
+      </Row>
+      {/* </button> */}
+      {/* <MultiUserTransactionModal
         userInfos={groupMembersItems}
         modalLabel="Members"
         open={open}
         setOpen={setOpen}
-      />
+      /> */}
     </>
   )
 }

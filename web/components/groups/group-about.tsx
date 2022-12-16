@@ -19,7 +19,7 @@ import Masonry from 'react-masonry-css'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { SiteLink } from '../widgets/site-link'
-import { GroupOverviewPost as GroupAboutPost } from './group-overview-post'
+import { GroupOverviewPost } from './group-overview-post'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { updateGroup } from 'web/lib/firebase/groups'
 import { PinnedSelectModal } from '../pinned-select-modal'
@@ -41,6 +41,25 @@ import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
 import { Spacer } from '../layout/spacer'
+
+export function GroupAboutSection(props: {
+  group: Group
+  isEditable: boolean
+  aboutPost: Post | null
+}) {
+  const { group, isEditable, aboutPost } = props
+  return (
+    <Col className="my-2 px-0">
+      {aboutPost && (
+        <GroupOverviewPost
+          group={group}
+          isEditable={isEditable}
+          post={aboutPost}
+        />
+      )}
+    </Col>
+  )
+}
 
 export function GroupAbout(props: {
   group: Group
@@ -67,7 +86,7 @@ export function GroupAbout(props: {
       <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
       {(group.aboutPostId != null || isEditable) && (
         <>
-          <GroupAboutPost
+          <GroupOverviewPost
             group={group}
             isEditable={isEditable}
             post={aboutPost}

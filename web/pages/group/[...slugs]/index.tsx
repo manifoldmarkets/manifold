@@ -28,16 +28,19 @@ import {
 } from 'web/lib/firebase/users'
 import Custom404 from '../../404'
 
-import { ArrowLeftIcon } from '@heroicons/react/solid'
+import { ArrowLeftIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupComment } from 'common/comment'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
 import Image from 'next/image'
-import { Button } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { ContractSearch } from 'web/components/contract-search'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
-import { GroupAbout } from 'web/components/groups/group-about'
+import {
+  GroupAbout,
+  GroupAboutSection,
+} from 'web/components/groups/group-about'
 import { GroupOptions } from 'web/components/groups/group-options'
 import GroupOpenClosedWidget, {
   GroupMembersWidget,
@@ -176,13 +179,14 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   const isCreator = user && group && user.id === group.creatorId
+  const isEditable = !!isCreator || isAdmin
   const maxLeaderboardSize = 50
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
   const chatEmbed = <ChatEmbed group={group} />
 
   return (
-    <Page rightSidebar={chatEmbed}>
+    <Page rightSidebar={chatEmbed} touchesTop={true}>
       <SEO
         title={group.name}
         description={`Created by ${creator.name}. ${group.about}`}
@@ -194,10 +198,17 @@ export default function GroupPage(props: {
           isMember={isMember}
           groupUrl={groupUrl}
           privateUser={privateUser}
-          isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
+          isEditable={isEditable}
         />
       )}
-      <figure className="relative h-60 w-full sm:h-80 ">
+      {user && (
+        <AddContractButton
+          group={group}
+          user={user}
+          className="fixed bottom-16 right-2 z-50 fill-white lg:right-4 lg:bottom-4 "
+        />
+      )}
+      <figure className="relative h-60 w-full sm:h-72 ">
         <Image
           src={'/default_cover.jpeg'}
           alt=""
@@ -205,7 +216,7 @@ export default function GroupPage(props: {
           // objectFit=""
         />
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
-          <Row className="mt-4 w-full justify-between">
+          <Row className="mt-4 mb-2 w-full justify-between">
             <div className="text-2xl font-normal text-gray-900 sm:text-3xl">
               {group.name}
             </div>
@@ -228,6 +239,7 @@ export default function GroupPage(props: {
                     group={group}
                     groupUrl={groupUrl}
                     privateUser={privateUser}
+                    isEditable={isEditable}
                   />
                 </>
               )}
@@ -239,11 +251,11 @@ export default function GroupPage(props: {
           </Row>
         </Col>
       </figure>
-      {group.about.length > 0 && (
-        <Col className="my-2 w-full gap-2 rounded py-2 px-4 lg:px-0">
-          <div className="font-thin">{group.about}</div>
-        </Col>
-      )}
+      <GroupAboutSection
+        group={group}
+        isEditable={isEditable}
+        aboutPost={aboutPost}
+      />
       <div className={'relative p-1 pt-0'}>
         <ControlledTabs
           activeIndex={activeIndex}
@@ -258,7 +270,7 @@ export default function GroupPage(props: {
           className={'mb-2'}
           tabs={[
             {
-              title: 'Markets',
+              title: 'Content',
               content: (
                 <ContractSearch
                   headerClassName="md:sticky"
@@ -279,7 +291,7 @@ export default function GroupPage(props: {
                 <GroupAbout
                   group={group}
                   posts={groupPosts}
-                  isEditable={!!isCreator || isAdmin}
+                  isEditable={isEditable}
                   aboutPost={aboutPost}
                   creator={creator}
                   user={user}
@@ -324,8 +336,9 @@ export function TopGroupNavBar(props: {
   isMember: boolean | undefined
   groupUrl: string
   privateUser: PrivateUser | undefined | null
+  isEditable: boolean
 }) {
-  const { group, isMember, groupUrl, privateUser } = props
+  const { group, isMember, groupUrl, privateUser, isEditable } = props
   const user = useUser()
 
   return (
@@ -354,6 +367,7 @@ export function TopGroupNavBar(props: {
               group={group}
               groupUrl={groupUrl}
               privateUser={privateUser}
+              isEditable={isEditable}
             />
           </Row>
         </div>
@@ -419,8 +433,12 @@ function GroupLeaderboard(props: {
   )
 }
 
-function AddContractButton(props: { group: Group; user: User }) {
-  const { group, user } = props
+function AddContractButton(props: {
+  group: Group
+  user: User
+  className?: string
+}) {
+  const { group, user, className } = props
   const [open, setOpen] = useState(false)
   const groupContractIds = useGroupContractIds(group.id)
 
@@ -431,15 +449,10 @@ function AddContractButton(props: { group: Group; user: User }) {
   }
 
   return (
-    <>
-      <Button
-        className="whitespace-nowrap"
-        size="md"
-        color="indigo"
-        onClick={() => setOpen(true)}
-      >
-        Add markets
-      </Button>
+    <div className={className}>
+      <IconButton size="md" onClick={() => setOpen(true)}>
+        <PlusCircleIcon className="h-16 w-16 text-indigo-700 drop-shadow" />
+      </IconButton>
 
       <SelectMarketsModal
         open={open}
@@ -462,7 +475,7 @@ function AddContractButton(props: { group: Group; user: User }) {
           additionalFilter: { excludeContractIds: groupContractIds },
         }}
       />
-    </>
+    </div>
   )
 }
 
