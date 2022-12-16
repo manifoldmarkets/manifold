@@ -15,7 +15,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/node": "16.18.3",
+    "@types/node": "18.11.16",
     "@typescript-eslint/eslint-plugin": "5.44.0",
     "@typescript-eslint/parser": "5.44.0",
     "concurrently": "6.5.1",
