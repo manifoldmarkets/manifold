@@ -22,7 +22,7 @@ import {
   OverallPerformanceData,
 } from './weekly-portfolio-emails'
 
-const emailMoneyFormat = (amount: number) => {
+export const emailMoneyFormat = (amount: number) => {
   return formatMoney(amount).replace(ENV_CONFIG.moneyMoniker, 'M')
 }
 
