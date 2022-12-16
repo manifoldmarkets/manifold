@@ -2364,11 +2364,6 @@
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-1.3.2.tgz#93e25bf9ee75fe0fd80b594bc4feb0e862111b5a"
   integrity sha512-YATxVxgRqNH6nHEIsvg6k2Boc1JHI9ZbH5iWFFv/MTkchz3b1ieGDa5T0a9RznNdI0KhVbdbWSN+KWWrQZRxTw==
 
-"@types/module-alias@2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@types/module-alias/-/module-alias-2.0.1.tgz#e5893236ce922152d57c5f3f978f764f4deeb45f"
-  integrity sha512-DN/CCT1HQG6HquBNJdLkvV+4v5l/oEuwOHUPLxI+Eub0NED+lk0YUfba04WGH90EINiUrNgClkNnwGmbICeWMQ==
-
 "@types/node-fetch@2.6.2":
   version "2.6.2"
   resolved "https://registry.yarnpkg.com/@types/node-fetch/-/node-fetch-2.6.2.tgz#d1a9c5fd049d9415dce61571557104dec3ec81da"
@@ -6504,11 +6499,6 @@ mkdirp@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
-
-module-alias@2.2.2:
-  version "2.2.2"
-  resolved "https://registry.yarnpkg.com/module-alias/-/module-alias-2.2.2.tgz#151cdcecc24e25739ff0aa6e51e1c5716974c0e0"
-  integrity sha512-A/78XjoX2EmNvppVWEhM2oGk3x4lLxnkEA4jTbaK97QKSDjkIoOsKQlfylt/d3kKKi596Qy3NP5XrXJ6fZIC9Q==
 
 ms@2.0.0:
   version "2.0.0"
