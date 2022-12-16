@@ -83,7 +83,6 @@
     "@types/react-dom": "18.0.9",
     "@types/string-similarity": "^4.0.0",
     "autoprefixer": "10.2.6",
-    "critters": "0.0.16",
     "cross-env": "^7.0.3",
     "csstype": "^3.1.0",
     "eslint-config-next": "13.0.0",
