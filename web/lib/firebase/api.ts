@@ -2,6 +2,7 @@ import { auth } from './users'
 import { APIError, getFunctionUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
 import { DividendCertReq } from 'web/pages/api/v0/cert/dividend'
+import { SwapCertReq } from 'web/pages/api/v0/cert/swap'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -61,6 +62,10 @@ export function resolveMarket(params: any) {
 
 export function swapCert(params: any) {
   return call(getFunctionUrl('swapcert'), 'POST', params)
+}
+
+export function swapCertVercel(params: SwapCertReq) {
+  return call('/api/v0/cert/swap', 'POST', params)
 }
 
 export function dividendCert(params: DividendCertReq) {

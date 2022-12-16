@@ -7,7 +7,9 @@ import {
 import { formatMoney } from 'common/util/format'
 
 import * as admin from 'firebase-admin'
+import { initAdmin } from '../_firebase-utils'
 
+initAdmin()
 const firestore = admin.firestore()
 
 // Note: this does NOT validate that the user has enough mana

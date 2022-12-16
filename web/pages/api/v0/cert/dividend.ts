@@ -38,12 +38,12 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
 
   const userId = await getUserId(req, res)
 
-  const resp = await dcert(req, userId)
+  const resp = await dividend(req, userId)
 
   return res.status(200).json(resp)
 }
 
-const dcert = async (req: NextApiRequest, userId: string) => {
+const dividend = async (req: NextApiRequest, userId: string) => {
   return await firestore.runTransaction(async (transaction) => {
     const { certId, amount } = validate(schema, req.body)
 
