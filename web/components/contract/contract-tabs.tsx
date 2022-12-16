@@ -44,6 +44,7 @@ import { useContractMetrics } from 'web/hooks/use-contract-metrics'
 import { formatWithCommas, shortFormatNumber } from 'common/util/format'
 import { useBets } from 'web/hooks/use-bets'
 import { NoLabel, YesLabel } from '../outcome-label'
+import { CertTrades, CertInfo } from './cert-overview'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -156,7 +157,12 @@ export function ContractTabs(props: {
           content: (
             <ContractBetsTable contract={contract} bets={userBets} isYourBets />
           ),
-        }
+        },
+
+        contract.outcomeType === 'CERT' && [
+          { title: 'Trades', content: <CertTrades contract={contract} /> },
+          { title: 'Positions', content: <CertInfo contract={contract} /> },
+        ]
       )}
     />
   )
