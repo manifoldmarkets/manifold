@@ -148,6 +148,8 @@ export function CertOverview(props: { contract: CertContract }) {
               label={ENV_CONFIG.moneyMoniker}
               amount={amount}
               onChange={setAmount}
+              // Note(James): Added below prop to fix type error.
+              error={undefined}
             />
           </div>
           <Button
