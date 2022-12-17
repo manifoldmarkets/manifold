@@ -13,6 +13,7 @@ import { updateUser } from 'web/lib/firebase/users'
 import { TextButton } from './text-button'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
+import { SearchUserInfo } from 'web/lib/supabase/users'
 
 export function ReferralsButton(props: {
   user: User
@@ -48,7 +49,7 @@ function ReferralsDialog(props: {
   currentUser?: User
 }) {
   const { user, referralIds, isOpen, setIsOpen, currentUser } = props
-  const [referredBy, setReferredBy] = useState<User[]>([])
+  const [referredBy, setReferredBy] = useState<SearchUserInfo[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
 

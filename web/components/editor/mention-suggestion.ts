@@ -13,7 +13,7 @@ type Suggestion = MentionOptions['suggestion']
 export const mentionSuggestion: Suggestion = {
   allowedPrefixes: [' '],
   items: async ({ query }) =>
-    sortBy(await searchUsers(query, 5), (u: any) =>
+    sortBy(await searchUsers(query, 5), (u) =>
       [u.name, u.username].some((s) => beginsWith(s, query)) ? -1 : 0
     ),
   render: makeMentionRender(MentionList),
