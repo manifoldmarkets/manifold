@@ -24,8 +24,8 @@ export async function run<T, R extends QueryResponse<T>>(q: PromiseLike<R>) {
   if (response.error != null) {
     throw response.error
   } else {
-    // mqp: good luck typing this function better, i gave up
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return { data: (response.data as R['data'])!, count: response.count }
+    // mqp: turn on typing once it works for JSON accesses, see
+    // https://github.com/supabase/postgrest-js/pull/380
+    return { data: response.data as any, count: response.count }
   }
 }
