@@ -11,7 +11,7 @@
     "dev:the": "cross-env NEXT_PUBLIC_FIREBASE_ENV=THEOREMONE yarn dev",
     "dev:local": "cross-env NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8080 yarn devdev",
     "dev:emulate": "cross-env NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
-    "build": "next build",
+    "build": "NODE_OPTIONS=--max_old_space_size=8092 next build",
     "start": "next start",
     "lint": "next lint",
     "lint-fix": "next lint --fix",
