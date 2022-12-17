@@ -5,12 +5,13 @@ import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { YesLabel, NoLabel } from '../outcome-label'
-import { getProbability } from 'common/calculate'
+import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractMetric } from 'common/contract-metric'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -33,7 +34,10 @@ export function BetsSummary(props: {
 }) {
   const { contract, metrics, className } = props
   const { resolution, outcomeType } = contract
-  const { profitPercent, payout, profit, invested, totalShares } = metrics
+  const userBets = useUserContractBets(metrics.userId, contract.id)
+  const { payout, invested, totalShares, profit, profitPercent } = userBets
+    ? getContractBetMetrics(contract, userBets)
+    : metrics
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
