@@ -289,10 +289,6 @@ export default function GroupPage(props: {
                   group={group}
                   posts={groupPosts}
                   isEditable={isEditable}
-                  aboutPost={aboutPost}
-                  creator={creator}
-                  user={user}
-                  isMember={isMember ?? false}
                 />
               ),
             },
