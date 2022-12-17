@@ -348,6 +348,24 @@ export function BuyPanel(props: {
           mobileView ? 'rounded-lg px-4 py-2' : 'px-0'
         )}
       >
+        <Row className="mt-2 mb-1 justify-between text-left text-xs text-gray-400">
+          Amount
+        </Row>
+
+        <BuyAmountInput
+          inputClassName="w-full max-w-none"
+          amount={betAmount}
+          onChange={onBetChange}
+          error={displayError ? error : undefined}
+          setError={setError}
+          disabled={isSubmitting}
+          inputRef={inputRef}
+          showSlider={true}
+          binaryOutcome={outcome}
+          hideInput={hideInput}
+        />
+
+        <Spacer h={8} />
         <Row className="mt-3 w-full gap-3">
           <Col className="w-1/2 text-sm">
             <Col className="flex-nowrap whitespace-nowrap text-xs text-gray-400">
@@ -393,25 +411,8 @@ export function BuyPanel(props: {
             )}
           </Col>
         </Row>
-        <Row className="mt-4 mb-1 justify-between text-left text-xs text-gray-400">
-          Amount
-        </Row>
-
-        <BuyAmountInput
-          inputClassName="w-full max-w-none"
-          amount={betAmount}
-          onChange={onBetChange}
-          error={displayError ? error : undefined}
-          setError={setError}
-          disabled={isSubmitting}
-          inputRef={inputRef}
-          showSlider={true}
-          binaryOutcome={outcome}
-          hideInput={hideInput}
-        />
 
         <Spacer h={8} />
-
         {user && (
           <WarningConfirmationButton
             marketType="binary"

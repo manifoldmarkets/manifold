@@ -136,7 +136,7 @@ export function BuyAmountInput(props: {
       <Col>
         <Row
           className={clsx(
-            'items-center gap-4 xl:flex-wrap',
+            'items-center gap-1 xl:flex-wrap',
             hideInput ? 'mb-4' : ''
           )}
         >
