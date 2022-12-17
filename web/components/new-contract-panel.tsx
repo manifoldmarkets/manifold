@@ -4,20 +4,14 @@ import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 
-import { Spacer } from 'web/components/layout/spacer'
-import { Contract, contractPath } from 'web/lib/firebase/contracts'
-import { createMarket } from 'web/lib/firebase/api'
-import { ANTES, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { Row } from 'web/components/layout/row'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   outcomeType,
   visibility,
 } from 'common/contract'
-import { FIXED_ANTE, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ANTES, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { Group, groupPath } from 'common/group'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -40,7 +34,6 @@ import { createMarket } from 'web/lib/firebase/api'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
-import { ENV, ENV_CONFIG } from 'common/envs/constants'
 
 export type NewQuestionParams = {
   groupId?: string

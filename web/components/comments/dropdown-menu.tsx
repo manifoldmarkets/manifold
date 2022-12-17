@@ -3,11 +3,6 @@ import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Fragment, ReactNode } from 'react'
 import { Row } from 'web/components/layout/row'
-export type DropdownItem = {
-  name: string
-  icon: ReactNode
-  onClick: () => void | Promise<void>
-}
 
 export type DropdownItem = {
   name: string
