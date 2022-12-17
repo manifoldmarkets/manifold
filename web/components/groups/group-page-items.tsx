@@ -30,7 +30,7 @@ export default function GroupOpenClosedWidget(props: { group: Group }) {
 //for larget groups, getting a too many outstanding requests error
 export function GroupMembersWidget(props: { group: Group }) {
   const { group } = props
-  const [open, setOpen] = useState(false)
+  // const [open, setOpen] = useState(false)
   //   const groupMembers = useMembers(group.id)
   //   const groupMembersItems = groupMembers
   //     .filter((groupMember) => groupMember)

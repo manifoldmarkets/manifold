@@ -40,8 +40,6 @@ import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
-import { DailyStats } from 'web./groups/group-post-sectionats'
-import { SectionHeader } from './groups/group-about'
 import { buttonClass } from './buttons/button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { PostBanBadge, UserBadge } from './widgets/user-link'
@@ -49,6 +47,8 @@ import Link from 'next/link'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
 import { TextButton } from 'web/components/buttons/text-button'
+import { DailyStats } from './daily-stats'
+import { SectionHeader } from './groups/group-post-section'
 
 export function UserPage(props: { user: User }) {
   const user = useUserById(props.user.id) ?? props.user
