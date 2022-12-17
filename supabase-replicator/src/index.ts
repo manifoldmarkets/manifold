@@ -2,11 +2,11 @@ import * as express from 'express'
 import * as admin from 'firebase-admin'
 import { PubSub, Subscription, Message } from '@google-cloud/pubsub'
 import {
-  createSupabaseClient,
   replicateWrites,
   createFailedWrites,
   replayFailedWrites,
 } from './replicate-writes'
+import { createClient } from '../../common/supabase/utils'
 import { TLEntry } from '../../common/transaction-log'
 import { CONFIGS } from '../../common/envs/constants'
 
@@ -32,7 +32,7 @@ if (!SUPABASE_KEY) {
 const pubsub = new PubSub()
 const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
-const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 const app = express()
 app.use(express.json())
