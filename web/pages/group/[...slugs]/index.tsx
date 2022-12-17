@@ -54,6 +54,10 @@ import { usePost, usePosts } from 'web/hooks/use-post'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import BannerImage from 'web/components/groups/group-banner-image'
+
+export const DEFAULT_BANNER_URL = '/group/default_group_banner_indigo.png'
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -208,13 +212,8 @@ export default function GroupPage(props: {
           className="fixed bottom-16 right-2 z-50 fill-white lg:right-4 lg:bottom-4 "
         />
       )}
-      <figure className="relative h-60 w-full sm:h-72 ">
-        <Image
-          src={'/group/default_group_banner_indigo.png'}
-          alt=""
-          fill={true}
-          objectFit="cover"
-        />
+      <div className="relative">
+        <BannerImage group={group} />
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
           <Row className="mt-4 mb-2 w-full justify-between">
             <div className="text-2xl font-normal text-gray-900 sm:text-3xl">
@@ -250,7 +249,8 @@ export default function GroupPage(props: {
             <GroupOpenClosedWidget group={group} />
           </Row>
         </Col>
-      </figure>
+      </div>
+
       <GroupAboutSection
         group={group}
         isEditable={isEditable}
