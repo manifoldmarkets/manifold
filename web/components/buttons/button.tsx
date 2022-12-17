@@ -42,7 +42,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'indigo' &&
       'disabled:bg-gray-200 bg-indigo-500 text-white hover:bg-indigo-600',
     color === 'gray' &&
-    'bg-gray-200 text-gray-600 enabled:hover:bg-gray-300 enabled:hover:text-gray-700 disabled:opacity-50',
+      'bg-gray-200 text-gray-600 enabled:hover:bg-gray-300 enabled:hover:text-gray-700 disabled:opacity-50',
     color === 'dark-gray' &&
       'bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50',
     color === 'gray-outline' &&
