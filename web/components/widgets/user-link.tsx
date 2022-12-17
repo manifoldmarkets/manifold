@@ -8,6 +8,8 @@ import {
 import { ShieldCheckIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
 import { BadgeCheckIcon } from '@heroicons/react/outline'
+import { Row } from '../layout/row'
+import { Avatar } from './avatar'
 
 export function shortenName(name: string) {
   const firstName = name.split(' ')[0]
@@ -21,6 +23,21 @@ export function shortenName(name: string) {
       ? name.substring(0, maxLength - 3) + '...'
       : name
   return shortName
+}
+
+export function UserAvatarAndBadge(props: {
+  name: string
+  username: string
+  avatarUrl?: string
+  className?: string
+}) {
+  const { name, username, avatarUrl, className } = props
+  return (
+    <Row className={clsx('items-center gap-4', className)}>
+      <Avatar avatarUrl={avatarUrl} username={username} size={8} />
+      <UserLink name={name} username={username} />
+    </Row>
+  )
 }
 
 export function UserLink(props: {

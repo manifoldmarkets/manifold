@@ -60,7 +60,10 @@ function GroupsDialog(props: {
           {groups
             .sort((group1, group2) => group2.createdTime - group1.createdTime)
             .map((group) => (
-              <Row className={clsx('items-center justify-between gap-2 p-2')}>
+              <Row
+                className={clsx('items-center justify-between gap-2 p-2')}
+                key={group.id}
+              >
                 <Row className="line-clamp-1 items-center gap-2">
                   <GroupLinkItem group={group} />
                 </Row>

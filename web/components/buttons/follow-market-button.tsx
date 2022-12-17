@@ -38,21 +38,9 @@ export const FollowMarketButton = (props: {
         onClick={async () => {
           if (!user) return firebaseLogin()
           if (followers?.includes(user.id)) {
-            await unFollowContract(contract.id, user.id)
-            toast("You'll no longer receive notifications from this market", {
-              icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
-            })
-            track('Unwatch Market', {
-              slug: contract.slug,
-            })
+            unfollowMarket(contract.id, contract.slug, user)
           } else {
-            await followContract(contract.id, user.id)
-            toast("You'll now receive notifications from this market!", {
-              icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
-            })
-            track('Watch Market', {
-              slug: contract.slug,
-            })
+            followMarket(contract.id, contract.slug, user)
           }
           if (!user.hasSeenContractFollowModal) {
             await updateUser(user.id, {
@@ -83,4 +71,32 @@ export const FollowMarketButton = (props: {
       </IconButton>
     </Tooltip>
   )
+}
+
+export async function unfollowMarket(
+  contractId: string,
+  contractSlug: string,
+  user: User
+) {
+  await unFollowContract(contractId, user.id)
+  toast("You'll no longer receive notifications from this market", {
+    icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
+  })
+  track('Unwatch Market', {
+    slug: contractSlug,
+  })
+}
+
+export async function followMarket(
+  contractid: string,
+  contractslug: string,
+  user: User
+) {
+  await followContract(contractid, user.id)
+  toast("You'll now receive notifications from this market!", {
+    icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
+  })
+  track('Watch Market', {
+    slug: contractslug,
+  })
 }

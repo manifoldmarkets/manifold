@@ -1,13 +1,26 @@
+import TinderCard from 'react-tinder-card'
+import toast from 'react-hot-toast'
+import clsx from 'clsx'
+import { useMemo, useState } from 'react'
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+  MinusIcon,
+  PlusIcon,
+} from '@heroicons/react/solid'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { uniqBy } from 'lodash'
+
+import { buildArray } from 'common/util/array'
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
 import type { BinaryContract, Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
-import { useMemo, useState } from 'react'
-import TinderCard from 'react-tinder-card'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
 import { useUser } from 'web/hooks/use-user'
-import { useUserSwipes } from 'web/hooks/use-user-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
 import { logSwipe } from 'web/lib/firebase/views'
@@ -17,21 +30,20 @@ import { fromNow } from 'web/lib/util/time'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
-import HorizontalArrows from 'web/lib/icons/horizontal-arrows'
-import clsx from 'clsx'
 import { getBinaryProb } from 'common/contract-details'
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  ArrowUpIcon,
-  MinusIcon,
-  PlusIcon,
-} from '@heroicons/react/solid'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { NoLabel, YesLabel } from 'web/components/outcome-label'
+import { useSwipes } from 'web/hooks/use-swipes'
+import { useFeed } from 'web/hooks/use-feed'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
 
 export async function getStaticProps() {
-  const contracts = (await getTrendingContracts(1000)).filter(
+  const contracts = (await getTrendingContracts(200)).filter(
     (c) => c.outcomeType === 'BINARY' && (c.closeTime ?? Infinity) > Date.now()
   )
   return {
@@ -41,26 +53,41 @@ export async function getStaticProps() {
 }
 
 export default function Swipe(props: { contracts: BinaryContract[] }) {
-  const { contracts } = props
+  const [amount, setAmount] = useState(10)
 
-  const old = useUserSwipes()
+  const old = useSwipes()
   const newToMe = useMemo(
-    () => contracts.filter((c) => !old.includes(c.id)),
-    [contracts, old]
+    () => props.contracts.filter((c) => !old.includes(c.id)),
+    [props.contracts, old]
   )
 
-  const [index, setIndex] = useState(0)
+  const user = useUser()
+  const feed = useFeed(user, 400)?.filter((c) => c.outcomeType === 'BINARY') as
+    | BinaryContract[]
+    | undefined
+
+  const contracts = uniqBy(
+    buildArray(newToMe[0], feed, newToMe.slice(1)),
+    (c) => c.id
+  )
+
+  const [index, setIndex] = usePersistentState(0, {
+    key: 'swipe-index',
+    store: inMemoryStore(),
+  })
   const cards = useMemo(
-    () => newToMe.slice(index, index + 4).reverse(),
-    [newToMe, index]
+    () => contracts.slice(index, index + 4).reverse(),
+    [contracts, index]
   )
 
   // resize height manually for iOS
   const { height, width = 600 } = useWindowSize()
 
+  if (user === undefined) {
+    return <LoadingIndicator />
+  }
   //show log in prompt if user not logged in
-  const user = useUser()
-  if (!user) {
+  if (user === null) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
         <Button onClick={firebaseLogin} color="gradient" size="2xl">
@@ -79,10 +106,12 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
         <div className="relative max-w-lg grow">
           {cards.map((c) => (
             <Card
+              key={c.id + amount}
               contract={c}
+              amount={amount}
+              setAmount={setAmount}
               onLeave={() => setIndex((i) => i + 1)}
               threshold={Math.min(128, width * 0.15)}
-              key={c.id}
             />
           ))}
           {/* TODO: users should never run out of cards */}
@@ -108,19 +137,21 @@ const Card = (props: {
   contract: BinaryContract
   onLeave?: () => void
   threshold: number
+  amount: number
+  setAmount: (amount: number) => void
 }) => {
-  const { contract, onLeave, threshold } = props
+  const { contract, onLeave, threshold, amount, setAmount } = props
   const { question, description, coverImageUrl, id: contractId } = contract
 
   const userId = useUser()?.id
 
-  const [amount, setAmount] = useState(10)
-  const addMoney = () => setAmount?.((amount) => amount + betTapAdd)
+  const addMoney = () => setAmount(amount + betTapAdd)
+
   const subMoney = () => {
     if (amount <= betTapAdd) {
       setDir('up')
     } else {
-      setAmount?.((amount) => amount - betTapAdd)
+      setAmount(amount - betTapAdd)
     }
   }
 
@@ -135,7 +166,15 @@ const Card = (props: {
 
   return (
     <>
-      {peek && <Peek contract={contract} onClose={() => setPeek(false)} />}
+      {peek && (
+        <Peek
+          contract={contract}
+          onClose={() => {
+            setPeek(false)
+            setDir('middle')
+          }}
+        />
+      )}
       <TinderCard
         onSwipe={async (direction) => {
           if (direction === 'down') {
@@ -147,7 +186,25 @@ const Card = (props: {
 
           if (direction === 'left' || direction === 'right') {
             const outcome = direction === 'left' ? 'NO' : 'YES'
-            await placeBet({ amount, outcome, contractId })
+
+            const promise = placeBet({ amount, outcome, contractId })
+
+            const shortQ = contract.question.slice(0, 20)
+
+            const message = `Bet ${formatMoney(
+              amount
+            )} ${outcome} on "${shortQ}"...`
+
+            toast.promise(
+              promise,
+              {
+                loading: message,
+                success: message,
+                error: (err) => `Error placing bet: ${err.message}`,
+              },
+              { position: 'top-center' }
+            )
+
             userId && logSwipe({ amount, outcome, contractId, userId })
             track('swipe bet', {
               slug: contract.slug,
@@ -183,9 +240,13 @@ const Card = (props: {
           {/* content */}
           <div className="absolute inset-0 flex select-none flex-col gap-4">
             <CornerDetails contract={contract} />
-            <div className="line-clamp-4 mx-8 mt-auto mb-4 text-2xl text-white [text-shadow:black_1px_1px_4px] ">
+            <SiteLink
+              className="line-clamp-4 mx-8 mt-auto mb-4 text-2xl text-white "
+              href={contractPath(contract)}
+              followsLinkClass
+            >
               {question}
-            </div>
+            </SiteLink>
             <Percent
               contract={contract}
               amount={amount}
@@ -199,8 +260,10 @@ const Card = (props: {
                 ? description
                 : richTextToString(description)}
             </div>
+
+            <SwipeStatus direction={dir} />
+
             <div className="mb-4 flex flex-col items-center gap-2 self-center">
-              <SwipeStatus direction={dir} />
               <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
                 <button
                   onClick={subMoney}
@@ -231,29 +294,40 @@ const SwipeStatus = (props: { direction: Direction }) => {
 
   if (direction === 'up') {
     return (
-      <div className="flex gap-1 text-indigo-100">
+      <div className="flex justify-center gap-1 text-indigo-100">
         Swipe <ArrowUpIcon className="h-5" /> to skip
+      </div>
+    )
+  }
+  if (direction === 'down') {
+    return (
+      <div className="flex justify-center gap-1 text-indigo-100">
+        Swipe <ArrowDownIcon className="h-5" /> for more info
       </div>
     )
   }
   if (direction === 'left') {
     return (
-      <div className="text-scarlet-100 flex gap-1">
-        <ArrowLeftIcon className="h-5" /> Bet NO
+      <div className="text-scarlet-100 mr-8 flex justify-end gap-1">
+        <ArrowLeftIcon className="h-5" /> Betting NO
       </div>
     )
   }
   if (direction === 'right') {
     return (
-      <div className="flex gap-1 text-teal-100">
-        Bet YES <ArrowRightIcon className="h-5" />
+      <div className="ml-8 flex justify-start gap-1 text-teal-100">
+        Betting YES <ArrowRightIcon className="h-5" />
       </div>
     )
   }
   return (
-    <div className="flex gap-1 text-yellow-100">
-      Swipe <HorizontalArrows /> to bet
-    </div>
+    <Row className="items-center justify-center text-yellow-100">
+      <ArrowLeftIcon className="text-scarlet-600 h-8" /> <NoLabel />
+      <span className="mx-4 whitespace-nowrap text-yellow-100">
+        Swipe to bet
+      </span>
+      <YesLabel /> <ArrowRightIcon className="h-8 text-teal-600" />
+    </Row>
   )
 }
 

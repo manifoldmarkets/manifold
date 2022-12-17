@@ -348,52 +348,7 @@ export function BuyPanel(props: {
           mobileView ? 'rounded-lg px-4 py-2' : 'px-0'
         )}
       >
-        <Row className="mt-3 w-full gap-3">
-          <Col className="w-1/2 text-sm">
-            <Col className="flex-nowrap whitespace-nowrap text-xs text-gray-400">
-              <div>
-                {isPseudoNumeric ? (
-                  'Max payout'
-                ) : (
-                  <>Payout if {outcome ?? 'YES'}</>
-                )}
-              </div>
-            </Col>
-            <div>
-              <span className="whitespace-nowrap text-xl">
-                {formatMoney(currentPayout)}
-              </span>
-              <span className="text-xs text-gray-400">
-                {' '}
-                +{currentReturnPercent}
-              </span>
-            </div>
-          </Col>
-          <Col className="w-1/2 text-sm">
-            <div className="text-xs text-gray-400">
-              {isPseudoNumeric ? 'Estimated value' : 'New Probability'}
-            </div>
-            {probStayedSame ? (
-              <div className="text-xl">{format(initialProb)}</div>
-            ) : (
-              <div className="text-xl">
-                {format(resultProb)}
-                <span className={clsx('text-xs text-gray-400')}>
-                  {isPseudoNumeric ? (
-                    <></>
-                  ) : (
-                    <>
-                      {' '}
-                      {outcome != 'NO' && '+'}
-                      {format(resultProb - initialProb)}
-                    </>
-                  )}
-                </span>
-              </div>
-            )}
-          </Col>
-        </Row>
-        <Row className="mt-4 mb-1 justify-between text-left text-xs text-gray-400">
+        <Row className="mt-2 mb-1 justify-between text-left text-sm text-gray-500">
           Amount
         </Row>
 
@@ -410,8 +365,53 @@ export function BuyPanel(props: {
           hideInput={hideInput}
         />
 
-        <Spacer h={8} />
+        <Row className="mt-8 w-full gap-3">
+          <Col className="w-1/2 text-sm">
+            <Col className="flex-nowrap whitespace-nowrap text-sm text-gray-500">
+              <div>
+                {isPseudoNumeric ? (
+                  'Max payout'
+                ) : (
+                  <>Payout if {outcome ?? 'YES'}</>
+                )}
+              </div>
+            </Col>
+            <div>
+              <span className="whitespace-nowrap text-lg">
+                {formatMoney(currentPayout)}
+              </span>
+              <span className="text-sm text-gray-500">
+                {' '}
+                +{currentReturnPercent}
+              </span>
+            </div>
+          </Col>
+          <Col className="w-1/2 text-sm">
+            <div className="text-sm text-gray-500">
+              {isPseudoNumeric ? 'Estimated value' : 'New Probability'}
+            </div>
+            {probStayedSame ? (
+              <div className="text-lg">{format(initialProb)}</div>
+            ) : (
+              <div className="text-lg">
+                {format(resultProb)}
+                <span className={clsx('text-sm text-gray-500')}>
+                  {isPseudoNumeric ? (
+                    <></>
+                  ) : (
+                    <>
+                      {' '}
+                      {outcome != 'NO' && '+'}
+                      {format(resultProb - initialProb)}
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+          </Col>
+        </Row>
 
+        <Spacer h={8} />
         {user && (
           <WarningConfirmationButton
             marketType="binary"
@@ -699,7 +699,7 @@ function LimitOrderPanel(props: {
         showSlider={true}
       />
 
-      <Col className="mt-3 w-full gap-3">
+      <Col className="mt-8 w-full gap-3">
         {(hasTwoBets || (hasYesLimitBet && yesBet.amount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="whitespace-nowrap text-gray-500">

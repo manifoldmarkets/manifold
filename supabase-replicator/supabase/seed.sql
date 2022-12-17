@@ -58,13 +58,11 @@ create table if not exists incoming_writes (
   doc_kind text not null,
   write_kind text not null,
   doc_id text not null,
-  data jsonb not null,
-  ts timestamp not null,
-  processed boolean not null default false
+  data jsonb null, /* can be null on deletes */
+  ts timestamp not null
 );
 alter table incoming_writes enable row level security;
 create index if not exists incoming_writes_ts on incoming_writes (ts desc);
-create index if not exists incoming_writes_processed_ts on incoming_writes (processed, ts desc);
 
 create or replace function get_document_table(doc_kind text)
   returns text
@@ -90,7 +88,6 @@ create or replace function replicate_writes_process_one(r incoming_writes)
 as
 $$
 declare dest_table text;
-declare replicated_id text;
 begin
   dest_table = get_document_table(r.doc_kind);
   if dest_table = null then
@@ -104,12 +101,12 @@ begin
        where %1$I.fs_updated_time <= %4$L
        returning id;',
       dest_table, r.doc_id, r.data, r.ts
-    ) into replicated_id;
+    );
   elsif r.write_kind = 'delete' then
     execute format(
       'delete from %1$I where id = %2$L and fs_updated_time <= %3$L',
       dest_table, r.doc_id, r.ts
-    ) into replicated_id;
+    );
   else
     raise warning 'Invalid write kind.';
     return false;
@@ -118,23 +115,23 @@ begin
 end
 $$;
 
-create or replace function replicate_writes_process_all()
-  returns table(succeeded boolean, n bigint)
+/* when processing batches of writes, we order by document ID to avoid deadlocks
+   when incoming write batches hit the same documents with new writes in different
+   sequences. */
+
+/* todo: we could process batches more efficiently by doing batch modifications for
+   each destination table in the batch, but likely not important right now */
+
+create or replace function replicate_writes_process_since(since timestamp)
+  returns table(id bigint, succeeded boolean)
   language plpgsql
 as
 $$
 begin
-  return query with updates as (
-    select r.id, replicate_writes_process_one(r) as succeeded
-    from incoming_writes as r
-    where r.processed = false
-    order by r.ts desc /* apply more recent writes first is less total work */
-  ), writes as (
-    update incoming_writes
-    set processed = updates.succeeded
-    from updates where incoming_writes.id = updates.id
-  )
-  select u.succeeded, count(u.succeeded) as n from updates as u group by u.succeeded;
+  return query select r.id, replicate_writes_process_one(r) as succeeded
+  from incoming_writes as r
+  where r.ts >= since
+  order by r.doc_id;
 end
 $$;
 
@@ -144,12 +141,16 @@ create or replace function replicate_writes_process_new()
 as
 $$
 begin
-  new.processed = replicate_writes_process_one(new);
-  return new;
+  perform r.id, replicate_writes_process_one(r) as succeeded
+  from new_table as r
+  order by r.doc_id;
+  return null;
 end
 $$;
 
 drop trigger if exists replicate_writes on incoming_writes;
 create trigger replicate_writes
-before insert on incoming_writes for each row
+after insert on incoming_writes
+referencing new table as new_table
+for each statement
 execute function replicate_writes_process_new();

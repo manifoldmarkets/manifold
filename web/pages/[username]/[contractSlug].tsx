@@ -35,7 +35,7 @@ import { ContractLeaderboard } from 'web/components/contract/contract-leaderboar
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
-import { BetsSummary } from 'web/components/bet/bet-summary'
+import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { ContractComment } from 'common/comment'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -55,11 +55,15 @@ import { removeUndefinedProps } from 'common/util/object'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { BackRow } from 'web/components/contract/back-row'
 
 const CONTRACT_BET_FILTER = {
   filterRedemptions: true,
   filterChallenges: true,
 }
+
+type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -110,10 +114,12 @@ export async function getStaticPropz(props: {
   return {
     props: {
       contract,
-      bets: useBetPoints ? bets.slice(0, 100) : bets,
+      historyData: {
+        bets: useBetPoints ? bets.slice(0, 100) : bets,
+        points: betPoints,
+      },
       comments,
       userPositionsByOutcome,
-      betPoints,
       totalBets,
       topContractMetrics,
       totalPositions,
@@ -128,20 +134,18 @@ export async function getStaticPaths() {
 
 export default function ContractPage(props: {
   contract: Contract | null
-  bets: Bet[]
+  historyData: HistoryData
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
-  betPoints: HistoryPoint<Partial<Bet>>[]
   totalBets: number
   topContractMetrics: ContractMetric[]
   totalPositions: number
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
-    bets: [],
+    historyData: { bets: [], points: [] },
     comments: [],
     userPositionsByOutcome: {},
-    betPoints: [],
     totalBets: 0,
     topContractMetrics: [],
     totalPositions: 0,
@@ -174,6 +178,7 @@ export function ContractPageContent(
   } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
+  const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = (privateUser?.blockedUserIds ?? []).concat(
     privateUser?.blockedByUserIds ?? []
@@ -191,15 +196,15 @@ export function ContractPageContent(
   )
 
   // Static props load bets in descending order by time
-  const lastBetTime = first(props.bets)?.createdTime
+  const lastBetTime = first(props.historyData.bets)?.createdTime
   const newBets = useBets({
     contractId: contract.id,
     afterTime: lastBetTime,
     ...CONTRACT_BET_FILTER,
   })
   const totalBets = props.totalBets + (newBets?.length ?? 0)
-  const bets = props.bets.concat(newBets ?? [])
-  const betPoints = props.betPoints.concat(
+  const bets = props.historyData.bets.concat(newBets ?? [])
+  const betPoints = props.historyData.points.concat(
     newBets?.map((bet) => ({
       x: bet.createdTime,
       y: bet.probAfter,
@@ -256,7 +261,8 @@ export function ContractPageContent(
           ogCardProps={ogCardProps}
         />
       )}
-      <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
+      <BackRow />
+      <Col className="w-full justify-between rounded bg-white pb-6 pt-4 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         <ContractOverview
           contract={contract}
           bets={bets}
@@ -330,12 +336,17 @@ export function ContractPageContent(
               )}
               contractId={contract.id}
               currentUser={user}
+              currentUserMetrics={contractMetrics}
             />
             <Spacer h={12} />
           </>
         )}
 
-        <BetsSummary className="mt-4 mb-2 px-2" contract={contract} />
+        <UserBetsSummary
+          className="mt-4 mb-2 px-2"
+          contract={contract}
+          initialMetrics={contractMetrics}
+        />
 
         <div ref={tabsContainerRef}>
           <ContractTabs

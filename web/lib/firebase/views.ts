@@ -1,6 +1,7 @@
 import { removeUndefinedProps } from 'common/util/object'
-import { doc, setDoc } from 'firebase/firestore'
-import { coll } from './utils'
+import { collection, doc, setDoc } from 'firebase/firestore'
+import { db } from './init'
+import { coll, getValues } from './utils'
 
 interface ActionLog {
   /** id of the market contract */
@@ -33,4 +34,9 @@ export const logSwipe = async (
   })
   await setDoc(document, data)
   return data
+}
+
+export async function getSwipes(userId: string) {
+  const swipeCollection = collection(db, `/private-users/${userId}/seenMarkets`)
+  return getValues(swipeCollection)
 }

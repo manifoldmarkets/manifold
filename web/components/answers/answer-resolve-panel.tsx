@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
@@ -9,7 +8,7 @@ import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../bet/yes-no-selector'
 import { ResolveConfirmationButton } from '../buttons/confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
-import { BETTOR, PAST_BETS } from 'common/user'
+import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 
 export function AnswerResolvePanel(props: {
@@ -43,10 +42,7 @@ export function AnswerResolvePanel(props: {
 
   useEffect(() => {
     if (resolveOption === 'CANCEL') {
-      setWarning(
-        `All ${PAST_BETS} will be returned. Unique ${BETTOR} bonuses will be
-            withdrawn from your account.`
-      )
+      setWarning(`Cancel all trades and return money back to ${BETTORS}.`)
     } else {
       setWarning(undefined)
     }
@@ -101,22 +97,18 @@ export function AnswerResolvePanel(props: {
           </span>
         )}
       </Row>
-      <Col className="gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:flex-wrap md:justify-between">
         <ChooseCancelSelector
-          className="sm:!flex-row sm:items-center"
           selected={resolveOption}
           onSelect={setResolveOption}
         />
 
-        <Row
-          className={clsx(
-            'flex-1 items-center',
-            resolveOption ? 'justify-between' : 'justify-end'
-          )}
-        >
+        <Row className="justify-end gap-1">
           {resolveOption && (
             <Button
               color="gray-white"
+              size="xl"
+              className="font-medium"
               onClick={() => {
                 setResolveOption(undefined)
               }}
@@ -156,7 +148,7 @@ export function AnswerResolvePanel(props: {
             isSubmitting={isSubmitting}
           />
         </Row>
-      </Col>
+      </div>
 
       {!!error && <div className="text-scarlet-500">{error}</div>}
       {!!warning && <div className="text-warning">{warning}</div>}

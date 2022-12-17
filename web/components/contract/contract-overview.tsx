@@ -30,6 +30,7 @@ import {
 import { ContractDetails } from './contract-details'
 import { ContractReportResolution } from './contract-report-resolution'
 import { SizedContainer } from 'web/components/sized-container'
+import { CertOverview } from './cert-overview'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -211,6 +212,8 @@ export const ContractOverview = (props: {
       return <NumericOverview contract={contract} />
     case 'PSEUDO_NUMERIC':
       return <PseudoNumericOverview contract={contract} betPoints={betPoints} />
+    case 'CERT':
+      return <CertOverview contract={contract} />
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return <ChoiceOverview contract={contract} bets={bets} />

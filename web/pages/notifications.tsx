@@ -196,6 +196,7 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
             totalItems={allGroupedNotifications.length}
             setPage={setPage}
             scrollToTop
+            savePageToQuery={true}
           />
         )}
     </Col>

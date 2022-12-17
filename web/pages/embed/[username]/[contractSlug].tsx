@@ -2,7 +2,6 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect } from 'react'
-import { first } from 'lodash'
 import {
   BinaryResolutionOrChance,
   ContractCard,
@@ -26,16 +25,41 @@ import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 import { useContract } from 'web/hooks/use-contracts'
-import { useBets } from 'web/hooks/use-bets'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { OrderByDirection } from 'firebase/firestore'
 import { useUser } from 'web/hooks/use-user'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
 
+type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
+
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
   filterChallenges: true,
+}
+
+async function getHistoryData(contract: Contract) {
+  if (contract.outcomeType === 'NUMERIC') {
+    return null
+  }
+  const bets = await listBets({
+    contractId: contract.id,
+    ...CONTRACT_BET_LOADING_OPTS,
+    limit: 10000,
+    order: 'desc' as OrderByDirection,
+  })
+  switch (contract.outcomeType) {
+    case 'BINARY':
+    case 'PSEUDO_NUMERIC':
+      // We could include avatars in the embed, but not sure it's worth it
+      const points = bets.map((bet) => ({
+        x: bet.createdTime,
+        y: bet.probAfter,
+      }))
+      return { points } as HistoryData
+    default: // choice contracts
+      return { bets } as HistoryData
+  }
 }
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -44,36 +68,12 @@ export async function getStaticPropz(props: {
 }) {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
-  const contractId = contract?.id
-  const useBetPoints =
-    contract?.outcomeType === 'BINARY' ||
-    contract?.outcomeType === 'PSEUDO_NUMERIC'
-  // Prioritize newer bets via descending order
-  const bets = contractId
-    ? await listBets({
-        contractId,
-        ...CONTRACT_BET_LOADING_OPTS,
-        limit: 10000,
-        order: 'desc' as OrderByDirection,
-      })
-    : []
-  // We could include avatars in the embed, but not sure it's worth it
-  const betPoints = useBetPoints
-    ? bets.map(
-        (bet) =>
-          ({
-            x: bet.createdTime,
-            y: bet.probAfter,
-          } as HistoryPoint<Partial<Bet>>)
-      )
-    : []
-
+  if (contract == null) {
+    return { notFound: true, revalidate: 60 }
+  }
+  const historyData = await getHistoryData(contract)
   return {
-    props: {
-      contract,
-      bets: useBetPoints ? bets.slice(0, 100) : bets,
-      betPoints,
-    },
+    props: { contract, historyData },
     revalidate: 60, // regenerate after a minute
   }
 }
@@ -84,33 +84,14 @@ export async function getStaticPaths() {
 
 export default function ContractEmbedPage(props: {
   contract: Contract | null
-  bets: Bet[]
-  betPoints: HistoryPoint<Partial<Bet>>[]
+  historyData: HistoryData | null
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
-    bets: [],
-    betPoints: [],
+    historyData: null,
   }
-  const router = useRouter()
 
   const contract = useContract(props.contract?.id) ?? props.contract
-
-  // Static props load bets in descending order by time
-  const lastBetTime = first(props.bets)?.createdTime
-  const newBets = useBets({
-    ...CONTRACT_BET_LOADING_OPTS,
-    contractId: contract?.id ?? '',
-    afterTime: lastBetTime,
-  })
-  const bets = props.bets.concat(newBets ?? [])
-  const betPoints = props.betPoints.concat(
-    newBets?.map((bet) => ({
-      x: bet.createdTime,
-      y: bet.probAfter,
-      obj: { userAvatarUrl: bet.userAvatarUrl },
-    })) ?? []
-  )
 
   useEffect(() => {
     if (contract?.id)
@@ -128,10 +109,6 @@ export default function ContractEmbedPage(props: {
     return <Custom404 />
   }
 
-  // Check ?graphColor=hex&textColor=hex from router
-  const graphColor = router.query.graphColor as string
-  const textColor = router.query.textColor as string
-
   // return (height < 250px) ? Card : SmolView
   return (
     <>
@@ -145,13 +122,7 @@ export default function ContractEmbedPage(props: {
         />
       </div>
       <div className="hidden [@media(min-height:250px)]:contents">
-        <ContractSmolView
-          contract={contract}
-          bets={bets}
-          betPoints={betPoints}
-          graphColor={graphColor}
-          textColor={textColor}
-        />
+        <ContractSmolView contract={contract} data={props.historyData} />
       </div>
     </>
   )
@@ -159,37 +130,55 @@ export default function ContractEmbedPage(props: {
 
 const ContractChart = (props: {
   contract: Contract
-  bets: Bet[]
-  betPoints: HistoryPoint<Partial<Bet>>[] // used in binary & numeric charts
+  data: HistoryData | null
   width: number
   height: number
   color?: string
 }) => {
-  const { contract } = props
+  const { contract, data, ...rest } = props
   switch (contract.outcomeType) {
     case 'BINARY':
-      return <BinaryContractChart {...{ ...props, contract }} />
+      return (
+        <BinaryContractChart
+          {...rest}
+          contract={contract}
+          betPoints={data?.points ?? []}
+        />
+      )
     case 'PSEUDO_NUMERIC':
-      return <PseudoNumericContractChart {...{ ...props, contract }} />
+      return (
+        <PseudoNumericContractChart
+          {...rest}
+          contract={contract}
+          betPoints={data?.points ?? []}
+        />
+      )
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
-      return <ChoiceContractChart {...{ ...props, contract }} />
+      return (
+        <ChoiceContractChart
+          {...rest}
+          contract={contract}
+          bets={data?.bets ?? []}
+        />
+      )
     case 'NUMERIC':
-      return <NumericContractChart {...{ ...props, contract }} />
+      return <NumericContractChart {...rest} contract={contract} />
     default:
-      return null
+      throw new Error('Contract outcome type not supported for chart')
   }
 }
 
 function ContractSmolView(props: {
   contract: Contract
-  bets: Bet[]
-  graphColor: string
-  textColor: string
-  betPoints: HistoryPoint<Partial<Bet>>[]
+  data: HistoryData | null
 }) {
-  const { contract, bets, betPoints, graphColor, textColor } = props
+  const { contract, data } = props
   const { question, outcomeType } = contract
+
+  const router = useRouter()
+  const graphColor = router.query.graphColor as string
+  const textColor = router.query.textColor as string
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -232,11 +221,10 @@ function ContractSmolView(props: {
         {graphWidth != null && graphHeight != null && (
           <ContractChart
             contract={contract}
-            bets={bets}
+            data={data}
             width={graphWidth}
             height={graphHeight}
             color={graphColor}
-            betPoints={betPoints}
           />
         )}
       </div>
@@ -245,7 +233,7 @@ function ContractSmolView(props: {
 }
 
 const Details = (props: { contract: Contract }) => {
-  const { creatorAvatarUrl, creatorUsername, uniqueBettorCount } =
+  const { creatorAvatarUrl, creatorUsername, creatorName, uniqueBettorCount } =
     props.contract
 
   return (
@@ -257,7 +245,7 @@ const Details = (props: { contract: Contract }) => {
           username={creatorUsername}
           noLink
         />
-        {creatorUsername}
+        {creatorName}
       </span>
       <CloseOrResolveTime contract={props.contract} isCreator disabled />
       <span>{uniqueBettorCount} traders</span>

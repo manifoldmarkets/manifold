@@ -3,6 +3,11 @@ import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Fragment, ReactNode } from 'react'
 import { Row } from 'web/components/layout/row'
+export type DropdownItem = {
+  name: string
+  icon: ReactNode
+  onClick: () => void | Promise<void>
+}
 
 export type DropdownItem = {
   name: string
@@ -11,7 +16,7 @@ export type DropdownItem = {
 }
 
 export default function DropdownMenu(props: {
-  Items: { name: string; icon: ReactNode; onClick: () => void }[]
+  Items: DropdownItem[]
   Icon?: ReactNode
   MenuWidth?: string
   buttonClass?: string

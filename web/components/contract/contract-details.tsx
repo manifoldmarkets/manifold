@@ -1,4 +1,4 @@
-import { ClockIcon } from '@heroicons/react/outline'
+import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
 import {
   ExclamationIcon,
   PencilIcon,
@@ -66,11 +66,12 @@ export function MiscDetails(props: {
           {fromNow(resolutionTime)}
         </Row>
       ) : (uniqueBettorCount ?? 0) > 1 ? (
-        <Row className={'shrink-0 gap-1'}>
-          <div className="font-semibold">{uniqueBettorCount || '0'} </div>
-          trader
-          {uniqueBettorCount !== 1 ? 's' : ''}
-        </Row>
+        <Tooltip text={'Unique traders'} className={'z-10'}>
+          <Row className={'shrink-0 items-center gap-1'}>
+            <div className="font-semibold">{uniqueBettorCount || '0'} </div>
+            <UserGroupIcon className="h-4 w-4" />
+          </Row>
+        </Tooltip>
       ) : (
         <></>
       )}
@@ -454,21 +455,23 @@ function EditableCloseDate(props: {
           )}
         </Col>
       </Modal>
-      <DateTimeTooltip
-        text={
-          isClient && closeTime <= Date.now()
-            ? 'Trading ended:'
-            : 'Trading ends:'
-        }
-        time={closeTime}
-        placement="bottom-start"
+
+      <Row
+        className={clsx(
+          'items-center gap-1 text-gray-500',
+          !disabled && isCreator ? 'cursor-pointer' : ''
+        )}
+        onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
       >
-        <Row
-          className={clsx(
-            'items-center gap-1',
-            !disabled && isCreator ? 'cursor-pointer' : ''
-          )}
-          onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
+        <DateTimeTooltip
+          text={
+            isClient && closeTime <= Date.now()
+              ? 'Trading ended:'
+              : 'Trading ends:'
+          }
+          time={closeTime}
+          placement="bottom-start"
+          noTap
         >
           <span>{dayjs().isBefore(closeTime) ? 'closes' : 'closed'} </span>
           {isSameDay && isClient ? (
@@ -478,9 +481,9 @@ function EditableCloseDate(props: {
           ) : (
             dayJsCloseTime.format('MMM D, YYYY')
           )}
-          {isCreator && !disabled && <PencilIcon className="h-4 w-4" />}
-        </Row>
-      </DateTimeTooltip>
+        </DateTimeTooltip>
+        {isCreator && !disabled && <PencilIcon className="h-4 w-4" />}
+      </Row>
     </>
   )
 }

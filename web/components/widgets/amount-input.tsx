@@ -14,7 +14,7 @@ import { binaryOutcomes } from '../bet/bet-panel'
 export function AmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
-  error: string | undefined
+  error?: string
   label: string
   disabled?: boolean
   className?: string
@@ -49,7 +49,7 @@ export function AmountInput(props: {
             {label}
           </span>
           <Input
-            className={clsx('w-24 pl-9 !text-base md:w-auto', inputClassName)}
+            className={clsx('pl-9 !text-lg', inputClassName)}
             ref={inputRef}
             type="text"
             pattern="[0-9]*"
@@ -136,7 +136,7 @@ export function BuyAmountInput(props: {
       <Col>
         <Row
           className={clsx(
-            'items-center gap-4 xl:flex-wrap',
+            'items-center gap-1 xl:flex-wrap',
             hideInput ? 'mb-4' : ''
           )}
         >

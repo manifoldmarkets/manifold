@@ -3,6 +3,14 @@ import { ENV_CONFIG } from './envs/constants'
 const econ = ENV_CONFIG.economy
 
 export const FIXED_ANTE = econ?.FIXED_ANTE ?? 50
+export const ANTES = {
+  BINARY: FIXED_ANTE,
+  MULTIPLE_CHOICE: FIXED_ANTE * 2,
+  FREE_RESPONSE: FIXED_ANTE * 2,
+  PSEUDO_NUMERIC: FIXED_ANTE * 5,
+  NUMERIC: FIXED_ANTE * 5,
+  CERT: FIXED_ANTE * 10,
+}
 
 export const STARTING_BALANCE = econ?.STARTING_BALANCE ?? 500
 export const STARTING_BONUS = econ?.STARTING_BONUS ?? 500

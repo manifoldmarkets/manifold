@@ -49,6 +49,8 @@ We're using Expo to help with android and ios builds. You can find more informat
 ## OTA updates
 `eas update` to publish an OTA update via EAS
 
+# Icons
+find icons [here](https://icons.expo.fyi/)
 
 ## Notes
 - The dev and prod version of the app use the same application id (`com.markets.manifold`). This may not be not ideal but it works.
