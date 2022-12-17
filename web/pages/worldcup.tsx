@@ -28,17 +28,17 @@ const general_markets = [
 //   'will-argentina-eliminate-croatia-in',
 //   'will-messi-score-a-goal-vs-croatia',
 // ]
-const nl_arg = [
-  'who-will-be-man-of-the-match-in-fra-47fe2b9e0483',
-  'will-france-eliminate-morocco-in-th',
-  'will-france-vs-morocco-go-to-a-pena',
-]
+// const nl_arg = [
+//   'who-will-be-man-of-the-match-in-fra-47fe2b9e0483',
+//   'will-france-eliminate-morocco-in-th',
+//   'will-france-vs-morocco-go-to-a-pena',
+// ]
 
-const mor_por = [
-  'who-will-be-man-of-the-match-in-mor',
-  'will-morocco-eliminate-portugal',
-  'will-moroccos-goalkeeper-save-a-pen',
-]
+// const mor_por = [
+//   'who-will-be-man-of-the-match-in-mor',
+//   'will-morocco-eliminate-portugal',
+//   'will-moroccos-goalkeeper-save-a-pen',
+// ]
 
 const uk_fr = [
   'will-argentina-win-the-fifa-world-c-bf4a7e33fba8',
