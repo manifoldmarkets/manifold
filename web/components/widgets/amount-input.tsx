@@ -49,7 +49,7 @@ export function AmountInput(props: {
             {label}
           </span>
           <Input
-            className={clsx('w-24 pl-9 !text-base md:w-auto', inputClassName)}
+            className={clsx('pl-9 !text-lg', inputClassName)}
             ref={inputRef}
             type="text"
             pattern="[0-9]*"
