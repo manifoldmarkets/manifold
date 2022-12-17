@@ -457,7 +457,7 @@ function EditableCloseDate(props: {
 
       <Row
         className={clsx(
-          'items-center gap-1',
+          'items-center gap-1 text-gray-500',
           !disabled && isCreator ? 'cursor-pointer' : ''
         )}
         onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
