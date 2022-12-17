@@ -63,6 +63,7 @@ export const creategroup = newEndpoint({}, async (req, auth) => {
     totalMembers: memberIds.length,
     postIds: [],
     pinnedItems: [],
+    bannerUrl: '/group/default_group_banner_indigo.png',
   }
 
   await groupRef.create(group)

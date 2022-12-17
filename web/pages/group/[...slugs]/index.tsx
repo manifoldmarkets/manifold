@@ -210,10 +210,10 @@ export default function GroupPage(props: {
       )}
       <figure className="relative h-60 w-full sm:h-72 ">
         <Image
-          src={'/default_cover.jpeg'}
+          src={'/group/default_group_banner_indigo.png'}
           alt=""
-          fill
-          // objectFit=""
+          fill={true}
+          objectFit="cover"
         />
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
           <Row className="mt-4 mb-2 w-full justify-between">
