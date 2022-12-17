@@ -23,6 +23,25 @@ import { Spacer } from '../layout/spacer'
 import { Content } from '../widgets/editor'
 import { ExpandableContent } from '../widgets/expandable-content'
 
+export function GroupAboutSection(props: {
+  group: Group
+  isEditable: boolean
+  aboutPost: Post | null
+}) {
+  const { group, isEditable, aboutPost } = props
+  return (
+    <Col className="my-2 px-0">
+      {aboutPost && (
+        <GroupOverviewPost
+          group={group}
+          isEditable={isEditable}
+          post={aboutPost}
+        />
+      )}
+    </Col>
+  )
+}
+
 function GroupAboutModalContent(props: {
   content: JSONContent | string
   groupName: string

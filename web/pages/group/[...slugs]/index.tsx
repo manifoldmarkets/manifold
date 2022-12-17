@@ -36,10 +36,7 @@ import { BETTORS, PrivateUser } from 'common/user'
 import { IconButton } from 'web/components/buttons/button'
 import { ContractSearch } from 'web/components/contract-search'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
-import {
-  GroupAbout,
-  GroupAboutSection,
-} from 'web/components/groups/group-about'
+import { GroupPostSection } from 'web/components/groups/group-post-section'
 import BannerImage from 'web/components/groups/group-banner-image'
 import { GroupOptions } from 'web/components/groups/group-options'
 import GroupOpenClosedWidget, {
@@ -54,6 +51,7 @@ import { usePost, usePosts } from 'web/hooks/use-post'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
+import { GroupAboutSection } from 'web/components/groups/group-overview-post'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -269,7 +267,7 @@ export default function GroupPage(props: {
           className={'mb-2'}
           tabs={[
             {
-              title: 'Content',
+              title: 'Markets',
               content: (
                 <ContractSearch
                   headerClassName="md:sticky"
@@ -285,9 +283,9 @@ export default function GroupPage(props: {
               ),
             },
             {
-              title: 'About',
+              title: 'Posts',
               content: (
-                <GroupAbout
+                <GroupPostSection
                   group={group}
                   posts={groupPosts}
                   isEditable={isEditable}
