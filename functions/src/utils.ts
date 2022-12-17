@@ -9,10 +9,9 @@ import {
   QueryDocumentSnapshot,
   Transaction,
 } from 'firebase-admin/firestore'
-import { SupabaseClientOptions, createClient } from '@supabase/supabase-js'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { generateJSON } from '@tiptap/html'
-import { SupabaseClient } from '../../common/supabase/utils'
+import { createClient } from '../../common/supabase/utils'
 import { stringParseExts } from '../../common/util/parse'
 
 import { DEV_CONFIG } from '../../common/envs/dev'
@@ -311,7 +310,7 @@ export function contractUrl(contract: Contract) {
   return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
 }
 
-export function createSupabaseClient(opts?: SupabaseClientOptions<'public'>) {
+export function createSupabaseClient() {
   const url =
     process.env.SUPABASE_URL ??
     (isProd() ? PROD_CONFIG.supabaseUrl : DEV_CONFIG.supabaseUrl)
@@ -324,5 +323,5 @@ export function createSupabaseClient(opts?: SupabaseClientOptions<'public'>) {
   if (!key) {
     throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
   }
-  return createClient(url, key, opts) as SupabaseClient
+  return createClient(url, key)
 }
