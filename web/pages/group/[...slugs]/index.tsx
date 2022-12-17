@@ -212,34 +212,36 @@ export default function GroupPage(props: {
       <div className="relative">
         <BannerImage group={group} user={user} isEditable={isEditable} />
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
-          <Row className="mt-4 mb-2 w-full justify-between">
+          <Row className="mt-4 mb-2 w-full justify-between gap-1">
             <div className="text-2xl font-normal text-gray-900 sm:text-3xl">
               {group.name}
             </div>
-            <Row className="items-center gap-2">
-              {isMobile && (
-                <JoinOrLeaveGroupButton
-                  group={group}
-                  isMember={isMember}
-                  user={user}
-                />
-              )}
-              {!isMobile && (
-                <>
+            <Col className="justify-end">
+              <Row className="items-center gap-2">
+                {isMobile && (
                   <JoinOrLeaveGroupButton
                     group={group}
                     isMember={isMember}
                     user={user}
                   />
-                  <GroupOptions
-                    group={group}
-                    groupUrl={groupUrl}
-                    privateUser={privateUser}
-                    isEditable={isEditable}
-                  />
-                </>
-              )}
-            </Row>
+                )}
+                {!isMobile && (
+                  <>
+                    <JoinOrLeaveGroupButton
+                      group={group}
+                      isMember={isMember}
+                      user={user}
+                    />
+                    <GroupOptions
+                      group={group}
+                      groupUrl={groupUrl}
+                      privateUser={privateUser}
+                      isEditable={isEditable}
+                    />
+                  </>
+                )}
+              </Row>
+            </Col>
           </Row>
           <Row className="mb-2 gap-4">
             <GroupMembersWidget group={group} />
