@@ -1,13 +1,11 @@
 import { UserGroupIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
 import { useState } from 'react'
-import { useMembers } from 'web/hooks/use-group'
 import {
   default as ClosedDoorIcon,
   default as OpenDoorIcon,
 } from 'web/lib/icons/open-door-icon'
 import { Row } from '../layout/row'
-import { MultiUserTransactionModal } from '../multi-user-transaction-link'
 
 export default function GroupOpenClosedWidget(props: { group: Group }) {
   const { group } = props

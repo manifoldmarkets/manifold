@@ -33,7 +33,6 @@ import { GroupComment } from 'common/comment'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
-import Image from 'next/image'
 import { IconButton } from 'web/components/buttons/button'
 import { ContractSearch } from 'web/components/contract-search'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
@@ -41,6 +40,7 @@ import {
   GroupAbout,
   GroupAboutSection,
 } from 'web/components/groups/group-about'
+import BannerImage from 'web/components/groups/group-banner-image'
 import { GroupOptions } from 'web/components/groups/group-options'
 import GroupOpenClosedWidget, {
   GroupMembersWidget,
@@ -54,10 +54,7 @@ import { usePost, usePosts } from 'web/hooks/use-post'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
-import BannerImage from 'web/components/groups/group-banner-image'
 
-export const DEFAULT_BANNER_URL = '/group/default_group_banner_indigo.png'
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -213,7 +210,7 @@ export default function GroupPage(props: {
         />
       )}
       <div className="relative">
-        <BannerImage group={group} />
+        <BannerImage group={group} user={user} isEditable={isEditable} />
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
           <Row className="mt-4 mb-2 w-full justify-between">
             <div className="text-2xl font-normal text-gray-900 sm:text-3xl">
