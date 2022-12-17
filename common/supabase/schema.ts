@@ -86,7 +86,6 @@ export interface Database {
           doc_id: string
           data: Json | null
           ts: string
-          processed: boolean
         }
         Insert: {
           id?: never
@@ -96,7 +95,6 @@ export interface Database {
           doc_id: string
           data?: Json | null
           ts: string
-          processed?: boolean
         }
         Update: {
           id?: never
@@ -106,7 +104,6 @@ export interface Database {
           doc_id?: string
           data?: Json | null
           ts?: string
-          processed?: boolean
         }
       }
       txns: {
@@ -156,13 +153,13 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
-      replicate_writes_process_all: {
-        Args: Record<PropertyKey, never>
-        Returns: { succeeded: boolean; n: number }[]
-      }
       replicate_writes_process_one: {
         Args: { r: unknown }
         Returns: boolean
+      }
+      replicate_writes_process_since: {
+        Args: { since: string }
+        Returns: { id: number; succeeded: boolean }[]
       }
     }
     Enums: {
