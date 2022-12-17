@@ -71,6 +71,7 @@ export const claimdestinysub = cloudFunction(
       trans.create(subDoc, sub)
       trans.update(userSnap.ref, {
         balance: FieldValue.increment(-DESTINY_SUB_COST),
+        totalDeposits: FieldValue.increment(-DESTINY_SUB_COST),
       })
       trans.update(privateSnap.ref, { destinySubClaimed: true })
 
