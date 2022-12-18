@@ -1,7 +1,16 @@
+import TinderCard from 'react-tinder-card'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-import { memo, useEffect, useMemo, useState } from 'react'
-import { MinusIcon, PlusIcon } from '@heroicons/react/solid'
+import { useMemo, useState } from 'react'
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpIcon,
+  MinusIcon,
+  PlusIcon,
+} from '@heroicons/react/solid'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { uniqBy } from 'lodash'
 
 import { buildArray } from 'common/util/array'
@@ -10,7 +19,9 @@ import type { BinaryContract, Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Content } from 'web/components/widgets/editor'
 import { useUser } from 'web/hooks/use-user'
+import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
 import { logView } from 'web/lib/firebase/views'
 import { contractPath, getTrendingContracts } from 'web/lib/firebase/contracts'
@@ -22,6 +33,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { getBinaryProb } from 'common/contract-details'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
+import { NoLabel, YesLabel } from 'web/components/outcome-label'
 import { useSwipes } from 'web/hooks/use-swipes'
 import { useFeed } from 'web/hooks/use-feed'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -29,9 +41,6 @@ import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { Col } from 'web/components/layout/col'
-import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useEvent } from 'web/hooks/use-event'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(200)).filter(
@@ -62,41 +71,17 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
     (c) => c.id
   )
 
-  const [contractId, setContractId] = usePersistentState<string | undefined>(
-    undefined,
-    {
-      key: 'swipe-index',
-      store: inMemoryStore(),
-    }
-  )
-  const [maxIndex, setMaxIndex] = usePersistentState(0, {
-    key: 'swipe-max-index',
+  const [index, setIndex] = usePersistentState(0, {
+    key: 'swipe-index',
     store: inMemoryStore(),
   })
+  const cards = useMemo(
+    () => contracts.slice(index, index + 4).reverse(),
+    [contracts, index]
+  )
 
-  const cards = useMemo(() => {
-    return contracts.slice(0, (Math.ceil(maxIndex / 10) + 1) * 10)
-  }, [contracts, maxIndex])
-
-  useEffect(() => {
-    if (contractId) {
-      document.getElementById(contractId)?.scrollIntoView()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const onView = useEvent((contract: Contract, alreadyViewed: boolean) => {
-    const contractId = contract.id
-    if (!alreadyViewed) {
-      track('swipe', { slug: contract.slug, contractId })
-      if (user) logView({ contractId, userId: user.id })
-    }
-    const newIndex = contracts.findIndex((c) => c.id === contractId)
-    if (newIndex !== -1) {
-      setContractId(contractId)
-      if (newIndex > maxIndex) setMaxIndex(newIndex)
-    }
-  })
+  // resize height manually for iOS
+  const { height, width = 600 } = useWindowSize()
 
   if (user === undefined) {
     return <LoadingIndicator />
@@ -114,18 +99,21 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
 
   return (
     <Page>
-      <div className="absolute flex h-screen justify-center overflow-hidden overscroll-none pb-[58px]">
-        <div className="scrollbar-hide relative w-full max-w-lg snap-y snap-mandatory overflow-y-scroll scroll-smooth">
+      <div
+        className="absolute inset-0 flex justify-center overflow-hidden overscroll-none pb-[58px] lg:pb-0"
+        style={{ height }}
+      >
+        <div className="relative max-w-lg grow">
           {cards.map((c) => (
             <Card
-              key={c.id}
+              key={c.id + amount}
               contract={c}
               amount={amount}
               setAmount={setAmount}
-              onView={onView}
+              onLeave={() => setIndex((i) => i + 1)}
+              threshold={Math.min(128, width * 0.15)}
             />
           ))}
-
           {/* TODO: users should never run out of cards */}
           {!cards.length && (
             <div className="flex h-full w-full flex-col items-center justify-center">
@@ -141,166 +129,214 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   )
 }
 
+type Direction = 'middle' | 'up' | 'right' | 'down' | 'left'
+
 const betTapAdd = 10
 
-const Card = memo(
-  (props: {
-    contract: BinaryContract
-    amount: number
-    setAmount: (amount: number) => void
-    onView: (contract: BinaryContract, alreadyViewed: boolean) => void
-  }) => {
-    const { contract, amount, setAmount, onView } = props
-    const { question, description, coverImageUrl, id: contractId } = contract
+const Card = (props: {
+  contract: BinaryContract
+  onLeave?: () => void
+  threshold: number
+  amount: number
+  setAmount: (amount: number) => void
+}) => {
+  const { contract, onLeave, threshold, amount, setAmount } = props
+  const { question, description, coverImageUrl, id: contractId } = contract
 
-    const [isViewed, setIsViewed] = usePersistentState(false, {
-      key: contract.id + '-viewed',
-      store: inMemoryStore(),
-    })
+  const userId = useUser()?.id
 
-    const userId = useUser()?.id
+  const addMoney = () => setAmount(amount + betTapAdd)
 
-    const addMoney = () => setAmount(amount + betTapAdd)
-
-    const subMoney = () => {
-      if (amount <= betTapAdd) {
-      } else {
-        setAmount(amount - betTapAdd)
-      }
+  const subMoney = () => {
+    if (amount <= betTapAdd) {
+      setDir('up')
+    } else {
+      setAmount(amount - betTapAdd)
     }
+  }
 
-    const image =
-      coverImageUrl ??
-      `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
+  const image =
+    coverImageUrl ??
+    `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
 
-    const onClickBet = (outcome: 'YES' | 'NO') => {
-      const promise = placeBet({ amount, outcome, contractId })
+  const [dir, setDir] = useState<Direction>('middle')
+  const [swiping, setSwiping] = useState(false)
 
-      const shortQ = contract.question.slice(0, 20)
+  const [peek, setPeek] = useState(false)
 
-      const message = `Bet ${formatMoney(amount)} ${outcome} on "${shortQ}"...`
-
-      toast.promise(
-        promise,
-        {
-          loading: message,
-          success: message,
-          error: (err) => `Error placing bet: ${err.message}`,
-        },
-        { position: 'top-center' }
-      )
-
-      userId && logView({ amount, outcome, contractId, userId })
-      track('swipe bet', {
-        slug: contract.slug,
-        contractId,
-        amount,
-        outcome,
-      })
-    }
-
-    return (
-      <Col
-        className={clsx('relative h-full snap-start snap-always')}
-        id={contract.id}
-      >
-        {/* background */}
-        <div className="flex h-full flex-col bg-black">
-          <div className="relative mb-24 grow">
-            <img
-              src={image}
-              alt=""
-              className="h-full object-cover"
-              style={{ filter: 'brightness(0.60)' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
-          </div>
-        </div>
-
-        {/* content */}
-        <div className="absolute inset-0 flex select-none flex-col gap-4">
-          <CornerDetails contract={contract} />
-          <SiteLink
-            className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white drop-shadow-2xl"
-            href={contractPath(contract)}
-            followsLinkClass
-          >
-            {question}
-          </SiteLink>
-          <Percent
-            contract={contract}
-            amount={amount}
-            outcome={undefined}
-          />
-          {/* TODO: use editor excluding widgets */}
-          <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
-            {typeof description === 'string'
-              ? description
-              : richTextToString(description)}
-          </div>
-
-          <Row className="gap-4 px-8">
-            <button
-              className={clsx(
-                'hover:bg-teal-600-focus hover:border-teal-600-focus inline-flex flex-1 items-center justify-center rounded-lg border-2 border-teal-600 p-2 hover:text-white',
-                'bg-transparent text-lg text-teal-500 active:bg-teal-600'
-              )}
-              onClick={() => onClickBet('YES')}
-            >
-              Bet YES
-            </button>
-            <button
-              className={clsx(
-                'hover:bg-teal-600-focus hover:border-teal-600-focus border-scarlet-300 inline-flex flex-1 items-center justify-center rounded-lg border-2 p-2 hover:text-white',
-                'text-scarlet-300 active:bg-scarlet-400 bg-transparent text-lg'
-              )}
-              onClick={() => onClickBet('NO')}
-            >
-              Bet NO
-            </button>
-          </Row>
-
-          <div className="mb-4 flex flex-col items-center gap-2 self-center">
-            <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
-              <button
-                onClick={subMoney}
-                onTouchStart={subMoney}
-                className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-              >
-                <MinusIcon className="h-4" />
-              </button>
-              <span className="mx-1 py-4">{formatMoney(amount)}</span>
-              <button
-                onClick={addMoney}
-                onTouchStart={addMoney}
-                className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-              >
-                <PlusIcon className="h-4" />
-              </button>
-            </span>
-          </div>
-        </div>
-
-        <VisibilityObserver
-          className="relative"
-          onVisibilityUpdated={(visible) => {
-            if (visible) {
-              onView(contract, isViewed)
-              setIsViewed(true)
-            }
+  return (
+    <>
+      {peek && (
+        <Peek
+          contract={contract}
+          onClose={() => {
+            setPeek(false)
+            setDir('middle')
           }}
         />
-      </Col>
+      )}
+      <TinderCard
+        onSwipe={async (direction) => {
+          if (direction === 'down') {
+            setPeek(true)
+            return
+          }
+
+          setSwiping(true)
+
+          if (direction === 'left' || direction === 'right') {
+            const outcome = direction === 'left' ? 'NO' : 'YES'
+
+            const promise = placeBet({ amount, outcome, contractId })
+
+            const shortQ = contract.question.slice(0, 20)
+
+            const message = `Bet ${formatMoney(
+              amount
+            )} ${outcome} on "${shortQ}"...`
+
+            toast.promise(
+              promise,
+              {
+                loading: message,
+                success: message,
+                error: (err) => `Error placing bet: ${err.message}`,
+              },
+              { position: 'top-center' }
+            )
+
+            userId && logView({ amount, outcome, contractId, userId })
+            track('swipe bet', {
+              slug: contract.slug,
+              contractId,
+              amount,
+              outcome,
+            })
+          }
+          if (direction === 'up') {
+            track('swipe skip', { slug: contract.slug, contractId })
+            userId && logView({ outcome: 'SKIP', contractId, userId })
+          }
+        }}
+        onCardLeftScreen={onLeave}
+        preventSwipe={['down']}
+        swipeRequirementType="position"
+        swipeThreshold={threshold}
+        onSwipeRequirementFulfilled={setDir}
+        onSwipeRequirementUnfulfilled={() => setDir('middle')}
+        className={clsx(
+          'absolute inset-2 cursor-grab [&>*]:last:scale-100',
+          swiping && 'pointer-events-none'
+        )}
+      >
+        <div className="h-full scale-95 overflow-hidden rounded-2xl transition-transform">
+          {/* background */}
+          <div className="flex h-full flex-col bg-black">
+            <div className="relative mb-24 grow">
+              <img src={image} alt="" className="h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
+            </div>
+          </div>
+          {/* content */}
+          <div className="absolute inset-0 flex select-none flex-col gap-4">
+            <CornerDetails contract={contract} />
+            <SiteLink
+              className="line-clamp-4 mx-8 mt-auto mb-4 text-2xl text-white "
+              href={contractPath(contract)}
+              followsLinkClass
+            >
+              {question}
+            </SiteLink>
+            <Percent
+              contract={contract}
+              amount={amount}
+              outcome={
+                dir === 'left' ? 'NO' : dir === 'right' ? 'YES' : undefined
+              }
+            />
+            {/* TODO: use editor excluding widgets */}
+            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 text-gray-50">
+              {typeof description === 'string'
+                ? description
+                : richTextToString(description)}
+            </div>
+
+            <SwipeStatus direction={dir} />
+
+            <div className="mb-4 flex flex-col items-center gap-2 self-center">
+              <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
+                <button
+                  onClick={subMoney}
+                  onTouchStart={subMoney}
+                  className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+                >
+                  <MinusIcon className="h-4" />
+                </button>
+                <span className="mx-1 py-4">{formatMoney(amount)}</span>
+                <button
+                  onClick={addMoney}
+                  onTouchStart={addMoney}
+                  className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+                >
+                  <PlusIcon className="h-4" />
+                </button>
+              </span>
+            </div>
+          </div>
+        </div>
+      </TinderCard>
+    </>
+  )
+}
+
+const SwipeStatus = (props: { direction: Direction }) => {
+  const { direction } = props
+
+  if (direction === 'up') {
+    return (
+      <div className="flex justify-center gap-1 text-indigo-100">
+        Swipe <ArrowUpIcon className="h-5" /> to skip
+      </div>
     )
   }
-)
+  if (direction === 'down') {
+    return (
+      <div className="flex justify-center gap-1 text-indigo-100">
+        Swipe <ArrowDownIcon className="h-5" /> for more info
+      </div>
+    )
+  }
+  if (direction === 'left') {
+    return (
+      <div className="text-scarlet-100 mr-8 flex justify-end gap-1">
+        <ArrowLeftIcon className="h-5" /> Betting NO
+      </div>
+    )
+  }
+  if (direction === 'right') {
+    return (
+      <div className="ml-8 flex justify-start gap-1 text-teal-100">
+        Betting YES <ArrowRightIcon className="h-5" />
+      </div>
+    )
+  }
+  return (
+    <Row className="items-center justify-center text-yellow-100">
+      <ArrowLeftIcon className="text-scarlet-600 h-8" /> <NoLabel />
+      <span className="mx-4 whitespace-nowrap text-yellow-100">
+        Swipe to bet
+      </span>
+      <YesLabel /> <ArrowRightIcon className="h-8 text-teal-600" />
+    </Row>
+  )
+}
 
 const CornerDetails = (props: { contract: Contract }) => {
   const { contract } = props
   const { creatorName, creatorAvatarUrl, closeTime } = contract
 
   return (
-    <div className="m-3 flex gap-2 self-start drop-shadow">
+    <div className="m-3 flex gap-2 drop-shadow">
       <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
       <div className="text-xs">
         <div className="text-white">{creatorName} </div>
@@ -349,5 +385,27 @@ function Percent(props: {
       </span>
       <span className="pt-2 text-2xl">%</span>
     </div>
+  )
+}
+
+const Peek = (props: { contract: BinaryContract; onClose: () => void }) => {
+  const { contract, onClose } = props
+  const { question, description } = contract
+  return (
+    <section className="absolute inset-0 z-50 flex flex-col bg-black/40">
+      {/* spacer to close */}
+      <button className="h-40 shrink-0" onClick={onClose} />
+      <div className="h-6 shrink-0 rounded-t-3xl bg-white" />
+      <div className="grow overflow-auto bg-white px-4">
+        <h1 className="mb-8 text-lg font-semibold">{question}</h1>
+        <Content size="sm" content={description} />
+        <SiteLink
+          href={contractPath(contract)}
+          className="flex justify-center gap-2 text-indigo-700"
+        >
+          More details <ExternalLinkIcon className="my-px h-5 w-5" />
+        </SiteLink>
+      </div>
+    </section>
   )
 }
