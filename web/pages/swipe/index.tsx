@@ -215,11 +215,11 @@ const Card = memo(
               : richTextToString(description)}
           </div>
 
-          <Row className="gap-4 px-4">
+          <Row className="gap-4 px-8">
             <button
               className={clsx(
                 'hover:bg-teal-600-focus hover:border-teal-600-focus inline-flex flex-1 items-center justify-center rounded-lg border-2 border-teal-600 p-2 hover:text-white',
-                'bg-transparent text-lg text-teal-500'
+                'bg-transparent text-lg text-teal-500 active:bg-teal-600'
               )}
               onClick={() => onClickBet('YES')}
             >
@@ -228,7 +228,7 @@ const Card = memo(
             <button
               className={clsx(
                 'hover:bg-teal-600-focus hover:border-teal-600-focus border-scarlet-300 inline-flex flex-1 items-center justify-center rounded-lg border-2 p-2 hover:text-white',
-                'text-scarlet-300 bg-transparent text-lg'
+                'text-scarlet-300 active:bg-scarlet-400 bg-transparent text-lg'
               )}
               onClick={() => onClickBet('NO')}
             >
