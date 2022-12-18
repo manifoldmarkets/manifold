@@ -1,7 +1,6 @@
-import TinderCard from 'react-tinder-card'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import {
   ArrowDownIcon,
   ArrowLeftIcon,
@@ -41,6 +40,8 @@ import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
+import { Col } from 'web/components/layout/col'
+import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(200)).filter(
@@ -75,10 +76,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
     key: 'swipe-index',
     store: inMemoryStore(),
   })
-  const cards = useMemo(
-    () => contracts.slice(index, index + 4).reverse(),
-    [contracts, index]
-  )
+  const cards = useMemo(() => contracts.slice(0, index + 1), [contracts, index])
 
   // resize height manually for iOS
   const { height, width = 600 } = useWindowSize()
@@ -103,15 +101,13 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
         className="absolute inset-0 flex justify-center overflow-hidden overscroll-none pb-[58px] lg:pb-0"
         style={{ height }}
       >
-        <div className="relative max-w-lg grow">
+        <div className="scrollbar-hide relative w-full max-w-lg grow snap-y snap-mandatory overflow-y-scroll scroll-smooth">
           {cards.map((c) => (
             <Card
-              key={c.id + amount}
+              key={c.id}
               contract={c}
               amount={amount}
               setAmount={setAmount}
-              onLeave={() => setIndex((i) => i + 1)}
-              threshold={Math.min(128, width * 0.15)}
             />
           ))}
           {/* TODO: users should never run out of cards */}
@@ -123,6 +119,16 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
               </SiteLink>
             </div>
           )}
+
+          <VisibilityObserver
+            className="relative -top-96 h-1"
+            onVisibilityUpdated={(visible) => {
+              if (visible) {
+                console.log('visible', visible, 'index', index + 1)
+                setIndex(index + 2)
+              }
+            }}
+          />
         </div>
       </div>
     </Page>
@@ -133,161 +139,140 @@ type Direction = 'middle' | 'up' | 'right' | 'down' | 'left'
 
 const betTapAdd = 10
 
-const Card = (props: {
-  contract: BinaryContract
-  onLeave?: () => void
-  threshold: number
-  amount: number
-  setAmount: (amount: number) => void
-}) => {
-  const { contract, onLeave, threshold, amount, setAmount } = props
-  const { question, description, coverImageUrl, id: contractId } = contract
+const Card = memo(
+  (props: {
+    contract: BinaryContract
+    amount: number
+    setAmount: (amount: number) => void
+  }) => {
+    const { contract, amount, setAmount } = props
+    const { question, description, coverImageUrl, id: contractId } = contract
 
-  const userId = useUser()?.id
+    const userId = useUser()?.id
 
-  const addMoney = () => setAmount(amount + betTapAdd)
+    const addMoney = () => setAmount(amount + betTapAdd)
 
-  const subMoney = () => {
-    if (amount <= betTapAdd) {
-      setDir('up')
-    } else {
-      setAmount(amount - betTapAdd)
+    const subMoney = () => {
+      if (amount <= betTapAdd) {
+        setDir('up')
+      } else {
+        setAmount(amount - betTapAdd)
+      }
     }
+
+    const image =
+      coverImageUrl ??
+      `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
+
+    const [dir, setDir] = useState<Direction>('middle')
+
+    return (
+      <>
+        <Col
+          // onClick={async (direction) => {
+          //   if (direction === 'down') {
+          //     setPeek(true)
+          //     return
+          //   }
+
+          //   setSwiping(true)
+
+          //   if (direction === 'left' || direction === 'right') {
+          //     const outcome = direction === 'left' ? 'NO' : 'YES'
+
+          //     const promise = placeBet({ amount, outcome, contractId })
+
+          //     const shortQ = contract.question.slice(0, 20)
+
+          //     const message = `Bet ${formatMoney(
+          //       amount
+          //     )} ${outcome} on "${shortQ}"...`
+
+          //     toast.promise(
+          //       promise,
+          //       {
+          //         loading: message,
+          //         success: message,
+          //         error: (err) => `Error placing bet: ${err.message}`,
+          //       },
+          //       { position: 'top-center' }
+          //     )
+
+          //     userId && logSwipe({ amount, outcome, contractId, userId })
+          //     track('swipe bet', {
+          //       slug: contract.slug,
+          //       contractId,
+          //       amount,
+          //       outcome,
+          //     })
+          //   }
+          //   if (direction === 'up') {
+          //     track('swipe skip', { slug: contract.slug, contractId })
+          //     userId && logSwipe({ outcome: 'SKIP', contractId, userId })
+          //   }
+          // }}
+          className={clsx('h-full cursor-grab snap-start snap-always')}
+        >
+          <div className="h-full scale-100 overflow-hidden transition-transform">
+            {/* background */}
+            <div className="flex h-full flex-col bg-black">
+              <div className="relative mb-24 grow">
+                <img src={image} alt="" className="h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
+              </div>
+            </div>
+            {/* content */}
+            <div className="absolute inset-0 flex select-none flex-col gap-4">
+              <CornerDetails contract={contract} />
+              <SiteLink
+                className="line-clamp-5 mx-8 mt-auto mb-4 text-2xl text-white "
+                href={contractPath(contract)}
+                followsLinkClass
+              >
+                {question}
+              </SiteLink>
+              <Percent
+                contract={contract}
+                amount={amount}
+                outcome={
+                  dir === 'left' ? 'NO' : dir === 'right' ? 'YES' : undefined
+                }
+              />
+              {/* TODO: use editor excluding widgets */}
+              <div className="prose prose-invert prose-sm line-clamp-3 mx-8 text-gray-50">
+                {typeof description === 'string'
+                  ? description
+                  : richTextToString(description)}
+              </div>
+
+              <SwipeStatus direction={dir} />
+
+              <div className="mb-4 flex flex-col items-center gap-2 self-center">
+                <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
+                  <button
+                    onClick={subMoney}
+                    onTouchStart={subMoney}
+                    className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+                  >
+                    <MinusIcon className="h-4" />
+                  </button>
+                  <span className="mx-1 py-4">{formatMoney(amount)}</span>
+                  <button
+                    onClick={addMoney}
+                    onTouchStart={addMoney}
+                    className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+                  >
+                    <PlusIcon className="h-4" />
+                  </button>
+                </span>
+              </div>
+            </div>
+          </div>
+        </Col>
+      </>
+    )
   }
-
-  const image =
-    coverImageUrl ??
-    `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
-
-  const [dir, setDir] = useState<Direction>('middle')
-  const [swiping, setSwiping] = useState(false)
-
-  const [peek, setPeek] = useState(false)
-
-  return (
-    <>
-      {peek && (
-        <Peek
-          contract={contract}
-          onClose={() => {
-            setPeek(false)
-            setDir('middle')
-          }}
-        />
-      )}
-      <TinderCard
-        onSwipe={async (direction) => {
-          if (direction === 'down') {
-            setPeek(true)
-            return
-          }
-
-          setSwiping(true)
-
-          if (direction === 'left' || direction === 'right') {
-            const outcome = direction === 'left' ? 'NO' : 'YES'
-
-            const promise = placeBet({ amount, outcome, contractId })
-
-            const shortQ = contract.question.slice(0, 20)
-
-            const message = `Bet ${formatMoney(
-              amount
-            )} ${outcome} on "${shortQ}"...`
-
-            toast.promise(
-              promise,
-              {
-                loading: message,
-                success: message,
-                error: (err) => `Error placing bet: ${err.message}`,
-              },
-              { position: 'top-center' }
-            )
-
-            userId && logSwipe({ amount, outcome, contractId, userId })
-            track('swipe bet', {
-              slug: contract.slug,
-              contractId,
-              amount,
-              outcome,
-            })
-          }
-          if (direction === 'up') {
-            track('swipe skip', { slug: contract.slug, contractId })
-            userId && logSwipe({ outcome: 'SKIP', contractId, userId })
-          }
-        }}
-        onCardLeftScreen={onLeave}
-        preventSwipe={['down']}
-        swipeRequirementType="position"
-        swipeThreshold={threshold}
-        onSwipeRequirementFulfilled={setDir}
-        onSwipeRequirementUnfulfilled={() => setDir('middle')}
-        className={clsx(
-          'absolute inset-2 cursor-grab [&>*]:last:scale-100',
-          swiping && 'pointer-events-none'
-        )}
-      >
-        <div className="h-full scale-95 overflow-hidden rounded-2xl transition-transform">
-          {/* background */}
-          <div className="flex h-full flex-col bg-black">
-            <div className="relative mb-24 grow">
-              <img src={image} alt="" className="h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
-            </div>
-          </div>
-          {/* content */}
-          <div className="absolute inset-0 flex select-none flex-col gap-4">
-            <CornerDetails contract={contract} />
-            <SiteLink
-              className="line-clamp-4 mx-8 mt-auto mb-4 text-2xl text-white "
-              href={contractPath(contract)}
-              followsLinkClass
-            >
-              {question}
-            </SiteLink>
-            <Percent
-              contract={contract}
-              amount={amount}
-              outcome={
-                dir === 'left' ? 'NO' : dir === 'right' ? 'YES' : undefined
-              }
-            />
-            {/* TODO: use editor excluding widgets */}
-            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 text-gray-50">
-              {typeof description === 'string'
-                ? description
-                : richTextToString(description)}
-            </div>
-
-            <SwipeStatus direction={dir} />
-
-            <div className="mb-4 flex flex-col items-center gap-2 self-center">
-              <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
-                <button
-                  onClick={subMoney}
-                  onTouchStart={subMoney}
-                  className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-                >
-                  <MinusIcon className="h-4" />
-                </button>
-                <span className="mx-1 py-4">{formatMoney(amount)}</span>
-                <button
-                  onClick={addMoney}
-                  onTouchStart={addMoney}
-                  className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-                >
-                  <PlusIcon className="h-4" />
-                </button>
-              </span>
-            </div>
-          </div>
-        </div>
-      </TinderCard>
-    </>
-  )
-}
+)
 
 const SwipeStatus = (props: { direction: Direction }) => {
   const { direction } = props
