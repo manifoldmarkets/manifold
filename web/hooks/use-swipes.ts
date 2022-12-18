@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { getSwipes } from 'web/lib/firebase/views'
+import { getSwipeViews } from 'web/lib/firebase/views'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
 import { useUser } from './use-user'
 
@@ -11,8 +11,10 @@ export const useSwipes = () => {
   })
   useEffect(() => {
     if (user)
-      getSwipes(user.id).then((s) => setSwipes(s.map((swipe: any) => swipe.id)))
+      getSwipeViews(user.id).then((s) =>
+        setSwipes(s.map((swipe: any) => swipe.id))
+      )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!user, getSwipes])
+  }, [!!user, getSwipeViews])
   return swipes
 }

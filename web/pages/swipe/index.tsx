@@ -23,7 +23,7 @@ import { Content } from 'web/components/widgets/editor'
 import { useUser } from 'web/hooks/use-user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
-import { logSwipe } from 'web/lib/firebase/views'
+import { logView } from 'web/lib/firebase/views'
 import { contractPath, getTrendingContracts } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { fromNow } from 'web/lib/util/time'
@@ -205,7 +205,7 @@ const Card = (props: {
               { position: 'top-center' }
             )
 
-            userId && logSwipe({ amount, outcome, contractId, userId })
+            userId && logView({ amount, outcome, contractId, userId })
             track('swipe bet', {
               slug: contract.slug,
               contractId,
@@ -215,7 +215,7 @@ const Card = (props: {
           }
           if (direction === 'up') {
             track('swipe skip', { slug: contract.slug, contractId })
-            userId && logSwipe({ outcome: 'SKIP', contractId, userId })
+            userId && logView({ outcome: 'SKIP', contractId, userId })
           }
         }}
         onCardLeftScreen={onLeave}
