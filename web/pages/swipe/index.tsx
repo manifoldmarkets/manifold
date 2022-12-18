@@ -78,9 +78,6 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   })
   const cards = useMemo(() => contracts.slice(0, index + 1), [contracts, index])
 
-  // resize height manually for iOS
-  const { height, width = 600 } = useWindowSize()
-
   if (user === undefined) {
     return <LoadingIndicator />
   }
@@ -97,10 +94,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
 
   return (
     <Page>
-      <div
-        className="absolute inset-0 flex justify-center overflow-hidden overscroll-none pb-[58px] lg:pb-0"
-        style={{ height }}
-      >
+      <div className="absolute flex h-screen justify-center overflow-hidden overscroll-none pb-[58px]">
         <div className="scrollbar-hide relative w-full max-w-lg grow snap-y snap-mandatory overflow-y-scroll scroll-smooth">
           {cards.map((c) => (
             <Card
@@ -110,6 +104,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
               setAmount={setAmount}
             />
           ))}
+
           {/* TODO: users should never run out of cards */}
           {!cards.length && (
             <div className="flex h-full w-full flex-col items-center justify-center">
@@ -211,61 +206,60 @@ const Card = memo(
           //     userId && logSwipe({ outcome: 'SKIP', contractId, userId })
           //   }
           // }}
-          className={clsx('h-full cursor-grab snap-start snap-always')}
+          className={clsx('relative h-full snap-start snap-always')}
         >
-          <div className="h-full scale-100 overflow-hidden transition-transform">
-            {/* background */}
-            <div className="flex h-full flex-col bg-black">
-              <div className="relative mb-24 grow">
-                <img src={image} alt="" className="h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
-              </div>
+          {/* background */}
+          <div className="flex h-full flex-col bg-black">
+            <div className="relative mb-24 grow">
+              <img src={image} alt="" className="h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
             </div>
-            {/* content */}
-            <div className="absolute inset-0 flex select-none flex-col gap-4">
-              <CornerDetails contract={contract} />
-              <SiteLink
-                className="line-clamp-5 mx-8 mt-auto mb-4 text-2xl text-white "
-                href={contractPath(contract)}
-                followsLinkClass
-              >
-                {question}
-              </SiteLink>
-              <Percent
-                contract={contract}
-                amount={amount}
-                outcome={
-                  dir === 'left' ? 'NO' : dir === 'right' ? 'YES' : undefined
-                }
-              />
-              {/* TODO: use editor excluding widgets */}
-              <div className="prose prose-invert prose-sm line-clamp-3 mx-8 text-gray-50">
-                {typeof description === 'string'
-                  ? description
-                  : richTextToString(description)}
-              </div>
+          </div>
 
-              <SwipeStatus direction={dir} />
+          {/* content */}
+          <div className="absolute inset-0 flex select-none flex-col gap-4">
+            <CornerDetails contract={contract} />
+            <SiteLink
+              className="line-clamp-5 mx-8 mt-auto mb-4 text-2xl text-white "
+              href={contractPath(contract)}
+              followsLinkClass
+            >
+              {question}
+            </SiteLink>
+            <Percent
+              contract={contract}
+              amount={amount}
+              outcome={
+                dir === 'left' ? 'NO' : dir === 'right' ? 'YES' : undefined
+              }
+            />
+            {/* TODO: use editor excluding widgets */}
+            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 text-gray-50">
+              {typeof description === 'string'
+                ? description
+                : richTextToString(description)}
+            </div>
 
-              <div className="mb-4 flex flex-col items-center gap-2 self-center">
-                <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
-                  <button
-                    onClick={subMoney}
-                    onTouchStart={subMoney}
-                    className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-                  >
-                    <MinusIcon className="h-4" />
-                  </button>
-                  <span className="mx-1 py-4">{formatMoney(amount)}</span>
-                  <button
-                    onClick={addMoney}
-                    onTouchStart={addMoney}
-                    className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-                  >
-                    <PlusIcon className="h-4" />
-                  </button>
-                </span>
-              </div>
+            <SwipeStatus direction={dir} />
+
+            <div className="mb-4 flex flex-col items-center gap-2 self-center">
+              <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
+                <button
+                  onClick={subMoney}
+                  onTouchStart={subMoney}
+                  className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+                >
+                  <MinusIcon className="h-4" />
+                </button>
+                <span className="mx-1 py-4">{formatMoney(amount)}</span>
+                <button
+                  onClick={addMoney}
+                  onTouchStart={addMoney}
+                  className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+                >
+                  <PlusIcon className="h-4" />
+                </button>
+              </span>
             </div>
           </div>
         </Col>
