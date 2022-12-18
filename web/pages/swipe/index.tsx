@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { MinusIcon, PlusIcon } from '@heroicons/react/solid'
 import { uniqBy } from 'lodash'
 
@@ -31,6 +31,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { Col } from 'web/components/layout/col'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import { useEvent } from 'web/hooks/use-event'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(200)).filter(
@@ -61,17 +62,41 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
     (c) => c.id
   )
 
-  const [index, setIndex] = usePersistentState(0, {
-    key: 'swipe-index',
+  const [contractId, setContractId] = usePersistentState<string | undefined>(
+    undefined,
+    {
+      key: 'swipe-index',
+      store: inMemoryStore(),
+    }
+  )
+  const [maxIndex, setMaxIndex] = usePersistentState(0, {
+    key: 'swipe-max-index',
     store: inMemoryStore(),
   })
-  const cards = useMemo(() => contracts.slice(0, index + 1), [contracts, index])
 
-  const onView = (contract: Contract) => {
+  const cards = useMemo(() => {
+    return contracts.slice(0, (Math.ceil(maxIndex / 10) + 1) * 10)
+  }, [contracts, maxIndex])
+
+  useEffect(() => {
+    if (contractId) {
+      document.getElementById(contractId)?.scrollIntoView()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const onView = useEvent((contract: Contract, alreadyViewed: boolean) => {
     const contractId = contract.id
-    track('swipe', { slug: contract.slug, contractId })
-    if (user) logView({ contractId, userId: user.id })
-  }
+    if (!alreadyViewed) {
+      track('swipe', { slug: contract.slug, contractId })
+      if (user) logView({ contractId, userId: user.id })
+    }
+    const newIndex = contracts.findIndex((c) => c.id === contractId)
+    if (newIndex !== -1) {
+      setContractId(contractId)
+      if (newIndex > maxIndex) setMaxIndex(newIndex)
+    }
+  })
 
   if (user === undefined) {
     return <LoadingIndicator />
@@ -90,7 +115,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   return (
     <Page>
       <div className="absolute flex h-screen justify-center overflow-hidden overscroll-none pb-[58px]">
-        <div className="scrollbar-hide relative w-full max-w-lg grow snap-y snap-mandatory overflow-y-scroll scroll-smooth">
+        <div className="scrollbar-hide relative w-full max-w-lg snap-y snap-mandatory overflow-y-scroll scroll-smooth">
           {cards.map((c) => (
             <Card
               key={c.id}
@@ -110,22 +135,11 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
               </SiteLink>
             </div>
           )}
-
-          <VisibilityObserver
-            className="relative -top-96 h-1"
-            onVisibilityUpdated={(visible) => {
-              if (visible) {
-                setIndex(index + 2)
-              }
-            }}
-          />
         </div>
       </div>
     </Page>
   )
 }
-
-type Direction = 'middle' | 'up' | 'right' | 'down' | 'left'
 
 const betTapAdd = 10
 
@@ -134,7 +148,7 @@ const Card = memo(
     contract: BinaryContract
     amount: number
     setAmount: (amount: number) => void
-    onView: (contract: BinaryContract) => void
+    onView: (contract: BinaryContract, alreadyViewed: boolean) => void
   }) => {
     const { contract, amount, setAmount, onView } = props
     const { question, description, coverImageUrl, id: contractId } = contract
@@ -150,7 +164,6 @@ const Card = memo(
 
     const subMoney = () => {
       if (amount <= betTapAdd) {
-        setDir('up')
       } else {
         setAmount(amount - betTapAdd)
       }
@@ -159,8 +172,6 @@ const Card = memo(
     const image =
       coverImageUrl ??
       `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
-
-    const [dir, setDir] = useState<Direction>('middle')
 
     const onClickBet = (outcome: 'YES' | 'NO') => {
       const promise = placeBet({ amount, outcome, contractId })
@@ -189,7 +200,10 @@ const Card = memo(
     }
 
     return (
-      <Col className={clsx('relative h-full snap-start snap-always')}>
+      <Col
+        className={clsx('relative h-full snap-start snap-always')}
+        id={contract.id}
+      >
         {/* background */}
         <div className="flex h-full flex-col bg-black">
           <div className="relative mb-24 grow">
@@ -216,9 +230,7 @@ const Card = memo(
           <Percent
             contract={contract}
             amount={amount}
-            outcome={
-              dir === 'left' ? 'NO' : dir === 'right' ? 'YES' : undefined
-            }
+            outcome={undefined}
           />
           {/* TODO: use editor excluding widgets */}
           <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
@@ -268,11 +280,12 @@ const Card = memo(
             </span>
           </div>
         </div>
+
         <VisibilityObserver
-          className="relative -top-96 h-1"
+          className="relative"
           onVisibilityUpdated={(visible) => {
-            if (visible && !isViewed) {
-              onView(contract)
+            if (visible) {
+              onView(contract, isViewed)
               setIsViewed(true)
             }
           }}
