@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { MinusIcon, PlusIcon } from '@heroicons/react/solid'
 import { uniqBy } from 'lodash'
 
@@ -12,7 +12,7 @@ import { richTextToString } from 'common/util/parse'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useUser } from 'web/hooks/use-user'
 import { placeBet } from 'web/lib/firebase/api'
-import { logSwipe } from 'web/lib/firebase/views'
+import { logView } from 'web/lib/firebase/views'
 import { contractPath, getTrendingContracts } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { fromNow } from 'web/lib/util/time'
@@ -67,6 +67,12 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   })
   const cards = useMemo(() => contracts.slice(0, index + 1), [contracts, index])
 
+  const onView = (contract: Contract) => {
+    const contractId = contract.id
+    track('swipe', { slug: contract.slug, contractId })
+    if (user) logView({ contractId, userId: user.id })
+  }
+
   if (user === undefined) {
     return <LoadingIndicator />
   }
@@ -91,6 +97,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
               contract={c}
               amount={amount}
               setAmount={setAmount}
+              onView={onView}
             />
           ))}
 
@@ -108,7 +115,6 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
             className="relative -top-96 h-1"
             onVisibilityUpdated={(visible) => {
               if (visible) {
-                console.log('visible', visible, 'index', index + 1)
                 setIndex(index + 2)
               }
             }}
@@ -128,9 +134,15 @@ const Card = memo(
     contract: BinaryContract
     amount: number
     setAmount: (amount: number) => void
+    onView: (contract: BinaryContract) => void
   }) => {
-    const { contract, amount, setAmount } = props
+    const { contract, amount, setAmount, onView } = props
     const { question, description, coverImageUrl, id: contractId } = contract
+
+    const [isViewed, setIsViewed] = usePersistentState(false, {
+      key: contract.id + '-viewed',
+      store: inMemoryStore(),
+    })
 
     const userId = useUser()?.id
 
@@ -167,7 +179,7 @@ const Card = memo(
         { position: 'top-center' }
       )
 
-      userId && logSwipe({ amount, outcome, contractId, userId })
+      userId && logView({ amount, outcome, contractId, userId })
       track('swipe bet', {
         slug: contract.slug,
         contractId,
@@ -175,11 +187,6 @@ const Card = memo(
         outcome,
       })
     }
-
-    useEffect(() => {
-      // track('swipe skip', { slug: contract.slug, contractId })
-      // userId && logSwipe({ outcome: 'SKIP', contractId, userId })
-    })
 
     return (
       <Col className={clsx('relative h-full snap-start snap-always')}>
@@ -261,6 +268,15 @@ const Card = memo(
             </span>
           </div>
         </div>
+        <VisibilityObserver
+          className="relative -top-96 h-1"
+          onVisibilityUpdated={(visible) => {
+            if (visible && !isViewed) {
+              onView(contract)
+              setIsViewed(true)
+            }
+          }}
+        />
       </Col>
     )
   }
