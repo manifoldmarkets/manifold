@@ -43,7 +43,7 @@ export async function getStaticProps() {
   }
 }
 
-export default function Swipe(props: { contracts: BinaryContract[] }) {
+export default function Scroll(props: { contracts: BinaryContract[] }) {
   const [amount, setAmount] = useState(10)
 
   const old = useSwipes()
@@ -88,7 +88,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   const onView = useEvent((contract: Contract, alreadyViewed: boolean) => {
     const contractId = contract.id
     if (!alreadyViewed) {
-      track('swipe', { slug: contract.slug, contractId })
+      track('scroll view', { slug: contract.slug, contractId })
       if (user) logView({ contractId, userId: user.id })
     }
     const newIndex = contracts.findIndex((c) => c.id === contractId)
@@ -191,7 +191,7 @@ const Card = memo(
       )
 
       userId && logView({ amount, outcome, contractId, userId })
-      track('swipe bet', {
+      track('scroll bet', {
         slug: contract.slug,
         contractId,
         amount,
