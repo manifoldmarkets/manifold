@@ -186,7 +186,12 @@ const Card = memo(
         {/* background */}
         <div className="flex h-full flex-col bg-black">
           <div className="relative mb-24 grow">
-            <img src={image} alt="" className="h-full object-cover" />
+            <img
+              src={image}
+              alt=""
+              className="h-full object-cover"
+              style={{ filter: 'brightness(0.60)' }}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
           </div>
         </div>
@@ -195,7 +200,7 @@ const Card = memo(
         <div className="absolute inset-0 flex select-none flex-col gap-4">
           <CornerDetails contract={contract} />
           <SiteLink
-            className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white "
+            className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white drop-shadow-2xl"
             href={contractPath(contract)}
             followsLinkClass
           >
@@ -223,7 +228,7 @@ const Card = memo(
               )}
               onClick={() => onClickBet('YES')}
             >
-              YES
+              Bet YES
             </button>
             <button
               className={clsx(
@@ -232,7 +237,7 @@ const Card = memo(
               )}
               onClick={() => onClickBet('NO')}
             >
-              NO
+              Bet NO
             </button>
           </Row>
 
@@ -266,7 +271,7 @@ const CornerDetails = (props: { contract: Contract }) => {
   const { creatorName, creatorAvatarUrl, closeTime } = contract
 
   return (
-    <div className="m-3 flex gap-2 drop-shadow">
+    <div className="m-3 flex gap-2 self-start drop-shadow">
       <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
       <div className="text-xs">
         <div className="text-white">{creatorName} </div>
