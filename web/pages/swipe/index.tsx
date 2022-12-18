@@ -1,15 +1,7 @@
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-import { memo, useMemo, useState } from 'react'
-import {
-  ArrowDownIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  ArrowUpIcon,
-  MinusIcon,
-  PlusIcon,
-} from '@heroicons/react/solid'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { memo, useEffect, useMemo, useState } from 'react'
+import { MinusIcon, PlusIcon } from '@heroicons/react/solid'
 import { uniqBy } from 'lodash'
 
 import { buildArray } from 'common/util/array'
@@ -18,9 +10,7 @@ import type { BinaryContract, Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import { Avatar } from 'web/components/widgets/avatar'
-import { Content } from 'web/components/widgets/editor'
 import { useUser } from 'web/hooks/use-user'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
 import { logSwipe } from 'web/lib/firebase/views'
 import { contractPath, getTrendingContracts } from 'web/lib/firebase/contracts'
@@ -32,7 +22,6 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { getBinaryProb } from 'common/contract-details'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { NoLabel, YesLabel } from 'web/components/outcome-label'
 import { useSwipes } from 'web/hooks/use-swipes'
 import { useFeed } from 'web/hooks/use-feed'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -161,154 +150,116 @@ const Card = memo(
 
     const [dir, setDir] = useState<Direction>('middle')
 
+    const onClickBet = (outcome: 'YES' | 'NO') => {
+      const promise = placeBet({ amount, outcome, contractId })
+
+      const shortQ = contract.question.slice(0, 20)
+
+      const message = `Bet ${formatMoney(amount)} ${outcome} on "${shortQ}"...`
+
+      toast.promise(
+        promise,
+        {
+          loading: message,
+          success: message,
+          error: (err) => `Error placing bet: ${err.message}`,
+        },
+        { position: 'top-center' }
+      )
+
+      userId && logSwipe({ amount, outcome, contractId, userId })
+      track('swipe bet', {
+        slug: contract.slug,
+        contractId,
+        amount,
+        outcome,
+      })
+    }
+
+    useEffect(() => {
+      // track('swipe skip', { slug: contract.slug, contractId })
+      // userId && logSwipe({ outcome: 'SKIP', contractId, userId })
+    })
+
     return (
-      <>
-        <Col
-          // onClick={async (direction) => {
-          //   if (direction === 'down') {
-          //     setPeek(true)
-          //     return
-          //   }
+      <Col className={clsx('relative h-full snap-start snap-always')}>
+        {/* background */}
+        <div className="flex h-full flex-col bg-black">
+          <div className="relative mb-24 grow">
+            <img src={image} alt="" className="h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
+          </div>
+        </div>
 
-          //   setSwiping(true)
-
-          //   if (direction === 'left' || direction === 'right') {
-          //     const outcome = direction === 'left' ? 'NO' : 'YES'
-
-          //     const promise = placeBet({ amount, outcome, contractId })
-
-          //     const shortQ = contract.question.slice(0, 20)
-
-          //     const message = `Bet ${formatMoney(
-          //       amount
-          //     )} ${outcome} on "${shortQ}"...`
-
-          //     toast.promise(
-          //       promise,
-          //       {
-          //         loading: message,
-          //         success: message,
-          //         error: (err) => `Error placing bet: ${err.message}`,
-          //       },
-          //       { position: 'top-center' }
-          //     )
-
-          //     userId && logSwipe({ amount, outcome, contractId, userId })
-          //     track('swipe bet', {
-          //       slug: contract.slug,
-          //       contractId,
-          //       amount,
-          //       outcome,
-          //     })
-          //   }
-          //   if (direction === 'up') {
-          //     track('swipe skip', { slug: contract.slug, contractId })
-          //     userId && logSwipe({ outcome: 'SKIP', contractId, userId })
-          //   }
-          // }}
-          className={clsx('relative h-full snap-start snap-always')}
-        >
-          {/* background */}
-          <div className="flex h-full flex-col bg-black">
-            <div className="relative mb-24 grow">
-              <img src={image} alt="" className="h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
-            </div>
+        {/* content */}
+        <div className="absolute inset-0 flex select-none flex-col gap-4">
+          <CornerDetails contract={contract} />
+          <SiteLink
+            className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white "
+            href={contractPath(contract)}
+            followsLinkClass
+          >
+            {question}
+          </SiteLink>
+          <Percent
+            contract={contract}
+            amount={amount}
+            outcome={
+              dir === 'left' ? 'NO' : dir === 'right' ? 'YES' : undefined
+            }
+          />
+          {/* TODO: use editor excluding widgets */}
+          <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
+            {typeof description === 'string'
+              ? description
+              : richTextToString(description)}
           </div>
 
-          {/* content */}
-          <div className="absolute inset-0 flex select-none flex-col gap-4">
-            <CornerDetails contract={contract} />
-            <SiteLink
-              className="line-clamp-5 mx-8 mt-auto mb-4 text-2xl text-white "
-              href={contractPath(contract)}
-              followsLinkClass
+          <Row className="gap-4 px-4">
+            <button
+              className={clsx(
+                'hover:bg-teal-600-focus hover:border-teal-600-focus inline-flex flex-1 items-center justify-center rounded-lg border-2 border-teal-600 p-2 hover:text-white',
+                'bg-transparent text-lg text-teal-500'
+              )}
+              onClick={() => onClickBet('YES')}
             >
-              {question}
-            </SiteLink>
-            <Percent
-              contract={contract}
-              amount={amount}
-              outcome={
-                dir === 'left' ? 'NO' : dir === 'right' ? 'YES' : undefined
-              }
-            />
-            {/* TODO: use editor excluding widgets */}
-            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 text-gray-50">
-              {typeof description === 'string'
-                ? description
-                : richTextToString(description)}
-            </div>
+              YES
+            </button>
+            <button
+              className={clsx(
+                'hover:bg-teal-600-focus hover:border-teal-600-focus border-scarlet-300 inline-flex flex-1 items-center justify-center rounded-lg border-2 p-2 hover:text-white',
+                'text-scarlet-300 bg-transparent text-lg'
+              )}
+              onClick={() => onClickBet('NO')}
+            >
+              NO
+            </button>
+          </Row>
 
-            <SwipeStatus direction={dir} />
-
-            <div className="mb-4 flex flex-col items-center gap-2 self-center">
-              <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
-                <button
-                  onClick={subMoney}
-                  onTouchStart={subMoney}
-                  className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-                >
-                  <MinusIcon className="h-4" />
-                </button>
-                <span className="mx-1 py-4">{formatMoney(amount)}</span>
-                <button
-                  onClick={addMoney}
-                  onTouchStart={addMoney}
-                  className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-                >
-                  <PlusIcon className="h-4" />
-                </button>
-              </span>
-            </div>
+          <div className="mb-4 flex flex-col items-center gap-2 self-center">
+            <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
+              <button
+                onClick={subMoney}
+                onTouchStart={subMoney}
+                className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+              >
+                <MinusIcon className="h-4" />
+              </button>
+              <span className="mx-1 py-4">{formatMoney(amount)}</span>
+              <button
+                onClick={addMoney}
+                onTouchStart={addMoney}
+                className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+              >
+                <PlusIcon className="h-4" />
+              </button>
+            </span>
           </div>
-        </Col>
-      </>
+        </div>
+      </Col>
     )
   }
 )
-
-const SwipeStatus = (props: { direction: Direction }) => {
-  const { direction } = props
-
-  if (direction === 'up') {
-    return (
-      <div className="flex justify-center gap-1 text-indigo-100">
-        Swipe <ArrowUpIcon className="h-5" /> to skip
-      </div>
-    )
-  }
-  if (direction === 'down') {
-    return (
-      <div className="flex justify-center gap-1 text-indigo-100">
-        Swipe <ArrowDownIcon className="h-5" /> for more info
-      </div>
-    )
-  }
-  if (direction === 'left') {
-    return (
-      <div className="text-scarlet-100 mr-8 flex justify-end gap-1">
-        <ArrowLeftIcon className="h-5" /> Betting NO
-      </div>
-    )
-  }
-  if (direction === 'right') {
-    return (
-      <div className="ml-8 flex justify-start gap-1 text-teal-100">
-        Betting YES <ArrowRightIcon className="h-5" />
-      </div>
-    )
-  }
-  return (
-    <Row className="items-center justify-center text-yellow-100">
-      <ArrowLeftIcon className="text-scarlet-600 h-8" /> <NoLabel />
-      <span className="mx-4 whitespace-nowrap text-yellow-100">
-        Swipe to bet
-      </span>
-      <YesLabel /> <ArrowRightIcon className="h-8 text-teal-600" />
-    </Row>
-  )
-}
 
 const CornerDetails = (props: { contract: Contract }) => {
   const { contract } = props
@@ -364,27 +315,5 @@ function Percent(props: {
       </span>
       <span className="pt-2 text-2xl">%</span>
     </div>
-  )
-}
-
-const Peek = (props: { contract: BinaryContract; onClose: () => void }) => {
-  const { contract, onClose } = props
-  const { question, description } = contract
-  return (
-    <section className="absolute inset-0 z-50 flex flex-col bg-black/40">
-      {/* spacer to close */}
-      <button className="h-40 shrink-0" onClick={onClose} />
-      <div className="h-6 shrink-0 rounded-t-3xl bg-white" />
-      <div className="grow overflow-auto bg-white px-4">
-        <h1 className="mb-8 text-lg font-semibold">{question}</h1>
-        <Content size="sm" content={description} />
-        <SiteLink
-          href={contractPath(contract)}
-          className="flex justify-center gap-2 text-indigo-700"
-        >
-          More details <ExternalLinkIcon className="my-px h-5 w-5" />
-        </SiteLink>
-      </div>
-    </section>
   )
 }
