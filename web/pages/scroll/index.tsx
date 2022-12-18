@@ -228,7 +228,7 @@ const Card = memo(
         <div className="absolute inset-0 flex select-none flex-col gap-4">
           <CornerDetails contract={contract} />
           <SiteLink
-            className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white drop-shadow-2xl"
+            className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white"
             href={contractPath(contract)}
             followsLinkClass
           >
