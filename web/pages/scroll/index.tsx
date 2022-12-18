@@ -32,6 +32,7 @@ import {
 import { Col } from 'web/components/layout/col'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useEvent } from 'web/hooks/use-event'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(200)).filter(
@@ -98,6 +99,9 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
     }
   })
 
+  // Resize height manually to accommodate mobile web.
+  const { height } = useWindowSize()
+
   if (user === undefined) {
     return <LoadingIndicator />
   }
@@ -114,7 +118,10 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
 
   return (
     <Page>
-      <div className="absolute flex h-screen justify-center overflow-hidden overscroll-none pb-[58px]">
+      <div
+        className="absolute flex justify-center overflow-hidden overscroll-none pb-[58px]"
+        style={{ height }}
+      >
         <div className="scrollbar-hide relative w-full max-w-lg snap-y snap-mandatory overflow-y-scroll scroll-smooth">
           {cards.map((c) => (
             <Card
