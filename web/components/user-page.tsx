@@ -36,7 +36,7 @@ import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
-import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG, PROJECT_ID } from 'common/envs/constants'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { DailyStats } from 'web/components/daily-stats'
@@ -49,12 +49,14 @@ import { UserLikedContractsButton } from 'web/components/profile/user-liked-cont
 import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
 import { TextButton } from 'web/components/buttons/text-button'
 import { Post } from 'common/post'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export function UserPage(props: { user: User; posts: Post[] }) {
   const user = useUserById(props.user.id) ?? props.user
 
   const router = useRouter()
   const currentUser = useUser()
+  const isAdmin = useAdmin()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
   const userPosts = usePostsByUser(user.id) ?? props.posts
@@ -123,6 +125,22 @@ export function UserPage(props: { user: User; posts: Post[] }) {
                 </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
+                  {isAdmin && (
+                    <span className={' text-sm'}>
+                      <a
+                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        href={firestoreUserConsolePath(user.id)}
+                      >
+                        user link
+                      </a>
+                      <a
+                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        href={firestorePrivateConsolePath(user.id)}
+                      >
+                        private link
+                      </a>
+                    </span>
+                  )}
                 </Row>
               </Col>
               <Row
@@ -421,4 +439,11 @@ function FollowsDialog(props: {
       </Col>
     </Modal>
   )
+}
+
+function firestoreUserConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fusers~2F${userId}`
+}
+function firestorePrivateConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fprivate-users~2F${userId}`
 }

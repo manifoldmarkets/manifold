@@ -1,11 +1,7 @@
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ExclamationCircleIcon,
-} from '@heroicons/react/solid'
+import { ExclamationCircleIcon } from '@heroicons/react/solid'
 
 import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
@@ -20,6 +16,7 @@ import { STARTING_BALANCE } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { getNativePlatform } from 'web/lib/native/is-native'
+import { Button } from 'web/components/buttons/button'
 
 export default function Welcome() {
   const user = useUser()
@@ -73,21 +70,24 @@ export default function Welcome() {
         {availablePages[page]}
         <Col>
           <Row className="place-content-between">
-            <ChevronLeftIcon
+            <Button
+              color={'gray'}
+              onClick={decreasePage}
               className={clsx(
-                'h-10 w-10 text-gray-400 hover:text-gray-500',
+                'text-gray-400 hover:text-gray-500',
                 page === 0 ? 'disabled invisible' : ''
               )}
-              onClick={decreasePage}
-            />
-            <PageIndicator page={page} totalpages={TOTAL_PAGES} />
-            <ChevronRightIcon
-              className={clsx(
-                'h-10 w-10 text-indigo-500 hover:text-indigo-600',
-                page === TOTAL_PAGES - 1 ? 'disabled invisible' : ''
-              )}
-              onClick={increasePage}
-            />
+            >
+              Previous
+            </Button>
+            <Button
+              color={'blue'}
+              onClick={
+                page === TOTAL_PAGES - 1 ? () => setOpen(false) : increasePage
+              }
+            >
+              Next
+            </Button>
           </Row>
           <u
             className="self-center text-xs text-gray-500"
@@ -112,23 +112,6 @@ const useIsTwitch = (user: User | null | undefined) => {
   }, [isTwitch, user?.id, user?.shouldShowWelcome])
 
   return isTwitch
-}
-
-function PageIndicator(props: { page: number; totalpages: number }) {
-  const { page, totalpages } = props
-  return (
-    <Row>
-      {[...Array(totalpages)].map((e, i) => (
-        <div
-          key={i}
-          className={clsx(
-            'mx-1.5 my-auto h-1.5 w-1.5 rounded-full',
-            i === page ? 'bg-indigo-500' : 'bg-gray-300'
-          )}
-        />
-      ))}
-    </Row>
-  )
 }
 
 function Page0() {
