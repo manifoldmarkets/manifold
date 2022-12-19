@@ -112,6 +112,7 @@ export const CHECK_USERNAMES = [
   'Conflux',
   'GavrielK',
   'NcyRocks',
+  'MichaelWheatley',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
