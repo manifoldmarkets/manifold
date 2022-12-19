@@ -38,10 +38,10 @@ export function UserContractsList(props: { creator: User }) {
   return (
     <Col className={'w-full'}>
       <Row className={'gap-8 pb-4'}>
-        <MarketStats title={'Creator rank'} total={`#${creatorRank}` ?? ''} />
+        <MarketStats title={'Creator rank'} total={`#${creatorRank ?? ''}`} />
         <MarketStats
           title={'Total markets'}
-          total={marketsCreated?.toString() ?? ''}
+          total={(marketsCreated ?? '').toString()}
         />
         <MarketStats
           title={'Unique traders'}
