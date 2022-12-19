@@ -15,7 +15,6 @@ import { User } from 'web/lib/firebase/users'
 import { useUser, useUserById, usePrefetchUsers } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './layout/page'
 import { linkClass, SiteLink } from './widgets/site-link'
@@ -50,6 +49,7 @@ import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
 import { TextButton } from 'web/components/buttons/text-button'
 import { Post } from 'common/post'
 import { useAdmin } from 'web/hooks/use-admin'
+import { UserContractsList } from 'web/components/profile/user-contracts-list'
 
 export function UserPage(props: { user: User; posts: Post[] }) {
   const user = useUserById(props.user.id) ?? props.user
@@ -126,7 +126,7 @@ export function UserPage(props: { user: User; posts: Post[] }) {
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
                   {isAdmin && (
-                    <span className={' text-sm'}>
+                    <span className={'text-xs sm:text-sm'}>
                       <a
                         className="p-2 pt-0 text-sm text-gray-500 hover:underline"
                         href={firestoreUserConsolePath(user.id)}
@@ -261,7 +261,7 @@ export function UserPage(props: { user: User; posts: Post[] }) {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <CreatorContractsList creator={user} />
+                    <UserContractsList creator={user} />
                   </>
                 ),
               },
