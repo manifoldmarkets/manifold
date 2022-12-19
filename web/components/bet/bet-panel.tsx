@@ -388,7 +388,7 @@ export function BuyPanel(props: {
           </Col>
           <Col className="w-1/2 text-sm">
             <div className="text-sm text-gray-500">
-              {isPseudoNumeric ? 'Estimated value' : 'New Probability'}
+              {isPseudoNumeric ? 'Estimated value' : 'New YES Probability'}
             </div>
             {probStayedSame ? (
               <div className="text-lg">{format(initialProb)}</div>
