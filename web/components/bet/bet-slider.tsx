@@ -48,10 +48,10 @@ export const BetSlider = (props: {
             'my-auto mx-2 !h-1  xl:mx-auto xl:mt-3 xl:ml-4  [&>.rc-slider-rail]:bg-gray-200',
             '[&>.rc-slider-handle]:z-10',
             binaryOutcome === 'YES'
-              ? '[&>.rc-slider-track]:bg-teal-600 [&>.rc-slider-handle]:bg-teal-500'
+              ? '[&>.rc-slider-handle]:bg-teal-500 [&>.rc-slider-track]:bg-teal-600'
               : binaryOutcome === 'NO'
               ? '[&>.rc-slider-track]:bg-scarlet-600 [&>.rc-slider-handle]:bg-scarlet-300'
-              : '[&>.rc-slider-track]:bg-indigo-700 [&>.rc-slider-handle]:bg-indigo-500'
+              : '[&>.rc-slider-handle]:bg-indigo-500 [&>.rc-slider-track]:bg-indigo-700'
           )}
           railStyle={{ height: 6, top: 4, left: 0 }}
           trackStyle={{ height: 6, top: 4 }}
