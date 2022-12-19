@@ -64,7 +64,7 @@ const createGroup = async (
       )
   )
   for (const market of contracts) {
-    if (market.groupLinks?.map((l) => l.groupId).includes(group.id)) continue // already in that group
+    if (market.groupLinks?.some((l) => l.groupId === group.id)) continue // already in that group
 
     const newGroupLinks = [
       ...(market.groupLinks ?? []),

@@ -406,3 +406,10 @@ export const getUsersBlockFacetFilters = (
   )
   return facetFilters
 }
+
+export async function getTotalContractCreated(userId: string) {
+  const resp = await getCountFromServer(
+    query(collection(db, 'contracts'), where('creatorId', '==', userId))
+  )
+  return resp.data().count
+}

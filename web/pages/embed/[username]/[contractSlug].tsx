@@ -2,7 +2,6 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect } from 'react'
-import { first } from 'lodash'
 import {
   BinaryResolutionOrChance,
   ContractCard,
@@ -11,7 +10,12 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
 import { CloseOrResolveTime } from 'web/components/contract/contract-details'
-import { ContractChart } from 'web/components/charts/contract'
+import {
+  BinaryContractChart,
+  ChoiceContractChart,
+  NumericContractChart,
+  PseudoNumericContractChart,
+} from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
@@ -21,15 +25,41 @@ import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 import { useContract } from 'web/hooks/use-contracts'
-import { useBets } from 'web/hooks/use-bets'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
-import { BetPoint } from 'web/pages/[username]/[contractSlug]'
 import { OrderByDirection } from 'firebase/firestore'
+import { useUser } from 'web/hooks/use-user'
+import { HistoryPoint } from 'web/components/charts/generic-charts'
+
+type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
   filterChallenges: true,
+}
+
+async function getHistoryData(contract: Contract) {
+  if (contract.outcomeType === 'NUMERIC') {
+    return null
+  }
+  const bets = await listBets({
+    contractId: contract.id,
+    ...CONTRACT_BET_LOADING_OPTS,
+    limit: 10000,
+    order: 'desc' as OrderByDirection,
+  })
+  switch (contract.outcomeType) {
+    case 'BINARY':
+    case 'PSEUDO_NUMERIC':
+      // We could include avatars in the embed, but not sure it's worth it
+      const points = bets.map((bet) => ({
+        x: bet.createdTime,
+        y: bet.probAfter,
+      }))
+      return { points } as HistoryData
+    default: // choice contracts
+      return { bets } as HistoryData
+  }
 }
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -38,33 +68,12 @@ export async function getStaticPropz(props: {
 }) {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
-  const contractId = contract?.id
-  const useBetPoints =
-    contract?.outcomeType === 'BINARY' ||
-    contract?.outcomeType === 'PSEUDO_NUMERIC'
-  // Prioritize newer bets via descending order
-  const bets = contractId
-    ? await listBets({
-        contractId,
-        ...CONTRACT_BET_LOADING_OPTS,
-        limit: 10000,
-        order: 'desc' as OrderByDirection,
-      })
-    : []
-  // We could include avatars in the embed, but not sure it's worth it
-  const betPoints = useBetPoints
-    ? bets.map((bet) => ({
-        x: bet.createdTime,
-        y: bet.probAfter,
-      }))
-    : []
-
+  if (contract == null) {
+    return { notFound: true, revalidate: 60 }
+  }
+  const historyData = await getHistoryData(contract)
   return {
-    props: {
-      contract,
-      bets: useBetPoints ? bets.slice(0, 100) : bets,
-      betPoints,
-    },
+    props: { contract, historyData },
     revalidate: 60, // regenerate after a minute
   }
 }
@@ -75,72 +84,30 @@ export async function getStaticPaths() {
 
 export default function ContractEmbedPage(props: {
   contract: Contract | null
-  bets: Bet[]
-  betPoints: BetPoint[]
+  historyData: HistoryData | null
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
-    bets: [],
-    betPoints: [],
+    historyData: null,
   }
-  const router = useRouter()
 
   const contract = useContract(props.contract?.id) ?? props.contract
 
-  // Static props load bets in descending order by time
-  const lastBetTime = first(props.bets)?.createdTime
-  const newBets = useBets({
-    ...CONTRACT_BET_LOADING_OPTS,
-    contractId: contract?.id ?? '',
-    afterTime: lastBetTime,
-  })
-  const bets = props.bets.concat(newBets ?? [])
-  const betPoints = props.betPoints.concat(
-    newBets?.map(
-      (bet) =>
-        ({
-          x: bet.createdTime,
-          y: bet.probAfter,
-          bet: { userAvatarUrl: bet.userAvatarUrl },
-        } as BetPoint)
-    ) ?? []
-  )
+  useEffect(() => {
+    if (contract?.id)
+      track('view market embed', {
+        slug: contract.slug,
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        hostname: window.location.hostname,
+      })
+  }, [contract?.creatorId, contract?.id, contract?.slug])
+
+  const user = useUser()
+
   if (!contract) {
     return <Custom404 />
   }
-
-  // Check ?graphColor=hex&textColor=hex from router
-  const graphColor = router.query.graphColor as string
-  const textColor = router.query.textColor as string
-  const embedProps = {
-    contract,
-    bets,
-    graphColor,
-    textColor,
-    betPoints,
-  }
-
-  return <ContractEmbed {...embedProps} />
-}
-
-interface EmbedProps {
-  contract: Contract
-  bets: Bet[]
-  betPoints: BetPoint[]
-  graphColor?: string
-  textColor?: string
-}
-
-export function ContractEmbed(props: EmbedProps) {
-  const { contract } = props
-  useEffect(() => {
-    track('view market embed', {
-      slug: contract.slug,
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-      hostname: window.location.hostname,
-    })
-  }, [contract.creatorId, contract.id, contract.slug])
 
   // return (height < 250px) ? Card : SmolView
   return (
@@ -151,23 +118,67 @@ export function ContractEmbed(props: EmbedProps) {
           className="h-screen"
           noLinkAvatar
           newTab
+          hideQuickBet={!user}
         />
       </div>
       <div className="hidden [@media(min-height:250px)]:contents">
-        <ContractSmolView {...props} />
+        <ContractSmolView contract={contract} data={props.historyData} />
       </div>
     </>
   )
 }
 
-function ContractSmolView({
-  contract,
-  bets,
-  graphColor,
-  textColor,
-  betPoints,
-}: EmbedProps) {
+const ContractChart = (props: {
+  contract: Contract
+  data: HistoryData | null
+  width: number
+  height: number
+  color?: string
+}) => {
+  const { contract, data, ...rest } = props
+  switch (contract.outcomeType) {
+    case 'BINARY':
+      return (
+        <BinaryContractChart
+          {...rest}
+          contract={contract}
+          betPoints={data?.points ?? []}
+        />
+      )
+    case 'PSEUDO_NUMERIC':
+      return (
+        <PseudoNumericContractChart
+          {...rest}
+          contract={contract}
+          betPoints={data?.points ?? []}
+        />
+      )
+    case 'FREE_RESPONSE':
+    case 'MULTIPLE_CHOICE':
+      return (
+        <ChoiceContractChart
+          {...rest}
+          contract={contract}
+          bets={data?.bets ?? []}
+        />
+      )
+    case 'NUMERIC':
+      return <NumericContractChart {...rest} contract={contract} />
+    default:
+      throw new Error('Contract outcome type not supported for chart')
+  }
+}
+
+function ContractSmolView(props: {
+  contract: Contract
+  data: HistoryData | null
+}) {
+  const { contract, data } = props
   const { question, outcomeType } = contract
+
+  const router = useRouter()
+  const graphColor = router.query.graphColor as string
+  const textColor = router.query.textColor as string
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -210,11 +221,10 @@ function ContractSmolView({
         {graphWidth != null && graphHeight != null && (
           <ContractChart
             contract={contract}
-            bets={bets}
+            data={data}
             width={graphWidth}
             height={graphHeight}
             color={graphColor}
-            betPoints={betPoints}
           />
         )}
       </div>
@@ -223,7 +233,7 @@ function ContractSmolView({
 }
 
 const Details = (props: { contract: Contract }) => {
-  const { creatorAvatarUrl, creatorUsername, uniqueBettorCount } =
+  const { creatorAvatarUrl, creatorUsername, creatorName, uniqueBettorCount } =
     props.contract
 
   return (
@@ -235,7 +245,7 @@ const Details = (props: { contract: Contract }) => {
           username={creatorUsername}
           noLink
         />
-        {creatorUsername}
+        {creatorName}
       </span>
       <CloseOrResolveTime contract={props.contract} isCreator disabled />
       <span>{uniqueBettorCount} traders</span>

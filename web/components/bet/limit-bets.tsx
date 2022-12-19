@@ -11,7 +11,6 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
@@ -43,7 +42,7 @@ export function LimitBets(props: {
 
       {yourBets.length > 0 && (
         <Col
-          className={'mt-4 gap-2 overflow-hidden rounded bg-white px-4 py-3'}
+          className={'mt-4 gap-2 overflow-hidden rounded bg-white py-3 sm:px-4'}
         >
           <Row className="mt-2 mb-4 items-center justify-between">
             <Subtitle className="!mt-0 !mb-0" text="Your orders" />
@@ -73,7 +72,15 @@ export function LimitOrderTable(props: {
 }) {
   const { limitBets, contract, isYou } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-
+  const [isCancelling, setIsCancelling] = useState(false)
+  const onCancel = () => {
+    setIsCancelling(true)
+    Promise.all(limitBets.map((bet) => cancelBet({ betId: bet.id }))).then(
+      () => {
+        setIsCancelling(false)
+      }
+    )
+  }
   return (
     <Table className="rounded">
       <thead>
@@ -82,7 +89,18 @@ export function LimitOrderTable(props: {
           <th>Outcome</th>
           <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
           <th>Amount</th>
-          {isYou && <th></th>}
+          {isYou && (
+            <th>
+              <Button
+                loading={isCancelling}
+                size={'2xs'}
+                color={'gray-outline'}
+                onClick={onCancel}
+              >
+                Cancel all
+              </Button>
+            </th>
+          )}
         </tr>
       </thead>
       <tbody>
@@ -104,17 +122,13 @@ function LimitBet(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [isCancelling, setIsCancelling] = useState(false)
-  const [isCancelled, setIsCancelled] = useState(false)
 
   const onCancel = () => {
     setIsCancelling(true)
     cancelBet({ betId: bet.id }).then(() => {
-      setIsCancelled(false)
-      setIsCancelled(true)
+      setIsCancelling(false)
     })
   }
-
-  if (isCancelled) return <></>
 
   return (
     <tr>
@@ -144,13 +158,14 @@ function LimitBet(props: {
       <td>{formatMoney(orderAmount - amount)}</td>
       {isYou && (
         <td>
-          {isCancelling ? (
-            <LoadingIndicator />
-          ) : (
-            <Button size="2xs" color="gray-outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
+          <Button
+            loading={isCancelling}
+            size="2xs"
+            color="gray-outline"
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
         </td>
       )}
     </tr>

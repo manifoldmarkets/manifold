@@ -86,8 +86,13 @@ export function OgMarket(props: OgCardProps) {
         {topAnswer ? AnswerDiv(props) : <div className={'hidden'} />}
       </div>
       {/* <!-- Metadata --> */}
-      <div className="absolute bottom-12 left-24 flex">
-        <div className="flex max-w-[80vw] bg-white text-3xl text-gray-500">
+      <div
+        className={clsx(
+          'absolute bottom-12 left-24 flex',
+          topAnswer ? 'bottom-8' : 'bottom-12'
+        )}
+      >
+        <div className="flex max-h-10 max-w-[80vw] overflow-hidden bg-white text-3xl text-gray-500">
           {metadata}
         </div>
       </div>
@@ -108,7 +113,7 @@ function AnswerDiv(props: OgCardProps) {
   const { probability, topAnswer, resolution } = props
   return (
     <div className="mt-6 flex w-full flex-row items-center">
-      <div className="flex max-h-[3.8rem] w-full justify-center overflow-hidden pr-4 text-6xl">
+      <div className="flex max-h-[3.8rem] w-full justify-start overflow-hidden pr-4 text-6xl">
         {topAnswer}
       </div>
       {resolution ? (
@@ -142,7 +147,7 @@ function ResolutionDiv(props: OgCardProps) {
   const text = {
     YES: 'YES',
     NO: 'NO',
-    MKT: probability,
+    MKT: probability ?? 'MANY',
     CANCEL: 'N/A',
   }[resolution]
   const color = {
@@ -153,9 +158,9 @@ function ResolutionDiv(props: OgCardProps) {
   }[resolution]
 
   return (
-    <div className={`flex flex-col ${color} text-center`}>
-      <div className="flex text-8xl">{text}</div>
-      <div className="flex text-4xl">
+    <div className={`flex flex-col ${color}`}>
+      <div className="flex text-center text-8xl">{text}</div>
+      <div className="flex w-full justify-center text-4xl">
         {resolution === 'CANCEL' ? '' : 'resolved'}
       </div>
     </div>

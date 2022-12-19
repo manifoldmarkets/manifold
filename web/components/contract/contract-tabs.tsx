@@ -1,10 +1,12 @@
+import clsx from 'clsx'
 import { memo, useMemo, useState } from 'react'
+import { groupBy, sortBy, sum } from 'lodash'
+
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FreeResponseComments } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
-import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
 import { AnyContractType, Contract } from 'common/contract'
 import { ContractBetsTable } from '../bet/bets-list'
@@ -20,7 +22,6 @@ import {
 } from 'common/antes'
 import { buildArray } from 'common/util/array'
 import { ContractComment } from 'common/comment'
-
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -36,16 +37,18 @@ import { track } from 'web/lib/service/analytics'
 import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
-import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetric } from 'common/contract-metric'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
+import { formatWithCommas, shortFormatNumber } from 'common/util/format'
+import { useBets } from 'web/hooks/use-bets'
+import { NoLabel, YesLabel } from '../outcome-label'
+import { CertTrades, CertInfo } from './cert-overview'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
-  userBets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
   answerResponse?: Answer | undefined
@@ -59,7 +62,6 @@ export function ContractTabs(props: {
   const {
     contract,
     bets,
-    userBets,
     answerResponse,
     onCancelAnswerResponse,
     blockedUserIds,
@@ -79,22 +81,39 @@ export function ContractTabs(props: {
   )
 
   const commentTitle =
-    comments.length === 0 ? 'Comments' : `${comments.length} Comments`
+    comments.length === 0
+      ? 'Comments'
+      : `${shortFormatNumber(comments.length)} Comments`
 
-  const betsTitle = totalBets === 0 ? 'Trades' : `${totalBets} Trades`
+  const user = useUser()
+  const userBets =
+    useBets({
+      contractId: contract.id,
+      userId: user?.id ?? '_',
+      filterAntes: true,
+    }) ?? []
+
+  const betsTitle =
+    totalBets === 0 ? 'Trades' : `${shortFormatNumber(totalBets)} Trades`
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
   )
+
+  const isMobile = useIsMobile()
+
   const yourBetsTitle =
-    visibleUserBets.length === 0 ? 'You' : `${visibleUserBets.length} You`
+    (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
+    (isMobile ? 'You' : 'Your Trades')
 
   const outcomes = ['YES', 'NO']
   const positions =
     useContractMetrics(contract.id, 100, outcomes) ??
     props.userPositionsByOutcome
   const positionsTitle =
-    totalPositions === 0 ? 'Users' : totalPositions + ' Users'
+    totalPositions === 0
+      ? 'Users'
+      : `${shortFormatNumber(totalPositions)} Users`
 
   return (
     <ControlledTabs
@@ -117,6 +136,13 @@ export function ContractTabs(props: {
             />
           ),
         },
+
+        totalPositions > 0 &&
+          contract.outcomeType === 'BINARY' && {
+            title: positionsTitle,
+            content: <BinaryUserPositionsTabContent positions={positions} />,
+          },
+
         totalBets > 0 && {
           title: betsTitle,
           content: (
@@ -126,17 +152,17 @@ export function ContractTabs(props: {
           ),
         },
 
-        totalPositions > 0 &&
-          contract.outcomeType === 'BINARY' && {
-            title: positionsTitle,
-            content: <BinaryUserPositionsTabContent positions={positions} />,
-          },
         userBets.length > 0 && {
           title: yourBetsTitle,
           content: (
             <ContractBetsTable contract={contract} bets={userBets} isYourBets />
           ),
-        }
+        },
+
+        contract.outcomeType === 'CERT' && [
+          { title: 'Trades', content: <CertTrades contract={contract} /> },
+          { title: 'Positions', content: <CertInfo contract={contract} /> },
+        ]
       )}
     />
   )
@@ -211,7 +237,7 @@ const BinaryUserPositionsTabContent = memo(
               'shrink-0'
             )}
           >
-            {Math.round(shares)}
+            {formatWithCommas(Math.floor(shares))}
           </span>
         </Row>
       )
@@ -222,7 +248,9 @@ const BinaryUserPositionsTabContent = memo(
         <Row className={'gap-8'}>
           <Col className={'w-full max-w-sm gap-2'}>
             <Row className={'justify-end px-2 text-gray-500'}>
-              <span>YES shares</span>
+              <span>
+                <YesLabel /> shares
+              </span>
             </Row>
             {visibleYesPositions.map((position) => {
               return (
@@ -236,7 +264,9 @@ const BinaryUserPositionsTabContent = memo(
           </Col>
           <Col className={'w-full max-w-sm gap-2'}>
             <Row className={'justify-end px-2 text-gray-500'}>
-              <span>NO shares</span>
+              <span>
+                <NoLabel /> shares
+              </span>
             </Row>
             {visibleNoPositions.map((position) => {
               return (

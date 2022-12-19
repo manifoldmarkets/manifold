@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import {
   Alert,
-  Modal,
   StyleSheet,
-  Text,
   View,
   Platform,
-  TouchableWithoutFeedback,
   ActivityIndicator,
+  Image,
+  TouchableOpacity,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native'
 import {
   AppleAuthenticationButton,
@@ -18,7 +19,6 @@ import {
   signInAsync,
 } from 'expo-apple-authentication'
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto'
-import { FontAwesome5 } from '@expo/vector-icons'
 import {
   GoogleAuthProvider,
   OAuthProvider,
@@ -26,37 +26,25 @@ import {
   updateProfile,
 } from 'firebase/auth'
 import { signInWithCredential } from '@firebase/auth'
-import { auth } from '../App'
+import { auth } from '../init'
 import WebView from 'react-native-webview'
 import * as Google from 'expo-auth-session/providers/google'
 import { ENV_CONFIG } from 'common/envs/constants'
 import * as Sentry from 'sentry-expo'
+import { Text } from './Text'
 
-export const AuthModal = (props: {
-  showModal: boolean
-  setShowModal: (shouldShowAuth: boolean) => void
+export const AuthPage = (props: {
   webview: React.RefObject<WebView | undefined>
+  height: number
+  width: number
 }) => {
-  const { showModal, setShowModal, webview } = props
+  const { webview, height, width } = props
   const [loading, setLoading] = useState(false)
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     // @ts-ignore
     ENV_CONFIG.expoConfig
   )
   const appleAuthAvailable = useAppleAuthentication()
-
-  useEffect(() => {
-    if (showModal) {
-      if (Platform.OS === 'ios') {
-        setShowModal(true)
-      } else {
-        promptAsync()
-      }
-    } else {
-      setShowModal(false)
-      setLoading(false)
-    }
-  }, [showModal])
 
   // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
@@ -79,7 +67,6 @@ export const AuthModal = (props: {
       })
       console.log('[google sign in] Error : ', err)
     }
-    setShowModal(false)
     setLoading(false)
   }, [response])
 
@@ -105,7 +92,6 @@ export const AuthModal = (props: {
       console.error(error)
     }
     setLoading(false)
-    setShowModal(false)
   }
 
   const loginWithApple = async () => {
@@ -156,29 +142,48 @@ export const AuthModal = (props: {
     }
   }
 
+  const computedStyles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      backgroundColor: '#4337C9',
+      height,
+      width,
+      position: 'absolute',
+      zIndex: 1000,
+    },
+  })
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={Platform.OS !== 'android' && showModal}
-      onRequestClose={() => {}}
-    >
-      <View style={styles.modalContent}>
+    <View style={computedStyles.container}>
+      <View style={styles.centerFlex}>
+        <Image
+          source={require('../assets/logo.png')}
+          style={{ height: 200, resizeMode: 'contain' }}
+        />
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
-          <View style={styles.modalView}>
-            <FontAwesome5.Button
+          <View style={styles.authContent}>
+            <TouchableOpacity
               style={styles.googleButton}
-              name="google"
               onPress={async () => {
                 setLoading(true)
                 await promptAsync()
                 setLoading(false)
               }}
             >
-              <Text style={styles.googleText}>Log In With Google</Text>
-            </FontAwesome5.Button>
+              <View style={styles.googleButtonContent}>
+                <Image
+                  source={require('../assets/square-google.png')}
+                  style={{
+                    height: 28,
+                    width: 28,
+                    resizeMode: 'contain',
+                  }}
+                />
+                <Text style={styles.googleText}>Sign in with Google</Text>
+              </View>
+            </TouchableOpacity>
 
             {appleAuthAvailable && (
               <AppleAuthenticationButton
@@ -193,17 +198,11 @@ export const AuthModal = (props: {
                 onPress={triggerLoginWithApple}
               />
             )}
+            <Eula />
           </View>
         )}
-        <TouchableWithoutFeedback
-          onPress={() => {
-            setShowModal(false)
-          }}
-        >
-          <View style={styles.modalOverlay} />
-        </TouchableWithoutFeedback>
       </View>
-    </Modal>
+    </View>
   )
 }
 
@@ -231,32 +230,38 @@ function useAppleAuthentication() {
 
 const styles = StyleSheet.create({
   googleButton: {
-    backgroundColor: '#4285F4',
+    // backgroundColor: '#4285F4',
+    backgroundColor: 'white',
+    borderRadius: 5,
     width: '100%',
     height: 48,
-    paddingHorizontal: 26,
+  },
+  googleButtonContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   googleText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#4285F4',
+    marginLeft: -2,
+    fontSize: 17.5,
     fontWeight: 'bold',
   },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
+  centerFlex: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  authContent: {
+    width: 300,
+    padding: 35,
     alignItems: 'center',
   },
   modalView: {
     margin: 20,
     width: 300,
+    height: 500,
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 35,
@@ -270,25 +275,93 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    flexDirection: 'column',
   },
-  button: {
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2,
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  buttonOpen: {
-    backgroundColor: '#F194FF',
+  eulaContainer: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
   },
-  buttonClose: {
-    backgroundColor: '#2196F3',
+  text: { fontSize: 11 },
+  eulaText: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
-  textStyle: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: 'center',
+  clickable: {
+    textDecorationLine: 'underline',
   },
 })
+
+function Eula() {
+  const [expanded, setExpanded] = useState<'privacy' | 'tos' | null>()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <View style={styles.eulaContainer}>
+        <Text style={styles.text}>
+          By signing up for Manifold, you agree to
+        </Text>
+        <TouchableOpacity
+          style={{ marginRight: 5 }}
+          onPress={() => {
+            setOpen(true)
+            setExpanded('privacy')
+          }}
+        >
+          <Text style={[styles.clickable, styles.text]}>Privacy Policy,</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            setOpen(true)
+            setExpanded('tos')
+          }}
+        >
+          <Text style={[styles.clickable, styles.text]}>Terms of Service</Text>
+        </TouchableOpacity>
+      </View>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={open}
+        onRequestClose={() => setOpen(false)}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.centerFlex}>
+          <View style={styles.modalView}>
+            {expanded === 'tos' && (
+              <WebView
+                style={{ height: 500, width: 300 }}
+                source={{ uri: 'https://manifold.markets/terms' }}
+              />
+            )}
+            {expanded === 'privacy' && (
+              <WebView
+                style={{ height: 500, width: 300 }}
+                source={{ uri: 'https://manifold.markets/privacy' }}
+              />
+            )}
+          </View>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              setOpen(false)
+              setExpanded(null)
+            }}
+          >
+            <View style={styles.modalOverlay} />
+          </TouchableWithoutFeedback>
+        </View>
+      </Modal>
+    </>
+  )
+}

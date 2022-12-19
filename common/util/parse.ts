@@ -65,5 +65,10 @@ export const stringParseExts = [
 
 export function richTextToString(text?: JSONContent) {
   if (!text) return ''
-  return generateText(text, stringParseExts)
+  try {
+    return generateText(text, stringParseExts)
+  } catch (e) {
+    console.error('error parsing rich text', `"${text}":`, e)
+    return ''
+  }
 }

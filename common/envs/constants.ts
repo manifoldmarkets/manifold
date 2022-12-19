@@ -6,7 +6,7 @@ import { THEOREMONE_CONFIG } from './theoremone'
 export const BACKGROUND_COLOR = 'bg-gray-50'
 export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 
-const CONFIGS: { [env: string]: EnvConfig } = {
+export const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
   THEOREMONE: THEOREMONE_CONFIG,
@@ -87,6 +87,32 @@ export const CORE_USERNAMES = [
   'DavidChee',
   'mqp',
   'IngaWei',
+  'ManifoldMarkets',
+]
+
+export const CHECK_USERNAMES = [
+  'EliezerYudkowsky',
+  'memestiny',
+  'ScottAlexander',
+  'Aella',
+  'BTE',
+  'jack',
+  'Yev',
+  'ZviMowshowitz',
+  'NathanpmYoung',
+  'kolotom99',
+  'SneakySly',
+  'IsaacKing',
+  'MattP',
+  'egroj',
+  'dreev',
+  'MartinRandall',
+  'LivInTheLookingGlass',
+  'LarsDoucet',
+  'Conflux',
+  'GavrielK',
+  'NcyRocks',
+  'MichaelWheatley',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -113,4 +139,7 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
   'free-money',
   'whale-watching',
   'spam',
+  'test',
+  'private-markets',
+  'proofniks',
 ]

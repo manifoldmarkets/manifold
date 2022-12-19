@@ -2,7 +2,13 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy } from 'lodash'
 
-import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
+import {
+  getUser,
+  getValues,
+  invokeFunction,
+  log,
+  revalidateStaticProps,
+} from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
@@ -58,7 +64,7 @@ export async function updateUserMetrics() {
 
   const now = Date.now()
   const monthAgo = now - DAY_MS * 30
-  const writer = firestore.bulkWriter({ throttling: false })
+  const writer = firestore.bulkWriter()
 
   // we need to update metrics for contracts that resolved up through a month ago,
   // for the purposes of computing the daily/weekly/monthly profit on them
@@ -69,7 +75,8 @@ export async function updateUserMetrics() {
 
   log('Computing metric updates...')
   const userUpdates = await batchedWaitAll(
-    users.map((user) => async () => {
+    users.map((staleUser) => async () => {
+      const user = (await getUser(staleUser.id)) ?? staleUser
       const userContracts = contractsByCreator[user.id] ?? []
       const metricRelevantBets = await loadUserContractBets(
         user.id,

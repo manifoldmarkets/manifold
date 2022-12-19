@@ -82,14 +82,6 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
     })
   )
 
-  // For testing different users on prod: (only send ian an email though)
-  // const privateUsersToSendEmailsTo = filterDefined([
-  //   await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'), // prod Ian
-  //   // isProd()
-  //   await getPrivateUser('FptiiMZZ6dQivihLI8MYFQ6ypSw1'), // prod Mik
-  //   //   : await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'), // dev Ian
-  // ])
-
   log(
     'Sending weekly trending emails to',
     privateUsersToSendEmailsTo.length,
@@ -99,8 +91,8 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
     .filter(
       (contract) =>
         !(
-          contract.question.toLowerCase().includes('trump') &&
-          contract.question.toLowerCase().includes('president')
+          contract.question.toLowerCase().includes('stock') &&
+          contract.question.toLowerCase().includes('permanent')
         ) &&
         (contract?.closeTime ?? 0) > Date.now() + DAY_MS &&
         !contract.groupSlugs?.some((slug) =>
@@ -446,7 +438,7 @@ const removeSimilarQuestions = (
   // )
 
   const returnContracts = contractsToFilter.filter(
-    (cf) => !contractsToRemove.map((c) => c.id).includes(cf.id)
+    (cf) => !contractsToRemove.some((c) => c.id === cf.id)
   )
 
   return returnContracts

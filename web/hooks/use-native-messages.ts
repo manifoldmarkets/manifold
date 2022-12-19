@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
+import { nativeToWebMessageType } from 'common/native-message'
 
 export const useNativeMessages = (
-  messageTypes: string[],
+  messageTypes: nativeToWebMessageType[],
   onMessageReceived: (type: string, data: any) => void
 ) => {
   const handleNativeMessage = async (e: any) => {

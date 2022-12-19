@@ -4,6 +4,7 @@
   "workspaces": [
     "common",
     "functions",
+    "supabase-replicator",
     "web"
   ],
   "scripts": {

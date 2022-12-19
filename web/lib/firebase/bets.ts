@@ -38,6 +38,7 @@ export type BetFilter = {
   filterChallenges?: boolean
   filterRedemptions?: boolean
   filterAntes?: boolean
+  isOpenLimitOrder?: boolean
   afterTime?: number
   order?: OrderByDirection
   limit?: number
@@ -65,6 +66,14 @@ export const getBetsQuery = (options?: BetFilter) => {
   }
   if (options?.filterRedemptions) {
     q = query(q, where('isRedemption', '==', false))
+  }
+  if (options?.isOpenLimitOrder) {
+    q = query(
+      q,
+      where('isFilled', '==', false),
+      where('isCancelled', '==', false)
+      // where('limitProb', '>=', 0)
+    )
   }
   if (options?.limit) {
     q = query(q, limit(options.limit))
@@ -151,9 +160,4 @@ export function listenForUnfilledBets(
     orderBy('createdTime', 'desc')
   )
   return listenForValues<LimitBet>(betsQuery, setBets)
-}
-
-export async function getSwipes(userId: string) {
-  const swipeCollection = collection(db, `/private-users/${userId}/seenMarkets`)
-  return getValues(swipeCollection)
 }

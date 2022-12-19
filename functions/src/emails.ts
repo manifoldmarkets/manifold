@@ -1,4 +1,4 @@
-import { DOMAIN } from '../../common/envs/constants'
+import { DOMAIN, ENV_CONFIG } from '../../common/envs/constants'
 import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
 import { Contract } from '../../common/contract'
@@ -21,6 +21,10 @@ import {
   PerContractInvestmentsData,
   OverallPerformanceData,
 } from './weekly-portfolio-emails'
+
+export const emailMoneyFormat = (amount: number) => {
+  return formatMoney(amount).replace(ENV_CONFIG.moneyMoniker, 'M')
+}
 
 export const sendMarketResolutionEmail = async (
   reason: notification_reason_types,
@@ -54,14 +58,14 @@ export const sendMarketResolutionEmail = async (
 
   const creatorPayoutText =
     creatorPayout >= 1 && privateUser.id === creator.id
-      ? ` (plus ${formatMoney(creatorPayout)} in commissions)`
+      ? ` (plus ${emailMoneyFormat(creatorPayout)} in commissions)`
       : ''
 
   const correctedInvestment =
     Number.isNaN(investment) || investment < 0 ? 0 : investment
-  const displayedInvestment = formatMoney(correctedInvestment)
 
-  const displayedPayout = formatMoney(payout)
+  const displayedInvestment = emailMoneyFormat(correctedInvestment)
+  const displayedPayout = emailMoneyFormat(payout)
 
   const templateData: market_resolved_template = {
     userId: user.id,
@@ -104,6 +108,9 @@ const toDisplayResolution = (
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
+  if (contract.outcomeType === 'CERT') {
+    return resolution + ' (CERT)'
+  }
   if (contract.outcomeType === 'BINARY') {
     const prob = resolutionProbability ?? getProbability(contract)
 
@@ -208,36 +215,6 @@ https://manifold.markets
   )
 }
 
-export const sendOneWeekBonusEmail = async (
-  user: User,
-  privateUser: PrivateUser
-) => {
-  if (!privateUser || !privateUser.email) return
-
-  const { name } = user
-  const firstName = name.split(' ')[0]
-
-  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
-    privateUser,
-    'onboarding_flow'
-  )
-  if (!sendToEmail) return
-
-  return await sendTemplateEmail(
-    privateUser.email,
-    'Manifold Markets one week anniversary gift',
-    'one-week',
-    {
-      name: firstName,
-      unsubscribeUrl,
-      manalink: 'https://manifold.markets/link/lj4JbBvE',
-    },
-    {
-      from: 'David from Manifold <david@manifold.markets>',
-    }
-  )
-}
-
 export const sendCreatorGuideEmail = async (
   user: User,
   privateUser: PrivateUser,
@@ -321,7 +298,7 @@ export const sendMarketCloseEmail = async (
       unsubscribeUrl: '',
       userId,
       name: firstName,
-      volume: formatMoney(volume),
+      volume: emailMoneyFormat(volume),
     }
   )
 }
@@ -351,9 +328,9 @@ export const sendNewCommentEmail = async (
   let betDescription = ''
   if (bet) {
     const { amount, sale } = bet
-    betDescription = `${sale || amount < 0 ? 'sold' : 'bought'} ${formatMoney(
-      Math.abs(amount)
-    )}`
+    betDescription = `${
+      sale || amount < 0 ? 'sold' : 'bought'
+    } ${emailMoneyFormat(Math.abs(amount))}`
   }
 
   const subject = `Comment on ${question}`
@@ -564,7 +541,7 @@ export const sendNewUniqueBettorsEmail = async (
     name: firstName,
     creatorName,
     totalPredictors: totalPredictors.toString(),
-    bonusString: formatMoney(bonusAmount),
+    bonusString: emailMoneyFormat(bonusAmount),
     marketTitle: contract.question,
     marketUrl: contractUrl(contract),
     unsubscribeUrl,
@@ -579,7 +556,7 @@ export const sendNewUniqueBettorsEmail = async (
       const { amount, sale } = bet
       templateData[`bet${i + 1}Description`] = `${
         sale || amount < 0 ? 'sold' : 'bought'
-      } ${formatMoney(Math.abs(amount))}`
+      } ${emailMoneyFormat(Math.abs(amount))}`
     }
   })
 
@@ -598,7 +575,8 @@ export const sendWeeklyPortfolioUpdateEmail = async (
   user: User,
   privateUser: PrivateUser,
   investments: PerContractInvestmentsData[],
-  overallPerformance: OverallPerformanceData
+  overallPerformance: OverallPerformanceData,
+  moversToSend: number
 ) => {
   if (!privateUser || !privateUser.email) return
 
@@ -616,21 +594,25 @@ export const sendWeeklyPortfolioUpdateEmail = async (
     unsubscribeUrl,
     ...overallPerformance,
   }
-  investments.forEach((investment, i) => {
-    templateData[`question${i + 1}Title`] = investment.questionTitle
-    templateData[`question${i + 1}Url`] = investment.questionUrl
-    templateData[`question${i + 1}Prob`] = investment.questionProb
-    templateData[`question${i + 1}Change`] = formatMoney(investment.profit)
-    templateData[`question${i + 1}ChangeStyle`] = investment.profitStyle
-  })
+  for (let i = 0; i < moversToSend; i++) {
+    const investment = investments[i]
+    if (investment) {
+      templateData[`question${i + 1}Title`] = investment.questionTitle
+      templateData[`question${i + 1}Url`] = investment.questionUrl
+      templateData[`question${i + 1}Prob`] = investment.questionProb
+      templateData[`question${i + 1}Change`] = emailMoneyFormat(
+        investment.profit
+      )
+      templateData[`question${i + 1}ChangeStyle`] = investment.profitStyle
+      templateData[`question${i + 1}Display`] = 'display: table-row'
+    } else templateData[`question${i + 1}Display`] = 'display: none'
+  }
 
   await sendTemplateEmail(
     privateUser.email,
     // 'iansphilips@gmail.com',
     `Here's your weekly portfolio update!`,
-    investments.length === 0
-      ? 'portfolio-update-no-movers'
-      : 'portfolio-update',
+    'portfolio-update',
     templateData
   )
   log('Sent portfolio update email to', privateUser.email)

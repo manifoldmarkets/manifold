@@ -2,12 +2,10 @@ import { useMemo } from 'react'
 import { range } from 'lodash'
 import { scaleLinear } from 'd3-scale'
 
-import { formatLargeNumber } from 'common/util/format'
 import { getDpmOutcomeProbabilities } from 'common/calculate-dpm'
 import { NumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { TooltipProps, formatPct } from '../helpers'
-import { DistributionPoint, DistributionChart } from '../generic-charts'
+import { DistributionChart } from '../generic-charts'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
@@ -23,27 +21,12 @@ const getNumericChartData = (contract: NumericContract) => {
   }))
 }
 
-const NumericChartTooltip = (
-  props: TooltipProps<number, DistributionPoint>
-) => {
-  const { prev, x, xScale } = props
-  const amount = xScale.invert(x)
-  if (!prev) return null
-  return (
-    <>
-      <span className="text-semibold mr-2">{formatLargeNumber(amount)}</span>
-      <span className="text-gray-600">{formatPct(prev.y, 2)}</span>
-    </>
-  )
-}
-
 export const NumericContractChart = (props: {
   contract: NumericContract
   width: number
   height: number
-  onMouseOver?: (p: DistributionPoint | undefined) => void
 }) => {
-  const { contract, width, height, onMouseOver } = props
+  const { contract, width, height } = props
   const { min, max } = contract
   const data = useMemo(() => getNumericChartData(contract), [contract])
   const maxY = Math.max(...data.map((d) => d.y))
@@ -58,8 +41,6 @@ export const NumericContractChart = (props: {
       yScale={yScale}
       data={data}
       color={NUMERIC_GRAPH_COLOR}
-      onMouseOver={onMouseOver}
-      Tooltip={NumericChartTooltip}
     />
   )
 }

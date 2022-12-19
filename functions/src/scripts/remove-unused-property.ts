@@ -3,18 +3,19 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 import { getValues } from '../utils'
 import { FieldValue } from 'firebase-admin/firestore'
-import { Contract } from 'common/contract'
+import { User } from 'common/user'
 
 initAdmin()
 
 const firestore = admin.firestore()
 
 async function main() {
-  const contracts = await getValues<Contract>(firestore.collection('contracts'))
+  const collection = 'users'
+  const users = await getValues<User>(firestore.collection(collection))
   await Promise.all(
-    contracts.map(async (contract) => {
-      await firestore.collection('contracts').doc(contract.id).update({
-        likedByUserIds: FieldValue.delete(),
+    users.map(async (user) => {
+      await firestore.collection(collection).doc(user.id).update({
+        followedCategories: FieldValue.delete(),
       })
     })
   )

@@ -1,9 +1,3 @@
-import React, { memo, ReactNode, useEffect, useState } from 'react'
-import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
-import { PrivateUser } from 'common/user'
-import { updatePrivateUser } from 'web/lib/firebase/users'
-import { Col } from 'web/components/layout/col'
 import {
   CashIcon,
   ChatIcon,
@@ -18,23 +12,29 @@ import {
   UserIcon,
   UsersIcon,
 } from '@heroicons/react/outline'
-import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
-import toast from 'react-hot-toast'
-import { SwitchSetting } from 'web/components/switch-setting'
-import { uniq } from 'lodash'
-import {
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
+import clsx from 'clsx'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
+import { PrivateUser } from 'common/user'
 import {
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
-import { getIsNative } from 'web/lib/native/is-native'
-import { Button } from 'web/components/buttons/button'
 import { deleteField } from 'firebase/firestore'
+import { uniq } from 'lodash'
+import { memo, ReactNode, useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
+import { Button } from 'web/components/buttons/button'
+import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { SwitchSetting } from 'web/components/switch-setting'
+import {
+  storageStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { updatePrivateUser } from 'web/lib/firebase/users'
+import { getIsNative } from 'web/lib/native/is-native'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
@@ -74,8 +74,6 @@ export function NotificationSettings(props: {
 
     // 'referral_bonuses',
     // 'on_new_follow',
-    // 'tips_on_your_markets',
-    // 'tips_on_your_comments',
     // maybe the following?
     // 'probability_updates_on_watched_markets',
     // 'limit_order_fills',
@@ -138,7 +136,6 @@ export function NotificationSettings(props: {
       'all_comments_on_my_markets',
       'all_answers_on_my_markets',
       'subsidized_your_market',
-      'tips_on_your_markets',
     ],
   }
   const bonuses: SectionData = {
@@ -151,11 +148,7 @@ export function NotificationSettings(props: {
   }
   const otherBalances: SectionData = {
     label: 'Other',
-    subscriptionTypes: [
-      'loan_income',
-      'limit_order_fills',
-      'tips_on_your_comments',
-    ],
+    subscriptionTypes: ['loan_income', 'limit_order_fills'],
   }
   const userInteractions: SectionData = {
     label: 'Users',
@@ -195,70 +188,7 @@ export function NotificationSettings(props: {
     const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
     const [mobileEnabled, setMobileEnabled] = useState(previousMobileValue)
     const [error, setError] = useState<string>('')
-    const loading = 'Changing Notifications Settings'
-    const success = 'Changed Notification Settings!'
     const highlight = navigateToSection === subscriptionTypeKey
-
-    const attemptToChangeSetting = (
-      setting: 'browser' | 'email' | 'mobile',
-      newValue: boolean
-    ) => {
-      const necessaryError =
-        'This notification type is necessary. At least one destination must be enabled.'
-      const necessarySetting =
-        NOTIFICATION_DESCRIPTIONS[subscriptionTypeKey].necessary
-      if (
-        necessarySetting &&
-        setting === 'browser' &&
-        !emailEnabled &&
-        !newValue
-      ) {
-        setError(necessaryError)
-        return
-      } else if (
-        necessarySetting &&
-        setting === 'email' &&
-        !inAppEnabled &&
-        !newValue
-      ) {
-        setError(necessaryError)
-        return
-      }
-      // Mobile notifications not included in necessary destinations yet
-
-      changeSetting(setting, newValue)
-    }
-
-    const changeSetting = (
-      setting: 'browser' | 'email' | 'mobile',
-      newValue: boolean
-    ) => {
-      toast
-        .promise(
-          updatePrivateUser(privateUser.id, {
-            notificationPreferences: {
-              ...privateUser.notificationPreferences,
-              [subscriptionTypeKey]: destinations.includes(setting)
-                ? destinations.filter((d) => d !== setting)
-                : uniq([...destinations, setting]),
-            },
-          }),
-          {
-            success,
-            loading,
-            error: 'Error changing notification settings. Try again?',
-          }
-        )
-        .then(() => {
-          if (setting === 'browser') {
-            setInAppEnabled(newValue)
-          } else if (setting === 'email') {
-            setEmailEnabled(newValue)
-          } else if (setting === 'mobile') {
-            setMobileEnabled(newValue)
-          }
-        })
-    }
 
     return (
       <Row
@@ -275,7 +205,18 @@ export function NotificationSettings(props: {
             {!browserDisabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={inAppEnabled}
-                onChange={(newVal) => attemptToChangeSetting('browser', newVal)}
+                onChange={(newVal) =>
+                  attemptToChangeSetting({
+                    setting: 'browser',
+                    newValue: newVal,
+                    subscriptionTypeKey: subscriptionTypeKey,
+                    privateUser: privateUser,
+                    emailEnabled: emailEnabled,
+                    inAppEnabled: inAppEnabled,
+                    setError: setError,
+                    setEnabled: setInAppEnabled,
+                  })
+                }
                 label={'Web'}
                 disabled={optOutAll.includes('browser')}
               />
@@ -283,7 +224,18 @@ export function NotificationSettings(props: {
             {emailsEnabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={emailEnabled}
-                onChange={(newVal) => attemptToChangeSetting('email', newVal)}
+                onChange={(newVal) =>
+                  attemptToChangeSetting({
+                    setting: 'email',
+                    newValue: newVal,
+                    subscriptionTypeKey: subscriptionTypeKey,
+                    privateUser: privateUser,
+                    emailEnabled: emailEnabled,
+                    inAppEnabled: inAppEnabled,
+                    setError: setError,
+                    setEnabled: setEmailEnabled,
+                  })
+                }
                 label={'Email'}
                 disabled={optOutAll.includes('email')}
               />
@@ -291,7 +243,18 @@ export function NotificationSettings(props: {
             {mobilePushEnabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={mobileEnabled}
-                onChange={(newVal) => attemptToChangeSetting('mobile', newVal)}
+                onChange={(newVal) =>
+                  attemptToChangeSetting({
+                    setting: 'mobile',
+                    newValue: newVal,
+                    subscriptionTypeKey: subscriptionTypeKey,
+                    privateUser: privateUser,
+                    emailEnabled: emailEnabled,
+                    inAppEnabled: inAppEnabled,
+                    setError: setError,
+                    setEnabled: setMobileEnabled,
+                  })
+                }
                 label={'Mobile'}
                 disabled={optOutAll.includes('mobile')}
               />
@@ -301,10 +264,6 @@ export function NotificationSettings(props: {
         </Col>
       </Row>
     )
-  }
-
-  const getUsersSavedPreference = (key: notification_preference) => {
-    return privateUser.notificationPreferences[key] ?? []
   }
 
   const Section = memo(function Section(props: {
@@ -354,13 +313,14 @@ export function NotificationSettings(props: {
               key={subType}
               subscriptionTypeKey={subType as notification_preference}
               destinations={getUsersSavedPreference(
-                subType as notification_preference
+                subType as notification_preference,
+                privateUser
               )}
               description={NOTIFICATION_DESCRIPTIONS[subType].simple}
               optOutAll={
                 subType === 'opt_out_all' || subType === 'your_contract_closed'
                   ? []
-                  : getUsersSavedPreference('opt_out_all')
+                  : getUsersSavedPreference('opt_out_all', privateUser)
               }
             />
           ))}
@@ -476,4 +436,129 @@ export function NotificationSettings(props: {
       </Col>
     </div>
   )
+}
+
+export const notificationIsNecessary = (props: {
+  setting: 'browser' | 'email' | 'mobile'
+  subscriptionTypeKey: notification_preference
+  emailEnabled: boolean
+  newValue: boolean
+  inAppEnabled: boolean
+  setError?: (error: string) => void
+}) => {
+  const {
+    setting,
+    subscriptionTypeKey,
+    emailEnabled,
+    newValue,
+    inAppEnabled,
+    setError,
+  } = props
+  const necessaryError =
+    'This notification type is necessary. At least one destination must be enabled.'
+  // Fall back to false for old deprecated reason types. They won't be able to change the setting though :(
+  const necessarySetting =
+    NOTIFICATION_DESCRIPTIONS[subscriptionTypeKey]?.necessary ?? false
+  if (necessarySetting && setting === 'browser' && !emailEnabled && !newValue) {
+    if (setError) {
+      setError(necessaryError)
+    }
+    return true
+  } else if (
+    necessarySetting &&
+    setting === 'email' &&
+    !inAppEnabled &&
+    !newValue
+  ) {
+    if (setError) {
+      setError(necessaryError)
+    }
+    return true
+  }
+  return false
+}
+
+const attemptToChangeSetting = (props: {
+  setting: 'browser' | 'email' | 'mobile'
+  newValue: boolean
+  subscriptionTypeKey: notification_preference
+  privateUser: PrivateUser
+  emailEnabled: boolean
+  inAppEnabled: boolean
+  setError: (error: string) => void
+  setEnabled?: (setting: boolean) => void
+}) => {
+  const {
+    setting,
+    newValue,
+    subscriptionTypeKey,
+    privateUser,
+    emailEnabled,
+    inAppEnabled,
+    setError,
+    setEnabled,
+  } = props
+  // Mobile notifications not included in necessary destinations yet
+  if (
+    notificationIsNecessary({
+      setting: setting,
+      subscriptionTypeKey: subscriptionTypeKey,
+      emailEnabled: emailEnabled,
+      newValue: newValue,
+      inAppEnabled: inAppEnabled,
+      setError: setError,
+    })
+  ) {
+    return
+  }
+
+  changeSetting({
+    setting: setting,
+    newValue: newValue,
+    privateUser: privateUser,
+    subscriptionTypeKey: subscriptionTypeKey,
+    setEnabled: setEnabled,
+  })
+}
+
+export const changeSetting = (props: {
+  setting: 'browser' | 'email' | 'mobile'
+  newValue: boolean
+  privateUser: PrivateUser
+  subscriptionTypeKey: notification_preference
+  setEnabled?: (setting: boolean) => void
+}) => {
+  const { setting, newValue, privateUser, subscriptionTypeKey, setEnabled } =
+    props
+  const destinations = getUsersSavedPreference(subscriptionTypeKey, privateUser)
+  const loading = 'Changing Notifications Settings'
+  const success = 'Changed Notification Settings!'
+  toast
+    .promise(
+      updatePrivateUser(privateUser.id, {
+        notificationPreferences: {
+          ...privateUser.notificationPreferences,
+          [subscriptionTypeKey]: destinations.includes(setting)
+            ? destinations.filter((d) => d !== setting)
+            : uniq([...destinations, setting]),
+        },
+      }),
+      {
+        success,
+        loading,
+        error: 'Error changing notification settings. Try again?',
+      }
+    )
+    .then(() => {
+      if (setEnabled) {
+        setEnabled(newValue)
+      }
+    })
+}
+
+export const getUsersSavedPreference = (
+  key: notification_preference,
+  privateUser: PrivateUser
+) => {
+  return privateUser.notificationPreferences[key] ?? []
 }

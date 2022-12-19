@@ -23,7 +23,6 @@ export function UserLikedContractsButton(props: {
   const likedContracts = filterDefined(
     useContracts(likes?.map((l) => l.contentId) ?? [])
   )
-
   return (
     <>
       <TextButton onClick={() => setIsOpen(true)} className={className}>

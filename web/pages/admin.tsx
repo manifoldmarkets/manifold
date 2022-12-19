@@ -39,7 +39,9 @@ function UsersTable() {
     .sort((a, b) => b.createdTime - a.createdTime)
 
   function exportCsv() {
-    const csv = fullUsers.map((u) => [u.email, u.name].join(', ')).join('\n')
+    const csv = fullUsers
+      .map((u) => [u.email, u.name.replace(',', '')].join(', '))
+      .join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

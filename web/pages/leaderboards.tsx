@@ -144,7 +144,7 @@ export default function Leaderboards(props: {
             entries={topCreatorEntries}
             columns={[
               {
-                header: 'Number of traders',
+                header: 'Traders',
                 renderCell: (user) => user.creatorTraders[period],
               },
             ]}
