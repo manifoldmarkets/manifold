@@ -88,7 +88,7 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
   })
 
   // Resize height manually to accommodate mobile web.
-  const { height } = useWindowSize()
+  const { height, width = 600 } = useWindowSize()
 
   if (user === undefined) {
     return <LoadingIndicator />
@@ -118,6 +118,7 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
               amount={amount}
               setAmount={setAmount}
               onView={onView}
+              width={width}
             />
           ))}
 
