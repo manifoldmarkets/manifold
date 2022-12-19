@@ -11,7 +11,6 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
@@ -159,13 +158,14 @@ function LimitBet(props: {
       <td>{formatMoney(orderAmount - amount)}</td>
       {isYou && (
         <td>
-          {isCancelling ? (
-            <LoadingIndicator />
-          ) : (
-            <Button size="2xs" color="gray-outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
+          <Button
+            loading={isCancelling}
+            size="2xs"
+            color="gray-outline"
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
         </td>
       )}
     </tr>
