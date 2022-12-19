@@ -43,7 +43,7 @@ export function LimitBets(props: {
 
       {yourBets.length > 0 && (
         <Col
-          className={'mt-4 gap-2 overflow-hidden rounded bg-white px-4 py-3'}
+          className={'mt-4 gap-2 overflow-hidden rounded bg-white py-3 sm:px-4'}
         >
           <Row className="mt-2 mb-4 items-center justify-between">
             <Subtitle className="!mt-0 !mb-0" text="Your orders" />
@@ -73,7 +73,15 @@ export function LimitOrderTable(props: {
 }) {
   const { limitBets, contract, isYou } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-
+  const [isCancelling, setIsCancelling] = useState(false)
+  const onCancel = () => {
+    setIsCancelling(true)
+    Promise.all(limitBets.map((bet) => cancelBet({ betId: bet.id }))).then(
+      () => {
+        setIsCancelling(false)
+      }
+    )
+  }
   return (
     <Table className="rounded">
       <thead>
@@ -82,7 +90,18 @@ export function LimitOrderTable(props: {
           <th>Outcome</th>
           <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
           <th>Amount</th>
-          {isYou && <th></th>}
+          {isYou && (
+            <th>
+              <Button
+                loading={isCancelling}
+                size={'2xs'}
+                color={'gray-outline'}
+                onClick={onCancel}
+              >
+                Cancel all
+              </Button>
+            </th>
+          )}
         </tr>
       </thead>
       <tbody>
