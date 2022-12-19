@@ -47,6 +47,7 @@ import { Title } from '../widgets/title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -387,9 +388,15 @@ export function BuyPanel(props: {
             </div>
           </Col>
           <Col className="w-1/2 text-sm">
-            <div className="text-sm text-gray-500">
-              {isPseudoNumeric ? 'Estimated value' : 'New YES Probability'}
-            </div>
+            <Row className={'relative'}>
+              <span className="text-sm text-gray-500">
+                {isPseudoNumeric ? 'Estimated value' : 'New probability'}
+              </span>
+              <InfoTooltip
+                text={'The probability of YES after placing your bet'}
+                className={'absolute top-0 pb-1.5'}
+              />
+            </Row>
             {probStayedSame ? (
               <div className="text-lg">{format(initialProb)}</div>
             ) : (

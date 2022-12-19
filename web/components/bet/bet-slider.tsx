@@ -21,7 +21,7 @@ export const BetSlider = (props: {
   )
 
   return (
-    <Col className={'w-full'}>
+    <Col className={'mb-1 w-full'}>
       <Row className={'w-full'}>
         <Slider
           min={0}
@@ -45,7 +45,7 @@ export const BetSlider = (props: {
           value={amount ?? 0}
           onChange={(value) => onAmountChange(value as number)}
           className={clsx(
-            'my-auto mx-2 !h-1  xl:mx-auto xl:mt-3 xl:ml-4  [&>.rc-slider-rail]:bg-gray-200',
+            'my-auto mx-2 !h-1  xl:mx-2 xl:mt-3  [&>.rc-slider-rail]:bg-gray-200',
             '[&>.rc-slider-handle]:z-10',
             binaryOutcome === 'YES'
               ? '[&>.rc-slider-handle]:bg-teal-500 [&>.rc-slider-track]:bg-teal-600'
