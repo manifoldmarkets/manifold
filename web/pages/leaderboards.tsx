@@ -11,7 +11,7 @@ import {
   Period,
   User,
 } from 'web/lib/firebase/users'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
 import { Tabs } from 'web/components/layout/tabs'
@@ -19,6 +19,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export async function getStaticProps() {
   const [allTime, monthly, weekly, daily] = await Promise.all([
@@ -145,7 +146,8 @@ export default function Leaderboards(props: {
             columns={[
               {
                 header: 'Traders',
-                renderCell: (user) => user.creatorTraders[period],
+                renderCell: (user) =>
+                  formatWithCommas(user.creatorTraders[period]),
               },
             ]}
             highlightUsername={user?.username}
@@ -180,8 +182,10 @@ export default function Leaderboards(props: {
         description={`Manifold's leaderboards show the top ${BETTORS} and market creators.`}
         url="/leaderboards"
       />
-      <Title text={'Leaderboards'} className={'hidden md:block'} />
-      <div className="mb-4 text-gray-500">Updated every 15 minutes</div>
+      <Title className={'hidden md:block'}>
+        Leaderboards <InfoTooltip text="Updated every 15 minutes" />
+      </Title>
+
       <Tabs
         className="mb-4"
         currentPageForAnalytics={'leaderboards'}

@@ -19,6 +19,22 @@ import { TextButton } from 'web/components/buttons/text-button'
 import { DailyStats } from 'web/components/daily-stats'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import { User } from 'web/lib/firebase/users'
+import { useUser, useUserById, usePrefetchUsers } from 'web/hooks/use-user'
+import { useDiscoverUsers } from 'web/hooks/use-users'
+import { useFollowers, useFollows } from 'web/hooks/use-follows'
+import { SEO } from './SEO'
+import { Page } from './layout/page'
+import { linkClass, SiteLink } from './widgets/site-link'
+import { Avatar } from './widgets/avatar'
+import { Col } from './layout/col'
+import { Linkify } from './widgets/linkify'
+import { Spacer } from './layout/spacer'
+import { Row } from './layout/row'
+import { Modal } from './layout/modal'
+import { Tabs } from './layout/tabs'
+import { QueryUncontrolledTabs } from './layout/tabs'
+import { UserCommentsList } from './comments/comments-list'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { usePostsByUser } from 'web/hooks/use-post'
@@ -40,6 +56,9 @@ import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from './layout/tabs'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { track } from 'web/lib/service/analytics'
+import { DOMAIN, ENV_CONFIG, PROJECT_ID } from 'common/envs/constants'
 import { PostCardList } from './posts/post-card'
 import { SEO } from './SEO'
 import { Avatar } from './widgets/avatar'
@@ -48,12 +67,17 @@ import { Linkify } from './widgets/linkify'
 import { linkClass, SiteLink } from './widgets/site-link'
 import { PostBanBadge, UserBadge } from './widgets/user-link'
 import { SectionHeader } from './groups/group-post-section'
+import { TextButton } from 'web/components/buttons/text-button'
+import { Post } from 'common/post'
+import { useAdmin } from 'web/hooks/use-admin'
+import { UserContractsList } from 'web/components/profile/user-contracts-list'
 
 export function UserPage(props: { user: User; posts: Post[] }) {
   const user = useUserById(props.user.id) ?? props.user
 
   const router = useRouter()
   const currentUser = useUser()
+  const isAdmin = useAdmin()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
   const userPosts = usePostsByUser(user.id) ?? props.posts
@@ -122,6 +146,22 @@ export function UserPage(props: { user: User; posts: Post[] }) {
                 </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
+                  {isAdmin && (
+                    <span className={'text-xs sm:text-sm'}>
+                      <a
+                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        href={firestoreUserConsolePath(user.id)}
+                      >
+                        user link
+                      </a>
+                      <a
+                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        href={firestorePrivateConsolePath(user.id)}
+                      >
+                        private link
+                      </a>
+                    </span>
+                  )}
                 </Row>
               </Col>
               <Row
@@ -242,7 +282,7 @@ export function UserPage(props: { user: User; posts: Post[] }) {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <CreatorContractsList creator={user} />
+                    <UserContractsList creator={user} />
                   </>
                 ),
               },
@@ -420,4 +460,11 @@ function FollowsDialog(props: {
       </Col>
     </Modal>
   )
+}
+
+function firestoreUserConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fusers~2F${userId}`
+}
+function firestorePrivateConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fprivate-users~2F${userId}`
 }

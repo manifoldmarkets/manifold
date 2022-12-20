@@ -6,7 +6,7 @@ import { useAllGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
-import { PillButton } from 'web/components/buttons/pill-button'
+import { ExplicitPillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { Group, filterTopGroups } from 'common/group'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -36,7 +36,7 @@ export default function GroupSelectorDialog(props: {
         <Title text="What interests you?" />
         <p className="mb-4">
           Choose among the categories below to personalize your Manifold
-          experience.
+          experience. We've already selected {memberGroupIds.length} for you.
         </p>
 
         <div className="scrollbar-hide items-start gap-2 overflow-x-auto">
@@ -44,7 +44,7 @@ export default function GroupSelectorDialog(props: {
             <LoadingIndicator spinnerClassName="h-12 w-12" />
           ) : (
             displayedGroups.map((group) => (
-              <PillButton
+              <ExplicitPillButton
                 key={group.id}
                 selected={memberGroupIds.includes(group.id)}
                 onSelect={withTracking(
@@ -58,7 +58,7 @@ export default function GroupSelectorDialog(props: {
                 className="mr-1 mb-2 max-w-[12rem] truncate"
               >
                 {group.name}
-              </PillButton>
+              </ExplicitPillButton>
             ))
           )}
         </div>

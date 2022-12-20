@@ -7,12 +7,12 @@ interface ActionLog {
   /** id of the market contract */
   id: string
   amount?: number
-  outcome: 'YES' | 'NO' | 'SKIP'
+  outcome?: 'YES' | 'NO' | 'SKIP'
   time: number
 }
 // TODO: normal view actions
 
-export const logSwipe = async (
+export const logView = async (
   props: Pick<ActionLog, 'amount' | 'outcome'> & {
     contractId: string
     userId: string
@@ -36,7 +36,7 @@ export const logSwipe = async (
   return data
 }
 
-export async function getSwipes(userId: string) {
+export async function getSwipeViews(userId: string) {
   const swipeCollection = collection(db, `/private-users/${userId}/seenMarkets`)
   return getValues(swipeCollection)
 }

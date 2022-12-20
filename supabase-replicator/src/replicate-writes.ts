@@ -1,11 +1,6 @@
 import { Firestore } from 'firebase-admin/firestore'
 import { TLEntry } from '../../common/transaction-log'
-import { createClient } from '@supabase/supabase-js'
 import { run, SupabaseClient } from '../../common/supabase/utils'
-
-export function createSupabaseClient(url: string, key: string) {
-  return createClient(url, key) as SupabaseClient
-}
 
 export async function createFailedWrites(
   firestore: Firestore,
