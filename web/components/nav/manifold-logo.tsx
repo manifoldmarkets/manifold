@@ -31,7 +31,7 @@ export function ManifoldLogo(props: {
       >
         <img
           className="transition-all group-hover:rotate-12"
-          src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
+          src={'/christmas_manifold_logo.png'}
           width={45}
           height={45}
           alt=""
