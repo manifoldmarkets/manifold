@@ -35,10 +35,8 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
-import { isAndroid, isIOS } from 'web/lib/util/device'
-import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
-import { MobileAppsQRCodeButton } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { getNativePlatform } from 'web/lib/native/is-native'
+import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
@@ -90,25 +88,7 @@ export default function Notifications() {
                       'min-w-fit items-center justify-center p-2 md:flex-row'
                     }
                   >
-                    {isAndroid() ? (
-                      <a className="badge" href={GOOGLE_PLAY_APP_URL}>
-                        <img
-                          className={'w-36'}
-                          alt="Get it on Google Play"
-                          src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-                        />
-                      </a>
-                    ) : isIOS() ? (
-                      <a className="badge" href={APPLE_APP_URL}>
-                        <img
-                          className={'w-26'}
-                          src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1668902400&h=9016541b6bb4c335b714be9b2a57b4bf"
-                          alt="Download on the App Store"
-                        />
-                      </a>
-                    ) : (
-                      <MobileAppsQRCodeButton />
-                    )}
+                    <AppBadgesOrGetAppButton />
                   </Col>
                 </Row>
               </span>

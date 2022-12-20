@@ -6,12 +6,12 @@ import { QRCode } from 'web/components/widgets/qr-code'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { Tabs } from 'web/components/layout/tabs'
 
-export const MobileAppsQRCodeButton = () => {
+export const MobileAppsQRCodeButton = (props: { size?: 'lg' }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-
+  const { size } = props
   return (
     <>
-      <Button color={'indigo'} onClick={() => setIsModalOpen(true)}>
+      <Button size={size} color={'indigo'} onClick={() => setIsModalOpen(true)}>
         Get the app
       </Button>
 

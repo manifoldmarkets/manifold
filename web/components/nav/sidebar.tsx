@@ -29,6 +29,7 @@ import { SidebarItem } from './sidebar-item'
 import { MoreButton } from './more-button'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
+import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 
 export default function Sidebar(props: {
   className?: string
@@ -62,7 +63,10 @@ export default function Sidebar(props: {
       <Spacer h={6} />
 
       {user === undefined && <div className="h-[56px]" />}
-      {user === null && <SignInButton className="mb-4" />}
+      {user === null && <SignInButton className="mb-3" />}
+      {user === null && (
+        <AppBadgesOrGetAppButton size={'lg'} className={'mb-4'} />
+      )}
 
       {user && !isMobile && <ProfileSummary user={user} />}
 
