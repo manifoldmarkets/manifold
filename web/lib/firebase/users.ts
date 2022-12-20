@@ -259,7 +259,7 @@ export function getTopTraders(period: Period) {
   const topTraders = query(
     users,
     orderBy('profitCached.' + period, 'desc'),
-    limit(20)
+    limit(21) // add extra to account for @acc removal
   )
 
   return getValues<User>(topTraders)
