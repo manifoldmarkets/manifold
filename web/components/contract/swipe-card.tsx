@@ -1,7 +1,4 @@
-import { track } from '@amplitude/analytics-browser'
 import clsx from 'clsx'
-import { useSpring, config, animated } from 'react-spring'
-import { useDrag } from '@use-gesture/react'
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -15,21 +12,13 @@ import { getBinaryProb } from 'common/contract-details'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import { memo } from 'react'
-import toast from 'react-hot-toast'
-import {
-  usePersistentState,
-  inMemoryStore,
-} from 'web/hooks/use-persistent-state'
-import { useUser } from 'web/hooks/use-user'
-import { placeBet } from 'web/lib/firebase/api'
 import { contractPath } from 'web/lib/firebase/contracts'
-import { logView } from 'web/lib/firebase/views'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
-import { VisibilityObserver } from '../widgets/visibility-observer'
 import { Row } from '../layout/row'
 import { NoLabel, YesLabel } from '../outcome-label'
+import { Col } from '../layout/col'
 
 const betTapAdd = 10
 
@@ -38,65 +27,10 @@ export const SwipeCard = memo(
     contract: BinaryContract
     amount: number
     setAmount: (amount: number) => void
-    onView: (contract: BinaryContract, alreadyViewed: boolean) => void
-    width: number
+    className?: string
   }) => {
-    const { contract, amount, setAmount, onView, width } = props
-    const { question, description, coverImageUrl, id: contractId } = contract
-
-    const [isViewed, setIsViewed] = usePersistentState(false, {
-      key: contract.id + '-viewed',
-      store: inMemoryStore(),
-    })
-
-    const onBet = (outcome: 'YES' | 'NO') => {
-      const promise = placeBet({ amount, outcome, contractId })
-
-      const shortQ = contract.question.slice(0, 20)
-
-      const message = `Bet ${formatMoney(amount)} ${outcome} on "${shortQ}"...`
-
-      toast.promise(
-        promise,
-        {
-          loading: message,
-          success: message,
-          error: (err) => `Error placing bet: ${err.message}`,
-        },
-        { position: 'top-center' }
-      )
-
-      userId && logView({ amount, outcome, contractId, userId })
-      track('scroll bet', {
-        slug: contract.slug,
-        contractId,
-        amount,
-        outcome,
-      })
-    }
-
-    const maxSwipeDist = width * 0.25
-
-    const [{ x }, api] = useSpring(() => ({
-      x: 0,
-      config: config.stiff,
-    }))
-
-    const bind = useDrag(
-      ({ down, movement: [mx] }) => {
-        const cappedDist = Math.min(Math.abs(mx), maxSwipeDist)
-        if (!down && cappedDist >= maxSwipeDist) {
-          const outcome = Math.sign(mx) > 0 ? 'YES' : 'NO'
-          console.log('swipe!', outcome, cappedDist, mx, Math.sign(mx))
-          onBet(outcome)
-        }
-
-        api.start({ x: down ? Math.sign(mx) * cappedDist : 0 })
-      },
-      { axis: 'x' }
-    )
-
-    const userId = useUser()?.id
+    const { contract, amount, setAmount, className } = props
+    const { question, description, coverImageUrl } = contract
 
     const addMoney = () => setAmount(amount + betTapAdd)
 
@@ -112,36 +46,8 @@ export const SwipeCard = memo(
       `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
 
     return (
-      // <div
-      //   className="relative h-full snap-start snap-always overscroll-none bg-black"
-      // >
-      //   <Col
-      //     className="absolute h-full items-center justify-center bg-green-700 text-2xl text-white"
-      //     style={{ left: -8, width: maxSwipeDist + 16 }}
-      //   >
-      //     YES
-      //   </Col>
-      //   <Col
-      //     className="absolute h-full items-center justify-center bg-red-700 text-2xl text-white"
-      //     style={{ right: -8, width: maxSwipeDist + 16 }}
-      //   >
-      //     NO
-      //   </Col>
-
-      <animated.div
-        {...bind()}
-        className={clsx(
-          'user-select-none snap-alway relative flex h-full transform-none touch-pan-y snap-start flex-col'
-        )}
-        style={{
-          x,
-          touchAction: 'pan-y',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          top: 0,
-        }}
-        id={contract.id}
+      <Col
+        className={clsx(className, 'user-select-none relative flex h-full')}
         onClick={(e) => e.preventDefault()}
       >
         {/* background */}
@@ -197,18 +103,7 @@ export const SwipeCard = memo(
             </span>
           </div>
         </div>
-
-        <VisibilityObserver
-          className="relative"
-          onVisibilityUpdated={(visible) => {
-            if (visible) {
-              onView(contract, isViewed)
-              setIsViewed(true)
-            }
-          }}
-        />
-      </animated.div>
-      // </div>
+      </Col>
     )
   }
 )
