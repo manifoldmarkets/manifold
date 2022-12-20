@@ -11,7 +11,7 @@
     "dev:the": "cross-env NEXT_PUBLIC_FIREBASE_ENV=THEOREMONE yarn dev",
     "dev:local": "cross-env NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8080 yarn devdev",
     "dev:emulate": "cross-env NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
-    "disk-space-info": "du -hs ./node_modules && du -hs ./.next && du -hs ./.next/cache && du -hs ./.next/static",
+    "disk-space-info": "du -hs ./node_modules && du -hs ./.next && du -hs ./.next/cache",
     "clear-nextjs-cache": "rm -rf ./.next/cache",
     "build": "yarn disk-space-info && yarn clear-nextjs-cache && next build",
     "start": "next start",
