@@ -26,7 +26,6 @@ import { AuthPage } from 'components/auth-page'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
-import { WebViewErrorEvent } from 'react-native-webview/lib/WebViewTypes'
 import { SplashLoading } from 'components/splash-loading'
 import {
   nativeToWebMessage,
@@ -39,6 +38,8 @@ import {
   handleWebviewCrash,
   ExternalWebView,
   sharedWebViewProps,
+  handleWebviewError,
+  handleRenderError,
 } from 'components/external-web-view'
 console.log('using', ENV, 'env')
 console.log(
@@ -68,7 +69,7 @@ const homeUri =
 const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
-  const [loaded, setLoaded] = useState(false)
+  const [loadedWebView, setLoadedWebView] = useState(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const webview = useRef<WebView>()
   const notificationResponseListener = useRef<Subscription | undefined>()
@@ -79,19 +80,21 @@ const App = () => {
   const [user, setUser] = useState(auth.currentUser)
   useEffect(() => {
     // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
-    if (loaded) {
+    if (loadedWebView) {
       console.log('webview loaded, waiting for auth')
       const timeout = setTimeout(() => {
         setWaitingForAuth(false)
       }, 2000)
       return () => clearTimeout(timeout)
     }
-  }, [loaded])
+  }, [loadedWebView])
 
+  // auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
   useEffect(() => {
     auth.onAuthStateChanged(setUser)
   }, [auth])
 
+  // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
   const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
@@ -105,7 +108,7 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
-    if (loaded) {
+    if (loadedWebView) {
       communicateWithWebview(
         'notification',
         response.notification.request.content.data
@@ -332,20 +335,7 @@ const App = () => {
     )
   }
 
-  const handleWebviewError = (e: WebViewErrorEvent) => {
-    const { nativeEvent } = e
-    console.log('error in webview', e)
-    Sentry.Native.captureException(nativeEvent.description, {
-      extra: {
-        message: 'webview error',
-        nativeEvent,
-      },
-    })
-    // fall back to home uri on error
-    setUrlToLoad(homeUri)
-  }
-
-  const shouldShowWebView = loaded && user
+  const shouldShowWebView = loadedWebView && user
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
@@ -392,29 +382,19 @@ const App = () => {
           <ExternalWebView
             url={externalUrl}
             height={height}
+            width={width}
             setUrl={setExternalUrl}
           />
           <WebView
             {...sharedWebViewProps}
             style={styles.webView}
             // Load start and end is for whole website loading, not navigations within manifold
-            onLoadEnd={() => setLoaded(true)}
+            onLoadEnd={() => setLoadedWebView(true)}
             source={{ uri: urlToLoad }}
             //@ts-ignore
             ref={webview}
-            onError={handleWebviewError}
-            renderError={(e) => {
-              // Renders this view while we resolve the error
-              return (
-                <View style={{ height, width }}>
-                  <SplashLoading
-                    height={height}
-                    width={width}
-                    source={require('./assets/splash.png')}
-                  />
-                </View>
-              )
-            }}
+            onError={(e) => handleWebviewError(e, () => setUrlToLoad(homeUri))}
+            renderError={(e) => handleRenderError(e, width, height)}
             onTouchStart={tellWebviewToSetNativeFlag}
             // On navigation state change changes on every url change
             onNavigationStateChange={(navState) => {

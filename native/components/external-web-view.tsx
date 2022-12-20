@@ -11,9 +11,12 @@ import {
 import { AntDesign, Feather } from '@expo/vector-icons'
 import React, { useRef, useState } from 'react'
 import {
+  WebViewErrorEvent,
   WebViewRenderProcessGoneEvent,
   WebViewTerminatedEvent,
 } from 'react-native-webview/lib/WebViewTypes'
+import * as Sentry from 'sentry-expo'
+import { SplashLoading } from 'components/splash-loading'
 const isIOS = Platform.OS === 'ios'
 
 export const sharedWebViewProps: WebViewProps = {
@@ -42,12 +45,52 @@ export const handleWebviewCrash = (
   webview?.reload()
 }
 
+export const handleWebviewError = (
+  e: WebViewErrorEvent,
+  callback: () => void
+) => {
+  const { nativeEvent } = e
+  console.log('error in webview', e)
+  Sentry.Native.captureException(nativeEvent.description, {
+    extra: {
+      message: 'webview error',
+      nativeEvent,
+    },
+  })
+  callback()
+}
+
+export const handleRenderError = (
+  e: string | undefined,
+  width: number,
+  height: number
+) => {
+  console.log('error on render webview', e)
+  Sentry.Native.captureException(e, {
+    extra: {
+      message: 'webview render error',
+      e,
+    },
+  })
+  // Renders this view while we resolve the error
+  return (
+    <View style={{ height, width }}>
+      <SplashLoading
+        height={height}
+        width={width}
+        source={require('../assets/splash.png')}
+      />
+    </View>
+  )
+}
+
 export const ExternalWebView = (props: {
   url: string | undefined
   setUrl: (url: string | undefined) => void
   height: number
+  width: number
 }) => {
-  const { url, height, setUrl } = props
+  const { url, height, setUrl, width } = props
   const webview = useRef<WebView>()
   const [loading, setLoading] = useState(false)
 
@@ -138,10 +181,12 @@ export const ExternalWebView = (props: {
         {...sharedWebViewProps}
         onLoadEnd={() => setLoading(false)}
         onLoadStart={() => setLoading(true)}
+        onError={(e) => handleWebviewError(e, () => setUrl(undefined))}
         style={styles.webView}
         source={{ uri: url }}
         // @ts-ignore
         ref={webview}
+        renderError={(e) => handleRenderError(e, width, height)}
         onRenderProcessGone={(e) => handleWebviewCrash(webview.current, e)}
         onContentProcessDidTerminate={(e) =>
           handleWebviewCrash(webview.current, e)
