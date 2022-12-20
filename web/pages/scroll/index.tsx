@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { uniqBy } from 'lodash'
-import { useSpring, animated } from 'react-spring'
+import { useSpring, animated } from '@react-spring/web'
 import { rubberbandIfOutOfBounds, useDrag } from '@use-gesture/react'
 import toast from 'react-hot-toast'
 
