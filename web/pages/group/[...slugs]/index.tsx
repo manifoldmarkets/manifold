@@ -200,7 +200,6 @@ export default function GroupPage(props: {
           groupUrl={groupUrl}
           privateUser={privateUser}
           isEditable={isEditable}
-          writingNewAbout={writingNewAbout}
           setWritingNewAbout={setWritingNewAbout}
           bannerVisible={bannerVisible}
         />
@@ -340,7 +339,6 @@ export function TopGroupNavBar(props: {
   groupUrl: string
   privateUser: PrivateUser | undefined | null
   isEditable: boolean
-  writingNewAbout: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
   bannerVisible: boolean
 }) {
@@ -350,7 +348,6 @@ export function TopGroupNavBar(props: {
     groupUrl,
     privateUser,
     isEditable,
-    writingNewAbout,
     setWritingNewAbout,
     bannerVisible,
   } = props
