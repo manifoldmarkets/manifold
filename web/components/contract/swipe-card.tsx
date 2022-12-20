@@ -29,7 +29,6 @@ import { Avatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import { Row } from '../layout/row'
-import { Col } from '../layout/col'
 import { NoLabel, YesLabel } from '../outcome-label'
 
 const betTapAdd = 10
@@ -78,7 +77,7 @@ export const SwipeCard = memo(
 
     const maxSwipeDist = width * 0.25
 
-    const [{ x }, set] = useSpring(() => ({
+    const [{ x }, api] = useSpring(() => ({
       x: 0,
       config: config.stiff,
     }))
@@ -92,9 +91,9 @@ export const SwipeCard = memo(
           onBet(outcome)
         }
 
-        set.start({ x: down ? Math.sign(mx) * cappedDist : 0 })
+        api.start({ x: down ? Math.sign(mx) * cappedDist : 0 })
       },
-      { preventScroll: true }
+      { axis: 'x' }
     )
 
     const userId = useUser()?.id
@@ -113,101 +112,103 @@ export const SwipeCard = memo(
       `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
 
     return (
-      <div className="relative h-full snap-start snap-always overscroll-none bg-black">
-        <Col
-          className="absolute h-full items-center justify-center bg-green-700 text-2xl text-white"
-          style={{ left: -8, width: maxSwipeDist + 16 }}
-        >
-          YES
-        </Col>
-        <Col
-          className="absolute h-full items-center justify-center bg-red-700 text-2xl text-white"
-          style={{ right: -8, width: maxSwipeDist + 16 }}
-        >
-          NO
-        </Col>
+      // <div
+      //   className="relative h-full snap-start snap-always overscroll-none bg-black"
+      // >
+      //   <Col
+      //     className="absolute h-full items-center justify-center bg-green-700 text-2xl text-white"
+      //     style={{ left: -8, width: maxSwipeDist + 16 }}
+      //   >
+      //     YES
+      //   </Col>
+      //   <Col
+      //     className="absolute h-full items-center justify-center bg-red-700 text-2xl text-white"
+      //     style={{ right: -8, width: maxSwipeDist + 16 }}
+      //   >
+      //     NO
+      //   </Col>
 
-        <animated.div
-          {...bind()}
-          className={clsx(
-            'user-select-none flex h-full flex-col overscroll-none'
-          )}
-          style={{
-            touchAction: 'pan-y',
-            transform: x.to((x) => `translateX(${x}px)`),
-            left: 0,
-            right: 0,
-            bottom: 0,
-            top: 0,
+      <animated.div
+        {...bind()}
+        className={clsx(
+          'user-select-none snap-alway relative flex h-full transform-none touch-pan-y snap-start flex-col'
+        )}
+        style={{
+          x,
+          touchAction: 'pan-y',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          top: 0,
+        }}
+        id={contract.id}
+        onClick={(e) => e.preventDefault()}
+      >
+        {/* background */}
+        <div className="flex h-full flex-col bg-black">
+          <div className="relative mb-24 grow">
+            <img
+              src={image}
+              alt=""
+              className="h-full object-cover"
+              style={{ filter: 'brightness(0.60)' }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
+          </div>
+        </div>
+
+        {/* content */}
+        <div className="absolute inset-0 flex select-none flex-col gap-4">
+          <CornerDetails contract={contract} />
+          <SiteLink
+            className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white"
+            href={contractPath(contract)}
+            followsLinkClass
+          >
+            {question}
+          </SiteLink>
+          <Percent contract={contract} amount={amount} outcome={undefined} />
+          {/* TODO: use editor excluding widgets */}
+          <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
+            {typeof description === 'string'
+              ? description
+              : richTextToString(description)}
+          </div>
+
+          <SwipeStatus />
+
+          <div className="mb-4 flex flex-col items-center gap-2 self-center">
+            <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
+              <button
+                onClick={subMoney}
+                onTouchStart={subMoney}
+                className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+              >
+                <MinusIcon className="h-4" />
+              </button>
+              <span className="mx-1 py-4">{formatMoney(amount)}</span>
+              <button
+                onClick={addMoney}
+                onTouchStart={addMoney}
+                className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+              >
+                <PlusIcon className="h-4" />
+              </button>
+            </span>
+          </div>
+        </div>
+
+        <VisibilityObserver
+          className="relative"
+          onVisibilityUpdated={(visible) => {
+            if (visible) {
+              onView(contract, isViewed)
+              setIsViewed(true)
+            }
           }}
-          id={contract.id}
-          onClick={(e) => e.preventDefault()}
-        >
-          {/* background */}
-          <div className="flex h-full flex-col bg-black">
-            <div className="relative mb-24 grow">
-              <img
-                src={image}
-                alt=""
-                className="h-full object-cover"
-                style={{ filter: 'brightness(0.60)' }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
-            </div>
-          </div>
-
-          {/* content */}
-          <div className="absolute inset-0 flex select-none flex-col gap-4">
-            <CornerDetails contract={contract} />
-            <SiteLink
-              className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white"
-              href={contractPath(contract)}
-              followsLinkClass
-            >
-              {question}
-            </SiteLink>
-            <Percent contract={contract} amount={amount} outcome={undefined} />
-            {/* TODO: use editor excluding widgets */}
-            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
-              {typeof description === 'string'
-                ? description
-                : richTextToString(description)}
-            </div>
-
-            <SwipeStatus />
-
-            <div className="mb-4 flex flex-col items-center gap-2 self-center">
-              <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
-                <button
-                  onClick={subMoney}
-                  onTouchStart={subMoney}
-                  className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-                >
-                  <MinusIcon className="h-4" />
-                </button>
-                <span className="mx-1 py-4">{formatMoney(amount)}</span>
-                <button
-                  onClick={addMoney}
-                  onTouchStart={addMoney}
-                  className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
-                >
-                  <PlusIcon className="h-4" />
-                </button>
-              </span>
-            </div>
-          </div>
-
-          <VisibilityObserver
-            className="relative"
-            onVisibilityUpdated={(visible) => {
-              if (visible) {
-                onView(contract, isViewed)
-                setIsViewed(true)
-              }
-            }}
-          />
-        </animated.div>
-      </div>
+        />
+      </animated.div>
+      // </div>
     )
   }
 )
