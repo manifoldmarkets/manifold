@@ -483,7 +483,9 @@ const App = () => {
           </View>
         </View>
         <View style={[styles.container, { position: 'relative' }]}>
-          {otherSiteUrl && <OtherSiteWebview url={otherSiteUrl} />}
+          {otherSiteUrl && (
+            <OtherSiteWebview url={otherSiteUrl} height={height} />
+          )}
           <WebView
             pullToRefreshEnabled={true}
             style={styles.webView}
@@ -531,15 +533,15 @@ const App = () => {
                 webview.current?.stopLoading()
               } else {
                 setOtherSiteUrl(undefined)
+                console.log('navState', url)
+                setCurrentNavState({
+                  ...currentNavState,
+                  url,
+                  loading,
+                  canGoBack,
+                })
+                tellWebviewToSetNativeFlag()
               }
-              console.log('navState', url)
-              setCurrentNavState({
-                ...currentNavState,
-                url,
-                loading,
-                canGoBack,
-              })
-              tellWebviewToSetNativeFlag()
             }}
             onRenderProcessGone={(syntheticEvent) => {
               const { nativeEvent } = syntheticEvent

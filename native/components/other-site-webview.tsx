@@ -1,19 +1,27 @@
 import WebView from 'react-native-webview'
-import React, { forwardRef } from 'react'
-export const OtherSiteWebview = forwardRef(function OtherSiteWebview(props: {
+import { View } from 'react-native'
+export const OtherSiteWebview = (props: {
   url: string | undefined
-}) {
-  const { url } = props
+  height: number
+}) => {
+  const { url, height } = props
+
   return (
-    <WebView
+    <View
       style={{
         display: url ? 'flex' : 'none',
-        height: '100vh',
-        flex: 1,
+        height,
       }}
-      source={{
-        uri: url ? url : 'about:blank',
-      }}
-    />
+    >
+      <WebView
+        style={{
+          display: url ? 'flex' : 'none',
+          height,
+        }}
+        source={{
+          uri: url ? url : 'about:blank',
+        }}
+      />
+    </View>
   )
-})
+}
