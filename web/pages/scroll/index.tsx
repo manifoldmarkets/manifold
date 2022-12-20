@@ -27,6 +27,7 @@ import { Col } from 'web/components/layout/col'
 import { formatMoney } from 'common/util/format'
 import { placeBet } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
+import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(200)).filter(
@@ -106,8 +107,7 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
     }
   }, [computedHeight, setHeight])
 
-  // Subtract bottom bar height.
-  const cardHeight = height - 58
+  const cardHeight = height - BOTTOM_NAV_BAR_HEIGHT
   const horizontalSwipeDist = width * 0.2
 
   const [{ x, y }, api] = useSpring(() => ({
@@ -128,6 +128,10 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, cardHeight])
 
+  const [swipeDirection, setSwipeDirection] = useState<
+    'YES' | 'NO' | undefined
+  >(undefined)
+
   const bind = useDrag(
     ({ down, movement: [mx, my] }) => {
       const cappedDist = rubberbandIfOutOfBounds(
@@ -139,6 +143,7 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
         const outcome = Math.sign(mx) > 0 ? 'YES' : 'NO'
         onBet(outcome)
       }
+      setSwipeDirection(!down || mx === 0 ? undefined : mx > 0 ? 'YES' : 'NO')
       const x = down ? Math.sign(mx) * cappedDist : 0
 
       let newIndex = index
@@ -209,6 +214,7 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
               contract={c}
               amount={amount}
               setAmount={setAmount}
+              swipeDirection={swipeDirection}
             />
           ))}
 

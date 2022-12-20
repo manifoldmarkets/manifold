@@ -19,6 +19,7 @@ import { SiteLink } from '../widgets/site-link'
 import { Row } from '../layout/row'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { Col } from '../layout/col'
+import { useContract } from 'web/hooks/use-contracts'
 
 const betTapAdd = 10
 
@@ -27,9 +28,12 @@ export const SwipeCard = memo(
     contract: BinaryContract
     amount: number
     setAmount: (amount: number) => void
+    swipeDirection: 'YES' | 'NO' | undefined
     className?: string
   }) => {
-    const { contract, amount, setAmount, className } = props
+    const { amount, setAmount, swipeDirection, className } = props
+    const contract = (useContract(props.contract.id) ??
+      props.contract) as BinaryContract
     const { question, description, coverImageUrl } = contract
 
     const addMoney = () => setAmount(amount + betTapAdd)
@@ -73,7 +77,11 @@ export const SwipeCard = memo(
           >
             {question}
           </SiteLink>
-          <Percent contract={contract} amount={amount} outcome={undefined} />
+          <Percent
+            contract={contract}
+            amount={amount}
+            outcome={swipeDirection}
+          />
           {/* TODO: use editor excluding widgets */}
           <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
             {typeof description === 'string'
@@ -81,7 +89,7 @@ export const SwipeCard = memo(
               : richTextToString(description)}
           </div>
 
-          <SwipeStatus />
+          <SwipeStatus outcome={swipeDirection} />
 
           <div className="mb-4 flex flex-col items-center gap-2 self-center">
             <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
@@ -127,7 +135,23 @@ const CornerDetails = (props: { contract: Contract }) => {
   )
 }
 
-const SwipeStatus = () => {
+const SwipeStatus = (props: { outcome: 'YES' | 'NO' | undefined }) => {
+  const { outcome } = props
+
+  if (outcome === 'NO') {
+    return (
+      <div className="text-scarlet-100 mr-8 flex justify-end gap-1">
+        <ArrowLeftIcon className="h-5" /> Betting NO
+      </div>
+    )
+  }
+  if (outcome === 'YES') {
+    return (
+      <div className="ml-8 flex justify-start gap-1 text-teal-100">
+        Betting YES <ArrowRightIcon className="h-5" />
+      </div>
+    )
+  }
   return (
     <Row className="items-center justify-center text-yellow-100">
       <YesLabel /> <ArrowRightIcon className="h-6 text-teal-600" />
