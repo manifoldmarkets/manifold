@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import WebView from 'react-native-webview'
+import WebView, { WebViewNavigation } from 'react-native-webview'
 import 'expo-dev-client'
 import { ENV } from 'common/envs/constants'
 import * as Device from 'expo-device'
@@ -39,33 +39,35 @@ import {
 } from 'common/native-message'
 import { useFonts, ReadexPro_400Regular } from '@expo-google-fonts/readex-pro'
 import { app, auth } from './init'
+import { OtherSiteWebview } from 'components/other-site-webview'
 console.log('using', ENV, 'env')
 console.log(
   'env not switching? run `npx expo start --clear` and then try again'
 )
 
 // Initialization
-Sentry.init({
-  dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
-  enableInExpoDevelopment: true,
-  debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
-})
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-})
+if (Device.isDevice) {
+  Sentry.init({
+    dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
+    enableInExpoDevelopment: true,
+    debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
+  })
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  })
+}
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+const isIOS = Platform.OS === 'ios'
 
 export type NavigationState = {
-  previousHomeUrl: string
-  previousUrl: string
   url: string
   loading: boolean
   canGoBack: boolean
@@ -74,7 +76,6 @@ const App = () => {
   // Init
   const hasWebViewLoaded = useRef(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
-  const isIOS = Platform.OS === 'ios'
   const webview = useRef<WebView | undefined>()
   const notificationResponseListener = useRef<Subscription | undefined>()
   useFonts({ ReadexPro_400Regular })
@@ -99,17 +100,14 @@ const App = () => {
 
   // Url management
   const [currentNavState, setCurrentNavState] = useState<NavigationState>({
-    previousHomeUrl: homeUri,
-    previousUrl: homeUri,
     url: homeUri,
     loading: true,
     canGoBack: false,
   })
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
-  const isVisitingOtherSite =
-    !currentNavState.url.startsWith(homeUri) ||
-    (currentNavState.loading &&
-      !currentNavState.previousUrl.startsWith(homeUri))
+  const [otherSiteUrl, setOtherSiteUrl] = useState<string | undefined>(
+    undefined
+  )
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     Platform.OS === 'ios' ? LinkingManager.default : null
@@ -371,17 +369,11 @@ const App = () => {
       justifyContent: 'center',
       overflow: 'hidden',
     },
-    horizontal: {
-      height: '100%',
-      justifyContent: 'space-around',
-      padding: 10,
-    },
     webView: {
       display: shouldShowWebView ? 'flex' : 'none',
       overflow: 'hidden',
       marginTop:
-        (isIOS ? 0 : RNStatusBar.currentHeight ?? 0) +
-        (isVisitingOtherSite ? 40 : 0),
+        (isIOS ? 0 : RNStatusBar.currentHeight ?? 0) + (otherSiteUrl ? 40 : 0),
       marginBottom: !isIOS ? 10 : 0,
     },
     otherSiteToolbar: {
@@ -392,7 +384,7 @@ const App = () => {
       height: isIOS ? 90 : 75,
       backgroundColor: 'lightgray',
       zIndex: 100,
-      display: isVisitingOtherSite ? 'flex' : 'none',
+      display: otherSiteUrl ? 'flex' : 'none',
     },
     row: {
       flexDirection: 'row',
@@ -428,7 +420,7 @@ const App = () => {
           <AuthPage webview={webview} height={height} width={width} />
         )
       )}
-      {Platform.OS === 'ios' && (
+      {Platform.OS === 'ios' && Device.isDevice && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
           setCheckoutAmount={setCheckoutAmount}
@@ -449,12 +441,7 @@ const App = () => {
             <Pressable
               style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
               onPress={() => {
-                const { previousHomeUrl } = currentNavState
-                // In order to make the webview load a new url manually it has to be different from the previous one
-                const back = !previousHomeUrl.includes('?')
-                  ? `${previousHomeUrl}?ignoreThisQuery=true`
-                  : `${previousHomeUrl}&ignoreThisQuery=true`
-                setUrlToLoad(back)
+                setOtherSiteUrl(undefined)
               }}
             >
               <Text style={styles.toolBarText}>Done</Text>
@@ -496,6 +483,7 @@ const App = () => {
           </View>
         </View>
         <View style={[styles.container, { position: 'relative' }]}>
+          {otherSiteUrl && <OtherSiteWebview url={otherSiteUrl} />}
           <WebView
             pullToRefreshEnabled={true}
             style={styles.webView}
@@ -537,14 +525,18 @@ const App = () => {
             }}
             // On navigation state change changes on every url change, it doesn't update loading
             onNavigationStateChange={(navState) => {
-              const { url, canGoBack } = navState
+              const { url, canGoBack, loading } = navState
+              if (!url.startsWith(homeUri)) {
+                setOtherSiteUrl(url)
+                webview.current?.stopLoading()
+              } else {
+                setOtherSiteUrl(undefined)
+              }
+              console.log('navState', url)
               setCurrentNavState({
                 ...currentNavState,
                 url,
-                previousHomeUrl: url.startsWith(homeUri)
-                  ? url
-                  : currentNavState.previousHomeUrl,
-                previousUrl: currentNavState.url,
+                loading,
                 canGoBack,
               })
               tellWebviewToSetNativeFlag()
