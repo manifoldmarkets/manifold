@@ -1,58 +1,61 @@
-import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
-import Router from 'next/router'
-
-import { toast } from 'react-hot-toast'
+import Router, { useRouter } from 'next/router'
+import { useEffect, useRef, useState } from 'react'
 
 import { Group, groupPath } from 'common/group'
-import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
-import {
-  addContractToGroup,
-  getGroupBySlug,
-  joinGroup,
-  listMemberIds,
-} from 'web/lib/firebase/groups'
-import { Row } from 'web/components/layout/row'
-import {
-  firebaseLogin,
-  getUser,
-  getUsersBlockFacetFilters,
-  User,
-} from 'web/lib/firebase/users'
+import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { Row } from 'web/components/layout/row'
+import { Leaderboard } from 'web/components/leaderboard'
+import { SEO } from 'web/components/SEO'
 import {
   useGroup,
   useGroupContractIds,
   useMemberGroupsSubscription,
 } from 'web/hooks/use-group'
-import { Leaderboard } from 'web/components/leaderboard'
-import { formatMoney } from 'common/util/format'
-import Custom404 from '../../404'
-import { SEO } from 'web/components/SEO'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
+import {
+  addContractToGroup,
+  getGroupBySlug,
+  listMemberIds,
+} from 'web/lib/firebase/groups'
+import {
+  getUser,
+  getUsersBlockFacetFilters,
+  User,
+} from 'web/lib/firebase/users'
+import Custom404 from '../../404'
 
-import { ContractSearch } from 'web/components/contract-search'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { Button } from 'web/components/buttons/button'
-import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
+import { ArrowLeftIcon, PlusCircleIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { GroupComment } from 'common/comment'
-import { getPost, listPosts } from 'web/lib/firebase/posts'
+import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
-import { usePost, usePosts } from 'web/hooks/use-post'
-import { useAdmin } from 'web/hooks/use-admin'
-import { track } from 'web/lib/service/analytics'
-import { ArrowLeftIcon } from '@heroicons/react/solid'
+import { BETTORS, PrivateUser } from 'common/user'
+import { IconButton } from 'web/components/buttons/button'
+import { ContractSearch } from 'web/components/contract-search'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
-import { BETTORS } from 'common/user'
+import { GroupAboutSection } from 'web/components/groups/group-about-section'
+import BannerImage from 'web/components/groups/group-banner-image'
+import { GroupOptions } from 'web/components/groups/group-options'
+import GroupOpenClosedWidget, {
+  GroupMembersWidget,
+} from 'web/components/groups/group-page-items'
+import { GroupPostSection } from 'web/components/groups/group-post-section'
+import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
-import { GroupAbout } from 'web/components/groups/group-about'
-import { HideGroupButton } from 'web/components/buttons/hide-group-button'
-import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
-import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useIntersection } from 'web/hooks/use-intersection'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { usePost, usePosts } from 'web/hooks/use-post'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
+import { listPosts } from 'web/lib/firebase/posts'
 
+export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -68,8 +71,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     contracts.filter((c) => (c.closeTime ?? 0) > now).length < 5
       ? 'all'
       : 'open'
-  const aboutPost =
-    group && group.aboutPostId != null ? await getPost(group.aboutPostId) : null
 
   const messages = group && (await listAllCommentsOnGroup(group.id))
 
@@ -94,7 +95,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       topTraders,
       topCreators,
       messages,
-      aboutPost,
       suggestedFilter,
       posts,
     },
@@ -146,7 +146,7 @@ export default function GroupPage(props: {
   )
 
   const group = useGroup(props.group?.id) ?? props.group
-  const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
+  const aboutPost = usePost(group?.aboutPostId) ?? null
 
   let groupPosts = usePosts(group?.postIds ?? []) ?? posts
 
@@ -172,42 +172,96 @@ export default function GroupPage(props: {
     groupId: group?.id,
   })
 
+  const [writingNewAbout, setWritingNewAbout] = useState(false)
+  const bannerRef = useRef<HTMLDivElement | null>(null)
+  const bannerVisible = useIntersection(bannerRef, '-120px')
+  const isMobile = useIsMobile()
   if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
     return <Custom404 />
   }
   const isCreator = user && group && user.id === group.creatorId
+  const isEditable = !!isCreator || isAdmin
   const maxLeaderboardSize = 50
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
   const chatEmbed = <ChatEmbed group={group} />
 
   return (
-    <Page logoSubheading={group.name} rightSidebar={chatEmbed}>
+    <Page rightSidebar={chatEmbed} touchesTop={true}>
       <SEO
         title={group.name}
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-      <TopGroupNavBar
-        group={group}
-        isMember={isMember}
-        isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
-      />
-      <div className="relative hidden justify-self-end lg:flex">
-        <Row className="absolute right-0 top-0 z-50 items-center gap-4">
-          <SimpleLinkButton
-            getUrl={() => groupUrl}
-            tooltip={`Copy link to ${group.name}`}
-          />
-
-          <JoinOrAddQuestionsButtons
-            group={group}
-            user={user}
-            isMember={!!isMember}
-            isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
-          />
-        </Row>
+      {isMobile && (
+        <TopGroupNavBar
+          group={group}
+          isMember={isMember}
+          groupUrl={groupUrl}
+          privateUser={privateUser}
+          isEditable={isEditable}
+          setWritingNewAbout={setWritingNewAbout}
+          bannerVisible={bannerVisible}
+        />
+      )}
+      {user && (
+        <AddContractButton
+          group={group}
+          user={user}
+          className="fixed bottom-16 right-2 z-50 fill-white lg:right-4 lg:bottom-4 "
+        />
+      )}
+      <div className="relative">
+        <div ref={bannerRef}>
+          <BannerImage group={group} user={user} isEditable={isEditable} />
+        </div>
+        <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
+          <Row className="mt-4 mb-2 w-full justify-between gap-1">
+            <div className="text-2xl font-normal text-gray-900 sm:text-3xl">
+              {group.name}
+            </div>
+            <Col className="justify-end">
+              <Row className="items-center gap-2">
+                {isMobile && (
+                  <JoinOrLeaveGroupButton
+                    group={group}
+                    isMember={isMember}
+                    user={user}
+                  />
+                )}
+                {!isMobile && (
+                  <>
+                    <JoinOrLeaveGroupButton
+                      group={group}
+                      isMember={isMember}
+                      user={user}
+                    />
+                    <GroupOptions
+                      group={group}
+                      groupUrl={groupUrl}
+                      privateUser={privateUser}
+                      isEditable={isEditable}
+                      setWritingNewAbout={setWritingNewAbout}
+                    />
+                  </>
+                )}
+              </Row>
+            </Col>
+          </Row>
+          <Row className="mb-2 gap-4">
+            <GroupMembersWidget group={group} />
+            <GroupOpenClosedWidget group={group} />
+          </Row>
+        </Col>
       </div>
+
+      <GroupAboutSection
+        group={group}
+        isEditable={isEditable}
+        post={aboutPost}
+        writingNewAbout={writingNewAbout}
+        setWritingNewAbout={setWritingNewAbout}
+      />
       <div className={'relative p-1 pt-0'}>
         <ControlledTabs
           activeIndex={activeIndex}
@@ -238,16 +292,12 @@ export default function GroupPage(props: {
               ),
             },
             {
-              title: 'About',
+              title: 'Posts',
               content: (
-                <GroupAbout
+                <GroupPostSection
                   group={group}
                   posts={groupPosts}
-                  isEditable={!!isCreator || isAdmin}
-                  aboutPost={aboutPost}
-                  creator={creator}
-                  user={user}
-                  isMember={isMember ?? false}
+                  isEditable={isEditable}
                 />
               ),
             },
@@ -286,13 +336,29 @@ export default function GroupPage(props: {
 export function TopGroupNavBar(props: {
   group: Group
   isMember: boolean | undefined
-  isBlocked?: boolean
+  groupUrl: string
+  privateUser: PrivateUser | undefined | null
+  isEditable: boolean
+  setWritingNewAbout: (writingNewAbout: boolean) => void
+  bannerVisible: boolean
 }) {
-  const { group, isMember, isBlocked } = props
+  const {
+    group,
+    isMember,
+    groupUrl,
+    privateUser,
+    isEditable,
+    setWritingNewAbout,
+    bannerVisible,
+  } = props
   const user = useUser()
+  const transitionClass = clsx(
+    'transition-opacity',
+    bannerVisible ? 'opacity-0' : 'opacity-100'
+  )
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 lg:hidden">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200">
       <Row className="items-center justify-between gap-2 bg-white px-2">
         <div className="flex flex-1">
           <Link
@@ -302,16 +368,33 @@ export function TopGroupNavBar(props: {
             <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
           </Link>
         </div>
-        <h1 className="truncate text-lg font-medium text-indigo-700">
+        <h1
+          className={clsx(
+            'truncate text-lg font-medium text-indigo-700 transition-all duration-500',
+            transitionClass
+          )}
+        >
           {props.group.name}
         </h1>
         <div className="flex flex-1 justify-end">
-          <JoinOrAddQuestionsButtons
-            group={group}
-            user={user}
-            isMember={isMember}
-            isBlocked={isBlocked}
-          />
+          <Row className="items-center gap-2">
+            <div className={transitionClass}>
+              <JoinOrLeaveGroupButton
+                group={group}
+                isMember={isMember}
+                user={user}
+                isMobile={true}
+                disabled={bannerVisible}
+              />
+            </div>
+            <GroupOptions
+              group={group}
+              groupUrl={groupUrl}
+              privateUser={privateUser}
+              isEditable={isEditable}
+              setWritingNewAbout={setWritingNewAbout}
+            />
+          </Row>
         </div>
       </Row>
     </header>
@@ -337,27 +420,6 @@ function ChatEmbed(props: { group: Group }) {
     )
   }
   return null
-}
-
-function JoinOrAddQuestionsButtons(props: {
-  group: Group
-  user: User | null | undefined
-  isMember: boolean | undefined
-  isBlocked?: boolean
-}) {
-  const { group, user, isMember, isBlocked } = props
-
-  if (user === undefined || isMember === undefined) return <div />
-
-  return isBlocked ? (
-    <HideGroupButton groupSlug={group.slug} />
-  ) : user && isMember ? (
-    <AddContractButton group={group} user={user} />
-  ) : group.anyoneCanJoin ? (
-    <JoinGroupButton group={group} user={user} />
-  ) : (
-    <div />
-  )
 }
 
 function GroupLeaderboard(props: {
@@ -396,8 +458,12 @@ function GroupLeaderboard(props: {
   )
 }
 
-function AddContractButton(props: { group: Group; user: User }) {
-  const { group, user } = props
+function AddContractButton(props: {
+  group: Group
+  user: User
+  className?: string
+}) {
+  const { group, user, className } = props
   const [open, setOpen] = useState(false)
   const groupContractIds = useGroupContractIds(group.id)
 
@@ -408,15 +474,16 @@ function AddContractButton(props: { group: Group; user: User }) {
   }
 
   return (
-    <>
-      <Button
-        className="whitespace-nowrap"
+    <div className={className}>
+      <IconButton
         size="md"
-        color="indigo"
         onClick={() => setOpen(true)}
+        className="drop-shadow hover:drop-shadow-lg"
       >
-        Add markets
-      </Button>
+        <div className="relative h-12 w-12 rounded-full bg-white">
+          <PlusCircleIcon className="absolute -left-2 -top-2 h-16 w-16 text-indigo-700 drop-shadow" />
+        </div>
+      </IconButton>
 
       <SelectMarketsModal
         open={open}
@@ -439,30 +506,6 @@ function AddContractButton(props: { group: Group; user: User }) {
           additionalFilter: { excludeContractIds: groupContractIds },
         }}
       />
-    </>
-  )
-}
-
-function JoinGroupButton(props: {
-  group: Group
-  user: User | null | undefined
-}) {
-  const { group, user } = props
-
-  const follow = async () => {
-    track('join group')
-    if (!user) return await firebaseLogin()
-
-    toast.promise(joinGroup(group, user.id), {
-      loading: 'Following group...',
-      success: 'Followed',
-      error: "Couldn't follow group, try again?",
-    })
-  }
-
-  return (
-    <div>
-      <Button onClick={follow}>Follow</Button>
     </div>
   )
 }

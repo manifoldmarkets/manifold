@@ -2,6 +2,9 @@ import { Fragment, ReactNode } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import clsx from 'clsx'
 
+export const MODAL_CLASS = 'items-center gap-4 rounded-md bg-white px-8 py-6'
+export const SCROLLABLE_MODAL_CLASS = 'max-h-[70vh] min-h-[20rem] overflow-auto'
+
 // From https://tailwindui.com/components/application-ui/overlays/modals
 export function Modal(props: {
   children: ReactNode
