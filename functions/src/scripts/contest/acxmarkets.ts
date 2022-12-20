@@ -1,11 +1,11 @@
 // Run with `npx ts-node src/scripts/contest/create-markets.ts`
 
-import { data } from './acxquestions'
+import { data } from './acxquestionstest'
 
-// API key for ACX Bot @ACXBot
-const API_KEY = '12bc3b92-fe0b-4339-86c3-ae0baf045ddb'
 // DEV API key for ACX Bot @ACXBot
 // const API_KEY = 'e112b79a-b843-4155-b574-02ed21095a58'
+// PROD API key for ACX Bot @ACXBot
+const API_KEY = '12bc3b92-fe0b-4339-86c3-ae0baf045ddb'
 
 type ACXSubmission = {
   ID: number
@@ -16,7 +16,7 @@ type ACXSubmission = {
 
 // Use the API to create a new market
 async function postMarket(submission: ACXSubmission) {
-  const { question } = submission
+  const { question, ID } = submission
   const response = await fetch('https://dev.manifold.markets/api/v0/market', {
     method: 'POST',
     headers: {
@@ -25,7 +25,7 @@ async function postMarket(submission: ACXSubmission) {
     },
     body: JSON.stringify({
       outcomeType: 'BINARY',
-      question: `${question}`,
+      question: `${ID}. ${question}`,
       description: makeDescription(submission),
       closeTime: Date.parse('2023-02-01 11:59:59 GMT').valueOf(),
       initialProb: 50,
@@ -38,7 +38,7 @@ async function postMarket(submission: ACXSubmission) {
 }
 
 async function postAll() {
-  for (const submission of data) {
+  for (const submission of data.reverse()) {
     await postMarket(submission)
   }
 }
@@ -50,18 +50,20 @@ function makeDescription(submission: ACXSubmission) {
   return {
     type: 'doc',
     content: [
-      {
-        type: 'paragraph',
-        content: [
-          {
-            type: 'text',
-            text: `${
-              description ?? 'No description provided, see links below.'
-            }`,
-          },
-        ],
-      },
-      { type: 'paragraph' },
+      ...(description
+        ? [
+            {
+              type: 'paragraph',
+              content: [
+                {
+                  type: 'text',
+                  text: description,
+                },
+              ],
+            },
+            { type: 'paragraph' },
+          ]
+        : []),
       {
         type: 'paragraph',
         content: [
@@ -101,7 +103,10 @@ function makeDescription(submission: ACXSubmission) {
             ],
             text: 'here',
           },
-          { type: 'text', text: '.' },
+          {
+            type: 'text',
+            text: '. Market will resolve according to Scott Alexander’s judgment, as given through future posts on Astral Codex Ten.',
+          },
         ],
       },
     ],
