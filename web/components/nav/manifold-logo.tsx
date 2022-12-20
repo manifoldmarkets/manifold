@@ -30,7 +30,7 @@ export function ManifoldLogo(props: {
         className={clsx('group flex flex-shrink-0 flex-row gap-4', className)}
       >
         <img
-          className="transition-all group-hover:rotate-12"
+          className="transition-all group-hover:rotate-12 object-contain"
           src={'/christmas_manifold_logo.png'}
           width={45}
           height={45}
