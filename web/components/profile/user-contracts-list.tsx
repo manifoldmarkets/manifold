@@ -6,6 +6,7 @@ import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { ContractSearch } from 'web/components/contract-search'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { formatWithCommas } from 'common/util/format'
 
 export function UserContractsList(props: { creator: User }) {
   const { creator } = props
@@ -38,26 +39,33 @@ export function UserContractsList(props: { creator: User }) {
   return (
     <Col className={'w-full'}>
       <Row className={'gap-8 pb-4'}>
-        <MarketStats title={'Creator rank'} total={`#${creatorRank ?? ''}`} />
+        <MarketStats
+          title={'Creator rank'}
+          total={`#${formatWithCommas(creatorRank ?? 0)}`}
+        />
         <MarketStats
           title={'Total markets'}
-          total={(marketsCreated ?? '').toString()}
+          total={formatWithCommas(marketsCreated ?? 0)}
         />
         <MarketStats
           title={'Unique traders'}
-          total={allTime.toString()}
+          total={formatWithCommas(allTime ?? 0)}
           subTitle={
-            <span
-              className={clsx(
-                'text-sm',
-                weekly > 0 ? 'text-teal-500' : 'text-scarlet-500'
-              )}
-            >
-              <Tooltip text={'7-day change'}>
-                {weekly > 0 ? '+' : ''}
-                {Math.round((weekly * 100) / allTime)}%
-              </Tooltip>
-            </span>
+            allTime === 0 ? (
+              <></>
+            ) : (
+              <span
+                className={clsx(
+                  'text-sm',
+                  weekly > 0 ? 'text-teal-500' : 'text-scarlet-500'
+                )}
+              >
+                <Tooltip text={'7-day change'}>
+                  {weekly > 0 ? '+' : ''}
+                  {Math.round((weekly * 100) / allTime)}%
+                </Tooltip>
+              </span>
+            )
           }
         />
       </Row>
