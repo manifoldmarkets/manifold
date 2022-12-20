@@ -242,7 +242,6 @@ export default function GroupPage(props: {
                       groupUrl={groupUrl}
                       privateUser={privateUser}
                       isEditable={isEditable}
-                      writingNewAbout={writingNewAbout}
                       setWritingNewAbout={setWritingNewAbout}
                     />
                   </>
@@ -396,7 +395,6 @@ export function TopGroupNavBar(props: {
               groupUrl={groupUrl}
               privateUser={privateUser}
               isEditable={isEditable}
-              writingNewAbout={writingNewAbout}
               setWritingNewAbout={setWritingNewAbout}
             />
           </Row>
