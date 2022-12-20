@@ -1,27 +1,23 @@
 import type { MentionOptions } from '@tiptap/extension-mention'
 import { ReactRenderer } from '@tiptap/react'
-import { beginsWith, searchInAny } from 'common/util/parse'
-import { orderBy } from 'lodash'
+import { beginsWith } from 'common/util/parse'
+import { sortBy, throttle } from 'lodash'
 import tippy from 'tippy.js'
-import { getCachedUsers } from 'web/hooks/use-users'
+import { searchUsers } from 'web/lib/supabase/users'
 import { MentionList } from './mention-list'
 type Render = Suggestion['render']
 
 type Suggestion = MentionOptions['suggestion']
 
+// debouncing the search return stale values so we throttle instead
+const search = throttle(searchUsers, 1000, { trailing: true, leading: true })
+
 // copied from https://tiptap.dev/api/nodes/mention#usage
 export const mentionSuggestion: Suggestion = {
   allowedPrefixes: [' '],
   items: async ({ query }) =>
-    orderBy(
-      (await getCachedUsers()).filter((u) =>
-        searchInAny(query, u.username, u.name)
-      ),
-      [
-        (u) => [u.name, u.username].some((s) => beginsWith(s, query)),
-        'followerCountCached',
-      ],
-      ['desc', 'desc']
+    sortBy(await search(query), (u: any) =>
+      [u.name, u.username].some((s) => beginsWith(s, query)) ? -1 : 0
     ).slice(0, 5),
   render: makeMentionRender(MentionList),
 }
