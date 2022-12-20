@@ -36,7 +36,7 @@ import { Subtitle } from '../widgets/subtitle'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { editorExtensions } from '../widgets/editor'
-import { CHECK_USERNAMES, CORE_USERNAMES } from 'common/lib/envs/constants'
+import { CHECK_USERNAMES, CORE_USERNAMES } from 'common/envs/constants'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
