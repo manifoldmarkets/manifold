@@ -233,11 +233,7 @@ function MarketGroups(props: { contract: Contract }) {
       {/* Put after market action icons on mobile, but before them on desktop*/}
       <Row className="order-last w-full flex-wrap items-end gap-1 sm:order-[unset]">
         {groupsToDisplay.map((group) => (
-          <GroupDisplay
-            key={group.groupId}
-            groupToDisplay={group}
-            disabled={disabled}
-          />
+          <GroupDisplay key={group.groupId} groupToDisplay={group} />
         ))}
 
         {!disabled && (
@@ -323,41 +319,20 @@ export function ExtraMobileContractDetails(props: {
   )
 }
 
-export function GroupDisplay(props: {
-  groupToDisplay?: GroupLink | null
-  disabled?: boolean
-}) {
-  const { groupToDisplay, disabled } = props
+export function GroupDisplay(props: { groupToDisplay: GroupLink }) {
+  const { groupToDisplay } = props
 
-  if (groupToDisplay) {
-    const groupSection = (
+  return (
+    <Link prefetch={false} href={groupPath(groupToDisplay.slug)} legacyBehavior>
       <a
         className={clsx(
-          'max-w-[200px] truncate whitespace-nowrap rounded-full bg-gray-400 py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
-          !disabled && 'cursor-pointer hover:bg-gray-300'
+          'max-w-[200px] truncate whitespace-nowrap rounded-full bg-gray-400 py-0.5 px-2 text-xs text-white sm:max-w-[250px]'
         )}
       >
         {groupToDisplay.name}
       </a>
-    )
-
-    return disabled ? (
-      groupSection
-    ) : (
-      <Link
-        prefetch={false}
-        href={groupPath(groupToDisplay.slug)}
-        legacyBehavior
-      >
-        {groupSection}
-      </Link>
-    )
-  } else
-    return (
-      <div className="truncate rounded-full bg-gray-400 py-0.5 px-2 text-xs text-white">
-        No Group
-      </div>
-    )
+    </Link>
+  )
 }
 
 function EditableCloseDate(props: {
