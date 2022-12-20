@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import WebView, { WebViewNavigation } from 'react-native-webview'
+import WebView from 'react-native-webview'
 import 'expo-dev-client'
 import { ENV } from 'common/envs/constants'
 import * as Device from 'expo-device'
@@ -13,9 +13,6 @@ import {
   StatusBar as RNStatusBar,
   Dimensions,
   View,
-  Text,
-  Pressable,
-  Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -26,7 +23,6 @@ import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 import { AuthPage } from 'components/auth-page'
-import { Feather, AntDesign } from '@expo/vector-icons'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
@@ -39,7 +35,11 @@ import {
 } from 'common/native-message'
 import { useFonts, ReadexPro_400Regular } from '@expo-google-fonts/readex-pro'
 import { app, auth } from './init'
-import { OtherSiteWebview } from 'components/other-site-webview'
+import {
+  handleWebviewCrash,
+  ExternalWebView,
+  sharedWebViewProps,
+} from 'components/external-web-view'
 console.log('using', ENV, 'env')
 console.log(
   'env not switching? run `npx expo start --clear` and then try again'
@@ -66,17 +66,11 @@ if (Device.isDevice) {
 const homeUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const isIOS = Platform.OS === 'ios'
-
-export type NavigationState = {
-  url: string
-  loading: boolean
-  canGoBack: boolean
-}
 const App = () => {
   // Init
-  const hasWebViewLoaded = useRef(false)
+  const [loaded, setLoaded] = useState(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
-  const webview = useRef<WebView | undefined>()
+  const webview = useRef<WebView>()
   const notificationResponseListener = useRef<Subscription | undefined>()
   useFonts({ ReadexPro_400Regular })
 
@@ -85,29 +79,21 @@ const App = () => {
   const [user, setUser] = useState(auth.currentUser)
   useEffect(() => {
     // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
-    if (hasWebViewLoaded.current) {
+    if (loaded) {
       console.log('webview loaded, waiting for auth')
       const timeout = setTimeout(() => {
         setWaitingForAuth(false)
       }, 2000)
       return () => clearTimeout(timeout)
     }
-  }, [hasWebViewLoaded.current])
+  }, [loaded])
 
   useEffect(() => {
     auth.onAuthStateChanged(setUser)
   }, [auth])
 
-  // Url management
-  const [currentNavState, setCurrentNavState] = useState<NavigationState>({
-    url: homeUri,
-    loading: true,
-    canGoBack: false,
-  })
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
-  const [otherSiteUrl, setOtherSiteUrl] = useState<string | undefined>(
-    undefined
-  )
+  const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     Platform.OS === 'ios' ? LinkingManager.default : null
@@ -119,7 +105,7 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
-    if (hasWebViewLoaded.current) {
+    if (loaded) {
       communicateWithWebview(
         'notification',
         response.notification.request.content.data
@@ -359,7 +345,7 @@ const App = () => {
     setUrlToLoad(homeUri)
   }
 
-  const shouldShowWebView = hasWebViewLoaded.current && user
+  const shouldShowWebView = loaded && user
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
@@ -372,37 +358,8 @@ const App = () => {
     webView: {
       display: shouldShowWebView ? 'flex' : 'none',
       overflow: 'hidden',
-      marginTop:
-        (isIOS ? 0 : RNStatusBar.currentHeight ?? 0) + (otherSiteUrl ? 40 : 0),
+      marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
       marginBottom: !isIOS ? 10 : 0,
-    },
-    otherSiteToolbar: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: isIOS ? 90 : 75,
-      backgroundColor: 'lightgray',
-      zIndex: 100,
-      display: otherSiteUrl ? 'flex' : 'none',
-    },
-    row: {
-      flexDirection: 'row',
-      flex: 1,
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-      marginBottom: 15,
-      marginHorizontal: 20,
-    },
-    toolBarText: {
-      fontSize: 20,
-      width: 50,
-    },
-    toolBarIcon: {
-      width: 50,
-      flex: 1,
-      flexDirection: 'row',
-      justifyContent: 'center',
     },
   })
 
@@ -429,83 +386,23 @@ const App = () => {
       )}
 
       <SafeAreaView style={styles.container}>
-        <StatusBar
-          animated={true}
-          backgroundColor="white"
-          style={'dark'}
-          hideTransitionAnimation={'none'}
-          hidden={false}
-        />
-        <View style={styles.otherSiteToolbar}>
-          <View style={styles.row}>
-            <Pressable
-              style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
-              onPress={() => {
-                setOtherSiteUrl(undefined)
-              }}
-            >
-              <Text style={styles.toolBarText}>Done</Text>
-            </Pressable>
-            <Pressable
-              style={styles.toolBarIcon}
-              onPress={async () => {
-                await Share.share({
-                  message: currentNavState.url,
-                })
-              }}
-            >
-              <Feather name="share" size={24} color="black" />
-            </Pressable>
-            <Pressable
-              style={[styles.toolBarIcon, { justifyContent: 'flex-end' }]}
-              onPress={async () => {
-                if (currentNavState.loading) {
-                  webview.current?.stopLoading()
-                  setCurrentNavState({
-                    ...currentNavState,
-                    loading: false,
-                  })
-                } else {
-                  webview.current?.reload()
-                  setCurrentNavState({
-                    ...currentNavState,
-                    loading: true,
-                  })
-                }
-              }}
-            >
-              {currentNavState.loading ? (
-                <Feather name="x" size={24} color="black" />
-              ) : (
-                <AntDesign name="reload1" size={24} color="black" />
-              )}
-            </Pressable>
-          </View>
-        </View>
+        <StatusBar animated={true} style={'dark'} hidden={false} />
+
         <View style={[styles.container, { position: 'relative' }]}>
-          {otherSiteUrl && (
-            <OtherSiteWebview url={otherSiteUrl} height={height} />
-          )}
+          <ExternalWebView
+            url={externalUrl}
+            height={height}
+            setUrl={setExternalUrl}
+          />
           <WebView
-            pullToRefreshEnabled={true}
+            {...sharedWebViewProps}
             style={styles.webView}
-            mediaPlaybackRequiresUserAction={true}
-            allowsInlineMediaPlayback={true}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            overScrollMode={'never'}
-            decelerationRate={'normal'}
-            allowsBackForwardNavigationGestures={true}
             // Load start and end is for whole website loading, not navigations within manifold
-            onLoadEnd={() => {
-              hasWebViewLoaded.current = true
-              setCurrentNavState({ ...currentNavState, loading: false })
-            }}
-            sharedCookiesEnabled={true}
+            onLoadEnd={() => setLoaded(true)}
             source={{ uri: urlToLoad }}
             //@ts-ignore
             ref={webview}
-            onError={(e) => handleWebviewError(e)}
+            onError={handleWebviewError}
             renderError={(e) => {
               // Renders this view while we resolve the error
               return (
@@ -518,47 +415,22 @@ const App = () => {
                 </View>
               )
             }}
-            onTouchStart={() => {
-              tellWebviewToSetNativeFlag()
-            }}
-            // Load start and end is for whole website loading, not navigations within manifold
-            onLoadStart={() => {
-              setCurrentNavState({ ...currentNavState, loading: true })
-            }}
-            // On navigation state change changes on every url change, it doesn't update loading
+            onTouchStart={tellWebviewToSetNativeFlag}
+            // On navigation state change changes on every url change
             onNavigationStateChange={(navState) => {
-              const { url, canGoBack, loading } = navState
+              const { url } = navState
               if (!url.startsWith(homeUri)) {
-                setOtherSiteUrl(url)
+                setExternalUrl(url)
                 webview.current?.stopLoading()
               } else {
-                setOtherSiteUrl(undefined)
-                console.log('navState', url)
-                setCurrentNavState({
-                  ...currentNavState,
-                  url,
-                  loading,
-                  canGoBack,
-                })
+                setExternalUrl(undefined)
                 tellWebviewToSetNativeFlag()
               }
             }}
-            onRenderProcessGone={(syntheticEvent) => {
-              const { nativeEvent } = syntheticEvent
-              console.warn(
-                'Content process terminated, reloading android',
-                nativeEvent.didCrash
-              )
-              webview.current?.reload()
-            }}
-            onContentProcessDidTerminate={(syntheticEvent) => {
-              const { nativeEvent } = syntheticEvent
-              console.warn(
-                'Content process terminated, reloading ios ',
-                nativeEvent
-              )
-              webview.current?.reload()
-            }}
+            onRenderProcessGone={(e) => handleWebviewCrash(webview.current, e)}
+            onContentProcessDidTerminate={(e) =>
+              handleWebviewCrash(webview.current, e)
+            }
             onMessage={handleMessageFromWebview}
           />
         </View>
