@@ -1,6 +1,6 @@
 // Run with `npx ts-node src/scripts/contest/create-markets.ts`
 
-import { data } from './acxquestionstest'
+import { data } from './acxquestions'
 
 // DEV API key for ACX Bot @ACXBot
 // const API_KEY = 'e112b79a-b843-4155-b574-02ed21095a58'
@@ -17,7 +17,7 @@ type ACXSubmission = {
 // Use the API to create a new market
 async function postMarket(submission: ACXSubmission) {
   const { question, ID } = submission
-  const response = await fetch('https://dev.manifold.markets/api/v0/market', {
+  const response = await fetch('https://manifold.markets/api/v0/market', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -30,7 +30,7 @@ async function postMarket(submission: ACXSubmission) {
       closeTime: Date.parse('2023-02-01 11:59:59 GMT').valueOf(),
       initialProb: 50,
       // groupId: 'f5Lnf2ZMFYvPLPAwQOSG', // [DEV] ACX Questions
-      groupId: 'f5Lnf2ZMFYvPLPAwQOSG', // [PROD] ACX questions
+      groupId: '9I1OV8xJtT13s6GPQLoH', // [PROD] ACX questions
     }),
   })
   const data = await response.json()
@@ -38,7 +38,8 @@ async function postMarket(submission: ACXSubmission) {
 }
 
 async function postAll() {
-  for (const submission of data.reverse()) {
+  data.reverse()
+  for (const submission of data) {
     await postMarket(submission)
   }
 }
