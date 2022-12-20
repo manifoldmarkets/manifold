@@ -26,7 +26,6 @@ import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
   NotificationGroup,
   useGroupedNotifications,
@@ -34,14 +33,20 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser } from 'web/hooks/use-user'
+import { XIcon } from '@heroicons/react/outline'
+import { updatePrivateUser } from 'web/lib/firebase/users'
+import { isAndroid, isIOS } from 'web/lib/util/device'
+import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
+import { MobileAppsQRCodeButton } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { getNativePlatform } from 'web/lib/native/is-native'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
   const router = useRouter()
   const [navigateToSection, setNavigateToSection] = useState<string>()
   const [activeIndex, setActiveIndex] = useState(0)
+  const { isNative } = getNativePlatform()
   useRedirectIfSignedOut()
-  const isMobile = useIsMobile()
 
   useEffect(() => {
     const query = { ...router.query }
@@ -56,12 +61,57 @@ export default function Notifications() {
   return (
     <Page>
       <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
-        <Row
-          className={clsx('w-full justify-between', isMobile ? 'hidden' : '')}
-        >
+        <Row className={clsx('hidden w-full justify-between lg:block')}>
           <Title text={'Notifications'} className="grow" />
         </Row>
         <SEO title="Notifications" description="Manifold user notifications" />
+        {privateUser && !privateUser.hasSeenAppBannerInNotificationsOn && (
+          <Row className="relative rounded-md bg-blue-50 p-2">
+            <XIcon
+              onClick={() =>
+                updatePrivateUser(privateUser.id, {
+                  hasSeenAppBannerInNotificationsOn: Date.now(),
+                })
+              }
+              className={
+                'absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full bg-gray-100 sm:p-0.5'
+              }
+            />
+            <span className={'text-sm sm:text-base'}>
+              <Row className={'items-center'}>
+                We have a mobile app! Get the Manifold icon on your home screen
+                and push notifications (if you want 'em).
+                <Col
+                  className={
+                    'min-w-fit items-center justify-center p-2 md:flex-row'
+                  }
+                >
+                  {isNative ? (
+                    <div />
+                  ) : isAndroid() ? (
+                    <a className="badge" href={GOOGLE_PLAY_APP_URL}>
+                      <img
+                        className={'w-36'}
+                        alt="Get it on Google Play"
+                        src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+                      />
+                    </a>
+                  ) : isIOS() ? (
+                    <a className="badge" href={APPLE_APP_URL}>
+                      <img
+                        className={'w-26'}
+                        src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1668902400&h=9016541b6bb4c335b714be9b2a57b4bf"
+                        alt="Download on the App Store"
+                      />
+                    </a>
+                  ) : (
+                    <MobileAppsQRCodeButton />
+                  )}
+                </Col>
+              </Row>
+            </span>
+          </Row>
+        )}
 
         {privateUser && router.isReady && (
           <div className="relative h-full w-full">

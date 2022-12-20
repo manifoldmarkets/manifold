@@ -53,6 +53,7 @@ export type User = {
 
 export type PrivateUser = {
   id: string // same as User.id
+  /** @deprecated - username on private user is not kept up to date **/
   username: string // denormalized from User
 
   email?: string
@@ -78,7 +79,7 @@ export type PrivateUser = {
   blockedByUserIds: string[]
   blockedContractIds: string[]
   blockedGroupSlugs: string[]
-  hasSignedEula?: boolean
+  hasSeenAppBannerInNotificationsOn?: number
 }
 
 export type PortfolioMetrics = {
