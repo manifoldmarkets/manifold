@@ -65,52 +65,55 @@ export default function Notifications() {
           <Title text={'Notifications'} className="grow" />
         </Row>
         <SEO title="Notifications" description="Manifold user notifications" />
-        {privateUser && !privateUser.hasSeenAppBannerInNotificationsOn && (
-          <Row className="relative rounded-md bg-blue-50 p-2">
-            <XIcon
-              onClick={() =>
-                updatePrivateUser(privateUser.id, {
-                  hasSeenAppBannerInNotificationsOn: Date.now(),
-                })
-              }
-              className={
-                'absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full bg-gray-100 sm:p-0.5'
-              }
-            />
-            <span className={'text-sm sm:text-base'}>
-              <Row className={'items-center'}>
-                We have a mobile app! Get the Manifold icon on your home screen
-                and push notifications (if you want 'em).
-                <Col
-                  className={
-                    'min-w-fit items-center justify-center p-2 md:flex-row'
-                  }
-                >
-                  {isNative ? (
-                    <div />
-                  ) : isAndroid() ? (
-                    <a className="badge" href={GOOGLE_PLAY_APP_URL}>
-                      <img
-                        className={'w-36'}
-                        alt="Get it on Google Play"
-                        src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-                      />
-                    </a>
-                  ) : isIOS() ? (
-                    <a className="badge" href={APPLE_APP_URL}>
-                      <img
-                        className={'w-26'}
-                        src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1668902400&h=9016541b6bb4c335b714be9b2a57b4bf"
-                        alt="Download on the App Store"
-                      />
-                    </a>
-                  ) : (
-                    <MobileAppsQRCodeButton />
-                  )}
-                </Col>
-              </Row>
-            </span>
-          </Row>
+        {isNative ? (
+          <div />
+        ) : (
+          privateUser &&
+          !privateUser.hasSeenAppBannerInNotificationsOn && (
+            <Row className="relative rounded-md bg-blue-50 p-2">
+              <XIcon
+                onClick={() =>
+                  updatePrivateUser(privateUser.id, {
+                    hasSeenAppBannerInNotificationsOn: Date.now(),
+                  })
+                }
+                className={
+                  'absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full bg-gray-100 sm:p-0.5'
+                }
+              />
+              <span className={'text-sm sm:text-base'}>
+                <Row className={'items-center'}>
+                  We have a mobile app! Get the Manifold icon on your home
+                  screen and push notifications (if you want 'em).
+                  <Col
+                    className={
+                      'min-w-fit items-center justify-center p-2 md:flex-row'
+                    }
+                  >
+                    {isAndroid() ? (
+                      <a className="badge" href={GOOGLE_PLAY_APP_URL}>
+                        <img
+                          className={'w-36'}
+                          alt="Get it on Google Play"
+                          src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+                        />
+                      </a>
+                    ) : isIOS() ? (
+                      <a className="badge" href={APPLE_APP_URL}>
+                        <img
+                          className={'w-26'}
+                          src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1668902400&h=9016541b6bb4c335b714be9b2a57b4bf"
+                          alt="Download on the App Store"
+                        />
+                      </a>
+                    ) : (
+                      <MobileAppsQRCodeButton />
+                    )}
+                  </Col>
+                </Row>
+              </span>
+            </Row>
+          )
         )}
 
         {privateUser && router.isReady && (
