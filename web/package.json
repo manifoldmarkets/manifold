@@ -12,6 +12,7 @@
     "dev:local": "cross-env NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8080 yarn devdev",
     "dev:emulate": "cross-env NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
     "space-info": "du -hs ./node_modules && du -hs ./.next && du -hs ./.next/cache && du -hs ./.next/server && du -hs ./.next/static",
+    "install": "yarn space-info",
     "build": "yarn space-info && next build",
     "start": "next start",
     "lint": "next lint",
