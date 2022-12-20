@@ -1,22 +1,20 @@
 import type { MentionOptions } from '@tiptap/extension-mention'
 import { ReactRenderer } from '@tiptap/react'
 import { beginsWith } from 'common/util/parse'
-import { debounce, orderBy } from 'lodash'
+import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
-import { searchUsers } from 'web/lib/supabase/stuff'
+import { searchUsers } from 'web/lib/supabase/users'
 import { MentionList } from './mention-list'
 type Render = Suggestion['render']
 
 type Suggestion = MentionOptions['suggestion']
-
-const search = debounce(searchUsers, 100)
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
 export const mentionSuggestion: Suggestion = {
   allowedPrefixes: [' '],
   items: async ({ query }) =>
     orderBy(
-      await search(query),
+      await searchUsers(query),
       [
         (u: any) => [u.name, u.username].some((s) => beginsWith(s, query)),
         'followerCountCached',
