@@ -65,7 +65,6 @@ export function CollapsibleContent(props: {
       }
     }
   }, [contentRef.current?.offsetHeight])
-  console.log(shouldAllowCollapseOfContent)
   if (shouldAllowCollapseOfContent) {
     return (
       <ActuallyCollapsibleContent content={content} contractId={contractId} />

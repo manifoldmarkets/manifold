@@ -23,25 +23,6 @@ import { Spacer } from '../layout/spacer'
 import { Content } from '../widgets/editor'
 import { ExpandableContent } from '../widgets/expandable-content'
 
-export function GroupAboutSection(props: {
-  group: Group
-  isEditable: boolean
-  aboutPost: Post | null
-}) {
-  const { group, isEditable, aboutPost } = props
-  return (
-    <Col className="my-2 px-0">
-      {aboutPost && (
-        <GroupOverviewPost
-          group={group}
-          isEditable={isEditable}
-          post={aboutPost}
-        />
-      )}
-    </Col>
-  )
-}
-
 function GroupAboutModalContent(props: {
   content: JSONContent | string
   groupName: string
@@ -55,19 +36,27 @@ function GroupAboutModalContent(props: {
   )
 }
 
-export function GroupOverviewPost(props: {
+export function GroupAboutSection(props: {
   group: Group
   isEditable: boolean
   post: Post | null
+  writingNewAbout: boolean
+  setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
-  const { group, isEditable, post } = props
-  // const post = usePost(group.aboutPostId) ?? props.post
-  if (post && post.content) {
+  const { group, isEditable, post, writingNewAbout, setWritingNewAbout } = props
+  if ((post && post.content) || writingNewAbout) {
     return (
-      <Col className="group gap-2 px-4 py-2 lg:px-0">
+      <Col className="group my-2 gap-2 px-4 py-2 lg:px-0">
         <div className=" text-gray-500">ABOUT</div>
-        {isEditable && <EditableGroupAbout group={group} post={post} />}
-        {!isEditable && (
+        {isEditable && (
+          <EditableGroupAbout
+            group={group}
+            post={post}
+            writingNewAbout={writingNewAbout}
+            setWritingNewAbout={setWritingNewAbout}
+          />
+        )}
+        {!isEditable && post && post.content && (
           <ExpandableContent
             content={post.content}
             modalContent={
@@ -112,8 +101,13 @@ export async function savePost(
   }
 }
 
-function EditableGroupAbout(props: { group: Group; post: Post }) {
-  const { group, post } = props
+function EditableGroupAbout(props: {
+  group: Group
+  post: Post | null
+  writingNewAbout: boolean
+  setWritingNewAbout: (writingNewAbout: boolean) => void
+}) {
+  const { group, post, writingNewAbout, setWritingNewAbout } = props
   const [editing, setEditing] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
@@ -123,7 +117,7 @@ function EditableGroupAbout(props: { group: Group; post: Post }) {
     size: 'lg',
   })
 
-  return editing ? (
+  return editing || writingNewAbout ? (
     <>
       <TextEditor editor={editor} />
       <Spacer h={2} />
@@ -134,6 +128,9 @@ function EditableGroupAbout(props: { group: Group; post: Post }) {
         <Button
           onClick={async () => {
             await savePost(editor, group, post)
+            if (writingNewAbout) {
+              setWritingNewAbout(false)
+            }
             setEditing(false)
           }}
         >
@@ -141,7 +138,7 @@ function EditableGroupAbout(props: { group: Group; post: Post }) {
         </Button>
       </Row>
     </>
-  ) : (
+  ) : post && post.content ? (
     <div className="relative">
       <Row className="absolute -top-8 right-0 transition-all group-hover:visible md:invisible">
         <Button
@@ -181,6 +178,8 @@ function EditableGroupAbout(props: { group: Group; post: Post }) {
         group={group}
       />
     </div>
+  ) : (
+    <></>
   )
 }
 

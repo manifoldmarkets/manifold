@@ -31,7 +31,7 @@ export function getBlockGroupDropdownItem(props: {
   return {
     name: isBlocked
       ? 'Unblock questions from this group'
-      : "Don't see questions from this group",
+      : "Don't show questions from this group",
     icon: isBlocked ? (
       <CheckIcon className="h-5 w-5" />
     ) : (

@@ -86,14 +86,17 @@ export function ChangeBannerModal(props: {
 
     await uploadImage(user.username, file)
       .then(async (url) => {
+        setError(undefined)
         setFileUrl(url)
         setBannerSelection(url)
         setFileLoading(false)
       })
-      .catch(() => {
+      .catch((e) => {
+        setError(e)
         setFileLoading(false)
       })
   }
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>

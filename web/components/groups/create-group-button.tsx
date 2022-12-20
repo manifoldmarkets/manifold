@@ -10,7 +10,7 @@ import { Col } from '../layout/col'
 import { TextEditor, useTextEditor } from '../widgets/editor'
 import { Input } from '../widgets/input'
 import { Title } from '../widgets/title'
-import { savePost } from './group-overview-post'
+import { savePost } from './group-about-section'
 
 export function editorHasContent(editor: Editor | null) {
   if (!editor) {

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Router, { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Group, groupPath } from 'common/group'
 import { formatMoney } from 'common/util/format'
@@ -29,6 +29,7 @@ import {
 import Custom404 from '../../404'
 
 import { ArrowLeftIcon, PlusCircleIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { GroupComment } from 'common/comment'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
@@ -36,22 +37,23 @@ import { BETTORS, PrivateUser } from 'common/user'
 import { IconButton } from 'web/components/buttons/button'
 import { ContractSearch } from 'web/components/contract-search'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
-import { GroupPostSection } from 'web/components/groups/group-post-section'
+import { GroupAboutSection } from 'web/components/groups/group-about-section'
 import BannerImage from 'web/components/groups/group-banner-image'
 import { GroupOptions } from 'web/components/groups/group-options'
 import GroupOpenClosedWidget, {
   GroupMembersWidget,
 } from 'web/components/groups/group-page-items'
+import { GroupPostSection } from 'web/components/groups/group-post-section'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { useAdmin } from 'web/hooks/use-admin'
+import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePost, usePosts } from 'web/hooks/use-post'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
-import { getPost, listPosts } from 'web/lib/firebase/posts'
-import { GroupAboutSection } from 'web/components/groups/group-overview-post'
+import { listPosts } from 'web/lib/firebase/posts'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -69,8 +71,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     contracts.filter((c) => (c.closeTime ?? 0) > now).length < 5
       ? 'all'
       : 'open'
-  const aboutPost =
-    group && group.aboutPostId != null ? await getPost(group.aboutPostId) : null
 
   const messages = group && (await listAllCommentsOnGroup(group.id))
 
@@ -95,7 +95,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       topTraders,
       topCreators,
       messages,
-      aboutPost,
       suggestedFilter,
       posts,
     },
@@ -147,7 +146,7 @@ export default function GroupPage(props: {
   )
 
   const group = useGroup(props.group?.id) ?? props.group
-  const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
+  const aboutPost = usePost(group?.aboutPostId) ?? null
 
   let groupPosts = usePosts(group?.postIds ?? []) ?? posts
 
@@ -173,6 +172,9 @@ export default function GroupPage(props: {
     groupId: group?.id,
   })
 
+  const [writingNewAbout, setWritingNewAbout] = useState(false)
+  const bannerRef = useRef<HTMLDivElement | null>(null)
+  const bannerVisible = useIntersection(bannerRef, '-120px')
   const isMobile = useIsMobile()
   if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
     return <Custom404 />
@@ -198,6 +200,9 @@ export default function GroupPage(props: {
           groupUrl={groupUrl}
           privateUser={privateUser}
           isEditable={isEditable}
+          writingNewAbout={writingNewAbout}
+          setWritingNewAbout={setWritingNewAbout}
+          bannerVisible={bannerVisible}
         />
       )}
       {user && (
@@ -208,7 +213,9 @@ export default function GroupPage(props: {
         />
       )}
       <div className="relative">
-        <BannerImage group={group} user={user} isEditable={isEditable} />
+        <div ref={bannerRef}>
+          <BannerImage group={group} user={user} isEditable={isEditable} />
+        </div>
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
           <Row className="mt-4 mb-2 w-full justify-between gap-1">
             <div className="text-2xl font-normal text-gray-900 sm:text-3xl">
@@ -235,6 +242,8 @@ export default function GroupPage(props: {
                       groupUrl={groupUrl}
                       privateUser={privateUser}
                       isEditable={isEditable}
+                      writingNewAbout={writingNewAbout}
+                      setWritingNewAbout={setWritingNewAbout}
                     />
                   </>
                 )}
@@ -251,7 +260,9 @@ export default function GroupPage(props: {
       <GroupAboutSection
         group={group}
         isEditable={isEditable}
-        aboutPost={aboutPost}
+        post={aboutPost}
+        writingNewAbout={writingNewAbout}
+        setWritingNewAbout={setWritingNewAbout}
       />
       <div className={'relative p-1 pt-0'}>
         <ControlledTabs
@@ -330,9 +341,25 @@ export function TopGroupNavBar(props: {
   groupUrl: string
   privateUser: PrivateUser | undefined | null
   isEditable: boolean
+  writingNewAbout: boolean
+  setWritingNewAbout: (writingNewAbout: boolean) => void
+  bannerVisible: boolean
 }) {
-  const { group, isMember, groupUrl, privateUser, isEditable } = props
+  const {
+    group,
+    isMember,
+    groupUrl,
+    privateUser,
+    isEditable,
+    writingNewAbout,
+    setWritingNewAbout,
+    bannerVisible,
+  } = props
   const user = useUser()
+  const transitionClass = clsx(
+    'transition-opacity',
+    bannerVisible ? 'opacity-0' : 'opacity-100'
+  )
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200">
@@ -345,22 +372,32 @@ export function TopGroupNavBar(props: {
             <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
           </Link>
         </div>
-        <h1 className="truncate text-lg font-medium text-indigo-700">
+        <h1
+          className={clsx(
+            'truncate text-lg font-medium text-indigo-700 transition-all duration-500',
+            transitionClass
+          )}
+        >
           {props.group.name}
         </h1>
         <div className="flex flex-1 justify-end">
           <Row className="items-center gap-2">
-            <JoinOrLeaveGroupButton
-              group={group}
-              isMember={isMember}
-              user={user}
-              isMobile={true}
-            />
+            <div className={transitionClass}>
+              <JoinOrLeaveGroupButton
+                group={group}
+                isMember={isMember}
+                user={user}
+                isMobile={true}
+                disabled={bannerVisible}
+              />
+            </div>
             <GroupOptions
               group={group}
               groupUrl={groupUrl}
               privateUser={privateUser}
               isEditable={isEditable}
+              writingNewAbout={writingNewAbout}
+              setWritingNewAbout={setWritingNewAbout}
             />
           </Row>
         </div>
@@ -443,8 +480,14 @@ function AddContractButton(props: {
 
   return (
     <div className={className}>
-      <IconButton size="md" onClick={() => setOpen(true)}>
-        <PlusCircleIcon className="h-16 w-16 text-indigo-700 drop-shadow" />
+      <IconButton
+        size="md"
+        onClick={() => setOpen(true)}
+        className="drop-shadow hover:drop-shadow-lg"
+      >
+        <div className="relative h-12 w-12 rounded-full bg-white">
+          <PlusCircleIcon className="absolute -left-2 -top-2 h-16 w-16 text-indigo-700 drop-shadow" />
+        </div>
       </IconButton>
 
       <SelectMarketsModal

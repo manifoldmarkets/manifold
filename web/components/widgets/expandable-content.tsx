@@ -7,10 +7,7 @@ import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import {
-  COLLAPSIBLE_HEIGHT,
-  SHOW_COLLAPSE_TRESHOLD,
-} from './collapsible-content'
+import { SHOW_COLLAPSE_TRESHOLD } from './collapsible-content'
 import { Content } from './editor'
 
 export function ExpandButton(props: {
@@ -80,10 +77,7 @@ function ExpandsToModalContent(props: {
   return (
     <>
       <Col className="relative gap-1">
-        <div
-          style={{ height: COLLAPSIBLE_HEIGHT }}
-          className={clsx('relative w-full overflow-hidden')}
-        >
+        <div className={clsx('line-clamp-2 relative w-full overflow-hidden')}>
           <Content content={content} />
         </div>
         <Row className="w-full justify-end">

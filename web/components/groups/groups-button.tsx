@@ -1,21 +1,21 @@
+import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useState } from 'react'
-import { withTracking } from 'web/lib/service/analytics'
+import toast from 'react-hot-toast'
+import { TextButton } from 'web/components/buttons/text-button'
+import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { useMemberGroupsSubscription } from 'web/hooks/use-group'
-import { TextButton } from 'web/components/buttons/text-button'
-import { Group } from 'common/group'
-import { Modal } from 'web/components/layout/modal'
-import { Col } from 'web/components/layout/col'
+import { useUser } from 'web/hooks/use-user'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { GroupLinkItem } from 'web/pages/groups'
-import toast from 'react-hot-toast'
-import { Button, IconButton } from '../buttons/button'
-import { useUser } from 'web/hooks/use-user'
-import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
+import { withTracking } from 'web/lib/service/analytics'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
+import { GroupLinkItem } from 'web/pages/groups'
+import { Button } from '../buttons/button'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -88,8 +88,9 @@ export function JoinOrLeaveGroupButton(props: {
   user: User | undefined | null
   className?: string
   isMobile?: boolean
+  disabled?: boolean
 }) {
-  const { group, className, isMember, user, isMobile } = props
+  const { group, className, isMember, user, isMobile, disabled } = props
 
   if (!group.anyoneCanJoin) {
     return <></>
@@ -112,7 +113,7 @@ export function JoinOrLeaveGroupButton(props: {
   if (isMember) {
     if (isMobile) {
       return (
-        <button className={className} onClick={unfollow}>
+        <button className={className} onClick={unfollow} disabled={disabled}>
           <UserRemoveIcon className={clsx('h-5 w-5', groupButtonClass)} />
         </button>
       )
@@ -129,9 +130,9 @@ export function JoinOrLeaveGroupButton(props: {
 
   if (isMobile) {
     return (
-      <IconButton className={className} onClick={follow}>
+      <button className={className} onClick={follow} disabled={disabled}>
         <UserAddIcon className={clsx('h-5 w-5', groupButtonClass)} />
-      </IconButton>
+      </button>
     )
   }
   return (

@@ -2,12 +2,10 @@ import { DotsVerticalIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { PrivateUser } from 'common/user'
-import { useState } from 'react'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { SimpleLinkButton } from '../buttons/simple-link-button'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
-import { CreateAboutGroupModal } from './create-about-group'
 import { getBlockGroupDropdownItem } from './hide-group-item'
 
 export function GroupOptions(props: {
@@ -15,9 +13,9 @@ export function GroupOptions(props: {
   groupUrl: string
   privateUser: PrivateUser | undefined | null
   isEditable: boolean
+  setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
-  const { group, groupUrl, privateUser, isEditable } = props
-  const [openCreateAboutModal, setOpenCreateAboutModal] = useState(false)
+  const { group, groupUrl, privateUser, isEditable, setWritingNewAbout } = props
   let groupOptionItems = [] as DropdownItem[]
 
   if (privateUser) {
@@ -31,7 +29,7 @@ export function GroupOptions(props: {
       groupOptionItems = groupOptionItems.concat({
         name: 'Create about section',
         icon: <PlusCircleIcon className="h-5 w-5" />,
-        onClick: () => setOpenCreateAboutModal(true),
+        onClick: () => setWritingNewAbout(true),
       })
     }
   }
@@ -50,14 +48,10 @@ export function GroupOptions(props: {
               <DotsVerticalIcon className={clsx('h-5 w-5', groupButtonClass)} />
             }
             MenuWidth={'w-60'}
+            className="z-40"
           />
         )}
       </Row>
-      <CreateAboutGroupModal
-        open={openCreateAboutModal}
-        setOpen={setOpenCreateAboutModal}
-        group={group}
-      />
     </>
   )
 }
