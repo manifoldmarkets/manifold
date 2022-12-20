@@ -45,7 +45,7 @@ async function postAll() {
 postAll()
 
 function makeDescription(submission: ACXSubmission) {
-  const { ID, description, category } = submission
+  const { ID, description } = submission
 
   return {
     type: 'doc',
