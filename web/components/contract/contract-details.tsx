@@ -36,6 +36,7 @@ import { Subtitle } from '../widgets/subtitle'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { editorExtensions } from '../widgets/editor'
+import { CHECK_USERNAMES, CORE_USERNAMES } from 'common/lib/envs/constants'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -216,11 +217,16 @@ export function CloseOrResolveTime(props: {
   } else return <></>
 }
 
-function MarketGroups(props: { contract: Contract; disabled?: boolean }) {
+function MarketGroups(props: { contract: Contract }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const { contract, disabled } = props
+  const { contract } = props
   const groupsToDisplay = getGroupLinksToDisplay(contract)
+  const disabled =
+    !user ||
+    (!CORE_USERNAMES.includes(user.username) &&
+      !CHECK_USERNAMES.includes(user.username) &&
+      contract.creatorId !== user.id)
 
   return (
     <>
@@ -234,7 +240,7 @@ function MarketGroups(props: { contract: Contract; disabled?: boolean }) {
           />
         ))}
 
-        {!disabled && user && (
+        {!disabled && (
           <button
             className="text-gray-400 hover:text-gray-300"
             onClick={() => setOpen(true)}
