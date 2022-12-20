@@ -31,7 +31,7 @@ import WebView from 'react-native-webview'
 import * as Google from 'expo-auth-session/providers/google'
 import { ENV_CONFIG } from 'common/envs/constants'
 import * as Sentry from 'sentry-expo'
-import { Text } from './Text'
+import { Text } from 'components/text'
 
 export const AuthPage = (props: {
   webview: React.RefObject<WebView | undefined>
