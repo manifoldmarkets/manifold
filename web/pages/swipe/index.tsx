@@ -146,7 +146,13 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
         onBet(outcome)
         didBet = true
       }
-      setSwipeDirection(!down || mx === 0 ? undefined : mx > 0 ? 'YES' : 'NO')
+      setSwipeDirection(
+        !down || cappedDist < horizontalSwipeDist
+          ? undefined
+          : mx > 0
+          ? 'YES'
+          : 'NO'
+      )
       const x = down ? Math.sign(mx) * cappedDist : 0
 
       let newIndex = index
