@@ -161,7 +161,7 @@ export const useUserRecommendedMarkets = (
     viewedMarketCardEvents.data?.map((e) => e.contractId) ?? []
   // get the count the number of times each market card was viewed
   const marketCardViewCounts = countBy(viewedMarketCardIds)
-  // filter out markets that were viewed 3 times
+  // filter out market cards that were viewed 4+ times
   const viewedMultipleTimesMarketIds = uniq(viewedMarketCardIds).filter(
     (id) => marketCardViewCounts[id] < 4
   )
@@ -176,13 +176,12 @@ export const useUserRecommendedMarkets = (
     recentBetOnContractMetrics
   )
 
-  // TODO: we shouldn't just get unique ids here, but weight them by how many times they've been viewed
-  const contractsRelatedToUser = sampleSize(
-    recentContractMetrics.data?.map((m) => m.contractId) ?? [],
-    10
-  )
+  const betOnContractIds =
+    recentContractMetrics.data?.map((m) => m.contractId) ?? []
+  const contractsRelatedToUser = sampleSize(betOnContractIds, 10)
 
   if (contractsRelatedToUser.length < 10) {
+    // TODO: we shouldn't just get unique ids here, but weight them by how many times they've been viewed
     const allSeenContractIds = uniq(
       viewedMarketEvents.data?.map((e) => e.contractId) ?? []
     )
@@ -197,8 +196,9 @@ export const useUserRecommendedMarkets = (
     contractsRelatedToUser,
     userId,
     count,
-    contractsRelatedToUser.concat(viewedMultipleTimesMarketIds ?? [])
-    contractsRelatedToUser.concat(excludeContractIds)
+    excludeContractIds.concat(
+      betOnContractIds.concat(viewedMultipleTimesMarketIds)
+    )
   )
 
   return recommendedContracts
