@@ -140,25 +140,29 @@ const SwipeStatus = (props: { outcome: 'YES' | 'NO' | undefined }) => {
 
   if (outcome === 'NO') {
     return (
-      <div className="text-scarlet-100 mr-8 flex justify-end gap-1">
+      <Row className="text-scarlet-100 mr-8 items-center justify-end gap-1">
         <ArrowLeftIcon className="h-5" /> Betting NO
-      </div>
+      </Row>
     )
   }
   if (outcome === 'YES') {
     return (
-      <div className="ml-8 flex justify-start gap-1 text-teal-100">
+      <Row className="ml-8 items-center justify-start gap-1 text-teal-100">
         Betting YES <ArrowRightIcon className="h-5" />
-      </div>
+      </Row>
     )
   }
   return (
     <Row className="items-center justify-center text-yellow-100">
-      <YesLabel /> <ArrowRightIcon className="h-6 text-teal-600" />
-      <span className="mx-4 whitespace-nowrap text-yellow-100">
+      <Row className="gap-1">
+        <YesLabel /> <ArrowRightIcon className="h-6 text-teal-600" />
+      </Row>
+      <span className="mx-8 whitespace-nowrap text-yellow-100">
         Swipe to bet
       </span>
-      <ArrowLeftIcon className="text-scarlet-600 h-6" /> <NoLabel />
+      <Row className="gap-1">
+        <ArrowLeftIcon className="text-scarlet-600 h-6" /> <NoLabel />
+      </Row>
     </Row>
   )
 }
