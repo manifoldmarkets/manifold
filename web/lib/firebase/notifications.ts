@@ -70,14 +70,15 @@ export const setPushTokenRequestDenied = async (userId: string) => {
 
 export function listenForNotifications(
   userId: string,
-  setNotifictions: (notifications: Notification[]) => void
+  setNotifictions: (notifications: Notification[]) => void,
+  // Nobody's going through 10 pages of notifications, right?
+  count = 10 * NOTIFICATIONS_PER_PAGE
 ) {
   const notifsCollection = collection(db, `/users/${userId}/notifications`)
   const q = query(
     notifsCollection,
     orderBy('createdTime', 'desc'),
-    // Nobody's going through 10 pages of notifications, right?
-    limit(NOTIFICATIONS_PER_PAGE * 10)
+    limit(count)
   )
   return listenForValues<Notification>(q, setNotifictions)
 }
