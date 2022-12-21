@@ -40,7 +40,10 @@ export async function getStaticProps() {
 }
 
 export default function Swipe(props: { contracts: BinaryContract[] }) {
-  const [amount, setAmount] = useState(10)
+  const [amount, setAmount] = usePersistentState(10, {
+    key: 'swipe-amount',
+    store: inMemoryStore(),
+  })
 
   const old = useSwipes()
   const newToMe = useMemo(
