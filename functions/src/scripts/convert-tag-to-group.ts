@@ -43,6 +43,7 @@ const createGroup = async (
     totalMembers: 1,
     postIds: [],
     pinnedItems: [],
+    bannerUrl: '/group/default_group_banner_indigo.png',
   }
   await groupRef.create(group)
   // create a GroupMemberDoc for the creator

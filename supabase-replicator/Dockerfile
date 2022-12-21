@@ -1,6 +1,6 @@
 # prereq: first do `yarn build` to compile typescript & etc.
 
-FROM node:18-slim
+FROM node:19-slim
 WORKDIR /usr/src/app
 
 # first get dependencies in for efficient docker layering

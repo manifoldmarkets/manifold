@@ -4,7 +4,10 @@ import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
-import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
+import {
+  useFirstPageOfNotifications,
+  useGroupedUnseenNotifications,
+} from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
 
@@ -28,6 +31,9 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
       setSeen(pathname.endsWith('notifications'))
     }
   }, [isReady, pathname])
+
+  // Cache notifications.
+  useFirstPageOfNotifications(privateUser)
 
   const unseenCount = (useGroupedUnseenNotifications(privateUser) ?? []).length
   if (!unseenCount || seen) {

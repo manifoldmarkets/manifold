@@ -15,10 +15,9 @@ import { filterDefined } from '../../common/util/array'
 import { DAY_MS } from '../../common/util/time'
 import { partition, sortBy, uniq, uniqBy } from 'lodash'
 import { Bet } from '../../common/bet'
-import { sendWeeklyPortfolioUpdateEmail } from './emails'
+import { emailMoneyFormat, sendWeeklyPortfolioUpdateEmail } from './emails'
 import { contractUrl } from './utils'
 import { Txn } from '../../common/txn'
-import { formatMoney } from '../../common/util/format'
 import { Reaction, ReactionTypes } from '../../common/reaction'
 import { ContractMetric } from '../../common/contract-metric'
 
@@ -184,8 +183,9 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         Math.round(user.profitCached.weekly) === 0
           ? 0
           : Math.floor(user.profitCached.weekly)
+
       const performanceData = {
-        profit: formatMoney(user.profitCached.weekly),
+        profit: emailMoneyFormat(user.profitCached.weekly),
         profit_style: `background-color: ${
           roundedProfit > 0 ? greenBg : roundedProfit === 0 ? clearBg : redBg
         }`,

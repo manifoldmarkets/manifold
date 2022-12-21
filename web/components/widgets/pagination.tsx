@@ -2,8 +2,9 @@ import clsx from 'clsx'
 import { Spacer } from '../layout/spacer'
 import { Row } from '../layout/row'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { range } from 'lodash'
+import { useRouter } from 'next/router'
 export const PAGE_ELLIPSES = '...'
 
 export function PaginationNextPrev(props: {
@@ -46,9 +47,55 @@ export function Pagination(props: {
   setPage: (page: number) => void
   scrollToTop?: boolean
   className?: string
+  savePageToQuery?: boolean
 }) {
-  const { page, itemsPerPage, totalItems, setPage, scrollToTop, className } =
-    props
+  const {
+    page,
+    itemsPerPage,
+    totalItems,
+    setPage,
+    scrollToTop,
+    className,
+    savePageToQuery,
+  } = props
+  const router = useRouter()
+  const { query } = router
+  const { p: pageQuery } = query
+
+  useEffect(() => {
+    if (pageQuery && page !== parseInt(pageQuery as string)) {
+      setPage(parseInt(pageQuery as string))
+    } else if (!pageQuery && page !== 0) {
+      setPage(0)
+    }
+    if (scrollToTop) {
+      window.scrollTo(0, 0)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageQuery])
+
+  const onClick = (page: number) => {
+    if (savePageToQuery) {
+      router.push(
+        {
+          query: {
+            ...router.query,
+            p: page.toString(),
+          },
+        },
+        {
+          query: {
+            ...router.query,
+            p: (page + 1).toString(),
+          },
+        }
+      )
+    }
+    setPage(page)
+    if (scrollToTop) {
+      window.scrollTo(0, 0)
+    }
+  }
 
   const maxPage = Math.ceil(totalItems / itemsPerPage) - 1
 
@@ -65,8 +112,7 @@ export function Pagination(props: {
     >
       <Row className="mx-auto gap-4">
         <PaginationArrow
-          scrollToTop={scrollToTop}
-          onClick={() => setPage(page - 1)}
+          onClick={() => onClick(page - 1)}
           disabled={page <= 0}
           nextOrPrev="prev"
         />
@@ -75,14 +121,13 @@ export function Pagination(props: {
             <PageNumbers
               key={pageNumber}
               pageNumber={pageNumber}
-              setPage={setPage}
+              setPage={onClick}
               page={page}
             />
           ))}
         </Row>
         <PaginationArrow
-          scrollToTop={scrollToTop}
-          onClick={() => setPage(page + 1)}
+          onClick={() => onClick(page + 1)}
           disabled={page >= maxPage}
           nextOrPrev="next"
         />
@@ -92,15 +137,13 @@ export function Pagination(props: {
 }
 
 export function PaginationArrow(props: {
-  scrollToTop?: boolean
   onClick: () => void
   disabled: boolean
   nextOrPrev: 'next' | 'prev'
 }) {
-  const { scrollToTop, onClick, disabled, nextOrPrev } = props
+  const { onClick, disabled, nextOrPrev } = props
   return (
-    <a
-      href={scrollToTop ? '#' : undefined}
+    <div
       onClick={onClick}
       className={clsx(
         'select-none rounded-lg transition-colors',
@@ -115,7 +158,7 @@ export function PaginationArrow(props: {
       {nextOrPrev === 'next' && (
         <ChevronRightIcon className="h-[24px] w-[24px]" />
       )}
-    </a>
+    </div>
   )
 }
 

@@ -2,11 +2,11 @@ import * as express from 'express'
 import * as admin from 'firebase-admin'
 import { PubSub, Subscription, Message } from '@google-cloud/pubsub'
 import {
-  createSupabaseClient,
   replicateWrites,
   createFailedWrites,
   replayFailedWrites,
 } from './replicate-writes'
+import { createClient } from '../../common/supabase/utils'
 import { TLEntry } from '../../common/transaction-log'
 import { CONFIGS } from '../../common/envs/constants'
 
@@ -32,7 +32,7 @@ if (!SUPABASE_KEY) {
 const pubsub = new PubSub()
 const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
-const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 const app = express()
 app.use(express.json())
@@ -52,16 +52,22 @@ async function tryReplicateBatch(...messages: Message[]) {
   const entries = messages.map((m) => JSON.parse(m.data.toString()) as TLEntry)
   try {
     const t0 = process.hrtime.bigint()
+    console.log(`Beginning replication of batch=${messages[0].id}.`)
     await replicateWrites(supabase, ...entries)
     const t1 = process.hrtime.bigint()
     const ms = (t1 - t0) / 1000000n
-    console.log(`Replicated count=${entries.length}, time=${ms}ms.`)
+    console.log(
+      `Replicated batch=${messages[0].id} count=${entries.length}, time=${ms}ms.`
+    )
   } catch (e) {
     console.error(
       `Failed to replicate ${entries.length} entries. Logging failed writes.`,
       e
     )
     await createFailedWrites(firestore, ...entries)
+  }
+  for (const msg of messages) {
+    msg.ack()
   }
 }
 
@@ -73,37 +79,36 @@ function processSubscriptionBatched(
 ) {
   const batch: Message[] = []
 
-  subscription.on('message', (message) => {
+  subscription.on('message', async (message) => {
+    console.debug(`Received message ${message.id}.`)
     batch.push(message)
     if (batch.length >= batchSize) {
       const toWrite = [...batch]
       batch.length = 0
       try {
-        process(toWrite).then(() => {
-          for (const msg of toWrite) {
-            msg.ack()
-          }
-        })
+        console.debug(`Starting clear batch ${toWrite[0].id}.`)
+        await process(toWrite)
       } catch (e) {
         console.error('Big error processing messages:', e)
       }
     }
   })
 
+  subscription.on('debug', (msg) => {
+    console.debug('Debug message from stream: ', msg)
+  })
+
   subscription.on('error', (error) => {
     console.error('Received error from subscription:', error)
   })
 
-  return setInterval(() => {
+  return setInterval(async () => {
     if (batch.length > 0) {
       const toWrite = [...batch]
       batch.length = 0
       try {
-        process(toWrite).then(() => {
-          for (const msg of toWrite) {
-            msg.ack()
-          }
-        })
+        console.debug(`Starting interval batch ${toWrite[0].id}.`)
+        await process(toWrite)
       } catch (e) {
         console.error('Big error processing messages:', e)
       }
@@ -115,7 +120,7 @@ processSubscriptionBatched(
   writeSub,
   (msgs) => tryReplicateBatch(...msgs),
   1000,
-  50
+  100
 ).unref() // unref() means it won't keep the process running if GCP stops the webserver
 
 app.listen(PORT, () =>

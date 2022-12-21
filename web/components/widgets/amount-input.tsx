@@ -7,14 +7,14 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from '../layout/row'
 import { AddFundsModal } from '../add-funds-modal'
 import { Input } from './input'
-import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
 import { binaryOutcomes } from '../bet/bet-panel'
+import { BetSlider } from 'web/components/bet/bet-slider'
 
 export function AmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
-  error: string | undefined
+  error?: string
   label: string
   disabled?: boolean
   className?: string
@@ -49,7 +49,7 @@ export function AmountInput(props: {
             {label}
           </span>
           <Input
-            className={clsx('w-24 pl-9 !text-base md:w-auto', inputClassName)}
+            className={clsx('pl-9 !text-lg', inputClassName)}
             ref={inputRef}
             type="text"
             pattern="[0-9]*"
@@ -136,7 +136,7 @@ export function BuyAmountInput(props: {
       <Col>
         <Row
           className={clsx(
-            'items-center gap-4 xl:flex-wrap',
+            'items-center gap-1 xl:flex-wrap',
             hideInput ? 'mb-4' : ''
           )}
         >
@@ -153,30 +153,10 @@ export function BuyAmountInput(props: {
             />
           )}
           {showSlider && (
-            <Slider
-              min={0}
-              max={100}
-              value={amount ?? 0}
-              onChange={(value) => onAmountChange(value as number)}
-              className={clsx(
-                ' my-auto mx-2 !h-1 xl:mx-auto xl:mt-3 xl:ml-4  [&>.rc-slider-rail]:bg-gray-200',
-                binaryOutcome === 'YES'
-                  ? '[&>.rc-slider-track]:bg-teal-600 [&>.rc-slider-handle]:bg-teal-500'
-                  : binaryOutcome === 'NO'
-                  ? '[&>.rc-slider-track]:bg-scarlet-600 [&>.rc-slider-handle]:bg-scarlet-300'
-                  : '[&>.rc-slider-track]:bg-indigo-700 [&>.rc-slider-handle]:bg-indigo-500'
-              )}
-              railStyle={{ height: 4, top: 4, left: 0 }}
-              trackStyle={{ height: 4, top: 4 }}
-              handleStyle={{
-                height: 24,
-                width: 24,
-                opacity: 1,
-                border: 'none',
-                boxShadow: 'none',
-                top: -0.5,
-              }}
-              step={5}
+            <BetSlider
+              amount={amount}
+              onAmountChange={onAmountChange}
+              binaryOutcome={binaryOutcome}
             />
           )}
         </Row>

@@ -1,10 +1,8 @@
 import { Contract } from 'web/lib/firebase/contracts'
-import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../widgets/site-link'
 import { ContractCard, ContractMetricsFooter } from './contract-card'
 import { ShowTime } from './contract-details'
-import { ContractSearch } from '../contract-search'
 import { useCallback } from 'react'
 import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -113,22 +111,5 @@ export function ContractsGrid(props: {
         />
       )}
     </Col>
-  )
-}
-
-export function CreatorContractsList(props: { creator: User }) {
-  const { creator } = props
-
-  return (
-    <ContractSearch
-      headerClassName="sticky"
-      defaultSort="newest"
-      defaultFilter="all"
-      additionalFilter={{
-        creatorId: creator.id,
-      }}
-      persistPrefix={`user-${creator.id}`}
-      profile={true}
-    />
   )
 }

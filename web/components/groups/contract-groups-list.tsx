@@ -12,8 +12,9 @@ import {
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { useGroupsWithContract, useMemberGroupIds } from 'web/hooks/use-group'
-import { Group } from 'common/group'
+import { useGroupsWithContract } from 'web/hooks/use-group'
+import { Group, GroupLink } from 'common/group'
+import { CHECK_USERNAMES, CORE_USERNAMES } from 'common/envs/constants'
 
 export function ContractGroupsList(props: {
   contract: Contract
@@ -22,13 +23,21 @@ export function ContractGroupsList(props: {
   const { user, contract } = props
   const { groupLinks = [] } = contract
   const groups = useGroupsWithContract(contract) ?? []
-  const memberGroupIds = useMemberGroupIds(user)
-
-  const canModifyGroupContracts = (group: Group, userId: string) => {
+  const isCreator = contract.creatorId === user?.id
+  const adminOrTrustworthyish =
+    user &&
+    (CORE_USERNAMES.includes(user.username) ||
+      CHECK_USERNAMES.includes(user.username))
+  const addGroupsDisabled = !user || (!adminOrTrustworthyish && !isCreator)
+  const canModifyGroupLink = (
+    groupLink: GroupLink,
+    group: Group,
+    userId: string
+  ) => {
     return (
       group.creatorId === userId ||
-      group.anyoneCanJoin ||
-      memberGroupIds?.includes(group.id)
+      adminOrTrustworthyish ||
+      groupLink.userId === userId
     )
   }
   return (
@@ -36,7 +45,7 @@ export function ContractGroupsList(props: {
       <span className={'text-xl text-indigo-700'}>
         <SiteLink href={'/groups/'}>Groups</SiteLink>
       </span>
-      {user && (
+      {!addGroupsDisabled && (
         <Col className={'ml-2 items-center justify-between sm:flex-row'}>
           <span>Add to: </span>
           <GroupSelector
@@ -67,7 +76,7 @@ export function ContractGroupsList(props: {
               <Row className="line-clamp-1 h-8 items-center gap-2">
                 <GroupLinkItem group={groupLink} />
               </Row>
-              {group && user && canModifyGroupContracts(group, user.id) && (
+              {group && user && canModifyGroupLink(groupLink, group, user.id) && (
                 <Button
                   color={'gray-white'}
                   size={'xs'}

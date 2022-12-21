@@ -5,18 +5,18 @@ import {
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
 import { MouseEventHandler, useRef, useState } from 'react'
-import { Row } from '../layout/row'
-import { Content } from './editor'
 import { Button } from 'web/components/buttons/button'
 import {
   storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { Row } from '../layout/row'
+import { Content } from './editor'
 
-const COLLAPSIBLE_HEIGHT = 45
-const SHOW_COLLAPSE_TRESHOLD = 180
+export const COLLAPSIBLE_HEIGHT = 45
+export const SHOW_COLLAPSE_TRESHOLD = 180
 
 export function ShowMoreLessButton(props: {
   onClick?: MouseEventHandler<any> | undefined
@@ -36,14 +36,14 @@ export function ShowMoreLessButton(props: {
       size={'xs'}
     >
       <Row className="items-center gap-0.5">
+        {isCollapsed
+          ? `Show ${howManyMoreText}more ${moreWhat}`
+          : `Show less ${moreWhat}`}
         {isCollapsed ? (
           <ChevronDoubleDownIcon className="h-4 w-4" />
         ) : (
           <ChevronDoubleUpIcon className="h-4 w-4" />
         )}
-        {isCollapsed
-          ? `Show ${howManyMoreText}More ${moreWhat}`
-          : `Show Less ${moreWhat}`}
       </Row>
     </Button>
   )
@@ -65,13 +65,11 @@ export function CollapsibleContent(props: {
       }
     }
   }, [contentRef.current?.offsetHeight])
-
   if (shouldAllowCollapseOfContent) {
     return (
       <ActuallyCollapsibleContent content={content} contractId={contractId} />
     )
   }
-
   return (
     <div ref={contentRef}>
       <Content content={content} />

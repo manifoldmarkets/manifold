@@ -38,6 +38,7 @@ import {
 } from '../../common/antes'
 import { User } from 'common/user'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
+import { computeContractMetricUpdates } from './update-contract-metrics'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -161,7 +162,7 @@ export const resolveMarket = async (
     resolutionProbability
   )
 
-  const contract = {
+  let contract = {
     ...unresolvedContract,
     ...removeUndefinedProps({
       isResolved: true,
@@ -175,6 +176,9 @@ export const resolveMarket = async (
     }),
     subsidyPool: 0,
   } as Contract
+
+  const updates = await computeContractMetricUpdates(contract, Date.now())
+  contract = { ...contract, ...(updates as any) }
 
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
   const loanPayouts = getLoanPayouts(openBets)

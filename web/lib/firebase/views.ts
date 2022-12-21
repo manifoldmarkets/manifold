@@ -1,17 +1,18 @@
 import { removeUndefinedProps } from 'common/util/object'
-import { doc, setDoc } from 'firebase/firestore'
-import { coll } from './utils'
+import { collection, doc, setDoc } from 'firebase/firestore'
+import { db } from './init'
+import { coll, getValues } from './utils'
 
 interface ActionLog {
   /** id of the market contract */
   id: string
   amount?: number
-  outcome: 'YES' | 'NO' | 'SKIP'
+  outcome?: 'YES' | 'NO' | 'SKIP'
   time: number
 }
 // TODO: normal view actions
 
-export const logSwipe = async (
+export const logView = async (
   props: Pick<ActionLog, 'amount' | 'outcome'> & {
     contractId: string
     userId: string
@@ -33,4 +34,9 @@ export const logSwipe = async (
   })
   await setDoc(document, data)
   return data
+}
+
+export async function getSwipeViews(userId: string) {
+  const swipeCollection = collection(db, `/private-users/${userId}/seenMarkets`)
+  return getValues(swipeCollection)
 }

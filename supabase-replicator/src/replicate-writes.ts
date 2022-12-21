@@ -1,28 +1,6 @@
 import { Firestore } from 'firebase-admin/firestore'
-import fetch, { RequestInfo, RequestInit } from 'node-fetch'
-import { Agent as HttpAgent } from 'http'
-import { Agent as HttpsAgent } from 'https'
 import { TLEntry } from '../../common/transaction-log'
-import { createClient } from '@supabase/supabase-js'
 import { run, SupabaseClient } from '../../common/supabase/utils'
-
-export function createSupabaseClient(url: string, key: string) {
-  const customFetch = (agents: { [k: string]: HttpAgent }) => {
-    return (url: RequestInfo, options: RequestInit = {}) => {
-      return fetch(url, {
-        agent: (parsedURL) => agents[parsedURL.protocol],
-        ...options,
-      })
-    }
-  }
-
-  const httpAgent = new HttpAgent({ keepAlive: true })
-  const httpsAgent = new HttpsAgent({ keepAlive: true })
-  const pooledFetch = customFetch({ http: httpAgent, https: httpsAgent })
-  return createClient(url, key, {
-    global: { fetch: pooledFetch as any },
-  }) as SupabaseClient
-}
 
 export async function createFailedWrites(
   firestore: Firestore,

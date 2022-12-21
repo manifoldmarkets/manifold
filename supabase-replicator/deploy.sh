@@ -35,7 +35,8 @@ yarn build && \
          --memory 2Gi \
          --concurrency 1000 \
          --min-instances 1 \
-         --no-allow-unauthenticated
+         --no-allow-unauthenticated \
+         --no-cpu-throttling
 
 # to establish subscription to service, e.g.:
 # gcloud pubsub subscriptions create supabaseReplicationSubscription --topic firestoreWrite --ack-deadline 600 --push-endpoint https://supabase-replicator-w3txbmd3ba-uc.a.run.app

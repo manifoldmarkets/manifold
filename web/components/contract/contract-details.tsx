@@ -1,8 +1,8 @@
-import { ClockIcon } from '@heroicons/react/outline'
+import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
 import {
+  DotsCircleHorizontalIcon,
   ExclamationIcon,
   PencilIcon,
-  PlusCircleIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
@@ -66,11 +66,12 @@ export function MiscDetails(props: {
           {fromNow(resolutionTime)}
         </Row>
       ) : (uniqueBettorCount ?? 0) > 1 ? (
-        <Row className={'shrink-0 gap-1'}>
-          <div className="font-semibold">{uniqueBettorCount || '0'} </div>
-          trader
-          {uniqueBettorCount !== 1 ? 's' : ''}
-        </Row>
+        <Tooltip text={'Unique traders'} className={'z-10'}>
+          <Row className={'shrink-0 items-center gap-1'}>
+            <div className="font-semibold">{uniqueBettorCount || '0'} </div>
+            <UserGroupIcon className="h-4 w-4" />
+          </Row>
+        </Tooltip>
       ) : (
         <></>
       )}
@@ -215,10 +216,10 @@ export function CloseOrResolveTime(props: {
   } else return <></>
 }
 
-function MarketGroups(props: { contract: Contract; disabled?: boolean }) {
+function MarketGroups(props: { contract: Contract }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const { contract, disabled } = props
+  const { contract } = props
   const groupsToDisplay = getGroupLinksToDisplay(contract)
 
   return (
@@ -226,19 +227,15 @@ function MarketGroups(props: { contract: Contract; disabled?: boolean }) {
       {/* Put after market action icons on mobile, but before them on desktop*/}
       <Row className="order-last w-full flex-wrap items-end gap-1 sm:order-[unset]">
         {groupsToDisplay.map((group) => (
-          <GroupDisplay
-            key={group.groupId}
-            groupToDisplay={group}
-            disabled={disabled}
-          />
+          <GroupDisplay key={group.groupId} groupToDisplay={group} />
         ))}
 
-        {!disabled && user && (
+        {user && (
           <button
             className="text-gray-400 hover:text-gray-300"
             onClick={() => setOpen(true)}
           >
-            <PlusCircleIcon className="h-[20px]" />
+            <DotsCircleHorizontalIcon className="h-[20px]" />
           </button>
         )}
       </Row>
@@ -316,41 +313,20 @@ export function ExtraMobileContractDetails(props: {
   )
 }
 
-export function GroupDisplay(props: {
-  groupToDisplay?: GroupLink | null
-  disabled?: boolean
-}) {
-  const { groupToDisplay, disabled } = props
+export function GroupDisplay(props: { groupToDisplay: GroupLink }) {
+  const { groupToDisplay } = props
 
-  if (groupToDisplay) {
-    const groupSection = (
+  return (
+    <Link prefetch={false} href={groupPath(groupToDisplay.slug)} legacyBehavior>
       <a
         className={clsx(
-          'max-w-[200px] truncate whitespace-nowrap rounded-full bg-gray-400 py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
-          !disabled && 'cursor-pointer hover:bg-gray-300'
+          'max-w-[200px] truncate whitespace-nowrap rounded-full bg-gray-400 py-0.5 px-2 text-xs text-white sm:max-w-[250px]'
         )}
       >
         {groupToDisplay.name}
       </a>
-    )
-
-    return disabled ? (
-      groupSection
-    ) : (
-      <Link
-        prefetch={false}
-        href={groupPath(groupToDisplay.slug)}
-        legacyBehavior
-      >
-        {groupSection}
-      </Link>
-    )
-  } else
-    return (
-      <div className="truncate rounded-full bg-gray-400 py-0.5 px-2 text-xs text-white">
-        No Group
-      </div>
-    )
+    </Link>
+  )
 }
 
 function EditableCloseDate(props: {
@@ -457,7 +433,7 @@ function EditableCloseDate(props: {
 
       <Row
         className={clsx(
-          'items-center gap-1',
+          'items-center gap-1 text-gray-500',
           !disabled && isCreator ? 'cursor-pointer' : ''
         )}
         onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}

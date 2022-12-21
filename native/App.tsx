@@ -13,9 +13,6 @@ import {
   StatusBar as RNStatusBar,
   Dimensions,
   View,
-  Text,
-  Pressable,
-  Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -26,11 +23,9 @@ import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 import { AuthPage } from 'components/auth-page'
-import { Feather, AntDesign } from '@expo/vector-icons'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
-import { WebViewErrorEvent } from 'react-native-webview/lib/WebViewTypes'
 import { SplashLoading } from 'components/splash-loading'
 import {
   nativeToWebMessage,
@@ -39,43 +34,44 @@ import {
 } from 'common/native-message'
 import { useFonts, ReadexPro_400Regular } from '@expo-google-fonts/readex-pro'
 import { app, auth } from './init'
+import {
+  handleWebviewCrash,
+  ExternalWebView,
+  sharedWebViewProps,
+  handleWebviewError,
+  handleRenderError,
+} from 'components/external-web-view'
 console.log('using', ENV, 'env')
 console.log(
   'env not switching? run `npx expo start --clear` and then try again'
 )
 
 // Initialization
-Sentry.init({
-  dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
-  enableInExpoDevelopment: true,
-  debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
-})
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-})
+if (Device.isDevice) {
+  Sentry.init({
+    dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
+    enableInExpoDevelopment: true,
+    debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
+  })
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  })
+}
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
-
-export type NavigationState = {
-  previousHomeUrl: string
-  previousUrl: string
-  url: string
-  loading: boolean
-  canGoBack: boolean
-}
+const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
-  const hasWebViewLoaded = useRef(false)
+  const [loadedWebView, setLoadedWebView] = useState(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
-  const isIOS = Platform.OS === 'ios'
-  const webview = useRef<WebView | undefined>()
+  const webview = useRef<WebView>()
   const notificationResponseListener = useRef<Subscription | undefined>()
   useFonts({ ReadexPro_400Regular })
 
@@ -84,32 +80,23 @@ const App = () => {
   const [user, setUser] = useState(auth.currentUser)
   useEffect(() => {
     // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
-    if (hasWebViewLoaded.current) {
+    if (loadedWebView) {
       console.log('webview loaded, waiting for auth')
       const timeout = setTimeout(() => {
         setWaitingForAuth(false)
       }, 2000)
       return () => clearTimeout(timeout)
     }
-  }, [hasWebViewLoaded.current])
+  }, [loadedWebView])
 
+  // auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
   useEffect(() => {
     auth.onAuthStateChanged(setUser)
   }, [auth])
 
   // Url management
-  const [currentNavState, setCurrentNavState] = useState<NavigationState>({
-    previousHomeUrl: homeUri,
-    previousUrl: homeUri,
-    url: homeUri,
-    loading: true,
-    canGoBack: false,
-  })
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
-  const isVisitingOtherSite =
-    !currentNavState.url.startsWith(homeUri) ||
-    (currentNavState.loading &&
-      !currentNavState.previousUrl.startsWith(homeUri))
+  const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     Platform.OS === 'ios' ? LinkingManager.default : null
@@ -121,7 +108,7 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
-    if (hasWebViewLoaded.current) {
+    if (loadedWebView) {
       communicateWithWebview(
         'notification',
         response.notification.request.content.data
@@ -348,20 +335,7 @@ const App = () => {
     )
   }
 
-  const handleWebviewError = (e: WebViewErrorEvent) => {
-    const { nativeEvent } = e
-    console.log('error in webview', e)
-    Sentry.Native.captureException(nativeEvent.description, {
-      extra: {
-        message: 'webview error',
-        nativeEvent,
-      },
-    })
-    // fall back to home uri on error
-    setUrlToLoad(homeUri)
-  }
-
-  const shouldShowWebView = hasWebViewLoaded.current && user
+  const shouldShowWebView = loadedWebView && user
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
@@ -371,46 +345,11 @@ const App = () => {
       justifyContent: 'center',
       overflow: 'hidden',
     },
-    horizontal: {
-      height: '100%',
-      justifyContent: 'space-around',
-      padding: 10,
-    },
     webView: {
       display: shouldShowWebView ? 'flex' : 'none',
       overflow: 'hidden',
-      marginTop:
-        (isIOS ? 0 : RNStatusBar.currentHeight ?? 0) +
-        (isVisitingOtherSite ? 40 : 0),
+      marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
       marginBottom: !isIOS ? 10 : 0,
-    },
-    otherSiteToolbar: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: isIOS ? 90 : 75,
-      backgroundColor: 'lightgray',
-      zIndex: 100,
-      display: isVisitingOtherSite ? 'flex' : 'none',
-    },
-    row: {
-      flexDirection: 'row',
-      flex: 1,
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-      marginBottom: 15,
-      marginHorizontal: 20,
-    },
-    toolBarText: {
-      fontSize: 20,
-      width: 50,
-    },
-    toolBarIcon: {
-      width: 50,
-      flex: 1,
-      flexDirection: 'row',
-      justifyContent: 'center',
     },
   })
 
@@ -428,7 +367,7 @@ const App = () => {
           <AuthPage webview={webview} height={height} width={width} />
         )
       )}
-      {Platform.OS === 'ios' && (
+      {Platform.OS === 'ios' && Device.isDevice && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
           setCheckoutAmount={setCheckoutAmount}
@@ -437,134 +376,41 @@ const App = () => {
       )}
 
       <SafeAreaView style={styles.container}>
-        <StatusBar
-          animated={true}
-          backgroundColor="white"
-          style={'dark'}
-          hideTransitionAnimation={'none'}
-          hidden={false}
-        />
-        <View style={styles.otherSiteToolbar}>
-          <View style={styles.row}>
-            <Pressable
-              style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
-              onPress={() => {
-                const { previousHomeUrl } = currentNavState
-                // In order to make the webview load a new url manually it has to be different from the previous one
-                const back = !previousHomeUrl.includes('?')
-                  ? `${previousHomeUrl}?ignoreThisQuery=true`
-                  : `${previousHomeUrl}&ignoreThisQuery=true`
-                setUrlToLoad(back)
-              }}
-            >
-              <Text style={styles.toolBarText}>Done</Text>
-            </Pressable>
-            <Pressable
-              style={styles.toolBarIcon}
-              onPress={async () => {
-                await Share.share({
-                  message: currentNavState.url,
-                })
-              }}
-            >
-              <Feather name="share" size={24} color="black" />
-            </Pressable>
-            <Pressable
-              style={[styles.toolBarIcon, { justifyContent: 'flex-end' }]}
-              onPress={async () => {
-                if (currentNavState.loading) {
-                  webview.current?.stopLoading()
-                  setCurrentNavState({
-                    ...currentNavState,
-                    loading: false,
-                  })
-                } else {
-                  webview.current?.reload()
-                  setCurrentNavState({
-                    ...currentNavState,
-                    loading: true,
-                  })
-                }
-              }}
-            >
-              {currentNavState.loading ? (
-                <Feather name="x" size={24} color="black" />
-              ) : (
-                <AntDesign name="reload1" size={24} color="black" />
-              )}
-            </Pressable>
-          </View>
-        </View>
+        <StatusBar animated={true} style={'dark'} hidden={false} />
+
         <View style={[styles.container, { position: 'relative' }]}>
+          <ExternalWebView
+            url={externalUrl}
+            height={height}
+            width={width}
+            setUrl={setExternalUrl}
+          />
           <WebView
-            pullToRefreshEnabled={true}
+            {...sharedWebViewProps}
             style={styles.webView}
-            mediaPlaybackRequiresUserAction={true}
-            allowsInlineMediaPlayback={true}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            overScrollMode={'never'}
-            decelerationRate={'normal'}
-            allowsBackForwardNavigationGestures={true}
             // Load start and end is for whole website loading, not navigations within manifold
-            onLoadEnd={() => {
-              hasWebViewLoaded.current = true
-              setCurrentNavState({ ...currentNavState, loading: false })
-            }}
-            sharedCookiesEnabled={true}
+            onLoadEnd={() => setLoadedWebView(true)}
             source={{ uri: urlToLoad }}
             //@ts-ignore
             ref={webview}
-            onError={(e) => handleWebviewError(e)}
-            renderError={(e) => {
-              // Renders this view while we resolve the error
-              return (
-                <View style={{ height, width }}>
-                  <SplashLoading
-                    height={height}
-                    width={width}
-                    source={require('./assets/splash.png')}
-                  />
-                </View>
-              )
-            }}
-            onTouchStart={() => {
-              tellWebviewToSetNativeFlag()
-            }}
-            // Load start and end is for whole website loading, not navigations within manifold
-            onLoadStart={() => {
-              setCurrentNavState({ ...currentNavState, loading: true })
-            }}
-            // On navigation state change changes on every url change, it doesn't update loading
+            onError={(e) => handleWebviewError(e, () => setUrlToLoad(homeUri))}
+            renderError={(e) => handleRenderError(e, width, height)}
+            onTouchStart={tellWebviewToSetNativeFlag}
+            // On navigation state change changes on every url change
             onNavigationStateChange={(navState) => {
-              const { url, canGoBack } = navState
-              setCurrentNavState({
-                ...currentNavState,
-                url,
-                previousHomeUrl: url.startsWith(homeUri)
-                  ? url
-                  : currentNavState.previousHomeUrl,
-                previousUrl: currentNavState.url,
-                canGoBack,
-              })
-              tellWebviewToSetNativeFlag()
+              const { url } = navState
+              if (!url.startsWith(homeUri)) {
+                setExternalUrl(url)
+                webview.current?.stopLoading()
+              } else {
+                setExternalUrl(undefined)
+                tellWebviewToSetNativeFlag()
+              }
             }}
-            onRenderProcessGone={(syntheticEvent) => {
-              const { nativeEvent } = syntheticEvent
-              console.warn(
-                'Content process terminated, reloading android',
-                nativeEvent.didCrash
-              )
-              webview.current?.reload()
-            }}
-            onContentProcessDidTerminate={(syntheticEvent) => {
-              const { nativeEvent } = syntheticEvent
-              console.warn(
-                'Content process terminated, reloading ios ',
-                nativeEvent
-              )
-              webview.current?.reload()
-            }}
+            onRenderProcessGone={(e) => handleWebviewCrash(webview.current, e)}
+            onContentProcessDidTerminate={(e) =>
+              handleWebviewCrash(webview.current, e)
+            }
             onMessage={handleMessageFromWebview}
           />
         </View>

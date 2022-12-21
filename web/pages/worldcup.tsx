@@ -28,23 +28,25 @@ const general_markets = [
 //   'will-argentina-eliminate-croatia-in',
 //   'will-messi-score-a-goal-vs-croatia',
 // ]
-const nl_arg = [
-  'who-will-be-man-of-the-match-in-fra-47fe2b9e0483',
-  'will-france-eliminate-morocco-in-th',
-  'will-france-vs-morocco-go-to-a-pena',
-]
+// const nl_arg = [
+//   'who-will-be-man-of-the-match-in-fra-47fe2b9e0483',
+//   'will-france-eliminate-morocco-in-th',
+//   'will-france-vs-morocco-go-to-a-pena',
+// ]
 
-const mor_por = [
-  'who-will-be-man-of-the-match-in-mor',
-  'will-morocco-eliminate-portugal',
-  'will-moroccos-goalkeeper-save-a-pen',
-]
+// const mor_por = [
+//   'who-will-be-man-of-the-match-in-mor',
+//   'will-morocco-eliminate-portugal',
+//   'will-moroccos-goalkeeper-save-a-pen',
+// ]
+
 const uk_fr = [
   'will-argentina-win-the-fifa-world-c-bf4a7e33fba8',
-  'will-croatia-win-the-fifa-world-cup',
+  // 'will-croatia-win-the-fifa-world-cup',
   'will-france-win-the-fifa-world-cup',
-  'will-morocco-win-the-fifa-world-cup',
+  // 'will-morocco-win-the-fifa-world-cup',
 ]
+
 const final = [] as string[]
 
 // const group_winners = [
@@ -94,14 +96,6 @@ const final = [] as string[]
 // ]
 
 export async function getStaticProps() {
-  // const groupWinners = await getContractsFromSlugs(group_winners)
-  // const groupRunnerups = await getContractsFromSlugs(group_runnerups)
-  // const roundOf16 = await getContractsFromSlugs(round_of_16)
-
-  const nlArg = await getContractsFromSlugs(nl_arg)
-
-  const morPor = await getContractsFromSlugs(mor_por)
-
   const ukFr = await getContractsFromSlugs(uk_fr)
 
   const finals = await getContractsFromSlugs(final)
@@ -112,8 +106,6 @@ export async function getStaticProps() {
 
   return {
     props: {
-      nlArg,
-      morPor,
       ukFr,
       finals,
       playerRatings,
@@ -136,45 +128,12 @@ const getContractsFromSlugs = async (slugs: string[]) => {
 }
 
 export default function WorldCup(props: {
-  nlArg: Contract[]
   ukFr: Contract[]
-  morPor: Contract[]
   finals: Contract[]
   playerRatings: Contract[]
   generalMarkets: Contract[]
 }) {
-  const { playerRatings, nlArg, ukFr } = props
-
-  // const isMobile = useIsMobile()
-  // const groupWinnerTab = (
-  //   <>
-  //     <Spacer h={4} />
-  //     <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
-  //       {groupWinners.map((contract, index) => (
-  //         <GroupComponent
-  //           key={contract.id}
-  //           group={contract}
-  //           title={`GROUP ${String.fromCharCode(65 + index)} (1st Place)`}
-  //         />
-  //       ))}
-  //     </div>
-  //   </>
-  // )
-
-  // const groupRunnerupTab = (
-  //   <>
-  //     <Spacer h={4} />
-  //     <div className="row-span-full grid grid-rows-1 gap-4 sm:grid-cols-2	">
-  //       {groupRunnerups.map((contract, index) => (
-  //         <GroupComponent
-  //           key={contract.id}
-  //           group={contract}
-  //           title={`GROUP ${String.fromCharCode(65 + index)} (2nd Place)`}
-  //         />
-  //       ))}
-  //     </div>
-  //   </>
-  // )
+  const { playerRatings, ukFr } = props
 
   return (
     <Page className="">
@@ -200,23 +159,6 @@ export default function WorldCup(props: {
 
           {/* Might want to put an image or something here. */}
 
-          <div className="mb-2 text-3xl text-indigo-700">France vs Morocco</div>
-          <Masonry
-            breakpointCols={{ default: 2, 768: 1 }}
-            className="-ml-4 flex w-auto"
-            columnClassName="pl-4 bg-clip-padding"
-          >
-            {nlArg?.map((contract, i) => (
-              <ContractCard
-                key={contract.slug}
-                contract={contract}
-                hideDetails={false}
-                showImage={i == 1}
-                className="mb-4"
-              />
-            ))}
-          </Masonry>
-
           <div className="my-4 text-3xl text-indigo-700">
             Who will win the World Cup?
           </div>
@@ -231,6 +173,7 @@ export default function WorldCup(props: {
                 contract={contract}
                 hideDetails={false}
                 className="mb-4"
+                showImage
               />
             ))}
           </Masonry>

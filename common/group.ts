@@ -26,6 +26,7 @@ export type Group = {
     }[]
   }
   pinnedItems: { itemId: string; type: 'post' | 'contract' }[]
+  bannerUrl?: string
 }
 
 export const MAX_GROUP_NAME_LENGTH = 75

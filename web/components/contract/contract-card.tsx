@@ -150,7 +150,7 @@ export const ContractCard = memo(function ContractCard(props: {
           </div>
         )}
 
-        <Col className="gap-1 px-4 pb-1 ">
+        <Col className="gap-1 px-4 pb-1">
           {/* question is here if not overlaid on an image */}
           {!hasImage && !hideQuestion && (
             <div

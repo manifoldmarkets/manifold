@@ -35,7 +35,7 @@ import { ContractLeaderboard } from 'web/components/contract/contract-leaderboar
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
-import { BetsSummary } from 'web/components/bet/bet-summary'
+import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { ContractComment } from 'common/comment'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -342,7 +342,7 @@ export function ContractPageContent(
           </>
         )}
 
-        <BetsSummary
+        <UserBetsSummary
           className="mt-4 mb-2 px-2"
           contract={contract}
           initialMetrics={contractMetrics}
