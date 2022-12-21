@@ -1,8 +1,8 @@
 import { Socket } from 'socket.io';
 
-import * as Packet from 'common/packet-ids';
+import * as Packet from '@common/packet-ids';
 
-import { PacketSelectMarket } from 'common/packets';
+import { PacketSelectMarket } from '@common/packets';
 import App from '../app';
 import log from '../logger';
 import { TwitchStream } from '../stream';

@@ -24,7 +24,7 @@ export default function registerAPIEndpoints(app: App, express: Express) {
       return;
     }
     try {
-      const user = await app.firestore.getUserForManifoldAPIKey(apiKey);
+      const user = app.firestore.getUserForManifoldAPIKey(apiKey);
       await app.bot.leaveChannel(user.data.twitchLogin);
       response.json(<APIResponse>{ success: true, message: `Bot successfully removed from channel ${user.data.twitchLogin}.` }); // TODO: Proper response (API type class)
     } catch (e) {
@@ -35,7 +35,7 @@ export default function registerAPIEndpoints(app: App, express: Express) {
   express.post('/registerchanneltwitch', async (request, response) => {
     const { apiKey } = <{ apiKey: string }>request.body;
     try {
-      const user = await app.firestore.getUserForManifoldAPIKey(apiKey);
+      const user = app.firestore.getUserForManifoldAPIKey(apiKey);
       await app.bot.joinChannel(user.data.twitchLogin);
       response.json(<APIResponse>{ success: true, message: 'Registered bot.' });
     } catch (e) {
@@ -96,7 +96,7 @@ export default function registerAPIEndpoints(app: App, express: Express) {
 
       let user: User;
       try {
-        user = await app.firestore.getUserForManifoldID(sessionData.manifoldID);
+        user = app.firestore.getUserForManifoldID(sessionData.manifoldID);
         user.data.APIKey = sessionData.apiKey;
         log.info(`Updated user API key: ${sessionData.apiKey}`);
       } catch (e) {

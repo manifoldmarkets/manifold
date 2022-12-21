@@ -1,7 +1,7 @@
 import { Combobox } from '@headlessui/react';
 import { CheckIcon, PlusCircleIcon, RefreshIcon, SelectorIcon } from '@heroicons/react/outline';
 import clsx from 'clsx';
-import { Group } from 'common/group';
+import { Group } from '@common/group';
 import { useEffect, useState } from 'react';
 import { SelectedGroup } from 'web/lib/selected-group';
 
@@ -11,8 +11,16 @@ async function fetchGroups(APIBase: string, userID: string): Promise<Group[]> {
   return groups;
 }
 
-export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Group | undefined; userID: string; setSelectedGroup: (group: Group) => void; onRefresh?: () => void; APIBase: string }) {
-  const { refreshSignal, selectedGroup, userID, setSelectedGroup, onRefresh, APIBase } = props;
+export function GroupSelector(props: {
+  refreshSignal?: number;
+  selectedGroup: Group | undefined;
+  userID: string;
+  setSelectedGroup: (group: Group) => void;
+  onRefresh?: () => void;
+  APIBase: string;
+  refreshBtnClass?: string;
+}) {
+  const { refreshSignal, selectedGroup, userID, setSelectedGroup, onRefresh, APIBase, refreshBtnClass } = props;
 
   const [isRefreshingGroups, setIsRefreshingGroups] = useState<boolean>(false);
   const [memberGroups, setMemberGroups] = useState<Group[] | undefined>();
@@ -68,12 +76,12 @@ export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Gr
 
   return (
     <>
-      <Combobox as="div" value={selectedGroup} onChange={setSelectedGroup} nullable={true} className={'text-sm w-full'} disabled={isRefreshingGroups}>
+      <Combobox as="div" value={selectedGroup} onChange={setSelectedGroup} nullable={true} className={'w-full text-sm'} disabled={isRefreshingGroups}>
         <div className="flex grow" style={{ ...(isRefreshingGroups && { pointerEvents: 'none' }) }}>
           <div className="relative flex w-full justify-items-stretch">
             <Combobox.Input
               spellCheck="false"
-              className="w-full border rounded-md border-gray-300 bg-white pl-4 h-12 pr-8 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
+              className="h-12 w-full rounded-md border border-gray-300 bg-white pl-4 pr-8 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-500 disabled:shadow-none"
               onChange={(event) => setQuery(event.target.value)}
               displayValue={(group: Group) => (group ? group.name : previouslySelectedGroup && previouslySelectedGroup.groupName)}
               placeholder={'Group name'}
@@ -99,14 +107,14 @@ export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Gr
                       )}
                       <span className={clsx('ml-5 mt-1 block truncate', selected && 'font-semibold')}>
                         {group.name}
-                        <p className="text-gray-400 italic font-light text-xs">{group.slug}</p>
+                        <p className="text-xs font-light italic text-gray-400">{group.slug}</p>
                       </span>
                     </>
                   )}
                 </Combobox.Option>
               ))}
               <div
-                className="btn btn-sm normal-case w-full justify-start rounded-none border-0 bg-white pl-2 h-14 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white"
+                className="btn btn-sm h-14 w-full justify-start rounded-none border-0 bg-white pl-2 font-normal normal-case text-gray-900 hover:bg-indigo-500 hover:text-white"
                 onClick={() => window.open(APIBase.startsWith('https://dev') ? 'https://dev.manifold.markets/groups' : 'https://manifold.markets/groups') /* TODO: Make full generic */}
               >
                 <PlusCircleIcon className="text-primary mr-2 h-5 w-5" />
@@ -116,7 +124,7 @@ export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Gr
           </div>
         </div>
       </Combobox>
-      <button className={clsx('btn btn-primary btn-square p-2 rounded-none', isRefreshingGroups ? 'loading' : '')} onClick={refreshGroupList}>
+      <button className={clsx('btn btn-primary btn-square rounded-none p-2', isRefreshingGroups ? 'loading' : '', refreshBtnClass)} onClick={refreshGroupList}>
         {!isRefreshingGroups && <RefreshIcon />}
       </button>
     </>

@@ -3,7 +3,7 @@
     "target": "es5",
     "module": "esnext",
     "moduleResolution": "node",
-    "baseUrl": "../",
+    "baseUrl": "./",
     "lib": ["dom", "dom.iterable", "esnext", "WebWorker"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -14,8 +14,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "strict": false
+    "strict": false,
+    "paths": {
+      "@common/*": ["../common/*"],
+      "@manifold_common/*": ["../../common/*"]
+    }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "../common/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "out"]
 }

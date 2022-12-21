@@ -1,8 +1,6 @@
 import { ChatUserstate, Client } from 'tmi.js';
-
-import { InsufficientBalanceException, TradingClosedException } from 'common/exceptions';
-
-import { ResolutionOutcome } from 'common/outcome';
+import { InsufficientBalanceException, TradingClosedException } from '@common/exceptions';
+import { ResolutionOutcome } from '@common/outcome';
 import App from './app';
 import { DEBUG_TWITCH_ACCOUNT, IS_DEV, MANIFOLD_SIGNUP_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from './envs';
 import log from './logger';
@@ -389,7 +387,7 @@ export default class TwitchBot {
       }
     } else {
       // this.client.getOptions().channels = await this.app.firestore.getRegisteredTwitchChannels();
-      channelsToJoin.push(...(await this.app.firestore.getRegisteredTwitchChannels()));
+      channelsToJoin.push(...this.app.firestore.getRegisteredTwitchChannels());
     }
 
     try {

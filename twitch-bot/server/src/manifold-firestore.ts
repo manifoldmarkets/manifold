@@ -1,16 +1,9 @@
-import { AnyContractType, Bet, Contract, User } from 'common/types/manifold-internal-types';
+import { AnyContractType, Bet, Contract, User } from '@common/types/manifold-internal-types';
 import { initializeApp, onLog } from 'firebase/app';
-import { collection, CollectionReference, doc, DocumentReference, getDoc, getFirestore, onSnapshot } from 'firebase/firestore';
+import { collection, CollectionReference, doc, DocumentReference, getDoc, getDocs, getFirestore } from 'firebase/firestore';
 import { MANIFOLD_FIREBASE_CONFIG } from './envs';
 import log from './logger';
-
-const timers: { [k: string]: number } = {};
-const ts = function (name: string) {
-  timers[name] = Date.now();
-};
-const te = function (name: string) {
-  return ((Date.now() - timers[name]) * 0.001).toFixed(1) + 's';
-};
+import { te, ts } from './utils';
 
 export default class ManifoldFirestore {
   private readonly contracts: CollectionReference<Contract>;
@@ -60,37 +53,25 @@ export default class ManifoldFirestore {
     log.info(message + ' success.');
   }
 
-  async loadAllUsers() {
+  async initialLoadAllUsers() {
     ts('users');
-    let firstLoad = true;
-    await new Promise<void>((r) =>
-      onSnapshot(this.users, (snapshot?) => {
-        snapshot.docChanges().map((change) => {
-          const d = change.doc.data();
-          // Extra logging:
-          // if (!firstLoad) {
-          //   const oldUserData = this.allUsers[d.id];
-          //   for (const k in d) {
-          //     const old = oldUserData && String(oldUserData[k]);
-          //     const ne = d && String(d[k]);
-          //     if (old != ne) {
-          //       log.info(`Field '${k}' changed from '${old}' to '${ne}' for user '${d.username}'`);
-          //     }
-          //   }
-          // }
-          this.allUsers[d.id] = d;
-        });
-        if (firstLoad) {
-          r();
-          firstLoad = false;
-        }
-      })
-    );
+    await new Promise<void>(async (resolvePromise) => {
+      const docs = await getDocs(this.users);
+      for (const doc of docs.docs) {
+        this.allUsers[doc.id] = doc.data();
+      }
+      resolvePromise();
+    });
     log.info(`Loaded ${Object.keys(this.allUsers).length} users in ${te('users')}.`);
   }
 
-  getManifoldUserByManifoldID(manifoldID: string) {
-    return this.allUsers[manifoldID];
+  async getManifoldUserByManifoldID(manifoldID: string, forceLatest = true) {
+    const cachedUser = this.allUsers[manifoldID];
+    const updateCachePromise = getDoc(doc(this.users, manifoldID)).then((d) => (this.allUsers[d.id] = d.data()));
+    if (cachedUser && !forceLatest) {
+      return cachedUser;
+    }
+    return updateCachePromise;
   }
 
   async getFullMarketByID(marketID: string): Promise<[DocumentReference<Contract<AnyContractType>>, CollectionReference<Bet>]> {

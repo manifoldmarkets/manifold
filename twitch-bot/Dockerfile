@@ -1,21 +1,23 @@
 # -- Stage 1 -- #
 FROM node:16 as builder
-WORKDIR /manifold
+WORKDIR /manifold/twitch-bot
 RUN npm install -g concurrently
-COPY package.json yarn.lock ./
-COPY web/package.json web/package.json
-COPY server/package.json server/package.json
-COPY common/package.json common/package.json
+COPY common ../common
+RUN yarn --cwd ../common
+COPY twitch-bot/package.json yarn.lock ./
+COPY twitch-bot/web/package.json web/package.json
+COPY twitch-bot/server/package.json server/package.json
+COPY twitch-bot/common/package.json common/package.json
 RUN yarn
-COPY common common
-COPY web web
-COPY server server
+COPY twitch-bot/common common
+COPY twitch-bot/web web
+COPY twitch-bot/server server
 RUN npx concurrently -n WEB,SERVER "yarn --cwd web build" "yarn --cwd server build" -g
 
 # -- Stage 2 -- #
 FROM node:16
 WORKDIR /deploy
-COPY --from=builder /manifold/web/out static
-COPY --from=builder /manifold/server/dist .
+COPY --from=builder /manifold/twitch-bot/web/out static
+COPY --from=builder /manifold/twitch-bot/server/dist .
 EXPOSE 9172
-CMD ["node", "bundle.js"]
+CMD ["node", "out.js"]

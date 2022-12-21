@@ -1,9 +1,9 @@
 import { Socket } from 'socket.io';
 
-import { getOutcomeForString } from 'common/outcome';
-import * as Packet from 'common/packet-ids';
+import { getOutcomeForString } from '@common/outcome';
+import * as Packet from '@common/packet-ids';
 
-import { PacketCreateMarket, PacketGroupControlFields, PacketHandshakeComplete, PacketMarketCreated } from 'common/packets';
+import { PacketCreateMarket, PacketGroupControlFields, PacketHandshakeComplete, PacketMarketCreated } from '@common/packets.js';
 import App from '../app';
 import { MANIFOLD_API_BASE_URL } from '../envs';
 import log from '../logger';
@@ -30,7 +30,12 @@ export default class DockClient {
 
     this.registerPacketHandlers();
 
-    const handshakePacket: PacketHandshakeComplete = { actingManifoldUserID: this.connectedUser.data.manifoldID, manifoldAPIBase: MANIFOLD_API_BASE_URL, serverID: process.env.__BUILD_ID__ };
+    const handshakePacket: PacketHandshakeComplete = {
+      actingManifoldUserID: this.connectedUser.data.manifoldID,
+      manifoldAPIBase: MANIFOLD_API_BASE_URL,
+      serverID: process.env.__BUILD_ID__,
+      isAdmin: this.connectedUser.data.admin || false,
+    };
     this.socket.emit(Packet.HANDSHAKE_COMPLETE, handshakePacket);
     if (this.stream.featuredMarket) {
       this.socket.emit(Packet.SELECT_MARKET_ID, this.stream.featuredMarket.data.id);

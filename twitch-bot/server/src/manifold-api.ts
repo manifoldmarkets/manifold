@@ -1,9 +1,9 @@
 import fetch, { Response } from 'node-fetch';
 
-import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundException, TradingClosedException } from 'common/exceptions';
-import { ResolutionOutcome } from 'common/outcome';
-import * as ManifoldAPITypes from 'common/types/manifold-api-types';
-import * as ManifoldInternalTypes from 'common/types/manifold-internal-types';
+import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundException, TradingClosedException } from '@common/exceptions';
+import { ResolutionOutcome } from '@common/outcome';
+import * as ManifoldAPITypes from '@common/types/manifold-api-types';
+import * as ManifoldInternalTypes from '@common/types/manifold-internal-types';
 import { MANIFOLD_API_BASE_URL } from './envs';
 import log from './logger';
 

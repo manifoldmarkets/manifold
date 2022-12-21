@@ -1,6 +1,6 @@
-import * as Packet from 'common/packet-ids';
-import { GroupControlField, PacketGroupControlFields, PacketSelectMarket } from 'common/packets';
-import { NamedBet } from 'common/types/manifold-abstract-types';
+import * as Packet from '@common/packet-ids';
+import { GroupControlField, PacketGroupControlFields, PacketSelectMarket } from '@common/packets';
+import { NamedBet } from '@common/types/manifold-abstract-types';
 import App from './app';
 import DockClient from './clients/dock';
 import OverlayClient from './clients/overlay';
@@ -110,7 +110,7 @@ export class TwitchStream {
 
         const params = getParamsFromURL(f.url);
         const controlToken = params['t'];
-        const user = await this.app.firestore.getUserForControlToken(<string>controlToken);
+        const user = this.app.firestore.getUserForControlToken(<string>controlToken);
         let stream: TwitchStream = undefined;
         if (user) {
           f.valid = true;
