@@ -95,7 +95,6 @@ export const SwipeCard = memo(
             <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
               <button
                 onClick={subMoney}
-                onTouchStart={subMoney}
                 className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
               >
                 <MinusIcon className="h-4" />
@@ -103,7 +102,6 @@ export const SwipeCard = memo(
               <span className="mx-1 py-4">{formatMoney(amount)}</span>
               <button
                 onClick={addMoney}
-                onTouchStart={addMoney}
                 className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
               >
                 <PlusIcon className="h-4" />
