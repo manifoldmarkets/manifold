@@ -14,7 +14,7 @@ import { Contract } from 'common/contract'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useGroupsWithContract } from 'web/hooks/use-group'
 import { Group, GroupLink } from 'common/group'
-import { CHECK_USERNAMES, CORE_USERNAMES } from 'common/lib/envs/constants'
+import { CHECK_USERNAMES, CORE_USERNAMES } from 'common/envs/constants'
 
 export function ContractGroupsList(props: {
   contract: Contract
