@@ -72,7 +72,6 @@ import GoToIcon from 'web/lib/icons/go-to-icon'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { track } from 'web/lib/service/analytics'
 import { GroupCard } from '../groups'
-import { ContractCardView } from 'common/events'
 import { useFeed } from 'web/hooks/use-feed'
 
 export async function getStaticProps() {
@@ -405,13 +404,7 @@ export const YourFeed = (props: { user: User; count: number }) => {
     <ContractsGrid
       contracts={contracts}
       showImageOnTopContract
-      onViewCard={(contract) => {
-        track('view market card', {
-          contractId: contract.id,
-          creatorId: contract.creatorId,
-          slug: contract.slug,
-        } as ContractCardView)
-      }}
+      trackCardViews={true}
     />
   )
 }
@@ -620,7 +613,11 @@ export const RecommendedSection = memo(function RecommendedSection(props: {
   return (
     <Col>
       <HomeSectionHeader label="Recommended" icon="👍" />
-      <ContractsGrid contracts={contracts} showImageOnTopContract={true} />
+      <ContractsGrid
+        contracts={contracts}
+        showImageOnTopContract={true}
+        trackCardViews={true}
+      />
     </Col>
   )
 })

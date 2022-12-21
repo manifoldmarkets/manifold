@@ -47,6 +47,7 @@ import { DAY_MS } from 'common/util/time'
 import { ContractMetrics } from 'common/calculate-metrics'
 import Image from 'next/image'
 import { useIsVisible } from 'web/hooks/use-is-visible'
+import { ContractCardView } from 'common/events'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -65,7 +66,7 @@ export const ContractCard = memo(function ContractCard(props: {
   hideQuestion?: boolean
   hideDetails?: boolean
   numAnswersFR?: number
-  onViewCard?: (contract: Contract) => void
+  trackCardViews?: boolean
 }) {
   const {
     showTime,
@@ -83,7 +84,7 @@ export const ContractCard = memo(function ContractCard(props: {
     hideQuestion,
     hideDetails,
     numAnswersFR,
-    onViewCard,
+    trackCardViews,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
   const { isResolved, createdTime, featuredLabel } = contract
@@ -91,7 +92,16 @@ export const ContractCard = memo(function ContractCard(props: {
   const { resolution } = contract
 
   const user = useUser()
-  const { ref } = useIsVisible(() => onViewCard?.(contract))
+  const { ref } = trackCardViews
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useIsVisible(() =>
+        track('view market card', {
+          contractId: contract.id,
+          creatorId: contract.creatorId,
+          slug: contract.slug,
+        } as ContractCardView)
+      )
+    : { ref: undefined }
   const marketClosed =
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 

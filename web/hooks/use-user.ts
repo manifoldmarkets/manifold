@@ -161,9 +161,9 @@ export const useUserRecommendedMarkets = (
     viewedMarketCardEvents.data?.map((e) => e.contractId) ?? []
   // get the count the number of times each market card was viewed
   const marketCardViewCounts = countBy(viewedMarketCardIds)
-  // filter out market cards that were viewed 4+ times
+  // filter out market cards that were viewed 6+ times
   const viewedMultipleTimesMarketIds = uniq(viewedMarketCardIds).filter(
-    (id) => marketCardViewCounts[id] < 4
+    (id) => marketCardViewCounts[id] < 6
   )
 
   const recentBetOnContractMetrics = query(
