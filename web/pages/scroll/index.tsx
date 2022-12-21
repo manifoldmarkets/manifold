@@ -139,15 +139,24 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
         0,
         horizontalSwipeDist
       )
+      let didBet = false
       if (!down && cappedDist >= horizontalSwipeDist) {
+        // Horizontal swipe is triggered!
         const outcome = Math.sign(mx) > 0 ? 'YES' : 'NO'
         onBet(outcome)
+        didBet = true
       }
       setSwipeDirection(!down || mx === 0 ? undefined : mx > 0 ? 'YES' : 'NO')
       const x = down ? Math.sign(mx) * cappedDist : 0
 
       let newIndex = index
+      if (didBet) {
+        // Scroll to next card.
+        newIndex = Math.min(cards.length - 1, index + 1)
+        setIndex(newIndex)
+      }
       if (!down) {
+        // Scroll to next or previous card.
         if (my < 0) newIndex = Math.min(cards.length - 1, index + 1)
         else if (my > 0) newIndex = Math.max(0, index - 1)
         setIndex(newIndex)
