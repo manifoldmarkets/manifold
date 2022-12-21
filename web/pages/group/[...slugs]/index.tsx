@@ -356,17 +356,18 @@ export function TopGroupNavBar(props: {
     'transition-opacity',
     bannerVisible ? 'opacity-0' : 'opacity-100'
   )
+  const router = useRouter()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200">
       <Row className="items-center justify-between gap-2 bg-white px-2">
         <div className="flex flex-1">
-          <Link
-            href="/"
+          <button
             className="py-4 px-2 text-indigo-700 hover:text-gray-500"
+            onClick={() => router.back()}
           >
             <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
-          </Link>
+          </button>
         </div>
         <h1
           className={clsx(

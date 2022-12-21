@@ -228,7 +228,7 @@ export function GroupMembersList(props: { group: Group }) {
   if (totalMembers === 1) return <div />
   return (
     <div className="flex flex-wrap gap-1 text-gray-700">
-      <span>{totalMembers} members</span>
+      <span>{totalMembers} followers</span>
     </div>
   )
 }
