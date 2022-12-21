@@ -665,7 +665,6 @@ We do this by crowdfunding loans and unlocking capital for the underserved, impr
 Using evidence and reason, we identify where resources would be most effective and help direct them there. We do this by conducting critical research to inform policymakers and philanthropists, and by guiding the development of new organizations to address key problems. 
 
 Our work covers important and neglected cause areas, including animal welfare, artificial intelligence, climate change, global health and development, and other work to safeguard a flourishing long-term future. We also aim to understand and support effective altruism – the community of people focused on these issues.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Happier Lives Institute',
@@ -676,7 +675,6 @@ Our work covers important and neglected cause areas, including animal welfare, a
     description: `We compare charities on a common metric called wellbeing-adjusted life years (WELLBYs). One WELLBY is equivalent to a 1-point increase on a 0-10 life satisfaction scale for one year.
 
 We use WELLBYs to compare the impact of charities that improve different outcomes, such as health or finances. This is the only approach to charity evaluation that allows us to make apples-to-apples comparisons. No other charity evaluator uses this approach. `,
-    tags: ['New'] as const,
   },
   {
     name: 'Strong Minds',
@@ -689,7 +687,6 @@ We use WELLBYs to compare the impact of charities that improve different outcome
 - StrongMinds provides free group talk therapy to low-income women and adolescents with depression in Uganda and Zambia.
 - We scale our reach through peer-to-peer therapy, teletherapy, public education, and partnerships.
 - Women who complete our therapy achieve clinically significant reductions in depression symptoms, restoring hope for themselves and their families.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Good Food Institute',
@@ -705,7 +702,6 @@ Globally, meat consumption is the highest it has ever been. According to the UN,
 With plant-based meat, cultivated meat, and fermentation, we can mitigate the environmental impact of our food system, decrease the risk of zoonotic disease, and ultimately feed more people with fewer resources. 
 
 By making meat from plants and cultivating meat from cells, we can modernize meat production. `,
-    tags: ['New'] as const,
   },
   {
     name: 'UMCOR',
@@ -714,7 +710,6 @@ By making meat from plants and cultivating meat from cells, we can modernize mea
     preview:
       'Assists United Methodists and churches to become involved globally in direct ministry to persons in need.',
     description: `As the humanitarian relief and development arm of The United Methodist Church, the United Methodist Committee on Relief – UMCOR – assists United Methodists and churches to become involved globally in direct ministry to persons in need. UMCOR comes alongside those who suffer from natural or human-caused disasters – famine, hurricane, war, flood, fire or other events—to alleviate suffering and serve as a source of help and hope for the vulnerable. UMCOR provides relief, response and long-term recovery grants when events overwhelm a community’s ability to recover on their own. UMCOR also provides technical support and training for partners to address emerging and ongoing issues related to disaster relief, recovery, and long-term health and development.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Sentience Institute',
@@ -726,7 +721,6 @@ By making meat from plants and cultivating meat from cells, we can modernize mea
 Our research has many different routes to impact, often referred to as the “Theory of Change.” Most directly, we aim to discover the factors (e.g., activism and business strategies) that most lead to moral circle expansion, but we also aim to understand the nature of moral progress (e.g., How do more people become longtermist?) and evaluate the extent to which certain moral and social outcomes should be prioritized by those trying to do the most good (i.e., “global priorities research”). This helps activists, donors, investors, governments, firms, and other stakeholders working on these issues knowledge to implement strategies that will change social norms and implement more morally inclusive laws and policies. While we mainly focus on institutional change, we expect our research will also help organizations working on changing individual behavior. Because of our longtermist perspective, we are interested in helping develop social movements and organizations that can take action many years from now.
 
 Where appropriate, we publish our research in academic journals, which helps communicate our findings to academics and encourages other researchers to carry out similar research. Our research sometimes attracts media attention, which we expect also has positive effects by informing public opinion and promoting more morally inclusive social norms. Usually, stakeholders see our research via email or directly on our website.`,
-    tags: ['New'] as const,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
