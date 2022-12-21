@@ -158,8 +158,12 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
       let newIndex = index
       if (didBet) {
         // Scroll to next card.
-        newIndex = Math.min(cards.length - 1, index + 1)
-        setIndex(newIndex)
+        setTimeout(() => {
+          newIndex = Math.min(cards.length - 1, index + 1)
+          setIndex(newIndex)
+          const y = -newIndex * cardHeight
+          api.start({ y })
+        }, 500)
       }
       if (!down) {
         // Scroll to next or previous card.
