@@ -400,7 +400,13 @@ export const YourFeed = (props: { user: User; count: number }) => {
   const contracts = useFeed(user, count)
 
   if (!contracts) return <LoadingIndicator />
-  return <ContractsGrid contracts={contracts} showImageOnTopContract />
+  return (
+    <ContractsGrid
+      contracts={contracts}
+      showImageOnTopContract
+      trackCardViews={true}
+    />
+  )
 }
 
 function HomeSectionHeader(props: {
@@ -607,7 +613,11 @@ export const RecommendedSection = memo(function RecommendedSection(props: {
   return (
     <Col>
       <HomeSectionHeader label="Recommended" icon="👍" />
-      <ContractsGrid contracts={contracts} showImageOnTopContract={true} />
+      <ContractsGrid
+        contracts={contracts}
+        showImageOnTopContract={true}
+        trackCardViews={true}
+      />
     </Col>
   )
 })
