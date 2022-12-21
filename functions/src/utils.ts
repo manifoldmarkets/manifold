@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
 import fetch from 'node-fetch'
 import {
+  CollectionReference,
   CollectionGroup,
   DocumentData,
   FieldValue,
@@ -99,6 +100,27 @@ export const writeAsync = async (
     }
     await batch.commit()
   }
+}
+
+export const loadPaginated = async <T extends DocumentData>(
+  q: Query<T> | CollectionReference<T>,
+  batchSize: number
+) => {
+  const results: T[] = []
+  let prev: QuerySnapshot<T> | undefined
+  let processed = 0
+  for (let i = 0; prev == null || prev.size > 0; i++) {
+    log(`Loading next page.`)
+    prev = await (prev == null
+      ? q.limit(batchSize)
+      : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
+    ).get()
+    log(`Loaded ${prev.size} documents.`)
+    processed += prev.size
+    results.push(...prev.docs.map((d) => d.data() as T))
+    log(`Processed ${prev.size} documents. Total: ${processed}`)
+  }
+  return results
 }
 
 export const processPaginated = async <T extends DocumentData, U>(
