@@ -140,14 +140,14 @@ function NumericValueDiv(props: OgCardProps) {
 }
 
 function ResolutionDiv(props: OgCardProps) {
-  const { resolution, probability } = props
+  const { resolution, probability, numericValue } = props
   if (!resolution) {
     return <div className={'hidden'} />
   }
   const text = {
     YES: 'YES',
     NO: 'NO',
-    MKT: probability ?? 'MANY',
+    MKT: probability ?? numericValue ?? 'MANY',
     CANCEL: 'N/A',
   }[resolution]
   const color = {
