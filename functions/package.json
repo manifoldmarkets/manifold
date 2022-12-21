@@ -45,7 +45,6 @@
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "marked": "4.1.1",
-    "module-alias": "2.2.2",
     "node-fetch": "2",
     "openai": "3.0.1",
     "stripe": "8.194.0",
@@ -54,9 +53,7 @@
   "devDependencies": {
     "@types/mailgun-js": "0.22.12",
     "@types/marked": "4.0.7",
-    "@types/module-alias": "2.0.1",
     "@types/node-fetch": "2.6.2",
-    "firebase-functions-test": "0.3.3",
     "puppeteer": "18.0.5"
   },
   "private": true
