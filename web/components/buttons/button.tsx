@@ -10,6 +10,7 @@ export type ColorType =
   | 'indigo'
   | 'yellow'
   | 'gray'
+  | 'dark-gray'
   | 'gray-outline'
   | 'gradient'
   | 'gradient-pink'
@@ -42,6 +43,8 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
       'disabled:bg-gray-200 bg-indigo-500 text-white hover:bg-indigo-600',
     color === 'gray' &&
       'bg-gray-200 text-gray-600 enabled:hover:bg-gray-300 enabled:hover:text-gray-700 disabled:opacity-50',
+    color === 'dark-gray' &&
+      'bg-gray-600 text-white hover:bg-gray-700 disabled:opacity-50',
     color === 'gray-outline' &&
       'ring-2 ring-gray-500 text-gray-500 enabled:hover:bg-gray-500 enabled:hover:text-white disabled:opacity-50',
     color === 'gradient' &&

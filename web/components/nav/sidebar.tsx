@@ -24,12 +24,12 @@ import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { withTracking } from 'web/lib/service/analytics'
 import { buildArray } from 'common/util/array'
-import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { SignInButton } from '../buttons/sign-in-button'
 import { SidebarItem } from './sidebar-item'
 import { MoreButton } from './more-button'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
+import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 
 export default function Sidebar(props: {
   className?: string
@@ -63,7 +63,10 @@ export default function Sidebar(props: {
       <Spacer h={6} />
 
       {user === undefined && <div className="h-[56px]" />}
-      {user === null && <SignInButton className="mb-4" />}
+      {user === null && <SignInButton className="mb-3" />}
+      {user === null && (
+        <AppBadgesOrGetAppButton size={'lg'} className={'mb-4'} />
+      )}
 
       {user && !isMobile && <ProfileSummary user={user} />}
 
@@ -113,7 +116,6 @@ const getDesktopNav = (loggedIn: boolean) =>
         href: '/leaderboards',
         icon: ChartBarIcon,
       },
-      { name: 'World Cup', href: '/worldcup', icon: TrophyIcon },
     ]
   )
 
@@ -145,7 +147,6 @@ const getMobileNav = (loggedIn: boolean) => {
     loggedIn && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
-    { name: 'World Cup', href: '/worldcup', icon: TrophyIcon },
     loggedIn && { name: 'Groups', href: '/groups', icon: UsersIcon },
     loggedIn && { name: 'Refer a friend', href: '/referrals', icon: GiftIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon }

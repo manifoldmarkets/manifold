@@ -1,60 +1,61 @@
-import clsx from 'clsx'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
-import { LinkIcon } from '@heroicons/react/solid'
 import {
+  DocumentIcon,
   FolderIcon,
   PencilIcon,
   ScaleIcon,
-  DocumentIcon,
 } from '@heroicons/react/outline'
-import toast from 'react-hot-toast'
+import { LinkIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { difference } from 'lodash'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 
-import { User } from 'web/lib/firebase/users'
-import { useUser, useUserById, usePrefetchUsers } from 'web/hooks/use-user'
-import { useDiscoverUsers } from 'web/hooks/use-users'
-import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { CreatorContractsList } from './contract/contracts-grid'
-import { SEO } from './SEO'
-import { Page } from './layout/page'
-import { linkClass, SiteLink } from './widgets/site-link'
-import { Avatar } from './widgets/avatar'
-import { Col } from './layout/col'
-import { Linkify } from './widgets/linkify'
-import { Spacer } from './layout/spacer'
-import { Row } from './layout/row'
-import { Modal } from './layout/modal'
-import { Tabs } from './layout/tabs'
-import { QueryUncontrolledTabs } from './layout/tabs'
-import { UserCommentsList } from './comments/comments-list'
-import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import { BetsList } from './bet/bets-list'
-import { UserFollowButton } from './buttons/follow-button'
-import { FollowList } from './follow-list'
-import { GroupsButton } from 'web/components/groups/groups-button'
-import { PortfolioValueSection } from './portfolio/portfolio-value-section'
-import { copyToClipboard } from 'web/lib/util/copy'
-import { track } from 'web/lib/service/analytics'
-import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
-import { PostCardList } from './posts/post-card'
-import { usePostsByUser } from 'web/hooks/use-post'
-import { DailyStats } from 'web/components/daily-stats'
-import { SectionHeader } from './groups/group-about'
-import { buttonClass } from './buttons/button'
-import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
-import { PostBanBadge, UserBadge } from './widgets/user-link'
-import Link from 'next/link'
-import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
-import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
-import { TextButton } from 'web/components/buttons/text-button'
+import { DOMAIN, ENV_CONFIG, PROJECT_ID } from 'common/envs/constants'
 import { Post } from 'common/post'
+import Link from 'next/link'
+import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
+import { TextButton } from 'web/components/buttons/text-button'
+import { DailyStats } from 'web/components/daily-stats'
+import { GroupsButton } from 'web/components/groups/groups-button'
+import { UserContractsList } from 'web/components/profile/user-contracts-list'
+import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useFollowers, useFollows } from 'web/hooks/use-follows'
+import { usePostsByUser } from 'web/hooks/use-post'
+import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
+import { useDiscoverUsers } from 'web/hooks/use-users'
+import { User } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { BetsList } from './bet/bets-list'
+import { buttonClass } from './buttons/button'
+import { UserFollowButton } from './buttons/follow-button'
+import { UserCommentsList } from './comments/comments-list'
+import { FollowList } from './follow-list'
+import { SectionHeader } from './groups/group-post-section'
+import { Col } from './layout/col'
+import { Modal } from './layout/modal'
+import { Page } from './layout/page'
+import { Row } from './layout/row'
+import { Spacer } from './layout/spacer'
+import { QueryUncontrolledTabs, Tabs } from './layout/tabs'
+import { PortfolioValueSection } from './portfolio/portfolio-value-section'
+import { PostCardList } from './posts/post-card'
+import { SEO } from './SEO'
+import { Avatar } from './widgets/avatar'
+import ImageWithBlurredShadow from './widgets/image-with-blurred-shadow'
+import { Linkify } from './widgets/linkify'
+import { linkClass, SiteLink } from './widgets/site-link'
+import { PostBanBadge, UserBadge } from './widgets/user-link'
 
 export function UserPage(props: { user: User; posts: Post[] }) {
   const user = useUserById(props.user.id) ?? props.user
 
   const router = useRouter()
   const currentUser = useUser()
+  const isAdmin = useAdmin()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
   const userPosts = usePostsByUser(user.id) ?? props.posts
@@ -123,6 +124,22 @@ export function UserPage(props: { user: User; posts: Post[] }) {
                 </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
+                  {isAdmin && (
+                    <span className={'text-xs sm:text-sm'}>
+                      <a
+                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        href={firestoreUserConsolePath(user.id)}
+                      >
+                        user link
+                      </a>
+                      <a
+                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        href={firestorePrivateConsolePath(user.id)}
+                      >
+                        private link
+                      </a>
+                    </span>
+                  )}
                 </Row>
               </Col>
               <Row
@@ -243,7 +260,7 @@ export function UserPage(props: { user: User; posts: Post[] }) {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <CreatorContractsList creator={user} />
+                    <UserContractsList creator={user} />
                   </>
                 ),
               },
@@ -421,4 +438,11 @@ function FollowsDialog(props: {
       </Col>
     </Modal>
   )
+}
+
+function firestoreUserConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fusers~2F${userId}`
+}
+function firestorePrivateConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fprivate-users~2F${userId}`
 }

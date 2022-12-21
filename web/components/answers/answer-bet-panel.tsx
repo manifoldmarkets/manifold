@@ -146,7 +146,7 @@ export function AnswerBetPanel(props: {
         showSlider={true}
       />
 
-      <Col className="mt-3 w-full gap-3">
+      <Col className="mt-8 w-full gap-3">
         <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">Probability</div>
           <Row>

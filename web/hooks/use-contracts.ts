@@ -20,6 +20,7 @@ import { CPMMBinaryContract } from 'common/contract'
 import { zipObject } from 'lodash'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useStore, useStoreItems } from './use-store'
+import { filterDefined } from 'common/util/array'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -174,5 +175,5 @@ export const useContracts = (
   contractIds: string[],
   options: { loadOnce?: boolean } = {}
 ) => {
-  return useStoreItems(contractIds, listenForContract, options)
+  return useStoreItems(filterDefined(contractIds), listenForContract, options)
 }

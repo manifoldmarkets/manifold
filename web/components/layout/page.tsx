@@ -10,8 +10,10 @@ export function Page(props: {
   className?: string
   children?: ReactNode
   logoSubheading?: string
+  touchesTop?: boolean
 }) {
-  const { children, rightSidebar, className, logoSubheading } = props
+  const { children, rightSidebar, className, logoSubheading, touchesTop } =
+    props
 
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
@@ -39,7 +41,7 @@ export function Page(props: {
         <div className="lg:col-span-8 xl:contents">
           <main
             className={clsx(
-              'lg:mt-6',
+              touchesTop ? '' : 'lg:mt-6',
               rightSidebar ? 'col-span-7' : 'col-span-8'
             )}
           >

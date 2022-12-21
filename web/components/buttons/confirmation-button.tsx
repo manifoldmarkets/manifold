@@ -1,9 +1,9 @@
 import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
-import { Button, ColorType, SizeType } from './button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
+import { Button, ColorType, SizeType } from './button'
 
 export function ConfirmationButton(props: {
   openModalBtn: {
@@ -52,7 +52,7 @@ export function ConfirmationButton(props: {
       <Modal open={open} setOpen={updateOpen}>
         <Col className="gap-4 rounded-md bg-white px-8 py-6">
           {children}
-          <Row className="gap-4">
+          <Row className="w-full justify-end gap-4">
             <Button
               color={cancelBtn?.color ?? 'gray-white'}
               onClick={() => updateOpen(false)}

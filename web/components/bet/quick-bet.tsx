@@ -402,7 +402,11 @@ export function QuickOutcomeView(props: {
   const prob = isMobile ? getProb(contract) : previewProb ?? getProb(contract)
   const textColor = getTextColor(contract)
 
-  if (outcomeType != 'FREE_RESPONSE' && outcomeType != 'MULTIPLE_CHOICE') {
+  if (
+    outcomeType == 'BINARY' ||
+    outcomeType == 'NUMERIC' ||
+    outcomeType == 'PSEUDO_NUMERIC'
+  ) {
     return (
       <div
         className={clsx(
@@ -427,7 +431,14 @@ export function QuickOutcomeView(props: {
     )
   }
 
-  return <ContractCardAnswers contract={contract} numAnswersFR={numAnswersFR} />
+  if (outcomeType == 'FREE_RESPONSE' || outcomeType == 'MULTIPLE_CHOICE') {
+    return (
+      <ContractCardAnswers contract={contract} numAnswersFR={numAnswersFR} />
+    )
+  }
+
+  // cert
+  return <></>
 }
 
 function cardText(contract: Contract, previewProb?: number) {

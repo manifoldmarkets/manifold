@@ -10,9 +10,10 @@ import { copyToClipboard } from 'web/lib/util/copy'
 
 export const SimpleLinkButton = (props: {
   getUrl: () => string
+  className?: string
   tooltip?: string
 }) => {
-  const { getUrl, tooltip } = props
+  const { getUrl, tooltip, className } = props
 
   return (
     <Tooltip
@@ -28,6 +29,7 @@ export const SimpleLinkButton = (props: {
           toast.success('Link copied!')
           track('copy share link')
         }}
+        className={className}
       >
         <Col className={'items-center gap-x-2 sm:flex-row'}>
           <LinkIcon className={clsx('h-5 w-5')} aria-hidden="true" />
