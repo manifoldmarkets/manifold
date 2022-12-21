@@ -6,7 +6,6 @@ import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
 import { useAllGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { listAllGroups } from 'web/lib/firebase/groups'
 import { User } from 'web/lib/firebase/users'
@@ -55,13 +54,18 @@ export default function Groups(props: { groups: Group[] }) {
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-4 sm:px-2">
           <Row className="items-center justify-between">
-            <Title text="Explore groups" />
-            {user && <CreateGroupButton user={user} goToGroupOnSubmit={true} />}
+            <div className="mt-3 sm:mt-0">
+              Discover groups of markets and follow them to customize your
+              recommendations.
+            </div>
+            {user && (
+              <CreateGroupButton
+                user={user}
+                goToGroupOnSubmit={true}
+                className={'w-32 whitespace-nowrap'}
+              />
+            )}
           </Row>
-
-          <div className="mb-6 text-gray-500">
-            Discuss and compete on questions with a group of friends.
-          </div>
 
           <Tabs
             className="mb-4"

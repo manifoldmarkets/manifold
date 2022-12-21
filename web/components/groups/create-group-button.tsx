@@ -111,7 +111,7 @@ export function CreateGroupButton(props: {
   return (
     <ConfirmationButton
       openModalBtn={{
-        label: label ? label : 'Create Group',
+        label: label ? label : 'New Group',
         icon: icon,
         className: className,
         disabled: isSubmitting,

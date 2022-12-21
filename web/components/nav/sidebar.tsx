@@ -3,7 +3,6 @@ import {
   HomeIcon,
   SearchIcon,
   BookOpenIcon,
-  UsersIcon,
   ChatIcon,
   ChartBarIcon,
   LogoutIcon,
@@ -30,6 +29,7 @@ import { MoreButton } from './more-button'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
+import { RectangleGroup } from 'web/components/icons/outline'
 
 export default function Sidebar(props: {
   className?: string
@@ -147,7 +147,11 @@ const getMobileNav = (loggedIn: boolean) => {
     loggedIn && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
-    loggedIn && { name: 'Groups', href: '/groups', icon: UsersIcon },
+    loggedIn && {
+      name: 'Topics',
+      href: '/groups',
+      icon: RectangleGroup,
+    },
     loggedIn && { name: 'Refer a friend', href: '/referrals', icon: GiftIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon }
   )
