@@ -1,3 +1,7 @@
+/* enable `explain` via the HTTP API for convenience */
+alter role authenticator set pgrst.db_plan_enabled to true;
+notify pgrst, 'reload config';
+
 create table if not exists users (
     id text not null primary key,
     data jsonb not null,
