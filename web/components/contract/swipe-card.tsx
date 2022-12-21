@@ -82,12 +82,14 @@ export const SwipeCard = memo(
             amount={amount}
             outcome={swipeDirection}
           />
-          {/* TODO: use editor excluding widgets */}
-          <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
-            {typeof description === 'string'
-              ? description
-              : richTextToString(description)}
-          </div>
+          <SiteLink href={contractPath(contract)} followsLinkClass>
+            {/* TODO: use editor excluding widgets */}
+            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
+              {typeof description === 'string'
+                ? description
+                : richTextToString(description)}
+            </div>
+          </SiteLink>
 
           <SwipeStatus outcome={swipeDirection} />
 
