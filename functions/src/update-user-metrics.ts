@@ -56,15 +56,13 @@ export const updateusermetrics = newEndpointNoAuth(
 export async function updateUserMetrics() {
   log('Loading users...')
   const users = await loadPaginated(
-    firestore.collection('users') as CollectionReference<User>,
-    500
+    firestore.collection('users') as CollectionReference<User>
   )
   log(`Loaded ${users.length} users.`)
 
   log('Loading contracts...')
   const contracts = await loadPaginated(
-    firestore.collection('contracts') as CollectionReference<Contract>,
-    500
+    firestore.collection('contracts') as CollectionReference<Contract>
   )
   const contractsByCreator = groupBy(contracts, (c) => c.creatorId)
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))

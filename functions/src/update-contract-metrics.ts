@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { CollectionReference } from 'firebase-admin/firestore'
 import { sumBy } from 'lodash'
 
-import { getValues, invokeFunction, log } from './utils'
+import { getValues, invokeFunction, loadPaginated, log } from './utils'
 import { Bet, LimitBet } from '../../common/bet'
 import { Contract, CPMM, CPMMContract } from '../../common/contract'
 import { DAY_MS } from '../../common/util/time'
@@ -34,7 +34,9 @@ export const updatecontractmetrics = newEndpointNoAuth(
 
 export async function updateContractMetrics() {
   log('Loading contracts...')
-  const contracts = await getValues<Contract>(firestore.collection('contracts'))
+  const contracts = await loadPaginated(
+    firestore.collection('contracts') as CollectionReference<Contract>
+  )
   log(`Loaded ${contracts.length} contracts.`)
 
   log('Computing metric updates...')

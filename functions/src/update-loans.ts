@@ -1,7 +1,14 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy, keyBy, sortBy } from 'lodash'
-import { getValues, invokeFunction, log, payUser, writeAsync } from './utils'
+import {
+  getValues,
+  invokeFunction,
+  loadPaginated,
+  log,
+  payUser,
+  writeAsync,
+} from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
@@ -10,6 +17,7 @@ import { createLoanIncomeNotification } from './create-notification'
 import { filterDefined } from '../../common/util/array'
 import { newEndpointNoAuth } from './api'
 import { batchedWaitAll } from '../../common/util/promise'
+import { CollectionReference, Query } from 'firebase-admin/firestore'
 
 const firestore = admin.firestore()
 
@@ -37,9 +45,11 @@ async function updateLoansCore() {
   log('Updating loans...')
 
   const [users, contracts] = await Promise.all([
-    getValues<User>(firestore.collection('users')),
-    getValues<Contract>(
-      firestore.collection('contracts').where('isResolved', '==', false)
+    loadPaginated(firestore.collection('users') as CollectionReference<User>),
+    loadPaginated(
+      firestore
+        .collection('contracts')
+        .where('isResolved', '==', false) as Query<Contract>
     ),
   ])
 
