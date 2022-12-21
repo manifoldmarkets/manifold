@@ -1,8 +1,8 @@
 import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
 import {
+  DotsCircleHorizontalIcon,
   ExclamationIcon,
   PencilIcon,
-  PlusCircleIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
@@ -36,7 +36,6 @@ import { Subtitle } from '../widgets/subtitle'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { editorExtensions } from '../widgets/editor'
-import { CHECK_USERNAMES, CORE_USERNAMES } from 'common/envs/constants'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -222,11 +221,6 @@ function MarketGroups(props: { contract: Contract }) {
   const user = useUser()
   const { contract } = props
   const groupsToDisplay = getGroupLinksToDisplay(contract)
-  const disabled =
-    !user ||
-    (!CORE_USERNAMES.includes(user.username) &&
-      !CHECK_USERNAMES.includes(user.username) &&
-      contract.creatorId !== user.id)
 
   return (
     <>
@@ -236,12 +230,12 @@ function MarketGroups(props: { contract: Contract }) {
           <GroupDisplay key={group.groupId} groupToDisplay={group} />
         ))}
 
-        {!disabled && (
+        {user && (
           <button
             className="text-gray-400 hover:text-gray-300"
             onClick={() => setOpen(true)}
           >
-            <PlusCircleIcon className="h-[20px]" />
+            <DotsCircleHorizontalIcon className="h-[20px]" />
           </button>
         )}
       </Row>
