@@ -1,6 +1,0 @@
-{
-  "watch": ["src", "../common"],
-  "ext": "ts",
-  "ignore": ["src/public"],
-  "exec": "node --inspect --experimental-specifier-resolution=node --loader ts-node/esm ./src/index.ts"
-}

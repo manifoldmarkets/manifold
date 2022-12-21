@@ -1,6 +1,6 @@
-import * as Packet from 'common/packet-ids';
-import { GroupControlField, PacketGroupControlFields, PacketSelectMarket } from 'common/packets';
-import { NamedBet } from 'common/types/manifold-abstract-types';
+import * as Packet from '@common/packet-ids';
+import { GroupControlField, PacketGroupControlFields, PacketSelectMarket } from '@common/packets';
+import { NamedBet } from '@common/types/manifold-abstract-types';
 import App from './app';
 import DockClient from './clients/dock';
 import OverlayClient from './clients/overlay';

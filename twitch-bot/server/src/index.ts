@@ -1,11 +1,6 @@
 import { exit } from 'process';
-import sourceMapSupport from 'source-map-support';
 import App from './app';
 import log from './logger';
-
-if (process.env.NODE_ENV === 'production') {
-  sourceMapSupport.install();
-}
 
 process.on('uncaughtException', async (e) => {
   log.crash(e);

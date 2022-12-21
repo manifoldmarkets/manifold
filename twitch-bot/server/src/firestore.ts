@@ -1,4 +1,4 @@
-import { UserNotRegisteredException } from 'common/exceptions';
+import { UserNotRegisteredException } from '@common/exceptions';
 import { FirebaseApp, initializeApp } from 'firebase/app';
 import { collection, CollectionReference, deleteField, doc, Firestore, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { MANIFOLD_DB_LOCATION, TWITCH_BOT_FIREBASE_KEY } from './envs';

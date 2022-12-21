@@ -1,7 +1,7 @@
 import { Combobox } from '@headlessui/react';
 import { CheckIcon, PlusCircleIcon, RefreshIcon, SelectorIcon } from '@heroicons/react/outline';
 import clsx from 'clsx';
-import { Group } from 'common/group';
+import { Group } from '@common/group';
 import { useEffect, useState } from 'react';
 import { SelectedGroup } from 'web/lib/selected-group';
 

@@ -1,8 +1,8 @@
-import { getOutcomeForString } from 'common/outcome';
-import { PacketResolved } from 'common/packets';
-import { AbstractMarket, NamedBet } from 'common/types/manifold-abstract-types';
-import { LiteUser } from 'common/types/manifold-api-types';
-import { Bet, CPMMBinaryContract } from 'common/types/manifold-internal-types';
+import { getOutcomeForString } from '@common/outcome';
+import { PacketResolved } from '@common/packets';
+import { AbstractMarket, NamedBet } from '@common/types/manifold-abstract-types';
+import { LiteUser } from '@common/types/manifold-api-types';
+import { Bet, CPMMBinaryContract } from '@common/types/manifold-internal-types';
 import { onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { default as lodash, default as _ } from 'lodash';
 import App from './app';

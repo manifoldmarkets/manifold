@@ -1,4 +1,4 @@
-import { AnyContractType, Bet, Contract, User } from 'common/types/manifold-internal-types';
+import { AnyContractType, Bet, Contract, User } from '@common/types/manifold-internal-types';
 import { initializeApp, onLog } from 'firebase/app';
 import { collection, CollectionReference, doc, DocumentReference, getDoc, getDocs, getFirestore } from 'firebase/firestore';
 import { MANIFOLD_FIREBASE_CONFIG } from './envs';

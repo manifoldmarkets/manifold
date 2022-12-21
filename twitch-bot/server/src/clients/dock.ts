@@ -1,9 +1,9 @@
 import { Socket } from 'socket.io';
 
-import { getOutcomeForString } from 'common/outcome';
-import * as Packet from 'common/packet-ids';
+import { getOutcomeForString } from '@common/outcome';
+import * as Packet from '@common/packet-ids';
 
-import { PacketCreateMarket, PacketGroupControlFields, PacketHandshakeComplete, PacketMarketCreated } from 'common/packets';
+import { PacketCreateMarket, PacketGroupControlFields, PacketHandshakeComplete, PacketMarketCreated } from '@common/packets.js';
 import App from '../app';
 import { MANIFOLD_API_BASE_URL } from '../envs';
 import log from '../logger';

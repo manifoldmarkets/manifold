@@ -1,9 +1,9 @@
 import { Transition } from '@headlessui/react';
 import clsx from 'clsx';
-import { Group } from 'common/group';
-import * as Packets from 'common/packet-ids';
-import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from 'common/packets';
-import { LiteMarket, LiteUser } from 'common/types/manifold-api-types';
+import { Group } from '@common/group';
+import * as Packets from '@common/packet-ids';
+import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from '@common/packets';
+import { LiteMarket, LiteUser } from '@common/types/manifold-api-types';
 import Head from 'next/head';
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import Textarea from 'react-expanding-textarea';
@@ -21,7 +21,7 @@ import { SelectedGroup } from 'web/lib/selected-group';
 import { CONTRACT_ANTE, formatMoney, Resolution } from 'web/lib/utils';
 import { ConfirmationButton } from '../components/confirmation-button';
 import { GroupSelector } from '../components/group-selector';
-import { ENV_CONFIG } from '../../../common/envs/constants';
+import { ENV_CONFIG } from '@manifold_common/envs/constants';
 
 let socket: Socket;
 let APIBase = undefined;
@@ -460,12 +460,12 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
     outcome === 'YES'
       ? 'btn-primary'
       : outcome === 'NO'
-      ? 'bg-red-400 hover:bg-red-500'
-      : outcome === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
-      : outcome === 'MKT'
-      ? 'bg-blue-400 hover:bg-blue-500'
-      : 'btn-disabled';
+        ? 'bg-red-400 hover:bg-red-500'
+        : outcome === 'CANCEL'
+          ? 'bg-yellow-400 hover:bg-yellow-500'
+          : outcome === 'MKT'
+            ? 'bg-blue-400 hover:bg-blue-500'
+            : 'btn-disabled';
 
   const resolveClicked = async (): Promise<boolean> => {
     console.log('Resolve clicked: ' + outcome);

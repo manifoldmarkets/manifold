@@ -1,5 +1,5 @@
-import { ResolutionOutcome } from 'common/outcome';
-import { LiteMarket } from 'common/types/manifold-api-types';
+import { ResolutionOutcome } from '@common/outcome';
+import { LiteMarket } from '@common/types/manifold-api-types';
 import { Response } from 'node-fetch';
 import * as Manifold from './manifold-api';
 

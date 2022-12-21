@@ -1,8 +1,8 @@
 import { PlusCircleIcon } from '@heroicons/react/outline';
 import { CheckIcon, PlusCircleIcon as PlusCircleIconSolid, XCircleIcon, XIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
-import * as Packets from 'common/packet-ids';
-import { PacketGroupControlFields } from 'common/packets';
+import * as Packets from '@common/packet-ids';
+import { PacketGroupControlFields } from '@common/packets';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import { Col } from './layout/col';
