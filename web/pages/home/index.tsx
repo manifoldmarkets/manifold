@@ -419,13 +419,10 @@ export const YourFeed = (props: { user: User; count: number }) => {
       contracts={contracts}
       showImageOnTopContract
       onViewCard={(contract) => {
-        track('view contract card', {
+        track('view market card', {
           contractId: contract.id,
           creatorId: contract.creatorId,
-          name: contract.question,
           slug: contract.slug,
-          groupSlugs: contract.groupSlugs,
-          timestamp: Date.now(),
         } as ContractCardView)
       }}
     />

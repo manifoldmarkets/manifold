@@ -159,7 +159,7 @@ export const useUserRecommendedMarkets = (userId = '_', count = 500) => {
   const marketCardViewCounts = countBy(viewedMarketCardIds)
   // filter out markets that were viewed 3 times
   const viewedMultipleTimesMarketIds = uniq(viewedMarketCardIds).filter(
-    (id) => marketCardViewCounts[id] < 3
+    (id) => marketCardViewCounts[id] < 4
   )
 
   const recentBetOnContractMetrics = query(
