@@ -39,7 +39,7 @@ export async function getStaticProps() {
   }
 }
 
-export default function Scroll(props: { contracts: BinaryContract[] }) {
+export default function Swipe(props: { contracts: BinaryContract[] }) {
   const [amount, setAmount] = useState(10)
 
   const old = useSwipes()
@@ -87,7 +87,7 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
     )
 
     if (user) logView({ amount, outcome, contractId, userId: user.id })
-    track('scroll bet', {
+    track('swipe bet', {
       slug: contract.slug,
       contractId,
       amount,
@@ -108,7 +108,7 @@ export default function Scroll(props: { contracts: BinaryContract[] }) {
   }, [computedHeight, setHeight])
 
   const cardHeight = height - BOTTOM_NAV_BAR_HEIGHT
-  const horizontalSwipeDist = width * 0.2
+  const horizontalSwipeDist = 80
 
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
