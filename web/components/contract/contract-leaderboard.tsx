@@ -1,28 +1,27 @@
 import { formatMoney } from 'common/util/format'
 
-import { Leaderboard } from '../leaderboard'
 import { BETTORS, User } from 'common/user'
-import { memo, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ContractMetric } from 'common/contract-metric'
-import { getProfitRankForContract } from 'web/lib/firebase/contract-metrics'
 import { removeUndefinedProps } from 'common/util/object'
-import { useUserContractMetric } from 'web/hooks/use-user-contract-metric'
+import { getProfitRankForContract } from 'web/lib/firebase/contract-metrics'
+import { Leaderboard } from 'web/components/leaderboard'
 
-export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
+export const ContractLeaderboard = function ContractLeaderboard(props: {
   topContractMetrics: ContractMetric[]
   currentUser: User | undefined | null
   contractId: string
+  currentUserMetrics: ContractMetric | undefined
 }) {
-  const { topContractMetrics, currentUser, contractId } = props
-  const topRankedUserIds = topContractMetrics.map((m) => m.userId)
-  const currentUserMetrics = useUserContractMetric(currentUser?.id, contractId)
+  const { topContractMetrics, currentUser, contractId, currentUserMetrics } =
+    props
+  const maxToShowMinusCurrentUser = 5
+  const topRankedUserIds = topContractMetrics
+    .slice(0, maxToShowMinusCurrentUser)
+    .map((m) => m.userId)
   const userIsAlreadyRanked =
     currentUser && topRankedUserIds.includes(currentUser.id)
-  const [yourRank, setYourRank] = useState<number | undefined>(
-    userIsAlreadyRanked
-      ? topRankedUserIds.indexOf(currentUser.id) + 1
-      : undefined
-  )
+  const [yourRank, setYourRank] = useState<number | undefined>(undefined)
 
   useEffect(() => {
     if (currentUserMetrics?.profit && !yourRank && !userIsAlreadyRanked) {
@@ -35,7 +34,7 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   const allMetrics =
     currentUserMetrics && currentUser && !userIsAlreadyRanked
       ? [
-          ...topContractMetrics.slice(0, 5),
+          ...topContractMetrics.slice(0, maxToShowMinusCurrentUser),
           {
             ...currentUserMetrics,
             userName: currentUser.username,
@@ -46,25 +45,32 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
         ]
       : topContractMetrics
 
-  const userProfits = allMetrics.map((cm) => {
-    const { profit } = cm
-    return removeUndefinedProps({
-      name: cm.userName,
-      username: cm.userUsername,
-      avatarUrl: cm.userAvatarUrl,
-      total: profit,
-      rank:
-        cm.userId === currentUser?.id && yourRank
-          ? yourRank
-          : topContractMetrics.indexOf(cm) + 1,
+  const userProfits = allMetrics
+    // exclude house bot from market leaderboard
+    .filter((cm) => cm.userName !== 'acc' || currentUser?.username === 'acc')
+    .map((cm) => {
+      const { profit } = cm
+      return removeUndefinedProps({
+        name: cm.userName,
+        username: cm.userUsername,
+        avatarUrl: cm.userAvatarUrl,
+        total: profit,
+        rank:
+          cm.userId === currentUser?.id && !userIsAlreadyRanked
+            ? yourRank
+              ? yourRank
+              : maxToShowMinusCurrentUser + 1
+            : topContractMetrics.indexOf(cm) + 1,
+      })
     })
-  })
   const top = Object.values(userProfits)
     .sort((a, b) => b.total - a.total)
     .filter((p) => p.total > 0)
     .slice(
       0,
-      !currentUser || userIsAlreadyRanked || !currentUserMetrics ? 5 : 6
+      !currentUser || userIsAlreadyRanked || !currentUserMetrics
+        ? maxToShowMinusCurrentUser
+        : maxToShowMinusCurrentUser + 1
     )
 
   return top && top.length > 0 ? (
@@ -81,4 +87,4 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
       highlightUsername={currentUser?.username}
     />
   ) : null
-})
+}

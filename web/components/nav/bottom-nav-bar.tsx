@@ -21,9 +21,12 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
 
+export const BOTTOM_NAV_BAR_HEIGHT = 58
+
 const itemClass =
-  'sm:hover:bg-gray-200 block w-full py-1 px-3 text-center sm:hover:text-indigo-700'
+  'sm:hover:bg-gray-200 block w-full py-1 px-3 text-center sm:hover:text-indigo-700 transition-colors'
 const selectedItemClass = 'bg-gray-100 text-indigo-700'
+const touchItemClass = 'bg-indigo-100'
 
 function getNavigation(user: User) {
   return [
@@ -97,15 +100,19 @@ function NavBarItem(props: {
 }) {
   const { item, currentPage, children, user } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
+  const [touched, setTouched] = useState(false)
   if (item.name === 'Profile' && user) {
     return (
       <Link
         href={item.href ?? '#'}
         className={clsx(
           itemClass,
+          touched && touchItemClass,
           currentPage === '/[username]' && selectedItemClass
         )}
         onClick={track}
+        onTouchStart={() => setTouched(true)}
+        onTouchEnd={() => setTouched(false)}
       >
         <Col>
           <div className="mx-auto my-1">
@@ -127,9 +134,12 @@ function NavBarItem(props: {
       href={item.href ?? '#'}
       className={clsx(
         itemClass,
+        touched && touchItemClass,
         currentPage === item.href && selectedItemClass
       )}
       onClick={track}
+      onTouchStart={() => setTouched(true)}
+      onTouchEnd={() => setTouched(false)}
     >
       {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
       {children}

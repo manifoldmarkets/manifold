@@ -8,7 +8,7 @@ import { DAY_MS } from '../../common/util/time'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 export const marketCloseNotifications = functions
-  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 1 hours')
   .onRun(async () => {
     await sendMarketCloseEmails()
@@ -18,29 +18,26 @@ const firestore = admin.firestore()
 
 export async function sendMarketCloseEmails() {
   const contracts = await firestore.runTransaction(async (transaction) => {
+    const now = Date.now()
     const snap = await transaction.get(
-      firestore.collection('contracts').where('isResolved', '!=', true)
+      firestore
+        .collection('contracts')
+        .where('isResolved', '==', false)
+        .where('closeTime', '<', now)
     )
     const contracts = snap.docs.map((doc) => doc.data() as Contract)
-    const now = Date.now()
-    const closeContracts = contracts.filter(
-      (contract) =>
-        contract.closeTime &&
-        contract.closeTime < now &&
-        shouldSendFirstOrFollowUpCloseNotification(contract)
+    console.log(`Found ${contracts.length} closed contracts`)
+    const needsNotification = contracts.filter((contract) =>
+      shouldSendFirstOrFollowUpCloseNotification(contract)
     )
+    console.log(`Found ${needsNotification.length} notifications to send`)
 
-    await Promise.all(
-      closeContracts.map(async (contract) => {
-        await transaction.update(
-          firestore.collection('contracts').doc(contract.id),
-          {
-            closeEmailsSent: admin.firestore.FieldValue.increment(1),
-          }
-        )
+    needsNotification.map(async (contract) => {
+      transaction.update(firestore.collection('contracts').doc(contract.id), {
+        closeEmailsSent: admin.firestore.FieldValue.increment(1),
       })
-    )
-    return closeContracts
+    })
+    return needsNotification
   })
 
   for (const contract of contracts) {

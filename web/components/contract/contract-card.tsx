@@ -40,12 +40,14 @@ import { Tooltip } from '../widgets/tooltip'
 import { Card } from '../widgets/card'
 import { useContract } from 'web/hooks/use-contracts'
 import { memo, ReactNode } from 'react'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
 import { ContractMetrics } from 'common/calculate-metrics'
+import Image from 'next/image'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { ContractCardView } from 'common/events'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -64,6 +66,7 @@ export const ContractCard = memo(function ContractCard(props: {
   hideQuestion?: boolean
   hideDetails?: boolean
   numAnswersFR?: number
+  trackCardViews?: boolean
 }) {
   const {
     showTime,
@@ -81,6 +84,7 @@ export const ContractCard = memo(function ContractCard(props: {
     hideQuestion,
     hideDetails,
     numAnswersFR,
+    trackCardViews,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
   const { isResolved, createdTime, featuredLabel } = contract
@@ -88,7 +92,16 @@ export const ContractCard = memo(function ContractCard(props: {
   const { resolution } = contract
 
   const user = useUser()
-
+  const { ref } = trackCardViews
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useIsVisible(() =>
+        track('view market card', {
+          contractId: contract.id,
+          creatorId: contract.creatorId,
+          slug: contract.slug,
+        } as ContractCardView)
+      )
+    : { ref: undefined }
   const marketClosed =
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
@@ -106,6 +119,7 @@ export const ContractCard = memo(function ContractCard(props: {
         hasImage ? 'ub-cover-image' : '',
         className
       )}
+      ref={ref}
     >
       <Col className="relative flex-1 gap-1 pt-2">
         {!hideDetails && (
@@ -124,10 +138,15 @@ export const ContractCard = memo(function ContractCard(props: {
         {/* overlay question on image */}
         {hasImage && !hideQuestion && (
           <div className="relative mb-2">
-            <img
-              className="h-80 w-full object-cover "
-              src={contract.coverImageUrl}
-            />
+            <div className="relative h-80">
+              <Image
+                fill
+                alt={contract.question}
+                sizes="100vw"
+                className="object-cover"
+                src={contract.coverImageUrl ?? ''}
+              />
+            </div>
             <div className="absolute bottom-0 w-full">
               <div
                 className={clsx(
@@ -141,7 +160,7 @@ export const ContractCard = memo(function ContractCard(props: {
           </div>
         )}
 
-        <Col className="gap-1 px-4 pb-1 ">
+        <Col className="gap-1 px-4 pb-1">
           {/* question is here if not overlaid on an image */}
           {!hasImage && !hideQuestion && (
             <div
@@ -420,8 +439,7 @@ export function ContractMetricsFooter(props: {
   const { contract, showDailyProfit } = props
 
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
-  const metrics = useSavedContractMetrics(contract, userBets)
+  const metrics = useSavedContractMetrics(contract)
 
   return user && metrics && metrics.hasShares ? (
     <LoadedMetricsFooter

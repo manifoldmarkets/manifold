@@ -1,19 +1,17 @@
 import { Editor } from '@tiptap/core'
-import { sum } from 'lodash'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { PostComment } from 'common/comment'
 import { Post } from 'common/post'
 import { Dictionary } from 'lodash'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Avatar } from 'web/components/widgets/avatar'
 import { CommentInput } from 'web/components/comments/comment-input'
 import { Content } from 'web/components/widgets/editor'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Tipper } from 'web/components/widgets/tipper'
 import { UserLink } from 'web/components/widgets/user-link'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -109,12 +107,11 @@ export function PostCommentItem(props: {
   probAtCreatedTime?: number
   onReplyClick?: (comment: PostComment) => void
 }) {
-  const { post, comment, tips, indent, onReplyClick } = props
+  const { post, comment, indent, onReplyClick } = props
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
 
   const commentRef = useRef<HTMLDivElement>(null)
-  const me = useUser()
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
   useEffect(() => {
@@ -171,11 +168,6 @@ export function PostCommentItem(props: {
               Reply
             </button>
           )}
-          <Tipper
-            comment={comment}
-            myTip={me ? tips?.[me.id] ?? 0 : 0}
-            totalTip={sum(Object.values(tips ?? {}))}
-          />
         </Row>
       </div>
     </Row>

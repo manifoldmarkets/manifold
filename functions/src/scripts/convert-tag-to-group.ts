@@ -43,6 +43,7 @@ const createGroup = async (
     totalMembers: 1,
     postIds: [],
     pinnedItems: [],
+    bannerUrl: '/group/default_group_banner_indigo.png',
   }
   await groupRef.create(group)
   // create a GroupMemberDoc for the creator
@@ -64,7 +65,7 @@ const createGroup = async (
       )
   )
   for (const market of contracts) {
-    if (market.groupLinks?.map((l) => l.groupId).includes(group.id)) continue // already in that group
+    if (market.groupLinks?.some((l) => l.groupId === group.id)) continue // already in that group
 
     const newGroupLinks = [
       ...(market.groupLinks ?? []),

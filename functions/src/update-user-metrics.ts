@@ -2,7 +2,14 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy } from 'lodash'
 
-import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
+import {
+  getUser,
+  getValues,
+  invokeFunction,
+  loadPaginated,
+  log,
+  revalidateStaticProps,
+} from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
@@ -17,6 +24,7 @@ import {
 import { batchedWaitAll } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
+import { CollectionReference } from 'firebase-admin/firestore'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
 
@@ -47,18 +55,24 @@ export const updateusermetrics = newEndpointNoAuth(
 
 export async function updateUserMetrics() {
   log('Loading users...')
-  const users = await getValues<User>(firestore.collection('users'))
+  const users = await loadPaginated(
+    firestore.collection('users') as CollectionReference<User>,
+    500
+  )
   log(`Loaded ${users.length} users.`)
 
   log('Loading contracts...')
-  const contracts = await getValues<Contract>(firestore.collection('contracts'))
+  const contracts = await loadPaginated(
+    firestore.collection('contracts') as CollectionReference<Contract>,
+    500
+  )
   const contractsByCreator = groupBy(contracts, (c) => c.creatorId)
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
   log(`Loaded ${contracts.length} contracts.`)
 
   const now = Date.now()
   const monthAgo = now - DAY_MS * 30
-  const writer = firestore.bulkWriter({ throttling: false })
+  const writer = firestore.bulkWriter()
 
   // we need to update metrics for contracts that resolved up through a month ago,
   // for the purposes of computing the daily/weekly/monthly profit on them
@@ -69,7 +83,8 @@ export async function updateUserMetrics() {
 
   log('Computing metric updates...')
   const userUpdates = await batchedWaitAll(
-    users.map((user) => async () => {
+    users.map((staleUser) => async () => {
+      const user = (await getUser(staleUser.id)) ?? staleUser
       const userContracts = contractsByCreator[user.id] ?? []
       const metricRelevantBets = await loadUserContractBets(
         user.id,

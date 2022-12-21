@@ -47,6 +47,7 @@ import { Title } from '../widgets/title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -309,7 +310,7 @@ export function BuyPanel(props: {
         )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
           user?.balance ?? 0
         )}`
-      : (betAmount ?? 0) > 10 && probChange >= 0.3 && bankrollFraction <= 1
+      : (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
       ? `Are you sure you want to move the market by ${displayedDifference}?`
       : undefined
 
@@ -317,6 +318,8 @@ export function BuyPanel(props: {
   const hideInput =
     mobileView &&
     (user?.createdTime ?? 0) > Date.now() - 7 * 24 * 60 * 60 * 1000
+
+  const displayError = !!outcome
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
@@ -346,9 +349,26 @@ export function BuyPanel(props: {
           mobileView ? 'rounded-lg px-4 py-2' : 'px-0'
         )}
       >
-        <Row className="mt-3 w-full gap-3">
+        <Row className="mt-2 mb-1 justify-between text-left text-sm text-gray-500">
+          Amount
+        </Row>
+
+        <BuyAmountInput
+          inputClassName="w-full max-w-none"
+          amount={betAmount}
+          onChange={onBetChange}
+          error={displayError ? error : undefined}
+          setError={setError}
+          disabled={isSubmitting}
+          inputRef={inputRef}
+          showSlider={true}
+          binaryOutcome={outcome}
+          hideInput={hideInput}
+        />
+
+        <Row className="mt-8 w-full gap-3">
           <Col className="w-1/2 text-sm">
-            <Col className="flex-nowrap whitespace-nowrap text-xs text-gray-400">
+            <Col className="flex-nowrap whitespace-nowrap text-sm text-gray-500">
               <div>
                 {isPseudoNumeric ? (
                   'Max payout'
@@ -358,25 +378,31 @@ export function BuyPanel(props: {
               </div>
             </Col>
             <div>
-              <span className="whitespace-nowrap text-xl">
+              <span className="whitespace-nowrap text-lg">
                 {formatMoney(currentPayout)}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-sm text-gray-500">
                 {' '}
                 +{currentReturnPercent}
               </span>
             </div>
           </Col>
           <Col className="w-1/2 text-sm">
-            <div className="text-xs text-gray-400">
-              {isPseudoNumeric ? 'Estimated value' : 'New Probability'}
-            </div>
+            <Row className={'relative'}>
+              <span className="text-sm text-gray-500">
+                {isPseudoNumeric ? 'Estimated value' : 'New probability'}
+              </span>
+              <InfoTooltip
+                text={'The probability of YES after placing your bet'}
+                className={'absolute top-0 pb-1.5'}
+              />
+            </Row>
             {probStayedSame ? (
-              <div className="text-xl">{format(initialProb)}</div>
+              <div className="text-lg">{format(initialProb)}</div>
             ) : (
-              <div className="text-xl">
+              <div className="text-lg">
                 {format(resultProb)}
-                <span className={clsx('text-xs text-gray-400')}>
+                <span className={clsx('text-sm text-gray-500')}>
                   {isPseudoNumeric ? (
                     <></>
                   ) : (
@@ -391,25 +417,8 @@ export function BuyPanel(props: {
             )}
           </Col>
         </Row>
-        <Row className="mt-4 mb-1 justify-between text-left text-xs text-gray-400">
-          Amount
-        </Row>
-
-        <BuyAmountInput
-          inputClassName="w-full max-w-none"
-          amount={betAmount}
-          onChange={onBetChange}
-          error={error}
-          setError={setError}
-          disabled={isSubmitting}
-          inputRef={inputRef}
-          showSlider={true}
-          binaryOutcome={outcome}
-          hideInput={hideInput}
-        />
 
         <Spacer h={8} />
-
         {user && (
           <WarningConfirmationButton
             marketType="binary"
@@ -697,7 +706,7 @@ function LimitOrderPanel(props: {
         showSlider={true}
       />
 
-      <Col className="mt-3 w-full gap-3">
+      <Col className="mt-8 w-full gap-3">
         {(hasTwoBets || (hasYesLimitBet && yesBet.amount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
             <div className="whitespace-nowrap text-gray-500">

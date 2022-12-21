@@ -1,8 +1,8 @@
 const truncatedLengths = {
-  sm: { startslice: 10, endSlice: -10 },
-  md: { startslice: 20, endSlice: -10 },
-  lg: { startslice: 50, endSlice: -10 },
-  xl: { startslice: 75, endSlice: -10 },
+  sm: 10,
+  md: 20,
+  lg: 50,
+  xl: 75,
 }
 
 export type truncateLengthType = 'sm' | 'md' | 'lg' | 'xl' | 'none'
@@ -15,10 +15,9 @@ export function truncateText(
   if (truncateLength === 'none' || !text) {
     return text
   }
-  const startSlice = truncatedLengths[truncateLength].startslice
-  const endSlice = truncatedLengths[truncateLength].endSlice
-  if (text.length <= startSlice + Math.abs(endSlice) + TRUNCATE_BUFFER) {
+  const slice = truncatedLengths[truncateLength]
+  if (text.length <= slice + TRUNCATE_BUFFER) {
     return text
   }
-  return text.slice(0, startSlice) + '...' + text.slice(endSlice)
+  return text.slice(0, slice) + '...'
 }

@@ -258,33 +258,41 @@ export const calculateNewProfit = (
 export const calculateMetricsByContract = (
   betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>,
-  user: User
+  user?: User
 ) => {
   return Object.entries(betsByContractId).map(([contractId, bets]) => {
-    const contract = contractsById[contractId]
-    const current = getContractBetMetrics(contract, bets)
-
-    let periodMetrics
-    if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
-      const periods = ['day', 'week', 'month'] as const
-      periodMetrics = Object.fromEntries(
-        periods.map((period) => [
-          period,
-          calculatePeriodProfit(contract, bets, period),
-        ])
-      )
-    }
-
-    return removeUndefinedProps({
-      contractId,
-      ...current,
-      from: periodMetrics,
-      userName: user.name,
-      userId: user.id,
-      userUsername: user.username,
-      userAvatarUrl: user.avatarUrl,
-    } as ContractMetric)
+    const contract: Contract = contractsById[contractId]
+    return calculateUserMetrics(contract, bets, user)
   })
+}
+
+export const calculateUserMetrics = (
+  contract: Contract,
+  bets: Bet[],
+  user?: User
+) => {
+  const current = getContractBetMetrics(contract, bets)
+
+  let periodMetrics
+  if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
+    const periods = ['day', 'week', 'month'] as const
+    periodMetrics = Object.fromEntries(
+      periods.map((period) => [
+        period,
+        calculatePeriodProfit(contract, bets, period),
+      ])
+    )
+  }
+
+  return removeUndefinedProps({
+    contractId: contract.id,
+    ...current,
+    from: periodMetrics,
+    userName: user?.name,
+    userId: user?.id,
+    userUsername: user?.username,
+    userAvatarUrl: user?.avatarUrl,
+  } as ContractMetric)
 }
 
 export type ContractMetrics = ReturnType<

@@ -46,6 +46,8 @@ export function getInitialProbability(
 }
 
 export function getOutcomeProbability(contract: Contract, outcome: string) {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('getOutcomeProbability not implemented')
   return contract.mechanism === 'cpmm-1'
     ? outcome === 'YES'
       ? getCpmmProbability(contract.pool, contract.p)
@@ -60,6 +62,8 @@ export function getOutcomeProbabilityAfterBet(
   outcome: string,
   bet: number
 ) {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('getOutcomeProbabilityAfterBet not implemented')
   const { mechanism, pool } = contract
   return mechanism === 'cpmm-1'
     ? getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
@@ -73,6 +77,8 @@ export function calculateSharesBought(
   outcome: string,
   amount: number
 ) {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('calculateSharesBought not implemented')
   const { mechanism, pool } = contract
   return mechanism === 'cpmm-1'
     ? calculateCpmmPurchase(contract, amount, outcome).shares
@@ -159,6 +165,7 @@ function getDpmInvested(yourBets: Bet[]) {
 }
 
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
+  const sortedBets = sortBy(yourBets, 'createdTime')
   const { resolution, mechanism } = contract
   const isCpmm = mechanism === 'cpmm-1'
 
@@ -169,7 +176,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   let redeemed = 0
   const totalShares: { [outcome: string]: number } = {}
 
-  for (const bet of yourBets) {
+  for (const bet of sortedBets) {
     const {
       isSold,
       sale,
@@ -212,7 +219,9 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const profit = payout + saleValue + redeemed - totalInvested
   const profitPercent = totalInvested === 0 ? 0 : (profit / totalInvested) * 100
 
-  const invested = isCpmm ? getCpmmInvested(yourBets) : getDpmInvested(yourBets)
+  const invested = isCpmm
+    ? getCpmmInvested(sortedBets)
+    : getDpmInvested(sortedBets)
   const hasShares = Object.values(totalShares).some(
     (shares) => !floatingEqual(shares, 0)
   )
@@ -220,7 +229,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { YES: yesShares, NO: noShares } = totalShares
   const hasYesShares = yesShares >= 1
   const hasNoShares = noShares >= 1
-  const lastBetTime = Math.max(...yourBets.map((b) => b.createdTime))
+  const lastBetTime = Math.max(...sortedBets.map((b) => b.createdTime))
   const maxSharesOutcome = hasShares
     ? maxBy(Object.keys(totalShares), (outcome) => totalShares[outcome])
     : null

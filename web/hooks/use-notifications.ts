@@ -1,8 +1,12 @@
-import { useMemo } from 'react'
-import { PrivateUser } from 'common/user'
 import { Notification } from 'common/notification'
-import { listenForNotifications } from 'web/lib/firebase/notifications'
-import { groupBy, map, partition } from 'lodash'
+import { PrivateUser } from 'common/user'
+import { groupBy, map } from 'lodash'
+import { useMemo } from 'react'
+import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
+import {
+  listenForNotifications,
+  listenForUnseenNotifications,
+} from 'web/lib/firebase/notifications'
 import { useStore } from './use-store'
 
 export type NotificationGroup = {
@@ -10,7 +14,6 @@ export type NotificationGroup = {
   groupedById: string
   isSeen: boolean
   timePeriod: string
-  type: 'income' | 'normal'
 }
 
 function useNotifications(privateUser: PrivateUser) {
@@ -19,19 +22,35 @@ function useNotifications(privateUser: PrivateUser) {
   })
 }
 
+export function useFirstPageOfNotifications(privateUser: PrivateUser) {
+  return useStore(
+    privateUser.id,
+    (userId, setNotifications: (notifications: Notification[]) => void) =>
+      listenForNotifications(userId, setNotifications, NOTIFICATIONS_PER_PAGE),
+    {
+      prefix: 'notifications-first-page',
+    }
+  )
+}
+
+function useUnseenNotifications(privateUser: PrivateUser) {
+  return useStore(privateUser.id, listenForUnseenNotifications, {
+    prefix: 'unseen-notifications',
+  })
+}
+
 export function useGroupedNotifications(privateUser: PrivateUser) {
-  const notifications = useNotifications(privateUser)
+  const firstNotifications = useFirstPageOfNotifications(privateUser)
+  const notifications = useNotifications(privateUser) ?? firstNotifications
   return useMemo(() => {
     return notifications ? groupNotifications(notifications) : undefined
   }, [notifications])
 }
 
-export function useUnseenNotificationCount(privateUser: PrivateUser) {
-  const notifications = useNotifications(privateUser)
+export function useGroupedUnseenNotifications(privateUser: PrivateUser) {
+  const notifications = useUnseenNotifications(privateUser)
   return useMemo(() => {
-    if (!notifications) return undefined
-    const unseen = notifications.filter((n) => !n.isSeen)
-    return groupNotifications(unseen).length
+    return notifications ? groupNotifications(notifications) : undefined
   }, [notifications])
 }
 
@@ -40,33 +59,12 @@ function groupNotifications(notifications: Notification[]) {
   const notificationGroupsByDay = groupBy(notifications, (notification) =>
     new Date(notification.createdTime).toDateString()
   )
-  const incomeSourceTypes = [
-    'bonus',
-    'tip',
-    'loan',
-    'betting_streak_bonus',
-    'tip_and_like',
-  ]
 
   Object.keys(notificationGroupsByDay).forEach((day) => {
     const notificationsGroupedByDay = notificationGroupsByDay[day]
-    const [incomeNotifications, normalNotificationsGroupedByDay] = partition(
-      notificationsGroupedByDay,
-      (notification) =>
-        incomeSourceTypes.includes(notification.sourceType ?? '')
-    )
-    if (incomeNotifications.length > 0) {
-      notificationGroups = notificationGroups.concat({
-        notifications: incomeNotifications,
-        groupedById: 'income' + day,
-        isSeen: incomeNotifications[0].isSeen,
-        timePeriod: day,
-        type: 'income',
-      })
-    }
-    // Group notifications by contract, filtering out bonuses:
+    // Group notifications by contract
     const groupedNotificationsByContractId = groupBy(
-      normalNotificationsGroupedByDay,
+      notificationsGroupedByDay,
       (notification) => {
         return notification.sourceContractId
       }
@@ -84,7 +82,6 @@ function groupNotifications(notifications: Notification[]) {
           groupedById: contractId,
           isSeen: notificationsForContractId.some((n) => !n.isSeen),
           timePeriod: day,
-          type: 'normal',
         }
         return notificationGroup
       })

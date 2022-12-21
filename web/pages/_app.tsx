@@ -7,6 +7,7 @@ import Welcome from 'web/components/onboarding/welcome'
 import { NativeMessageListener } from 'web/components/native-message-listener'
 import { Analytics } from '@vercel/analytics/react'
 import '../styles/globals.css'
+import { useHasLoaded } from 'web/hooks/use-has-loaded'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -30,6 +31,7 @@ type ManifoldPageProps = { auth?: AuthUser }
 
 function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
+  useHasLoaded()
 
   return (
     <>

@@ -100,8 +100,8 @@ export class Market {
               const bets = update.docs.map((d) => d.data());
               bets.filter((b) => Market.isBetValid(b));
               bets.sort((a, b) => a.createdTime - b.createdTime); // Sort oldest bets first !!! check
-              await Promise.all(_.uniq(bets.map((b) => b.userId)).map(async (id) => await app.getDisplayNameForUserID(id)));
-              await Promise.all(bets.map(async (b) => <NamedBet>{ ...b, username: await app.getDisplayNameForUserID(b.userId) })).then((bets) => (market.data.bets = bets));
+              await Promise.all(_.uniq(bets.map((b) => async ({userId}) => await app.getDisplayNameForUserID(userId))));
+              market.data.bets = await Promise.all(bets.map(async (b) => <NamedBet>{ ...b, username: await app.getDisplayNameForUserID(b.userId) }))
               r();
               return;
             }

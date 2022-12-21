@@ -8,6 +8,10 @@ import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
 import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
 import { useMemberGroups } from 'web/hooks/use-group'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getGroupBySlug, getGroupContractIds } from 'web/lib/firebase/groups'
 import { PillButton } from './buttons/pill-button'
@@ -35,14 +39,16 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
       memberGroups.some((g) => DESTINY_GROUP_SLUGS.includes(g.slug))
     )
 
-  const [blockedGroupContractIds, setBlockedGroupContractIds] = useState<
-    string[]
-  >([])
+  const [blockedGroupContractIds, setBlockedGroupContractIds] =
+    usePersistentState<string[] | undefined>(undefined, {
+      key: 'blockedGroupContractIds',
+      store: inMemoryStore(),
+    })
 
   useEffect(() => {
     const blockedGroupSlugs = buildArray(
       privateUser?.blockedGroupSlugs ?? [],
-      shouldBlockDestiny && 'destinygg'
+      shouldBlockDestiny && DESTINY_GROUP_SLUGS
     )
 
     Promise.all(blockedGroupSlugs.map(getGroupBySlug))
@@ -50,12 +56,12 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
         Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
       )
       .then((cids) => setBlockedGroupContractIds(cids.flat()))
-  }, [privateUser, shouldBlockDestiny])
+  }, [privateUser, setBlockedGroupContractIds, shouldBlockDestiny])
 
-  const blockedContractIds = [
-    ...blockedGroupContractIds,
-    ...(privateUser?.blockedContractIds ?? []),
-  ]
+  const blockedContractIds = buildArray(
+    blockedGroupContractIds,
+    privateUser?.blockedContractIds
+  )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
   const { count, showPills } = props
@@ -125,6 +131,7 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
     rawBets &&
     rawComments &&
     rawContracts &&
+    blockedGroupContractIds &&
     itemsSubset.every((item) =>
       'contractId' in item ? contractsById[item.contractId] : true
     )

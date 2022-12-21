@@ -46,29 +46,25 @@ const numericSchema = z.object({
   value: z.number(),
 })
 
-export const placebet = newEndpoint({}, async (req, auth) => {
-  log('Inside endpoint handler.')
+export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
+  log(`Inside endpoint handler for ${auth.uid}.`)
   const { amount, contractId } = validate(bodySchema, req.body)
 
   const result = await firestore.runTransaction(async (trans) => {
-    log('Inside main transaction.')
+    log(`Inside main transaction for ${auth.uid}.`)
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
-    const [[contractSnap, userSnap], { unfilledBets, balanceByUserId }] =
-      await Promise.all([
-        trans.getAll(contractDoc, userDoc),
-
-        // Note: Used only for cpmm-1 markets, but harmless to get for all markets.
-        getUnfilledBetsAndUserBalances(trans, contractDoc),
-      ])
+    const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
 
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
-    log('Loaded user and contract snapshots.')
 
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
+    log(
+      `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
+    )
 
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
       contract
@@ -111,6 +107,12 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           limitProb = Math.round(limitProb * 100) / 100
         }
 
+        log(
+          `Checking for limit orders in placebet for user ${auth.uid} on contract id ${contractId}.`
+        )
+        const { unfilledBets, balanceByUserId } =
+          await getUnfilledBetsAndUserBalances(trans, contractDoc, auth.uid)
+
         return getBinaryCpmmBetInfo(
           outcome,
           amount,
@@ -140,7 +142,9 @@ export const placebet = newEndpoint({}, async (req, auth) => {
         throw new APIError(500, 'Contract has invalid type/mechanism.')
       }
     })()
-    log('Calculated new bet information.')
+    log(
+      `Calculated new bet information for ${user.username} - auth ${auth.uid}.`
+    )
 
     if (
       mechanism == 'cpmm-1' &&
@@ -160,7 +164,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       userName: user.name,
       ...newBet,
     })
-    log('Created new bet document.')
+    log(`Created new bet document for ${user.username} - auth ${auth.uid}.`)
 
     if (makers) {
       updateMakers(makers, betDoc.id, contractDoc, trans)
@@ -181,7 +185,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           FLAT_TRADE_FEE
 
     trans.update(userDoc, { balance: FieldValue.increment(-balanceChange) })
-    log('Updated user balance.')
+    log(`Updated user ${user.username} balance - auth ${auth.uid}.`)
 
     if (newBet.amount !== 0) {
       trans.update(
@@ -196,13 +200,13 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           volume: volume + newBet.amount,
         })
       )
-      log('Updated contract properties.')
+      log(`Updated contract ${contract.slug} properties - auth ${auth.uid}.`)
     }
 
     return { contract, betId: betDoc.id, makers, newBet }
   })
 
-  log('Main transaction finished.')
+  log(`Main transaction finished - auth ${auth.uid}.`)
 
   const { contract, newBet, makers } = result
   const { mechanism } = contract
@@ -216,7 +220,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
     await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
-    log('Share redemption transaction finished.')
+    log(`Share redemption transaction finished - auth ${auth.uid}.`)
   }
 
   return { betId: result.betId }
@@ -233,7 +237,8 @@ const getUnfilledBetsQuery = (contractDoc: DocumentReference) => {
 
 export const getUnfilledBetsAndUserBalances = async (
   trans: Transaction,
-  contractDoc: DocumentReference
+  contractDoc: DocumentReference,
+  bettorId: string
 ) => {
   const unfilledBetsSnap = await trans.get(getUnfilledBetsQuery(contractDoc))
   const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
@@ -244,7 +249,12 @@ export const getUnfilledBetsAndUserBalances = async (
     userIds.length === 0
       ? []
       : await trans.getAll(
-          ...userIds.map((userId) => firestore.doc(`users/${userId}`))
+          ...userIds.map((userId) => {
+            log(
+              `Bettor ${bettorId} is checking balance of user ${userId} that has limit order on contract ${contractDoc.id}`
+            )
+            return firestore.doc(`users/${userId}`)
+          })
         )
   const users = filterDefined(userDocs.map((doc) => doc.data() as User))
   const balanceByUserId = Object.fromEntries(

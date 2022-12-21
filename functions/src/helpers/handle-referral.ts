@@ -63,7 +63,7 @@ export async function handleReferral(staleUser: User, eventId: string) {
     )
     if (txns.size > 0) {
       // If the referring user already has a referral txn due to referring this user, halt
-      if (txns.docs.map((txn) => txn.data()?.description).includes(user.id)) {
+      if (txns.docs.some((txn) => txn.data()?.description === user.id)) {
         console.log('found referral txn with the same details, aborting')
         return
       }

@@ -1,9 +1,9 @@
 import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
-import { Button, ColorType, SizeType } from './button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
+import { Button, ColorType, SizeType } from './button'
 
 export function ConfirmationButton(props: {
   openModalBtn: {
@@ -52,7 +52,7 @@ export function ConfirmationButton(props: {
       <Modal open={open} setOpen={updateOpen}>
         <Col className="gap-4 rounded-md bg-white px-8 py-6">
           {children}
-          <Row className="gap-4">
+          <Row className="w-full justify-end gap-4">
             <Button
               color={cancelBtn?.color ?? 'gray-white'}
               onClick={() => updateOpen(false)}
@@ -100,11 +100,20 @@ export function ResolveConfirmationButton(props: {
   onResolve: () => void
   isSubmitting: boolean
   openModalButtonClass?: string
-  color?: ColorType
+  marketTitle: string
+  label: string
+  color: ColorType
   disabled?: boolean
 }) {
-  const { onResolve, isSubmitting, openModalButtonClass, color, disabled } =
-    props
+  const {
+    onResolve,
+    isSubmitting,
+    openModalButtonClass,
+    color,
+    marketTitle,
+    label,
+    disabled,
+  } = props
   return (
     <ConfirmationButton
       openModalBtn={{
@@ -118,13 +127,16 @@ export function ResolveConfirmationButton(props: {
         label: 'Back',
       }}
       submitBtn={{
-        label: 'Resolve',
+        label: `Resolve to ${label}`,
         color: color,
         isSubmitting,
       }}
       onSubmit={onResolve}
     >
-      <p>Are you sure you want to resolve this market?</p>
+      <p>
+        Are you sure you want to resolve "{marketTitle}" to <b>{label}</b>?
+        <br />
+      </p>
     </ConfirmationButton>
   )
 }

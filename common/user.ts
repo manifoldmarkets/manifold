@@ -1,6 +1,5 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { MarketCreatorBadge, ProvenCorrectBadge, StreakerBadge } from './badge'
 
 export type User = {
   id: string
@@ -38,35 +37,23 @@ export type User = {
   nextLoanCached: number
   followerCountCached: number
 
-  followedCategories?: string[]
   homeSections?: string[]
 
   referredByUserId?: string
   referredByContractId?: string
   referredByGroupId?: string
-  lastPingTime?: number
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
+  streakForgiveness: number
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
-
-  achievements: {
-    provenCorrect?: {
-      badges: ProvenCorrectBadge[]
-    }
-    marketCreator?: {
-      badges: MarketCreatorBadge[]
-    }
-    streaker?: {
-      badges: StreakerBadge[]
-    }
-  }
   userDeleted?: boolean
 }
 
 export type PrivateUser = {
   id: string // same as User.id
+  /** @deprecated - username on private user is not kept up to date **/
   username: string // denormalized from User
 
   email?: string
@@ -84,6 +71,7 @@ export type PrivateUser = {
     botEnabled?: boolean
     needsRelinking?: boolean
   }
+  destinySubClaimed?: boolean
   pushToken?: string
   rejectedPushNotificationsOn?: number
   interestedInPushNotifications?: boolean
@@ -91,7 +79,7 @@ export type PrivateUser = {
   blockedByUserIds: string[]
   blockedContractIds: string[]
   blockedGroupSlugs: string[]
-  hasSignedEula?: boolean
+  hasSeenAppBannerInNotificationsOn?: number
 }
 
 export type PortfolioMetrics = {

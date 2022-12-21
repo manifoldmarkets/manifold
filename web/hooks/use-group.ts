@@ -23,6 +23,9 @@ import { useQuery } from 'react-query'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { limit, query } from 'firebase/firestore'
 import { useTrendingContracts } from './use-contracts'
+import { storageStore, usePersistentState } from './use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { useStoreItems } from './use-store'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -34,7 +37,7 @@ export const useGroup = (groupId: string | undefined) => {
   return group
 }
 
-export const useGroups = () => {
+export const useAllGroups = () => {
   const [groups, setGroups] = useState<Group[] | undefined>()
 
   useEffect(() => {
@@ -104,8 +107,13 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
 }
 
 export function useMemberGroupsSubscription(user: User | null | undefined) {
-  const cachedGroups = useMemberGroups(user?.id)
-  const [groups, setGroups] = useState(cachedGroups)
+  const [groups, setGroups] = usePersistentState<Group[] | undefined>(
+    undefined,
+    {
+      key: 'member-groups',
+      store: storageStore(safeLocalStorage()),
+    }
+  )
 
   const userId = user?.id
   useEffect(() => {
@@ -116,9 +124,32 @@ export function useMemberGroupsSubscription(user: User | null | undefined) {
         )
       })
     }
-  }, [userId])
+  }, [setGroups, userId])
 
   return groups
+}
+
+export function useMemberGroupsIdsAndSlugs(userId: string | null | undefined) {
+  const [groupIdsAndSlugs, setGroupIdsAndSlugs] = usePersistentState<
+    { id: string; slug: string }[] | undefined
+  >(undefined, {
+    key: 'member-groups-ids-and-slugs',
+    store: storageStore(safeLocalStorage()),
+  })
+
+  useEffect(() => {
+    if (userId) {
+      return listenForMemberGroupIds(userId, (groupIds) => {
+        Promise.all(groupIds.map((id) => getGroup(id))).then((groups) =>
+          setGroupIdsAndSlugs(
+            filterDefined(groups).map((g) => ({ id: g.id, slug: g.slug }))
+          )
+        )
+      })
+    }
+  }, [setGroupIdsAndSlugs, userId])
+
+  return groupIdsAndSlugs
 }
 
 export function useMembers(groupId: string | undefined) {
@@ -170,4 +201,8 @@ export function useGroupContractIds(groupId: string) {
   }, [groupId])
 
   return contractIds
+}
+
+export function useGroups(groupIds: string[]) {
+  return useStoreItems(groupIds, listenForGroup, { loadOnce: true })
 }

@@ -5,7 +5,7 @@ import { BucketInput } from './bucket-input'
 import { Input } from './input'
 import { Col } from '../layout/col'
 
-function ProbabilityInput(props: {
+export function ProbabilityInput(props: {
   prob: number | undefined
   onChange: (newProb: number | undefined) => void
   disabled?: boolean
@@ -30,18 +30,16 @@ function ProbabilityInput(props: {
       <label className="relative w-fit">
         <Input
           className={clsx('pr-2 !text-lg', inputClassName)}
-          type="number"
-          max={99}
-          min={1}
+          type="text"
           pattern="[0-9]*"
           inputMode="numeric"
-          placeholder={placeholder ?? '0'}
           maxLength={2}
+          placeholder={placeholder ?? '0'}
           value={prob ?? ''}
           disabled={disabled}
           onChange={(e) => onProbChange(e.target.value)}
         />
-        <span className="absolute top-1/2 right-10 my-auto -translate-y-1/2 text-gray-400">
+        <span className="absolute top-1/2 right-4 my-auto -translate-y-1/2 text-gray-400">
           %
         </span>
       </label>

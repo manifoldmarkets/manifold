@@ -1,39 +1,39 @@
+import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon } from '@heroicons/react/solid'
+import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
-import { ChevronDownIcon } from '@heroicons/react/solid'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
-import dayjs from 'dayjs'
 
-import { Spacer } from 'web/components/layout/spacer'
-import { Contract, contractPath } from 'web/lib/firebase/contracts'
-import { createMarket } from 'web/lib/firebase/api'
-import { FIXED_ANTE, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { Row } from 'web/components/layout/row'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   outcomeType,
   visibility,
 } from 'common/contract'
+import { ANTES, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { Group, groupPath } from 'common/group'
+import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
-import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { getGroup } from 'web/lib/firebase/groups'
-import { Group, groupPath } from 'common/group'
-import { track } from 'web/lib/service/analytics'
-import { GroupSelector } from 'web/components/groups/group-selector'
-import { User } from 'common/user'
-import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
-import { Checkbox } from 'web/components/widgets/checkbox'
-import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { MINUTE_MS } from 'common/util/time'
-import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
-import ShortToggle from 'web/components/widgets/short-toggle'
-import { Input } from 'web/components/widgets/input'
+import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
+import { Button } from 'web/components/buttons/button'
+import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
+import { GroupSelector } from 'web/components/groups/group-selector'
+import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
+import { Checkbox } from 'web/components/widgets/checkbox'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Input } from 'web/components/widgets/input'
+import ShortToggle from 'web/components/widgets/short-toggle'
+import { createMarket } from 'web/lib/firebase/api'
+import { Contract, contractPath } from 'web/lib/firebase/contracts'
+import { getGroup } from 'web/lib/firebase/groups'
+import { track } from 'web/lib/service/analytics'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -86,12 +86,7 @@ export function NewContractPanel(props: {
       })
   }, [creator.id, groupId])
 
-  const ante =
-    outcomeType === 'BINARY'
-      ? FIXED_ANTE
-      : outcomeType === 'PSEUDO_NUMERIC'
-      ? FIXED_ANTE * 5
-      : FIXED_ANTE * 2
+  const ante = ANTES[outcomeType]
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the market a week from today
@@ -259,11 +254,15 @@ export function NewContractPanel(props: {
             <ChoicesToggleGroup
               currentChoice={outcomeType}
               setChoice={(choice) => {
-                if (choice === 'FREE_RESPONSE')
-                  setMarketInfoText(
-                    'Users can submit their own answers to this market.'
-                  )
-                else setMarketInfoText('')
+                const text =
+                  {
+                    FREE_RESPONSE:
+                      'Users can submit their own answers to this market.',
+                    PSEUDO_NUMERIC:
+                      '[EXPERIMENTAL] Predict the value of a number.',
+                    CERT: '[EXPERIMENTAL] Tradeable shares of a stock',
+                  }[choice] ?? ''
+                setMarketInfoText(text)
                 setOutcomeType(choice as outcomeType)
               }}
               choicesMap={{
@@ -271,6 +270,8 @@ export function NewContractPanel(props: {
                 'Multiple choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
+                // Only show cert option in dev, for now
+                ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
               }}
               isSubmitting={isSubmitting}
               className={'col-span-4'}

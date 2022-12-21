@@ -4,41 +4,46 @@ import {
 } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
-import { useRef, useState } from 'react'
-import { Row } from '../layout/row'
-import { Content } from './editor'
+import { MouseEventHandler, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import {
   storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { Row } from '../layout/row'
+import { Content } from './editor'
 
-const COLLAPSIBLE_HEIGHT = 45
-const SHOW_COLLAPSE_TRESHOLD = 180
+export const COLLAPSIBLE_HEIGHT = 45
+export const SHOW_COLLAPSE_TRESHOLD = 180
 
 export function ShowMoreLessButton(props: {
-  onClick: () => void
+  onClick?: MouseEventHandler<any> | undefined
   isCollapsed: boolean
   className?: string
+  howManyMore?: number
   moreWhat?: string
 }) {
-  const { onClick, isCollapsed, className, moreWhat = '' } = props
+  const { onClick, isCollapsed, className, howManyMore, moreWhat = '' } = props
+  const howManyMoreText = howManyMore ? howManyMore + ' ' : ''
 
   return (
     <Button
-      color={'gray-white'}
+      color={'indigo-text-only'}
       className={clsx('z-10 select-none bg-white text-sm', className)}
       onClick={onClick}
+      size={'xs'}
     >
-      <Row className="items-center gap-0.5 text-indigo-700 drop-shadow-2xl">
+      <Row className="items-center gap-0.5">
+        {isCollapsed
+          ? `Show ${howManyMoreText}more ${moreWhat}`
+          : `Show less ${moreWhat}`}
         {isCollapsed ? (
           <ChevronDoubleDownIcon className="h-4 w-4" />
         ) : (
           <ChevronDoubleUpIcon className="h-4 w-4" />
         )}
-        {isCollapsed ? `Show More ${moreWhat}` : `Show Less ${moreWhat}`}
       </Row>
     </Button>
   )
@@ -60,13 +65,11 @@ export function CollapsibleContent(props: {
       }
     }
   }, [contentRef.current?.offsetHeight])
-
   if (shouldAllowCollapseOfContent) {
     return (
       <ActuallyCollapsibleContent content={content} contractId={contractId} />
     )
   }
-
   return (
     <div ref={contentRef}>
       <Content content={content} />

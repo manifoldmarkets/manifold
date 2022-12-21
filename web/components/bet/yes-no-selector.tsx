@@ -1,8 +1,8 @@
 import clsx from 'clsx'
-import React, { ReactNode } from 'react'
-import { Col } from '../layout/col'
+import React from 'react'
 import { Row } from '../layout/row'
 import { resolution } from 'common/contract'
+import { Button } from '../buttons/button'
 
 export function YesNoSelector(props: {
   selected?: 'YES' | 'NO'
@@ -73,14 +73,14 @@ export function YesNoCancelSelector(props: {
   selected: resolution | undefined
   onSelect: (selected: resolution) => void
   className?: string
-  btnClassName?: string
 }) {
   const { selected, onSelect } = props
 
-  const btnClassName = clsx('px-6 flex-1 rounded-3xl', props.btnClassName)
+  const btnClassName =
+    'px-0 !py-2 flex-1 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none'
 
   return (
-    <Col className="gap-2">
+    <Row className="gap-1">
       {/* Should ideally use a radio group instead of buttons */}
       <Button
         color={selected === 'YES' ? 'green' : 'gray'}
@@ -113,46 +113,48 @@ export function YesNoCancelSelector(props: {
       >
         N/A
       </Button>
-    </Col>
+    </Row>
   )
 }
 
 export function ChooseCancelSelector(props: {
   selected: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   onSelect: (selected: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL') => void
-  className?: string
-  btnClassName?: string
 }) {
-  const { selected, onSelect, className } = props
+  const { selected, onSelect } = props
 
-  const btnClassName = clsx('px-6 flex-1', props.btnClassName)
+  const btnClassName =
+    'flex-1 font-medium sm:first:rounded-l-xl sm:last:rounded-r-xl sm:rounded-none whitespace-nowrap'
 
   return (
-    <Col className={clsx('gap-2', className)}>
+    <div className="flex flex-col gap-1 sm:flex-row">
       <Button
         color={selected === 'CHOOSE' ? 'green' : 'gray'}
+        size="xl"
         onClick={() => onSelect('CHOOSE')}
-        className={clsx('whitespace-nowrap', btnClassName)}
+        className={btnClassName}
       >
         Choose an answer
       </Button>
 
       <Button
         color={selected === 'CHOOSE_MULTIPLE' ? 'blue' : 'gray'}
+        size="xl"
         onClick={() => onSelect('CHOOSE_MULTIPLE')}
-        className={clsx('whitespace-nowrap', btnClassName)}
+        className={btnClassName}
       >
         Choose multiple
       </Button>
 
       <Button
         color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+        size="xl"
         onClick={() => onSelect('CANCEL')}
-        className={clsx(btnClassName, '')}
+        className={btnClassName}
       >
         N/A
       </Button>
-    </Col>
+    </div>
   )
 }
 
@@ -177,57 +179,30 @@ export function NumberCancelSelector(props: {
   selected: 'NUMBER' | 'CANCEL' | undefined
   onSelect: (selected: 'NUMBER' | 'CANCEL') => void
   className?: string
-  btnClassName?: string
 }) {
-  const { selected, onSelect, className } = props
+  const { selected, onSelect } = props
 
-  const btnClassName = clsx('px-6 flex-1', props.btnClassName)
+  const btnClassName = 'flex-1 font-medium whitespace-nowrap'
 
   return (
-    <Col className={clsx('gap-2', className)}>
+    <Row className={'gap-1'}>
       <Button
         color={selected === 'NUMBER' ? 'indigo' : 'gray'}
+        size="lg"
         onClick={() => onSelect('NUMBER')}
-        className={clsx('whitespace-nowrap', btnClassName)}
+        className={clsx(btnClassName, 'rounded-l-xl rounded-r-none')}
       >
         Choose value
       </Button>
 
       <Button
         color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+        size="lg"
         onClick={() => onSelect('CANCEL')}
-        className={clsx(btnClassName, '')}
+        className={clsx(btnClassName, 'rounded-l-none rounded-r-xl')}
       >
         N/A
       </Button>
-    </Col>
-  )
-}
-
-function Button(props: {
-  className?: string
-  onClick?: () => void
-  color: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray'
-  children?: ReactNode
-}) {
-  const { className, onClick, children, color } = props
-
-  return (
-    <button
-      type="button"
-      className={clsx(
-        'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
-        color === 'green' && 'bg-teal-500 text-white hover:bg-teal-500',
-        color === 'red' && 'bg-scarlet-300 hover:bg-scarlet-400 text-white',
-        color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
-        color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
-        color === 'indigo' && 'bg-indigo-500 text-white hover:bg-indigo-600',
-        color === 'gray' && 'bg-gray-200 text-gray-700 hover:bg-gray-300',
-        className
-      )}
-      onClick={onClick}
-    >
-      {children}
-    </button>
+    </Row>
   )
 }

@@ -13,6 +13,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
 import { Manalink } from 'common/manalink'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { Page } from 'web/components/layout/page'
 
 export default function ClaimPage() {
   const user = useUser()
@@ -30,7 +31,7 @@ export default function ClaimPage() {
 
   const info = { ...manalink, uses: manalink.claims.length }
   return (
-    <>
+    <Page>
       <SEO
         title="Send Mana"
         description="Send mana to anyone via link!"
@@ -85,7 +86,7 @@ export default function ClaimPage() {
           </Button>
         </Row>
       </div>
-    </>
+    </Page>
   )
 }
 

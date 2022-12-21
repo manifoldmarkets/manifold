@@ -45,7 +45,7 @@ export function GroupSelector(props: {
     openGroups
       .concat(
         (memberGroups ?? []).filter(
-          (g) => !openGroups.map((og) => og.id).includes(g.id)
+          (g) => !openGroups.some((og) => og.id === g.id)
         )
       )
       .filter((group) => !ignoreGroupIds?.includes(group.id))

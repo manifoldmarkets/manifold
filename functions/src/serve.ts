@@ -13,6 +13,8 @@ import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
 import { createuser } from './create-user'
 import { createanswer } from './create-answer'
+import { swapcert } from './swap-cert'
+import { dividendcert } from './dividend-cert'
 import { placebet } from './place-bet'
 import { cancelbet } from './cancel-bet'
 import { sellbet } from './sell-bet'
@@ -29,7 +31,6 @@ import { getcurrentuser } from './get-current-user'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { testscheduledfunction } from './test-scheduled-function'
-import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
 import { validateiap } from 'functions/src/validate-iap'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
@@ -57,6 +58,8 @@ addJsonEndpointRoute('/changeuserinfo', changeuserinfo)
 addJsonEndpointRoute('/createuser', createuser)
 addJsonEndpointRoute('/createanswer', createanswer)
 addJsonEndpointRoute('/createcomment', createcomment)
+addJsonEndpointRoute('/swapcert', swapcert)
+addJsonEndpointRoute('/dividendcert', dividendcert)
 addJsonEndpointRoute('/placebet', placebet)
 addJsonEndpointRoute('/cancelbet', cancelbet)
 addJsonEndpointRoute('/sellbet', sellbet)
@@ -64,8 +67,6 @@ addJsonEndpointRoute('/sellshares', sellshares)
 addJsonEndpointRoute('/addsubsidy', addsubsidy)
 addJsonEndpointRoute('/claimmanalink', claimmanalink)
 addJsonEndpointRoute('/createmarket', createmarket)
-addJsonEndpointRoute('/addCommentBounty', addcommentbounty)
-addJsonEndpointRoute('/awardCommentBounty', awardcommentbounty)
 addJsonEndpointRoute('/creategroup', creategroup)
 addJsonEndpointRoute('/resolvemarket', resolvemarket)
 addJsonEndpointRoute('/unsubscribe', unsubscribe)

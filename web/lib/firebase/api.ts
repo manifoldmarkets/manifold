@@ -30,6 +30,10 @@ export function createAnswer(params: any) {
   return call(getFunctionUrl('createanswer'), 'POST', params)
 }
 
+export function claimDestinySub(params: any) {
+  return call(getFunctionUrl('claimdestinysub'), 'POST', params)
+}
+
 export function transact(params: any) {
   return call(getFunctionUrl('transact'), 'POST', params)
 }
@@ -46,20 +50,20 @@ export function addSubsidy(params: any) {
   return call(getFunctionUrl('addsubsidy'), 'POST', params)
 }
 
-export function addCommentBounty(params: any) {
-  return call(getFunctionUrl('addcommentbounty'), 'POST', params)
-}
-
-export function awardCommentBounty(params: any) {
-  return call(getFunctionUrl('awardcommentbounty'), 'POST', params)
-}
-
 export function createMarket(params: any) {
   return call(getFunctionUrl('createmarket'), 'POST', params)
 }
 
 export function resolveMarket(params: any) {
   return call(getFunctionUrl('resolvemarket'), 'POST', params)
+}
+
+export function swapCert(params: any) {
+  return call(getFunctionUrl('swapcert'), 'POST', params)
+}
+
+export function dividendCert(params: any) {
+  return call(getFunctionUrl('dividendcert'), 'POST', params)
 }
 
 export function placeBet(params: any) {

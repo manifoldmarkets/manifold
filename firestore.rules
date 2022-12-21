@@ -22,6 +22,10 @@ service cloud.firestore {
       allow read;
     }
 
+     match /destiny-subs/{sub} {
+      allow read;
+    }
+
     match /globalConfig/globalConfig {
       allow read;
       allow update: if isAdmin()
@@ -33,7 +37,7 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
+                                                                    .hasOnly(['userDeleted', 'bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -46,6 +50,7 @@ service cloud.firestore {
                           // && (get(/databases/$(database)/documents/users/$(request.resource.data.referredByUserId)).referredByUserId == resource.data.id);
       match /events/{eventId} {
         allow create: if (request.auth == null && userId == 'NO_USER') || userId == request.auth.uid;
+        allow read: if userId == request.auth.uid || userId == '_';
       }
     }
 
@@ -78,7 +83,11 @@ service cloud.firestore {
       allow write: if request.auth.uid == userId;
     }
 
-    match /users/{userId}/likes/{likeId} {
+    match /{somePath=**}/reactions/{reactionId}{
+      allow read;
+    }
+
+    match /users/{userId}/reactions/{reactionId} {
       allow read;
       allow write: if request.auth.uid == userId;
     }
@@ -91,13 +100,13 @@ service cloud.firestore {
       allow read: if userId == request.auth.uid || isAdmin();
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['email', 'apiKey', 'notificationPreferences', 'twitchInfo', 'pushToken', 'rejectedPushNotificationsOn', 'blockedUserIds', 'blockedContractIds', 'blockedGroupSlugs','interestedInPushNotifications', 'hasSignedEula']);
+                         .hasOnly(['email', 'apiKey', 'notificationPreferences', 'twitchInfo', 'pushToken', 'rejectedPushNotificationsOn', 'blockedUserIds', 'blockedContractIds', 'blockedGroupSlugs','interestedInPushNotifications', 'hasSeenAppBannerInNotificationsOn']);
       allow update: if (request.auth != null || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['blockedByUserIds'])
                        && request.resource.data.blockedByUserIds.toSet().difference(resource.data.blockedByUserIds.toSet()).hasOnly([request.auth.uid]);
 
-      allow delete: if (userId == request.auth.uid || isAdmin());              
+      allow delete: if (userId == request.auth.uid || isAdmin());
     }
 
     match /private-users/{userId}/views/{viewId} {
@@ -117,7 +126,7 @@ service cloud.firestore {
     }
 
     match /private-users/{userId}/seenMarkets/{marketId} {
-      allow create: if userId == request.auth.uid;
+      allow write: if userId == request.auth.uid;
       allow read: if userId == request.auth.uid
     }
 
@@ -205,7 +214,7 @@ service cloud.firestore {
       allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                         && request.resource.data.diff(resource.data)
                         .affectedKeys()
-                        .hasOnly(['name', 'about', 'anyoneCanJoin', 'aboutPostId', 'pinnedItems' ]);
+                        .hasOnly(['name', 'about', 'anyoneCanJoin', 'aboutPostId', 'pinnedItems','bannerUrl' ]);
       allow delete: if request.auth.uid == resource.data.creatorId;
 
       match /groupContracts/{contractId} {

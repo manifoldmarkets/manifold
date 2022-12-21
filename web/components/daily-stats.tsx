@@ -18,7 +18,7 @@ import {
 import { LoansModal } from 'web/components/profile/loans-modal'
 import Link from 'next/link'
 
-const dailyStatsHeaderClass = 'text-gray-500 text-xs sm:text-sm'
+const dailyStatsHeaderClass = 'text-gray-500 text-xs font-thin'
 const dailyStatsClass = 'items-center text-lg'
 
 export function DailyStats(props: {
@@ -97,9 +97,7 @@ export function DailyStats(props: {
 export function DailyProfit(props: { user: User | null | undefined }) {
   const { user } = props
 
-  const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_'
-  )
+  const contractMetricsByProfit = useUserContractMetricsByProfit(user?.id)
   const profit = sum(
     contractMetricsByProfit?.metrics.map((m) =>
       m.from ? m.from.day.profit : 0

@@ -37,6 +37,8 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { User } from 'common/user'
+import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
+import { computeContractMetricUpdates } from './update-contract-metrics'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -111,11 +113,11 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
 })
 
 export const resolveMarket = async (
-  contract: Contract,
+  unresolvedContract: Contract,
   creator: User,
   { value, resolutions, probabilityInt, outcome }: ResolutionParams
 ) => {
-  const { creatorId, closeTime, id: contractId } = contract
+  const { creatorId, closeTime, id: contractId } = unresolvedContract
 
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
@@ -153,15 +155,15 @@ export const resolveMarket = async (
     collectedFees,
   } = getPayouts(
     outcome,
-    contract,
+    unresolvedContract,
     bets,
     liquidities,
     resolutionProbs,
     resolutionProbability
   )
 
-  const updatedContract = {
-    ...contract,
+  let contract = {
+    ...unresolvedContract,
     ...removeUndefinedProps({
       isResolved: true,
       resolution: outcome,
@@ -173,7 +175,10 @@ export const resolveMarket = async (
       collectedFees,
     }),
     subsidyPool: 0,
-  }
+  } as Contract
+
+  const updates = await computeContractMetricUpdates(contract, Date.now())
+  contract = { ...contract, ...(updates as any) }
 
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
   const loanPayouts = getLoanPayouts(openBets)
@@ -203,15 +208,16 @@ export const resolveMarket = async (
   if (userCount <= 499) {
     await firestore.runTransaction(async (transaction) => {
       payUsers(transaction, payouts)
-      transaction.update(contractDoc, updatedContract)
+      transaction.update(contractDoc, contract)
     })
   } else {
     await payUsersMultipleTransactions(payouts)
-    await contractDoc.update(updatedContract)
+    await contractDoc.update(contract)
   }
 
   console.log('contract ', contractId, 'resolved to:', outcome)
 
+  await updateContractMetricsForUsers(contract, bets)
   await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
   await revalidateStaticProps(getContractPath(contract))
 
@@ -241,7 +247,7 @@ export const resolveMarket = async (
     }
   )
 
-  return updatedContract
+  return contract
 }
 
 function getResolutionParams(contract: Contract, body: string) {

@@ -30,10 +30,12 @@ export * from './weekly-markets-emails'
 export * from './reset-betting-streaks'
 export * from './reset-weekly-emails-flags'
 export * from './on-update-contract-follow'
-export * from './on-update-like'
 export * from './weekly-portfolio-emails'
 export * from './drizzle-liquidity'
 export * from './check-push-notification-receipts'
+export * from './on-update-reaction'
+export * from './log-writes'
+export * from './increment-streak-forgiveness'
 
 // v2
 export * from './health'
@@ -53,10 +55,10 @@ export * from './unsubscribe'
 export * from './stripe'
 export * from './mana-signup-bonus'
 export * from './close-market'
-export * from './update-comment-bounty'
 export * from './add-subsidy'
 export * from './test-scheduled-function'
 export * from './validate-iap'
+export * from './claim-destiny-sub'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -70,7 +72,6 @@ import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
 import { createcomment } from './create-comment'
-import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { closemarket } from './close-market'
@@ -87,6 +88,8 @@ import { updateloans } from './update-loans'
 import { addsubsidy } from './add-subsidy'
 import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from './validate-iap'
+import { swapcert } from './swap-cert'
+import { dividendcert } from './dividend-cert'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -103,9 +106,7 @@ const sellSharesFunction = toCloudFunction(sellshares)
 const claimManalinkFunction = toCloudFunction(claimmanalink)
 const createMarketFunction = toCloudFunction(createmarket)
 const addSubsidyFunction = toCloudFunction(addsubsidy)
-const addCommentBounty = toCloudFunction(addcommentbounty)
 const createCommentFunction = toCloudFunction(createcomment)
-const awardCommentBounty = toCloudFunction(awardcommentbounty)
 const createGroupFunction = toCloudFunction(creategroup)
 const resolveMarketFunction = toCloudFunction(resolvemarket)
 const closeMarketFunction = toCloudFunction(closemarket)
@@ -122,6 +123,8 @@ const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 const updateLoansFunction = toCloudFunction(updateloans)
 const validateIAPFunction = toCloudFunction(validateiap)
+const swapCertFunction = toCloudFunction(swapcert)
+const dividendCertFunction = toCloudFunction(dividendcert)
 
 export {
   healthFunction as health,
@@ -147,12 +150,12 @@ export {
   createPostFunction as createpost,
   saveTwitchCredentials as savetwitchcredentials,
   createCommentFunction as createcomment,
-  addCommentBounty as addcommentbounty,
-  awardCommentBounty as awardcommentbounty,
   testScheduledFunction as testscheduledfunction,
   updateContractMetricsFunction as updatecontractmetrics,
   updateUserMetricsFunction as updateusermetrics,
   updateGroupMetricsFunction as updategroupmetrics,
   updateLoansFunction as updateloans,
   validateIAPFunction as validateiap,
+  swapCertFunction as swapcert,
+  dividendCertFunction as dividendcert,
 }

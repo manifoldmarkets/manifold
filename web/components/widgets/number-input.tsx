@@ -35,7 +35,7 @@ export function NumberInput(props: {
       <Input
         className={clsx('max-w-[200px] !text-lg', inputClassName)}
         ref={inputRef}
-        type="number"
+        type="text"
         pattern="[0-9]*"
         inputMode="numeric"
         placeholder={placeholder ?? '0'}

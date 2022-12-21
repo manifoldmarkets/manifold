@@ -1,24 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
-import { getAuth } from 'firebase/auth'
 import 'expo-dev-client'
-import { ENV, FIREBASE_CONFIG } from 'common/envs/constants'
+import { ENV } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
   Platform,
   BackHandler,
   NativeEventEmitter,
-  ActivityIndicator,
   StyleSheet,
   SafeAreaView,
   StatusBar as RNStatusBar,
-  Image,
   Dimensions,
   View,
-  Text,
-  Pressable,
-  Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -26,70 +20,83 @@ import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingMan
 import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
-import { getApp, getApps, initializeApp } from 'firebase/app'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
-import { AuthModal } from 'components/auth-modal'
-import { Feather, AntDesign } from '@expo/vector-icons'
+import { AuthPage } from 'components/auth-page'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
 import { getSourceUrl, Notification } from 'common/notification'
-import { WebViewErrorEvent } from 'react-native-webview/lib/WebViewTypes'
-
+import { SplashLoading } from 'components/splash-loading'
+import {
+  nativeToWebMessage,
+  nativeToWebMessageType,
+  webToNativeMessage,
+} from 'common/native-message'
+import { useFonts, ReadexPro_400Regular } from '@expo-google-fonts/readex-pro'
+import { app, auth } from './init'
+import {
+  handleWebviewCrash,
+  ExternalWebView,
+  sharedWebViewProps,
+  handleWebviewError,
+  handleRenderError,
+} from 'components/external-web-view'
 console.log('using', ENV, 'env')
 console.log(
   'env not switching? run `npx expo start --clear` and then try again'
 )
 
 // Initialization
-Sentry.init({
-  dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
-  enableInExpoDevelopment: true,
-  debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
-})
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-})
-const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
-export const auth = getAuth(app)
+if (Device.isDevice) {
+  Sentry.init({
+    dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
+    enableInExpoDevelopment: true,
+    debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
+  })
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  })
+}
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
-
+const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
-  const hasWebViewLoaded = useRef(false)
+  const [loadedWebView, setLoadedWebView] = useState(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
-  const isIOS = Platform.OS === 'ios'
-  const webview = useRef<WebView | undefined>()
+  const webview = useRef<WebView>()
   const notificationResponseListener = useRef<Subscription | undefined>()
+  useFonts({ ReadexPro_400Regular })
 
   // Auth
-  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [waitingForAuth, setWaitingForAuth] = useState(true)
+  const [user, setUser] = useState(auth.currentUser)
+  useEffect(() => {
+    // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
+    if (loadedWebView) {
+      console.log('webview loaded, waiting for auth')
+      const timeout = setTimeout(() => {
+        setWaitingForAuth(false)
+      }, 2000)
+      return () => clearTimeout(timeout)
+    }
+  }, [loadedWebView])
 
-  // Url mangement
-  const [currentHostStatus, setCurrentHostStatus] = useState<{
-    previousHomeUrl: string
-    previousUrl: string
-    url: string
-    loading: boolean
-  }>({
-    previousHomeUrl: homeUri,
-    previousUrl: homeUri,
-    url: homeUri,
-    loading: true,
-  })
+  // auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
+  useEffect(() => {
+    auth.onAuthStateChanged(setUser)
+  }, [auth])
+
+  // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
-  const isVisitingOtherSite =
-    !currentHostStatus.url.startsWith(homeUri) ||
-    (currentHostStatus.loading &&
-      !currentHostStatus.previousUrl.startsWith(homeUri))
+  const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     Platform.OS === 'ios' ? LinkingManager.default : null
@@ -101,7 +108,7 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
-    if (hasWebViewLoaded.current) {
+    if (loadedWebView) {
       communicateWithWebview(
         'notification',
         response.notification.request.content.data
@@ -148,6 +155,7 @@ const App = () => {
     }
   }, [])
 
+  // Handle deep links
   useEffect(() => {
     if (!linkedUrl) return
 
@@ -158,7 +166,7 @@ const App = () => {
           queryParams
         )}`
       )
-      communicateWithWebview('link', path ? path : '/')
+      communicateWithWebview('link', { url: path ? path : '/' })
       // If we don't clear the url, we won't reopen previously opened links
       const clearUrlCacheEvent = {
         hostname: 'manifold.markets',
@@ -220,7 +228,7 @@ const App = () => {
       if (finalStatus !== 'granted') {
         communicateWithWebview('pushNotificationPermissionStatus', {
           status: finalStatus,
-          userId: auth.currentUser?.uid,
+          userId: user?.uid,
         })
         return null
       }
@@ -236,25 +244,23 @@ const App = () => {
 
   const handleMessageFromWebview = ({ nativeEvent }: any) => {
     const { data } = nativeEvent
-    const { type, data: payload } = JSON.parse(data)
-    console.log('Received nativeEvent: ', type)
+    const { type, data: payload } = JSON.parse(data) as webToNativeMessage
+    console.log('Received message from webview: ', type)
     setHasSetNativeFlag(true)
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
     } else if (type === 'loginClicked') {
-      if (auth.currentUser) {
+      if (user) {
         try {
           // Let's start from a clean slate if the webview and native auths are out of sync
-          auth.signOut().then(() => {
-            setShowAuthModal(true)
-          })
+          auth.signOut()
         } catch (err) {
           console.log('[sign out before sign in] Error : ', err)
           Sentry.Native.captureException(err, {
             extra: { message: 'sign out before sign in' },
           })
         }
-      } else setShowAuthModal(true)
+      }
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -263,12 +269,12 @@ const App = () => {
           if (token)
             communicateWithWebview('pushToken', {
               token,
-              userId: auth.currentUser?.uid,
+              userId: user?.uid,
             })
         } else
           communicateWithWebview('pushNotificationPermissionStatus', {
             status,
-            userId: auth.currentUser?.uid,
+            userId: user?.uid,
           })
       })
     } else if (type === 'copyToClipboard') {
@@ -280,7 +286,7 @@ const App = () => {
         if (token)
           communicateWithWebview('pushToken', {
             token,
-            userId: auth.currentUser?.uid,
+            userId: user?.uid,
           })
       })
     } else if (type === 'signOut') {
@@ -317,239 +323,97 @@ const App = () => {
     communicateWithWebview('setIsNative', { platform: Platform.OS })
   }
 
-  const communicateWithWebview = (type: string, data: object | string) => {
+  const communicateWithWebview = (
+    type: nativeToWebMessageType,
+    data: object
+  ) => {
     webview.current?.postMessage(
       JSON.stringify({
         type,
         data,
-      })
+      } as nativeToWebMessage)
     )
   }
 
-  const handleWebviewError = (e: WebViewErrorEvent) => {
-    const { nativeEvent } = e
-    console.log('error in webview', e)
-    Sentry.Native.captureException(nativeEvent.description, {
-      extra: {
-        message: 'webview error',
-        nativeEvent,
-      },
-    })
-    // fall back to home uri on error
-    setUrlToLoad(homeUri)
-  }
-
+  const shouldShowWebView = loadedWebView && user
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
-      display: !hasWebViewLoaded.current ? 'none' : 'flex',
+      display: shouldShowWebView ? 'flex' : 'none',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
-    },
-    horizontal: {
-      height: '100%',
-      justifyContent: 'space-around',
-      padding: 10,
     },
     webView: {
-      display: !hasWebViewLoaded.current ? 'none' : 'flex',
+      display: shouldShowWebView ? 'flex' : 'none',
       overflow: 'hidden',
-      marginTop:
-        (isIOS ? 0 : RNStatusBar.currentHeight ?? 0) +
-        (isVisitingOtherSite ? 40 : 0),
+      marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
       marginBottom: !isIOS ? 10 : 0,
-    },
-    image: {
-      height,
-      width,
-      flex: 1,
-      justifyContent: 'center',
-      resizeMode: 'cover',
-    },
-    activityIndicator: {
-      position: 'absolute',
-      left: width / 2 - 20,
-      bottom: 100,
-    },
-    otherSiteToolbar: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: isIOS ? 90 : 75,
-      backgroundColor: 'lightgray',
-      zIndex: 100,
-      display: isVisitingOtherSite ? 'flex' : 'none',
-    },
-    row: {
-      flexDirection: 'row',
-      flex: 1,
-      justifyContent: 'space-between',
-      alignItems: 'flex-end',
-      marginBottom: 15,
-      marginHorizontal: 20,
-    },
-    toolBarText: {
-      fontSize: 20,
-      width: 50,
-    },
-    toolBarIcon: {
-      width: 50,
-      flex: 1,
-      flexDirection: 'row',
-      justifyContent: 'center',
     },
   })
 
-  const SplashLoading = () => (
-    <>
-      <Image style={styles.image} source={require('./assets/splash.png')} />
-      <ActivityIndicator
-        style={styles.activityIndicator}
-        size={'large'}
-        color={'white'}
-      />
-    </>
-  )
-
   return (
     <>
-      {Platform.OS === 'ios' && (
+      {!shouldShowWebView && waitingForAuth ? (
+        <SplashLoading
+          height={height}
+          width={width}
+          source={require('./assets/splash.png')}
+        />
+      ) : (
+        !shouldShowWebView &&
+        !waitingForAuth && (
+          <AuthPage webview={webview} height={height} width={width} />
+        )
+      )}
+      {Platform.OS === 'ios' && Device.isDevice && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
           setCheckoutAmount={setCheckoutAmount}
           communicateWithWebview={communicateWithWebview}
         />
       )}
-      {!hasWebViewLoaded.current && <SplashLoading />}
+
       <SafeAreaView style={styles.container}>
-        <StatusBar
-          animated={true}
-          backgroundColor="white"
-          style={'dark'}
-          hideTransitionAnimation={'none'}
-          hidden={false}
-        />
-        <View style={styles.otherSiteToolbar}>
-          <View style={styles.row}>
-            <Pressable
-              style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
-              onPress={() => {
-                const { previousHomeUrl } = currentHostStatus
-                // In order to make the webview load a new url manually it has to be different from the previous one
-                const back = !previousHomeUrl.includes('?')
-                  ? `${previousHomeUrl}?ignoreThisQuery=true`
-                  : `${previousHomeUrl}&ignoreThisQuery=true`
-                setUrlToLoad(back)
-              }}
-            >
-              <Text style={styles.toolBarText}>Done</Text>
-            </Pressable>
-            <Pressable
-              style={styles.toolBarIcon}
-              onPress={async () => {
-                await Share.share({
-                  message: currentHostStatus.url,
-                })
-              }}
-            >
-              <Feather name="share" size={24} color="black" />
-            </Pressable>
-            <Pressable
-              style={[styles.toolBarIcon, { justifyContent: 'flex-end' }]}
-              onPress={async () => {
-                if (currentHostStatus.loading) {
-                  webview.current?.stopLoading()
-                  setCurrentHostStatus({
-                    ...currentHostStatus,
-                    loading: false,
-                  })
-                } else {
-                  webview.current?.reload()
-                  setCurrentHostStatus({
-                    ...currentHostStatus,
-                    loading: true,
-                  })
-                }
-              }}
-            >
-              {currentHostStatus.loading ? (
-                <Feather name="x" size={24} color="black" />
-              ) : (
-                <AntDesign name="reload1" size={24} color="black" />
-              )}
-            </Pressable>
-          </View>
+        <StatusBar animated={true} style={'dark'} hidden={false} />
+
+        <View style={[styles.container, { position: 'relative' }]}>
+          <ExternalWebView
+            url={externalUrl}
+            height={height}
+            width={width}
+            setUrl={setExternalUrl}
+          />
+          <WebView
+            {...sharedWebViewProps}
+            style={styles.webView}
+            // Load start and end is for whole website loading, not navigations within manifold
+            onLoadEnd={() => setLoadedWebView(true)}
+            source={{ uri: urlToLoad }}
+            //@ts-ignore
+            ref={webview}
+            onError={(e) => handleWebviewError(e, () => setUrlToLoad(homeUri))}
+            renderError={(e) => handleRenderError(e, width, height)}
+            onTouchStart={tellWebviewToSetNativeFlag}
+            // On navigation state change changes on every url change
+            onNavigationStateChange={(navState) => {
+              const { url } = navState
+              if (!url.startsWith(homeUri)) {
+                setExternalUrl(url)
+                webview.current?.stopLoading()
+              } else {
+                setExternalUrl(undefined)
+                tellWebviewToSetNativeFlag()
+              }
+            }}
+            onRenderProcessGone={(e) => handleWebviewCrash(webview.current, e)}
+            onContentProcessDidTerminate={(e) =>
+              handleWebviewCrash(webview.current, e)
+            }
+            onMessage={handleMessageFromWebview}
+          />
         </View>
-        <WebView
-          style={styles.webView}
-          mediaPlaybackRequiresUserAction={true}
-          allowsInlineMediaPlayback={true}
-          showsHorizontalScrollIndicator={false}
-          showsVerticalScrollIndicator={false}
-          overScrollMode={'never'}
-          decelerationRate={'normal'}
-          allowsBackForwardNavigationGestures={true}
-          onLoadEnd={() => {
-            hasWebViewLoaded.current = true
-            setCurrentHostStatus({ ...currentHostStatus, loading: false })
-          }}
-          sharedCookiesEnabled={true}
-          source={{ uri: urlToLoad }}
-          //@ts-ignore
-          ref={webview}
-          onError={(e) => handleWebviewError(e)}
-          renderError={(e) => {
-            // Renders this view while we resolve the error
-            return (
-              <View style={{ height, width }}>
-                <SplashLoading />
-              </View>
-            )
-          }}
-          onTouchStart={() => {
-            tellWebviewToSetNativeFlag()
-          }}
-          onLoadStart={() => {
-            setCurrentHostStatus({ ...currentHostStatus, loading: true })
-          }}
-          onNavigationStateChange={(navState) => {
-            const { url, loading } = navState
-            setCurrentHostStatus({
-              loading,
-              url,
-              previousHomeUrl: url.startsWith(homeUri)
-                ? url
-                : currentHostStatus.previousHomeUrl,
-              previousUrl: currentHostStatus.url,
-            })
-            tellWebviewToSetNativeFlag()
-          }}
-          onRenderProcessGone={(syntheticEvent) => {
-            const { nativeEvent } = syntheticEvent
-            console.warn(
-              'Content process terminated, reloading android',
-              nativeEvent.didCrash
-            )
-            webview.current?.reload()
-          }}
-          onContentProcessDidTerminate={(syntheticEvent) => {
-            const { nativeEvent } = syntheticEvent
-            console.warn(
-              'Content process terminated, reloading ios ',
-              nativeEvent
-            )
-            webview.current?.reload()
-          }}
-          onMessage={handleMessageFromWebview}
-        />
-        <AuthModal
-          showModal={showAuthModal}
-          setShowModal={setShowAuthModal}
-          webview={webview}
-        />
       </SafeAreaView>
     </>
   )

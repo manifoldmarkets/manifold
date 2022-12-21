@@ -6,7 +6,7 @@ import { THEOREMONE_CONFIG } from './theoremone'
 export const BACKGROUND_COLOR = 'bg-gray-50'
 export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 
-const CONFIGS: { [env: string]: EnvConfig } = {
+export const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
   THEOREMONE: THEOREMONE_CONFIG,
@@ -87,6 +87,33 @@ export const CORE_USERNAMES = [
   'DavidChee',
   'mqp',
   'IngaWei',
+  'ManifoldMarkets',
+]
+
+export const CHECK_USERNAMES = [
+  'EliezerYudkowsky',
+  'memestiny',
+  'ScottAlexander',
+  'Aella',
+  'BTE',
+  'jack',
+  'Yev',
+  'ZviMowshowitz',
+  'NathanpmYoung',
+  'kolotom99',
+  'SneakySly',
+  'IsaacKing',
+  'MattP',
+  'egroj',
+  'dreev',
+  'MartinRandall',
+  'LivInTheLookingGlass',
+  'LarsDoucet',
+  'Conflux',
+  'GavrielK',
+  'NcyRocks',
+  'MichaelWheatley',
+  'dglid',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -95,6 +122,11 @@ export function firestoreConsolePath(contractId: string) {
   return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fcontracts~2F${contractId}`
 }
 
+export const GOOGLE_PLAY_APP_URL =
+  'https://play.google.com/store/apps/details?id=com.markets.manifold'
+export const APPLE_APP_URL =
+  'https://apps.apple.com/us/app/manifold-markets/id6444136749'
+
 export const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 
 export const DESTINY_GROUP_SLUGS = [
@@ -102,4 +134,18 @@ export const DESTINY_GROUP_SLUGS = [
   'destinygg-stocks',
   'eto',
   'mumbowl-stonks',
+]
+
+export const HOME_BLOCKED_GROUP_SLUGS = [
+  'fun',
+  'selfresolving',
+  'experimental',
+  'trading-bots',
+  'gambling',
+  'free-money',
+  'whale-watching',
+  'spam',
+  'test',
+  'private-markets',
+  'proofniks',
 ]

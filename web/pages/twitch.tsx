@@ -26,8 +26,35 @@ import {
 } from 'web/lib/twitch/link-twitch-account'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { formatMoney } from 'common/util/format'
-import { STARTING_BALANCE } from 'common/economy'
+import { REFERRAL_AMOUNT, STARTING_BALANCE } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+
+export default function TwitchLandingPage() {
+  useSaveReferral()
+  useTracking('view twitch landing page')
+
+  const user = useUser()
+  const privateUser = usePrivateUser()
+
+  return (
+    <Page>
+      <SEO
+        title="Manifold Markets on Twitch"
+        description="Get more out of Twitch with play-money betting markets."
+      />
+      <div className="px-4 pt-2 md:mt-0 lg:hidden">
+        <ManifoldLogo />
+      </div>
+
+      <Col className="max-w-3xl gap-8 rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
+        <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
+        <TwitchChatCommands />
+        <SetUpBot user={user} privateUser={privateUser} />
+      </Col>
+    </Page>
+  )
+}
 
 function ButtonGetStarted(props: {
   user?: User | null
@@ -264,7 +291,7 @@ function BotSetupStep(props: {
   )
 }
 
-function CopyLinkButton(props: { link: string; text: string }) {
+function CopyButton(props: { link: string; text: string }) {
   const { link, text } = props
   const toastTheme = {
     className: '!bg-teal-600 !text-white',
@@ -398,7 +425,7 @@ function SetUpBot(props: {
             <BotSetupStep
               stepNum={2}
               overrideButton={
-                <CopyLinkButton
+                <CopyButton
                   link={getOverlayURLForUser(privateUser)}
                   text={'Overlay link'}
                 />
@@ -411,7 +438,7 @@ function SetUpBot(props: {
             <BotSetupStep
               stepNum={3}
               overrideButton={
-                <CopyLinkButton
+                <CopyButton
                   link={getDockURLForUser(privateUser)}
                   text={'Control dock link'}
                 />
@@ -434,33 +461,20 @@ function SetUpBot(props: {
           Need help? Contact SirSalty#5770 in Discord or email
           david@manifold.markets
         </div>
+        {user && (
+          <Col className="mb-8 p-4">
+            <div className="mb-2 text-base text-gray-700">
+              Share your markets! Earn a {formatMoney(REFERRAL_AMOUNT)} referral
+              bonus if a new user signs up and places a trade using the link.
+            </div>
+
+            <CopyLinkButton
+              url={'https://manifold.markets/twitch?referrer=' + user?.username}
+              tracking="copy share link"
+            />
+          </Col>
+        )}
       </Col>
     </>
-  )
-}
-
-export default function TwitchLandingPage() {
-  useSaveReferral()
-  useTracking('view twitch landing page')
-
-  const user = useUser()
-  const privateUser = usePrivateUser()
-
-  return (
-    <Page>
-      <SEO
-        title="Manifold Markets on Twitch"
-        description="Get more out of Twitch with play-money betting markets."
-      />
-      <div className="px-4 pt-2 md:mt-0 lg:hidden">
-        <ManifoldLogo />
-      </div>
-
-      <Col className="max-w-3xl gap-8 rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
-        <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
-        <TwitchChatCommands />
-        <SetUpBot user={user} privateUser={privateUser} />
-      </Col>
-    </Page>
   )
 }

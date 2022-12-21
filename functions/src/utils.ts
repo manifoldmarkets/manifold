@@ -1,16 +1,22 @@
 import * as admin from 'firebase-admin'
 import fetch from 'node-fetch'
 import {
+  CollectionReference,
   CollectionGroup,
   DocumentData,
   FieldValue,
+  Query,
+  QuerySnapshot,
   QueryDocumentSnapshot,
   Transaction,
 } from 'firebase-admin/firestore'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { generateJSON } from '@tiptap/html'
+import { createClient } from '../../common/supabase/utils'
 import { stringParseExts } from '../../common/util/parse'
 
+import { DEV_CONFIG } from '../../common/envs/dev'
+import { PROD_CONFIG } from '../../common/envs/prod'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
@@ -96,6 +102,49 @@ export const writeAsync = async (
   }
 }
 
+export const loadPaginated = async <T extends DocumentData>(
+  q: Query<T> | CollectionReference<T>,
+  batchSize: number
+) => {
+  const results: T[] = []
+  let prev: QuerySnapshot<T> | undefined
+  let processed = 0
+  for (let i = 0; prev == null || prev.size > 0; i++) {
+    log(`Loading next page.`)
+    prev = await (prev == null
+      ? q.limit(batchSize)
+      : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
+    ).get()
+    log(`Loaded ${prev.size} documents.`)
+    processed += prev.size
+    results.push(...prev.docs.map((d) => d.data() as T))
+    log(`Processed ${prev.size} documents. Total: ${processed}`)
+  }
+  return results
+}
+
+export const processPaginated = async <T extends DocumentData, U>(
+  q: Query<T>,
+  batchSize: number,
+  fn: (ts: QuerySnapshot<T>) => Promise<U>
+) => {
+  const results = []
+  let prev: QuerySnapshot<T> | undefined
+  let processed = 0
+  for (let i = 0; prev == null || prev.size > 0; i++) {
+    log(`Loading next page.`)
+    prev = await (prev == null
+      ? q.limit(batchSize)
+      : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
+    ).get()
+    log(`Loaded ${prev.size} documents.`)
+    processed += prev.size
+    results.push(await fn(prev))
+    log(`Processed ${prev.size} documents. Total: ${processed}`)
+  }
+  return results
+}
+
 export const processPartitioned = async <T extends DocumentData, U>(
   group: CollectionGroup<T>,
   partitions: number,
@@ -106,11 +155,13 @@ export const processPartitioned = async <T extends DocumentData, U>(
   let processed = 0
   for await (const part of parts) {
     const i = results.length
-    log(`[${i + 1}/${partitions}] Loading partition.`)
+    const tag = `${i + 1}/${partitions}`
+    log(`[${tag}] Loading partition.`)
     const ts = await part.toQuery().get()
-    processed += ts.size
-    log(`[${i + 1}/${partitions}] Loaded = ${ts.size}. Total = ${processed}.`)
+    log(`[${tag}] Loaded ${ts.size} documents.`)
     results.push(await fn(ts.docs))
+    processed += ts.size
+    log(`[${tag}] Processed ${ts.size} documents. Total: ${processed}`)
   }
   return results
 }
@@ -279,4 +330,20 @@ export const getContractPath = (contract: Contract) => {
 
 export function contractUrl(contract: Contract) {
   return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
+}
+
+export function createSupabaseClient() {
+  const url =
+    process.env.SUPABASE_URL ??
+    (isProd() ? PROD_CONFIG.supabaseUrl : DEV_CONFIG.supabaseUrl)
+  if (!url) {
+    throw new Error(
+      "Can't connect to Supabase; no process.env.SUPABASE_URL and no supabaseUrl in config."
+    )
+  }
+  const key = process.env.SUPABASE_KEY
+  if (!key) {
+    throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
+  }
+  return createClient(url, key)
 }

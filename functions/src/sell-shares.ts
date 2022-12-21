@@ -30,6 +30,9 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
+    log(
+      `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
+    )
     const [
       [contractSnap, userSnap],
       userBetsSnap,
@@ -37,7 +40,7 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     ] = await Promise.all([
       transaction.getAll(contractDoc, userDoc),
       transaction.get(betsQ),
-      getUnfilledBetsAndUserBalances(transaction, contractDoc),
+      getUnfilledBetsAndUserBalances(transaction, contractDoc, auth.uid),
     ])
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
