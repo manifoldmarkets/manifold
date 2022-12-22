@@ -1,20 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import { uniqBy } from 'lodash'
 import { useSpring, animated } from '@react-spring/web'
 import { rubberbandIfOutOfBounds, useDrag } from '@use-gesture/react'
 import toast from 'react-hot-toast'
 
-import { buildArray } from 'common/util/array'
 import type { BinaryContract } from 'common/contract'
 import { useUser } from 'web/hooks/use-user'
 import { logView } from 'web/lib/firebase/views'
-import { getTrendingContracts } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Page } from 'web/components/layout/page'
-import { useSwipes } from 'web/hooks/use-swipes'
 import { useFeed } from 'web/hooks/use-feed'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import {
@@ -30,17 +26,7 @@ import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { useTracking } from 'web/hooks/use-tracking'
 
-export async function getStaticProps() {
-  const contracts = (await getTrendingContracts(200)).filter(
-    (c) => c.outcomeType === 'BINARY' && (c.closeTime ?? Infinity) > Date.now()
-  )
-  return {
-    props: { contracts },
-    revalidate: 500,
-  }
-}
-
-export default function Swipe(props: { contracts: BinaryContract[] }) {
+export default function Swipe() {
   useTracking('view swipe page')
 
   const [amount, setAmount] = usePersistentState(10, {
@@ -48,33 +34,25 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
     store: inMemoryStore(),
   })
 
-  const old = useSwipes()
-  const newToMe = useMemo(
-    () => props.contracts.filter((c) => !old.includes(c.id)),
-    [props.contracts, old]
-  )
-
   const user = useUser()
   const feed = useFeed(user, 400)?.filter((c) => c.outcomeType === 'BINARY') as
     | BinaryContract[]
     | undefined
 
-  const contracts = uniqBy(
-    buildArray(newToMe[0], feed, newToMe.slice(1)),
-    (c) => c.id
-  )
   const [index, setIndex] = usePersistentState(0, {
     key: 'swipe-index',
     store: inMemoryStore(),
   })
-  const contract = contracts[index]
+  const contract = feed ? feed[index] : undefined
 
   const cards = useMemo(() => {
-    return contracts.slice(0, index + 2)
-  }, [contracts, index])
+    if (!feed) return []
+    return feed.slice(0, index + 2)
+  }, [feed, index])
 
   const onBet = (outcome: 'YES' | 'NO') => {
-    const contract = contracts[index]
+    if (!feed) return
+    const contract = feed[index]
     const contractId = contract.id
 
     const promise = placeBet({ amount, outcome, contractId })
@@ -191,17 +169,23 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
     }
   }, [])
 
-  if (user === undefined) {
-    return <LoadingIndicator />
+  if (user === undefined || feed === undefined) {
+    return (
+      <Page>
+        <LoadingIndicator className="mt-6" />
+      </Page>
+    )
   }
   // Show log in prompt if user not logged in.
   if (user === null) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <Button onClick={firebaseLogin} color="gradient" size="2xl">
-          Log in to use Manifold Swipe
-        </Button>
-      </div>
+      <Page>
+        <div className="flex h-screen w-screen items-center justify-center">
+          <Button onClick={firebaseLogin} color="gradient" size="2xl">
+            Log in to use Manifold Swipe
+          </Button>
+        </div>
+      </Page>
     )
   }
 
