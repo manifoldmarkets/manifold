@@ -441,7 +441,6 @@ const BetsTabContent = memo(function BetsTabContent(props: {
     if (limit <= 0) return
     getOlderBets(contract.id, oldestBet.createdTime, limit)
       .then((olderBets) => {
-        console.log('supabets', olderBets)
         setBets((bets) => [...bets, ...olderBets])
       })
       .catch((err) => {
