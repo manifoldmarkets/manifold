@@ -6,6 +6,7 @@ import DockClient from './clients/dock';
 import OverlayClient from './clients/overlay';
 import log from './logger';
 import { Market } from './market';
+import { MetricEvent, UniqueMetricEvent } from './metrics';
 import { getParamsFromURL } from './utils';
 
 type AdditionalControl = GroupControlField & {
@@ -61,6 +62,8 @@ export class TwitchStream {
         this.broadcastToOverlays(Packet.SELECT_MARKET, selectMarketPacket);
         this.app.firestore.updateSelectedMarketForUser(this.name, id);
         this.app.bot.onMarketFeatured(this.name, market);
+        this.app.metrics.logMetricsEvent(MetricEvent.MARKET_FEATURED);
+        this.app.metrics.logUnqiueMetricsEvent(UniqueMetricEvent.UNIQUE_OVERLAY, this.app.getUserForTwitchUsername(this.name));
         return market;
       } catch (e) {
         throw new Error('Failed to feature market: ' + e.message);

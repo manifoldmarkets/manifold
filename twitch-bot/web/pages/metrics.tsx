@@ -1,11 +1,11 @@
+import { ArrowDownIcon, ArrowUpIcon, MoonIcon, SunIcon as SunIconSolid } from '@heroicons/react/solid';
 import clsx from 'clsx';
+import { AnimationTimer, quartic } from 'lib/animation';
+import dynamic from 'next/dynamic';
 import Head from 'next/head';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
-import { ReactNode, useEffect, useRef } from 'react';
-import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/solid';
-import { SunIcon } from '@heroicons/react/outline';
-import { SunIcon as SunIconSolid } from '@heroicons/react/solid';
 
 type Day = {
   uniqueUsers: number;
@@ -18,9 +18,10 @@ type Day = {
 
 const days: Day[] = [];
 
-const gap6 = 'gap-2 md:gap-6';
+const gap6 = 'gap-2 lg:gap-6';
 
-// let temp = 0;
+let animationFactor = 0;
+const animTimer = new AnimationTimer();
 
 const r = (upper = 2000) => Math.floor(Math.random() * upper);
 for (let i = 0; i < 20; i++) {
@@ -41,8 +42,6 @@ function Cavnas(props: { render: (g: CanvasRenderingContext2D, w: number, h: num
     window.addEventListener('resize', resize);
     resize();
 
-    console.log(window.devicePixelRatio);
-
     const render = () => {
       const g = c.getContext('2d');
       const w = c.width / pr.current;
@@ -52,14 +51,13 @@ function Cavnas(props: { render: (g: CanvasRenderingContext2D, w: number, h: num
       props.render(g, w, h);
       g.resetTransform();
 
-      // if (temp++ < 1000)
       window.requestAnimationFrame(render);
     };
     window.requestAnimationFrame(render);
 
     return () => {
       //TODO: Cleanup
-      console.log('Died');
+      console.debug('Canvas unmounted');
     };
   }, []);
   return <canvas ref={ref} id="canvas" className="absolute h-full w-full"></canvas>;
@@ -76,6 +74,7 @@ function KeyItem(props: { bg: string; name: string }) {
 }
 
 function CanvasDonut() {
+
   const drawDonut = (g: CanvasRenderingContext2D, w: number, h: number, lineWidth: number, colour: string, radius: number, value: number) => {
     g.save();
     g.lineWidth = lineWidth;
@@ -102,25 +101,25 @@ function CanvasDonut() {
     g.restore();
   };
 
-  let v = 0;
   const render = (g: CanvasRenderingContext2D, w: number, h: number) => {
     g.clearRect(0, 0, w, h);
 
-    v += (0.9 - v) * 0.02;
+    animationFactor = quartic(0, 0.9, animTimer.getTime_s(1));
 
-    const lw = Math.min(25, w * 0.1);
+    const lw = Math.min(25, w * 0.08);
     const lwp = lw + 4;
     const ir = Math.min(w, h) / 6;
-    drawDonut(g, w, h, lw, '#A495FC', ir + 2 * lwp, v);
-    drawDonut(g, w, h, lw, '#5883F3', ir + lwp, v * 0.8);
-    drawDonut(g, w, h, lw, '#58D0BC', ir, v * 0.4);
+    drawDonut(g, w, h, lw, '#A495FC', ir + 2 * lwp, animationFactor);
+    drawDonut(g, w, h, lw, '#5883F3', ir + lwp, animationFactor * 0.8);
+    drawDonut(g, w, h, lw, '#1fb0aE', ir, animationFactor * 0.4);
+
   };
   return (
-    <div className="flex w-full flex-col md:flex-row">
-      <div className="relative h-full min-h-[20rem] grow ">
+    <div className="flex w-full flex-col md:flex-row h-full">
+      <div className="relative h-full aspect-square">
         <Cavnas render={render} />
       </div>
-      <div className="m-6 flex items-center text-slate-800 dark:text-slate-50">
+      <div className="m-6 flex items-center">
         <div className="flex max-h-fit flex-col gap-4 rounded-xl border p-6">
           <KeyItem bg="bg-[#A495FC]" name="Users with linked Twitch accounts" />
           <KeyItem bg="bg-[#5883F3]" name="Users who placed a unique bet" />
@@ -131,11 +130,10 @@ function CanvasDonut() {
   );
 }
 
+/* eslint-disable-next-line */
 function CanvasLineGraph() {
   const drawLine = (g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, v: number, colour: string) => {
     g.save();
-
-    // g.fillRect(0, 0, w, lineWidth);
 
     g.fillStyle = colour;
     g.beginPath();
@@ -145,18 +143,67 @@ function CanvasLineGraph() {
     g.restore();
   };
 
-  let v = 0;
   const render = (g: CanvasRenderingContext2D, w: number, h: number) => {
     g.clearRect(0, 0, w, h);
 
-    v += (0.9 - v) * 0.02;
-
     const lw = 10;
-    drawLine(g, 20, 20, w - 40, lw, v, '#A495FC');
-    drawLine(g, 20, 60, w - 40, lw, v * 0.7, '#5883F3');
-    drawLine(g, 20, 100, w - 40, lw, v * 0.3, '#58D0BC');
+    drawLine(g, 20, 20, w - 40, lw, animationFactor, '#A495FC');
+    drawLine(g, 20, 60, w - 40, lw, animationFactor * 0.7, '#5883F3');
+    drawLine(g, 20, 100, w - 40, lw, animationFactor * 0.3, '#58D0BC');
   };
   return <Cavnas render={render} />;
+}
+
+function Tooltip() {
+  const ref = useRef(null);
+  useEffect(() => {
+    console.log("Tooltip loaded");
+
+    // ref.current.style.transform = `translate(${window.getMou.x}px,${e.y}px)`;
+
+    const handler = (e: MouseEvent) => {
+      if (!ref.current) {
+        console.log("No ref");
+        return;
+      };
+      const div = ref.current as HTMLDivElement;
+      div.style.transform = `translate(${e.x}px,${e.y}px)`;
+    }
+
+    window.addEventListener("mousemove", handler);
+    return () => window.removeEventListener("mousemove", handler);
+  }, []);
+  return <div className="fixed inset-0 border border-slate-200 dark:border-slate-500 max-w-fit max-h-fit bg-white dark:bg-slate-900 z-50 rounded-lg text-base p-2 whitespace-nowrap" ref={ref}>
+    700 / 1000
+  </div>
+}
+
+function LineGraphEntry(props: { bg: string, name: string, fac: number }) {
+  const { bg, fac, name } = props;
+  const [tooltip, setTooltip] = useState(undefined);
+  const onHover = () => {
+    setTooltip(true);
+  }
+  const onExit = () => {
+    setTooltip(false);
+  }
+  return <div onMouseEnter={onHover} onMouseLeave={onExit}>
+    {tooltip && <Tooltip />}
+    {name}
+    <div className="h-2 relative">
+      <div className={clsx("absolute h-2 z-10", bg)} style={{ width: (100 * fac) + "%" }} />
+      <div className={clsx("w-full bg-gray-400 h-2 opacity-40")} />
+    </div>
+  </div>
+}
+
+function LineGraph() {
+  const day = days[days.length - 1];
+  return <div className="flex flex-col p-6 gap-6">
+    <LineGraphEntry bg="bg-[#A495FC]" name="Unique users" fac={day.uniqueUsers / 1000} />
+    <LineGraphEntry bg="bg-[#5883F3]" name="Featured questions" fac={day.featuredQuestions / 1000} />
+    <LineGraphEntry bg="bg-[#58D0BC]" name="New bots" fac={day.newBots / 1000} />
+  </div>
 }
 
 function gradient(a: number[], b: number[]) {
@@ -164,8 +211,6 @@ function gradient(a: number[], b: number[]) {
 }
 
 function CanvasChart() {
-  let v = 0;
-
   const data: number[][][] = [];
 
   for (let i = 0; i < 3; i++) {
@@ -178,8 +223,6 @@ function CanvasChart() {
 
   const render = (g: CanvasRenderingContext2D, w: number, h: number) => {
     g.clearRect(0, 0, w, h);
-
-    v += (1 - v) * 0.02;
 
     const lw = 5;
 
@@ -194,8 +237,8 @@ function CanvasChart() {
       const sx = w / points[points.length - 1][0];
 
       g.save();
-      g.translate(0, h * (1 - v));
-      g.scale(1, v);
+      g.translate(0, h * (1 - animationFactor));
+      g.scale(1, animationFactor);
       g.beginPath();
       g.moveTo(points[0][0], points[0][1]);
 
@@ -242,14 +285,14 @@ function CanvasChart() {
 
 function Panel(props: { className?: string; children?: ReactNode }) {
   const { className, children } = props;
-  return <div className={clsx('grow rounded-xl border bg-white p-2 text-xl text-white dark:border-slate-500 dark:bg-slate-900', className)}>{children}</div>;
+  return <div className={clsx('grow rounded-xl border bg-white p-2 dark:border-slate-500 dark:bg-slate-900', className)}>{children}</div>;
 }
 
 function PanelRaw(props: { name: string; value: number; percentChange: number }) {
   const { name, value, percentChange } = props;
   return (
     <Panel className="max-w-lg !flex-[1_0_10rem] dark:bg-slate-900">
-      <Col className="m-4 text-slate-800 dark:text-white">
+      <Col className="m-4">
         <Row className="whitespace-nowrap text-lg">
           {name}
           <div className="min-w-[1.5rem] flex-[1_0]"></div>
@@ -265,27 +308,36 @@ function PanelRaw(props: { name: string; value: number; percentChange: number })
 }
 
 function DarkModeSwitch() {
+  const isDarkMode = localStorage.getItem("dark-mode") ? true : false;
+  useEffect(() => {
+    if (isDarkMode) {
+      document.querySelector('html').classList.add('dark');
+    }
+  }, []);
   return (
     <>
-      <SunIcon className="mr-1 h-8 w-8 stroke-slate-600 dark:stroke-slate-50" />
+      <SunIconSolid className="mr-1 h-8 w-8 fill-slate-600 dark:fill-slate-50" />
       <input
         type="checkbox"
         id="switch"
+        defaultChecked={isDarkMode}
         onChange={(e) => {
           if (e.target.checked) {
             document.querySelector('html').classList.add('dark');
+            localStorage.setItem("dark-mode", "true");
           } else {
             document.querySelector('html').classList.remove('dark');
+            localStorage.removeItem("dark-mode");
           }
         }}
       />
       <label htmlFor="switch">Toggle</label>
-      <SunIconSolid className="ml-1 h-8 w-8 fill-slate-600 dark:fill-slate-50" />
+      <MoonIcon className="ml-1 h-7 w-7 fill-slate-600 dark:fill-slate-50" />
     </>
   );
 }
 
-export default () => {
+function MetricsPage() {
   const day = days[days.length - 1];
   const animateThemeChange = false;
   return (
@@ -295,8 +347,8 @@ export default () => {
       </Head>
       {typeof window !== "undefined" && <div
         className={clsx(
-          'font-readex-pro animate min-h-screen w-screen bg-slate-50 p-2 dark:bg-slate-600 lg:p-20',
-          animateThemeChange && '[&_*]:ease [&_*]:transition-[background-color] [&_*]:duration-200'
+          'font-readex-pro animate min-h-screen w-full bg-slate-50 p-2 dark:bg-slate-600 lg:p-20 text-slate-800 dark:text-white',
+          animateThemeChange && '[&_*]:ease [&_*]:transition-[background-color,border-color] [&_*]:duration-300'
         )}
       >
         <div className="flex flex-row pb-6">
@@ -304,12 +356,12 @@ export default () => {
           <DarkModeSwitch />
         </div>
         <Col className={clsx('grow', gap6)}>
-          <div className={clsx('flex flex-col md:flex-row', gap6)}>
-            <Panel className="relative overflow-hidden !p-0">
+          <div className={clsx('flex flex-row flex-wrap', gap6)}>
+            <Panel className="relative overflow-hidden !p-0 flex-1 min-w-fit min-h-fit">
               <CanvasDonut />
             </Panel>
-            <Panel className="relative h-96 overflow-hidden !p-0">
-              <CanvasLineGraph />
+            <Panel className="relative overflow-hidden !p-0 flex-1 min-w-fit">
+              <LineGraph />
             </Panel>
           </div>
           <Row className={clsx('flex-wrap justify-center', gap6)}>
@@ -328,3 +380,9 @@ export default () => {
     </>
   );
 };
+
+const DynamicComponentWithNoSSR = dynamic(() => Promise.resolve(MetricsPage), {
+  ssr: false
+})
+
+export default () => <DynamicComponentWithNoSSR />

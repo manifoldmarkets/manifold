@@ -81,7 +81,7 @@ function cleanupPreviousProc() {
 }
 
 function startProc() {
-  const newProc = spawn('node', [config.WAIT_FOR_DEBUGGER.value ? '--inspect-brk' : '--inspect', config.BUILD_FILE.value], { stdio: 'inherit' });
+  const newProc = spawn('node', [config.WAIT_FOR_DEBUGGER.value ? '--inspect-brk' : '--inspect', '--enable-source-maps', config.BUILD_FILE.value], { stdio: 'inherit' });
   currentlyRunningProc = newProc;
 }
 
