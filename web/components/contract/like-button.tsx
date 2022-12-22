@@ -41,7 +41,6 @@ export const LikeButton = memo(function LikeButton(props: {
   const disabled = !user || contentCreatorId === user?.id
   const [liked, setLiked] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  const showPink = liked
   const [totalLikes, setTotalLikes] = useState(props.totalLikes)
 
   useEffect(() => {
@@ -66,11 +65,11 @@ export const LikeButton = memo(function LikeButton(props: {
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedOnLike = useMemo(() => debounce(onLike, 500), [user])
+  const debouncedOnLike = useMemo(() => debounce(onLike, 1000), [user])
 
   // Handle changes from our useLike hook
   useEffect(() => {
-    setLiked(userLiked ?? false)
+    setLiked(userLiked)
   }, [userLiked])
 
   useEffect(() => {
@@ -81,7 +80,6 @@ export const LikeButton = memo(function LikeButton(props: {
     setLiked(liked)
     setTotalLikes((prev) => (liked ? prev + 1 : prev - 1))
     debouncedOnLike(liked)
-    onLike(liked)
   }
 
   const likeLongPress = useLongTouch(
@@ -141,7 +139,7 @@ export const LikeButton = memo(function LikeButton(props: {
             <HeartIcon
               className={clsx(
                 'h-5 w-5',
-                showPink ? 'fill-pink-400 stroke-pink-400' : ''
+                liked ? 'fill-pink-400 stroke-pink-400' : ''
               )}
             />
           </div>
