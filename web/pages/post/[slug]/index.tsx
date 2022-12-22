@@ -33,10 +33,10 @@ import { SEO } from 'web/components/SEO'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
 
-export async function getStaticProps(props: { params: { slugs: string[] } }) {
-  const { slugs } = props.params
+export async function getStaticProps(props: { params: { slug: string } }) {
+  const { slug } = props.params
 
-  const post = await getPostBySlug(slugs[0])
+  const post = await getPostBySlug(slug)
   const creator = post ? await getUser(post.creatorId) : null
   const comments = post && (await listAllCommentsOnPost(post.id))
 
