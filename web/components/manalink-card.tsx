@@ -19,6 +19,23 @@ export type ManalinkInfo = {
   message: string
 }
 
+export function linkClaimed(info: ManalinkInfo) {
+  return (
+    (info.maxUses != null && info.uses >= info.maxUses) ||
+    (info.expiresTime != null && info.expiresTime < Date.now())
+  )
+}
+
+export function toInfo(manalink: Manalink): ManalinkInfo {
+  return {
+    expiresTime: manalink.expiresTime,
+    maxUses: manalink.maxUses,
+    uses: manalink.claims.length,
+    amount: manalink.amount,
+    message: manalink.message,
+  }
+}
+
 export function ManalinkCard(props: {
   info: ManalinkInfo
   className?: string
@@ -32,7 +49,7 @@ export function ManalinkCard(props: {
         className={clsx(
           className,
           'min-h-20 group rounded-lg bg-gradient-to-br drop-shadow-sm transition-all',
-          getManalinkGradient(info.amount)
+          getManalinkGradient(info)
         )}
       >
         <Col className="mx-4 mt-2 -mb-4 text-right text-sm text-gray-100">
@@ -59,7 +76,7 @@ export function ManalinkCard(props: {
           <div
             className={clsx(
               'mb-1 text-xl text-indigo-500',
-              getManalinkAmountColor(amount)
+              getManalinkAmountColor(info)
             )}
           >
             {formatMoney(amount)}
@@ -94,7 +111,7 @@ export function ManalinkCardFromView(props: {
         <Col
           className={clsx(
             'relative rounded-t-lg bg-gradient-to-br transition-all',
-            getManalinkGradient(link.amount)
+            getManalinkGradient(toInfo(link))
           )}
           onClick={() => setShowDetails(!showDetails)}
         >
@@ -125,7 +142,7 @@ export function ManalinkCardFromView(props: {
           <div
             className={clsx(
               'my-auto mb-1 w-full',
-              getManalinkAmountColor(amount)
+              getManalinkAmountColor(toInfo(link))
             )}
           >
             {formatMoney(amount)}
@@ -197,7 +214,11 @@ function Claim(props: { claim: Claim }) {
   )
 }
 
-function getManalinkGradient(amount: number) {
+function getManalinkGradient(info: ManalinkInfo) {
+  if (linkClaimed(info)) {
+    return 'from-gray-200 via-gray-400 to-gray-600'
+  }
+  const { amount } = info
   if (amount < 200) {
     return 'from-indigo-200 via-indigo-500 to-indigo-800'
   } else if (amount >= 200 && amount < 500) {
@@ -209,7 +230,11 @@ function getManalinkGradient(amount: number) {
   }
 }
 
-function getManalinkAmountColor(amount: number) {
+function getManalinkAmountColor(info: ManalinkInfo) {
+  if (linkClaimed(info)) {
+    return 'text-gray-500'
+  }
+  const { amount } = info
   if (amount < 200) {
     return 'text-indigo-500'
   } else if (amount >= 200 && amount < 500) {

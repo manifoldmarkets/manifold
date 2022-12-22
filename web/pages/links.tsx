@@ -21,13 +21,18 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { CreateLinksButton } from 'web/components/manalinks/create-links-button'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
-import { ManalinkCardFromView } from 'web/components/manalink-card'
+import {
+  linkClaimed,
+  ManalinkCardFromView,
+  toInfo,
+} from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
 import { canCreateManalink, Manalink } from 'common/manalink'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { UserLink } from 'web/components/widgets/user-link'
 import { ENV_CONFIG } from 'common/envs/constants'
+import ShortToggle from 'web/components/widgets/short-toggle'
 
 const LINKS_PER_PAGE = 24
 
@@ -44,11 +49,10 @@ export default function LinkPage(props: { auth: { user: User } }) {
   const links = useUserManalinks(user.id ?? '')
   // const manalinkTxns = useManalinkTxns(user?.id ?? '')
   const [highlightedSlug, setHighlightedSlug] = useState('')
-  const unclaimedLinks = links.filter(
-    (l) =>
-      (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
-      (l.expiresTime == null || l.expiresTime > Date.now())
-  )
+  const [showDisabled, setShowDisabled] = useState(false)
+  const displayedLinks = showDisabled
+    ? links
+    : links.filter((l) => !linkClaimed(toInfo(l)))
 
   const authorized = canCreateManalink(user)
 
@@ -78,11 +82,17 @@ export default function LinkPage(props: { auth: { user: User } }) {
             user signs up and places a trade!!
           </SiteLink>
         </p>
-        <Subtitle text="Your Manalinks" />
 
+        <Row className="items-baseline justify-between">
+          <Subtitle text="Your Manalinks" />
+          <Row className="items-center gap-4 text-sm text-gray-500">
+            Show claimed links
+            <ShortToggle on={showDisabled} setOn={setShowDisabled} />
+          </Row>
+        </Row>
         {authorized ? (
           <ManalinksDisplay
-            unclaimedLinks={unclaimedLinks}
+            links={displayedLinks}
             highlightedSlug={highlightedSlug}
           />
         ) : (
@@ -97,20 +107,19 @@ export default function LinkPage(props: { auth: { user: User } }) {
 }
 
 function ManalinksDisplay(props: {
-  unclaimedLinks: Manalink[]
+  links: Manalink[]
   highlightedSlug: string
 }) {
-  const { unclaimedLinks, highlightedSlug } = props
+  const { links, highlightedSlug } = props
   const [page, setPage] = useState(0)
   const start = page * LINKS_PER_PAGE
   const end = start + LINKS_PER_PAGE
-  const displayedLinks = unclaimedLinks.slice(start, end)
+  const displayedLinks = links.slice(start, end)
 
-  if (unclaimedLinks.length === 0) {
+  if (links.length === 0) {
     return (
       <p className="text-gray-500">
-        You don't have any unclaimed manalinks. Send some more to spread the
-        wealth!
+        You don't have any active manalinks. Create one to spread the wealth!
       </p>
     )
   } else {
@@ -128,7 +137,7 @@ function ManalinksDisplay(props: {
         <Pagination
           page={page}
           itemsPerPage={LINKS_PER_PAGE}
-          totalItems={unclaimedLinks.length}
+          totalItems={links.length}
           setPage={setPage}
           className="bg-transparent"
           scrollToTop
