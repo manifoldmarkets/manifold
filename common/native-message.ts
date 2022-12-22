@@ -28,3 +28,4 @@ export type webToNativeMessageType =
   | 'signOut'
   | 'users'
   | 'error'
+  | 'onPageVisit'

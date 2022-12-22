@@ -28,6 +28,7 @@ import { formatMoney } from 'common/util/format'
 import { placeBet } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
+import { postMessageToNative } from 'web/components/native-message-listener'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(200)).filter(
@@ -180,6 +181,13 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
     },
     { axis: 'lock' }
   )
+
+  useEffect(() => {
+    postMessageToNative('onPageVisit', { page: 'swipe' })
+    return () => {
+      postMessageToNative('onPageVisit', { page: undefined })
+    }
+  }, [])
 
   if (user === undefined) {
     return <LoadingIndicator />
