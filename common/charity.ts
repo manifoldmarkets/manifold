@@ -722,6 +722,47 @@ Our research has many different routes to impact, often referred to as the “Th
 
 Where appropriate, we publish our research in academic journals, which helps communicate our findings to academics and encourages other researchers to carry out similar research. Our research sometimes attracts media attention, which we expect also has positive effects by informing public opinion and promoting more morally inclusive social norms. Usually, stakeholders see our research via email or directly on our website.`,
   },
+  {
+    name: 'GTNPF',
+    website: 'https://www.gtnpf.org/',
+    photo: 'https://i.imgur.com/7OD1ViM.png',
+    preview:
+      'Grand Teton National Park Foundation initiates improvements, critical research, and projects that help better connect visitors to the park',
+    description: `Grand Teton National Park Foundation is a private, nonprofit organization that funds projects that enhance Grand Teton National Park’s cultural, historic, and natural resources and helps others learn about and protect all that is special in the park.`,
+    tags: ['New'],
+  },
+  {
+    name: 'MIRI',
+    website: 'https://intelligence.org/',
+    photo: 'https://i.imgur.com/3SUKZ9m.png',
+    preview:
+      'The Machine Intelligence Research Institute does foundational mathemtical research to ensure smarter-than-human AI has a positive impact',
+    description: `MIRI’s mission is to ensure that the creation of smarter-than-human intelligence has a positive impact. We aim to make advanced intelligent systems behave as we intend even in the absence of immediate human supervision.
+    
+    MIRI focuses on AI approaches that can be made transparent (e.g., precisely specified decision algorithms, not genetic algorithms), so that humans can understand why AI systems behave as they do. For safety purposes, a mathematical equation defining general intelligence is more desirable than an impressive but poorly-understood code kludge.
+
+Much of our research is therefore aimed at putting theoretical foundations under AI robustness work. We consider settings where traditional decision and probability theory frequently break down: settings where computation is expensive, there is no sharp agent/environment boundary, multiple agents exist, or self-referential reasoning is admitted.
+
+Using training data to teach advanced AI systems what we value looks more promising than trying to code in everything we care about by hand. However, we know very little about how to discern when training data is unrepresentative of the agent’s future environment, or how to ensure that the agent not only learns about our values but accepts them as its own.
+
+Additionally, rational agents pursuing some goal have an incentive to protect their goal-content. No matter what their current goal is, it will very likely be better served if the agent continues to promote it than if the agent changes goals. This suggests that it may be difficult to improve an agent’s alignment with human interests over time, particularly when the agent is smart enough to model and adapt to its programmers’ goals. Making value learning systems error-tolerant is likely to be necessary for safe online learning.
+
+In addition to our mathematical research, MIRI investigates important strategic questions. What can (and can’t) we predict about the future of AI? How can we improve our forecasting ability? Which interventions available today appear to be the most beneficial, given what little we do know?`,
+    tags: ['New'],
+  },
+  {
+    name: 'Charity Entrepreneurship',
+    website: 'https://www.charityentrepreneurship.com/',
+    photo: 'https://i.imgur.com/8eHlC4h.png',
+    preview:
+      'Charity Entrepreneurship launches high-impact nonprofits by connecting entrepreneurs with effective ideas, training, and funding.',
+    description: `Each year, Charity Entrepreneurship dedicates hundreds of research hours to identifying the most effective charity ideas. Then we recruit aspiring entrepreneurs and, through our two-month Incubation Program, provide them with the training and funding to turn these ideas into high-impact organizations.
+    
+Our mission is to enable more effective charities to exist in the world. We strive to achieve this goal through our extensive research process and Incubation Program.
+
+Nonprofit entrepreneurship is also a highly neglected career opportunity that, fueled by a more analytical, effective-altruist mindset, can lead to cost-effective, evidence-based outcomes that are approximately equivalent to donating ~$200,000 to effective charities per year. It provides a chance to build a portfolio of useful skills and great career capital, and to have high job satisfaction while retaining substantial individual impact.`,
+    tags: ['New'],
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
