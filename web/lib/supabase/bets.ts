@@ -1,5 +1,7 @@
 import { db } from './db'
 import { run } from 'common/supabase/utils'
+import { Bet } from 'common/bet'
+import { JsonData } from 'web/lib/supabase/json-data'
 
 export async function getOlderBets(
   contractId: string,
@@ -10,13 +12,11 @@ export async function getOlderBets(
     db
       .from('bets')
       .select('data')
-      .like('data->>contractId', contractId)
-      // .eq(`data->>contractId`, contractId)
-      // .eq('data->>contractId', contractId)
-      // .lte('data->>createdTime', beforeTime)
-      // .order('data->createdTime', { ascending: false } as any)
+      .contains('data', { contractId })
+      .lt('data->>createdTime', beforeTime)
+      .order('data->>createdTime', { ascending: false } as any)
       .limit(limit)
   )
 
-  return data
+  return data.map((d:JsonData<Bet>)=>d.data)
 }

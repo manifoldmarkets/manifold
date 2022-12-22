@@ -46,6 +46,7 @@ create table if not exists bets (
 alter table bets enable row level security;
 drop policy if exists "public read" on bets;
 create policy "public read" on bets for select using (true);
+create index concurrently bets_data_gin on bets using GIN (data);
 
 create table if not exists comments (
     id text not null primary key,
