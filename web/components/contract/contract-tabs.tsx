@@ -46,7 +46,6 @@ import { useBets } from 'web/hooks/use-bets'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
-import { getCountFromServer } from 'firebase/firestore'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
 
 export function ContractTabs(props: {
