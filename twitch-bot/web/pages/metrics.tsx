@@ -1,4 +1,6 @@
-import { ArrowDownIcon, ArrowUpIcon, MoonIcon, SunIcon as SunIconSolid } from '@heroicons/react/solid';
+import { getCurrentEpochDay, MetricDay } from '@common/types/metric-types';
+import { ChevronDoubleUpIcon } from '@heroicons/react/outline';
+import { ArrowDownIcon, ArrowUpIcon, MoonIcon, SunIcon as SunIconSolid, SwitchHorizontalIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
 import { AnimationTimer, quartic } from 'lib/animation';
 import dynamic from 'next/dynamic';
@@ -7,26 +9,14 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
 
-type Day = {
-  uniqueUsers: number;
-  featuredQuestions: number;
-  newBots: number;
-  twitchLinks: number;
-  commandsUsed: number;
-  activeUsers: number;
-};
+// const days: MetricDay[] = [];
 
-const days: Day[] = [];
+const r = (upper = 2000) => Math.floor(Math.random() * upper);
 
 const gap6 = 'gap-2 lg:gap-6';
 
 let animationFactor = 0;
 const animTimer = new AnimationTimer();
-
-const r = (upper = 2000) => Math.floor(Math.random() * upper);
-for (let i = 0; i < 20; i++) {
-  days.push({ activeUsers: r(2000), commandsUsed: r(10000), featuredQuestions: r(200), newBots: r(10), twitchLinks: r(50), uniqueUsers: r(100) });
-}
 
 function Cavnas(props: { render: (g: CanvasRenderingContext2D, w: number, h: number) => void }) {
   const ref = useRef(null);
@@ -198,11 +188,10 @@ function LineGraphEntry(props: { bg: string, name: string, fac: number }) {
 }
 
 function LineGraph() {
-  const day = days[days.length - 1];
   return <div className="flex flex-col p-6 gap-6">
-    <LineGraphEntry bg="bg-[#A495FC]" name="Unique users" fac={day.uniqueUsers / 1000} />
-    <LineGraphEntry bg="bg-[#5883F3]" name="Featured questions" fac={day.featuredQuestions / 1000} />
-    <LineGraphEntry bg="bg-[#58D0BC]" name="New bots" fac={day.newBots / 1000} />
+    {/* <LineGraphEntry bg="bg-[#A495FC]" name="Unique users" fac={day.uniqueUserFeatures / 1000} /> */}
+    {/* <LineGraphEntry bg="bg-[#5883F3]" name="Featured questions" fac={day.featuredQuestions / 1000} /> */}
+    {/* <LineGraphEntry bg="bg-[#58D0BC]" name="New bots" fac={day.newBots / 1000} /> */}
   </div>
 }
 
@@ -283,22 +272,29 @@ function CanvasChart() {
   return <Cavnas render={render} />;
 }
 
-function Panel(props: { className?: string; children?: ReactNode }) {
-  const { className, children } = props;
-  return <div className={clsx('grow rounded-xl border bg-white p-2 dark:border-slate-500 dark:bg-slate-900', className)}>{children}</div>;
+function Panel(props: { className?: string; children?: ReactNode; disabled?: boolean }) {
+  const { className, children, disabled = false } = props;
+  return <div className={clsx('relative grow rounded-xl border bg-white p-2 dark:border-slate-500 dark:bg-slate-900', className)}>
+    {disabled && <div className="absolute top-0 left-0 z-50 w-full h-full opacity-50 flex items-center justify-center text-white text-2xl" style={{ background: "repeating-linear-gradient(45deg,#606dbc,#606dbc 10px,#465298 10px,#465298 20px)" }}>Coming soon</div>}
+    {children}
+  </div>;
 }
 
 function PanelRaw(props: { name: string; value: number; percentChange: number }) {
   const { name, value, percentChange } = props;
+  let pString = Math.abs(percentChange).toFixed(1);
+  if (pString.endsWith("0")) {
+    pString = pString.substring(0, pString.length - 2);
+  }
   return (
     <Panel className="max-w-lg !flex-[1_0_10rem] dark:bg-slate-900">
       <Col className="m-4">
         <Row className="whitespace-nowrap text-lg">
           {name}
           <div className="min-w-[1.5rem] flex-[1_0]"></div>
-          <div className={clsx(percentChange > 0 ? 'text-green-400' : 'text-red-400', 'flex flex-row items-center')}>
-            {percentChange > 0 ? <ArrowUpIcon className="h-4 w-4" /> : <ArrowDownIcon className="h-4 w-4" />}
-            <p>{Math.abs(percentChange)}%</p>
+          <div className={clsx(percentChange >= 0 ? 'text-green-400' : 'text-red-400', 'flex flex-row items-center')}>
+            {!isFinite(percentChange) ? <ChevronDoubleUpIcon className="h-4 w-4" /> : percentChange > 0 ? <ArrowUpIcon className="h-4 w-4" /> : percentChange === 0 ? <p>=</p> : <ArrowDownIcon className="h-4 w-4" />}
+            {isFinite(percentChange) && percentChange !== 0 && <p>{pString}%</p>}
           </div>
         </Row>
         <div className="pt-5 text-5xl">{value}</div>
@@ -338,8 +334,18 @@ function DarkModeSwitch() {
 }
 
 function MetricsPage() {
-  const day = days[days.length - 1];
   const animateThemeChange = false;
+  const [prevDay, setPrevDay] = useState<MetricDay>(null);
+  const [day, setData] = useState<MetricDay>(null);
+  useEffect(() => {
+    fetch(`/metric-data?epochDay=${getCurrentEpochDay()}`).then(r => r.json()).then((r) => setData(r));
+    fetch(`/metric-data?epochDay=${getCurrentEpochDay() - 1}`).then(r => r.json()).then((r) => setPrevDay(r));
+  }, []);
+  const getP = (param: string): number => {
+    if (!prevDay) return NaN;
+    if (day[param] === prevDay[param]) return 0;
+    return (day[param] - prevDay[param]) / prevDay[param] * 100;
+  }
   return (
     <>
       <Head>
@@ -357,22 +363,26 @@ function MetricsPage() {
         </div>
         <Col className={clsx('grow', gap6)}>
           <div className={clsx('flex flex-row flex-wrap', gap6)}>
-            <Panel className="relative overflow-hidden !p-0 flex-1 min-w-fit min-h-fit">
+            <Panel className="relative overflow-hidden !p-0 flex-1 min-w-fit min-h-fit" disabled>
               <CanvasDonut />
             </Panel>
-            <Panel className="relative overflow-hidden !p-0 flex-1 min-w-fit">
+            <Panel className="relative overflow-hidden !p-0 flex-1 min-w-fit" disabled>
               <LineGraph />
             </Panel>
           </div>
           <Row className={clsx('flex-wrap justify-center', gap6)}>
-            <PanelRaw name="Unique users" value={day.uniqueUsers} percentChange={-10.4} />
-            <PanelRaw name="Featured questions" value={day.featuredQuestions} percentChange={12.1} />
-            <PanelRaw name="New bots" value={day.newBots} percentChange={r()} />
-            <PanelRaw name="Twitch links" value={day.twitchLinks} percentChange={r()} />
-            <PanelRaw name="Commands used" value={day.commandsUsed} percentChange={r()} />
-            <PanelRaw name="Active users" value={day.activeUsers} percentChange={r()} />
+            {day &&
+              <>
+                <PanelRaw name="Unique users" value={day.uniqueUserFeatures} percentChange={getP("uniqueUserFeatures")} />
+                <PanelRaw name="Featured questions" value={day.featuredQuestions} percentChange={getP("featuredQuestions")} />
+                <PanelRaw name="New bots" value={day.newBots} percentChange={getP("newBots")} />
+                <PanelRaw name="Twitch links" value={day.twitchLinks} percentChange={getP("twitchLinks")} />
+                <PanelRaw name="Commands used" value={day.commandsUsed} percentChange={getP("commandsUsed")} />
+                <PanelRaw name="Active users" value={day.activeUsers} percentChange={getP("activeUsers")} />
+              </>
+            }
           </Row>
-          <Panel className="relative h-96  overflow-hidden !p-0">
+          <Panel className="relative h-96  overflow-hidden !p-0" disabled>
             <CanvasChart />
           </Panel>
         </Col>

@@ -130,4 +130,19 @@ export default function registerAPIEndpoints(app: App, express: Express) {
       response.status(400).json({ error: e.message, message: 'Failed to link accounts.' });
     }
   });
+
+  express.get('/metric-data', async (request, response) => {
+    const { epochDay } = <{ epochDay: string }>getParamsFromURL(request.url);
+    if (!epochDay || isNaN(<any>epochDay)) {
+      response.status(400).json({ error: 'Bad request', message: 'Invalid or missing epochDay parameter.' });
+      return;
+    } else {
+    }
+    const data = await app.firestore.getMetricData(Number.parseInt(epochDay));
+    if (data) {
+      response.json(data);
+    } else {
+      response.json({});
+    }
+  });
 }

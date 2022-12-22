@@ -1,7 +1,6 @@
 import App from './app';
 import User from './user';
-import { getCurrentEpochDay } from './utils';
-import { MetricDay } from '@common/types/metric-types';
+import { getCurrentEpochDay, MetricDay } from '@common/types/metric-types';
 
 export enum MetricEvent {
   MARKET_FEATURED,

@@ -6,3 +6,7 @@ export type MetricDay = {
   commandsUsed: number; // Times a Twitch bot command has been used
   activeUsers: number; // Users that have used a command today
 };
+
+export function getCurrentEpochDay() {
+  return (Date.now() / 8.64e7) >> 0;
+}

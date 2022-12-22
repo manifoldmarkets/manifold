@@ -44,7 +44,3 @@ export const ts = function (name: string) {
 export const te = function (name: string) {
   return ((Date.now() - timers[name]) * 0.001).toFixed(1) + 's';
 };
-
-export function getCurrentEpochDay() {
-  return (Date.now() / 8.64e7) >> 0;
-}
