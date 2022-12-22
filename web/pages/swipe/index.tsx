@@ -28,6 +28,7 @@ import { placeBet } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { postMessageToNative } from 'web/components/native-message-listener'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts(200)).filter(
@@ -40,6 +41,8 @@ export async function getStaticProps() {
 }
 
 export default function Swipe(props: { contracts: BinaryContract[] }) {
+  useTracking('view swipe page')
+
   const [amount, setAmount] = usePersistentState(10, {
     key: 'swipe-amount',
     store: inMemoryStore(),
