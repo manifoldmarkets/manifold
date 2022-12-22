@@ -69,18 +69,16 @@ export function UserContractsList(props: { creator: User }) {
           }
         />
       </Row>
-      <Row>
-        <ContractSearch
-          headerClassName="sticky"
-          defaultSort="newest"
-          defaultFilter="all"
-          additionalFilter={{
-            creatorId: creator.id,
-          }}
-          persistPrefix={`user-${creator.id}`}
-          profile={true}
-        />
-      </Row>
+      <ContractSearch
+        headerClassName="sticky"
+        defaultSort="newest"
+        defaultFilter="all"
+        additionalFilter={{
+          creatorId: creator.id,
+        }}
+        persistPrefix={`user-${creator.id}`}
+        profile={true}
+      />
     </Col>
   )
 }
