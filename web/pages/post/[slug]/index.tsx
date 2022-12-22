@@ -32,11 +32,12 @@ import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
+import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 
-export async function getStaticProps(props: { params: { slugs: string[] } }) {
-  const { slugs } = props.params
+export async function getStaticProps(props: { params: { slug: string } }) {
+  const { slug } = props.params
 
-  const post = await getPostBySlug(slugs[0])
+  const post = await getPostBySlug(slug)
   const creator = post ? await getUser(post.creatorId) : null
   const comments = post && (await listAllCommentsOnPost(post.id))
 
@@ -46,8 +47,6 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
       creator,
       comments,
     },
-
-    revalidate: 60, // regenerate after a minute
   }
 }
 
@@ -74,6 +73,8 @@ export default function PostPage(props: {
   }
   const shareUrl = `https://${ENV_CONFIG.domain}${postPath(post.slug)}`
 
+  const canEdit = !!user && user.id === post.creatorId
+
   return (
     <Page>
       <SEO
@@ -81,13 +82,25 @@ export default function PostPage(props: {
         description={post.subtitle}
         url={'/post/' + post.slug}
       />
-      <div className="mx-auto w-full max-w-3xl ">
-        <div>
-          <Title className="!my-0 px-2 pt-4" text={post.title} />
-          <br />
-          <Subtitle className="!mt-2 px-2 pb-4" text={post.subtitle} />
-        </div>
-        <Row className="items-center">
+      <div className="mx-auto mt-1 flex w-full max-w-3xl flex-col">
+        <EditInPlaceInput
+          className="-m-px px-2 !text-3xl"
+          initialValue={post.title}
+          onSave={(title) => updatePost(post, { title })}
+          disabled={!canEdit}
+        >
+          {(value) => <Title className="!my-0 p-2" text={value} />}
+        </EditInPlaceInput>
+        <div className="h-2" />
+        <EditInPlaceInput
+          className="-m-px px-2 !text-xl"
+          initialValue={post.subtitle}
+          onSave={(subtitle) => updatePost(post, { subtitle })}
+          disabled={!canEdit}
+        >
+          {(value) => <Subtitle className="!my-0 p-2" text={value} />}
+        </EditInPlaceInput>
+        <Row className="mt-4 items-center">
           <Col className="flex-1 px-2">
             <div className={'inline-flex'}>
               <div className="mr-1 text-gray-500">Created by</div>
@@ -109,10 +122,7 @@ export default function PostPage(props: {
         <Spacer h={2} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
           <div className="flex w-full flex-col py-2">
-            <RichEditPost
-              post={post}
-              canEdit={!!user && user.id === post.creatorId}
-            />
+            <RichEditPost post={post} canEdit={canEdit} />
           </div>
         </div>
 
