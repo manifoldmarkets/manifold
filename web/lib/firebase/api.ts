@@ -28,6 +28,28 @@ export async function call(url: string, method: string, params: any) {
   })
 }
 
+async function callEdge(url: string, params: any) {
+  const user = auth.currentUser
+  if (user == null) {
+    throw new Error('Must be signed in to make API calls.')
+  }
+  // Turn params and token into url params to add to url
+  const token = await user.getIdToken()
+  const urlParams = new URLSearchParams(params)
+  urlParams.append('idToken', token)
+  const req = new Request(url + '?' + urlParams.toString(), {
+    method: 'GET',
+  })
+  console.log('edge url', req.url)
+  return await fetch(req).then(async (resp) => {
+    const json = (await resp.json()) as { [k: string]: any }
+    if (!resp.ok) {
+      throw new APIError(resp.status, json?.message, json?.details)
+    }
+    return json
+  })
+}
+
 export function createAnswer(params: any) {
   return call(getFunctionUrl('createanswer'), 'POST', params)
 }
@@ -66,6 +88,10 @@ export function swapCert(params: any) {
 
 export function swapCertVercel(params: SwapCertReq) {
   return call('/api/v0/cert/swap', 'POST', params)
+}
+
+export function swapCertEdge(params: SwapCertReq) {
+  return callEdge('/api/v0/cert/swape', params)
 }
 
 export function dividendCert(params: DividendCertReq) {

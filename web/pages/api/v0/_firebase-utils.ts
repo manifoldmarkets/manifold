@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import * as admin from 'firebase-admin'
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
+import { NextRequest } from 'next/server'
 
 export function initAdmin() {
   // Right now, FIREBASE_SERVICE_ACCOUNT_KEY points at the dev-mantic-markets key
@@ -29,6 +30,7 @@ export async function getUserId(req: NextApiRequest, res: NextApiResponse) {
     res.status(403).json({ error: 'Invalid auth scheme; must be "Bearer".' })
   }
   // Seems to involve a roundtrip to Firebase; could we skip? (Or locate Vercel server such that this is fast?)
+  // Log how long this takes
   const decodedToken = await admin.auth().verifyIdToken(payload)
   return decodedToken.uid
 }

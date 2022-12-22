@@ -31,14 +31,20 @@ export type DividendCertReq = {
 }
 
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
+  // Log how long these takes
+  const start = Date.now()
   await applyCorsHeaders(req, res, {
     origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
     methods: 'POST',
   })
 
   const userId = await getUserId(req, res)
+  const end1 = Date.now()
+  console.log(`dividend.ts: getUserId took ${end1 - start}ms`)
 
   const resp = await dividend(req, userId)
+  const end2 = Date.now()
+  console.log(`dividend.ts: dividend took ${end2 - end1}ms`)
 
   return res.status(200).json(resp)
 }

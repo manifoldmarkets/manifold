@@ -34,14 +34,21 @@ export type SwapCertReq = {
 }
 
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
+  const start = Date.now()
   await applyCorsHeaders(req, res, {
     origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
     methods: 'POST',
   })
+  const end1 = Date.now()
+  console.log(`swap.ts: applyCorsHeaders took ${end1 - start}ms`)
 
   const userId = await getUserId(req, res)
+  const end2 = Date.now()
+  console.log(`swap.ts: getUserId took ${end2 - end1}ms`)
 
   const resp = await swap(req, userId)
+  const end3 = Date.now()
+  console.log(`swap.ts: swap took ${end3 - end2}ms`)
 
   return res.status(200).json(resp)
 }

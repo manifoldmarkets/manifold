@@ -13,7 +13,12 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
 import { useUser } from 'web/hooks/use-user'
-import { dividendCert, swapCert, swapCertVercel } from 'web/lib/firebase/api'
+import {
+  dividendCert,
+  swapCert,
+  swapCertEdge,
+  swapCertVercel,
+} from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -142,6 +147,20 @@ function BuyCertWidget(props: { contract: CertContract }) {
             }}
           >
             Buy (Vercel)
+          </Button>
+          <Button
+            onClick={async () => {
+              // Track how long this took using the performance API
+              const start = performance.now()
+              await swapCertEdge({
+                certId: contract.id,
+                amount,
+              })
+              const end = performance.now()
+              console.log('swapCertEdge took', end - start, 'ms')
+            }}
+          >
+            Buy (Vercel Edge)
           </Button>
           <Row>
             <br /> Average price per share: {formatPrice(pricePerShare)}
