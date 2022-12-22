@@ -23,7 +23,6 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { SwipeCard } from 'web/components/contract/swipe-card'
-import { Col } from 'web/components/layout/col'
 import { formatMoney } from 'common/util/format'
 import { placeBet } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
@@ -209,28 +208,14 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
         className="absolute justify-center overflow-hidden overscroll-none"
         style={{ height: cardHeight }}
       >
-        <Col
-          className="absolute h-full bg-teal-700"
-          style={{ width: width / 2, left: 0 }}
-        >
-          <Col
-            className="h-full items-center justify-center text-2xl text-white"
-            style={{ width: horizontalSwipeDist }}
-          >
-            YES
-          </Col>
-        </Col>
-        <Col
-          className="bg-scarlet-700 absolute h-full items-end"
-          style={{ width: width / 2, right: 0 }}
-        >
-          <Col
-            className="h-full items-center justify-center text-2xl text-white"
-            style={{ width: horizontalSwipeDist }}
-          >
-            NO
-          </Col>
-        </Col>
+        <div className="absolute inset-0 columns-2 gap-0 text-center text-2xl text-white">
+          <div className="flex h-full items-center bg-teal-700">
+            <div style={{ width: horizontalSwipeDist }}>YES</div>
+          </div>
+          <div className="bg-scarlet-700 flex h-full items-center justify-end">
+            <div style={{ width: horizontalSwipeDist }}>NO</div>
+          </div>
+        </div>
 
         <animated.div
           {...bind()}
