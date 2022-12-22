@@ -47,6 +47,8 @@ export async function getStaticProps(props: { params: { slug: string } }) {
       creator,
       comments,
     },
+
+    revalidate: 60, // regenerate after a minute
   }
 }
 
