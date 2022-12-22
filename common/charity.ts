@@ -729,7 +729,7 @@ Where appropriate, we publish our research in academic journals, which helps com
     preview:
       'Grand Teton National Park Foundation initiates improvements, critical research, and projects that help better connect visitors to the park',
     description: `Grand Teton National Park Foundation is a private, nonprofit organization that funds projects that enhance Grand Teton National Park’s cultural, historic, and natural resources and helps others learn about and protect all that is special in the park.`,
-    tags: ['New'],
+    tags: ['New'] as const,
   },
   {
     name: 'MIRI',
@@ -748,7 +748,7 @@ Using training data to teach advanced AI systems what we value looks more promis
 Additionally, rational agents pursuing some goal have an incentive to protect their goal-content. No matter what their current goal is, it will very likely be better served if the agent continues to promote it than if the agent changes goals. This suggests that it may be difficult to improve an agent’s alignment with human interests over time, particularly when the agent is smart enough to model and adapt to its programmers’ goals. Making value learning systems error-tolerant is likely to be necessary for safe online learning.
 
 In addition to our mathematical research, MIRI investigates important strategic questions. What can (and can’t) we predict about the future of AI? How can we improve our forecasting ability? Which interventions available today appear to be the most beneficial, given what little we do know?`,
-    tags: ['New'],
+    tags: ['New'] as const,
   },
   {
     name: 'Charity Entrepreneurship',
@@ -761,7 +761,7 @@ In addition to our mathematical research, MIRI investigates important strategic 
 Our mission is to enable more effective charities to exist in the world. We strive to achieve this goal through our extensive research process and Incubation Program.
 
 Nonprofit entrepreneurship is also a highly neglected career opportunity that, fueled by a more analytical, effective-altruist mindset, can lead to cost-effective, evidence-based outcomes that are approximately equivalent to donating ~$200,000 to effective charities per year. It provides a chance to build a portfolio of useful skills and great career capital, and to have high job satisfaction while retaining substantial individual impact.`,
-    tags: ['New'],
+    tags: ['New'] as const,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
