@@ -413,7 +413,6 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.amount > 0
   )
-
   const items = [
     ...visibleBets.map((bet) => ({
       type: 'bet' as const,
@@ -428,20 +427,19 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   ]
   const [totalItems, setTotalItems] = useState(items.length)
 
-  const willNeedMoreBets = (totalItems % ITEMS_PER_PAGE === 0)
   useEffect(() => {
+    const willNeedMoreBets = totalItems % ITEMS_PER_PAGE === 0
     if (!willNeedMoreBets) return
-      getTotalBetCount(contract.id).then((totalBetCount) => {
-        setTotalItems(totalBetCount + visibleLps.length)
-      })
-
-  }, [willNeedMoreBets, contract.id, visibleLps.length])
+    getTotalBetCount(contract.id).then((totalBetCount) => {
+      setTotalItems(totalBetCount + visibleLps.length)
+    })
+  }, [contract.id, totalItems, visibleLps.length])
 
   useEffect(() => {
     const uiPage = page + 1
-    const limit =  (items.length - uiPage*ITEMS_PER_PAGE)*-1
+    const limit = (items.length - uiPage * ITEMS_PER_PAGE) * -1
     if (limit <= 0) return
-    getOlderBets(contract.id, oldestBet.createdTime,limit)
+    getOlderBets(contract.id, oldestBet.createdTime, limit)
       .then((olderBets) => {
         console.log('supabets', olderBets)
         setBets((bets) => [...bets, ...olderBets])
