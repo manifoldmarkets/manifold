@@ -99,7 +99,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   }
 
   // Measure height manually to accommodate mobile web.
-  const { height: computedHeight, width = 600 } = useWindowSize()
+  const { height: computedHeight } = useWindowSize()
   const [height, setHeight] = usePersistentState(computedHeight ?? 800, {
     key: 'screen-height',
     store: inMemoryStore(),
