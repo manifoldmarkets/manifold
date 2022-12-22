@@ -166,7 +166,7 @@ export async function updateUserMetrics() {
         },
       }
     }),
-    100
+    500
   )
 
   for (const { user, fields } of userUpdates) {
