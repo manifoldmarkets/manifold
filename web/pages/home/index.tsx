@@ -267,7 +267,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 }
 
 const HOME_SECTIONS = [
-  { label: 'Recommended', id: 'recommended', icon: '👍' },
+  { label: 'For you', id: 'recommended', icon: '🤟' },
   { label: 'Trending', id: 'score', icon: '🔥' },
   { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   { label: 'Your daily movers', id: 'daily-movers' },
@@ -380,14 +380,14 @@ const YourFeedSection = (props: { user: User }) => {
 
   return (
     <Col>
-      <HomeSectionHeader label="Your feed" href="/your-feed" icon={'📖'} />
+      <HomeSectionHeader label="Discover" href="/discover" icon={'📖'} />
       <VisibilityObserver
         className="relative -top-[300px] h-1"
         onVisibilityUpdated={(visible) => visible && setHasViewedBottom(true)}
       />
 
       {hasViewedBottom ? (
-        <YourFeed user={user} count={100} />
+        <DiscoverFeed user={user} count={100} />
       ) : (
         <LoadingIndicator />
       )}
@@ -395,7 +395,7 @@ const YourFeedSection = (props: { user: User }) => {
   )
 }
 
-export const YourFeed = (props: { user: User; count: number }) => {
+export const DiscoverFeed = (props: { user: User; count: number }) => {
   const { user, count } = props
   const contracts = useFeed(user, count)
 
@@ -612,7 +612,7 @@ export const RecommendedSection = memo(function RecommendedSection(props: {
   const { contracts } = props
   return (
     <Col>
-      <HomeSectionHeader label="Recommended" icon="👍" />
+      <HomeSectionHeader label="For you" icon="🤟" />
       <ContractsGrid
         contracts={contracts}
         showImageOnTopContract={true}
