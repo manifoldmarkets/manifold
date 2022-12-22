@@ -18,5 +18,5 @@ export async function getOlderBets(
       .limit(limit)
   )
 
-  return data.map((d:JsonData<Bet>)=>d.data)
+  return data.map((d: JsonData<Bet>) => d.data)
 }

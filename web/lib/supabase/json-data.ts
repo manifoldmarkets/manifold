@@ -1,3 +1,3 @@
 export type JsonData<T> = {
-  data:T
+  data: T
 }
