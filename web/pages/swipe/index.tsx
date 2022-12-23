@@ -215,7 +215,7 @@ export default function Swipe() {
               className={i < index - 1 ? 'invisible' : undefined}
               contract={c}
               amount={amount}
-              setAmount={setAmount}
+              setAmount={setAmount as any}
               swipeDirection={swipeDirection}
               user={user}
             />
