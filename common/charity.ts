@@ -763,6 +763,14 @@ Our mission is to enable more effective charities to exist in the world. We stri
 Nonprofit entrepreneurship is also a highly neglected career opportunity that, fueled by a more analytical, effective-altruist mindset, can lead to cost-effective, evidence-based outcomes that are approximately equivalent to donating ~$200,000 to effective charities per year. It provides a chance to build a portfolio of useful skills and great career capital, and to have high job satisfaction while retaining substantial individual impact.`,
     tags: ['New'] as const,
   },
+  {
+    name: 'NAACP Legal Defense Fund',
+    website: 'https://www.naacpldf.org/',
+    photo: 'https://i.imgur.com/32vJo5L.png',
+    preview: 'The Premier Legal Organization Fighting for Racial Justice.',
+    description: `The Legal Defense Fund (LDF) is America’s premier legal organization fighting for racial justice. Using the power of law, narrative, research, and people, we defend and advance the full dignity and citizenship of Black people in America.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
