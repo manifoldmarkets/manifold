@@ -90,7 +90,7 @@ import { swapcert } from './swap-cert'
 import { dividendcert } from './dividend-cert'
 
 // v2
-export { updateusermetrics2 } from './update-user-metrics'
+export { updateusermetrics } from './update-user-metrics'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)

@@ -28,7 +28,7 @@ const BAD_RESOLUTION_THRESHOLD = 0.1
 
 const firestore = admin.firestore()
 
-export const updateusermetrics2 = onSchedule(
+export const updateusermetrics = onSchedule(
   {
     schedule: 'every 15 minutes',
     timeoutSeconds: 2000,
