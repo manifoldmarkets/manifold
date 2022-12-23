@@ -4,7 +4,6 @@ import {
   ArrowRightIcon,
   MinusIcon,
   PlusIcon,
-  ShareIcon,
 } from '@heroicons/react/solid'
 
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
