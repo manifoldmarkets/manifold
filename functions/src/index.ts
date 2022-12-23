@@ -10,7 +10,6 @@ export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
 export * from './on-create-comment-on-post'
 export { scheduleUpdateContractMetrics } from './update-contract-metrics'
-export { scheduleUpdateUserMetrics } from './update-user-metrics'
 export { scheduleUpdateGroupMetrics } from './update-group-metrics'
 export { scheduleUpdateLoans } from './update-loans'
 export * from './update-stats'
@@ -82,7 +81,6 @@ import { acceptchallenge } from './accept-challenge'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { updatecontractmetrics } from './update-contract-metrics'
-import { updateusermetrics } from './update-user-metrics'
 import { updategroupmetrics } from './update-group-metrics'
 import { updateloans } from './update-loans'
 import { addsubsidy } from './add-subsidy'
@@ -90,6 +88,9 @@ import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from './validate-iap'
 import { swapcert } from './swap-cert'
 import { dividendcert } from './dividend-cert'
+
+// v2
+export { updateusermetrics2 } from './update-user-metrics'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -119,7 +120,6 @@ const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
 const testScheduledFunction = toCloudFunction(testscheduledfunction)
 const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
-const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 const updateLoansFunction = toCloudFunction(updateloans)
 const validateIAPFunction = toCloudFunction(validateiap)
@@ -152,7 +152,6 @@ export {
   createCommentFunction as createcomment,
   testScheduledFunction as testscheduledfunction,
   updateContractMetricsFunction as updatecontractmetrics,
-  updateUserMetricsFunction as updateusermetrics,
   updateGroupMetricsFunction as updategroupmetrics,
   updateLoansFunction as updateloans,
   validateIAPFunction as validateiap,

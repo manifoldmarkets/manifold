@@ -1,11 +1,10 @@
-import * as functions from 'firebase-functions'
+import { onSchedule } from 'firebase-functions/v2/scheduler'
 import * as admin from 'firebase-admin'
 import { groupBy } from 'lodash'
 
 import {
   getUser,
   getValues,
-  invokeFunction,
   loadPaginated,
   log,
   revalidateStaticProps,
@@ -23,33 +22,23 @@ import {
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
-import { newEndpointNoAuth } from './api'
 import { CollectionReference } from 'firebase-admin/firestore'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
 
 const firestore = admin.firestore()
 
-export const scheduleUpdateUserMetrics = functions.pubsub
-  .schedule('every 15 minutes')
-  .onRun(async () => {
-    try {
-      console.log(await invokeFunction('updateusermetrics'))
-    } catch (e) {
-      console.error(e)
-    }
-  })
-
-export const updateusermetrics = newEndpointNoAuth(
+export const updateusermetrics2 = onSchedule(
   {
+    schedule: 'every 15 minutes',
     timeoutSeconds: 2000,
     memory: '16GiB',
     minInstances: 0,
     secrets: ['API_SECRET'],
   },
-  async (_req) => {
+  async (e) => {
+    console.log('Running scheduled job', e.jobName)
     await updateUserMetrics()
-    return { success: true }
   }
 )
 
