@@ -729,14 +729,13 @@ Where appropriate, we publish our research in academic journals, which helps com
     preview:
       'Grand Teton National Park Foundation initiates improvements, critical research, and projects that help better connect visitors to the park',
     description: `Grand Teton National Park Foundation is a private, nonprofit organization that funds projects that enhance Grand Teton National Park’s cultural, historic, and natural resources and helps others learn about and protect all that is special in the park.`,
-    tags: ['New'] as const,
   },
   {
     name: 'MIRI',
     website: 'https://intelligence.org/',
     photo: 'https://i.imgur.com/3SUKZ9m.png',
     preview:
-      'The Machine Intelligence Research Institute does foundational mathemtical research to ensure smarter-than-human AI has a positive impact',
+      'The Machine Intelligence Research Institute does foundational mathematical research to ensure smarter-than-human AI has a positive impact',
     description: `MIRI’s mission is to ensure that the creation of smarter-than-human intelligence has a positive impact. We aim to make advanced intelligent systems behave as we intend even in the absence of immediate human supervision.
     
     MIRI focuses on AI approaches that can be made transparent (e.g., precisely specified decision algorithms, not genetic algorithms), so that humans can understand why AI systems behave as they do. For safety purposes, a mathematical equation defining general intelligence is more desirable than an impressive but poorly-understood code kludge.
@@ -748,7 +747,6 @@ Using training data to teach advanced AI systems what we value looks more promis
 Additionally, rational agents pursuing some goal have an incentive to protect their goal-content. No matter what their current goal is, it will very likely be better served if the agent continues to promote it than if the agent changes goals. This suggests that it may be difficult to improve an agent’s alignment with human interests over time, particularly when the agent is smart enough to model and adapt to its programmers’ goals. Making value learning systems error-tolerant is likely to be necessary for safe online learning.
 
 In addition to our mathematical research, MIRI investigates important strategic questions. What can (and can’t) we predict about the future of AI? How can we improve our forecasting ability? Which interventions available today appear to be the most beneficial, given what little we do know?`,
-    tags: ['New'] as const,
   },
   {
     name: 'Charity Entrepreneurship',
@@ -761,13 +759,13 @@ In addition to our mathematical research, MIRI investigates important strategic 
 Our mission is to enable more effective charities to exist in the world. We strive to achieve this goal through our extensive research process and Incubation Program.
 
 Nonprofit entrepreneurship is also a highly neglected career opportunity that, fueled by a more analytical, effective-altruist mindset, can lead to cost-effective, evidence-based outcomes that are approximately equivalent to donating ~$200,000 to effective charities per year. It provides a chance to build a portfolio of useful skills and great career capital, and to have high job satisfaction while retaining substantial individual impact.`,
-    tags: ['New'] as const,
   },
   {
     name: 'NAACP Legal Defense Fund',
     website: 'https://www.naacpldf.org/',
     photo: 'https://i.imgur.com/32vJo5L.png',
-    preview: 'The Premier Legal Organization Fighting for Racial Justice.',
+    preview:
+      "NAACP's Legal Defense Fund is the premier legal organization fighting for racial justice.",
     description: `The Legal Defense Fund (LDF) is America’s premier legal organization fighting for racial justice. Using the power of law, narrative, research, and people, we defend and advance the full dignity and citizenship of Black people in America.`,
     tags: ['New'] as const,
   },
@@ -776,8 +774,32 @@ Nonprofit entrepreneurship is also a highly neglected career opportunity that, f
     website: 'https://www.ewg.org/',
     photo: 'https://i.imgur.com/7QApy7i.png',
     preview:
-      'Our mission is simple: To empower you with breakthrough research to make informed choices and live a healthy life in a healthy environment.',
+      'EWG empowers you with breakthrough research to make informed choices and live a healthy life in a healthy environment.',
     description: `Since 1993, the Environmental Working Group has shined a spotlight on outdated legislation, harmful agricultural practices and industry loopholes that pose a risk to our health and the health of our environment.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'AI Impacts',
+    website: 'https://aiimpacts.org/',
+    photo: 'https://i.imgur.com/VWm1DLf.png',
+    preview:
+      'AI Impacts answers decision-relevant questions about the future of artificial intelligence.',
+    description: `This project aims to improve our understanding of the likely impacts of human-level artificial intelligence.
+The intended audience includes researchers doing work related to artificial intelligence, philanthropists involved in funding research related to artificial intelligence, and policy-makers whose decisions may be influenced by their expectations about artificial intelligence.
+
+The focus is particularly on the long-term impacts of sophisticated artificial intelligence. Although human-level AI may be far in the future, there are a number of important questions which we can try to address today and may have implications for contemporary decisions. For example:
+
+- What should we believe about timelines for AI development?
+- How rapid is the development of AI likely to be near human-level? How much advance notice should we expect to have of disruptive change?
+- What are the likely economic impacts of human-level AI?
+- Which paths to AI should be considered plausible or likely?
+- Will human-level AI tend to pursue particular goals, and if so what kinds of goals?
+- Can we say anything meaningful about the impact of contemporary choices on long-term outcomes?
+
+Today, public discussion on these issues appears to be highly fragmented and of limited credibility. More credible and clearly communicated views on these issues might help improve estimates of the social returns to AI investment, identify neglected research areas, improve policy, or productively channel public interest in AI.
+
+The goal of the project is to clearly present and organize the considerations which inform contemporary views on these and related issues, to identify and explore disagreements, and to assemble whatever empirical evidence is relevant.    
+`,
     tags: ['New'] as const,
   },
 ].map((charity) => {
