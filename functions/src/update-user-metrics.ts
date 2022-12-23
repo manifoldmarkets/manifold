@@ -166,7 +166,7 @@ export async function updateUserMetrics() {
         },
       }
     }),
-    500
+    100
   )
 
   for (const { user, fields } of userUpdates) {
@@ -192,7 +192,7 @@ const loadUserContractBets = async (userId: string, contractIds: string[]) => {
         .where('userId', '==', userId)
         .get()
     }),
-    100
+    500
   )
   return betDocs
     .map((d) => d.docs)
