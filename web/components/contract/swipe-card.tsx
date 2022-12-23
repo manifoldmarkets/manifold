@@ -11,7 +11,7 @@ import { BinaryContract, Contract } from 'common/contract'
 import { getBinaryProb } from 'common/contract-details'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
-import { memo } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
@@ -29,7 +29,7 @@ export const SwipeCard = memo(
   (props: {
     contract: BinaryContract
     amount: number
-    setAmount: (amount: number) => void
+    setAmount: (setAmount: (amount: number) => void) => void
     swipeDirection: 'YES' | 'NO' | undefined
     className?: string
     user?: User
@@ -39,14 +39,27 @@ export const SwipeCard = memo(
       props.contract) as BinaryContract
     const { question, description, coverImageUrl } = contract
 
-    const addMoney = () => setAmount(amount + betTapAdd)
+    const [pressState, setPressState] = useState<undefined | 'add' | 'sub'>(
+      undefined
+    )
 
-    const subMoney = () => {
-      if (amount <= betTapAdd) {
-      } else {
-        setAmount(amount - betTapAdd)
+    const processPress = () => {
+      if (pressState === 'add') {
+        setAmount((a) => Math.min(250, a + betTapAdd))
+      }
+      if (pressState === 'sub') {
+        setAmount((a) => Math.max(10, a - betTapAdd))
       }
     }
+
+    useEffect(() => {
+      if (pressState) {
+        processPress()
+        const interval = setInterval(processPress, 100)
+        return () => clearInterval(interval)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pressState])
 
     const image =
       coverImageUrl ??
@@ -102,14 +115,26 @@ export const SwipeCard = memo(
           <div className="mb-4 flex flex-col items-center gap-2 self-center">
             <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
               <button
-                onClick={subMoney}
+                onTouchStartCapture={() => {
+                  setPressState('sub')
+                }}
+                onTouchEndCapture={() => {
+                  setPressState(undefined)
+                }}
                 className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
               >
                 <MinusIcon className="h-4" />
               </button>
+
               <span className="mx-1 py-4">{formatMoney(amount)}</span>
+
               <button
-                onClick={addMoney}
+                onTouchStartCapture={() => {
+                  setPressState('add')
+                }}
+                onTouchEndCapture={() => {
+                  setPressState(undefined)
+                }}
                 className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
               >
                 <PlusIcon className="h-4" />
