@@ -771,6 +771,15 @@ Nonprofit entrepreneurship is also a highly neglected career opportunity that, f
     description: `The Legal Defense Fund (LDF) is America’s premier legal organization fighting for racial justice. Using the power of law, narrative, research, and people, we defend and advance the full dignity and citizenship of Black people in America.`,
     tags: ['New'] as const,
   },
+  {
+    name: 'EWG',
+    website: 'https://www.ewg.org/',
+    photo: 'https://i.imgur.com/7QApy7i.png',
+    preview:
+      'Our mission is simple: To empower you with breakthrough research to make informed choices and live a healthy life in a healthy environment.',
+    description: `Since 1993, the Environmental Working Group has shined a spotlight on outdated legislation, harmful agricultural practices and industry loopholes that pose a risk to our health and the health of our environment.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
