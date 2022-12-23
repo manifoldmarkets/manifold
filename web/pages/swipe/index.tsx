@@ -217,6 +217,7 @@ export default function Swipe() {
               amount={amount}
               setAmount={setAmount}
               swipeDirection={swipeDirection}
+              user={user}
             />
           ))}
 

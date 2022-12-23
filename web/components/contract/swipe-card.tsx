@@ -20,6 +20,8 @@ import { Row } from '../layout/row'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { Col } from '../layout/col'
 import { useContract } from 'web/hooks/use-contracts'
+import { User } from 'common/user'
+import { LikeButton } from 'web/components/contract/like-button'
 
 const betTapAdd = 10
 
@@ -30,8 +32,9 @@ export const SwipeCard = memo(
     setAmount: (amount: number) => void
     swipeDirection: 'YES' | 'NO' | undefined
     className?: string
+    user?: User
   }) => {
-    const { amount, setAmount, swipeDirection, className } = props
+    const { amount, setAmount, swipeDirection, className, user } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
     const { question, description, coverImageUrl } = contract
@@ -77,11 +80,15 @@ export const SwipeCard = memo(
           >
             {question}
           </SiteLink>
-          <Percent
-            contract={contract}
-            amount={amount}
-            outcome={swipeDirection}
-          />
+          <div className="grid grid-cols-3">
+            <div />
+            <Percent
+              contract={contract}
+              amount={amount}
+              outcome={swipeDirection}
+            />
+            <Actions contract={contract} user={user} />
+          </div>
           <SiteLink href={contractPath(contract)} followsLinkClass>
             {/* TODO: use editor excluding widgets */}
             <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
@@ -183,7 +190,7 @@ function Percent(props: {
   return (
     <div
       className={clsx(
-        'transition-color flex items-center self-center font-bold',
+        'transition-color flex w-full items-center justify-center font-bold',
         !outcome && 'text-white',
         outcome === 'YES' && 'text-teal-100',
         outcome === 'NO' && 'text-scarlet-100'
@@ -201,6 +208,27 @@ function Percent(props: {
         {formatPercent(percent).slice(0, -1)}
       </span>
       <span className="pt-2 text-2xl">%</span>
+    </div>
+  )
+}
+
+function Actions(props: { user?: User; contract: BinaryContract }) {
+  const { user, contract } = props
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <LikeButton
+        contentId={contract.id}
+        contentCreatorId={contract.creatorId}
+        user={user}
+        contentType={'contract'}
+        totalLikes={contract.likedByUserCount ?? 0}
+        contract={contract}
+        contentText={contract.question}
+        className="scale-200 text-white"
+        size="xl"
+      />
+      {/* TODO Share button */}
     </div>
   )
 }

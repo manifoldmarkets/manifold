@@ -23,6 +23,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
         totalLikes={contract.likedByUserCount ?? 0}
         contract={contract}
         contentText={contract.question}
+        className="py-1"
       />
 
       <SimpleLinkButton getUrl={() => getShareUrl(contract, user?.username)} />
