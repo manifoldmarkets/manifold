@@ -145,6 +145,7 @@ export default function Swipe() {
         setTimeout(() => {
           newIndex = Math.min(cards.length - 1, index + 1)
           setIndex(newIndex)
+          setAmount(10) // reset amount
           const y = -newIndex * cardHeight
           api.start({ y })
         }, 500)
@@ -154,6 +155,7 @@ export default function Swipe() {
         if (my < 0) newIndex = Math.min(cards.length - 1, index + 1)
         else if (my > 0) newIndex = Math.max(0, index - 1)
         setIndex(newIndex)
+        setAmount(10)
       }
       const y = -newIndex * cardHeight + (down ? my : 0)
 
