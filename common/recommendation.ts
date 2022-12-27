@@ -1,5 +1,5 @@
 import { uniq } from 'lodash'
-import { buildCompletedMatrix, factorizeSparseMatrix } from './util/matrix'
+import { buildCompletedMatrix, factorizeMatrix } from './util/matrix'
 
 export async function getMarketRecommendations(
   betPairs: { userId: string; contractId: string }[]
@@ -18,7 +18,7 @@ export async function getMarketRecommendations(
   }
 
   const columns = Array.from(columnSet)
-  const [f1, f2] = factorizeSparseMatrix(sparseMatrix, columns, 12)
+  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 12)
   const result = buildCompletedMatrix([f1, f2])
   console.log('result', result)
   return result
