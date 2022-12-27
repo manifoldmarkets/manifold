@@ -1,43 +1,44 @@
-import * as fs from 'fs'
+import { writeFile, readFile } from 'fs/promises'
 
 const SEPARATOR = ','
 
-export const createCsv = <T extends { [field: string]: string }>(
+export const writeCsv = async <T extends { [field: string]: string }>(
   filename: string,
   fields: string[],
   data: T[]
 ) => {
   console.log('\n', 'creating', filename, '\n')
 
-  return new Promise<void>((resolve) => {
-    const firstLine = fields.join(SEPARATOR) + '\n'
+  const firstLine = fields.join(SEPARATOR) + '\n'
 
-    const lines =
-      firstLine +
-      data
-        .map((datum) => {
-          const values = fields.map((field) => datum[field] ?? '')
-          return values.join(SEPARATOR)
-        })
-        .join('\n') +
-      '\n'
+  const lines =
+    firstLine +
+    data
+      .map((datum) => {
+        const values = fields.map((field) => datum[field] ?? '')
+        return values.join(SEPARATOR)
+      })
+      .join('\n') +
+    '\n'
 
-    fs.writeFile(filename, lines, (err) => {
-      if (err) console.log(err)
-      resolve()
-    })
-  })
+  await writeFile(filename, lines)
 }
 
 export const readCsv = async <T extends { [field: string]: string }>(
   filename: string
 ) => {
-  const lines = await new Promise<string[]>((resolve, error) => {
-    fs.readFile(filename, { encoding: 'utf-8' }, (err, data) => {
-      if (err) error(err)
-      else resolve(data.split('\n'))
-    })
-  })
+  let data: string
+  try {
+    data = await readFile(filename, { encoding: 'utf-8' })
+  } catch (e) {
+    if (e && typeof e === 'object' && 'code' in e && e.code === 'ENOENT') {
+      // File doesn't exist.
+      return undefined
+    } else {
+      throw e
+    }
+  }
+  const lines = data.split('\n')
 
   const fields = lines[0].split(SEPARATOR)
 

@@ -3,7 +3,7 @@ import { getMarketRecommendations } from 'common/recommendation'
 import { filterDefined } from 'common/util/array'
 import * as admin from 'firebase-admin'
 import { Query } from 'firebase-admin/firestore'
-import { createCsv, readCsv } from '../helpers/csv'
+import { writeCsv, readCsv } from '../helpers/csv'
 import { loadPaginated } from '../utils'
 
 import { initAdmin } from './script-init'
@@ -33,17 +33,18 @@ const loadData = async () => {
 const recommend = async () => {
   console.log('Recommend script')
 
+  const result = await readCsv<{ userId: string; contractId: string }>(
+    'bet-pairs.csv'
+  )
+
   let betPairs: { userId: string; contractId: string }[]
-  try {
-    const { rows } = await readCsv<{ userId: string; contractId: string }>(
-      'bet-pairs.csv'
-    )
-    betPairs = rows
+  if (result) {
+    betPairs = result.rows
     console.log('Loaded bet data from file.')
-  } catch (e) {
+  } else {
     console.log('Loading bet data from Firestore...')
     betPairs = await loadData()
-    await createCsv('bet-pairs.csv', ['userId', 'contractId'], betPairs)
+    await writeCsv('bet-pairs.csv', ['userId', 'contractId'], betPairs)
   }
 
   console.log('Computing recommendations...')
