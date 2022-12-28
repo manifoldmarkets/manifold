@@ -96,8 +96,8 @@ export function BetsSummary(props: {
 
         <Col>
           <div className="whitespace-nowrap text-sm text-gray-500">
-            Invested{' '}
-            <InfoTooltip text="Cash currently invested in this market." />
+            Cost basis{' '}
+            <InfoTooltip text="Cash originally invested in this market, using average cost accounting." />
           </div>
           <div className="whitespace-nowrap">{formatMoney(invested)}</div>
         </Col>
