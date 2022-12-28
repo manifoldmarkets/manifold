@@ -32,7 +32,6 @@ export function factorizeMatrix(
     LATENT_FEATURES_COUNT,
     () => Math.random()
   )
-  const transposedFactorMatrix2 = transpose(factorMatrix2)
 
   const updateLatentFeature = (
     latentFeatureA: number,
@@ -52,34 +51,28 @@ export function factorizeMatrix(
         const TRUE_VALUE = TARGET_MATRIX[i][column]
         const j = columnToIndex[column]
 
-        // Process non-empty values
-        if (TRUE_VALUE > 0) {
-          // Get difference of actual value and the current approximate value as error
-          const CURRENT_VALUE = dotVectors(
-            factorMatrix1[i],
-            columnVector(transposedFactorMatrix2, j)
+        // Get difference of actual value and the current approximate value as error
+        const CURRENT_VALUE = dotVectors(factorMatrix1[i], factorMatrix2[j])
+        const ERROR = TRUE_VALUE - CURRENT_VALUE
+
+        // Update factor matrices
+        for (let k = 0; k < LATENT_FEATURES_COUNT; k++) {
+          const latentFeatureA = factorMatrix1[i][k]
+          const latentFeatureB = factorMatrix2[j][k]
+
+          // Update latent feature k of factor matrix 1
+          factorMatrix1[i][k] = updateLatentFeature(
+            latentFeatureA,
+            latentFeatureB,
+            ERROR
           )
-          const ERROR = TRUE_VALUE - CURRENT_VALUE
 
-          // Update factor matrices
-          for (let k = 0; k++; k < LATENT_FEATURES_COUNT) {
-            const latentFeatureA = factorMatrix1[i][k]
-            const latentFeatureB = transposedFactorMatrix2[k][j]
-
-            // Update latent feature k of factor matrix 1
-            factorMatrix1[i][k] = updateLatentFeature(
-              latentFeatureA,
-              latentFeatureB,
-              ERROR
-            )
-
-            // Update latent feature k of factor matrix 2
-            transposedFactorMatrix2[k][j] = updateLatentFeature(
-              latentFeatureB,
-              latentFeatureA,
-              ERROR
-            )
-          }
+          // Update latent feature k of factor matrix 2
+          factorMatrix2[j][k] = updateLatentFeature(
+            latentFeatureB,
+            latentFeatureA,
+            ERROR
+          )
         }
       }
     }
@@ -91,14 +84,16 @@ export function factorizeMatrix(
       LATENT_FEATURES_COUNT,
       REGULARIZATION_RATE,
       factorMatrix1,
-      transposedFactorMatrix2
+      factorMatrix2
     )
+
+    console.log('iter', iter, 'error', TOTAL_ERROR)
 
     // Complete factorization process if total error falls below a certain threshold
     if (TOTAL_ERROR < THRESHOLD) break
   }
 
-  return [factorMatrix1, transpose(transposedFactorMatrix2)]
+  return [factorMatrix1, factorMatrix2]
 }
 
 /**
@@ -110,7 +105,7 @@ function calculateError(
   LATENT_FEATURES_COUNT: number,
   REGULARIZATION_RATE: number,
   factorMatrix1: number[][],
-  transposedFactorMatrix2: number[][]
+  factorMatrix2: number[][]
 ) {
   let totalError = 0
 
@@ -121,24 +116,18 @@ function calculateError(
       const TRUE_VALUE = TARGET_MATRIX[i][column]
       const j = columnToIndex[column]
 
-      // Process non-empty values
-      if (TRUE_VALUE > 0) {
-        // Get difference of actual value and the current approximate value as error
-        const CURRENT_VALUE = dotVectors(
-          factorMatrix1[i],
-          columnVector(transposedFactorMatrix2, j)
-        )
-        const ERROR = TRUE_VALUE - CURRENT_VALUE
+      // Get difference of actual value and the current approximate value as error
+      const CURRENT_VALUE = dotVectors(factorMatrix1[i], factorMatrix2[j])
+      const ERROR = TRUE_VALUE - CURRENT_VALUE
 
-        // Increment totalError with current error
-        totalError = totalError + ERROR ** 2
+      // Increment totalError with current error
+      totalError = totalError + ERROR ** 2
 
-        for (let k = 0; k++; k < LATENT_FEATURES_COUNT) {
-          totalError =
-            totalError +
-            (REGULARIZATION_RATE / 2) *
-              (factorMatrix1[i][k] ** 2 + transposedFactorMatrix2[k][j] ** 2)
-        }
+      for (let k = 0; k < LATENT_FEATURES_COUNT; k++) {
+        totalError =
+          totalError +
+          (REGULARIZATION_RATE / 2) *
+            (factorMatrix1[i][k] ** 2 + factorMatrix2[j][k] ** 2)
       }
     }
   }
@@ -183,16 +172,6 @@ function matrixMultiply(m: number[][], n: number[][]) {
   const transposedN = transpose(n)
 
   return m.map((row) => transposedN.map((column) => dotVectors(row, column)))
-}
-
-/**
- * Gets the column vector at given index.
- *
- * @param matrix
- * @param index
- */
-function columnVector(matrix: number[][], index: number) {
-  return matrix.map((m) => m[index])
 }
 
 /**

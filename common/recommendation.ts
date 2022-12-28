@@ -18,7 +18,9 @@ export async function getMarketRecommendations(
   }
 
   const columns = Array.from(columnSet)
-  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 12)
+  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 8)
+  console.log('f1', f1)
+  console.log('f2', f2)
   const result = buildCompletedMatrix([f1, f2])
   return result
 }

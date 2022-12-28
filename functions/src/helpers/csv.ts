@@ -53,5 +53,5 @@ export const readCsv = async <T extends { [field: string]: string }>(
     rows.push(row as T)
   }
 
-  return { rows, fields }
+  return rows
 }

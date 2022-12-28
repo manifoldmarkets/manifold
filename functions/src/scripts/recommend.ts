@@ -33,13 +33,11 @@ const loadData = async () => {
 const recommend = async () => {
   console.log('Recommend script')
 
-  const result = await readCsv<{ userId: string; contractId: string }>(
+  let betPairs = await readCsv<{ userId: string; contractId: string }>(
     'bet-pairs.csv'
   )
 
-  let betPairs: { userId: string; contractId: string }[]
-  if (result) {
-    betPairs = result.rows
+  if (betPairs) {
     console.log('Loaded bet data from file.')
   } else {
     console.log('Loading bet data from Firestore...')
