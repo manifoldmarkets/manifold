@@ -1,8 +1,8 @@
 /**
  * Gets the factors of a sparse matrix
  *
- * @param TARGET_MATRIX target matrix
- * @param columns Column names of the target matrix
+ * @param TARGET_MATRIX target matrix, where each row specifies a subset of all columns.
+ * @param columns All column names of the target matrix
  * @param LATENT_FEATURES_COUNT Number of latent features
  * @param ITERS Number of times to move towards the real factors
  * @param LEARNING_RATE Learning rate
@@ -19,6 +19,7 @@ export function factorizeMatrix(
   THRESHOLD = 0.001
 ) {
   const columnToIndex = Object.fromEntries(columns.map((col, i) => [col, i]))
+  const columnsOfRow = TARGET_MATRIX.map(Object.keys)
 
   const FACTOR1_ROW_COUNT = TARGET_MATRIX.length
   const FACTOR2_ROW_COUNT = columns.length
@@ -33,8 +34,6 @@ export function factorizeMatrix(
     () => Math.random()
   )
 
-  const columnsOfRow = TARGET_MATRIX.map(Object.keys)
-
   const updateLatentFeature = (
     latentFeatureA: number,
     latentFeatureB: number,
@@ -44,11 +43,10 @@ export function factorizeMatrix(
     LEARNING_RATE *
       (2 * error * latentFeatureB - REGULARIZATION_RATE * latentFeatureA)
 
+  // Iteratively figure out correct factors.
   for (let iter = 0; iter < ITERS; iter++) {
-    // Iteratively figure out correct factors
     for (let i = 0; i < TARGET_MATRIX.length; i++) {
-      const columns = columnsOfRow[i]
-      for (const column of columns) {
+      for (const column of columnsOfRow[i]) {
         // Get actual value on target matrix
         const TRUE_VALUE = TARGET_MATRIX[i][column]
         const j = columnToIndex[column]
@@ -80,8 +78,7 @@ export function factorizeMatrix(
     }
 
     if (iter % 20 === 0) {
-      // Calculating totalError
-      const TOTAL_ERROR = calculateError(
+      const TOTAL_ERROR = calculateFactorMatricesError(
         TARGET_MATRIX,
         columnToIndex,
         LATENT_FEATURES_COUNT,
@@ -102,7 +99,7 @@ export function factorizeMatrix(
 /**
  * Calculate total error of factor matrices
  */
-function calculateError(
+function calculateFactorMatricesError(
   TARGET_MATRIX: { [column: string]: number }[],
   columnToIndex: { [column: string]: number },
   LATENT_FEATURES_COUNT: number,
@@ -140,38 +137,16 @@ function calculateError(
 
 /**
  * Build completed matrix from matrix factors.
- *
- * @param factors Derived matrix factors
- * @returns Completed matrix
  */
-export function buildCompletedMatrix(factors: [number[][], number[][]]) {
-  const [FACTOR1, FACTOR2] = factors
-
-  return matrixMultiply(FACTOR1, transpose(FACTOR2))
+export function buildCompletedMatrix(factor1: number[][], factor2: number[][]) {
+  return multiplyMatrices(factor1, transpose(factor2))
 }
 
-/***************************
- * Helper Functions        *
- ***************************/
-
-/**
- * Transposes a matrix
- *
- * @param matrix Target matrix
- * @returns The transposed matrix
- */
 function transpose(matrix: number[][]) {
   return matrix.map((t, i) => t.map((_, j) => matrix[j][i]))
 }
 
-/**
- * Gets the dot product of two matrices.
- *
- * @param m First matrix
- * @param n Second matrix
- * @returns Dot product of the two matrices
- */
-function matrixMultiply(m: number[][], n: number[][]) {
+function multiplyMatrices(m: number[][], n: number[][]) {
   const transposedN = transpose(n)
 
   return m.map((row) => transposedN.map((column) => dotVectors(row, column)))
@@ -187,12 +162,7 @@ function dotVectors(v: number[], w: number[]) {
 }
 
 /**
- * Creates an n x m matrix filled with the result of given fill function
- *
- * @param n Number of rows
- * @param m Number of columns
- * @param fill Function used to fill the matrix with
- * @returns The filled matrix
+ * Creates an n x m matrix filled with the result of given fill function.
  */
 function fillMatrix(n: number, m: number, fill = () => 0) {
   const matrix: number[][] = []
