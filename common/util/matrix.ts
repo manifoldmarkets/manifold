@@ -33,6 +33,8 @@ export function factorizeMatrix(
     () => Math.random()
   )
 
+  const columnsOfRow = TARGET_MATRIX.map(Object.keys)
+
   const updateLatentFeature = (
     latentFeatureA: number,
     latentFeatureB: number,
@@ -45,8 +47,8 @@ export function factorizeMatrix(
   for (let iter = 0; iter < ITERS; iter++) {
     // Iteratively figure out correct factors
     for (let i = 0; i < TARGET_MATRIX.length; i++) {
-      const row = TARGET_MATRIX[i]
-      for (const column of Object.keys(row)) {
+      const columns = columnsOfRow[i]
+      for (const column of columns) {
         // Get actual value on target matrix
         const TRUE_VALUE = TARGET_MATRIX[i][column]
         const j = columnToIndex[column]
@@ -77,20 +79,21 @@ export function factorizeMatrix(
       }
     }
 
-    // Calculating totalError
-    const TOTAL_ERROR = calculateError(
-      TARGET_MATRIX,
-      columnToIndex,
-      LATENT_FEATURES_COUNT,
-      REGULARIZATION_RATE,
-      factorMatrix1,
-      factorMatrix2
-    )
+    if (iter % 20 === 0) {
+      // Calculating totalError
+      const TOTAL_ERROR = calculateError(
+        TARGET_MATRIX,
+        columnToIndex,
+        LATENT_FEATURES_COUNT,
+        REGULARIZATION_RATE,
+        factorMatrix1,
+        factorMatrix2
+      )
+      console.log('iter', iter, 'error', TOTAL_ERROR)
 
-    console.log('iter', iter, 'error', TOTAL_ERROR)
-
-    // Complete factorization process if total error falls below a certain threshold
-    if (TOTAL_ERROR < THRESHOLD) break
+      // Complete factorization process if total error falls below a certain threshold
+      if (TOTAL_ERROR < THRESHOLD) break
+    }
   }
 
   return [factorMatrix1, factorMatrix2]
