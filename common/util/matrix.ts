@@ -143,7 +143,7 @@ export function buildCompletedMatrix(factor1: number[][], factor2: number[][]) {
 }
 
 function transpose(matrix: number[][]) {
-  return matrix.map((t, i) => t.map((_, j) => matrix[j][i]))
+  return matrix[0].map((_, i) => matrix.map((row) => row[i]))
 }
 
 function multiplyMatrices(m: number[][], n: number[][]) {
