@@ -86,18 +86,19 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     - Training for researchers or practitioners who work to mitigate existential risks, or help with relevant recruitment efforts, or infrastructure for people working on longtermist projects
     - Promoting long-term thinking`,
   },
-  {
-    name: 'New Science',
-    website: 'https://newscience.org/',
-    photo: 'https://i.imgur.com/C7PoR4q.png',
-    preview:
-      'Facilitating scientific breakthroughs by empowering the next generation of scientists and building the 21st century institutions of basic science.',
-    description: `As its first major project, in the summer of 2022, New Science will run an in-person research fellowship in Boston for young life scientists, during which they will independently explore an ambitious high-risk scientific idea they couldn’t work on otherwise and start building the foundations for a bigger research project, while having much more freedom than they could expect in their normal research environment but also much more support from us. This is inspired by Cold Spring Harbor Laboratory, which started as a place where leading molecular biologists came for the summer to hang out and work on random projects together, and which eventually housed 8 Nobel Prize winners.
+  // Temporarily disabled as New Science isn't accepting donations
+  // {
+  //   name: 'New Science',
+  //   website: 'https://newscience.org/',
+  //   photo: 'https://i.imgur.com/C7PoR4q.png',
+  //   preview:
+  //     'Facilitating scientific breakthroughs by empowering the next generation of scientists and building the 21st century institutions of basic science.',
+  //   description: `As its first major project, in the summer of 2022, New Science will run an in-person research fellowship in Boston for young life scientists, during which they will independently explore an ambitious high-risk scientific idea they couldn’t work on otherwise and start building the foundations for a bigger research project, while having much more freedom than they could expect in their normal research environment but also much more support from us. This is inspired by Cold Spring Harbor Laboratory, which started as a place where leading molecular biologists came for the summer to hang out and work on random projects together, and which eventually housed 8 Nobel Prize winners.
 
-    As its second major project, in the fall of 2022, New Science will run an in-person 12-month-long fellowship for young scientists starting to directly attack the biggest structural issues of the established institutions of science. We will double down on things that worked well during the summer fellowship, while extending the fellowship to one year, thus allowing researchers to make much more progress and will strive to provide them as much scientific leverage as possible.
-    
-    In several years, New Science will start funding entire labs outside of academia and then will be creating an entire network of scientific organizations, while supporting the broader scientific ecosystem that will constitute the 21st century institutions of basic science.`,
-  },
+  //   As its second major project, in the fall of 2022, New Science will run an in-person 12-month-long fellowship for young scientists starting to directly attack the biggest structural issues of the established institutions of science. We will double down on things that worked well during the summer fellowship, while extending the fellowship to one year, thus allowing researchers to make much more progress and will strive to provide them as much scientific leverage as possible.
+
+  //   In several years, New Science will start funding entire labs outside of academia and then will be creating an entire network of scientific organizations, while supporting the broader scientific ecosystem that will constitute the 21st century institutions of basic science.`,
+  // },
   {
     name: 'Global Health and Development Fund',
     website: 'https://funds.effectivealtruism.org/funds/global-development',
