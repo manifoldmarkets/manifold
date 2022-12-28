@@ -1,15 +1,18 @@
 import { Contract } from 'common/contract'
 import { getMarketRecommendations } from 'common/recommendation'
+import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
+import { asyncMap } from 'common/util/promise'
 import * as admin from 'firebase-admin'
-import { Query } from 'firebase-admin/firestore'
+import { CollectionReference, Query } from 'firebase-admin/firestore'
 import { writeCsv, readCsv } from '../helpers/csv'
 import { loadPaginated } from '../utils'
 
 import { initAdmin } from './script-init'
 initAdmin()
+const firestore = admin.firestore()
 
-const loadData = async () => {
+const loadBetPairs = async () => {
   const contractUniqueBettorIds = await loadPaginated(
     admin
       .firestore()
@@ -30,6 +33,26 @@ const loadData = async () => {
   return betPairs
 }
 
+const loadViewPairs = async () => {
+  const users = await loadPaginated(
+    firestore.collection('users') as CollectionReference<User>
+  )
+  const viewPairsUnflattened = await asyncMap(users, async (user) => {
+    const userId = user.id
+    const contractIds = await loadPaginated(
+      admin
+        .firestore()
+        .collection('users')
+        .doc(user.id)
+        .collection('seenMarkets')
+        .select('id') as Query<{ id: string }>
+    )
+    return contractIds.map(({ id: contractId }) => ({ userId, contractId }))
+  })
+  const viewPairs = viewPairsUnflattened.flat()
+  return viewPairs
+}
+
 const recommend = async () => {
   console.log('Recommend script')
 
@@ -41,12 +64,24 @@ const recommend = async () => {
     console.log('Loaded bet data from file.')
   } else {
     console.log('Loading bet data from Firestore...')
-    betPairs = await loadData()
+    betPairs = await loadBetPairs()
     await writeCsv('bet-pairs.csv', ['userId', 'contractId'], betPairs)
   }
 
+  let viewPairs = await readCsv<{ userId: string; contractId: string }>(
+    'view-pairs.csv'
+  )
+
+  if (viewPairs) {
+    console.log('Loaded view data from file.')
+  } else {
+    console.log('Loading view data from Firestore...')
+    viewPairs = await loadViewPairs()
+    await writeCsv('view-pairs.csv', ['userId', 'contractId'], viewPairs)
+  }
+
   console.log('Computing recommendations...')
-  const matrix = await getMarketRecommendations(betPairs)
+  const matrix = await getMarketRecommendations(betPairs, viewPairs)
   console.log('result', matrix)
 }
 

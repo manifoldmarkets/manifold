@@ -44,3 +44,12 @@ export const batchedWaitAll = async <T>(
 
   return result
 }
+
+export const asyncMap = async <T, U>(
+  items: T[],
+  f: (item: T) => Promise<U>,
+  batchSize = 100
+) => {
+  const createPromises = items.map((item) => () => f(item))
+  return await batchedWaitAll(createPromises, batchSize)
+}
