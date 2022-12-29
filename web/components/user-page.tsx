@@ -1,5 +1,6 @@
 import {
   DocumentIcon,
+  ChatIcon,
   FolderIcon,
   PencilIcon,
   ScaleIcon,
@@ -278,37 +279,41 @@ export function UserPage(props: { user: User; posts: Post[] }) {
               },
               {
                 title: 'Comments',
+                stackedTabIcon: <ChatIcon className="h-5" />,
+                content: (
+                  <>
+                    <Col>
+                      <UserCommentsList user={user} />
+                    </Col>
+                  </>
+                ),
+              },
+              {
+                title: 'Posts',
                 stackedTabIcon: <DocumentIcon className="h-5" />,
                 content: (
                   <>
-                    {userPosts.length > 0 && (
-                      <>
-                        <Spacer h={4} />
-
-                        <Row className="flex items-center justify-between">
-                          <SectionHeader label={'Posts'} href={''} />
-
-                          {isCurrentUser && (
-                            <Link
-                              className={clsx(
-                                'mb-3',
-                                buttonClass('md', 'indigo')
-                              )}
-                              href={'/create-post'}
-                              onClick={() => track('profile click create post')}
-                            >
-                              Create Post
-                            </Link>
-                          )}
-                        </Row>
-
-                        <PostCardList posts={userPosts} limit={6} />
-                        <Spacer h={4} />
-                        <SectionHeader label={'Comments'} href={''} />
-                      </>
-                    )}
                     <Col>
-                      <UserCommentsList user={user} />
+                      {isCurrentUser && (
+                        <p className="mt-4 flex items-center justify-between">
+                          <Link
+                            className={clsx(
+                              'mb-3',
+                              buttonClass('md', 'indigo')
+                            )}
+                            href={'/create-post'}
+                            onClick={() => track('profile click create post')}
+                          >
+                            Create Post
+                          </Link>
+                        </p>
+                      )}
+
+                      {!isCurrentUser && userPosts.length == 0 && (
+                        <p className="mt-4 text-gray-500">No posts yet</p>
+                      )}
+
+                      <PostCardList posts={userPosts} limit={6} />
                     </Col>
                   </>
                 ),
