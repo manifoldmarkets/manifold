@@ -1,7 +1,8 @@
 import { getCurrentEpochDay, MetricDay } from '@common/types/metric-types';
-import { ChevronDoubleUpIcon } from '@heroicons/react/outline';
-import { ArrowDownIcon, ArrowUpIcon, MoonIcon, SunIcon as SunIconSolid, SwitchHorizontalIcon } from '@heroicons/react/solid';
+import { ChevronDoubleDownIcon, ChevronDoubleUpIcon } from '@heroicons/react/outline';
+import { ArrowDownIcon, ArrowUpIcon, MoonIcon, SunIcon as SunIconSolid } from '@heroicons/react/solid';
 import clsx from 'clsx';
+import { Title } from 'components/title';
 import { AnimationTimer, quartic } from 'lib/animation';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
@@ -9,16 +10,12 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
 
-// const days: MetricDay[] = [];
-
-const r = (upper = 2000) => Math.floor(Math.random() * upper);
-
 const gap6 = 'gap-2 lg:gap-6';
 
 let animationFactor = 0;
 const animTimer = new AnimationTimer();
 
-function Cavnas(props: { render: (g: CanvasRenderingContext2D, w: number, h: number) => void }) {
+function Canvas(props: { render: (g: CanvasRenderingContext2D, w: number, h: number) => void }) {
   const ref = useRef(null);
   const pr = useRef(window.devicePixelRatio);
   useEffect(() => {
@@ -66,29 +63,14 @@ function KeyItem(props: { bg: string; name: string }) {
 function CanvasDonut() {
 
   const drawDonut = (g: CanvasRenderingContext2D, w: number, h: number, lineWidth: number, colour: string, radius: number, value: number) => {
-    g.save();
-    g.lineWidth = lineWidth;
-
-    // g.strokeStyle = '#eee';
-    // g.filter = 'blur(5px)';
-    // g.beginPath();
-    // g.arc(w / 2 + 5, h / 2 + 5, radius, 0, 0.5 * Math.PI * Math.sin(t++ / 50) + Math.PI, false);
-    // g.stroke();
-    // g.filter = 'none';
-
-    g.strokeStyle = colour;
-
-    g.lineCap = 'round';
-    g.beginPath();
-    g.arc(w / 2, h / 2, radius, -Math.PI / 2, value * Math.PI * 2 - Math.PI / 2);
-    g.stroke();
-
-    // g.lineCap = 'butt';
-    // g.beginPath();
-    // g.arc(w / 2, h / 2, radius, -Math.PI / 2, -Math.PI / 2 + 0.2);
-    // g.stroke();
-
-    g.restore();
+    g.save(); {
+      g.lineWidth = lineWidth;
+      g.strokeStyle = colour;
+      g.lineCap = 'round';
+      g.beginPath();
+      g.arc(w / 2, h / 2, radius, -Math.PI / 2, value * Math.PI * 2 - Math.PI / 2);
+      g.stroke();
+    } g.restore();
   };
 
   const render = (g: CanvasRenderingContext2D, w: number, h: number) => {
@@ -102,12 +84,12 @@ function CanvasDonut() {
     drawDonut(g, w, h, lw, '#A495FC', ir + 2 * lwp, animationFactor);
     drawDonut(g, w, h, lw, '#5883F3', ir + lwp, animationFactor * 0.8);
     drawDonut(g, w, h, lw, '#1fb0aE', ir, animationFactor * 0.4);
-
   };
+
   return (
     <div className="flex w-full flex-col md:flex-row h-full">
       <div className="relative h-full aspect-square">
-        <Cavnas render={render} />
+        <Canvas render={render} />
       </div>
       <div className="m-6 flex items-center">
         <div className="flex max-h-fit flex-col gap-4 rounded-xl border p-6">
@@ -118,30 +100,6 @@ function CanvasDonut() {
       </div>
     </div>
   );
-}
-
-/* eslint-disable-next-line */
-function CanvasLineGraph() {
-  const drawLine = (g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, v: number, colour: string) => {
-    g.save();
-
-    g.fillStyle = colour;
-    g.beginPath();
-    g.rect(x, y, w * v, h);
-    g.fill();
-
-    g.restore();
-  };
-
-  const render = (g: CanvasRenderingContext2D, w: number, h: number) => {
-    g.clearRect(0, 0, w, h);
-
-    const lw = 10;
-    drawLine(g, 20, 20, w - 40, lw, animationFactor, '#A495FC');
-    drawLine(g, 20, 60, w - 40, lw, animationFactor * 0.7, '#5883F3');
-    drawLine(g, 20, 100, w - 40, lw, animationFactor * 0.3, '#58D0BC');
-  };
-  return <Cavnas render={render} />;
 }
 
 function Tooltip() {
@@ -189,9 +147,9 @@ function LineGraphEntry(props: { bg: string, name: string, fac: number }) {
 
 function LineGraph() {
   return <div className="flex flex-col p-6 gap-6">
-    {/* <LineGraphEntry bg="bg-[#A495FC]" name="Unique users" fac={day.uniqueUserFeatures / 1000} /> */}
-    {/* <LineGraphEntry bg="bg-[#5883F3]" name="Featured questions" fac={day.featuredQuestions / 1000} /> */}
-    {/* <LineGraphEntry bg="bg-[#58D0BC]" name="New bots" fac={day.newBots / 1000} /> */}
+    <LineGraphEntry bg="bg-[#A495FC]" name="Unique users" fac={500 / 1000} />
+    <LineGraphEntry bg="bg-[#5883F3]" name="Featured questions" fac={700 / 1000} />
+    <LineGraphEntry bg="bg-[#58D0BC]" name="New bots" fac={100 / 1000} />
   </div>
 }
 
@@ -269,7 +227,7 @@ function CanvasChart() {
       drawLine(line);
     }
   };
-  return <Cavnas render={render} />;
+  return <Canvas render={render} />;
 }
 
 function Panel(props: { className?: string; children?: ReactNode; disabled?: boolean }) {
@@ -280,24 +238,68 @@ function Panel(props: { className?: string; children?: ReactNode; disabled?: boo
   </div>;
 }
 
-function PanelRaw(props: { name: string; value: number; percentChange: number }) {
-  const { name, value, percentChange } = props;
+function getPercentageChange(prev: number, current: number): number {
+  return ((current - prev) / prev) * 100;
+}
+
+function PanelRaw(props: { name: string; days: { [day: number]: MetricDay }; propName: string }) {
+  const { name, days, propName } = props;
+  const today = days[0];
+  const yesterday = days[1];
+
+  if (!today || !yesterday) {
+    // Not loaded data yet
+    return (
+      <Panel className="max-w-lg !flex-[1_0_10rem] dark:bg-slate-900">
+        <Col className="m-4">
+          <Row className="whitespace-nowrap text-lg">
+            {name}
+            <div className="min-w-[1.5rem] flex-[1_0]"></div>
+          </Row>
+          <div className="pt-5 text-5xl min-h-[1.5em]"></div>
+        </Col>
+      </Panel>
+    );
+  }
+
+  const MUCH_LOWER = <ChevronDoubleDownIcon className="h-4 w-4" />;
+  const LOWER = <ArrowDownIcon className="h-4 w-4" />;
+  const EQUAL = "=";
+  const HIGHER = <ArrowUpIcon className="h-4 w-4" />;
+  const MUCH_HIGHER = <ChevronDoubleUpIcon className="h-4 w-4" />;
+
+  const value = today[propName] || 0;
+  const prevValue = yesterday[propName] || 0;
+  const percentChange = getPercentageChange(prevValue, value);
+
+  let symbol: string | JSX.Element;
+  if (value === prevValue) {
+    symbol = EQUAL;
+  } else if (!isFinite(percentChange)) {
+    symbol = percentChange > 0 ? MUCH_HIGHER : MUCH_LOWER;
+  } else if (percentChange > 0) {
+    symbol = HIGHER;
+  } else if (percentChange < 0) {
+    symbol = LOWER;
+  }
+
   let pString = Math.abs(percentChange).toFixed(1);
   if (pString.endsWith("0")) {
     pString = pString.substring(0, pString.length - 2);
   }
+
   return (
     <Panel className="max-w-lg !flex-[1_0_10rem] dark:bg-slate-900">
       <Col className="m-4">
         <Row className="whitespace-nowrap text-lg">
           {name}
           <div className="min-w-[1.5rem] flex-[1_0]"></div>
-          <div className={clsx(percentChange >= 0 ? 'text-green-400' : 'text-red-400', 'flex flex-row items-center')}>
-            {!isFinite(percentChange) ? <ChevronDoubleUpIcon className="h-4 w-4" /> : percentChange > 0 ? <ArrowUpIcon className="h-4 w-4" /> : percentChange === 0 ? <p>=</p> : <ArrowDownIcon className="h-4 w-4" />}
+          <div className={clsx([EQUAL, HIGHER, MUCH_HIGHER].includes(symbol) ? 'text-green-400' : 'text-red-400', 'flex flex-row items-center')}>
+            {symbol}
             {isFinite(percentChange) && percentChange !== 0 && <p>{pString}%</p>}
           </div>
         </Row>
-        <div className="pt-5 text-5xl">{value}</div>
+        <div className="pt-5 text-5xl min-h-[1.5em]">{value}</div>
       </Col>
     </Panel>
   );
@@ -311,7 +313,7 @@ function DarkModeSwitch() {
     }
   }, []);
   return (
-    <>
+    <div className="flex darkmodeslider">
       <SunIconSolid className="mr-1 h-8 w-8 fill-slate-600 dark:fill-slate-50" />
       <input
         type="checkbox"
@@ -329,23 +331,25 @@ function DarkModeSwitch() {
       />
       <label htmlFor="switch">Toggle</label>
       <MoonIcon className="ml-1 h-7 w-7 fill-slate-600 dark:fill-slate-50" />
-    </>
+    </div>
   );
 }
 
 function MetricsPage() {
   const animateThemeChange = false;
-  const [prevDay, setPrevDay] = useState<MetricDay>(null);
-  const [day, setData] = useState<MetricDay>(null);
+  const [days, setDays] = useState<{ [day: number]: MetricDay }>({});
   useEffect(() => {
-    fetch(`/metric-data?epochDay=${getCurrentEpochDay()}`).then(r => r.json()).then((r) => setData(r));
-    fetch(`/metric-data?epochDay=${getCurrentEpochDay() - 1}`).then(r => r.json()).then((r) => setPrevDay(r));
+    const tempDays = {};
+
+    const loadDay = async (daysInPast: number) => {
+      const dayData = await fetch(`/metric-data?epochDay=${getCurrentEpochDay() - daysInPast}`).then(r => r.json());
+      tempDays[daysInPast] = dayData;
+      setDays(days);
+    }
+
+    Promise.all([loadDay(0), loadDay(1), loadDay(2)]).then(() => setDays(tempDays));
   }, []);
-  const getP = (param: string): number => {
-    if (!prevDay) return NaN;
-    if (day[param] === prevDay[param]) return 0;
-    return (day[param] - prevDay[param]) / prevDay[param] * 100;
-  }
+
   return (
     <>
       <Head>
@@ -357,7 +361,8 @@ function MetricsPage() {
           animateThemeChange && '[&_*]:ease [&_*]:transition-[background-color,border-color] [&_*]:duration-300'
         )}
       >
-        <div className="flex flex-row pb-6">
+        <div className="flex flex-row pb-1 lg:pb-6 text-6xl">
+          <Title text="Today's data" className='!mb-0 !mt-0 pl-1 dark:text-white' />
           <div className="grow" />
           <DarkModeSwitch />
         </div>
@@ -371,16 +376,12 @@ function MetricsPage() {
             </Panel>
           </div>
           <Row className={clsx('flex-wrap justify-center', gap6)}>
-            {day &&
-              <>
-                <PanelRaw name="Unique users" value={day.uniqueUserFeatures} percentChange={getP("uniqueUserFeatures")} />
-                <PanelRaw name="Featured questions" value={day.featuredQuestions} percentChange={getP("featuredQuestions")} />
-                <PanelRaw name="New bots" value={day.newBots} percentChange={getP("newBots")} />
-                <PanelRaw name="Twitch links" value={day.twitchLinks} percentChange={getP("twitchLinks")} />
-                <PanelRaw name="Commands used" value={day.commandsUsed} percentChange={getP("commandsUsed")} />
-                <PanelRaw name="Active users" value={day.activeUsers} percentChange={getP("activeUsers")} />
-              </>
-            }
+            <PanelRaw name="Unique users" days={days} propName={"uniqueUserFeatures"} />
+            <PanelRaw name="Featured questions" days={days} propName={"featuredQuestions"} />
+            <PanelRaw name="New bots" days={days} propName={"newBots"} />
+            <PanelRaw name="Twitch links" days={days} propName={"twitchLinks"} />
+            <PanelRaw name="Commands used" days={days} propName={"commandsUsed"} />
+            <PanelRaw name="Active users" days={days} propName={"activeUsers"} />
           </Row>
           <Panel className="relative h-96  overflow-hidden !p-0" disabled>
             <CanvasChart />
