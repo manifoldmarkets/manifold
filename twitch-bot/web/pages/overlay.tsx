@@ -350,7 +350,7 @@ export default () => {
                   </div>
                 </Col>
               </Col>
-              <Col className="text-center">
+              <Col className="text-center overflow-hidden">
                 <div
                   style={{
                     backgroundImage: 'url(logo-white.svg)',

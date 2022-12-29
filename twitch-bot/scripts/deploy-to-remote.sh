@@ -77,39 +77,12 @@ build() {
 	exit 0
 }
 
-update_git_and_build () {
-	if [[! -f $BUILD_DIR/src]]
-	then
-		echo Build folder not found, creating...
-		mkdir $BUILD_DIR
-		pushd $BUILD_DIR
-		git clone https://github.com/PhilBladen/ManifoldTwitchIntegration.git src
-		popd
-	else
-		pushd $BUILD_DIR/src
-		git pull
-		popd
-	fi
-	SOURCE_DIR=$BUILD_DIR/src
-	goto build
-}
-
-init_build () {
-	read -p "Use latest git [Y/n]? " latestgit
-	case $latestgit in
-		y) update_git_and_build; break;;
-		"") update_git_and_build; break;;
-		n) build; break;;
-		*) echo Invalid option entered. Exiting...; error; break;;
-	esac
-}
-
 init_dev () {
 	echo Deploying to DEV
 	INSTANCE_NAME=$DEV_INSTANCE
 	BUILD_DIR=$DEV_BUILD_DIR
 	ZONE=$DEV_ZONE
-	init_build
+	build
 }
 
 init_prod () {
@@ -117,7 +90,7 @@ init_prod () {
 	INSTANCE_NAME=$PROD_INSTANCE
 	BUILD_DIR=$PROD_BUILD_DIR
 	ZONE=$PROD_ZONE
-	init_build
+	build
 }
 
 cd $ROUTE_TO_SCRIPTS_DIR
