@@ -1,5 +1,26 @@
 import { writeFile, readFile } from 'fs/promises'
 
+export const writeJson = async <T>(filename: string, obj: T) => {
+  console.log('\n', 'Writing to', filename, '\n')
+  await writeFile(filename, JSON.stringify(obj))
+}
+
+export const readJson = async <T>(filename: string) => {
+  let data: string
+  try {
+    data = await readFile(filename, { encoding: 'utf-8' })
+  } catch (e) {
+    if (e && typeof e === 'object' && 'code' in e && e.code === 'ENOENT') {
+      // File doesn't exist.
+      return undefined
+    } else {
+      throw e
+    }
+  }
+
+  return JSON.parse(data) as T
+}
+
 const SEPARATOR = ','
 
 export const writeCsv = async <T extends { [field: string]: string }>(
@@ -7,7 +28,7 @@ export const writeCsv = async <T extends { [field: string]: string }>(
   fields: string[],
   data: T[]
 ) => {
-  console.log('\n', 'creating', filename, '\n')
+  console.log('\n', 'Writing to', filename, '\n')
 
   const firstLine = fields.join(SEPARATOR) + '\n'
 
