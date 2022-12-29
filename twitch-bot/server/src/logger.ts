@@ -10,6 +10,49 @@ enum Level {
   CRASH,
 }
 
+const colors = {
+  Reset: '\x1b[0m',
+  Bright: '\x1b[1m',
+  Dim: '\x1b[2m',
+  Underscore: '\x1b[4m',
+  Blink: '\x1b[5m',
+  Reverse: '\x1b[7m',
+  Hidden: '\x1b[8m',
+  FgBlack: '\x1b[30m',
+  FgRed: '\x1b[31m',
+  FgGreen: '\x1b[32m',
+  FgYellow: '\x1b[33m',
+  FgBlue: '\x1b[34m',
+  FgMagenta: '\x1b[35m',
+  FgCyan: '\x1b[36m',
+  FgWhite: '\x1b[37m',
+  BgBlack: '\x1b[40m',
+  BgRed: '\x1b[41m',
+  BgGreen: '\x1b[42m',
+  BgYellow: '\x1b[43m',
+  BgBlue: '\x1b[44m',
+  BgMagenta: '\x1b[45m',
+  BgCyan: '\x1b[46m',
+  BgWhite: '\x1b[47m',
+};
+
+function levelToColor(level: Level): string {
+  switch (level) {
+    case Level.DEBUG:
+      return colors.FgMagenta;
+    case Level.WARN:
+      return colors.FgYellow;
+    case Level.ERROR:
+      return colors.FgRed;
+    case Level.TRACE:
+      return colors.FgRed;
+    case Level.CRASH:
+      return colors.FgRed;
+    default:
+      return colors.Reset;
+  }
+}
+
 let l: GoogleLogger = undefined;
 async function init() {
   await detectGCloudInstance().then(async (r) => {
@@ -49,8 +92,8 @@ function getTimestamp() {
 function log(level: Level, msg: any, ...args: any[]) {
   const timestamp = getTimestamp();
 
-  const outputPrefix = `${timestamp} ${Level[level]}: `;
   const output = `${String(msg)} ${String(args)}`;
+  const outputPrefix = `${colors.FgCyan}${timestamp}${colors.Reset} ${levelToColor(level) + Level[level]}: `;
   const localOutput = outputPrefix + output;
 
   switch (level) {
@@ -59,7 +102,7 @@ function log(level: Level, msg: any, ...args: any[]) {
       l?.debug(output);
       break;
     case Level.ERROR:
-      console.error(localOutput);
+      console.error(localOutput + colors.Reset);
       l?.error(output);
       break;
     case Level.INFO:
@@ -67,7 +110,7 @@ function log(level: Level, msg: any, ...args: any[]) {
       l?.info(output);
       break;
     case Level.WARN:
-      console.warn(localOutput);
+      console.warn(localOutput + colors.Reset);
       l?.warning(output);
       break;
     case Level.TRACE: {
@@ -77,15 +120,15 @@ function log(level: Level, msg: any, ...args: any[]) {
       } else {
         message += JSON.stringify(msg);
       }
-      console.error(outputPrefix + message);
+      console.error(outputPrefix + message + colors.Reset);
       l?.error(message);
       break;
     }
     case Level.CRASH: {
       const getMessage = (prefix: string) => {
-        let ls = '\n';
+        let ls = '\n' + colors.FgRed;
         for (let i = 0; i < prefix.length; i++) ls += ' ';
-        let message = prefix + '================================= SERVER CRASH =================================';
+        let message = colors.FgRed + prefix + '================================= SERVER CRASH =================================';
         if (msg?.stack) {
           const stackLines = msg.stack.split('\n');
           for (const line of stackLines) {
@@ -94,7 +137,7 @@ function log(level: Level, msg: any, ...args: any[]) {
         } else {
           message += ls + String(msg);
         }
-        message += ls + '================================================================================';
+        message += ls + '================================================================================' + colors.Reset;
         return message;
       };
       console.error(getMessage(timestamp + ' '));
