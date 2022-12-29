@@ -223,7 +223,7 @@ export const placebet = newEndpoint({ minInstances: 2 }, async (req, auth) => {
     log(`Share redemption transaction finished - auth ${auth.uid}.`)
   }
 
-  return { betId: result.betId }
+  return { ...newBet, betId: result.betId }
 })
 
 const firestore = admin.firestore()
