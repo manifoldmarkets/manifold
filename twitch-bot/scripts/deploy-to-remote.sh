@@ -8,7 +8,7 @@
 # ============
 #    CONFIG   
 # ============
-ROUTE_TO_SCRIPTS_DIR=..
+ROUTE_TO_SCRIPTS_DIR=.
 PROJECT=mantic-markets
 
 DEV_INSTANCE=dev-twitch-bot
@@ -24,7 +24,6 @@ PROD_ZONE=us-central1-a
 # ============
 error () {
 	echo An error occuring during the deployment process.
-	#read -p "Press ENTER to continue..." REPLY
 	exit 1
 }
 
@@ -68,14 +67,12 @@ build() {
 	echo Rebuilding docker image... &&
 	docker build -t bot out &&
 	echo Launching docker image... &&
-	docker run -d --env-file=out/.env --restart on-failure --network="host" bot &&
+	docker run -d --env-file=out/.env --restart on-failure --network=host bot &&
 	echo Cleaning up... &&
 	rm -r out &&
 	docker system prune -a -f"
 
 	gcloud compute ssh --zone $ZONE $INSTANCE_NAME --command "$COMMAND" || error
-	
-	#call gcloud compute ssh --zone %ZONE% %INSTANCE_NAME% --command "!COMMAND!" || goto error
 
 	exit 0
 }

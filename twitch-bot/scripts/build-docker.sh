@@ -1,4 +1,4 @@
-cd ../../..
+cd ../..
 start=`date +%s`
 docker build -f twitch-bot/Dockerfile -t mb .
 end=`date +%s`
