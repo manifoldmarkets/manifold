@@ -112,6 +112,9 @@ esbuild
     ignoreAnnotations: true,
     treeShaking: true,
     logLevel: config.BUILD_ONLY.value ? 'info' : 'silent',
+    define: {
+      'process.env.__BUILD_ID__': JSON.stringify(new Date().toISOString()),
+    },
     watch: !config.BUILD_ONLY.value && {
       onRebuild: (error) => {
         cleanupPreviousProc();
