@@ -125,10 +125,10 @@ function log(level: Level, msg: any, ...args: any[]) {
       break;
     }
     case Level.CRASH: {
-      const getMessage = (prefix: string) => {
-        let ls = '\n' + colors.FgRed;
+      const getMessage = (prefix: string, useColors = false) => {
+        let ls = '\n' + useColors ? colors.FgRed : '';
         for (let i = 0; i < prefix.length; i++) ls += ' ';
-        let message = colors.FgRed + prefix + '================================= SERVER CRASH =================================';
+        let message = useColors ? colors.FgRed : '' + prefix + '================================= SERVER CRASH =================================';
         if (msg?.stack) {
           const stackLines = msg.stack.split('\n');
           for (const line of stackLines) {
@@ -137,10 +137,10 @@ function log(level: Level, msg: any, ...args: any[]) {
         } else {
           message += ls + String(msg);
         }
-        message += ls + '================================================================================' + colors.Reset;
+        message += ls + '================================================================================' + useColors ? colors.Reset : '';
         return message;
       };
-      console.error(getMessage(timestamp + ' '));
+      console.error(getMessage(timestamp + ' ', true));
       l?.critical(getMessage(''));
       break;
     }
