@@ -11,6 +11,12 @@
       "port": 9222, // chrome needs to be started with the parameter "--remote-debugging-port=9222"
       "urlFilter": "http://localhost:3000/*",
       "webRoot": "${workspaceFolder}/web"
+    },
+    {
+      "name": "Debug Twitch bot",
+      "type": "node",
+      "request": "attach",
+      "port": 9229
     }
   ]
 }
