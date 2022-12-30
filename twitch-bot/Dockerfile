@@ -11,8 +11,9 @@ COPY twitch-bot/common/package.json common/package.json
 RUN yarn
 COPY twitch-bot/common common
 COPY twitch-bot/web web
+RUN yarn --cwd web build
 COPY twitch-bot/server server
-RUN npx concurrently -n WEB,SERVER "yarn --cwd web build" "yarn --cwd server build" -g
+RUN yarn --cwd server build
 
 # -- Stage 2 -- #
 FROM node:16

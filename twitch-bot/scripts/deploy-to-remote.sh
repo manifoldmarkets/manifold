@@ -19,6 +19,8 @@ PROD_INSTANCE=twitch-bot
 PROD_BUILD_DIR=build/prod
 PROD_ZONE=us-central1-a
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 # ============
 #    SCRIPT   
 # ============
@@ -35,10 +37,12 @@ popd () {
     command popd "$@" > /dev/null
 }
 
+gcloud() {
+	command node "$SCRIPT_DIR/gcloud.mjs" "$@"
+}
+
 build() {
-	pushd $SOURCE_DIR/..
-	echo "CWD: $PWD"
-	
+	pushd ../..
 	echo Building code...
 	docker rmi mb
 	docker build -f twitch-bot/Dockerfile -t mb . || error
@@ -54,22 +58,21 @@ build() {
 	cp $BUILD_DIR/.env $BUILD_DIR/out/
 	cp Dockerfile $BUILD_DIR/out/
 
-	cd $BUILD_DIR
-
+	pushd $BUILD_DIR
 	echo Copying files to server...
 	tar -czf out.tar.gz out
 	rm -r out
-	gcloud.cmd compute scp --recurse --zone $ZONE out.tar.gz Phil@$INSTANCE_NAME:. || error
+	gcloud compute scp --recurse --zone $ZONE out.tar.gz Phil@$INSTANCE_NAME:. || error
 	rm out.tar.gz
 
-	COMMAND="tar -zxf out.tar.gz out &&
-	rm out.tar.gz &&
-	echo Rebuilding docker image... &&
-	docker build -t bot out &&
-	echo Launching docker image... &&
-	docker run -d --env-file=out/.env --restart on-failure --network=host bot &&
-	echo Cleaning up... &&
-	rm -r out &&
+	COMMAND="tar -zxf out.tar.gz out && \
+	rm out.tar.gz && \
+	echo Rebuilding docker image... && \
+	docker build -t bot out && \
+	echo Launching docker image... && \
+	docker run -d --env-file=out/.env --restart on-failure --network=host bot && \
+	echo Cleaning up... && \
+	rm -r out && \
 	docker system prune -a -f"
 
 	gcloud compute ssh --zone $ZONE $INSTANCE_NAME --command "$COMMAND" || error
@@ -93,13 +96,10 @@ init_prod () {
 	build
 }
 
-cd $ROUTE_TO_SCRIPTS_DIR
-SOURCE_DIR=..
+cd "$SCRIPT_DIR"
 read -p "Which server do you want to deploy to [DEV/prod]? " de
 case $de in
-	prod ) init_prod; break;;
-	p ) init_prod; break;;
-	dev ) init_dev; break;;
-	"" ) init_dev; break;;
+	prod|p ) init_prod; break;;
+	dev|d|"" ) init_dev; break;;
 	* ) echo "Invalid option entered. Exiting..."; error; break;;
 esac
