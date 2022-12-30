@@ -187,11 +187,13 @@ export const ContractCard = memo(function ContractCard(props: {
 
           {!isNew &&
             (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
-              <ProbOrNumericChange
-                className="py-2 px-2"
-                contract={contract as CPMMContract}
-                user={user}
-              />
+              <Tooltip text={'Daily price change'} className={'z-10'}>
+                <ProbOrNumericChange
+                  className="py-2 px-2"
+                  contract={contract as CPMMContract}
+                  user={user}
+                />
+              </Tooltip>
             )}
         </Row>
         {children}

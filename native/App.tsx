@@ -99,9 +99,12 @@ const App = () => {
   const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
-    Platform.OS === 'ios' ? LinkingManager.default : null
+    isIOS ? LinkingManager.default : null
   )
 
+  const [allowSystemBack, setAllowSystemBack] = useState(
+    sharedWebViewProps.allowsBackForwardNavigationGestures
+  )
   // IAP
   const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
 
@@ -313,6 +316,10 @@ const App = () => {
           extra: { message: 'error parsing nativeEvent.data' },
         })
       }
+    } else if (type == 'onPageVisit') {
+      if (!isIOS) return // Android doesn't use the swipe to go back
+      const { page } = payload
+      setAllowSystemBack(page !== 'swipe')
     } else {
       console.log('Unhandled nativeEvent.data: ', data)
     }
@@ -387,6 +394,7 @@ const App = () => {
           />
           <WebView
             {...sharedWebViewProps}
+            allowsBackForwardNavigationGestures={allowSystemBack}
             style={styles.webView}
             // Load start and end is for whole website loading, not navigations within manifold
             onLoadEnd={() => setLoadedWebView(true)}

@@ -104,21 +104,16 @@ export const writeAsync = async (
 
 export const loadPaginated = async <T extends DocumentData>(
   q: Query<T> | CollectionReference<T>,
-  batchSize: number
+  batchSize = 500
 ) => {
   const results: T[] = []
   let prev: QuerySnapshot<T> | undefined
-  let processed = 0
-  for (let i = 0; prev == null || prev.size > 0; i++) {
-    log(`Loading next page.`)
-    prev = await (prev == null
+  for (let i = 0; prev == undefined || prev.size > 0; i++) {
+    prev = await (prev == undefined
       ? q.limit(batchSize)
       : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
     ).get()
-    log(`Loaded ${prev.size} documents.`)
-    processed += prev.size
     results.push(...prev.docs.map((d) => d.data() as T))
-    log(`Processed ${prev.size} documents. Total: ${processed}`)
   }
   return results
 }

@@ -11,7 +11,7 @@ import { BinaryContract, Contract } from 'common/contract'
 import { getBinaryProb } from 'common/contract-details'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
-import { memo } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
@@ -20,6 +20,8 @@ import { Row } from '../layout/row'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { Col } from '../layout/col'
 import { useContract } from 'web/hooks/use-contracts'
+import { User } from 'common/user'
+import { LikeButton } from 'web/components/contract/like-button'
 
 const betTapAdd = 10
 
@@ -27,23 +29,37 @@ export const SwipeCard = memo(
   (props: {
     contract: BinaryContract
     amount: number
-    setAmount: (amount: number) => void
+    setAmount: (setAmount: (amount: number) => void) => void
     swipeDirection: 'YES' | 'NO' | undefined
     className?: string
+    user?: User
   }) => {
-    const { amount, setAmount, swipeDirection, className } = props
+    const { amount, setAmount, swipeDirection, className, user } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
     const { question, description, coverImageUrl } = contract
 
-    const addMoney = () => setAmount(amount + betTapAdd)
+    const [pressState, setPressState] = useState<undefined | 'add' | 'sub'>(
+      undefined
+    )
 
-    const subMoney = () => {
-      if (amount <= betTapAdd) {
-      } else {
-        setAmount(amount - betTapAdd)
+    const processPress = () => {
+      if (pressState === 'add') {
+        setAmount((a) => Math.min(250, a + betTapAdd))
+      }
+      if (pressState === 'sub') {
+        setAmount((a) => Math.max(10, a - betTapAdd))
       }
     }
+
+    useEffect(() => {
+      if (pressState) {
+        processPress()
+        const interval = setInterval(processPress, 100)
+        return () => clearInterval(interval)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pressState])
 
     const image =
       coverImageUrl ??
@@ -77,11 +93,16 @@ export const SwipeCard = memo(
           >
             {question}
           </SiteLink>
-          <Percent
-            contract={contract}
-            amount={amount}
-            outcome={swipeDirection}
-          />
+          <div className="grid grid-cols-3">
+            <div />
+            <Percent
+              contract={contract}
+              amount={amount}
+              outcome={swipeDirection}
+            />
+            <Actions contract={contract} user={user} />
+          </div>
+
           {/* TODO: use editor excluding widgets */}
           <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
             {typeof description === 'string'
@@ -94,14 +115,26 @@ export const SwipeCard = memo(
           <div className="mb-4 flex flex-col items-center gap-2 self-center">
             <span className="flex overflow-hidden rounded-full border  border-yellow-400 text-yellow-300">
               <button
-                onClick={subMoney}
+                onTouchStartCapture={() => {
+                  setPressState('sub')
+                }}
+                onTouchEndCapture={() => {
+                  setPressState(undefined)
+                }}
                 className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
               >
                 <MinusIcon className="h-4" />
               </button>
+
               <span className="mx-1 py-4">{formatMoney(amount)}</span>
+
               <button
-                onClick={addMoney}
+                onTouchStartCapture={() => {
+                  setPressState('add')
+                }}
+                onTouchEndCapture={() => {
+                  setPressState(undefined)
+                }}
                 className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
               >
                 <PlusIcon className="h-4" />
@@ -138,25 +171,29 @@ const SwipeStatus = (props: { outcome: 'YES' | 'NO' | undefined }) => {
 
   if (outcome === 'NO') {
     return (
-      <div className="text-scarlet-100 mr-8 flex justify-end gap-1">
+      <Row className="text-scarlet-100 mr-8 items-center justify-end gap-1">
         <ArrowLeftIcon className="h-5" /> Betting NO
-      </div>
+      </Row>
     )
   }
   if (outcome === 'YES') {
     return (
-      <div className="ml-8 flex justify-start gap-1 text-teal-100">
+      <Row className="ml-8 items-center justify-start gap-1 text-teal-100">
         Betting YES <ArrowRightIcon className="h-5" />
-      </div>
+      </Row>
     )
   }
   return (
     <Row className="items-center justify-center text-yellow-100">
-      <YesLabel /> <ArrowRightIcon className="h-6 text-teal-600" />
-      <span className="mx-4 whitespace-nowrap text-yellow-100">
+      <Row className="gap-1">
+        <YesLabel /> <ArrowRightIcon className="h-6 text-teal-600" />
+      </Row>
+      <span className="mx-8 whitespace-nowrap text-yellow-100">
         Swipe to bet
       </span>
-      <ArrowLeftIcon className="text-scarlet-600 h-6" /> <NoLabel />
+      <Row className="gap-1">
+        <ArrowLeftIcon className="text-scarlet-600 h-6" /> <NoLabel />
+      </Row>
     </Row>
   )
 }
@@ -177,7 +214,7 @@ function Percent(props: {
   return (
     <div
       className={clsx(
-        'transition-color flex items-center self-center font-bold',
+        'transition-color flex w-full items-center justify-center font-bold',
         !outcome && 'text-white',
         outcome === 'YES' && 'text-teal-100',
         outcome === 'NO' && 'text-scarlet-100'
@@ -195,6 +232,27 @@ function Percent(props: {
         {formatPercent(percent).slice(0, -1)}
       </span>
       <span className="pt-2 text-2xl">%</span>
+    </div>
+  )
+}
+
+function Actions(props: { user?: User; contract: BinaryContract }) {
+  const { user, contract } = props
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <LikeButton
+        contentId={contract.id}
+        contentCreatorId={contract.creatorId}
+        user={user}
+        contentType={'contract'}
+        totalLikes={contract.likedByUserCount ?? 0}
+        contract={contract}
+        contentText={contract.question}
+        className="scale-200 text-white"
+        size="xl"
+      />
+      {/* TODO Share button */}
     </div>
   )
 }

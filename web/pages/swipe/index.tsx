@@ -1,20 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import { uniqBy } from 'lodash'
 import { useSpring, animated } from '@react-spring/web'
 import { rubberbandIfOutOfBounds, useDrag } from '@use-gesture/react'
 import toast from 'react-hot-toast'
 
-import { buildArray } from 'common/util/array'
 import type { BinaryContract } from 'common/contract'
 import { useUser } from 'web/hooks/use-user'
 import { logView } from 'web/lib/firebase/views'
-import { getTrendingContracts } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Page } from 'web/components/layout/page'
-import { useSwipes } from 'web/hooks/use-swipes'
 import { useFeed } from 'web/hooks/use-feed'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import {
@@ -23,52 +19,40 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { SwipeCard } from 'web/components/contract/swipe-card'
-import { Col } from 'web/components/layout/col'
 import { formatMoney } from 'common/util/format'
 import { placeBet } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
+import { postMessageToNative } from 'web/components/native-message-listener'
+import { useTracking } from 'web/hooks/use-tracking'
 
-export async function getStaticProps() {
-  const contracts = (await getTrendingContracts(200)).filter(
-    (c) => c.outcomeType === 'BINARY' && (c.closeTime ?? Infinity) > Date.now()
-  )
-  return {
-    props: { contracts },
-    revalidate: 500,
-  }
-}
+export default function Swipe() {
+  useTracking('view swipe page')
 
-export default function Swipe(props: { contracts: BinaryContract[] }) {
-  const [amount, setAmount] = useState(10)
-
-  const old = useSwipes()
-  const newToMe = useMemo(
-    () => props.contracts.filter((c) => !old.includes(c.id)),
-    [props.contracts, old]
-  )
+  const [amount, setAmount] = usePersistentState(10, {
+    key: 'swipe-amount',
+    store: inMemoryStore(),
+  })
 
   const user = useUser()
   const feed = useFeed(user, 400)?.filter((c) => c.outcomeType === 'BINARY') as
     | BinaryContract[]
     | undefined
 
-  const contracts = uniqBy(
-    buildArray(newToMe[0], feed, newToMe.slice(1)),
-    (c) => c.id
-  )
   const [index, setIndex] = usePersistentState(0, {
     key: 'swipe-index',
     store: inMemoryStore(),
   })
-  const contract = contracts[index]
+  const contract = feed ? feed[index] : undefined
 
   const cards = useMemo(() => {
-    return contracts.slice(0, index + 2)
-  }, [contracts, index])
+    if (!feed) return []
+    return feed.slice(0, index + 2)
+  }, [feed, index])
 
   const onBet = (outcome: 'YES' | 'NO') => {
-    const contract = contracts[index]
+    if (!feed) return
+    const contract = feed[index]
     const contractId = contract.id
 
     const promise = placeBet({ amount, outcome, contractId })
@@ -96,7 +80,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
   }
 
   // Measure height manually to accommodate mobile web.
-  const { height: computedHeight, width = 600 } = useWindowSize()
+  const { height: computedHeight } = useWindowSize()
   const [height, setHeight] = usePersistentState(computedHeight ?? 800, {
     key: 'screen-height',
     store: inMemoryStore(),
@@ -161,6 +145,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
         setTimeout(() => {
           newIndex = Math.min(cards.length - 1, index + 1)
           setIndex(newIndex)
+          setAmount(10) // reset amount
           const y = -newIndex * cardHeight
           api.start({ y })
         }, 500)
@@ -170,6 +155,7 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
         if (my < 0) newIndex = Math.min(cards.length - 1, index + 1)
         else if (my > 0) newIndex = Math.max(0, index - 1)
         setIndex(newIndex)
+        setAmount(10)
       }
       const y = -newIndex * cardHeight + (down ? my : 0)
 
@@ -178,17 +164,30 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
     { axis: 'lock' }
   )
 
-  if (user === undefined) {
-    return <LoadingIndicator />
+  useEffect(() => {
+    postMessageToNative('onPageVisit', { page: 'swipe' })
+    return () => {
+      postMessageToNative('onPageVisit', { page: undefined })
+    }
+  }, [])
+
+  if (user === undefined || feed === undefined) {
+    return (
+      <Page>
+        <LoadingIndicator className="mt-6" />
+      </Page>
+    )
   }
   // Show log in prompt if user not logged in.
   if (user === null) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <Button onClick={firebaseLogin} color="gradient" size="2xl">
-          Log in to use Manifold Swipe
-        </Button>
-      </div>
+      <Page>
+        <div className="flex h-screen w-screen items-center justify-center">
+          <Button onClick={firebaseLogin} color="gradient" size="2xl">
+            Log in to use Manifold Swipe
+          </Button>
+        </div>
+      </Page>
     )
   }
 
@@ -198,28 +197,14 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
         className="absolute justify-center overflow-hidden overscroll-none"
         style={{ height: cardHeight }}
       >
-        <Col
-          className="absolute h-full bg-teal-700"
-          style={{ width: width / 2, left: 0 }}
-        >
-          <Col
-            className="h-full items-center justify-center text-2xl text-white"
-            style={{ width: horizontalSwipeDist }}
-          >
-            YES
-          </Col>
-        </Col>
-        <Col
-          className="bg-scarlet-700 absolute h-full items-end"
-          style={{ width: width / 2, right: 0 }}
-        >
-          <Col
-            className="h-full items-center justify-center text-2xl text-white"
-            style={{ width: horizontalSwipeDist }}
-          >
-            NO
-          </Col>
-        </Col>
+        <div className="absolute inset-0 columns-2 gap-0 text-center text-2xl text-white">
+          <div className="flex h-full items-center bg-teal-700">
+            <div style={{ width: horizontalSwipeDist }}>YES</div>
+          </div>
+          <div className="bg-scarlet-700 flex h-full items-center justify-end">
+            <div style={{ width: horizontalSwipeDist }}>NO</div>
+          </div>
+        </div>
 
         <animated.div
           {...bind()}
@@ -232,8 +217,9 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
               className={i < index - 1 ? 'invisible' : undefined}
               contract={c}
               amount={amount}
-              setAmount={setAmount}
+              setAmount={setAmount as any}
               swipeDirection={swipeDirection}
+              user={user}
             />
           ))}
 
