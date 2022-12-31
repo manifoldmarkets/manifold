@@ -68,8 +68,10 @@ export const createcomment = newEndpoint({}, async (req, auth) => {
   if (!contentJson) {
     throw new APIError(400, 'No comment content provided.')
   }
+  
+  const contentJsonString = JSON.stringify(contentJson)
 
-  if (JSON.stringify(contentJson).length > MAX_COMMENT_JSON_LENGTH) {
+  if (contentJsonString.length > MAX_COMMENT_JSON_LENGTH) {
     throw new APIError(
       400,
       `Comment is too long; should be less than ${MAX_COMMENT_JSON_LENGTH} as a JSON string.`
