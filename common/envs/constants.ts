@@ -75,6 +75,9 @@ export const BOT_USERNAMES = [
   'LiquidityBonusBot',
   '538',
   'FairlyRandom',
+  'Anatolii',
+  'Catnee',
+  'JeremyK',
 ]
 
 export const CORE_USERNAMES = [
