@@ -10,6 +10,7 @@ create table if not exists users (
 alter table users enable row level security;
 drop policy if exists "public read" on users;
 create policy "public read" on users for select using (true);
+create index concurrently if not exists users_data_gin on txns using GIN (data);
 
 create table if not exists contracts (
     id text not null primary key,
@@ -19,6 +20,7 @@ create table if not exists contracts (
 alter table contracts enable row level security;
 drop policy if exists "public read" on contracts;
 create policy "public read" on contracts for select using (true);
+create index concurrently if not exists contracts_data_gin on txns using GIN (data);
 
 create table if not exists groups (
     id text not null primary key,
@@ -28,6 +30,7 @@ create table if not exists groups (
 alter table groups enable row level security;
 drop policy if exists "public read" on groups;
 create policy "public read" on groups for select using (true);
+create index concurrently if not exists groups_data_gin on groups using GIN (data);
 
 create table if not exists txns (
     id text not null primary key,
@@ -37,6 +40,7 @@ create table if not exists txns (
 alter table txns enable row level security;
 drop policy if exists "public read" on txns;
 create policy "public read" on txns for select using (true);
+create index concurrently if not exists txns_data_gin on txns using GIN (data);
 
 create table if not exists bets (
     id text not null primary key,
@@ -46,6 +50,7 @@ create table if not exists bets (
 alter table bets enable row level security;
 drop policy if exists "public read" on bets;
 create policy "public read" on bets for select using (true);
+create index concurrently if not exists bets_data_gin on bets using GIN (data);
 
 create table if not exists comments (
     id text not null primary key,
@@ -55,6 +60,18 @@ create table if not exists comments (
 alter table comments enable row level security;
 drop policy if exists "public read" on comments;
 create policy "public read" on comments for select using (true);
+create index concurrently if not exists comments_data_gin on comments using GIN (data);
+
+begin;
+  drop publication if exists supabase_realtime;
+  create publication supabase_realtime;
+  alter publication supabase_realtime add table users;
+  alter publication supabase_realtime add table contracts;
+  alter publication supabase_realtime add table groups;
+  alter publication supabase_realtime add table txns;
+  alter publication supabase_realtime add table bets;
+  alter publication supabase_realtime add table comments;
+commit;
 
 create table if not exists incoming_writes (
   id bigint generated always as identity primary key,
@@ -158,14 +175,3 @@ after insert on incoming_writes
 referencing new table as new_table
 for each statement
 execute function replicate_writes_process_new();
-
-begin;
-  drop publication if exists supabase_realtime;
-  create publication supabase_realtime;
-  alter publication supabase_realtime add table users;
-  alter publication supabase_realtime add table contracts;
-  alter publication supabase_realtime add table groups;
-  alter publication supabase_realtime add table txns;
-  alter publication supabase_realtime add table bets;
-  alter publication supabase_realtime add table comments;
-commit;
