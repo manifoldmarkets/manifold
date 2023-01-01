@@ -56,7 +56,6 @@ export default class App {
         displayName = 'A trader';
       }
     }
-    log.info(`Cached display name for user '${displayName}'.`);
     return (this.userIdToNameMap[userID] = displayName);
   }
 
