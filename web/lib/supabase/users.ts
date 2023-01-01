@@ -1,7 +1,7 @@
 import { db } from './db'
 import { run } from 'common/supabase/utils'
 
-export async function searchUsers(prompt: string) {
+export async function searchUsers(prompt: string, limit: number) {
   const { data } = await run(
     db
       .from('users')
@@ -9,7 +9,7 @@ export async function searchUsers(prompt: string) {
       // TODO: use fts (fullTextsearch) instead of ilike
       .or(`data->>username.ilike.%${prompt}%,data->>name.ilike.%${prompt}%`)
       .order('data->followerCountCached', { ascending: false } as any)
-      .limit(50)
+      .limit(limit)
   )
 
   return data
