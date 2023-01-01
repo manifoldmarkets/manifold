@@ -1,3 +1,4 @@
+import { filterDefined } from './util/array'
 import { buildCompletedMatrix, factorizeMatrix } from './util/matrix'
 
 export type user_data = {
@@ -7,6 +8,11 @@ export type user_data = {
   viewedCardIds: string[]
   viewedPageIds: string[]
   likedIds: string[]
+  recentBetOnIds: string[]
+  recentSwipedIds: string[]
+  recentViewedCardIds: string[]
+  recentViewedPageIds: string[]
+  recentLikedIds: string[]
 }
 
 export async function getMarketRecommendations(userData: user_data[]) {
@@ -23,6 +29,11 @@ export async function getMarketRecommendations(userData: user_data[]) {
     viewedPageIds,
     betOnIds,
     likedIds,
+    recentSwipedIds,
+    recentViewedCardIds,
+    recentViewedPageIds,
+    recentBetOnIds,
+    recentLikedIds,
   } of userData) {
     const userIndex = userIdToIndex[userId]
 
@@ -38,13 +49,34 @@ export async function getMarketRecommendations(userData: user_data[]) {
       sparseMatrix[userIndex][contractId] = 0.2
       columnSet.add(contractId)
     }
-    for (const contractId of betOnIds ?? []) {
+    for (const contractId of betOnIds) {
       sparseMatrix[userIndex][contractId] = 0.8
       columnSet.add(contractId)
     }
     for (const contractId of likedIds) {
       sparseMatrix[userIndex][contractId] = 1
       columnSet.add(contractId)
+    }
+
+    for (const contractId of recentSwipedIds) {
+      sparseMatrix[userIndex]['recent' + contractId] = 0
+      columnSet.add('recent' + contractId)
+    }
+    for (const contractId of recentViewedCardIds) {
+      sparseMatrix[userIndex]['recent' + contractId] = 0
+      columnSet.add('recent' + contractId)
+    }
+    for (const contractId of recentViewedPageIds) {
+      sparseMatrix[userIndex]['recent' + contractId] = 0.2
+      columnSet.add('recent' + contractId)
+    }
+    for (const contractId of recentBetOnIds) {
+      sparseMatrix[userIndex]['recent' + contractId] = 0.8
+      columnSet.add('recent' + contractId)
+    }
+    for (const contractId of recentLikedIds) {
+      sparseMatrix[userIndex]['recent' + contractId] = 1
+      columnSet.add('recent' + contractId)
     }
   }
 
@@ -58,7 +90,7 @@ export async function getMarketRecommendations(userData: user_data[]) {
     return Math.min(1, seenCount / 20)
   })
 
-  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 5, 5000)
+  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 5, 10000)
 
   const recsMatrix = buildCompletedMatrix(f1, f2)
   const getUserContractScores = (userId: string) => {
@@ -67,7 +99,10 @@ export async function getMarketRecommendations(userData: user_data[]) {
 
     const userScores = recsMatrix[userIndex]
     return Object.fromEntries(
-      userScores.map((v, i) => [columns[i], v * columnConfidence[i]])
+      userScores
+        .map((v, i) => [columns[i], v * columnConfidence[i]] as const)
+        .filter(([column]) => column.startsWith('recent'))
+        .map(([column, value]) => [column.replace('recent', ''), value])
     )
   }
   return getUserContractScores

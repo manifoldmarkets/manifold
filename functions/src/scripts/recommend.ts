@@ -1,11 +1,10 @@
-import { Contract } from 'common/contract'
 import { getMarketRecommendations, user_data } from 'common/recommendation'
 import { User } from 'common/user'
-import { filterDefined } from 'common/util/array'
 import { asyncMap } from 'common/util/promise'
+import { DAY_MS } from 'common/util/time'
 import * as admin from 'firebase-admin'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
-import { groupBy, mapValues, sortBy, uniq } from 'lodash'
+import { sortBy, uniq } from 'lodash'
 import { readJson, writeJson } from '../helpers/file'
 import { getContract, loadPaginated } from '../utils'
 
@@ -20,84 +19,152 @@ const loadUserData = async () => {
 
   console.log('Loaded', users.length, 'users')
 
-  const contractUniqueBettorIds = await loadPaginated(
-    admin
-      .firestore()
-      .collection('contracts')
-      .select('id', 'uniqueBettorIds') as Query<
-      Pick<Contract, 'id' | 'uniqueBettorIds'>
-    >
-  )
-  const betPairs = filterDefined(
-    contractUniqueBettorIds.map(({ id: contractId, uniqueBettorIds }) =>
-      uniqueBettorIds?.map((userId) => ({
-        userId,
-        contractId,
-      }))
-    )
-  ).flat()
-  const betsByUser = mapValues(
-    groupBy(betPairs, (pair) => pair.userId),
-    (pairs) => pairs.map((pair) => pair.contractId)
-  )
-  console.log('Loaded bets')
+  const threeDaysAgo = Date.now() - DAY_MS * 3
 
   return await asyncMap(users, async (user) => {
     console.log(user.id)
     const userId = user.id
-    const betOnIds = betsByUser[userId] ?? []
-    const swipedIds = await loadPaginated(
-      admin
-        .firestore()
-        .collection('users')
-        .doc(user.id)
-        .collection('seenMarkets')
-        .select('id') as Query<{ id: string }>
-    )
-    const uniqueSwipeIds = uniq(swipedIds.map(({ id }) => id))
 
-    const contractCardIds = await loadPaginated(
-      firestore
-        .collection('users')
-        .doc(userId)
-        .collection('events')
-        .where('name', '==', 'view market card')
-        .select('contractId') as Query<{ contractId: string }>
+    const betOnIds = (
+      await loadPaginated(
+        firestore
+          .collection('users')
+          .doc(userId)
+          .collection('contract-metrics')
+          .select('contractId') as Query<{ contractId: string }>
+      )
+    ).map(({ contractId }) => contractId)
+
+    const recentBetOnIds = (
+      await loadPaginated(
+        firestore
+          .collection('users')
+          .doc(userId)
+          .collection('contract-metrics')
+          .where('lastBetTime', '>', threeDaysAgo)
+          .select('contractId', 'lastBetTime') as Query<{ contractId: string }>
+      )
+    ).map(({ contractId }) => contractId)
+
+    const swipedIds = uniq(
+      (
+        await loadPaginated(
+          admin
+            .firestore()
+            .collection('users')
+            .doc(user.id)
+            .collection('seenMarkets')
+            .select('id') as Query<{ id: string }>
+        )
+      ).map(({ id }) => id)
     )
-    const uniqueContractCardIds = uniq(
-      contractCardIds.map(({ contractId }) => contractId)
+    const recentSwipedIds = uniq(
+      (
+        await loadPaginated(
+          admin
+            .firestore()
+            .collection('users')
+            .doc(user.id)
+            .collection('seenMarkets')
+            .where('time', '>', threeDaysAgo)
+            .select('id') as Query<{ id: string }>
+        )
+      ).map(({ id }) => id)
     )
 
-    const contractPageIds = await loadPaginated(
-      firestore
-        .collection('users')
-        .doc(userId)
-        .collection('events')
-        .where('name', '==', 'view market')
-        .select('contractId') as Query<{ contractId: string }>
+    const viewedCardIds = uniq(
+      (
+        await loadPaginated(
+          firestore
+            .collection('users')
+            .doc(userId)
+            .collection('events')
+            .where('name', '==', 'view market card')
+            .select('contractId') as Query<{ contractId: string }>
+        )
+      ).map(({ contractId }) => contractId)
     )
-    const uniqueContractPageIds = uniq(
-      contractPageIds.map(({ contractId }) => contractId)
+    const recentViewedCardIds = uniq(
+      (
+        await loadPaginated(
+          firestore
+            .collection('users')
+            .doc(userId)
+            .collection('events')
+            .where('name', '==', 'view market card')
+            .where('timestamp', '>', threeDaysAgo)
+            .select('contractId', 'timestamp') as Query<{ contractId: string }>
+        )
+      ).map(({ contractId }) => contractId)
     )
 
-    const likedIds = await loadPaginated(
-      admin
-        .firestore()
-        .collection('users')
-        .doc(userId)
-        .collection('reactions')
-        .where('contentType', '==', 'contract')
-        .select('contentId') as Query<{ contentId: string }>
+    const viewedPageIds = uniq(
+      (
+        await loadPaginated(
+          firestore
+            .collection('users')
+            .doc(userId)
+            .collection('events')
+            .where('name', '==', 'view market')
+            .select('contractId') as Query<{ contractId: string }>
+        )
+      ).map(({ contractId }) => contractId)
     )
-    const uniqueLikedIds = uniq(likedIds.map(({ contentId }) => contentId))
+    const recentViewedPageIds = uniq(
+      (
+        await loadPaginated(
+          firestore
+            .collection('users')
+            .doc(userId)
+            .collection('events')
+            .where('name', '==', 'view market')
+            .where('timestamp', '>', threeDaysAgo)
+            .select('contractId', 'timestamp') as Query<{ contractId: string }>
+        )
+      ).map(({ contractId }) => contractId)
+    )
+
+    const likedIds = uniq(
+      (
+        await loadPaginated(
+          admin
+            .firestore()
+            .collection('users')
+            .doc(userId)
+            .collection('reactions')
+            .where('contentType', '==', 'contract')
+            .select('contentId') as Query<{ contentId: string }>
+        )
+      ).map(({ contentId }) => contentId)
+    )
+
+    const recentLikedIds = uniq(
+      (
+        await loadPaginated(
+          admin
+            .firestore()
+            .collection('users')
+            .doc(userId)
+            .collection('reactions')
+            .where('contentType', '==', 'contract')
+            .where('createdTime', '>', threeDaysAgo)
+            .select('contentId', 'createdTime') as Query<{ contentId: string }>
+        )
+      ).map(({ contentId }) => contentId)
+    )
 
     return {
       userId,
       betOnIds,
-      swipedIds: uniqueSwipeIds,
-      viewedCardIds: uniqueContractCardIds,
-      viewedPageIds: uniqueContractPageIds,
-      likedIds: uniqueLikedIds,
+      recentBetOnIds,
+      swipedIds,
+      recentSwipedIds,
+      viewedCardIds,
+      recentViewedCardIds,
+      viewedPageIds,
+      recentViewedPageIds,
+      likedIds,
+      recentLikedIds,
     }
   })
 }
@@ -105,14 +172,14 @@ const loadUserData = async () => {
 const recommend = async () => {
   console.log('Recommend script')
 
-  let userData = await readJson<user_data[]>('user-data.json')
+  let userData = await readJson<user_data[]>('user-data2.json')
 
   if (userData) {
     console.log('Loaded view data from file.')
   } else {
     console.log('Loading view data from Firestore...')
     userData = await loadUserData()
-    await writeJson('user-data.json', userData)
+    await writeJson('user-data2.json', userData)
   }
 
   console.log('Computing recommendations...')
