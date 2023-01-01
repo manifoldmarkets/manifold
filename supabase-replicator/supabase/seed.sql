@@ -158,3 +158,14 @@ after insert on incoming_writes
 referencing new table as new_table
 for each statement
 execute function replicate_writes_process_new();
+
+begin;
+  drop publication if exists supabase_realtime;
+  create publication supabase_realtime;
+  alter publication supabase_realtime add table users;
+  alter publication supabase_realtime add table contracts;
+  alter publication supabase_realtime add table groups;
+  alter publication supabase_realtime add table txns;
+  alter publication supabase_realtime add table bets;
+  alter publication supabase_realtime add table comments;
+commit;
