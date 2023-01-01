@@ -1,5 +1,4 @@
-import * as Packet from '@common/packet-ids';
-import { GroupControlField, PacketGroupControlFields, PacketSelectMarket } from '@common/packets';
+import { GroupControlField, Packet, PacketAddBets, PacketGroupControlFields, PacketResolved, PacketSelectMarket, PacketSelectMarketID, PacketUnfeature } from '@common/packets';
 import { NamedBet } from '@common/types/manifold-abstract-types';
 import App from './app';
 import DockClient from './clients/dock';
@@ -28,22 +27,22 @@ export class TwitchStream {
     this.name = twitchName;
   }
 
-  private broadcastToDocks(packetId: string, packet: any, sender?: DockClient) {
+  private broadcastToDocks<T extends Packet>(type: { new (): T }, packet: T, sender?: DockClient) {
     for (const dock of this.docks) {
       if (dock === sender) continue;
-      dock.socket.emit(packetId, packet);
+      dock.sw.emit(type, packet);
     }
   }
 
-  private broadcastToOverlays(packetId: string, packet: any) {
+  private broadcastToOverlays<T extends Packet>(type: { new (): T }, packet: T) {
     for (const overlay of this.overlays) {
-      overlay.socket.emit(packetId, packet);
+      overlay.sw.emit(type, packet);
     }
   }
 
-  private broadcastToDocksAndOverlays(packetId: string, packet?: any, sender?: DockClient) {
-    this.broadcastToDocks(packetId, packet, sender);
-    this.broadcastToOverlays(packetId, packet);
+  private broadcastToDocksAndOverlays<T extends Packet>(type: { new (): T }, packet?: T, sender?: DockClient) {
+    this.broadcastToDocks(type, packet, sender);
+    this.broadcastToOverlays(type, packet);
   }
 
   public async selectMarket(id: string, sourceDock?: DockClient): Promise<Market> {
@@ -57,9 +56,8 @@ export class TwitchStream {
         this.featuredMarket = market;
         log.debug(`Selected market '${market.data.question}' for channel '${this.name}'`);
         const initialBetIndex = Math.max(0, market.data.bets.length - 3);
-        const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.data.bets, initialBets: market.data.bets.slice(initialBetIndex) };
-        this.broadcastToDocks(Packet.SELECT_MARKET_ID, id, sourceDock);
-        this.broadcastToOverlays(Packet.SELECT_MARKET, selectMarketPacket);
+        this.broadcastToDocks(PacketSelectMarketID, { id }, sourceDock);
+        this.broadcastToOverlays(PacketSelectMarket, { market: { ...market.data, bets: market.data.bets }, initialBets: market.data.bets.slice(initialBetIndex) });
         this.app.firestore.updateSelectedMarketForUser(this.name, id);
         this.app.bot.onMarketFeatured(this.name, market);
         this.app.metrics.logMetricsEvent(MetricEvent.MARKET_FEATURED);
@@ -80,22 +78,20 @@ export class TwitchStream {
       this.featuredMarket.unfeature();
       this.featuredMarket = null;
     }
-    this.broadcastToDocksAndOverlays(Packet.UNFEATURE_MARKET, undefined, sourceDock);
+    this.broadcastToDocksAndOverlays(PacketUnfeature, undefined, sourceDock);
   }
 
   public marketResolved(market: Market) {
     this.unfeatureTimer = setTimeout(() => {
       this.selectMarket(null);
-      this.broadcastToDocksAndOverlays(Packet.UNFEATURE_MARKET);
+      this.broadcastToDocksAndOverlays(PacketUnfeature);
     }, 24000);
     this.app.bot.onMarketResolved(this.name, market);
-
-    this.broadcastToDocksAndOverlays(Packet.RESOLVE, market.resolveData);
-    this.broadcastToDocksAndOverlays(Packet.RESOLVED);
+    this.broadcastToDocksAndOverlays(PacketResolved, market.resolveData);
   }
 
   public onNewBet(bet: NamedBet) {
-    this.broadcastToOverlays(Packet.ADD_BETS, [bet]);
+    this.broadcastToOverlays(PacketAddBets, { bets: [bet] });
   }
 
   public async updateGroupControlFields(p: PacketGroupControlFields) {
@@ -136,9 +132,9 @@ export class TwitchStream {
       p.fields.push({ url: a.url, valid: a.valid, affectedUserName: a.affectedUserName });
     }
     if (dock) {
-      dock.socket.emit(Packet.GROUP_CONTROL_FIELDS, p);
+      dock.sw.emit(PacketGroupControlFields, p);
     } else {
-      this.broadcastToDocks(Packet.GROUP_CONTROL_FIELDS, p);
+      this.broadcastToDocks(PacketGroupControlFields, p);
     }
   }
 

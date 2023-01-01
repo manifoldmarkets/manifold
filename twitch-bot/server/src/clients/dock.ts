@@ -1,9 +1,18 @@
 import { Socket } from 'socket.io';
 
 import { getOutcomeForString } from '@common/outcome';
-import * as Packet from '@common/packet-ids';
-
-import { PacketCreateMarket, PacketGroupControlFields, PacketHandshakeComplete, PacketMarketCreated } from '@common/packets.js';
+import {
+  PacketCreateMarket,
+  PacketGroupControlFields,
+  PacketHandshakeComplete,
+  PacketMarketCreated,
+  PacketPing,
+  PacketPong,
+  PacketRequestResolve,
+  PacketSelectMarketID,
+  PacketUnfeature,
+} from '@common/packets';
+import SocketWrapper from '@common/socket-wrapper';
 import App from '../app';
 import { MANIFOLD_API_BASE_URL } from '../envs';
 import log from '../logger';
@@ -13,6 +22,7 @@ import User from '../user';
 
 export default class DockClient {
   readonly socket: Socket;
+  readonly sw: SocketWrapper<Socket>;
   readonly app: App;
   connectedUser: User;
   stream: TwitchStream;
@@ -20,12 +30,15 @@ export default class DockClient {
   constructor(app: App, socket: Socket, stream: TwitchStream) {
     this.app = app;
     this.socket = socket;
+    this.sw = new SocketWrapper(socket);
     this.stream = stream;
     log.debug(`Dock socket for Twitch user ${stream.name} connected (SID: ${this.socket.id})`);
     this.init();
   }
 
   private async init() {
+    const sw = this.sw;
+
     this.connectedUser = <User>this.socket.data;
 
     this.registerPacketHandlers();
@@ -36,45 +49,46 @@ export default class DockClient {
       serverID: process.env.__BUILD_ID__,
       isAdmin: this.connectedUser.data.admin || false,
     };
-    this.socket.emit(Packet.HANDSHAKE_COMPLETE, handshakePacket);
+    sw.emit(PacketHandshakeComplete, handshakePacket);
     if (this.stream.featuredMarket) {
-      this.socket.emit(Packet.SELECT_MARKET_ID, this.stream.featuredMarket.data.id);
+      sw.emit(PacketSelectMarketID, { id: this.stream.featuredMarket.data.id });
     } else {
-      this.socket.emit(Packet.UNFEATURE_MARKET);
+      sw.emit(PacketUnfeature);
     }
     this.stream.updateGroupsInDocks(this);
   }
 
   private registerPacketHandlers() {
     const streamName = this.stream.name;
+    const sw = this.sw;
 
-    this.socket.on(Packet.SELECT_MARKET_ID, async (marketID) => {
-      log.debug(`Select market ID '${marketID}' requested for channel '${streamName}' by dock`);
+    this.sw.on(PacketSelectMarketID, async (p) => {
+      log.debug(`Select market ID '${p.id}' requested for channel '${streamName}' by dock`);
       try {
-        await this.stream.selectMarket(marketID, this);
+        await this.stream.selectMarket(p.id, this);
       } catch (e) {
-        this.socket.emit(Packet.UNFEATURE_MARKET);
+        this.sw.emit(PacketUnfeature);
         log.trace(e);
       }
     });
 
-    this.socket.on(Packet.UNFEATURE_MARKET, async () => {
+    sw.on(PacketUnfeature, async () => {
       log.debug(`Market unfeatured for channel '${streamName}'`);
       await this.stream.selectMarket(null, this);
     });
 
-    this.socket.on(Packet.RESOLVE, async (outcomeString: string) => {
+    sw.on(PacketRequestResolve, async (p) => {
       const currentMarket = this.stream.featuredMarket;
       if (!currentMarket) {
         log.error(`Received resolve request when no market was active for stream '${streamName}'`);
         return;
       }
 
-      log.debug(`Dock requested market '${currentMarket.data.id}' resolve ${outcomeString}`);
+      log.debug(`Dock requested market '${currentMarket.data.id}' resolve ${p.outcomeString}`);
 
-      const outcome = getOutcomeForString(outcomeString);
+      const outcome = getOutcomeForString(p.outcomeString);
       if (!outcome) {
-        log.error('Received invalid resolve outcome: ' + outcomeString);
+        log.error('Received invalid resolve outcome: ' + p.outcomeString);
         return;
       }
 
@@ -85,21 +99,19 @@ export default class DockClient {
       }
     });
 
-    this.socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
+    sw.on(PacketCreateMarket, async (packet: PacketCreateMarket) => {
       try {
         const newMarket = await ManifoldAPI.createBinaryMarket(this.connectedUser.data.APIKey, packet.question, undefined, 50, { groupID: packet.groupId, visibility: 'unlisted' });
-        this.socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
+        sw.emit(PacketMarketCreated, { id: newMarket.id });
         log.debug('Created new market via dock: ' + packet.question);
       } catch (e) {
-        this.socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ failReason: e.message });
+        sw.emit(PacketMarketCreated, { failReason: e.message });
       }
     });
 
-    this.socket.on(Packet.PING, () => {
-      this.socket.emit(Packet.PONG);
-    });
+    sw.on(PacketPing, () => sw.emit(PacketPong));
 
-    this.socket.on(Packet.GROUP_CONTROL_FIELDS, async (p: PacketGroupControlFields) => {
+    sw.on(PacketGroupControlFields, async (p) => {
       this.stream.updateGroupControlFields(p);
     });
 

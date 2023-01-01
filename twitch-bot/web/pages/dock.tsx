@@ -1,9 +1,19 @@
-import { Transition } from '@headlessui/react';
-import clsx from 'clsx';
-import { Group } from '@common/group';
-import * as Packets from '@common/packet-ids';
-import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from '@common/packets';
+import {
+  PacketCreateMarket,
+  PacketHandshakeComplete,
+  PacketMarketCreated,
+  PacketPing,
+  PacketPong, PacketRequestResolve,
+  PacketResolved,
+  PacketSelectMarketID,
+  PacketUnfeature
+} from '@common/packets';
+import SocketWrapper from '@common/socket-wrapper';
 import { LiteMarket, LiteUser } from '@common/types/manifold-api-types';
+import { Contract, Group } from '@common/types/manifold-internal-types';
+import { Transition } from '@headlessui/react';
+import { ENV_CONFIG } from '@manifold_common/envs/constants';
+import clsx from 'clsx';
 import Head from 'next/head';
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import Textarea from 'react-expanding-textarea';
@@ -21,13 +31,20 @@ import { SelectedGroup } from 'web/lib/selected-group';
 import { CONTRACT_ANTE, formatMoney, Resolution } from 'web/lib/utils';
 import { ConfirmationButton } from '../components/confirmation-button';
 import { GroupSelector } from '../components/group-selector';
-import { ENV_CONFIG } from '@manifold_common/envs/constants';
 
 let socket: Socket;
+let sw: SocketWrapper<Socket>;
 let APIBase = undefined;
 let connectedServerID: string = undefined;
 let isAdmin = false;
 
+export function getMarketDisplayability(c: Contract): [featureable: boolean, listPrecedence: number, reason?: string] {
+  if (c.outcomeType !== 'BINARY') return [false, 6, 'This type of market is not currently supported'];
+  if (c.mechanism !== 'cpmm-1') return [false, 5, 'This type of market is not currently supported'];
+  if (c.resolution) return [false, 3, 'This market has been resolved'];
+  if (c.closeTime < Date.now()) return [false, 2, 'This marked is closed'];
+  return [true, 1];
+}
 async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
   const r = await fetch(`${APIBase}group/by-id/${group.id}/markets`);
   const markets = (await r.json()) as LiteMarket[];
@@ -122,8 +139,8 @@ export default () => {
     setIsSubmittingQuestion(true);
     try {
       await new Promise<void>((resolve, reject) => {
-        socket.emit(Packets.CREATE_MARKET, { groupId: selectedGroup.id, question: question } as PacketCreateMarket);
-        socket.once(Packets.MARKET_CREATED, async (packet: PacketMarketCreated) => {
+        sw.emit(PacketCreateMarket, { groupId: selectedGroup.id, question: question });
+        sw.once(PacketMarketCreated, async (packet) => {
           if (packet.failReason) {
             reject(new Error(packet.failReason));
             return;
@@ -157,14 +174,15 @@ export default () => {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
     socket = io({ query: { type: 'dock', controlToken: params['t'] }, rememberUpgrade: true, reconnectionDelay: 100, reconnectionDelayMax: 100 });
+    sw = new SocketWrapper(socket);
 
     let pingRepeatTask: NodeJS.Timeout = null;
     const sendPing = () => {
       clearTimeout(pingRepeatTask);
-      socket.emit(Packets.PING);
+      sw.emit(PacketPing);
       pingSent = Date.now();
     };
-    socket.on(Packets.PONG, () => {
+    sw.on(PacketPong, () => {
       const ping = Date.now() - pingSent;
       setPing(ping);
 
@@ -210,7 +228,7 @@ export default () => {
         socket.connect();
       }
     });
-    socket.on(Packets.HANDSHAKE_COMPLETE, (p: PacketHandshakeComplete) => {
+    sw.on(PacketHandshakeComplete, (p) => {
       const firstConnect = APIBase === undefined;
       APIBase = p.manifoldAPIBase;
       isAdmin = p.isAdmin;
@@ -241,7 +259,7 @@ export default () => {
       setLoadingMessage('Connected');
     });
 
-    socket.on(Packets.RESOLVED, () => {
+    sw.on(PacketResolved, () => {
       console.debug('Market resolved');
       setSelectedContract(undefined);
       if (selectedGroup) {
@@ -256,25 +274,23 @@ export default () => {
       }
     });
 
-    socket.on(Packets.SELECT_MARKET_ID, async (marketID) => {
-      console.debug('Selecting market: ' + marketID);
-      const market = await fetchMarketById(marketID);
+    sw.on(PacketSelectMarketID, async (p) => {
+      console.debug('Selecting market: ' + p.id);
+      const market = await fetchMarketById(p.id);
       setSelectedContract(market);
     });
 
-    socket.on(Packets.UNFEATURE_MARKET, () => {
-      setSelectedContract(undefined);
-    });
+    sw.on(PacketUnfeature, () => setSelectedContract(undefined));
   }, []);
 
   const onContractFeature = (contract: LiteMarket) => {
     setSelectedContract(contract);
-    socket.emit(Packets.SELECT_MARKET_ID, contract.id);
+    sw.emit(PacketSelectMarketID, { id: contract.id });
   };
 
   const onContractUnfeature = () => {
-    socket.emit(Packets.UNFEATURE_MARKET);
     setSelectedContract(undefined);
+    sw.emit(PacketUnfeature);
   };
 
   const firstLoad = useRef(false);
@@ -329,7 +345,7 @@ export default () => {
                   APIBase={APIBase}
                   refreshBtnClass={!isAdmin && '!rounded-r-md'}
                 />
-                {isAdmin && <AdditionalControlsDropdown socket={socket} />}
+                {isAdmin && <AdditionalControlsDropdown sw={sw} />}
               </div>
               <div className="flex w-full justify-center">
                 <ConfirmationButton
@@ -468,8 +484,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
             : 'btn-disabled';
 
   const resolveClicked = async (): Promise<boolean> => {
-    console.log('Resolve clicked: ' + outcome);
-    socket.emit(Packets.RESOLVE, outcome);
+    sw.emit(PacketRequestResolve, { outcomeString: outcome });
     setIsSubmitting(true);
     return true;
   };

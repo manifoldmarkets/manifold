@@ -1,12 +1,13 @@
 import { Menu, Transition } from '@headlessui/react';
 import { ChevronDownIcon, QrcodeIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
+import SocketWrapper from '@common/socket-wrapper';
 import { Fragment, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import { ModalGroupControl } from './modal-group-control';
 
-export function AdditionalControlsDropdown(props: { socket: Socket }) {
-  const { socket } = props;
+export function AdditionalControlsDropdown(props: { sw: SocketWrapper<Socket> }) {
+  const { sw } = props;
   const [open, setOpen] = useState(false);
   const groupControl = () => {
     setOpen(true);
@@ -46,7 +47,7 @@ export function AdditionalControlsDropdown(props: { socket: Socket }) {
           </Menu.Items>
         </Transition>
       </Menu>
-      <ModalGroupControl socket={socket} open={open} setOpen={setOpen} />
+      <ModalGroupControl sw={sw} open={open} setOpen={setOpen} />
     </>
   );
 }
