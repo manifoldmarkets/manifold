@@ -5,6 +5,12 @@ create extension pg_trgm;
 alter role authenticator set pgrst.db_plan_enabled to true;
 notify pgrst, 'reload config';
 
+/* create a version of to_jsonb marked immutable so that we can index over it.
+   see https://github.com/PostgREST/postgrest/issues/2594 */
+create or replace function to_jsonb(jsonb) returns jsonb
+immutable parallel safe strict
+language sql as $$ select $1 $$;
+
 create table if not exists users (
     id text not null primary key,
     data jsonb not null,
@@ -14,8 +20,11 @@ alter table users enable row level security;
 drop policy if exists "public read" on users;
 create policy "public read" on users for select using (true);
 create index concurrently if not exists users_data_gin on users using GIN (data);
+
+/* indexes supporting @-mention autocomplete */
 create index concurrently if not exists users_name_gin on users using GIN ((data->>'name') gin_trgm_ops);
 create index concurrently if not exists users_username_gin on users using GIN ((data->>'username') gin_trgm_ops);
+create index concurrently if not exists users_follower_count_cached on users (to_jsonb(data->'followerCountCached') desc)
 
 create table if not exists user_followers (
     id text not null primary key,
