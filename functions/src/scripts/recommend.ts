@@ -45,7 +45,7 @@ const loadUserData = async () => {
   return await asyncMap(users, async (user) => {
     console.log(user.id)
     const userId = user.id
-    const betOnIds = betsByUser[userId]
+    const betOnIds = betsByUser[userId] ?? []
     const swipedIds = await loadPaginated(
       admin
         .firestore()
@@ -118,24 +118,38 @@ const recommend = async () => {
   console.log('Computing recommendations...')
   const getUserContractScores = await getMarketRecommendations(userData)
 
-  const jamesScores = getUserContractScores('5LZ4LgYuySdL1huCWe7bti02ghx2')
-  const sortedScores = sortBy(
-    Object.entries(jamesScores),
-    ([, score]) => -score
-  )
-  console.log('top scores', sortedScores.slice(0, 20))
-  console.log('bottom scores', sortedScores.slice(sortedScores.length - 20))
+  console.log('Destiny user scores')
+  await printUserScores('PKj937RvUZYUbnG7IU8sVPN7XYr1', getUserContractScores)
 
+  console.log('Bembo scores')
+  await printUserScores('G3S3nhcGWhPU3WEtlUYbAH4tv7f1', getUserContractScores)
+
+  console.log('Stephen scores')
+  await printUserScores('tlmGNz9kjXc2EteizMORes4qvWl2', getUserContractScores)
+
+  console.log('James scores')
+  await printUserScores('5LZ4LgYuySdL1huCWe7bti02ghx2', getUserContractScores)
+}
+
+async function printUserScores(
+  userId: string,
+  getUserContractScores: (userId: string) => { [k: string]: number }
+) {
+  const userScores = getUserContractScores(userId)
+  const sortedScores = sortBy(Object.entries(userScores), ([, score]) => -score)
   console.log(
     'top scores',
+    sortedScores.slice(0, 20),
     (
       await Promise.all(
         sortedScores.slice(0, 20).map(([contractId]) => getContract(contractId))
       )
     ).map((c) => c?.question)
   )
+
   console.log(
     'bottom scores',
+    sortedScores.slice(sortedScores.length - 20),
     (
       await Promise.all(
         sortedScores

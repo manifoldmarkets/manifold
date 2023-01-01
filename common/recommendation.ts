@@ -35,11 +35,11 @@ export async function getMarketRecommendations(userData: user_data[]) {
       columnSet.add(contractId)
     }
     for (const contractId of viewedPageIds) {
-      sparseMatrix[userIndex][contractId] = 0.1
+      sparseMatrix[userIndex][contractId] = 0.2
       columnSet.add(contractId)
     }
-    for (const contractId of betOnIds) {
-      sparseMatrix[userIndex][contractId] = 0.5
+    for (const contractId of betOnIds ?? []) {
+      sparseMatrix[userIndex][contractId] = 0.8
       columnSet.add(contractId)
     }
     for (const contractId of likedIds) {
@@ -49,12 +49,26 @@ export async function getMarketRecommendations(userData: user_data[]) {
   }
 
   const columns = Array.from(columnSet)
-  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 8)
+
+  const columnConfidence = columns.map((c) => {
+    let seenCount = 0
+    for (const row of sparseMatrix) {
+      if (row[c] !== undefined) seenCount++
+    }
+    return Math.min(1, seenCount / 20)
+  })
+
+  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 5, 5000)
+
   const recsMatrix = buildCompletedMatrix(f1, f2)
   const getUserContractScores = (userId: string) => {
     const userIndex = userIdToIndex[userId]
+    console.log('user feature scores', f1[userIndex])
+
     const userScores = recsMatrix[userIndex]
-    return Object.fromEntries(userScores.map((v, i) => [columns[i], v]))
+    return Object.fromEntries(
+      userScores.map((v, i) => [columns[i], v * columnConfidence[i]])
+    )
   }
   return getUserContractScores
 }

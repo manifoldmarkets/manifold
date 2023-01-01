@@ -1,3 +1,8 @@
+import { sumBy } from 'lodash'
+
+// Code originally from: https://github.com/johnpaulada/matrix-factorization-js/blob/master/src/matrix-factorization.js
+// Used to implement recommendations through collaborative filtering: https://towardsdatascience.com/recommender-systems-matrix-factorization-using-pytorch-bd52f46aa199
+
 /**
  * Gets the factors of a sparse matrix
  *
@@ -20,18 +25,20 @@ export function factorizeMatrix(
 ) {
   const columnToIndex = Object.fromEntries(columns.map((col, i) => [col, i]))
   const columnsOfRow = TARGET_MATRIX.map(Object.keys)
+  const numPoints = sumBy(columnsOfRow, (row) => row.length)
 
   const FACTOR1_ROW_COUNT = TARGET_MATRIX.length
   const FACTOR2_ROW_COUNT = columns.length
+  const initCell = () => (2 * Math.random()) / LATENT_FEATURES_COUNT
   const factorMatrix1 = fillMatrix(
     FACTOR1_ROW_COUNT,
     LATENT_FEATURES_COUNT,
-    () => Math.random()
+    initCell
   )
   const factorMatrix2 = fillMatrix(
     FACTOR2_ROW_COUNT,
     LATENT_FEATURES_COUNT,
-    () => Math.random()
+    initCell
   )
 
   const updateLatentFeature = (
@@ -77,15 +84,16 @@ export function factorizeMatrix(
       }
     }
 
-    if (iter % 20 === 0) {
-      const TOTAL_ERROR = calculateFactorMatricesError(
-        TARGET_MATRIX,
-        columnToIndex,
-        LATENT_FEATURES_COUNT,
-        REGULARIZATION_RATE,
-        factorMatrix1,
-        factorMatrix2
-      )
+    if (iter % 50 === 0 || iter === ITERS - 1) {
+      const TOTAL_ERROR =
+        calculateFactorMatricesError(
+          TARGET_MATRIX,
+          columnToIndex,
+          LATENT_FEATURES_COUNT,
+          REGULARIZATION_RATE,
+          factorMatrix1,
+          factorMatrix2
+        ) / numPoints
       console.log('iter', iter, 'error', TOTAL_ERROR)
 
       // Complete factorization process if total error falls below a certain threshold
