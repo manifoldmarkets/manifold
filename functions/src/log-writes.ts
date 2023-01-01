@@ -78,3 +78,4 @@ export const logGroupMembers = logger(
 export const logTxns = logger('txns/{g}', 'txn')
 export const logManalinks = logger('manalinks/{m}', 'manalink')
 export const logPosts = logger('posts/{p}', 'post')
+export const logTest = logger('test/{t}', 'test')

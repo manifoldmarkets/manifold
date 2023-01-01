@@ -142,6 +142,16 @@ drop policy if exists "public read" on posts;
 create policy "public read" on posts for select using (true);
 create index concurrently if not exists posts_data_gin on posts using GIN (data);
 
+create table if not exists test (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table test enable row level security;
+drop policy if exists "public read" on test;
+create policy "public read" on test for select using (true);
+create index concurrently if not exists test_data_gin on test using GIN (data);
+
 begin;
   drop publication if exists supabase_realtime;
   create publication supabase_realtime;
@@ -159,6 +169,7 @@ begin;
   alter publication supabase_realtime add table comments;
   alter publication supabase_realtime add table manalinks;
   alter publication supabase_realtime add table posts;
+  alter publication supabase_realtime add table test;
 commit;
 
 create table if not exists incoming_writes (
@@ -194,6 +205,7 @@ begin
     when 'txn' then 'txns'
     when 'manalink' then 'manalinks'
     when 'post' then 'posts'
+    when 'test' then 'test'
     else null
   end;
 end
