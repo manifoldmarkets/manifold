@@ -13,6 +13,7 @@ export type DocumentKind =
   | 'txn'
   | 'manalink'
   | 'post'
+  | 'test'
 
 export type WriteKind = 'create' | 'update' | 'delete'
 
