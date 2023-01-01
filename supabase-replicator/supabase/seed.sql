@@ -10,6 +10,17 @@ create table if not exists users (
 alter table users enable row level security;
 drop policy if exists "public read" on users;
 create policy "public read" on users for select using (true);
+create index concurrently if not exists users_data_gin on users using GIN (data);
+
+create table if not exists user_followers (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table user_followers enable row level security;
+drop policy if exists "public read" on user_followers;
+create policy "public read" on user_followers for select using (true);
+create index concurrently if not exists user_followers_data_gin on user_followers using GIN (data);
 
 create table if not exists contracts (
     id text not null primary key,
@@ -19,24 +30,17 @@ create table if not exists contracts (
 alter table contracts enable row level security;
 drop policy if exists "public read" on contracts;
 create policy "public read" on contracts for select using (true);
+create index concurrently if not exists contracts_data_gin on contracts using GIN (data);
 
-create table if not exists groups (
+create table if not exists contract_answers (
     id text not null primary key,
     data jsonb not null,
     fs_updated_time timestamp not null
 );
-alter table groups enable row level security;
-drop policy if exists "public read" on groups;
-create policy "public read" on groups for select using (true);
-
-create table if not exists txns (
-    id text not null primary key,
-    data jsonb not null,
-    fs_updated_time timestamp not null
-);
-alter table txns enable row level security;
-drop policy if exists "public read" on txns;
-create policy "public read" on txns for select using (true);
+alter table contract_answers enable row level security;
+drop policy if exists "public read" on contract_answers;
+create policy "public read" on contract_answers for select using (true);
+create index concurrently if not exists contract_answers_data_gin on contract_answers using GIN (data);
 
 create table if not exists bets (
     id text not null primary key,
@@ -46,6 +50,7 @@ create table if not exists bets (
 alter table bets enable row level security;
 drop policy if exists "public read" on bets;
 create policy "public read" on bets for select using (true);
+create index concurrently if not exists bets_data_gin on bets using GIN (data);
 
 create table if not exists comments (
     id text not null primary key,
@@ -55,6 +60,106 @@ create table if not exists comments (
 alter table comments enable row level security;
 drop policy if exists "public read" on comments;
 create policy "public read" on comments for select using (true);
+create index concurrently if not exists comments_data_gin on comments using GIN (data);
+
+create table if not exists contract_follows (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table contract_follows enable row level security;
+drop policy if exists "public read" on contract_follows;
+create policy "public read" on contract_follows for select using (true);
+create index concurrently if not exists contract_follows_data_gin on contract_follows using GIN (data);
+
+create table if not exists contract_liquidity (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table contract_liquidity enable row level security;
+drop policy if exists "public read" on contract_liquidity;
+create policy "public read" on contract_liquidity for select using (true);
+create index concurrently if not exists contract_liquidity_data_gin on contract_liquidity using GIN (data);
+
+create table if not exists groups (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table groups enable row level security;
+drop policy if exists "public read" on groups;
+create policy "public read" on groups for select using (true);
+create index concurrently if not exists groups_data_gin on groups using GIN (data);
+
+create table if not exists group_contracts (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table group_contracts enable row level security;
+drop policy if exists "public read" on group_contracts;
+create policy "public read" on group_contracts for select using (true);
+create index concurrently if not exists group_contracts_data_gin on group_contracts using GIN (data);
+
+create table if not exists group_members (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table group_members enable row level security;
+drop policy if exists "public read" on group_members;
+create policy "public read" on group_members for select using (true);
+create index concurrently if not exists group_members_data_gin on group_members using GIN (data);
+
+create table if not exists txns (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table txns enable row level security;
+drop policy if exists "public read" on txns;
+create policy "public read" on txns for select using (true);
+create index concurrently if not exists txns_data_gin on txns using GIN (data);
+
+create table if not exists manalinks (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table manalinks enable row level security;
+drop policy if exists "public read" on manalinks;
+create policy "public read" on manalinks for select using (true);
+create index concurrently if not exists manalinks_data_gin on manalinks using GIN (data);
+
+create table if not exists posts (
+    id text not null primary key,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+);
+alter table posts enable row level security;
+drop policy if exists "public read" on posts;
+create policy "public read" on posts for select using (true);
+create index concurrently if not exists posts_data_gin on posts using GIN (data);
+
+begin;
+  drop publication if exists supabase_realtime;
+  create publication supabase_realtime;
+  alter publication supabase_realtime add table users;
+  alter publication supabase_realtime add table user_followers;
+  alter publication supabase_realtime add table contracts;
+  alter publication supabase_realtime add table contract_answers;
+  alter publication supabase_realtime add table contract_follows;
+  alter publication supabase_realtime add table contract_liquidity;
+  alter publication supabase_realtime add table groups;
+  alter publication supabase_realtime add table group_contracts;
+  alter publication supabase_realtime add table group_members;
+  alter publication supabase_realtime add table txns;
+  alter publication supabase_realtime add table bets;
+  alter publication supabase_realtime add table comments;
+  alter publication supabase_realtime add table manalinks;
+  alter publication supabase_realtime add table posts;
+commit;
 
 create table if not exists incoming_writes (
   id bigint generated always as identity primary key,
@@ -75,12 +180,20 @@ as
 $$
 begin
   return case doc_kind
-    when 'txn' then 'txns'
     when 'user' then 'users'
-    when 'group' then 'groups'
+    when 'userFollower' then 'user_followers'
     when 'contract' then 'contracts'
+    when 'contractAnswer' then 'contract_answers'
     when 'contractBet' then 'bets'
     when 'contractComment' then 'comments'
+    when 'contractFollow' then 'contract_follows'
+    when 'contractLiquidity' then 'contract_liquidity'
+    when 'group' then 'groups'
+    when 'groupContract' then 'group_contracts'
+    when 'groupMember' then 'group_members'
+    when 'txn' then 'txns'
+    when 'manalink' then 'manalinks'
+    when 'post' then 'posts'
     else null
   end;
 end
@@ -158,14 +271,3 @@ after insert on incoming_writes
 referencing new table as new_table
 for each statement
 execute function replicate_writes_process_new();
-
-begin;
-  drop publication if exists supabase_realtime;
-  create publication supabase_realtime;
-  alter publication supabase_realtime add table users;
-  alter publication supabase_realtime add table contracts;
-  alter publication supabase_realtime add table groups;
-  alter publication supabase_realtime add table txns;
-  alter publication supabase_realtime add table bets;
-  alter publication supabase_realtime add table comments;
-commit;

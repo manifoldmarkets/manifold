@@ -104,18 +104,30 @@ async function importDatabase(kinds?: string[]) {
     await clearFailedWrites()
   }
 
-  if (shouldImport('txn'))
-    await importCollection(client, firestore.collection('txns'), 'txn', 2500)
-  if (shouldImport('group'))
-    await importCollection(client, firestore.collection('groups'), 'group', 500)
   if (shouldImport('user'))
     await importCollection(client, firestore.collection('users'), 'user', 500)
+  if (shouldImport('userFollower'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('followers'),
+      'userFollower',
+      (_) => true,
+      500
+    )
   if (shouldImport('contract'))
     await importCollection(
       client,
       firestore.collection('contracts'),
       'contract',
       500
+    )
+  if (shouldImport('contractAnswer'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('answers'),
+      'contractAnswer',
+      (_) => true,
+      2500
     )
   if (shouldImport('contractBet'))
     await importCollectionGroup(
@@ -133,6 +145,51 @@ async function importDatabase(kinds?: string[]) {
       (c) => c.get('commentType') === 'contract',
       500
     )
+  if (shouldImport('contractFollow'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('follows'),
+      'contractFollow',
+      (_) => true,
+      2500
+    )
+  if (shouldImport('contractLiquidity'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('liquidity'),
+      'contractLiquidity',
+      (_) => true,
+      2500
+    )
+  if (shouldImport('group'))
+    await importCollection(client, firestore.collection('groups'), 'group', 500)
+  if (shouldImport('groupContract'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('groupContracts'),
+      'groupContract',
+      (_) => true,
+      500
+    )
+  if (shouldImport('groupMember'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('groupMembers'),
+      'groupMember',
+      (_) => true,
+      2500
+    )
+  if (shouldImport('txn'))
+    await importCollection(client, firestore.collection('txns'), 'txn', 2500)
+  if (shouldImport('manalink'))
+    await importCollection(
+      client,
+      firestore.collection('manalinks'),
+      'manalink',
+      2500
+    )
+  if (shouldImport('post'))
+    await importCollection(client, firestore.collection('posts'), 'post', 100)
 }
 
 if (require.main === module) {

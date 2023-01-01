@@ -1,10 +1,18 @@
 export type DocumentKind =
-  | 'txn'
-  | 'group'
   | 'user'
+  | 'userFollower'
   | 'contract'
+  | 'contractAnswer'
   | 'contractBet'
   | 'contractComment'
+  | 'contractFollow'
+  | 'contractLiquidity'
+  | 'group'
+  | 'groupContract'
+  | 'groupMember'
+  | 'txn'
+  | 'manalink'
+  | 'post'
 
 export type WriteKind = 'create' | 'update' | 'delete'
 
