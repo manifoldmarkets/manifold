@@ -195,10 +195,10 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 
   // Mark all notifications as seen.
   useEffect(() => {
-    if (isPageVisible && allGroupedNotifications) {
+    if (isPageVisible) {
       markAllNotifications({ seen: true })
     }
-  }, [privateUser.id, isPageVisible, allGroupedNotifications])
+  }, [privateUser.id, isPageVisible])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
