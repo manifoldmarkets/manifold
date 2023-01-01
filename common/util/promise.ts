@@ -47,9 +47,31 @@ export const batchedWaitAll = async <T>(
 
 export const asyncMap = async <T, U>(
   items: T[],
-  f: (item: T) => Promise<U>,
-  batchSize = 100
+  f: (item: T, index?: number) => Promise<U>,
+  maxConcurrentRequests = 100
 ) => {
-  const createPromises = items.map((item) => () => f(item))
-  return await batchedWaitAll(createPromises, batchSize)
+  let index = 0
+  let currRequests = 0
+  const results: U[] = []
+
+  return new Promise((resolve: (results: U[]) => void, reject) => {
+    const doWork = () => {
+      while (index < items.length && currRequests < maxConcurrentRequests) {
+        const itemIndex = index
+        f(items[itemIndex], itemIndex)
+          .then((data) => {
+            results[itemIndex] = data
+            currRequests--
+            if (index === items.length && currRequests === 0) resolve(results)
+            else doWork()
+          })
+          .catch(reject)
+
+        index++
+        currRequests++
+      }
+    }
+
+    doWork()
+  })
 }
