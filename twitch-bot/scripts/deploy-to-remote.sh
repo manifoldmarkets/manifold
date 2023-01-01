@@ -62,7 +62,7 @@ build() {
 	echo Copying files to server...
 	tar -czf out.tar.gz out
 	rm -r out
-	gcloud compute scp --recurse --zone $ZONE out.tar.gz Phil@$INSTANCE_NAME:. || error
+	gcloud compute scp --recurse --zone $ZONE out.tar.gz $INSTANCE_NAME:. || error
 	rm out.tar.gz
 
 	COMMAND="tar -zxf out.tar.gz out && \
