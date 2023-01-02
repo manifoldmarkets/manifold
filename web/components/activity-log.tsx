@@ -58,30 +58,17 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
       .then((cids) => setBlockedGroupContractIds(cids.flat()))
   }, [privateUser, setBlockedGroupContractIds, shouldBlockDestiny])
 
+  const blockedContractIds = buildArray(
+    blockedGroupContractIds,
+    privateUser?.blockedContractIds
+  )
+  const blockedUserIds = privateUser?.blockedUserIds ?? []
+
   const { count, showPills } = props
   const rawBets = useLiveBets(count * 3 + 20, {
     filterRedemptions: true,
     filterAntes: true,
   })
-  const rawComments = useLiveComments(count * 3)
-  const rawContracts = useLiveContracts(count * 3)
-  const contracts = filterDefined(
-    useContracts([
-      ...(rawBets ?? []).map((b) => b.contractId),
-      ...(rawComments ?? []).map((c) =>
-        c.commentType === 'contract' ? c.contractId : ''
-      ),
-    ])
-  ).concat(rawContracts ?? [])
-  const contractsById = keyBy(contracts, 'id')
-
-  const blockedContractIds = buildArray(
-    blockedGroupContractIds,
-    privateUser?.blockedContractIds,
-    contracts.flatMap((c) => (c.visibility === 'unlisted' ? [c.id] : []))
-  )
-  const blockedUserIds = privateUser?.blockedUserIds ?? []
-
   const bets = (rawBets ?? []).filter(
     (bet) =>
       !blockedContractIds.includes(bet.contractId) &&
@@ -89,6 +76,7 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
       !BOT_USERNAMES.includes(bet.userUsername) &&
       !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
   )
+  const rawComments = useLiveComments(count * 3)
   const comments = (rawComments ?? []).filter(
     (c) =>
       c.commentType === 'contract' &&
@@ -97,6 +85,7 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
       !BOT_USERNAMES.includes(c.userUsername)
   ) as ContractComment[]
 
+  const rawContracts = useLiveContracts(count * 3)
   const newContracts = (rawContracts ?? []).filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&
@@ -119,6 +108,14 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
   )
     .reverse()
     .filter((i) => i.createdTime < Date.now())
+
+  const contracts = filterDefined(
+    useContracts([
+      ...bets.map((b) => b.contractId),
+      ...comments.map((c) => c.contractId),
+    ])
+  ).concat(newContracts ?? [])
+  const contractsById = keyBy(contracts, 'id')
 
   const startIndex =
     range(0, items.length - count).find((i) =>
