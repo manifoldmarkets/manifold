@@ -8,7 +8,7 @@ import {
   usePersistentState,
   urlParamStore,
 } from 'web/hooks/use-persistent-state'
-import { PAST_BETS } from 'common/user'
+import { PAST_BET } from 'common/user'
 import { Input } from 'web/components/widgets/input'
 import { Select } from 'web/components/widgets/select'
 
@@ -99,7 +99,7 @@ export default function ContractSearchFirestore(props: {
         <Select value={sort} onChange={(e) => setSort(e.target.value)}>
           <option value="score">Trending</option>
           <option value="newest">Newest</option>
-          <option value="most-traded">Most ${PAST_BETS}</option>
+          <option value="most-traded">Most ${PAST_BET}</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
         </Select>

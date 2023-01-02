@@ -9,7 +9,7 @@ import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
-import { BETTORS, PRESENT_BETS } from 'common/user'
+import { BETTORS, PLURAL_BETS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { capitalize } from 'lodash'
 import { ProbabilityInput } from './widgets/probability-input'
@@ -98,7 +98,7 @@ export function ResolutionPanel(props: {
             <>Cancel all trades and return money back to {BETTORS}.</>
           ) : outcome === 'MKT' ? (
             <>
-              {capitalize(PRESENT_BETS)} will be paid out at the probability you
+              {capitalize(PLURAL_BETS)} will be paid out at the probability you
               specify:
             </>
           ) : (

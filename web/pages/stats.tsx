@@ -9,7 +9,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { Linkify } from 'web/components/widgets/linkify'
 import { getStats } from 'web/lib/firebase/stats'
 import { Stats } from 'common/stats'
-import { PAST_BETS } from 'common/user'
+import { PLURAL_BETS } from 'common/user'
 import { capitalize } from 'lodash'
 import { formatLargeNumber } from 'common/util/format'
 
@@ -248,7 +248,7 @@ export function CustomAnalytics(props: Stats) {
         defaultIndex={0}
         tabs={[
           {
-            title: capitalize(PAST_BETS),
+            title: capitalize(PLURAL_BETS),
             content: (
               <DailyChart dailyValues={dailyBetCounts} startDate={startDate} />
             ),
