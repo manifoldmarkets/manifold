@@ -19,8 +19,6 @@ const loadUserData = async () => {
 
   console.log('Loaded', users.length, 'users')
 
-  const threeDaysAgo = Date.now() - DAY_MS * 3
-
   return await asyncMap(users, async (user, i) => {
     console.log(user.id, i)
     const userId = user.id
@@ -35,17 +33,6 @@ const loadUserData = async () => {
       )
     ).map(({ contractId }) => contractId)
 
-    const recentBetOnIds = (
-      await loadPaginated(
-        firestore
-          .collection('users')
-          .doc(userId)
-          .collection('contract-metrics')
-          .where('lastBetTime', '>', threeDaysAgo)
-          .select('contractId', 'lastBetTime') as Query<{ contractId: string }>
-      )
-    ).map(({ contractId }) => contractId)
-
     const swipedIds = uniq(
       (
         await loadPaginated(
@@ -55,19 +42,6 @@ const loadUserData = async () => {
             .doc(user.id)
             .collection('seenMarkets')
             .select('id') as Query<{ id: string }>
-        )
-      ).map(({ id }) => id)
-    )
-    const recentSwipedIds = uniq(
-      (
-        await loadPaginated(
-          admin
-            .firestore()
-            .collection('private-users')
-            .doc(user.id)
-            .collection('seenMarkets')
-            .where('time', '>', threeDaysAgo)
-            .select('id', 'time') as Query<{ id: string }>
         )
       ).map(({ id }) => id)
     )
@@ -84,19 +58,6 @@ const loadUserData = async () => {
         )
       ).map(({ contractId }) => contractId)
     )
-    const recentViewedCardIds = uniq(
-      (
-        await loadPaginated(
-          firestore
-            .collection('users')
-            .doc(userId)
-            .collection('events')
-            .where('name', '==', 'view market card')
-            .where('timestamp', '>', threeDaysAgo)
-            .select('contractId', 'timestamp') as Query<{ contractId: string }>
-        )
-      ).map(({ contractId }) => contractId)
-    )
 
     const viewedPageIds = uniq(
       (
@@ -107,19 +68,6 @@ const loadUserData = async () => {
             .collection('events')
             .where('name', '==', 'view market')
             .select('contractId') as Query<{ contractId: string }>
-        )
-      ).map(({ contractId }) => contractId)
-    )
-    const recentViewedPageIds = uniq(
-      (
-        await loadPaginated(
-          firestore
-            .collection('users')
-            .doc(userId)
-            .collection('events')
-            .where('name', '==', 'view market')
-            .where('timestamp', '>', threeDaysAgo)
-            .select('contractId', 'timestamp') as Query<{ contractId: string }>
         )
       ).map(({ contractId }) => contractId)
     )
@@ -138,33 +86,13 @@ const loadUserData = async () => {
       ).map(({ contentId }) => contentId)
     )
 
-    const recentLikedIds = uniq(
-      (
-        await loadPaginated(
-          admin
-            .firestore()
-            .collection('users')
-            .doc(userId)
-            .collection('reactions')
-            .where('contentType', '==', 'contract')
-            .where('createdTime', '>', threeDaysAgo)
-            .select('contentId', 'createdTime') as Query<{ contentId: string }>
-        )
-      ).map(({ contentId }) => contentId)
-    )
-
     return {
       userId,
       betOnIds,
-      recentBetOnIds,
       swipedIds,
-      recentSwipedIds,
       viewedCardIds,
-      recentViewedCardIds,
       viewedPageIds,
-      recentViewedPageIds,
       likedIds,
-      recentLikedIds,
     }
   })
 }

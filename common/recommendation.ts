@@ -1,4 +1,4 @@
-import { filterDefined } from './util/array'
+import { isArray, uniq } from 'lodash'
 import { buildCompletedMatrix, factorizeMatrix } from './util/matrix'
 
 export type user_data = {
@@ -8,14 +8,12 @@ export type user_data = {
   viewedCardIds: string[]
   viewedPageIds: string[]
   likedIds: string[]
-  recentBetOnIds: string[]
-  recentSwipedIds: string[]
-  recentViewedCardIds: string[]
-  recentViewedPageIds: string[]
-  recentLikedIds: string[]
 }
 
 export async function getMarketRecommendations(userData: user_data[]) {
+  userData = userData.filter((userData) =>
+    Object.values(userData).some((obj) => isArray(obj) && obj.length > 0)
+  )
   const userIds = userData.map(({ userId }) => userId)
   const userIdToIndex = Object.fromEntries(userIds.map((id, i) => [id, i]))
 
@@ -29,80 +27,79 @@ export async function getMarketRecommendations(userData: user_data[]) {
     viewedPageIds,
     betOnIds,
     likedIds,
-    recentSwipedIds,
-    recentViewedCardIds,
-    recentViewedPageIds,
-    recentBetOnIds,
-    recentLikedIds,
   } of userData) {
     const userIndex = userIdToIndex[userId]
 
-    for (const contractId of swipedIds) {
-      sparseMatrix[userIndex][contractId] = 0
-      columnSet.add(contractId)
-    }
+    const likedOrBetOnIds = uniq([...likedIds, ...betOnIds])
+
     for (const contractId of viewedCardIds) {
       sparseMatrix[userIndex][contractId] = 0
       columnSet.add(contractId)
     }
     for (const contractId of viewedPageIds) {
-      sparseMatrix[userIndex][contractId] = 0.2
+      sparseMatrix[userIndex][contractId] = 0.25
       columnSet.add(contractId)
     }
-    for (const contractId of betOnIds) {
-      sparseMatrix[userIndex][contractId] = 0.8
-      columnSet.add(contractId)
-    }
-    for (const contractId of likedIds) {
-      sparseMatrix[userIndex][contractId] = 1
-      columnSet.add(contractId)
+    for (const contractId of likedOrBetOnIds) {
+      // Don't include contracts bet on before we recorded views.
+      // If there are no views, then algorithm can just predict 1 always.
+      if (columnSet.has(contractId)) {
+        sparseMatrix[userIndex][contractId] = 1
+      }
     }
 
-    for (const contractId of recentSwipedIds) {
-      sparseMatrix[userIndex]['recent' + contractId] = 0
-      columnSet.add('recent' + contractId)
+    // Add new columns for swiped contracts.
+    for (const contractId of swipedIds) {
+      sparseMatrix[userIndex]['swiped-' + contractId] = 0
+      columnSet.add('swiped-' + contractId)
     }
-    for (const contractId of recentViewedCardIds) {
-      sparseMatrix[userIndex]['recent' + contractId] = 0
-      columnSet.add('recent' + contractId)
-    }
-    for (const contractId of recentViewedPageIds) {
-      sparseMatrix[userIndex]['recent' + contractId] = 0.2
-      columnSet.add('recent' + contractId)
-    }
-    for (const contractId of recentBetOnIds) {
-      sparseMatrix[userIndex]['recent' + contractId] = 0.8
-      columnSet.add('recent' + contractId)
-    }
-    for (const contractId of recentLikedIds) {
-      sparseMatrix[userIndex]['recent' + contractId] = 1
-      columnSet.add('recent' + contractId)
+    for (const contractId of likedOrBetOnIds) {
+      if (columnSet.has('swiped-' + contractId)) {
+        sparseMatrix[userIndex]['swiped-' + contractId] = 1
+      }
     }
   }
 
   const columns = Array.from(columnSet)
+  console.log('rows', sparseMatrix.length, 'columns', columns.length)
 
-  const columnConfidence = columns.map((c) => {
-    let seenCount = 0
-    for (const row of sparseMatrix) {
-      if (row[c] !== undefined) seenCount++
+  // Fill in a few random 0's for each user and contract.
+  // When users click a link directly to a market or search for it,
+  // and bet on it, then we start to get only 1's in the matrix,
+  // which is bad for the algorithm to distinguish between good and bad contracts:
+  // it will just predict 1 for all contracts.
+  const contractColumns = Array.from(columnSet).filter(
+    (column) => !column.startsWith('swiped-')
+  )
+  for (const row of sparseMatrix) {
+    for (let i = 0; i < 10; i++) {
+      const randColumn =
+        contractColumns[Math.floor(Math.random() * contractColumns.length)]
+      if (row[randColumn] === undefined) row[randColumn] = 0
     }
-    return Math.min(1, seenCount / 20)
-  })
+  }
+  for (const column of contractColumns) {
+    for (let i = 0; i < 10; i++) {
+      const randUser = Math.floor(Math.random() * sparseMatrix.length)
+      if (sparseMatrix[randUser][column] === undefined)
+        sparseMatrix[randUser][column] = 0
+    }
+  }
 
-  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 5, 10000)
+  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 5, 5000)
 
   const recsMatrix = buildCompletedMatrix(f1, f2)
   const getUserContractScores = (userId: string) => {
     const userIndex = userIdToIndex[userId]
     console.log('user feature scores', f1[userIndex])
+    if (!userIndex) return {}
 
     const userScores = recsMatrix[userIndex]
     return Object.fromEntries(
       userScores
-        .map((v, i) => [columns[i], v * columnConfidence[i]] as const)
-        .filter(([column]) => column.startsWith('recent'))
-        .map(([column, value]) => [column.replace('recent', ''), value])
+        .map((v, i) => [columns[i], v] as const)
+        .filter(([column]) => column.startsWith('swiped-'))
+        .map(([column, value]) => [column.replace('swiped-', ''), value])
     )
   }
   return getUserContractScores
