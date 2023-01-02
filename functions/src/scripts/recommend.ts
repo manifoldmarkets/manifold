@@ -21,8 +21,8 @@ const loadUserData = async () => {
 
   const threeDaysAgo = Date.now() - DAY_MS * 3
 
-  return await asyncMap(users, async (user) => {
-    console.log(user.id)
+  return await asyncMap(users, async (user, i) => {
+    console.log(user.id, i)
     const userId = user.id
 
     const betOnIds = (
@@ -51,7 +51,7 @@ const loadUserData = async () => {
         await loadPaginated(
           admin
             .firestore()
-            .collection('users')
+            .collection('private-users')
             .doc(user.id)
             .collection('seenMarkets')
             .select('id') as Query<{ id: string }>
@@ -63,11 +63,11 @@ const loadUserData = async () => {
         await loadPaginated(
           admin
             .firestore()
-            .collection('users')
+            .collection('private-users')
             .doc(user.id)
             .collection('seenMarkets')
             .where('time', '>', threeDaysAgo)
-            .select('id') as Query<{ id: string }>
+            .select('id', 'time') as Query<{ id: string }>
         )
       ).map(({ id }) => id)
     )
@@ -172,14 +172,14 @@ const loadUserData = async () => {
 const recommend = async () => {
   console.log('Recommend script')
 
-  let userData = await readJson<user_data[]>('user-data2.json')
+  let userData = await readJson<user_data[]>('user-data3.json')
 
   if (userData) {
     console.log('Loaded view data from file.')
   } else {
     console.log('Loading view data from Firestore...')
     userData = await loadUserData()
-    await writeJson('user-data2.json', userData)
+    await writeJson('user-data3.json', userData)
   }
 
   console.log('Computing recommendations...')
