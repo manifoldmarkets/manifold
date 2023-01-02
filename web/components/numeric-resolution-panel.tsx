@@ -109,7 +109,7 @@ export function NumericResolutionPanel(props: {
           color={outcomeMode === 'CANCEL' ? 'yellow' : 'indigo'}
           label={outcomeMode === 'CANCEL' ? 'N/A' : String(value)}
           marketTitle={question}
-          disabled={outcomeMode === undefined || value === undefined}
+          disabled={outcomeMode === undefined || (value === undefined && outcomeMode !== 'CANCEL')}
         />
       </div>
       {!!error && <div className="text-scarlet-500">{error}</div>}
