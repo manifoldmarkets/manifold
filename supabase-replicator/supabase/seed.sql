@@ -56,25 +56,25 @@ drop policy if exists "public read" on contract_answers;
 create policy "public read" on contract_answers for select using (true);
 create index concurrently if not exists contract_answers_data_gin on contract_answers using GIN (data);
 
-create table if not exists bets (
+create table if not exists contract_bets (
     id text not null primary key,
     data jsonb not null,
     fs_updated_time timestamp not null
 );
-alter table bets enable row level security;
-drop policy if exists "public read" on bets;
-create policy "public read" on bets for select using (true);
-create index concurrently if not exists bets_data_gin on bets using GIN (data);
+alter table contract_bets enable row level security;
+drop policy if exists "public read" on contract_bets;
+create policy "public read" on contract_bets for select using (true);
+create index concurrently if not exists contract_bets_data_gin on contract_bets using GIN (data);
 
-create table if not exists comments (
+create table if not exists contract_comments (
     id text not null primary key,
     data jsonb not null,
     fs_updated_time timestamp not null
 );
-alter table comments enable row level security;
-drop policy if exists "public read" on comments;
-create policy "public read" on comments for select using (true);
-create index concurrently if not exists comments_data_gin on comments using GIN (data);
+alter table contract_comments enable row level security;
+drop policy if exists "public read" on contract_comments;
+create policy "public read" on contract_comments for select using (true);
+create index concurrently if not exists contract_comments_data_gin on contract_comments using GIN (data);
 
 create table if not exists contract_follows (
     id text not null primary key,
@@ -173,14 +173,14 @@ begin;
   alter publication supabase_realtime add table user_followers;
   alter publication supabase_realtime add table contracts;
   alter publication supabase_realtime add table contract_answers;
+  alter publication supabase_realtime add table contract_bets;
+  alter publication supabase_realtime add table contract_comments;
   alter publication supabase_realtime add table contract_follows;
   alter publication supabase_realtime add table contract_liquidity;
   alter publication supabase_realtime add table groups;
   alter publication supabase_realtime add table group_contracts;
   alter publication supabase_realtime add table group_members;
   alter publication supabase_realtime add table txns;
-  alter publication supabase_realtime add table bets;
-  alter publication supabase_realtime add table comments;
   alter publication supabase_realtime add table manalinks;
   alter publication supabase_realtime add table posts;
   alter publication supabase_realtime add table test;
@@ -209,8 +209,8 @@ begin
     when 'userFollower' then 'user_followers'
     when 'contract' then 'contracts'
     when 'contractAnswer' then 'contract_answers'
-    when 'contractBet' then 'bets'
-    when 'contractComment' then 'comments'
+    when 'contractBet' then 'contract_bets'
+    when 'contractComment' then 'contract_comments'
     when 'contractFollow' then 'contract_follows'
     when 'contractLiquidity' then 'contract_liquidity'
     when 'group' then 'groups'
