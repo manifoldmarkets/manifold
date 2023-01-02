@@ -24,7 +24,8 @@ export type TLEntry<T extends WriteDocument = WriteDocument> = {
   docKind: DocumentKind
   writeKind: WriteKind
   docId: string
-  parent: string
+  parentId: string | null
+  path: string
   data: T | null
   ts: number
 }

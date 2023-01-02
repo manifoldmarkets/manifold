@@ -34,6 +34,7 @@ function getWriteRow(
     doc_kind: docKind,
     write_kind: 'create',
     doc_id: snap.id,
+    parent_id: snap.ref.parent.parent?.id,
     data: snap.data(),
     ts: ts.toISOString(),
   }

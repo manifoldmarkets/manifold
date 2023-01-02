@@ -1,8 +1,8 @@
-import { DocumentSnapshot } from 'firebase-admin/firestore'
+import { DocumentData, DocumentSnapshot } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions'
 import { Change, EventContext } from 'firebase-functions'
 import { PubSub } from '@google-cloud/pubsub'
-import { DocumentKind } from '../../common/transaction-log'
+import { DocumentKind, TLEntry } from '../../common/transaction-log'
 
 const pubSubClient = new PubSub()
 
@@ -19,18 +19,19 @@ function getWriteInfo<T>(change: Change<DocumentSnapshot<T>>) {
   }
 }
 
-function getTLEntry<T>(
+function getTLEntry<T extends DocumentData>(
   change: Change<DocumentSnapshot<T>>,
   context: EventContext,
   docKind: DocumentKind
-) {
+): TLEntry<T> {
   const info = getWriteInfo(change)
   return {
     docKind,
     writeKind: info.kind,
     eventId: context.eventId,
     docId: info.ref.id,
-    parent: info.ref.parent.path,
+    parentId: context.params['parent'] ?? null,
+    path: info.ref.path,
     data: info.data,
     ts: Date.parse(context.timestamp).valueOf(),
   }
@@ -43,39 +44,42 @@ function logger(path: string, docKind: DocumentKind) {
   })
 }
 
-export const logUsers = logger('users/{u}', 'user')
+export const logUsers = logger('users/{id}', 'user')
 export const logUserFollowers = logger(
-  'users/{u}/{followers}/{f}',
+  'users/{parent}/followers/{id}',
   'userFollower'
 )
-export const logContracts = logger('contracts/{c}', 'contract')
+export const logContracts = logger('contracts/{id}', 'contract')
 export const logContractAnswers = logger(
-  'contracts/{c}/answers/{b}',
+  'contracts/{parent}/answers/{id}',
   'contractAnswer'
 )
-export const logContractBets = logger('contracts/{c}/bets/{b}', 'contractBet')
+export const logContractBets = logger(
+  'contracts/{parent}/bets/{id}',
+  'contractBet'
+)
 export const logContractComments = logger(
-  'contracts/{ct}/comments/{co}',
+  'contracts/{parent}/comments/{id}',
   'contractComment'
 )
 export const logContractFollows = logger(
-  'contracts/{ct}/follows/{f}',
+  'contracts/{parent}/follows/{id}',
   'contractFollow'
 )
 export const logContractLiquidity = logger(
-  'contracts/{ct}/liquidity/{l}',
+  'contracts/{parent}/liquidity/{id}',
   'contractLiquidity'
 )
-export const logGroups = logger('groups/{g}', 'group')
+export const logGroups = logger('groups/{id}', 'group')
 export const logGroupContracts = logger(
-  'groups/{gr}/groupContracts/{gc}',
+  'groups/{parent}/groupContracts/{id}',
   'groupContract'
 )
 export const logGroupMembers = logger(
-  'groups/{gr}/groupMembers/{gm}',
+  'groups/{parent}/groupMembers/{id}',
   'groupMember'
 )
-export const logTxns = logger('txns/{g}', 'txn')
-export const logManalinks = logger('manalinks/{m}', 'manalink')
-export const logPosts = logger('posts/{p}', 'post')
-export const logTest = logger('test/{t}', 'test')
+export const logTxns = logger('txns/{id}', 'txn')
+export const logManalinks = logger('manalinks/{id}', 'manalink')
+export const logPosts = logger('posts/{id}', 'post')
+export const logTest = logger('test/{id}', 'test')
