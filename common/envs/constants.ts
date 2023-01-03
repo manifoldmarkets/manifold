@@ -120,6 +120,8 @@ export const CHECK_USERNAMES = [
   'dglid',
   'yaboi69',
   'TheSkeward',
+  'Duncan',
+  'a',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
