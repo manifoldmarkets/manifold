@@ -55,6 +55,7 @@ export async function replicateWrites(
         event_id: e.eventId,
         doc_kind: e.docKind,
         write_kind: e.writeKind,
+        parent_id: e.parentId,
         doc_id: e.docId,
         data: e.data,
         ts: new Date(e.ts).toISOString(),

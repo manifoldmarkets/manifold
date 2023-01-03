@@ -34,6 +34,7 @@ function getWriteRow(
     doc_kind: docKind,
     write_kind: 'create',
     doc_id: snap.id,
+    parent_id: snap.ref.parent.parent?.id,
     data: snap.data(),
     ts: ts.toISOString(),
   }
@@ -106,13 +107,21 @@ async function importDatabase(kinds?: string[]) {
 
   if (shouldImport('user'))
     await importCollection(client, firestore.collection('users'), 'user', 500)
-  if (shouldImport('userFollower'))
+  if (shouldImport('userFollow'))
     await importCollectionGroup(
       client,
-      firestore.collectionGroup('followers'),
-      'userFollower',
+      firestore.collectionGroup('follows'),
+      'userFollow',
+      (c) => c.ref.parent.parent?.parent.path === 'users',
+      5000
+    )
+  if (shouldImport('userReaction'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('reactions'),
+      'userReaction',
       (_) => true,
-      500
+      2500
     )
   if (shouldImport('contract'))
     await importCollection(
@@ -150,8 +159,8 @@ async function importDatabase(kinds?: string[]) {
       client,
       firestore.collectionGroup('follows'),
       'contractFollow',
-      (_) => true,
-      2500
+      (c) => c.ref.parent.parent?.parent.path == 'contracts',
+      5000
     )
   if (shouldImport('contractLiquidity'))
     await importCollectionGroup(
@@ -169,7 +178,7 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('groupContracts'),
       'groupContract',
       (_) => true,
-      500
+      5000
     )
   if (shouldImport('groupMember'))
     await importCollectionGroup(
@@ -177,7 +186,7 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('groupMembers'),
       'groupMember',
       (_) => true,
-      2500
+      5000
     )
   if (shouldImport('txn'))
     await importCollection(client, firestore.collection('txns'), 'txn', 2500)
