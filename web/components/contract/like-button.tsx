@@ -17,7 +17,8 @@ import {
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-export const LIKES_SHOWN = 3
+
+const LIKES_SHOWN = 3
 
 const ButtonReactionType = 'like' as ReactionTypes
 export const LikeButton = memo(function LikeButton(props: {
@@ -189,20 +190,25 @@ function UserLikedList(props: {
     )
     userInfo = youLiked.concat(otherUsersLiked)
   }
+
+  // only show "& n more" for n > 1
+  const shown =
+    userInfo.length <= LIKES_SHOWN + 1 ? userInfo : userInfo.slice(0, 3)
+
   return (
     <Col className="min-w-24 items-start">
       <div className="mb-1 font-bold">Like</div>
-      {userInfo.slice(0, LIKES_SHOWN).map((u) => {
+      {shown.map((u) => {
         return (
           <UserLikedItem key={u.avatarUrl + u.username + u.name} userInfo={u} />
         )
       })}
-      {length > LIKES_SHOWN && (
+      {userInfo.length > shown.length && (
         <div
           className="w-full cursor-pointer text-left text-indigo-300 hover:text-indigo-200"
           onClick={setModalOpen}
         >
-          & {length - LIKES_SHOWN} more
+          & {userInfo.length - shown.length} more
         </div>
       )}
     </Col>
