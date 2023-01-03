@@ -78,6 +78,7 @@ export const BOT_USERNAMES = [
   'Anatolii',
   'Catnee',
   'JeremyK',
+  'Botmageddon',
 ]
 
 export const CORE_USERNAMES = [
