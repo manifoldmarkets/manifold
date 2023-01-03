@@ -1,5 +1,5 @@
 import { isArray, uniq } from 'lodash'
-import { buildCompletedMatrix, factorizeMatrix } from './util/matrix'
+import { dotProduct, factorizeMatrix } from './util/matrix'
 
 export type user_data = {
   userId: string
@@ -86,21 +86,26 @@ export async function getMarketRecommendations(userData: user_data[]) {
     }
   }
 
-  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 5, 5000)
+  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 5, 50)
 
-  const recsMatrix = buildCompletedMatrix(f1, f2)
+  // Compute scores per user one at a time to save memory.
   const getUserContractScores = (userId: string) => {
     const userIndex = userIdToIndex[userId]
-    console.log('user feature scores', f1[userIndex])
     if (!userIndex) return {}
 
-    const userScores = recsMatrix[userIndex]
-    return Object.fromEntries(
-      userScores
-        .map((v, i) => [columns[i], v] as const)
-        .filter(([column]) => column.startsWith('swiped-'))
-        .map(([column, value]) => [column.replace('swiped-', ''), value])
-    )
+    const userFeatures = f1[userIndex]
+
+    const contractScorePairs = columns
+      .map((column, i) => {
+        const columnFeatures = f2[i]
+        const score = dotProduct(userFeatures, columnFeatures)
+        return [column, score] as const
+      })
+      .filter(([column]) => column.startsWith('swiped-'))
+      .map(([column, value]) => [column.replace('swiped-', ''), value])
+
+    return Object.fromEntries(contractScorePairs)
   }
-  return getUserContractScores
+
+  return { getUserContractScores, userIds }
 }

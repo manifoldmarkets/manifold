@@ -26,6 +26,7 @@ export function factorizeMatrix(
   const columnToIndex = Object.fromEntries(columns.map((col, i) => [col, i]))
   const columnsOfRow = TARGET_MATRIX.map(Object.keys)
   const numPoints = sumBy(columnsOfRow, (row) => row.length)
+  console.log('numPoints', numPoints)
 
   const FACTOR1_ROW_COUNT = TARGET_MATRIX.length
   const FACTOR2_ROW_COUNT = columns.length
@@ -59,7 +60,7 @@ export function factorizeMatrix(
         const j = columnToIndex[column]
 
         // Get difference of actual value and the current approximate value as error
-        const CURRENT_VALUE = dotVectors(factorMatrix1[i], factorMatrix2[j])
+        const CURRENT_VALUE = dotProduct(factorMatrix1[i], factorMatrix2[j])
         const ERROR = TRUE_VALUE - CURRENT_VALUE
 
         // Update factor matrices
@@ -125,7 +126,7 @@ function calculateFactorMatricesError(
       const j = columnToIndex[column]
 
       // Get difference of actual value and the current approximate value as error
-      const CURRENT_VALUE = dotVectors(factorMatrix1[i], factorMatrix2[j])
+      const CURRENT_VALUE = dotProduct(factorMatrix1[i], factorMatrix2[j])
       const ERROR = TRUE_VALUE - CURRENT_VALUE
 
       // Increment totalError with current error
@@ -157,13 +158,13 @@ function transpose(matrix: number[][]) {
 function multiplyMatrices(m: number[][], n: number[][]) {
   const transposedN = transpose(n)
 
-  return m.map((row) => transposedN.map((column) => dotVectors(row, column)))
+  return m.map((row) => transposedN.map((column) => dotProduct(row, column)))
 }
 
 /**
  * Multiplies vectors together and sums the resulting vector up.
  */
-function dotVectors(v: number[], w: number[]) {
+export function dotProduct(v: number[], w: number[]) {
   let sum = 0
   for (let i = 0; i < v.length; i++) sum += v[i] * w[i]
   return sum
