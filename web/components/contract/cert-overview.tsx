@@ -21,7 +21,7 @@ import Image from 'next/image'
 import { Fragment, useState } from 'react'
 import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
 import { useUser, useUsersById } from 'web/hooks/use-user'
-import { dividendCert, swapCert } from 'web/lib/firebase/api'
+import { dividendCert, swapCert, swapCertVercel } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -235,11 +235,31 @@ export function CertOverview(props: { contract: CertContract }) {
             size="xl"
             className="w-40 transition-colors"
             disabled={!amount}
-            onClick={async () =>
+            onClick={async () => {
+              const start = performance.now()
               await swapCert({ certId: contract.id, amount: realAmount })
-            }
+              const end = performance.now()
+              console.log('swapCert took', end - start, 'ms')
+            }}
           >
             {isBuy ? 'Buy' : 'Sell'}
+          </Button>
+          <Button
+            color={isBuy ? 'green' : 'red'}
+            size="xl"
+            className="w-40 transition-colors"
+            disabled={!amount}
+            onClick={async () => {
+              const start = performance.now()
+              await swapCertVercel({
+                certId: contract.id,
+                amount: realAmount,
+              })
+              const end = performance.now()
+              console.log('swapCertVCF took', end - start, 'ms')
+            }}
+          >
+            VCF {isBuy ? 'Buy' : 'Sell'}
           </Button>
         </Row>
       </Col>
