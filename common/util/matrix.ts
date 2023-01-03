@@ -2,6 +2,7 @@ import { sumBy } from 'lodash'
 
 // Code originally from: https://github.com/johnpaulada/matrix-factorization-js/blob/master/src/matrix-factorization.js
 // Used to implement recommendations through collaborative filtering: https://towardsdatascience.com/recommender-systems-matrix-factorization-using-pytorch-bd52f46aa199
+// See also: https://en.wikipedia.org/wiki/Matrix_factorization_(recommender_systems)
 
 /**
  * Gets the factors of a sparse matrix
