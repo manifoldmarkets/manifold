@@ -1,6 +1,6 @@
 # Manifold Markets Twitch Bot
 
-This repo has everything required to host the Manifold Twitch Bot, and associated overlay and dock browser sources for OBS.
+This sub-repo has everything required to host the Manifold Twitch Bot and associated overlay and dock browser sources for OBS.
 
 ![OBS example](./docs/OBS.png)
 
@@ -31,6 +31,7 @@ These can either be defined as global environmental variables on the system, or 
 
 - Ensure the [environmental variables](#environmental-variables) are correctly configured
 - Ensure [Yarn](https://classic.yarnpkg.com/lang/en/docs/install/#windows-stable) is installed
+- Ensure `concurrently` is installed globally (run `npm install -g concurrently` to install)
 - Run the following commands from the root of the Manifold repository:
   - `$ yarn`
   - `$ cd twitch-bot`
@@ -50,7 +51,9 @@ In order to deploy to the Manifold Twitch servers, you will need to have the app
 
 If you are using Windows, it is also recommended to have [Git Bash](https://git-scm.com/downloads) installed, as the deployment script is targeted for use on Unix OSs.
 
-Launch `twitch-bot/scripts/deploy-to-remote.sh`. On Windows, this must be done through Git Bash. The script will ask whether you wish to deploy to the development or production server, and should then handle everything else.
+Launch `scripts/deploy-to-remote.sh`. On Windows, this must be done through Git Bash. The script will ask whether you wish to deploy to the development or production server, and should then handle everything else.
+
+> Note: appropriate `.env` files must be copied into the `scripts/build` directory for the deployed bot to launch successfully.
 
 The first time this script is run it will need to download docker images, Yarn dependencies and build all the source from scratch, so be patient! Subsequent runs should only take a matter of seconds to complete.
 
@@ -58,7 +61,13 @@ The first time this script is run it will need to download docker images, Yarn d
 
 This repo can be built into a Docker image ready for deployment to a hosting site as-is. The container host must have all the [environmental variables](#environmental-variables) set for this to work.
 
-The Docker image can be built with `docker build -t {IMAGE_NAME} .` in the root of the repository, and run with `docker run --env-file .env -p 9172:9172 -it {IMAGE_NAME}`
+The Docker image can be built using the `scripts/build-docker.sh` script, and run with the `scripts/launch-docker.sh` script.
+
+## Fixing failed deployments
+
+In the case that the bot fails to deploy, it is possible that future "quick deployments" (i.e. using the `deploy-to-remote` script) will fail due to being unable to instigate a smooth handover of control to the updated bot container.
+
+In order to fix this, all running Docker containers must be killed before the script can be run. This can be done by SSHing into the remote server using `gcloud compute ssh dev-twitch-bot` OR `gcloud compute ssh twitch-bot` and then running `docker kill $(docker ps -q)`
 
 ## Viewing logs in production
 
@@ -81,3 +90,35 @@ There are two ways to view the logs of the deployed bot:
 - [ ] Save which markets are currently featured on each Twitch channel to Firestore to support server rebooting without interruption
 - [ ] Allow docks to set the group within which markets created through chat will be added
 - [ ] Support renewing dock and overlay links in case of a leak
+
+## Potential Kubernetes structure
+
+### Key principles
+
+- Only max one instance of TMI server to prevent multiple bots responding to the same message
+- Streams are sharded by hash to determine which bot responds to said stream's chat messages
+- Bots can come online and go offline as demand increases or decreases (effectively autoscaling without the risk of multiple responses)
+
+```
+                                      ┌───────────►DOCK
+                                      │
+                        stream1   ┌───┴───┐
+                       ┌─────────►│ BOT 1 ├───────►OVERLAY
+                       │          └───┬───┘
+                       │              │
+                       │              └───────────►DOCK
+                       │
+                       │
+                       │
+┌───────────┐       ┌──▼──┐   s2  ┌───────┐
+│ TWITCH.TV │◄─────►│ TMI │◄─────►│ BOT 2 ├──────►DOCK
+│  SERVERS  │       └──▲──┘       └───────┘
+└───────────┘          │
+                       │              .
+                       │              .
+                       │              .
+                       │
+                       │          ┌───────┐
+                       └─────────►│ BOT 9 ├──────►OVERLAY
+                            s9    └───────┘
+```
