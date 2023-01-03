@@ -144,9 +144,6 @@ export const OtherWaysToGetMana = (props: { includeBuyNote?: boolean }) => {
   return (
     <ul className="space-y-2 text-sm">
       <Item>
-        Add a helpful comment to a market or post to earn tips from other users
-      </Item>
-      <Item>
         Place your first {SINGULAR_BET} of the day to get your streak bonus (up
         to
         <span className={'mx-1 font-bold'}>
@@ -168,7 +165,7 @@ export const OtherWaysToGetMana = (props: { includeBuyNote?: boolean }) => {
       </Item>
       <Item url="https://discord.gg/3Zuth9792G">
         Come by our discord and ask nicely. We pay new users for sharing their
-        experience!
+        experiences!
       </Item>
       <Item url="https://github.com/manifoldmarkets/manifold">
         Contribute to our codebase, even something simple, and we'll pay you a
