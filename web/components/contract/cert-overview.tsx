@@ -189,7 +189,7 @@ export function CertOverview(props: { contract: CertContract }) {
           {({ checked }) => (
             <div
               className={clsx(
-                'rounded-t-lg border-2 bg-teal-100 py-2',
+                'cursor-pointer rounded-t-lg border-2 bg-teal-100 py-2 hover:bg-teal-200',
                 checked
                   ? 'border-teal-300 border-b-teal-100'
                   : 'border-b-scarlet-300 border-teal-100'
@@ -203,7 +203,7 @@ export function CertOverview(props: { contract: CertContract }) {
           {({ checked }) => (
             <div
               className={clsx(
-                'bg-scarlet-100 rounded-t-lg border-2 py-2',
+                'bg-scarlet-100 hover:bg-scarlet-200 cursor-pointer rounded-t-lg border-2 py-2',
                 checked
                   ? 'border-scarlet-300 border-b-scarlet-100'
                   : 'border-scarlet-100 border-b-teal-300'
