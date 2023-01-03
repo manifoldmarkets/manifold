@@ -27,12 +27,12 @@ import { Button } from '../buttons/button'
 import { CertContractChart } from '../charts/contract/cert'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { RelativeTimestamp } from '../relative-timestamp'
 import { SizedContainer } from '../sized-container'
 import { AmountInput } from '../widgets/amount-input'
 import { Avatar } from '../widgets/avatar'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
+import CertTradesTable from './cert-trades-table'
 
 export function CertInfo(props: { contract: CertContract }) {
   const { contract } = props
@@ -272,13 +272,5 @@ export function CertOverview(props: { contract: CertContract }) {
 export function CertTrades(props: { contract: CertContract }) {
   const { contract } = props
   const txns = useCertTxns(contract.id)
-  return (
-    <>
-      {txns.map((txn, i) => (
-        <div key={i} className="rounded-lg px-2 py-1 text-gray-500">
-          {txn.description} <RelativeTimestamp time={txn.createdTime} />
-        </div>
-      ))}
-    </>
-  )
+  return <CertTradesTable txns={txns} />
 }

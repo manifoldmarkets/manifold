@@ -12,3 +12,7 @@ const FORMATTER = new Intl.DateTimeFormat('default', {
 })
 
 export const formatTime = FORMATTER.format
+
+export function formatTimeShort(time: number) {
+  return dayjs(time).format('MMM D, h:mma')
+}
