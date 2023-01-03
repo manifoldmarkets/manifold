@@ -112,7 +112,7 @@ async function importDatabase(kinds?: string[]) {
       client,
       firestore.collectionGroup('follows'),
       'userFollow',
-      (c) => c.ref.parent.parent?.parent.path == '/users',
+      (c) => c.ref.parent.parent?.parent.path === 'users',
       5000
     )
   if (shouldImport('userReaction'))
@@ -159,7 +159,7 @@ async function importDatabase(kinds?: string[]) {
       client,
       firestore.collectionGroup('follows'),
       'contractFollow',
-      (c) => c.ref.parent.parent?.parent.path == '/contracts',
+      (c) => c.ref.parent.parent?.parent.path == 'contracts',
       5000
     )
   if (shouldImport('contractLiquidity'))
