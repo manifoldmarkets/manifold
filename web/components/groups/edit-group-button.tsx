@@ -8,10 +8,10 @@ import { Spacer } from '../layout/spacer'
 import { useRouter } from 'next/router'
 import { Modal } from 'web/components/layout/modal'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
-import { User } from 'common/user'
 import { useMemberIds } from 'web/hooks/use-group'
 import { Input } from '../widgets/input'
 import { Button } from '../buttons/button'
+import { SearchUserInfo } from 'web/lib/supabase/users'
 
 export function EditGroupButton(props: { group: Group; className?: string }) {
   const { group, className } = props
@@ -20,7 +20,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
   const [name, setName] = useState(group.name)
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [addMemberUsers, setAddMemberUsers] = useState<User[]>([])
+  const [addMemberUsers, setAddMemberUsers] = useState<SearchUserInfo[]>([])
   const memberIds = useMemberIds(group.id) ?? []
   function updateOpen(newOpen: boolean) {
     setAddMemberUsers([])

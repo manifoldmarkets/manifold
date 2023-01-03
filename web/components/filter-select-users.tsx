@@ -1,18 +1,16 @@
 import { UserIcon, XIcon } from '@heroicons/react/outline'
-import { useUsers } from 'web/hooks/use-users'
-import { User } from 'common/user'
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useRef, useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { Menu, Transition } from '@headlessui/react'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
-import { searchInAny } from 'common/util/parse'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Input } from './widgets/input'
+import { searchUsers, SearchUserInfo } from 'web/lib/supabase/users'
 
 export function FilterSelectUsers(props: {
-  setSelectedUsers: (users: User[]) => void
-  selectedUsers: User[]
+  setSelectedUsers: (users: SearchUserInfo[]) => void
+  selectedUsers: SearchUserInfo[]
   ignoreUserIds: string[]
   showSelectedUsersTitle?: boolean
   selectedUsersClassName?: string
@@ -26,22 +24,31 @@ export function FilterSelectUsers(props: {
     selectedUsersClassName,
     maxUsers,
   } = props
-  const users = useUsers()
   const [query, setQuery] = useState('')
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
-  const beginQuerying = query.length > 2
-  useMemo(() => {
-    if (beginQuerying)
-      setFilteredUsers(
-        users.filter((user: User) => {
-          return (
-            !selectedUsers.some(({ name }) => name === user.name) &&
-            !ignoreUserIds.includes(user.id) &&
-            searchInAny(query, user.name, user.username)
+  const [filteredUsers, setFilteredUsers] = useState<SearchUserInfo[]>([])
+
+  const requestId = useRef(0)
+  useEffect(() => {
+    const id = ++requestId.current
+    if (query.length > 2) {
+      searchUsers(query, 5).then((results) => {
+        // if there's a more recent request, forget about this one
+        if (id === requestId.current) {
+          setFilteredUsers(
+            results.filter((user: SearchUserInfo) => {
+              return (
+                !selectedUsers.some(({ name }) => name === user.name) &&
+                !ignoreUserIds.includes(user.id)
+              )
+            })
           )
-        })
-      )
-  }, [beginQuerying, users, selectedUsers, ignoreUserIds, query])
+        }
+      })
+    } else {
+      setFilteredUsers([])
+    }
+  }, [query, selectedUsers, ignoreUserIds])
+
   const shouldShow = maxUsers ? selectedUsers.length < maxUsers : true
   return (
     <div>
@@ -65,12 +72,12 @@ export function FilterSelectUsers(props: {
             as="div"
             className={clsx(
               'relative inline-block w-full overflow-y-scroll text-right',
-              beginQuerying && 'h-36'
+              query.length > 2 && 'h-36'
             )}
           >
             {({}) => (
               <Transition
-                show={beginQuerying}
+                show={query.length > 2}
                 as={Fragment}
                 enter="transition ease-out duration-100"
                 enterFrom="transform opacity-0 scale-95"
@@ -84,7 +91,7 @@ export function FilterSelectUsers(props: {
                   className="absolute right-0 mt-2 w-full origin-top-right cursor-pointer divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
                 >
                   <div className="py-1">
-                    {filteredUsers.map((user: User) => (
+                    {filteredUsers.map((user) => (
                       <Menu.Item key={user.id}>
                         {({ active }) => (
                           <span
@@ -128,7 +135,7 @@ export function FilterSelectUsers(props: {
               selectedUsersClassName
             )}
           >
-            {selectedUsers.map((user: User) => (
+            {selectedUsers.map((user: SearchUserInfo) => (
               <div
                 key={user.id}
                 className="col-span-2 flex flex-row items-center justify-between"
@@ -148,7 +155,7 @@ export function FilterSelectUsers(props: {
                 <XIcon
                   onClick={() =>
                     setSelectedUsers([
-                      ...selectedUsers.filter((u) => u.id != user.id),
+                      ...selectedUsers.filter(({ id }) => id != user.id),
                     ])
                   }
                   className=" h-5 w-5 cursor-pointer text-gray-400"
