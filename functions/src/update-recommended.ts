@@ -5,7 +5,7 @@ import { uniq } from 'lodash'
 
 import { createSupabaseClient, invokeFunction, loadPaginated } from './utils'
 import { newEndpointNoAuth } from './api'
-import { getMarketRecommendations } from 'common/recommendation'
+import { getMarketRecommendations } from '../../common/recommendation'
 import { run } from '../../common/supabase/utils'
 import { mapAsync } from '../../common/util/promise'
 
