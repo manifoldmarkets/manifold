@@ -115,7 +115,6 @@ const DeletedUser = () => {
           src="https://discord.com/widget?id=915138780216823849&theme=dark"
           width="350"
           height="500"
-          frameBorder="0"
           sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
         ></iframe>
       </div>
