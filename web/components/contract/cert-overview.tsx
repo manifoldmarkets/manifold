@@ -7,6 +7,7 @@ import {
   getCertOwnershipUsers,
   getCertPoints,
   getDividendPayouts,
+  toPayoutsMap,
 } from 'common/calculate/cert'
 import {
   calculatePrice,
@@ -15,7 +16,6 @@ import {
 } from 'common/calculate/uniswap2'
 import { CertContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { CertTxn } from 'common/txn'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { keyBy } from 'lodash'
 import Image from 'next/image'
@@ -43,11 +43,17 @@ export function CertInfo(props: { contract: CertContract }) {
   const userArr = useUsersById(Object.keys(ownership))
   const users = userArr ? keyBy(userArr, 'id') : {}
 
+  const user = useUser()
+  const [totalDividend, setTotalDividend] = useState(10_000)
+  const isCreator = user && user.id === contract.creatorId
+  const payouts = getDividendPayouts(user?.id || '', totalDividend, txns)
+  const payoutsMap = toPayoutsMap(payouts)
+
   return (
     <Col className="gap-1 md:gap-2">
       <div className="max-w-full px-2">
         <h2 className="mb-2 text-xl text-indigo-700">Pool</h2>
-        {share} shares <br />
+        {formatLargeNumber(share)} shares <br />
         {formatMoney(mana)}
         <h2 className="mt-4 mb-2 text-xl text-indigo-700">Positions</h2>
         <Table>
@@ -55,6 +61,7 @@ export function CertInfo(props: { contract: CertContract }) {
             <tr>
               <td>User</td>
               <td>Shares</td>
+              <td>Dividend</td>
             </tr>
           </thead>
           <tbody className="align-center">
@@ -78,43 +85,42 @@ export function CertInfo(props: { contract: CertContract }) {
                       {user.name}
                     </div>
                   </td>
-                  <td>{shares}</td>
+                  <td>{formatLargeNumber(shares)}</td>
+                  <td>
+                    {isCreator && payoutsMap[id] ? (
+                      <span className="text-blue-400">
+                        {' '}
+                        {formatMoney(payoutsMap[id])}
+                      </span>
+                    ) : null}
+                  </td>
                 </tr>
               )
             })}
           </tbody>
         </Table>
       </div>
-    </Col>
-  )
-}
-
-function PayDividendWidget(props: { contract: CertContract; txns: CertTxn[] }) {
-  const { contract, txns } = props
-  const user = useUser()
-  const [totalDividend, setTotalDividend] = useState(10_000)
-  if (!user || user.id != contract.creatorId) return null
-  const payouts = getDividendPayouts(user?.id, totalDividend, txns)
-  return (
-    <Col className="gap-2 rounded-lg bg-gray-50 p-4">
-      <Title>Pay Dividend</Title>
-      <input
-        type="number"
-        value={totalDividend}
-        onChange={(e) => setTotalDividend(parseInt(e.target.value))}
-      />
-      <p>{JSON.stringify(payouts)}</p>
-      <Button
-        color="gradient"
-        onClick={async () => {
-          await dividendCert({
-            certId: contract.id,
-            amount: totalDividend,
-          })
-        }}
-      >
-        Pay Dividend
-      </Button>
+      {isCreator && (
+        <Col className="gap-2 rounded-lg bg-gray-50 p-4">
+          <Title>Pay Dividend</Title>
+          <input
+            type="number"
+            value={totalDividend}
+            onChange={(e) => setTotalDividend(parseInt(e.target.value))}
+          />
+          <Button
+            color="gradient"
+            onClick={async () => {
+              await dividendCert({
+                certId: contract.id,
+                amount: totalDividend,
+              })
+            }}
+          >
+            Pay Dividend
+          </Button>
+        </Col>
+      )}
     </Col>
   )
 }
@@ -273,7 +279,6 @@ export function CertTrades(props: { contract: CertContract }) {
           {txn.description} <RelativeTimestamp time={txn.createdTime} />
         </div>
       ))}
-      <PayDividendWidget contract={contract} txns={txns} />
     </>
   )
 }

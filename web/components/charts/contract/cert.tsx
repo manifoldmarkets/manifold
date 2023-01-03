@@ -3,12 +3,10 @@ import { last, max, sortBy } from 'lodash'
 import { curveStepAfter } from 'd3-shape'
 
 import { DAY_MS } from 'common/util/time'
-import { Bet } from 'common/bet'
 import { CertContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import {
   formatDateInRange,
-  getDateRange,
   getRightmostVisibleDate,
   TooltipProps,
 } from '../helpers'

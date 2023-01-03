@@ -59,6 +59,11 @@ export function getDividendPayouts(
   }))
   return payouts
 }
+export function toPayoutsMap(payouts: { userId: string; payout: number }[]) {
+  return Object.fromEntries(
+    payouts.map(({ userId, payout }) => [userId, payout])
+  )
+}
 
 // For each cert txn, calculate a point: {x: timestamp, y: price}
 // Right now, txns don't have a "priceAfter" field
