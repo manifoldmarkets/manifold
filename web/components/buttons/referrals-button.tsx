@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { useState } from 'react'
-import { usePrefetchUsers, useUserById } from 'web/hooks/use-user'
+import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Tabs } from '../layout/tabs'
@@ -15,12 +15,8 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
 import { SearchUserInfo } from 'web/lib/supabase/users'
 
-export function ReferralsButton(props: {
-  user: User
-  currentUser?: User
-  className?: string
-}) {
-  const { user, currentUser, className } = props
+export function ReferralsButton(props: { user: User; className?: string }) {
+  const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
   const referralIds = useReferrals(user.id)
 
@@ -35,7 +31,6 @@ export function ReferralsButton(props: {
         referralIds={referralIds ?? []}
         isOpen={isOpen}
         setIsOpen={setIsOpen}
-        currentUser={currentUser}
       />
     </>
   )
@@ -46,13 +41,13 @@ function ReferralsDialog(props: {
   referralIds: string[]
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
-  currentUser?: User
 }) {
-  const { user, referralIds, isOpen, setIsOpen, currentUser } = props
+  const { user, referralIds, isOpen, setIsOpen } = props
   const [referredBy, setReferredBy] = useState<SearchUserInfo[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
 
+  const currentUser = useUser()
   const referredByUser = useUserById(user.referredByUserId)
   usePrefetchUsers(referralIds)
 
