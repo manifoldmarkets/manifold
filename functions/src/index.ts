@@ -13,6 +13,7 @@ export { scheduleUpdateContractMetrics } from './update-contract-metrics'
 export { scheduleUpdateUserMetrics } from './update-user-metrics'
 export { scheduleUpdateGroupMetrics } from './update-group-metrics'
 export { scheduleUpdateLoans } from './update-loans'
+export { scheduleUpdateRecommended } from './update-recommended'
 export * from './update-stats'
 export * from './backup-db'
 export * from './market-close-notifications'
@@ -85,6 +86,7 @@ import { updatecontractmetrics } from './update-contract-metrics'
 import { updateusermetrics } from './update-user-metrics'
 import { updategroupmetrics } from './update-group-metrics'
 import { updateloans } from './update-loans'
+import { updaterecommended } from './update-recommended'
 import { addsubsidy } from './add-subsidy'
 import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from './validate-iap'
@@ -122,6 +124,7 @@ const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
 const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 const updateLoansFunction = toCloudFunction(updateloans)
+const updateRecommendedFunction = toCloudFunction(updaterecommended)
 const validateIAPFunction = toCloudFunction(validateiap)
 const swapCertFunction = toCloudFunction(swapcert)
 const dividendCertFunction = toCloudFunction(dividendcert)
@@ -155,6 +158,7 @@ export {
   updateUserMetricsFunction as updateusermetrics,
   updateGroupMetricsFunction as updategroupmetrics,
   updateLoansFunction as updateloans,
+  updateRecommendedFunction as updaterecommended,
   validateIAPFunction as validateiap,
   swapCertFunction as swapcert,
   dividendCertFunction as dividendcert,

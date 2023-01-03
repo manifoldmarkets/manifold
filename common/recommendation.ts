@@ -10,7 +10,10 @@ export type user_data = {
   likedIds: string[]
 }
 
-export async function getMarketRecommendations(userData: user_data[]) {
+export function getMarketRecommendations(
+  userData: user_data[],
+  iterations = 5000
+) {
   userData = userData.filter((userData) =>
     Object.values(userData).some((obj) => isArray(obj) && obj.length > 0)
   )
@@ -90,7 +93,7 @@ export async function getMarketRecommendations(userData: user_data[]) {
     sparseMatrix,
     columns,
     5,
-    2000
+    iterations
   )
 
   const swipeColumnIndices = columns
