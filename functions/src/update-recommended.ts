@@ -24,7 +24,7 @@ export const scheduleUpdateRecommended = functions.pubsub
   })
 
 export const updaterecommended = newEndpointNoAuth(
-  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
+  { timeoutSeconds: 3600, memory: '8GiB', minInstances: 0 },
   async (_req) => {
     await updateRecommendedMarkets()
     return { success: true }
@@ -38,7 +38,7 @@ export const updateRecommendedMarkets = async () => {
   console.log('Computing recommendations...')
 
   const { userIds, userFeatures, contractIds, contractFeatures } =
-    getMarketRecommendations(userData)
+    getMarketRecommendations(userData, 3000)
 
   const userFeatureRows = userFeatures.map((features, i) => ({
     user_id: userIds[i],

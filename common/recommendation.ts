@@ -12,7 +12,7 @@ export type user_data = {
 
 export function getMarketRecommendations(
   userData: user_data[],
-  iterations = 5000
+  iterations = 2000
 ) {
   userData = userData.filter((userData) =>
     Object.values(userData).some((obj) => isArray(obj) && obj.length > 0)
