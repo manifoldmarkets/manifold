@@ -45,9 +45,9 @@ function logger(path: string, docKind: DocumentKind) {
 }
 
 export const logUsers = logger('users/{id}', 'user')
-export const logUserFollowers = logger(
-  'users/{parent}/followers/{id}',
-  'userFollower'
+export const logUserFollows = logger(
+  'users/{parent}/follows/{id}',
+  'userFollow'
 )
 export const logContracts = logger('contracts/{id}', 'contract')
 export const logContractAnswers = logger(

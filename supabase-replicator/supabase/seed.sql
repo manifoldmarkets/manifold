@@ -26,17 +26,17 @@ create index concurrently if not exists users_name_gin on users using GIN ((data
 create index concurrently if not exists users_username_gin on users using GIN ((data->>'username') gin_trgm_ops);
 create index concurrently if not exists users_follower_count_cached on users ((to_jsonb(data->'followerCountCached')) desc);
 
-create table if not exists user_followers (
+create table if not exists user_follows (
     user_id text not null,
-    follower_id text not null,
+    follow_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
-    primary key(user_id, follower_id)
+    primary key(user_id, follow_id)
 );
-alter table user_followers enable row level security;
-drop policy if exists "public read" on user_followers;
-create policy "public read" on user_followers for select using (true);
-create index concurrently if not exists user_followers_data_gin on user_followers using GIN (data);
+alter table user_follows enable row level security;
+drop policy if exists "public read" on user_follows;
+create policy "public read" on user_follows for select using (true);
+create index concurrently if not exists user_follows_data_gin on user_follows using GIN (data);
 
 create table if not exists contracts (
     id text not null primary key,
@@ -86,10 +86,10 @@ create index concurrently if not exists contract_comments_data_gin on contract_c
 
 create table if not exists contract_follows (
     contract_id text not null,
-    follower_id text not null,
+    follow_id text not null,
     data jsonb not null,
     fs_updated_time timestamp not null,
-    primary key(contract_id, follower_id)
+    primary key(contract_id, follow_id)
 );
 alter table contract_follows enable row level security;
 drop policy if exists "public read" on contract_follows;
@@ -227,12 +227,12 @@ $$
 begin
   return case doc_kind
     when 'user' then cast(('users', null, 'id') as table_spec)
-    when 'userFollower' then cast(('users', 'user_id', 'follower_id') as table_spec)
+    when 'userFollow' then cast(('user_follows', 'user_id', 'follow_id') as table_spec)
     when 'contract' then cast(('contracts', null, 'id') as table_spec)
     when 'contractAnswer' then cast(('contract_answers', 'contract_id', 'answer_id') as table_spec)
     when 'contractBet' then cast(('contract_bets', 'contract_id', 'bet_id') as table_spec)
     when 'contractComment' then cast(('contract_comments', 'contract_id', 'comment_id') as table_spec)
-    when 'contractFollow' then cast(('contract_follows', 'contract_id', 'follower_id') as table_spec)
+    when 'contractFollow' then cast(('contract_follows', 'contract_id', 'follow_id') as table_spec)
     when 'contractLiquidity' then cast(('contract_liquidity', 'contract_id', 'liquidity_id') as table_spec)
     when 'group' then cast(('groups', null, 'id') as table_spec)
     when 'groupContract' then cast(('group_contracts', 'group_id', 'contract_id') as table_spec)
@@ -254,12 +254,12 @@ $$
 declare dest_table table_spec;
 begin
   dest_spec = get_document_table_spec(r.doc_kind);
-  if dest_spec = null then
+  if dest_spec is null then
     raise warning 'Invalid document kind.';
     return false;
   end if;
   if r.write_kind = 'create' or r.write_kind = 'update' then
-    if dest_spec.parent_id_col_name != null then
+    if dest_spec.parent_id_col_name is not null then
       execute format(
         'insert into %1$I (%2$I, %3$I, data, fs_updated_time) values (%4$L, %5$L, %6$L, %7$L)
          on conflict (%2$I, %3$I) do update set data = %6$L, fs_updated_time = %7$L
@@ -277,7 +277,7 @@ begin
       );
     end if;
   elsif r.write_kind = 'delete' then
-    if dest_spec.parent_id_col_name != null then
+    if dest_spec.parent_id_col_name is not null then
       execute format(
         'delete from %1$I where %2$I = %4$L and %3$I = %5$L and fs_updated_time <= %6$L',
         dest_spec.table_name, dest_spec.parent_id_col_name, dest_spec.id_col_name,
