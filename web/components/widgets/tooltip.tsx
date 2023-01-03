@@ -23,8 +23,9 @@ export function Tooltip(props: {
   placement?: Placement
   noTap?: boolean
   noFade?: boolean
+  hasSafePolygon?: boolean
 }) {
-  const { text, children, className, noTap, noFade } = props
+  const { text, children, className, noTap, noFade, hasSafePolygon } = props
 
   const arrowRef = useRef(null)
 
@@ -57,7 +58,7 @@ export function Tooltip(props: {
   const { getReferenceProps, getFloatingProps } = useInteractions([
     useHover(context, {
       mouseOnly: noTap,
-      handleClose: safePolygon({ buffer: -0.5 }),
+      handleClose: hasSafePolygon ? safePolygon({ buffer: -0.5 }) : null,
     }),
     useRole(context, { role: 'tooltip' }),
   ])
