@@ -1,8 +1,9 @@
-import { Fragment, ReactNode } from 'react'
 import { Menu, Transition } from '@headlessui/react'
-import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { Fragment, ReactNode } from 'react'
 import { Row } from 'web/components/layout/row'
+
 export type DropdownItem = {
   name: string
   icon: ReactNode
@@ -14,13 +15,17 @@ export default function DropdownMenu(props: {
   Icon?: ReactNode
   MenuWidth?: string
   buttonClass?: string
+  className?: string
 }) {
-  const { Items, Icon, MenuWidth, buttonClass } = props
+  const { Items, Icon, MenuWidth, buttonClass, className } = props
   const icon = Icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
   )
   return (
-    <Menu as="div" className="relative inline-block text-left">
+    <Menu
+      as="div"
+      className={clsx('relative inline-block text-left', className)}
+    >
       <Menu.Button
         className={clsx(
           'flex items-center rounded-full text-gray-400 hover:text-gray-600',

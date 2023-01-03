@@ -3,6 +3,7 @@ import Link from 'next/link'
 import {
   HomeIcon,
   MenuAlt3Icon,
+  SparklesIcon,
   SearchIcon,
   XIcon,
 } from '@heroicons/react/outline'
@@ -21,6 +22,8 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
 
+export const BOTTOM_NAV_BAR_HEIGHT = 58
+
 const itemClass =
   'sm:hover:bg-gray-200 block w-full py-1 px-3 text-center sm:hover:text-indigo-700 transition-colors'
 const selectedItemClass = 'bg-gray-100 text-indigo-700'
@@ -29,7 +32,7 @@ const touchItemClass = 'bg-indigo-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Search', href: '/search', icon: SearchIcon },
+    { name: 'Explore', href: '/swipe', icon: SparklesIcon },
     {
       name: 'Profile',
       href: `/${user.username}?tab=portfolio`,

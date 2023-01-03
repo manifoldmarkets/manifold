@@ -25,10 +25,14 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
   // TODO: Ideally, highlight your own entry on the leaderboard
   const { title, columns, className, highlightUsername } = props
   const maxToShow = props.maxToShow ?? props.entries.length
+
   const entries = sortBy(
-    props.entries.slice(0, maxToShow),
+    props.entries.filter(
+      (e) => e.username !== 'acc' || highlightUsername === 'acc'
+    ), // exclude house bot
     (entry) => entry.rank
-  )
+  ).slice(0, maxToShow)
+
   return (
     <div className={clsx('w-full px-1', className)}>
       <Title text={title} className="!mt-0" />
@@ -55,7 +59,10 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                   }
                 >
                   <td className={'w-[4.5rem] min-w-[4.5rem] '}>
-                    {entry.rank ? entry.rank : index + 1}
+                    {entry.username === highlightUsername &&
+                    (entry.rank ?? 0) > maxToShow
+                      ? (entry.rank ?? 21) - 1 // account for @acc's removal
+                      : index + 1}
                   </td>
                   <td className="max-w-[200px]">
                     <UserAvatarAndBadge

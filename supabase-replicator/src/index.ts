@@ -1,8 +1,17 @@
 import * as express from 'express'
 import * as admin from 'firebase-admin'
-import { createSupabaseClient, replicateWrites } from './replicate-writes'
+import { PubSub, Subscription, Message } from '@google-cloud/pubsub'
+import {
+  replicateWrites,
+  createFailedWrites,
+  replayFailedWrites,
+} from './replicate-writes'
+import { log } from './utils'
+import { createClient } from '../../common/supabase/utils'
 import { TLEntry } from '../../common/transaction-log'
 import { CONFIGS } from '../../common/envs/constants'
+
+const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
 const ENV = process.env.ENVIRONMENT ?? 'DEV'
 const CONFIG = CONFIGS[ENV]
@@ -20,66 +29,102 @@ if (!SUPABASE_KEY) {
   throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
 }
 
-admin.initializeApp()
-const firestore = admin.firestore()
-const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+const pubsub = new PubSub()
+const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
+const firestore = admin.initializeApp().firestore()
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 const app = express()
 app.use(express.json())
-app.post('/', async (req, res) => {
-  const data = req.body?.message.data
-  if (data == null) {
-    res.status(400).send('No pub/sub message in body.')
-    return
-  }
-  const entry = JSON.parse(Buffer.from(data, 'base64').toString()) as TLEntry
+
+app.post('/replay-failed', async (_req, res) => {
+  log('INFO', 'Checking for failed writes...')
   try {
-    await replicateWrites(supabase, entry)
+    const n = await replayFailedWrites(firestore, supabase)
+    return res.status(200).json({ success: true, n })
   } catch (e) {
-    console.error(
-      `Failed to replicate ${entry.docKind} ${entry.docId}. \
-        Logging failed write: ${entry.eventId}.`,
-      e
-    )
-    await firestore
-      .collection('replicationState')
-      .doc('supabase')
-      .collection('failedWrites')
-      .doc(entry.eventId)
-      .create(entry)
+    log('ERROR', 'Error replaying failed writes.', e)
+    return res.status(500).json({ error: (e as any).toString() })
   }
-  console.log('Processed message.')
-  res.status(204).send()
 })
 
-async function replayFailedWrites() {
-  console.log('Checking for failed writes...')
-  const failedWrites = await firestore
-    .collection('replicationState')
-    .doc('supabase')
-    .collection('failedWrites')
-    .limit(1000)
-    .get()
-  const deleter = firestore.bulkWriter({ throttling: false })
-  if (failedWrites.size > 0) {
-    console.log(`Attempting to replay ${failedWrites.size} write(s)...`)
-    const entries = failedWrites.docs.map((d) => d.data() as TLEntry)
+async function tryReplicateBatch(...messages: Message[]) {
+  const entries = messages.map((m) => JSON.parse(m.data.toString()) as TLEntry)
+  try {
+    const t0 = process.hrtime.bigint()
+    log('DEBUG', `Beginning replication of batch=${messages[0].id}.`)
     await replicateWrites(supabase, ...entries)
-    for (const doc of failedWrites.docs) {
-      deleter.delete(doc.ref)
-    }
+    const t1 = process.hrtime.bigint()
+    const ms = (t1 - t0) / 1000000n
+    log(
+      'INFO',
+      `Replicated batch=${messages[0].id} count=${entries.length}, time=${ms}ms.`
+    )
+  } catch (e) {
+    log(
+      'ERROR',
+      `Failed to replicate batch=${messages[0].id} count=${entries.length}. Logging failed writes.`,
+      e
+    )
+    await createFailedWrites(firestore, ...entries)
   }
-  await deleter.close()
+  for (const msg of messages) {
+    msg.ack()
+  }
 }
 
-const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
+function processSubscriptionBatched(
+  subscription: Subscription,
+  process: (msgs: Message[]) => Promise<void>,
+  batchSize: number,
+  batchTimeoutMs: number
+) {
+  const batch: Message[] = []
+
+  subscription.on('message', async (message) => {
+    log('DEBUG', `Received message ${message.id}.`)
+    batch.push(message)
+    if (batch.length >= batchSize) {
+      const toWrite = [...batch]
+      batch.length = 0
+      try {
+        log('DEBUG', `Starting clear batch ${toWrite[0].id}.`)
+        await process(toWrite)
+      } catch (e) {
+        log('ERROR', 'Big error processing messages:', e)
+      }
+    }
+  })
+
+  subscription.on('debug', (msg) => {
+    log('INFO', 'Debug message from stream: ', msg)
+  })
+
+  subscription.on('error', (error) => {
+    log('ERROR', 'Received error from subscription:', error)
+  })
+
+  return setInterval(async () => {
+    if (batch.length > 0) {
+      const toWrite = [...batch]
+      batch.length = 0
+      try {
+        log('DEBUG', `Starting interval batch ${toWrite[0].id}.`)
+        await process(toWrite)
+      } catch (e) {
+        log('ERROR', 'Big error processing messages:', e)
+      }
+    }
+  }, batchTimeoutMs)
+}
+
+processSubscriptionBatched(
+  writeSub,
+  (msgs) => tryReplicateBatch(...msgs),
+  1000,
+  100
+).unref() // unref() means it won't keep the process running if GCP stops the webserver
 
 app.listen(PORT, () =>
-  console.log(`Replication server listening on port ${PORT}.`)
-)
-
-// poll and process failed writes every minute
-setInterval(
-  () => replayFailedWrites().catch((e) => console.error(e)),
-  1000 * 60
+  log('INFO', `Running in ${ENV} environment listening on port ${PORT}.`)
 )

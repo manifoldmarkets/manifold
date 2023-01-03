@@ -1,10 +1,8 @@
 import { Contract } from 'web/lib/firebase/contracts'
-import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../widgets/site-link'
 import { ContractCard, ContractMetricsFooter } from './contract-card'
 import { ShowTime } from './contract-details'
-import { ContractSearch } from '../contract-search'
 import { useCallback } from 'react'
 import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -25,6 +23,7 @@ export function ContractsGrid(props: {
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
   showImageOnTopContract?: boolean
+  trackCardViews?: boolean
 }) {
   const {
     contracts,
@@ -35,6 +34,7 @@ export function ContractsGrid(props: {
     highlightCards,
     trackingPostfix,
     showImageOnTopContract,
+    trackCardViews,
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
   const onVisibilityUpdated = useCallback(
@@ -96,6 +96,7 @@ export function ContractsGrid(props: {
               highlightCards?.includes(contract.id) &&
                 'bg-gradient-to-b from-indigo-50 via-white to-white outline outline-2 outline-indigo-400'
             )}
+            trackCardViews={trackCardViews}
           >
             {contract.mechanism === 'cpmm-1' ? (
               <ContractMetricsFooter contract={contract} />
@@ -110,22 +111,5 @@ export function ContractsGrid(props: {
         />
       )}
     </Col>
-  )
-}
-
-export function CreatorContractsList(props: { creator: User }) {
-  const { creator } = props
-
-  return (
-    <ContractSearch
-      headerClassName="sticky"
-      defaultSort="newest"
-      defaultFilter="all"
-      additionalFilter={{
-        creatorId: creator.id,
-      }}
-      persistPrefix={`user-${creator.id}`}
-      profile={true}
-    />
   )
 }

@@ -4,11 +4,10 @@ import {
   CollectionGroup,
   QueryDocumentSnapshot,
 } from 'firebase-admin/firestore'
-import { SupabaseClient } from '@supabase/supabase-js'
 import { chunk } from 'lodash'
 
 import { withRetries } from '../../../common/util/promise'
-import { run } from '../../../common/supabase/utils'
+import { run, SupabaseClient } from '../../../common/supabase/utils'
 import { createSupabaseClient, log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 import { DocumentKind } from '../../../common/transaction-log'
@@ -81,23 +80,54 @@ async function importCollectionGroup(
   })
 }
 
+async function clearFailedWrites() {
+  const firestore = admin.firestore()
+  log('Clearing failed writes...')
+  const refs = await firestore
+    .collection('replicationState')
+    .doc('supabase')
+    .collection('failedWrites')
+    .listDocuments()
+  const deleter = firestore.bulkWriter({ throttling: false })
+  for (const ref of refs) {
+    deleter.delete(ref)
+  }
+  await deleter.close()
+}
+
 async function importDatabase(kinds?: string[]) {
   const firestore = admin.firestore()
   const client = createSupabaseClient()
   const shouldImport = (k: DocumentKind) => kinds == null || kinds.includes(k)
 
-  if (shouldImport('txn'))
-    await importCollection(client, firestore.collection('txns'), 'txn', 1000)
-  if (shouldImport('group'))
-    await importCollection(client, firestore.collection('groups'), 'group', 100)
+  if (kinds == null) {
+    await clearFailedWrites()
+  }
+
   if (shouldImport('user'))
-    await importCollection(client, firestore.collection('users'), 'user', 100)
+    await importCollection(client, firestore.collection('users'), 'user', 500)
+  if (shouldImport('userFollower'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('followers'),
+      'userFollower',
+      (_) => true,
+      500
+    )
   if (shouldImport('contract'))
     await importCollection(
       client,
       firestore.collection('contracts'),
       'contract',
-      100
+      500
+    )
+  if (shouldImport('contractAnswer'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('answers'),
+      'contractAnswer',
+      (_) => true,
+      2500
     )
   if (shouldImport('contractBet'))
     await importCollectionGroup(
@@ -105,7 +135,7 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('bets'),
       'contractBet',
       (_) => true,
-      1000
+      2500
     )
   if (shouldImport('contractComment'))
     await importCollectionGroup(
@@ -113,8 +143,53 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('comments'),
       'contractComment',
       (c) => c.get('commentType') === 'contract',
-      100
+      500
     )
+  if (shouldImport('contractFollow'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('follows'),
+      'contractFollow',
+      (_) => true,
+      2500
+    )
+  if (shouldImport('contractLiquidity'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('liquidity'),
+      'contractLiquidity',
+      (_) => true,
+      2500
+    )
+  if (shouldImport('group'))
+    await importCollection(client, firestore.collection('groups'), 'group', 500)
+  if (shouldImport('groupContract'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('groupContracts'),
+      'groupContract',
+      (_) => true,
+      500
+    )
+  if (shouldImport('groupMember'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('groupMembers'),
+      'groupMember',
+      (_) => true,
+      2500
+    )
+  if (shouldImport('txn'))
+    await importCollection(client, firestore.collection('txns'), 'txn', 2500)
+  if (shouldImport('manalink'))
+    await importCollection(
+      client,
+      firestore.collection('manalinks'),
+      'manalink',
+      2500
+    )
+  if (shouldImport('post'))
+    await importCollection(client, firestore.collection('posts'), 'post', 100)
 }
 
 if (require.main === module) {

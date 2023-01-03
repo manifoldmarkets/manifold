@@ -1,11 +1,12 @@
-import * as Packet from 'common/packet-ids';
-import { GroupControlField, PacketGroupControlFields, PacketSelectMarket } from 'common/packets';
-import { NamedBet } from 'common/types/manifold-abstract-types';
+import * as Packet from '@common/packet-ids';
+import { GroupControlField, PacketGroupControlFields, PacketSelectMarket } from '@common/packets';
+import { NamedBet } from '@common/types/manifold-abstract-types';
 import App from './app';
 import DockClient from './clients/dock';
 import OverlayClient from './clients/overlay';
 import log from './logger';
 import { Market } from './market';
+import { MetricEvent, UniqueMetricEvent } from './metrics';
 import { getParamsFromURL } from './utils';
 
 type AdditionalControl = GroupControlField & {
@@ -61,6 +62,8 @@ export class TwitchStream {
         this.broadcastToOverlays(Packet.SELECT_MARKET, selectMarketPacket);
         this.app.firestore.updateSelectedMarketForUser(this.name, id);
         this.app.bot.onMarketFeatured(this.name, market);
+        this.app.metrics.logMetricsEvent(MetricEvent.MARKET_FEATURED);
+        this.app.metrics.logUnqiueMetricsEvent(UniqueMetricEvent.UNIQUE_OVERLAY, this.app.getUserForTwitchUsername(this.name));
         return market;
       } catch (e) {
         throw new Error('Failed to feature market: ' + e.message);
@@ -110,7 +113,7 @@ export class TwitchStream {
 
         const params = getParamsFromURL(f.url);
         const controlToken = params['t'];
-        const user = await this.app.firestore.getUserForControlToken(<string>controlToken);
+        const user = this.app.firestore.getUserForControlToken(<string>controlToken);
         let stream: TwitchStream = undefined;
         if (user) {
           f.valid = true;

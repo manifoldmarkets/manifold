@@ -13,6 +13,7 @@ import { IS_DEV, PORT } from './envs';
 import AppFirestore from './firestore';
 import log from './logger';
 import ManifoldFirestore from './manifold-firestore';
+import { Metrics } from './metrics';
 import { TwitchStream } from './stream';
 import TwitchBot from './twitch-bot';
 import User from './user';
@@ -23,6 +24,7 @@ export default class App {
   readonly bot: TwitchBot;
   readonly firestore: AppFirestore;
   readonly manifoldFirestore: ManifoldFirestore;
+  readonly metrics: Metrics;
   readonly streams: { [twitchChannel: string]: TwitchStream } = {};
   readonly userIdToNameMap: { [k: string]: string } = {};
 
@@ -34,6 +36,7 @@ export default class App {
     this.bot = new TwitchBot(this);
     this.firestore = new AppFirestore();
     this.manifoldFirestore = new ManifoldFirestore();
+    this.metrics = new Metrics(this);
   }
 
   public async getDisplayNameForUserID(userID: string) {
@@ -42,11 +45,11 @@ export default class App {
     }
     let displayName: string;
     try {
-      const user = await this.firestore.getUserForManifoldID(userID);
+      const user = this.firestore.getUserForManifoldID(userID);
       displayName = user.data.twitchLogin;
     } catch {
       try {
-        const user = this.manifoldFirestore.getManifoldUserByManifoldID(userID);
+        const user = await this.manifoldFirestore.getManifoldUserByManifoldID(userID);
         displayName = user.name;
       } catch (e) {
         log.warn(e);
@@ -65,7 +68,7 @@ export default class App {
     return stream;
   }
 
-  public async getUserForTwitchUsername(twitchUsername: string): Promise<User> {
+  public getUserForTwitchUsername(twitchUsername: string): User {
     return this.firestore.getUserForTwitchUsername(twitchUsername);
   }
 
@@ -84,9 +87,11 @@ export default class App {
   }
 
   public async launch() {
+    await this.metrics.load();
+    await this.firestore.loadUsers();
     await this.bot.connect();
     await this.manifoldFirestore.validateConnection();
-    await this.manifoldFirestore.loadAllUsers();
+    await this.manifoldFirestore.initialLoadAllUsers();
 
     try {
       await fetch('http://localhost:5000/online');
@@ -113,7 +118,7 @@ export default class App {
         next(new Error('Invalid connection type'));
         return;
       }
-      const connectedUser = await this.firestore.getUserForControlToken(<string>controlToken);
+      const connectedUser = this.firestore.getUserForControlToken(<string>controlToken);
       if (!connectedUser) {
         log.warn('Socket connection failed: No account associated with this control token');
         next(new Error('No account associated with this control token'));

@@ -9,81 +9,46 @@ import PencilIcon from '@heroicons/react/solid/PencilIcon'
 import { Contract } from 'common/contract'
 import { Group, groupPath } from 'common/group'
 import { Post } from 'common/post'
-import React, { useEffect, useState } from 'react'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { getPost } from 'web/lib/firebase/posts'
 import { ContractCard } from '../contract/contract-card'
 
 import Masonry from 'react-masonry-css'
 
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
-import { SiteLink } from '../widgets/site-link'
-import { GroupOverviewPost as GroupAboutPost } from './group-overview-post'
+import { REFERRAL_AMOUNT } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { User } from 'common/user'
+import toast from 'react-hot-toast'
+import { useUser } from 'web/hooks/use-user'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { updateGroup } from 'web/lib/firebase/groups'
-import { PinnedSelectModal } from '../pinned-select-modal'
+import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
-import { User } from 'common/user'
+import { CopyLinkButton } from '../buttons/copy-link-button'
+import { ChoicesToggleGroup } from '../choices-toggle-group'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
+import { PinnedSelectModal } from '../pinned-select-modal'
+import { CreatePostForm } from '../posts/create-post'
+import { PostCard, PostCardList } from '../posts/post-card'
+import { Linkify } from '../widgets/linkify'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { SiteLink } from '../widgets/site-link'
 import { UserLink } from '../widgets/user-link'
 import { EditGroupButton } from './edit-group-button'
 import { JoinOrLeaveGroupButton } from './groups-button'
-import { Linkify } from '../widgets/linkify'
-import { ChoicesToggleGroup } from '../choices-toggle-group'
-import { CopyLinkButton } from '../buttons/copy-link-button'
-import { REFERRAL_AMOUNT } from 'common/economy'
-import toast from 'react-hot-toast'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { PostCard, PostCardList } from '../posts/post-card'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { useUser } from 'web/hooks/use-user'
-import { CreatePostForm } from '../posts/create-post'
-import { Modal } from '../layout/modal'
-import { track } from 'web/lib/service/analytics'
-import { HideGroupButton } from 'web/components/buttons/hide-group-button'
-import { Spacer } from '../layout/spacer'
 
-export function GroupAbout(props: {
+export function GroupPostSection(props: {
   group: Group
   isEditable: boolean
   posts: Post[]
-  aboutPost: Post | null
-  creator: User
-  user: User | null | undefined
-  isMember: boolean
 }) {
-  const { group, isEditable, posts, aboutPost, creator, user, isMember } = props
+  const { group, isEditable, posts } = props
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
-      <Row className={'justify-between'}>
-        <HideGroupButton groupSlug={group.slug} />
-        {isMember && (
-          <JoinOrLeaveGroupButton
-            group={group}
-            isMember={isMember}
-            user={user}
-          />
-        )}
-      </Row>
       <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
-      {(group.aboutPostId != null || isEditable) && (
-        <>
-          <GroupAboutPost
-            group={group}
-            isEditable={isEditable}
-            post={aboutPost}
-          />
-        </>
-      )}
-
-      <GroupAboutDetails
-        group={group}
-        creator={creator}
-        isEditable={isEditable}
-        user={user}
-        isMember={isMember}
-      />
-
       <GroupPosts group={group} posts={posts} />
     </Col>
   )

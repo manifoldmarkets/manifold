@@ -5,27 +5,39 @@ import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { YesLabel, NoLabel } from '../outcome-label'
-import { getProbability } from 'common/calculate'
+import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractMetric } from 'common/contract-metric'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
 
-export function BetsSummary(props: {
+export function UserBetsSummary(props: {
   contract: Contract
   initialMetrics?: ContractMetric
   className?: string
 }) {
   const { contract, className } = props
-  const { resolution, outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-
   const metrics = useSavedContractMetrics(contract) ?? props.initialMetrics
 
   if (!metrics) return <></>
+  return (
+    <BetsSummary contract={contract} metrics={metrics} className={className} />
+  )
+}
 
-  const { profitPercent, payout, profit, invested, totalShares } = metrics
+export function BetsSummary(props: {
+  contract: Contract
+  metrics: ContractMetric
+  className?: string
+}) {
+  const { contract, metrics, className } = props
+  const { resolution, outcomeType } = contract
+  const userBets = useUserContractBets(metrics.userId, contract.id)
+  const { payout, invested, totalShares, profit, profitPercent } = userBets
+    ? getContractBetMetrics(contract, userBets)
+    : metrics
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
@@ -33,6 +45,7 @@ export function BetsSummary(props: {
   const position = yesWinnings - noWinnings
   const exampleOutcome = position < 0 ? 'NO' : 'YES'
 
+  const isBinary = outcomeType === 'BINARY'
   const prob = isBinary ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
@@ -72,7 +85,7 @@ export function BetsSummary(props: {
             </div>
           </Col>
         ) : (
-          <Col>
+          <Col className="hidden sm:inline">
             <div className="whitespace-nowrap text-sm text-gray-500">
               Expectation{''}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />
@@ -81,16 +94,16 @@ export function BetsSummary(props: {
           </Col>
         )}
 
-        <Col className="hidden sm:inline">
+        <Col>
           <div className="whitespace-nowrap text-sm text-gray-500">
-            Invested{' '}
-            <InfoTooltip text="Cash currently invested in this market." />
+            Cost basis{' '}
+            <InfoTooltip text="Cash originally invested in this market, using average cost accounting." />
           </div>
           <div className="whitespace-nowrap">{formatMoney(invested)}</div>
         </Col>
 
         {isBinary && !resolution && (
-          <Col>
+          <Col className="hidden sm:inline">
             <div className="whitespace-nowrap text-sm text-gray-500">
               Expectation{' '}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />

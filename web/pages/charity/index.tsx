@@ -207,18 +207,21 @@ export default function Charity(props: {
           <span className="text-lg font-semibold">Notes</span>
           <ul>
             <li>
-              Don't see your favorite charity? Recommend it by emailing{' '}
+              Don't see your favorite 501c3 charity? Contact us at{' '}
               <a href="mailto:charity@manifold.markets?subject=Add%20Charity">
                 charity@manifold.markets
               </a>
               !
             </li>
-            <li>Manifold is not affiliated with any charities.</li>
+            <li>Manifold is not affiliated with any of the above charities.</li>
             <li>
-              As Manifold itself is a for-profit entity, your contributions will
-              not be tax deductible.
+              Unfortunately, your contributions will not be tax deductible.
             </li>
             <li>Donations are wired once each quarter.</li>
+            <li>
+              Manifold reserves the right to cancel its charity program at any
+              time.
+            </li>
           </ul>
         </div>
       </Col>

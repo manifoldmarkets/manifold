@@ -3,6 +3,7 @@ export type EnvConfig = {
   firebaseConfig: FirebaseConfig
   amplitudeApiKey?: string
   supabaseUrl?: string
+  supabaseAnonKey?: string
   twitchBotEndpoint?: string
   sprigEnvironmentId?: string
 
@@ -18,9 +19,9 @@ export type EnvConfig = {
 
   // Branding
   moneyMoniker: string // e.g. 'Ṁ'
-  bettor?: string // e.g. 'bettor' or 'predictor'
-  presentBet?: string // e.g. 'bet' or 'predict'
-  pastBet?: string // e.g. 'bet' or 'prediction'
+  bettor?: string // e.g. 'predictor'
+  nounBet?: string // e.g. 'prediction'
+  verbPastBet?: string // e.g. 'predicted'
   faviconPath?: string // Should be a file in /public
   navbarLogoPath?: string
   newQuestionPlaceholders: string[]
@@ -64,6 +65,8 @@ export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
   supabaseUrl: 'https://pxidrgkatumlvfqaxcll.supabase.co',
+  supabaseAnonKey:
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4aWRyZ2thdHVtbHZmcWF4Y2xsIiwicm9sZSI6ImFub24iLCJpYXQiOjE2Njg5OTUzOTgsImV4cCI6MTk4NDU3MTM5OH0.d_yYtASLzAoIIGdXUBIgRAGLBnNow7JG2SoaNMQ8ySg',
   sprigEnvironmentId: 'sQcrq9TDqkib',
 
   firebaseConfig: {
@@ -94,8 +97,8 @@ export const PROD_CONFIG: EnvConfig = {
 
   moneyMoniker: 'Ṁ',
   bettor: 'trader',
-  pastBet: 'traded',
-  presentBet: 'trade',
+  verbPastBet: 'traded',
+  nounBet: 'trade',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
   newQuestionPlaceholders: [

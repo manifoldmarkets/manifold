@@ -28,7 +28,7 @@
     "@flat/in-app-purchase": "FlatIO/in-app-purchase#1.13.5",
     "@google-cloud/functions-framework": "3.1.2",
     "@google-cloud/pubsub": "3.2.1",
-    "@supabase/supabase-js": "2.0.5",
+    "@supabase/supabase-js": "2.2.0",
     "@tiptap/core": "2.0.0-beta.199",
     "@tiptap/extension-image": "2.0.0-beta.199",
     "@tiptap/extension-link": "2.0.0-beta.199",
@@ -45,7 +45,6 @@
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "marked": "4.1.1",
-    "module-alias": "2.2.2",
     "node-fetch": "2",
     "openai": "3.0.1",
     "stripe": "8.194.0",
@@ -54,9 +53,7 @@
   "devDependencies": {
     "@types/mailgun-js": "0.22.12",
     "@types/marked": "4.0.7",
-    "@types/module-alias": "2.0.1",
     "@types/node-fetch": "2.6.2",
-    "firebase-functions-test": "0.3.3",
     "puppeteer": "18.0.5"
   },
   "private": true

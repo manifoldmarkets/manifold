@@ -1,7 +1,7 @@
 .git
 .vscode
 docs
-node_modules
+**/node_modules
 scripts
 npm-debug.log
 .cache

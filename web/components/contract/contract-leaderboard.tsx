@@ -45,21 +45,24 @@ export const ContractLeaderboard = function ContractLeaderboard(props: {
         ]
       : topContractMetrics
 
-  const userProfits = allMetrics.map((cm) => {
-    const { profit } = cm
-    return removeUndefinedProps({
-      name: cm.userName,
-      username: cm.userUsername,
-      avatarUrl: cm.userAvatarUrl,
-      total: profit,
-      rank:
-        cm.userId === currentUser?.id && !userIsAlreadyRanked
-          ? yourRank
+  const userProfits = allMetrics
+    // exclude house bot from market leaderboard
+    .filter((cm) => cm.userName !== 'acc' || currentUser?.username === 'acc')
+    .map((cm) => {
+      const { profit } = cm
+      return removeUndefinedProps({
+        name: cm.userName,
+        username: cm.userUsername,
+        avatarUrl: cm.userAvatarUrl,
+        total: profit,
+        rank:
+          cm.userId === currentUser?.id && !userIsAlreadyRanked
             ? yourRank
-            : maxToShowMinusCurrentUser + 1
-          : topContractMetrics.indexOf(cm) + 1,
+              ? yourRank
+              : maxToShowMinusCurrentUser + 1
+            : topContractMetrics.indexOf(cm) + 1,
+      })
     })
-  })
   const top = Object.values(userProfits)
     .sort((a, b) => b.total - a.total)
     .filter((p) => p.total > 0)

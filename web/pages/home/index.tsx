@@ -27,7 +27,7 @@ import { ContractCard } from 'web/components/contract/contract-card'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { DailyStats } from 'web/components/daily-stats'
-import { PinnedItems } from 'web/components/groups/group-about'
+import { PinnedItems } from 'web/components/groups/group-post-section'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -59,7 +59,6 @@ import {
   usePrivateUser,
   useUser,
   useUserContractMetricsByProfit,
-  useUserRecommendedMarkets,
 } from 'web/hooks/use-user'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import {
@@ -73,6 +72,7 @@ import GoToIcon from 'web/lib/icons/go-to-icon'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { track } from 'web/lib/service/analytics'
 import { GroupCard } from '../groups'
+import { useFeed } from 'web/hooks/use-feed'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -267,7 +267,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 }
 
 const HOME_SECTIONS = [
-  { label: 'Recommended', id: 'recommended', icon: '👍' },
+  { label: 'For you', id: 'recommended', icon: '🤟' },
   { label: 'Trending', id: 'score', icon: '🔥' },
   { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   { label: 'Your daily movers', id: 'daily-movers' },
@@ -380,14 +380,14 @@ const YourFeedSection = (props: { user: User }) => {
 
   return (
     <Col>
-      <HomeSectionHeader label="Your feed" href="/your-feed" icon={'📖'} />
+      <HomeSectionHeader label="Discover" href="/discover" icon={'📖'} />
       <VisibilityObserver
         className="relative -top-[300px] h-1"
         onVisibilityUpdated={(visible) => visible && setHasViewedBottom(true)}
       />
 
       {hasViewedBottom ? (
-        <YourFeed user={user} count={100} />
+        <DiscoverFeed user={user} count={100} />
       ) : (
         <LoadingIndicator />
       )}
@@ -395,25 +395,18 @@ const YourFeedSection = (props: { user: User }) => {
   )
 }
 
-export const YourFeed = (props: { user: User; count: number }) => {
+export const DiscoverFeed = (props: { user: User; count: number }) => {
   const { user, count } = props
-
-  const [savedContracts, setSavedContracts] = usePersistentState<
-    Contract[] | undefined
-  >(undefined, { key: 'home-your-feed' + count, store: inMemoryStore() })
-
-  const computedContracts = useUserRecommendedMarkets(user.id, count)
-
-  useEffect(() => {
-    if (computedContracts && !savedContracts)
-      setSavedContracts(computedContracts)
-  }, [computedContracts, savedContracts, setSavedContracts])
-
-  // Show only the first loaded batch of contracts, so users can come back to them.
-  const contracts = savedContracts ?? computedContracts
+  const contracts = useFeed(user, count)
 
   if (!contracts) return <LoadingIndicator />
-  return <ContractsGrid contracts={contracts} showImageOnTopContract />
+  return (
+    <ContractsGrid
+      contracts={contracts}
+      showImageOnTopContract
+      trackCardViews={true}
+    />
+  )
 }
 
 function HomeSectionHeader(props: {
@@ -619,8 +612,12 @@ export const RecommendedSection = memo(function RecommendedSection(props: {
   const { contracts } = props
   return (
     <Col>
-      <HomeSectionHeader label="Recommended" icon="👍" />
-      <ContractsGrid contracts={contracts} showImageOnTopContract={true} />
+      <HomeSectionHeader label="For you" icon="🤟" />
+      <ContractsGrid
+        contracts={contracts}
+        showImageOnTopContract={true}
+        trackCardViews={true}
+      />
     </Col>
   )
 })

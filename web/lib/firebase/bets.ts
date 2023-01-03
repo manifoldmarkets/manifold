@@ -161,8 +161,3 @@ export function listenForUnfilledBets(
   )
   return listenForValues<LimitBet>(betsQuery, setBets)
 }
-
-export async function getSwipes(userId: string) {
-  const swipeCollection = collection(db, `/private-users/${userId}/seenMarkets`)
-  return getValues(swipeCollection)
-}

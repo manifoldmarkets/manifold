@@ -5,7 +5,10 @@ export const Text = (props: TextProps) => {
   return (
     <RNText
       {...props}
-      style={[props.style, { fontFamily: 'ReadexPro_400Regular' }]}
+      style={[
+        { fontFamily: 'ReadexPro_400Regular', color: 'white' },
+        props.style,
+      ]}
     />
   )
 }

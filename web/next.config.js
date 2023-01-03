@@ -25,6 +25,7 @@ module.exports = {
     },
   },
   images: {
+    dangerouslyAllowSVG: true,
     domains: [
       'manifold.markets',
       'lh3.googleusercontent.com',

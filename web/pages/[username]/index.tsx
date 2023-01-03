@@ -7,6 +7,8 @@ import { BlockedUser } from 'web/components/profile/blocked-user'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
+import { getPostsByUser } from 'web/lib/firebase/posts'
+import { Post } from 'common/post'
 
 export const getStaticProps = async (props: {
   params: {
@@ -15,10 +17,13 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
+  const posts = user ? await getPostsByUser(user?.id) : []
+
   return {
     props: {
       user,
       username,
+      posts,
     },
     revalidate: 60, // Regenerate after 60 second
   }
@@ -31,8 +36,9 @@ export const getStaticPaths = () => {
 export default function UserProfile(props: {
   user: User | null
   username: string
+  posts: Post[]
 }) {
-  const { user, username } = props
+  const { user, username, posts } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
@@ -45,7 +51,7 @@ export default function UserProfile(props: {
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />
   ) : (
-    <UserPage user={user} />
+    <UserPage user={user} posts={posts} />
   )
 }
 

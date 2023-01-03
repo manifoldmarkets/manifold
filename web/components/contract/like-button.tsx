@@ -17,7 +17,8 @@ import {
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-export const LIKES_SHOWN = 3
+
+const LIKES_SHOWN = 3
 
 const ButtonReactionType = 'like' as ReactionTypes
 export const LikeButton = memo(function LikeButton(props: {
@@ -28,6 +29,8 @@ export const LikeButton = memo(function LikeButton(props: {
   totalLikes: number
   contract: Contract
   contentText: string
+  className?: string
+  size?: 'md' | 'xl'
 }) {
   const {
     user,
@@ -36,12 +39,13 @@ export const LikeButton = memo(function LikeButton(props: {
     contentId,
     contract,
     contentText,
+    className,
+    size = 'md',
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
   const [liked, setLiked] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  const showPink = liked
   const [totalLikes, setTotalLikes] = useState(props.totalLikes)
 
   useEffect(() => {
@@ -66,11 +70,11 @@ export const LikeButton = memo(function LikeButton(props: {
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedOnLike = useMemo(() => debounce(onLike, 500), [user])
+  const debouncedOnLike = useMemo(() => debounce(onLike, 1000), [user])
 
   // Handle changes from our useLike hook
   useEffect(() => {
-    setLiked(userLiked ?? false)
+    setLiked(userLiked)
   }, [userLiked])
 
   useEffect(() => {
@@ -81,7 +85,6 @@ export const LikeButton = memo(function LikeButton(props: {
     setLiked(liked)
     setTotalLikes((prev) => (liked ? prev + 1 : prev - 1))
     debouncedOnLike(liked)
-    onLike(liked)
   }
 
   const likeLongPress = useLongTouch(
@@ -123,9 +126,11 @@ export const LikeButton = memo(function LikeButton(props: {
         <button
           disabled={disabled}
           className={clsx(
-            'my-auto px-2 py-1 text-xs', //2xs button
+            size === 'md' && 'p-2',
+            size === 'xl' && 'p-4',
             'text-gray-500 transition-transform disabled:cursor-not-allowed',
-            !disabled ? 'hover:text-gray-600' : ''
+            !disabled ? 'hover:text-gray-600' : '',
+            className
           )}
           {...likeLongPress}
         >
@@ -133,15 +138,19 @@ export const LikeButton = memo(function LikeButton(props: {
             <div
               className={clsx(
                 totalLikes > 0 ? 'bg-gray-500' : '',
-                ' absolute -bottom-1.5 -right-1.5 min-w-[15px] rounded-full p-[1.5px] text-center text-[10px] leading-3 text-white'
+                'absolute rounded-full text-center text-white',
+                size === 'md' &&
+                  '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
+                size === 'xl' && 'bottom-0 right-0 min-w-[24px] p-0.5 text-sm'
               )}
             >
               {totalLikes > 0 ? totalLikes : ''}
             </div>
             <HeartIcon
               className={clsx(
-                'h-5 w-5',
-                showPink ? 'fill-pink-400 stroke-pink-400' : ''
+                size === 'md' && 'h-5 w-5',
+                size === 'xl' && 'h-12 w-12',
+                liked ? 'fill-pink-400 stroke-pink-400' : ''
               )}
             />
           </div>
@@ -181,20 +190,25 @@ function UserLikedList(props: {
     )
     userInfo = youLiked.concat(otherUsersLiked)
   }
+
+  // only show "& n more" for n > 1
+  const shown =
+    userInfo.length <= LIKES_SHOWN + 1 ? userInfo : userInfo.slice(0, 3)
+
   return (
     <Col className="min-w-24 items-start">
       <div className="mb-1 font-bold">Like</div>
-      {userInfo.slice(0, LIKES_SHOWN).map((u) => {
+      {shown.map((u) => {
         return (
           <UserLikedItem key={u.avatarUrl + u.username + u.name} userInfo={u} />
         )
       })}
-      {length > LIKES_SHOWN && (
+      {userInfo.length > shown.length && (
         <div
           className="w-full cursor-pointer text-left text-indigo-300 hover:text-indigo-200"
           onClick={setModalOpen}
         >
-          & {length - LIKES_SHOWN} more
+          & {userInfo.length - shown.length} more
         </div>
       )}
     </Col>

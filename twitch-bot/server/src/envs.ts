@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
 import { getDomainFromURL } from './utils';
+import { DEV_CONFIG } from '@manifold_common/envs/dev';
+import { PROD_CONFIG } from '@manifold_common/envs/prod';
 dotenv.config({ path: '../.env' });
 
 export const PORT = Number.parseInt(process.env.PORT) || 9172;
@@ -30,28 +32,7 @@ export const MANIFOLD_DB_LOCATION = getDomainFromURL(TARGET === 'PROD' ? MANIFOL
 export const MANIFOLD_API_BASE_URL = MANIFOLD_URLS[TARGET] + 'api/v0/';
 export const MANIFOLD_SIGNUP_URL = MANIFOLD_URLS[TARGET] + 'twitch';
 
-export const MANIFOLD_FIREBASE_CONFIG =
-  TARGET === 'PROD'
-    ? {
-        apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
-        authDomain: 'mantic-markets.firebaseapp.com',
-        projectId: 'mantic-markets',
-        region: 'us-central1',
-        storageBucket: 'mantic-markets.appspot.com',
-        messagingSenderId: '128925704902',
-        appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
-        measurementId: 'G-SSFK1Q138D',
-      }
-    : {
-        // apiKey: 'AIzaSyBoq3rzUa8Ekyo3ZaTnlycQYPRCA26VpOw',
-        // authDomain: 'dev-mantic-markets.firebaseapp.com',
-        projectId: 'dev-mantic-markets',
-        // region: 'us-central1',
-        // storageBucket: 'dev-mantic-markets.appspot.com',
-        // messagingSenderId: '134303100058',
-        // appId: '1:134303100058:web:27f9ea8b83347251f80323',
-        // measurementId: 'G-YJC9E37P37',
-      };
+export const MANIFOLD_FIREBASE_CONFIG = TARGET === 'PROD' ? PROD_CONFIG.firebaseConfig : DEV_CONFIG.firebaseConfig;
 
 export const GOOGLE_PROJECT_ID = 'mantic-markets';
 export const GOOGLE_LOG_NAME = 'bot-' + TARGET;

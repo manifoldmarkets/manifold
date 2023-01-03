@@ -14,14 +14,14 @@ import io, { Socket } from 'socket.io-client';
 import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
 
-import { ResolutionOutcome } from 'common/outcome';
-import * as Packet from 'common/packet-ids';
-import { PacketHandshakeComplete, PacketResolved, PacketSelectMarket } from 'common/packets';
-import { AbstractMarket, NamedBet } from 'common/types/manifold-abstract-types';
+import { ResolutionOutcome } from '@common/outcome';
+import * as Packet from '@common/packet-ids';
+import { PacketHandshakeComplete, PacketResolved, PacketSelectMarket } from '@common/packets';
+import { AbstractMarket, NamedBet } from '@common/types/manifold-abstract-types';
 import { DisconnectDescription } from 'socket.io-client/build/esm/socket';
-import { LoadingOverlay } from 'web/components/loading-overlay';
-import { ConnectionState } from 'web/lib/connection-state';
-import { ENV_CONFIG } from '../../../common/envs/constants';
+import { LoadingOverlay } from '../components/loading-overlay';
+import { ConnectionState } from '../lib/connection-state';
+import { ENV_CONFIG } from '@manifold_common/envs/constants';
 
 class BetElement {
   bet: NamedBet;
@@ -350,7 +350,7 @@ export default () => {
                   </div>
                 </Col>
               </Col>
-              <Col className="text-center">
+              <Col className="text-center overflow-hidden">
                 <div
                   style={{
                     backgroundImage: 'url(logo-white.svg)',

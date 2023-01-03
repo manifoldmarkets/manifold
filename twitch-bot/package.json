@@ -1,13 +1,14 @@
 {
   "name": "twitch-chat-bot",
   "private": true,
+  "version": "1.0.0",
   "workspaces": [
     "common",
     "server",
     "web"
   ],
   "scripts": {
-    "dev:fullstack": "concurrently -n WEB,SERVER -c blue,gray \"yarn --cwd web rdev\" \"yarn --cwd server dev\""
+    "dev:fullstack": "concurrently -n WEB,SERVER -c blue,gray \"yarn --cwd web dev\" \"yarn --cwd server dev\""
   },
   "keywords": [],
   "author": "Phil Bladen",

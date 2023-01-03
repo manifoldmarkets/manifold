@@ -47,7 +47,7 @@ We're using Expo to help with android and ios builds. You can find more informat
 - I think we use Transporter once we have our Apple Business Developer account set up
 
 ## OTA updates
-`eas update` to publish an OTA update via EAS
+`eas update --branch default` to publish an over-the-air update to production 
 
 # Icons
 find icons [here](https://icons.expo.fyi/)

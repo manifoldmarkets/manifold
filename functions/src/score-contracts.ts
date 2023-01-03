@@ -1,7 +1,9 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { Query } from 'firebase-admin/firestore'
+
 import { Contract } from '../../common/contract'
-import { log } from './utils'
+import { loadPaginated, log } from './utils'
 import { removeUndefinedProps } from '../../common/util/object'
 import { DAY_MS, HOUR_MS } from '../../common/util/time'
 
@@ -17,12 +19,10 @@ async function scoreContractsInternal() {
   const now = Date.now()
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
-  const activeContractsSnap = await firestore
-    .collection('contracts')
-    .where('lastUpdatedTime', '>', hourAgo)
-    .get()
-  const activeContracts = activeContractsSnap.docs.map(
-    (doc) => doc.data() as Contract
+  const activeContracts = await loadPaginated(
+    firestore
+      .collection('contracts')
+      .where('lastUpdatedTime', '>', hourAgo) as Query<Contract>
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContractsSnap = await firestore

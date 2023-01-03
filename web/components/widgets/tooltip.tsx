@@ -55,7 +55,10 @@ export function Tooltip(props: {
   const { x: arrowX, y: arrowY } = middlewareData.arrow ?? {}
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
-    useHover(context, { mouseOnly: noTap, handleClose: safePolygon() }),
+    useHover(context, {
+      mouseOnly: noTap,
+      handleClose: safePolygon({ buffer: -0.5 }),
+    }),
     useRole(context, { role: 'tooltip' }),
   ])
   // which side of tooltip arrow is on. like: if tooltip is top-left, arrow is on bottom of tooltip

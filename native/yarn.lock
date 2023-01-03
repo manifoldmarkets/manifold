@@ -3776,10 +3776,10 @@ expo-application@~4.2.0, expo-application@~4.2.2:
   resolved "https://registry.yarnpkg.com/expo-application/-/expo-application-4.2.2.tgz#c9500819723c59eaee5ca9832bf17d1fd4139f74"
   integrity sha512-bFEaFRUdV6aK2iBd+HzkHNPYsyj88EAhaQW5leznmO0qQMJxpAQ3eoUXMey1hfDBh1qgkkHgSyCZ9BIgMAGJ1g==
 
-expo-asset@~8.6.1:
-  version "8.6.1"
-  resolved "https://registry.yarnpkg.com/expo-asset/-/expo-asset-8.6.1.tgz#86355b3e231e8aa6cf68a456ce9746dff1478b48"
-  integrity sha512-urbUp1YtwH2J0Qc3inGQJdqTjWKML77SeMNgff+iR9MUE8gDkFqSCDjrBi7i5Oj5DDtq43mmtDg8G8ei6Vchcg==
+expo-asset@~8.6.3:
+  version "8.6.3"
+  resolved "https://registry.yarnpkg.com/expo-asset/-/expo-asset-8.6.3.tgz#fd8e8e8d9a7bbbe3c202459a17746b923fb9bdda"
+  integrity sha512-AOuB0FBbwYUfuLKtQtIsKUvm08d9OAPWZu9NZjUyIvAxmmdVKPUdN5tFUZQXXLRy3SYmk2z76JVQCoaHgJ5wvw==
   dependencies:
     blueimp-md5 "^2.10.0"
     expo-constants "~13.2.2"
@@ -3921,10 +3921,10 @@ expo-modules-autolinking@0.10.3:
     find-up "^5.0.0"
     fs-extra "^9.1.0"
 
-expo-modules-core@0.11.9:
-  version "0.11.9"
-  resolved "https://registry.yarnpkg.com/expo-modules-core/-/expo-modules-core-0.11.9.tgz#43763bca72b72f268ad5d7f1f0fc1c7cc75a6e9f"
-  integrity sha512-6AlOE4KHN3/WWbY8hH7W6ceuIFj0qbk1N+UhmMhiCEUas3NvXA6wcH3xjO+8JZ+BRcIB9M4QEeX72j6vDDuExg==
+expo-modules-core@0.11.10:
+  version "0.11.10"
+  resolved "https://registry.yarnpkg.com/expo-modules-core/-/expo-modules-core-0.11.10.tgz#84800ea62431a3842661966276747260f7e33b37"
+  integrity sha512-wn7bdL1AXMNuuDEFhuIeE65A+dlvBL+6nC5fGy4NO7x3TXPBR1xCgL28i8d8WWyK5evI4z4TVvJp3YYzdapbqQ==
   dependencies:
     compare-versions "^3.4.0"
     invariant "^2.2.4"
@@ -4000,10 +4000,10 @@ expo-web-browser@~11.0.0:
   dependencies:
     compare-urls "^2.0.0"
 
-expo@~46.0.17:
-  version "46.0.17"
-  resolved "https://registry.yarnpkg.com/expo/-/expo-46.0.17.tgz#d558aa11056007269d2a38481982f1ebbe0852f3"
-  integrity sha512-rB+KMvjU3lFMkec5LcVFFn0Q2iJUEIoyB9TckKMirA15H5mW4yZMao0ilR7239fJ5ytVoDC8SIf7ZAvTmiMuMw==
+expo@~46.0.19:
+  version "46.0.19"
+  resolved "https://registry.yarnpkg.com/expo/-/expo-46.0.19.tgz#85fe0aa047bdee4ee01fa0f934b28d03166a813d"
+  integrity sha512-nOMwWd54Y5awLYMo7Skf0jFyD83xeLph8Vb9z0awsTctlAhxPulHFHD/nzN2LxvzfCOQORUctvtX+qknL7MEDQ==
   dependencies:
     "@babel/runtime" "^7.14.0"
     "@expo/cli" "0.3.2"
@@ -4011,13 +4011,13 @@ expo@~46.0.17:
     babel-preset-expo "~9.2.0"
     cross-spawn "^6.0.5"
     expo-application "~4.2.2"
-    expo-asset "~8.6.1"
+    expo-asset "~8.6.3"
     expo-constants "~13.2.4"
     expo-file-system "~14.1.0"
     expo-font "~10.2.1"
     expo-keep-awake "~10.2.0"
     expo-modules-autolinking "0.10.3"
-    expo-modules-core "0.11.9"
+    expo-modules-core "0.11.10"
     fbemitter "^3.0.0"
     getenv "^1.0.0"
     invariant "^2.2.4"
@@ -6797,10 +6797,10 @@ react-native-web@~0.18.7:
     postcss-value-parser "^4.2.0"
     styleq "^0.1.2"
 
-react-native-webview@11.23.0:
-  version "11.23.0"
-  resolved "https://registry.yarnpkg.com/react-native-webview/-/react-native-webview-11.23.0.tgz#603a584236da2e993906e6a094f165dcac3a1fdb"
-  integrity sha512-mGrgsMnYcQONvQy59xpBn87sKqkCsSkqIDRo+c2Ov4ISYl1j90wFBs+qViVJRWdoNHVuoCAZ4nZkJ65mhDpHhA==
+react-native-webview@11.26.0:
+  version "11.26.0"
+  resolved "https://registry.yarnpkg.com/react-native-webview/-/react-native-webview-11.26.0.tgz#e524992876fe4a79e69905f0fab8949b470e9f16"
+  integrity sha512-4T4CKRm8xlaQDz9h/bCMPGAvtkesrhkRWqCX9FDJEzBToaVUIsV0ZOqtC4w/JSnCtFKKYiaC1ReJtCGv+4mFeQ==
   dependencies:
     escape-string-regexp "2.0.0"
     invariant "2.2.4"

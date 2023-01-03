@@ -3,12 +3,9 @@ import { useEffect, useState } from 'react'
 import {
   Bet,
   USER_BET_FILTER,
-  getSwipes,
   getBetsQuery,
   listenForBets,
 } from 'web/lib/firebase/bets'
-import { useUser } from './use-user'
-import { inMemoryStore, usePersistentState } from './use-persistent-state'
 
 export const useUserBets = (userId: string) => {
   const result = useFirestoreQueryData(
@@ -49,18 +46,4 @@ export const useGetUserBetContractIds = (userId: string | undefined) => {
   }, [userId])
 
   return contractIds
-}
-
-export const useUserSwipes = () => {
-  const user = useUser()
-  const [swipes, setSwipes] = usePersistentState<string[]>([], {
-    store: inMemoryStore(),
-    key: 'user-swipes',
-  })
-  useEffect(() => {
-    if (user)
-      getSwipes(user.id).then((s) => setSwipes(s.map((swipe: any) => swipe.id)))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!user, getSwipes])
-  return swipes
 }

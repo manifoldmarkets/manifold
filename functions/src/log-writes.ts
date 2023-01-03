@@ -43,12 +43,39 @@ function logger(path: string, docKind: DocumentKind) {
   })
 }
 
-export const logTxns = logger('txns/{g}', 'txn')
-export const logGroups = logger('groups/{g}', 'group')
 export const logUsers = logger('users/{u}', 'user')
+export const logUserFollowers = logger(
+  'users/{u}/{followers}/{f}',
+  'userFollower'
+)
 export const logContracts = logger('contracts/{c}', 'contract')
+export const logContractAnswers = logger(
+  'contracts/{c}/answers/{b}',
+  'contractAnswer'
+)
 export const logContractBets = logger('contracts/{c}/bets/{b}', 'contractBet')
 export const logContractComments = logger(
   'contracts/{ct}/comments/{co}',
   'contractComment'
 )
+export const logContractFollows = logger(
+  'contracts/{ct}/follows/{f}',
+  'contractFollow'
+)
+export const logContractLiquidity = logger(
+  'contracts/{ct}/liquidity/{l}',
+  'contractLiquidity'
+)
+export const logGroups = logger('groups/{g}', 'group')
+export const logGroupContracts = logger(
+  'groups/{gr}/groupContracts/{gc}',
+  'groupContract'
+)
+export const logGroupMembers = logger(
+  'groups/{gr}/groupMembers/{gm}',
+  'groupMember'
+)
+export const logTxns = logger('txns/{g}', 'txn')
+export const logManalinks = logger('manalinks/{m}', 'manalink')
+export const logPosts = logger('posts/{p}', 'post')
+export const logTest = logger('test/{t}', 'test')

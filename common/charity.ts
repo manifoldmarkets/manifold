@@ -86,18 +86,19 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     - Training for researchers or practitioners who work to mitigate existential risks, or help with relevant recruitment efforts, or infrastructure for people working on longtermist projects
     - Promoting long-term thinking`,
   },
-  {
-    name: 'New Science',
-    website: 'https://newscience.org/',
-    photo: 'https://i.imgur.com/C7PoR4q.png',
-    preview:
-      'Facilitating scientific breakthroughs by empowering the next generation of scientists and building the 21st century institutions of basic science.',
-    description: `As its first major project, in the summer of 2022, New Science will run an in-person research fellowship in Boston for young life scientists, during which they will independently explore an ambitious high-risk scientific idea they couldn’t work on otherwise and start building the foundations for a bigger research project, while having much more freedom than they could expect in their normal research environment but also much more support from us. This is inspired by Cold Spring Harbor Laboratory, which started as a place where leading molecular biologists came for the summer to hang out and work on random projects together, and which eventually housed 8 Nobel Prize winners.
+  // Temporarily disabled as New Science isn't accepting donations
+  // {
+  //   name: 'New Science',
+  //   website: 'https://newscience.org/',
+  //   photo: 'https://i.imgur.com/C7PoR4q.png',
+  //   preview:
+  //     'Facilitating scientific breakthroughs by empowering the next generation of scientists and building the 21st century institutions of basic science.',
+  //   description: `As its first major project, in the summer of 2022, New Science will run an in-person research fellowship in Boston for young life scientists, during which they will independently explore an ambitious high-risk scientific idea they couldn’t work on otherwise and start building the foundations for a bigger research project, while having much more freedom than they could expect in their normal research environment but also much more support from us. This is inspired by Cold Spring Harbor Laboratory, which started as a place where leading molecular biologists came for the summer to hang out and work on random projects together, and which eventually housed 8 Nobel Prize winners.
 
-    As its second major project, in the fall of 2022, New Science will run an in-person 12-month-long fellowship for young scientists starting to directly attack the biggest structural issues of the established institutions of science. We will double down on things that worked well during the summer fellowship, while extending the fellowship to one year, thus allowing researchers to make much more progress and will strive to provide them as much scientific leverage as possible.
-    
-    In several years, New Science will start funding entire labs outside of academia and then will be creating an entire network of scientific organizations, while supporting the broader scientific ecosystem that will constitute the 21st century institutions of basic science.`,
-  },
+  //   As its second major project, in the fall of 2022, New Science will run an in-person 12-month-long fellowship for young scientists starting to directly attack the biggest structural issues of the established institutions of science. We will double down on things that worked well during the summer fellowship, while extending the fellowship to one year, thus allowing researchers to make much more progress and will strive to provide them as much scientific leverage as possible.
+
+  //   In several years, New Science will start funding entire labs outside of academia and then will be creating an entire network of scientific organizations, while supporting the broader scientific ecosystem that will constitute the 21st century institutions of basic science.`,
+  // },
   {
     name: 'Global Health and Development Fund',
     website: 'https://funds.effectivealtruism.org/funds/global-development',
@@ -665,7 +666,6 @@ We do this by crowdfunding loans and unlocking capital for the underserved, impr
 Using evidence and reason, we identify where resources would be most effective and help direct them there. We do this by conducting critical research to inform policymakers and philanthropists, and by guiding the development of new organizations to address key problems. 
 
 Our work covers important and neglected cause areas, including animal welfare, artificial intelligence, climate change, global health and development, and other work to safeguard a flourishing long-term future. We also aim to understand and support effective altruism – the community of people focused on these issues.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Happier Lives Institute',
@@ -676,7 +676,6 @@ Our work covers important and neglected cause areas, including animal welfare, a
     description: `We compare charities on a common metric called wellbeing-adjusted life years (WELLBYs). One WELLBY is equivalent to a 1-point increase on a 0-10 life satisfaction scale for one year.
 
 We use WELLBYs to compare the impact of charities that improve different outcomes, such as health or finances. This is the only approach to charity evaluation that allows us to make apples-to-apples comparisons. No other charity evaluator uses this approach. `,
-    tags: ['New'] as const,
   },
   {
     name: 'Strong Minds',
@@ -689,7 +688,6 @@ We use WELLBYs to compare the impact of charities that improve different outcome
 - StrongMinds provides free group talk therapy to low-income women and adolescents with depression in Uganda and Zambia.
 - We scale our reach through peer-to-peer therapy, teletherapy, public education, and partnerships.
 - Women who complete our therapy achieve clinically significant reductions in depression symptoms, restoring hope for themselves and their families.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Good Food Institute',
@@ -705,7 +703,6 @@ Globally, meat consumption is the highest it has ever been. According to the UN,
 With plant-based meat, cultivated meat, and fermentation, we can mitigate the environmental impact of our food system, decrease the risk of zoonotic disease, and ultimately feed more people with fewer resources. 
 
 By making meat from plants and cultivating meat from cells, we can modernize meat production. `,
-    tags: ['New'] as const,
   },
   {
     name: 'UMCOR',
@@ -714,7 +711,6 @@ By making meat from plants and cultivating meat from cells, we can modernize mea
     preview:
       'Assists United Methodists and churches to become involved globally in direct ministry to persons in need.',
     description: `As the humanitarian relief and development arm of The United Methodist Church, the United Methodist Committee on Relief – UMCOR – assists United Methodists and churches to become involved globally in direct ministry to persons in need. UMCOR comes alongside those who suffer from natural or human-caused disasters – famine, hurricane, war, flood, fire or other events—to alleviate suffering and serve as a source of help and hope for the vulnerable. UMCOR provides relief, response and long-term recovery grants when events overwhelm a community’s ability to recover on their own. UMCOR also provides technical support and training for partners to address emerging and ongoing issues related to disaster relief, recovery, and long-term health and development.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Sentience Institute',
@@ -726,6 +722,85 @@ By making meat from plants and cultivating meat from cells, we can modernize mea
 Our research has many different routes to impact, often referred to as the “Theory of Change.” Most directly, we aim to discover the factors (e.g., activism and business strategies) that most lead to moral circle expansion, but we also aim to understand the nature of moral progress (e.g., How do more people become longtermist?) and evaluate the extent to which certain moral and social outcomes should be prioritized by those trying to do the most good (i.e., “global priorities research”). This helps activists, donors, investors, governments, firms, and other stakeholders working on these issues knowledge to implement strategies that will change social norms and implement more morally inclusive laws and policies. While we mainly focus on institutional change, we expect our research will also help organizations working on changing individual behavior. Because of our longtermist perspective, we are interested in helping develop social movements and organizations that can take action many years from now.
 
 Where appropriate, we publish our research in academic journals, which helps communicate our findings to academics and encourages other researchers to carry out similar research. Our research sometimes attracts media attention, which we expect also has positive effects by informing public opinion and promoting more morally inclusive social norms. Usually, stakeholders see our research via email or directly on our website.`,
+  },
+  {
+    name: 'GTNPF',
+    website: 'https://www.gtnpf.org/',
+    photo: 'https://i.imgur.com/7OD1ViM.png',
+    preview:
+      'Grand Teton National Park Foundation initiates improvements, critical research, and projects that help better connect visitors to the park',
+    description: `Grand Teton National Park Foundation is a private, nonprofit organization that funds projects that enhance Grand Teton National Park’s cultural, historic, and natural resources and helps others learn about and protect all that is special in the park.`,
+  },
+  {
+    name: 'MIRI',
+    website: 'https://intelligence.org/',
+    photo: 'https://i.imgur.com/3SUKZ9m.png',
+    preview:
+      'The Machine Intelligence Research Institute does foundational mathematical research to ensure smarter-than-human AI has a positive impact',
+    description: `MIRI’s mission is to ensure that the creation of smarter-than-human intelligence has a positive impact. We aim to make advanced intelligent systems behave as we intend even in the absence of immediate human supervision.
+    
+    MIRI focuses on AI approaches that can be made transparent (e.g., precisely specified decision algorithms, not genetic algorithms), so that humans can understand why AI systems behave as they do. For safety purposes, a mathematical equation defining general intelligence is more desirable than an impressive but poorly-understood code kludge.
+
+Much of our research is therefore aimed at putting theoretical foundations under AI robustness work. We consider settings where traditional decision and probability theory frequently break down: settings where computation is expensive, there is no sharp agent/environment boundary, multiple agents exist, or self-referential reasoning is admitted.
+
+Using training data to teach advanced AI systems what we value looks more promising than trying to code in everything we care about by hand. However, we know very little about how to discern when training data is unrepresentative of the agent’s future environment, or how to ensure that the agent not only learns about our values but accepts them as its own.
+
+Additionally, rational agents pursuing some goal have an incentive to protect their goal-content. No matter what their current goal is, it will very likely be better served if the agent continues to promote it than if the agent changes goals. This suggests that it may be difficult to improve an agent’s alignment with human interests over time, particularly when the agent is smart enough to model and adapt to its programmers’ goals. Making value learning systems error-tolerant is likely to be necessary for safe online learning.
+
+In addition to our mathematical research, MIRI investigates important strategic questions. What can (and can’t) we predict about the future of AI? How can we improve our forecasting ability? Which interventions available today appear to be the most beneficial, given what little we do know?`,
+  },
+  {
+    name: 'Charity Entrepreneurship',
+    website: 'https://www.charityentrepreneurship.com/',
+    photo: 'https://i.imgur.com/8eHlC4h.png',
+    preview:
+      'Charity Entrepreneurship launches high-impact nonprofits by connecting entrepreneurs with effective ideas, training, and funding.',
+    description: `Each year, Charity Entrepreneurship dedicates hundreds of research hours to identifying the most effective charity ideas. Then we recruit aspiring entrepreneurs and, through our two-month Incubation Program, provide them with the training and funding to turn these ideas into high-impact organizations.
+    
+Our mission is to enable more effective charities to exist in the world. We strive to achieve this goal through our extensive research process and Incubation Program.
+
+Nonprofit entrepreneurship is also a highly neglected career opportunity that, fueled by a more analytical, effective-altruist mindset, can lead to cost-effective, evidence-based outcomes that are approximately equivalent to donating ~$200,000 to effective charities per year. It provides a chance to build a portfolio of useful skills and great career capital, and to have high job satisfaction while retaining substantial individual impact.`,
+  },
+  {
+    name: 'NAACP Legal Defense Fund',
+    website: 'https://www.naacpldf.org/',
+    photo: 'https://i.imgur.com/32vJo5L.png',
+    preview:
+      "NAACP's Legal Defense Fund is the premier legal organization fighting for racial justice.",
+    description: `The Legal Defense Fund (LDF) is America’s premier legal organization fighting for racial justice. Using the power of law, narrative, research, and people, we defend and advance the full dignity and citizenship of Black people in America.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'EWG',
+    website: 'https://www.ewg.org/',
+    photo: 'https://i.imgur.com/7QApy7i.png',
+    preview:
+      'EWG empowers you with breakthrough research to make informed choices and live a healthy life in a healthy environment.',
+    description: `Since 1993, the Environmental Working Group has shined a spotlight on outdated legislation, harmful agricultural practices and industry loopholes that pose a risk to our health and the health of our environment.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'AI Impacts',
+    website: 'https://aiimpacts.org/',
+    photo: 'https://i.imgur.com/VWm1DLf.png',
+    preview:
+      'AI Impacts answers decision-relevant questions about the future of artificial intelligence.',
+    description: `This project aims to improve our understanding of the likely impacts of human-level artificial intelligence.
+The intended audience includes researchers doing work related to artificial intelligence, philanthropists involved in funding research related to artificial intelligence, and policy-makers whose decisions may be influenced by their expectations about artificial intelligence.
+
+The focus is particularly on the long-term impacts of sophisticated artificial intelligence. Although human-level AI may be far in the future, there are a number of important questions which we can try to address today and may have implications for contemporary decisions. For example:
+
+- What should we believe about timelines for AI development?
+- How rapid is the development of AI likely to be near human-level? How much advance notice should we expect to have of disruptive change?
+- What are the likely economic impacts of human-level AI?
+- Which paths to AI should be considered plausible or likely?
+- Will human-level AI tend to pursue particular goals, and if so what kinds of goals?
+- Can we say anything meaningful about the impact of contemporary choices on long-term outcomes?
+
+Today, public discussion on these issues appears to be highly fragmented and of limited credibility. More credible and clearly communicated views on these issues might help improve estimates of the social returns to AI investment, identify neglected research areas, improve policy, or productively channel public interest in AI.
+
+The goal of the project is to clearly present and organize the considerations which inform contemporary views on these and related issues, to identify and explore disagreements, and to assemble whatever empirical evidence is relevant.    
+`,
     tags: ['New'] as const,
   },
 ].map((charity) => {

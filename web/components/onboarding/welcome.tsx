@@ -1,19 +1,10 @@
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ExclamationCircleIcon,
-} from '@heroicons/react/solid'
 
-import { PrivateUser, User } from 'common/user'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import {
-  firebaseLogout,
-  updatePrivateUser,
-  updateUser,
-} from 'web/lib/firebase/users'
+import { User } from 'common/user'
+import { useUser } from 'web/hooks/use-user'
+import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -21,14 +12,13 @@ import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
 import { formatMoney } from 'common/util/format'
 import { STARTING_BALANCE } from 'common/economy'
-import { Button } from 'web/components/buttons/button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { getNativePlatform } from 'web/lib/native/is-native'
+import { Button } from 'web/components/buttons/button'
 
 export default function Welcome() {
   const user = useUser()
-  const privateUser = usePrivateUser()
   const [open, setOpen] = useState(true)
   const [page, setPage] = useState(0)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
@@ -41,28 +31,20 @@ export default function Welcome() {
     <Page3 />,
   ])
   const TOTAL_PAGES = availablePages.length
-  // Just making new users created after 10/31/2022 go through this for now
-  const shouldSeeEula =
-    user &&
-    privateUser &&
-    !privateUser?.hasSignedEula &&
-    user.createdTime > 1667977200000
 
   function increasePage() {
     if (page < TOTAL_PAGES - 1) {
       setPage(page + 1)
     }
   }
+
   useEffect(() => {
-    if (!open && shouldSeeEula) {
-      setOpen(true)
-    }
-    if (!open && !shouldSeeEula && user?.shouldShowWelcome) {
+    if (!open && user?.shouldShowWelcome) {
       if (user?.shouldShowWelcome)
         updateUser(user.id, { shouldShowWelcome: false })
       setGroupSelectorOpen(true)
     }
-  }, [open, shouldSeeEula, user?.id, user?.shouldShowWelcome])
+  }, [open, user?.id, user?.shouldShowWelcome])
 
   function decreasePage() {
     if (page > 0) {
@@ -70,11 +52,7 @@ export default function Welcome() {
     }
   }
 
-  if (
-    isTwitch ||
-    !user ||
-    (!user.shouldShowWelcome && !groupSelectorOpen && !shouldSeeEula)
-  )
+  if (isTwitch || !user || (!user.shouldShowWelcome && !groupSelectorOpen))
     return <></>
 
   if (groupSelectorOpen)
@@ -86,47 +64,38 @@ export default function Welcome() {
     )
 
   return (
-    <Modal
-      open={open}
-      setOpen={(toOpen) => {
-        if (shouldSeeEula) return
-        else setOpen(toOpen)
-      }}
-    >
-      {shouldSeeEula ? (
-        <Col className="h-full place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:text-lg">
-          <Eula privateUser={privateUser} />
-        </Col>
-      ) : (
-        <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
-          {availablePages[page]}
-          <Col>
-            <Row className="place-content-between">
-              <ChevronLeftIcon
-                className={clsx(
-                  'h-10 w-10 text-gray-400 hover:text-gray-500',
-                  page === 0 ? 'disabled invisible' : ''
-                )}
-                onClick={decreasePage}
-              />
-              <PageIndicator page={page} totalpages={TOTAL_PAGES} />
-              <ChevronRightIcon
-                className={clsx(
-                  'h-10 w-10 text-indigo-500 hover:text-indigo-600',
-                  page === TOTAL_PAGES - 1 ? 'disabled invisible' : ''
-                )}
-                onClick={increasePage}
-              />
-            </Row>
-            <u
-              className="self-center text-xs text-gray-500"
-              onClick={() => setOpen(false)}
+    <Modal open={open} setOpen={setOpen}>
+      <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
+        {availablePages[page]}
+        <Col>
+          <Row className="place-content-between">
+            <Button
+              color={'gray'}
+              onClick={decreasePage}
+              className={clsx(
+                'text-gray-400 hover:text-gray-500',
+                page === 0 ? 'disabled invisible' : ''
+              )}
             >
-              I got the gist, exit welcome
-            </u>
-          </Col>
+              Previous
+            </Button>
+            <Button
+              color={'blue'}
+              onClick={
+                page === TOTAL_PAGES - 1 ? () => setOpen(false) : increasePage
+              }
+            >
+              Next
+            </Button>
+          </Row>
+          <u
+            className="self-center text-xs text-gray-500"
+            onClick={() => setOpen(false)}
+          >
+            I got the gist, exit welcome
+          </u>
         </Col>
-      )}
+      </Col>
     </Modal>
   )
 }
@@ -142,23 +111,6 @@ const useIsTwitch = (user: User | null | undefined) => {
   }, [isTwitch, user?.id, user?.shouldShowWelcome])
 
   return isTwitch
-}
-
-function PageIndicator(props: { page: number; totalpages: number }) {
-  const { page, totalpages } = props
-  return (
-    <Row>
-      {[...Array(totalpages)].map((e, i) => (
-        <div
-          key={i}
-          className={clsx(
-            'mx-1.5 my-auto h-1.5 w-1.5 rounded-full',
-            i === page ? 'bg-indigo-500' : 'bg-gray-300'
-          )}
-        />
-      ))}
-    </Row>
-  )
 }
 
 function Page0() {
@@ -214,27 +166,23 @@ function Page1() {
 export function Page2() {
   return (
     <>
+      <Title className="">What is mana ({ENV_CONFIG.moneyMoniker})?</Title>
       <p>
         <span className="mt-4 font-normal text-indigo-700">
           Mana ({ENV_CONFIG.moneyMoniker})
         </span>{' '}
-        is the play money you bet with. You can also turn it into a real
-        donation to charity, at a 100:1 ratio.
+        is Manifold's play money. Use it to create and bet in markets. The more
+        mana you have, the more you can bet and move the market.
       </p>
-      <Row className="mt-4 gap-2 rounded border border-gray-200 bg-gray-50 py-2 pl-2 pr-4 text-sm text-indigo-700">
-        <ExclamationCircleIcon className="h-5 w-5" />
-        Mana can not be traded in for real money.
-      </Row>
-      <div className="mt-8 font-semibold">Example</div>
-      <p className="mt-2">
-        When you donate{' '}
-        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
-        Manifold sends them <span className="font-semibold">$10 USD</span>.
+      <p>
+        Mana <strong>can't be converted to real money</strong>.
       </p>
-      <video loop autoPlay className="z-0 h-full w-full">
-        <source src="/welcome/charity.mp4" type="video/mp4" />
-        Your browser does not support video
-      </video>
+      <img
+        src="logo-flapping-with-money.gif"
+        height={200}
+        width={200}
+        className="place-self-center object-contain"
+      />
     </>
   )
 }
@@ -248,69 +196,27 @@ function Page3() {
         As a thank you for signing up, we’ve sent you{' '}
         <span className="font-normal text-indigo-700">
           {formatMoney(STARTING_BALANCE)}
-        </span>{' '}
+        </span>
+        .
       </p>
     </>
   )
 }
 
-function Eula(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
-  const [expanded, setExpanded] = useState<'privacy' | 'tos' | null>()
+export function Page4() {
   return (
-    <Col className="mt-4 gap-2">
-      <img
-        className="h-2/3 w-2/3 place-self-center object-contain"
-        src="/welcome/manipurple.png"
-      />
-      <Title className="text-center" text="Welcome to Manifold Markets!" />
-      <div className="font-semibold">Terms of Service & Privacy Policy</div>
-      <span>
-        <span className="mt-2">
-          By using Manifold Markets, you agree to the following:
-        </span>{' '}
-        <span
-          className="cursor-pointer text-indigo-500 hover:text-indigo-600"
-          onClick={() => setExpanded(expanded === 'privacy' ? null : 'privacy')}
-        >
-          Privacy Policy
-        </span>{' '}
-        &{' '}
-        <span
-          className="cursor-pointer text-indigo-500 hover:text-indigo-600"
-          onClick={() => setExpanded(expanded === 'tos' ? null : 'tos')}
-        >
-          Terms of Service
-        </span>
-      </span>
-      <Row>
-        {expanded === 'tos' && (
-          <iframe
-            src={'https://manifold.markets/terms'}
-            className="mt-4 mb-4 h-72 w-full overflow-x-hidden overflow-y-scroll"
-          />
-        )}
-        <div className={'my-2 h-0.5 bg-gray-200'} />
-        {expanded === 'privacy' && (
-          <iframe
-            src={'https://manifold.markets/privacy'}
-            className="mt-4 mb-4 h-72 w-full overflow-x-hidden overflow-y-scroll"
-          />
-        )}
-      </Row>
-      <Row className={'justify-between'}>
-        <Button color={'gray'} onClick={() => firebaseLogout()}>
-          Cancel
-        </Button>
-        <Button
-          color={'blue'}
-          onClick={() =>
-            updatePrivateUser(privateUser.id, { hasSignedEula: true })
-          }
-        >
-          I agree
-        </Button>
-      </Row>
-    </Col>
+    <>
+      <Title className="mx-auto" text="Donate" />
+      <p className="mt-2">
+        You can turn your mana earnings into a real donation to charity, at a
+        100:1 ratio. When you donate{' '}
+        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
+        Manifold sends them <span className="font-semibold">$10 USD</span>.
+      </p>
+      <video loop autoPlay className="z-0 h-full w-full">
+        <source src="/welcome/charity.mp4" type="video/mp4" />
+        Your browser does not support video
+      </video>
+    </>
   )
 }

@@ -1,8 +1,6 @@
 import { ChatUserstate, Client } from 'tmi.js';
-
-import { InsufficientBalanceException, TradingClosedException } from 'common/exceptions';
-
-import { ResolutionOutcome } from 'common/outcome';
+import { InsufficientBalanceException, TradingClosedException } from '@common/exceptions';
+import { ResolutionOutcome } from '@common/outcome';
 import App from './app';
 import { DEBUG_TWITCH_ACCOUNT, IS_DEV, MANIFOLD_SIGNUP_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from './envs';
 import log from './logger';
@@ -11,6 +9,7 @@ import { Market } from './market';
 import { TwitchStream } from './stream';
 import { sanitizeTwitchChannelName } from './twitch-api';
 import User from './user';
+import { MetricEvent, UniqueMetricEvent } from './metrics';
 
 const COMMAND_REGEXP = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/);
 
@@ -284,12 +283,12 @@ export default class TwitchBot {
       const userDisplayName = tags['display-name'];
 
       try {
-        const broadcaster = await this.app.getUserForTwitchUsername(channelName);
+        const broadcaster = this.app.getUserForTwitchUsername(channelName);
 
         const market = stream.featuredMarket;
         let user = undefined;
         try {
-          user = await this.app.getUserForTwitchUsername(tags.username);
+          user = this.app.getUserForTwitchUsername(tags.username);
           user.twitchDisplayName = userDisplayName;
         } catch (e) {}
         const commandParams: CommandParams = { args, stream, tags, username: tags.username, broadcaster, market, user };
@@ -328,6 +327,11 @@ export default class TwitchBot {
   }
 
   private addMessageToQueue(channelName: string, command: CommandDef, params: CommandParams) {
+    this.app.metrics.logMetricsEvent(MetricEvent.COMMAND_USED);
+    // TODO: Inconsistent: this measures how many registered users have used a command today, but the regular command metrics measures how many of any user used a command.
+    if (params.user) {
+      this.app.metrics.logUnqiueMetricsEvent(UniqueMetricEvent.UNIQUE_COMMAND_USER, params.user);
+    }
     if (!this.messageQueue[channelName]) {
       this.messageQueue[channelName] = [];
     }
@@ -389,11 +393,13 @@ export default class TwitchBot {
       }
     } else {
       // this.client.getOptions().channels = await this.app.firestore.getRegisteredTwitchChannels();
-      channelsToJoin.push(...(await this.app.firestore.getRegisteredTwitchChannels()));
+      channelsToJoin.push(...this.app.firestore.getRegisteredTwitchChannels());
     }
 
     try {
       await this.client.connect();
+      const p = await this.client.ping();
+      log.info(`Connected to Twitch with ${p[0] * 1000}ms ping.`);
     } catch (e) {
       throw new TwitchBotInitializationException(e);
     }
@@ -435,4 +441,9 @@ export default class TwitchBot {
   }
 }
 
-class TwitchBotInitializationException extends Error {}
+class TwitchBotInitializationException extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'TwitchBotInitializationException';
+  }
+}

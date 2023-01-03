@@ -3,7 +3,6 @@ import {
   deleteField,
   doc,
   limit,
-  getDocs,
   orderBy,
   query,
   updateDoc,
@@ -70,14 +69,15 @@ export const setPushTokenRequestDenied = async (userId: string) => {
 
 export function listenForNotifications(
   userId: string,
-  setNotifictions: (notifications: Notification[]) => void
+  setNotifictions: (notifications: Notification[]) => void,
+  // Nobody's going through 10 pages of notifications, right?
+  count = 10 * NOTIFICATIONS_PER_PAGE
 ) {
   const notifsCollection = collection(db, `/users/${userId}/notifications`)
   const q = query(
     notifsCollection,
     orderBy('createdTime', 'desc'),
-    // Nobody's going through 10 pages of notifications, right?
-    limit(NOTIFICATIONS_PER_PAGE * 10)
+    limit(count)
   )
   return listenForValues<Notification>(q, setNotifictions)
 }
@@ -94,17 +94,4 @@ export function listenForUnseenNotifications(
     limit(NOTIFICATIONS_PER_PAGE * 10)
   )
   return listenForValues<Notification>(q, setNotifictions)
-}
-
-export const markAllNotificationsAsSeen = async (userId: string) => {
-  const notifsCollection = collection(db, `/users/${userId}/notifications`)
-  const unseenNotifications = await getDocs(
-    query(notifsCollection, where('isSeen', '==', false))
-  )
-  const now = new Date()
-  return await Promise.all(
-    unseenNotifications.docs.map((d) => {
-      return updateDoc(d.ref, { isSeen: true, viewTime: now })
-    })
-  )
 }

@@ -259,7 +259,7 @@ export function getTopTraders(period: Period) {
   const topTraders = query(
     users,
     orderBy('profitCached.' + period, 'desc'),
-    limit(20)
+    limit(21) // add extra to account for @acc removal
   )
 
   return getValues<User>(topTraders)
@@ -405,4 +405,11 @@ export const getUsersBlockFacetFilters = (
     )
   )
   return facetFilters
+}
+
+export async function getTotalContractCreated(userId: string) {
+  const resp = await getCountFromServer(
+    query(collection(db, 'contracts'), where('creatorId', '==', userId))
+  )
+  return resp.data().count
 }

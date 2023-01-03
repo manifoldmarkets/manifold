@@ -1,9 +1,9 @@
 import { Transition } from '@headlessui/react';
 import clsx from 'clsx';
-import { Group } from 'common/group';
-import * as Packets from 'common/packet-ids';
-import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from 'common/packets';
-import { LiteMarket, LiteUser } from 'common/types/manifold-api-types';
+import { Group } from '@common/group';
+import * as Packets from '@common/packet-ids';
+import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from '@common/packets';
+import { LiteMarket, LiteUser } from '@common/types/manifold-api-types';
 import Head from 'next/head';
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import Textarea from 'react-expanding-textarea';
@@ -21,11 +21,12 @@ import { SelectedGroup } from 'web/lib/selected-group';
 import { CONTRACT_ANTE, formatMoney, Resolution } from 'web/lib/utils';
 import { ConfirmationButton } from '../components/confirmation-button';
 import { GroupSelector } from '../components/group-selector';
-import { ENV_CONFIG } from '../../../common/envs/constants';
+import { ENV_CONFIG } from '@manifold_common/envs/constants';
 
 let socket: Socket;
 let APIBase = undefined;
 let connectedServerID: string = undefined;
+let isAdmin = false;
 
 async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
   const r = await fetch(`${APIBase}group/by-id/${group.id}/markets`);
@@ -212,6 +213,7 @@ export default () => {
     socket.on(Packets.HANDSHAKE_COMPLETE, (p: PacketHandshakeComplete) => {
       const firstConnect = APIBase === undefined;
       APIBase = p.manifoldAPIBase;
+      isAdmin = p.isAdmin;
       if (!connectedServerID) {
         connectedServerID = p.serverID;
       } else {
@@ -319,8 +321,15 @@ export default () => {
           <div className="relative flex h-screen max-w-xl grow flex-col overflow-hidden">
             <div className="p-2">
               <div className="flex flex-row justify-center">
-                <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} refreshSignal={refreshSignal} APIBase={APIBase} />
-                <AdditionalControlsDropdown socket={socket} />
+                <GroupSelector
+                  userID={manifoldUserID}
+                  selectedGroup={selectedGroup}
+                  setSelectedGroup={setSelectedGroup}
+                  refreshSignal={refreshSignal}
+                  APIBase={APIBase}
+                  refreshBtnClass={!isAdmin && '!rounded-r-md'}
+                />
+                {isAdmin && <AdditionalControlsDropdown socket={socket} />}
               </div>
               <div className="flex w-full justify-center">
                 <ConfirmationButton
@@ -451,12 +460,12 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
     outcome === 'YES'
       ? 'btn-primary'
       : outcome === 'NO'
-      ? 'bg-red-400 hover:bg-red-500'
-      : outcome === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
-      : outcome === 'MKT'
-      ? 'bg-blue-400 hover:bg-blue-500'
-      : 'btn-disabled';
+        ? 'bg-red-400 hover:bg-red-500'
+        : outcome === 'CANCEL'
+          ? 'bg-yellow-400 hover:bg-yellow-500'
+          : outcome === 'MKT'
+            ? 'bg-blue-400 hover:bg-blue-500'
+            : 'btn-disabled';
 
   const resolveClicked = async (): Promise<boolean> => {
     console.log('Resolve clicked: ' + outcome);

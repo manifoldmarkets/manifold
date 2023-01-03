@@ -6,6 +6,7 @@ import {
   getUser,
   getValues,
   invokeFunction,
+  loadPaginated,
   log,
   revalidateStaticProps,
 } from './utils'
@@ -23,6 +24,7 @@ import {
 import { batchedWaitAll } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
+import { CollectionReference } from 'firebase-admin/firestore'
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
 
@@ -42,7 +44,7 @@ export const updateusermetrics = newEndpointNoAuth(
   {
     timeoutSeconds: 2000,
     memory: '16GiB',
-    minInstances: 0,
+    minInstances: 1,
     secrets: ['API_SECRET'],
   },
   async (_req) => {
@@ -53,11 +55,15 @@ export const updateusermetrics = newEndpointNoAuth(
 
 export async function updateUserMetrics() {
   log('Loading users...')
-  const users = await getValues<User>(firestore.collection('users'))
+  const users = await loadPaginated(
+    firestore.collection('users') as CollectionReference<User>
+  )
   log(`Loaded ${users.length} users.`)
 
   log('Loading contracts...')
-  const contracts = await getValues<Contract>(firestore.collection('contracts'))
+  const contracts = await loadPaginated(
+    firestore.collection('contracts') as CollectionReference<Contract>
+  )
   const contractsByCreator = groupBy(contracts, (c) => c.creatorId)
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
   log(`Loaded ${contracts.length} contracts.`)
@@ -186,7 +192,7 @@ const loadUserContractBets = async (userId: string, contractIds: string[]) => {
         .where('userId', '==', userId)
         .get()
     }),
-    100
+    500
   )
   return betDocs
     .map((d) => d.docs)

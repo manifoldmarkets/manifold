@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
 import fetch from 'node-fetch'
 import {
+  CollectionReference,
   CollectionGroup,
   DocumentData,
   FieldValue,
@@ -9,9 +10,9 @@ import {
   QueryDocumentSnapshot,
   Transaction,
 } from 'firebase-admin/firestore'
-import { SupabaseClientOptions, createClient } from '@supabase/supabase-js'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { generateJSON } from '@tiptap/html'
+import { createClient } from '../../common/supabase/utils'
 import { stringParseExts } from '../../common/util/parse'
 
 import { DEV_CONFIG } from '../../common/envs/dev'
@@ -99,6 +100,22 @@ export const writeAsync = async (
     }
     await batch.commit()
   }
+}
+
+export const loadPaginated = async <T extends DocumentData>(
+  q: Query<T> | CollectionReference<T>,
+  batchSize = 500
+) => {
+  const results: T[] = []
+  let prev: QuerySnapshot<T> | undefined
+  for (let i = 0; prev == undefined || prev.size > 0; i++) {
+    prev = await (prev == undefined
+      ? q.limit(batchSize)
+      : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
+    ).get()
+    results.push(...prev.docs.map((d) => d.data() as T))
+  }
+  return results
 }
 
 export const processPaginated = async <T extends DocumentData, U>(
@@ -310,7 +327,7 @@ export function contractUrl(contract: Contract) {
   return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
 }
 
-export function createSupabaseClient(opts?: SupabaseClientOptions<'public'>) {
+export function createSupabaseClient() {
   const url =
     process.env.SUPABASE_URL ??
     (isProd() ? PROD_CONFIG.supabaseUrl : DEV_CONFIG.supabaseUrl)
@@ -323,5 +340,5 @@ export function createSupabaseClient(opts?: SupabaseClientOptions<'public'>) {
   if (!key) {
     throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
   }
-  return createClient(url, key, opts)
+  return createClient(url, key)
 }

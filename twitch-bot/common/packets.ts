@@ -31,6 +31,7 @@ export type PacketHandshakeComplete = {
   actingManifoldUserID: string;
   manifoldAPIBase: string;
   serverID: string;
+  isAdmin: boolean;
 };
 
 export type PacketSelectMarket = AbstractMarket & {

@@ -2,6 +2,7 @@ import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { groupBy, map } from 'lodash'
 import { useMemo } from 'react'
+import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 import {
   listenForNotifications,
   listenForUnseenNotifications,
@@ -21,6 +22,17 @@ function useNotifications(privateUser: PrivateUser) {
   })
 }
 
+export function useFirstPageOfNotifications(privateUser: PrivateUser) {
+  return useStore(
+    privateUser.id,
+    (userId, setNotifications: (notifications: Notification[]) => void) =>
+      listenForNotifications(userId, setNotifications, NOTIFICATIONS_PER_PAGE),
+    {
+      prefix: 'notifications-first-page',
+    }
+  )
+}
+
 function useUnseenNotifications(privateUser: PrivateUser) {
   return useStore(privateUser.id, listenForUnseenNotifications, {
     prefix: 'unseen-notifications',
@@ -28,7 +40,8 @@ function useUnseenNotifications(privateUser: PrivateUser) {
 }
 
 export function useGroupedNotifications(privateUser: PrivateUser) {
-  const notifications = useNotifications(privateUser)
+  const firstNotifications = useFirstPageOfNotifications(privateUser)
+  const notifications = useNotifications(privateUser) ?? firstNotifications
   return useMemo(() => {
     return notifications ? groupNotifications(notifications) : undefined
   }, [notifications])

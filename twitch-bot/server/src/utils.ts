@@ -36,3 +36,11 @@ export async function detectGCloudInstance(): Promise<string> {
     })
     .catch(() => undefined);
 }
+
+const timers: { [k: string]: number } = {};
+export const ts = function (name: string) {
+  timers[name] = Date.now();
+};
+export const te = function (name: string) {
+  return ((Date.now() - timers[name]) * 0.001).toFixed(1) + 's';
+};

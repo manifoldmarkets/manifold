@@ -18,7 +18,7 @@ import {
   PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
-import { markAllNotificationsAsSeen } from 'web/lib/firebase/notifications'
+import { markAllNotifications } from 'web/lib/firebase/api'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
@@ -26,7 +26,6 @@ import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
   NotificationGroup,
   useGroupedNotifications,
@@ -34,14 +33,18 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser } from 'web/hooks/use-user'
+import { XIcon } from '@heroicons/react/outline'
+import { updatePrivateUser } from 'web/lib/firebase/users'
+import { getNativePlatform } from 'web/lib/native/is-native'
+import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
   const router = useRouter()
   const [navigateToSection, setNavigateToSection] = useState<string>()
   const [activeIndex, setActiveIndex] = useState(0)
+  const { isNative } = getNativePlatform()
   useRedirectIfSignedOut()
-  const isMobile = useIsMobile()
 
   useEffect(() => {
     const query = { ...router.query }
@@ -56,12 +59,42 @@ export default function Notifications() {
   return (
     <Page>
       <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
-        <Row
-          className={clsx('w-full justify-between', isMobile ? 'hidden' : '')}
-        >
+        <Row className={clsx('hidden w-full justify-between lg:block')}>
           <Title text={'Notifications'} className="grow" />
         </Row>
         <SEO title="Notifications" description="Manifold user notifications" />
+        {isNative ? (
+          <div />
+        ) : (
+          privateUser &&
+          !privateUser.hasSeenAppBannerInNotificationsOn && (
+            <Row className="relative rounded-md bg-blue-50 p-2">
+              <XIcon
+                onClick={() =>
+                  updatePrivateUser(privateUser.id, {
+                    hasSeenAppBannerInNotificationsOn: Date.now(),
+                  })
+                }
+                className={
+                  'absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full bg-gray-100 sm:p-0.5'
+                }
+              />
+              <span className={'text-sm sm:text-base'}>
+                <Row className={'items-center'}>
+                  We have a mobile app! Get the Manifold icon on your home
+                  screen and push notifications (if you want 'em).
+                  <Col
+                    className={
+                      'min-w-fit items-center justify-center p-2 md:flex-row'
+                    }
+                  >
+                    <AppBadgesOrGetAppButton />
+                  </Col>
+                </Row>
+              </span>
+            </Row>
+          )
+        )}
 
         {privateUser && router.isReady && (
           <div className="relative h-full w-full">
@@ -162,10 +195,10 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 
   // Mark all notifications as seen.
   useEffect(() => {
-    if (isPageVisible && allGroupedNotifications) {
-      markAllNotificationsAsSeen(privateUser.id)
+    if (privateUser != null && isPageVisible) {
+      markAllNotifications({ seen: true })
     }
-  }, [privateUser.id, isPageVisible, allGroupedNotifications])
+  }, [privateUser, isPageVisible])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
@@ -196,6 +229,7 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
             totalItems={allGroupedNotifications.length}
             setPage={setPage}
             scrollToTop
+            savePageToQuery={true}
           />
         )}
     </Col>
