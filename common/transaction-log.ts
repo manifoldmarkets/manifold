@@ -1,6 +1,7 @@
 export type DocumentKind =
   | 'user'
   | 'userFollow'
+  | 'userReaction'
   | 'contract'
   | 'contractAnswer'
   | 'contractBet'

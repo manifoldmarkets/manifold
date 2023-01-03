@@ -49,6 +49,10 @@ export const logUserFollows = logger(
   'users/{parent}/follows/{id}',
   'userFollow'
 )
+export const logUserReactions = logger(
+  'users/{parent}/reactions/{id}',
+  'userReaction'
+)
 export const logContracts = logger('contracts/{id}', 'contract')
 export const logContractAnswers = logger(
   'contracts/{parent}/answers/{id}',

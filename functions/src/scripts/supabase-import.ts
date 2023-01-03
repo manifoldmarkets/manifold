@@ -115,6 +115,14 @@ async function importDatabase(kinds?: string[]) {
       (c) => c.ref.parent.parent?.parent.path == '/users',
       5000
     )
+  if (shouldImport('userReaction'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('reactions'),
+      'userReaction',
+      (_) => true,
+      2500
+    )
   if (shouldImport('contract'))
     await importCollection(
       client,
