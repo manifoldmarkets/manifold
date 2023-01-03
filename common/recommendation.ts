@@ -1,4 +1,4 @@
-import { isArray, uniq } from 'lodash'
+import { isArray, uniq, zip } from 'lodash'
 import { dotProduct, factorizeMatrix } from './util/matrix'
 
 export type user_data = {
@@ -86,26 +86,48 @@ export async function getMarketRecommendations(userData: user_data[]) {
     }
   }
 
-  const [f1, f2] = factorizeMatrix(sparseMatrix, columns, 5, 50)
+  const [userFeatures, contractFeatures] = factorizeMatrix(
+    sparseMatrix,
+    columns,
+    5,
+    2000
+  )
+
+  const swipeColumnIndices = columns
+    .map((column, i) => [column, i] as const)
+    .filter(([column]) => column.startsWith('swiped-'))
+    .map(([_, i]) => i)
+  const swipeContractFeatures = swipeColumnIndices.map(
+    (i) => contractFeatures[i]
+  )
+  const swipeContractIds = swipeColumnIndices.map((i) =>
+    columns[i].replace('swiped-', '')
+  )
+  const swipeContractToFeatures = Object.fromEntries(
+    zip(swipeContractIds, swipeContractFeatures) as [string, number[]][]
+  )
 
   // Compute scores per user one at a time to save memory.
   const getUserContractScores = (userId: string) => {
     const userIndex = userIdToIndex[userId]
     if (!userIndex) return {}
 
-    const userFeatures = f1[userIndex]
-
-    const contractScorePairs = columns
-      .map((column, i) => {
-        const columnFeatures = f2[i]
-        const score = dotProduct(userFeatures, columnFeatures)
-        return [column, score] as const
-      })
-      .filter(([column]) => column.startsWith('swiped-'))
-      .map(([column, value]) => [column.replace('swiped-', ''), value])
+    const contractScorePairs = swipeContractIds.map((contractId) => {
+      const score = dotProduct(
+        userFeatures[userIndex],
+        swipeContractToFeatures[contractId]
+      )
+      return [contractId, score] as const
+    })
 
     return Object.fromEntries(contractScorePairs)
   }
 
-  return { getUserContractScores, userIds }
+  return {
+    userIds,
+    userFeatures,
+    contractIds: swipeContractIds,
+    contractFeatures: swipeContractFeatures,
+    getUserContractScores,
+  }
 }

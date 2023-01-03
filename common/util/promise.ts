@@ -45,7 +45,7 @@ export const batchedWaitAll = async <T>(
   return result
 }
 
-export const asyncMap = async <T, U>(
+export const mapAsync = async <T, U>(
   items: T[],
   f: (item: T, index: number) => Promise<U>,
   maxConcurrentRequests = 100
