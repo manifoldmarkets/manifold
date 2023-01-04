@@ -154,7 +154,7 @@ export function AnswerLabel(props: {
   const ELLIPSES_LENGTH = 3
 
   let truncated = text
-  let truncatedLength =
+  const truncatedLength =
     truncate === 'short'
       ? 20
       : truncated === 'medium'
@@ -162,6 +162,7 @@ export function AnswerLabel(props: {
       : truncated === 'long'
       ? 75
       : undefined
+
   if (truncatedLength && text.length > truncatedLength + ELLIPSES_LENGTH) {
     truncated = text.slice(0, truncatedLength) + '...'
   }
