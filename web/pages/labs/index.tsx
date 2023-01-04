@@ -1,4 +1,3 @@
-import { CHALLENGES_ENABLED } from 'common/challenge'
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import Link from 'next/link'
 import Masonry from 'react-masonry-css'
@@ -37,14 +36,6 @@ export default function LabsPage() {
               title="🫀 Charity"
               description={`Turn ${ENV_CONFIG.moneyMoniker} into real donations to causes you care about`}
               href="/charity"
-            />
-          )}
-
-          {CHALLENGES_ENABLED && (
-            <LabCard
-              title="⚔️ Challenges"
-              description="One-on-one bets between friends"
-              href="/challenges"
             />
           )}
 

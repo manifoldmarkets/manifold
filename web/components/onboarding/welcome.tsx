@@ -154,7 +154,8 @@ function Page1() {
         loop
         autoPlay={shouldAutoPlay}
         controls={!shouldAutoPlay}
-        className="my-4 h-full w-full"
+        muted
+        className="hide-video-cast-overlay my-4 h-full w-full"
       >
         <source src="/welcome/mana-example.mp4" type="video/mp4" />
         Your browser does not support video
@@ -213,7 +214,12 @@ export function Page4() {
         <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
         Manifold sends them <span className="font-semibold">$10 USD</span>.
       </p>
-      <video loop autoPlay className="z-0 h-full w-full">
+      <video
+        loop
+        autoPlay
+        muted
+        className="hide-video-cast-overlay z-0 h-full w-full"
+      >
         <source src="/welcome/charity.mp4" type="video/mp4" />
         Your browser does not support video
       </video>

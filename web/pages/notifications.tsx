@@ -18,7 +18,7 @@ import {
   PARENT_NOTIFICATION_STYLE,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
-import { markAllNotificationsAsSeen } from 'web/lib/firebase/notifications'
+import { markAllNotifications } from 'web/lib/firebase/api'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
@@ -195,10 +195,10 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 
   // Mark all notifications as seen.
   useEffect(() => {
-    if (isPageVisible && allGroupedNotifications) {
-      markAllNotificationsAsSeen(privateUser.id)
+    if (privateUser != null && isPageVisible) {
+      markAllNotifications({ seen: true })
     }
-  }, [privateUser.id, isPageVisible, allGroupedNotifications])
+  }, [privateUser, isPageVisible])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />

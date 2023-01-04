@@ -32,6 +32,7 @@ import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from 'functions/src/validate-iap'
+import { markallnotifications } from 'functions/src/mark-all-notifications'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -77,6 +78,7 @@ addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 addEndpointRoute('/createpost', createpost)
 addEndpointRoute('/testscheduledfunction', testscheduledfunction)
 addJsonEndpointRoute('/validateIap', validateiap)
+addJsonEndpointRoute('/markallnotifications', markallnotifications)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)

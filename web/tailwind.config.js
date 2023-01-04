@@ -320,6 +320,11 @@ module.exports = {
           'overflow-wrap': 'anywhere',
           'word-break': 'break-word', // for Safari
         },
+        '.hide-video-cast-overlay': {
+          '&::-internal-media-controls-overlay-cast-button': {
+            display: 'none',
+          },
+        },
       })
     }),
   ],
