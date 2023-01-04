@@ -404,6 +404,15 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
 
+  useEffect(() => {
+    const newBets = props.bets.filter(
+      (b) => b.createdTime > (bets[0]?.createdTime ?? 0)
+    )
+    if (newBets.length > 0) setBets([...newBets, ...bets])
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.bets])
+
   const lps = useLiquidity(contract.id) ?? []
   const visibleBets = bets.filter((bet) => !bet.isAnte) // on top of main contract page bet filters
   const visibleLps = lps.filter(
@@ -416,7 +425,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const items = [
     ...visibleBets.map((bet) => ({
       type: 'bet' as const,
-      id: bet.id + '-' + (bet.isSold ? 'sold' : 'unsold'),
+      id: bet.id + '-' + bet.createdTime,
       bet,
     })),
     ...visibleLps.map((lp) => ({
