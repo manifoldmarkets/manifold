@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { groupBy, sortBy, sum } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
@@ -45,6 +45,8 @@ import { formatWithCommas, shortFormatNumber } from 'common/util/format'
 import { useBets } from 'web/hooks/use-bets'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
+import { getOlderBets } from 'web/lib/supabase/bets'
+import { getTotalBetCount } from 'web/lib/firebase/bets'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -394,9 +396,11 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
 }) {
-  const { contract, bets } = props
+  const { contract } = props
+  const [bets, setBets] = useState(props.bets)
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
+  const oldestBet = bets[bets.length - 1]
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
 
@@ -409,7 +413,6 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.amount > 0
   )
-
   const items = [
     ...visibleBets.map((bet) => ({
       type: 'bet' as const,
@@ -422,6 +425,28 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       lp,
     })),
   ]
+  const [totalItems, setTotalItems] = useState(items.length)
+
+  useEffect(() => {
+    const willNeedMoreBets = totalItems % ITEMS_PER_PAGE === 0
+    if (!willNeedMoreBets) return
+    getTotalBetCount(contract.id).then((totalBetCount) => {
+      setTotalItems(totalBetCount + visibleLps.length)
+    })
+  }, [contract.id, totalItems, visibleLps.length])
+
+  const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
+  const shouldLoadMore = limit > 0 && bets.length < totalItems
+  useEffect(() => {
+    if (!shouldLoadMore) return
+    getOlderBets(contract.id, oldestBet.createdTime, limit)
+      .then((olderBets) => {
+        setBets((bets) => [...bets, ...olderBets])
+      })
+      .catch((err) => {
+        console.error(err)
+      })
+  }, [contract.id, limit, oldestBet.createdTime, shouldLoadMore])
 
   const pageItems = sortBy(items, (item) =>
     item.type === 'bet'
@@ -434,18 +459,22 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   return (
     <>
       <Col className="mb-4 gap-4">
-        {pageItems.map((item) =>
-          item.type === 'bet' ? (
-            <FeedBet key={item.id} contract={contract} bet={item.bet} />
-          ) : (
-            <FeedLiquidity key={item.id} liquidity={item.lp} />
+        {shouldLoadMore ? (
+          <LoadingIndicator />
+        ) : (
+          pageItems.map((item) =>
+            item.type === 'bet' ? (
+              <FeedBet key={item.id} contract={contract} bet={item.bet} />
+            ) : (
+              <FeedLiquidity key={item.id} liquidity={item.lp} />
+            )
           )
         )}
       </Col>
       <Pagination
         page={page}
-        itemsPerPage={50}
-        totalItems={items.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        totalItems={totalItems}
         setPage={setPage}
         scrollToTop
       />
