@@ -657,7 +657,9 @@ export const ActivitySection = memo(function ActivitySection() {
   return (
     <Col>
       <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
-      <ActivityLog count={6} showPills />
+      <div className="h-[700px] flex-none overflow-hidden">
+        <ActivityLog count={10} showPills />
+      </div>
     </Col>
   )
 })
