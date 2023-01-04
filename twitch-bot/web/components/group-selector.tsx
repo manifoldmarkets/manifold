@@ -1,9 +1,9 @@
+import { Group } from '@common/types/manifold-internal-types';
 import { Combobox } from '@headlessui/react';
 import { CheckIcon, PlusCircleIcon, RefreshIcon, SelectorIcon } from '@heroicons/react/outline';
 import clsx from 'clsx';
-import { Group } from '@common/group';
 import { useEffect, useState } from 'react';
-import { SelectedGroup } from 'web/lib/selected-group';
+import { SelectedGroup } from '../lib/selected-group';
 
 async function fetchGroups(APIBase: string, userID: string): Promise<Group[]> {
   const r = await fetch(`${APIBase}groups?availableToUserId=${userID}`);

@@ -15,8 +15,8 @@ import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
 
 import { ResolutionOutcome } from '@common/outcome';
-import * as Packet from '@common/packet-ids';
-import { PacketHandshakeComplete, PacketResolved, PacketSelectMarket } from '@common/packets';
+import { PacketAddBets, PacketClear, PacketHandshakeComplete, PacketResolved, PacketSelectMarket, PacketUnfeature } from '@common/packets';
+import SocketWrapper from '@common/socket-wrapper';
 import { AbstractMarket, NamedBet } from '@common/types/manifold-abstract-types';
 import { DisconnectDescription } from 'socket.io-client/build/esm/socket';
 import { LoadingOverlay } from '../components/loading-overlay';
@@ -32,6 +32,7 @@ class Application {
   readonly transactionTemplate: HTMLElement;
   readonly chart: Chart;
   readonly socket: Socket;
+  readonly sw: SocketWrapper<Socket>;
 
   betElements: BetElement[] = [];
 
@@ -61,6 +62,7 @@ class Application {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
     this.socket = io({ query: { type: 'overlay', controlToken: params['t'] }, rememberUpgrade: true });
+    this.sw = new SocketWrapper(this.socket);
     this.socket.on('disconnect', (reason: Socket.DisconnectReason, description?: DisconnectDescription) => {
       const reasons: { reason: Socket.DisconnectReason; desc: string }[] = [
         { reason: 'io server disconnect', desc: 'The server has forcefully disconnected the socket with socket.disconnect()' },
@@ -89,16 +91,16 @@ class Application {
   }
 
   registerPacketHandlers() {
-    this.socket.on(Packet.ADD_BETS, (bets: NamedBet[]) => {
+    this.sw.on(PacketAddBets, (p) => {
       try {
-        for (const bet of bets) {
+        for (const bet of p.bets) {
           this.addBet(bet);
         }
       } catch (e) {
         console.trace(e);
       }
     });
-    this.socket.on(Packet.SELECT_MARKET, (p: PacketSelectMarket) => {
+    this.sw.on(PacketSelectMarket, (p: PacketSelectMarket) => {
       console.debug(p);
       try {
         this.resetUI();
@@ -107,9 +109,7 @@ class Application {
         console.trace(e);
       }
     });
-    this.socket.on(Packet.CLEAR, () => {
-      this.resetUI();
-    });
+    this.sw.on(PacketClear, () => this.resetUI());
     this.socket.on('connect', () => {
       console.debug(`Using transport: ${this.socket.io.engine.transport.name}`);
 
@@ -130,7 +130,7 @@ class Application {
   }
 
   loadMarket(p: PacketSelectMarket) {
-    this.currentMarket = { ...p };
+    this.currentMarket = { ...p.market, initialBets: p.initialBets } as AbstractMarket;
 
     if (this.currentMarket.bets.length > 0) {
       this.currentMarket.probability = this.currentMarket.bets[this.currentMarket.bets.length - 1].probAfter;
@@ -158,7 +158,7 @@ class Application {
     const data: Point[] = [];
     // Bets are stored oldest-first:
     data.push(new Point(Date.now() - 1e9, 0.5));
-    if (p.bets.length > 0) {
+    if (p.market.bets.length > 0) {
       for (const bet of this.currentMarket.bets) {
         data.push(new Point(bet.createdTime, bet.probBefore));
         data.push(new Point(bet.createdTime, bet.probAfter));
@@ -256,7 +256,7 @@ export default () => {
       // setLoadingMessage('Connecting to server...');
       // setConnectionState(ConnectionState.CONNECTING);
     });
-    app.socket.on(Packet.HANDSHAKE_COMPLETE, (packet: PacketHandshakeComplete) => {
+    app.sw.on(PacketHandshakeComplete, (packet) => {
       if (!connectedServerID) {
         connectedServerID = packet.serverID;
       } else {
@@ -265,18 +265,16 @@ export default () => {
         }
       }
     });
-    app.socket.on(Packet.RESOLVE, (packet: PacketResolved) => {
-      setResolvedData(packet);
-    });
-    app.socket.on(Packet.CLEAR, () => {
+    app.sw.on(PacketResolved, (p) => setResolvedData(p));
+    app.sw.on(PacketClear, () => {
       setResolvedData(undefined);
       setOverlayVisible(false);
     });
-    app.socket.on(Packet.SELECT_MARKET, () => {
+    app.sw.on(PacketSelectMarket, () => {
       setResolvedData(undefined);
       setOverlayVisible(true);
     });
-    app.socket.on(Packet.UNFEATURE_MARKET, () => {
+    app.sw.on(PacketUnfeature, () => {
       setResolvedData(undefined);
       setOverlayVisible(false);
     });

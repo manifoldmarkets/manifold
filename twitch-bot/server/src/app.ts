@@ -56,7 +56,6 @@ export default class App {
         displayName = 'A trader';
       }
     }
-    log.info(`Cached display name for user '${displayName}'.`);
     return (this.userIdToNameMap[userID] = displayName);
   }
 
@@ -90,8 +89,7 @@ export default class App {
     await this.metrics.load();
     await this.firestore.loadUsers();
     await this.bot.connect();
-    await this.manifoldFirestore.validateConnection();
-    await this.manifoldFirestore.initialLoadAllUsers();
+    await this.manifoldFirestore.load();
 
     try {
       await fetch('http://localhost:5000/online');
