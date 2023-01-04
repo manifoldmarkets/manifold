@@ -3,14 +3,15 @@ import {
   PacketHandshakeComplete,
   PacketMarketCreated,
   PacketPing,
-  PacketPong, PacketRequestResolve,
+  PacketPong,
+  PacketRequestResolve,
   PacketResolved,
   PacketSelectMarketID,
   PacketUnfeature
 } from '@common/packets';
 import SocketWrapper from '@common/socket-wrapper';
 import { LiteMarket, LiteUser } from '@common/types/manifold-api-types';
-import { Contract, Group } from '@common/types/manifold-internal-types';
+import { Group } from '@common/types/manifold-internal-types';
 import { Transition } from '@headlessui/react';
 import { ENV_CONFIG } from '@manifold_common/envs/constants';
 import clsx from 'clsx';
@@ -38,13 +39,14 @@ let APIBase = undefined;
 let connectedServerID: string = undefined;
 let isAdmin = false;
 
-export function getMarketDisplayability(c: Contract): [featureable: boolean, listPrecedence: number, reason?: string] {
+export function getMarketDisplayability(c: LiteMarket): [featureable: boolean, listPrecedence: number, reason?: string] {
   if (c.outcomeType !== 'BINARY') return [false, 6, 'This type of market is not currently supported'];
   if (c.mechanism !== 'cpmm-1') return [false, 5, 'This type of market is not currently supported'];
   if (c.resolution) return [false, 3, 'This market has been resolved'];
   if (c.closeTime < Date.now()) return [false, 2, 'This marked is closed'];
   return [true, 1];
 }
+
 async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
   const r = await fetch(`${APIBase}group/by-id/${group.id}/markets`);
   const markets = (await r.json()) as LiteMarket[];
@@ -53,12 +55,7 @@ async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
   markets.sort((a, b) => b.createdTime - a.createdTime);
 
   // Sort the markets such that the display order is Featureable markets > Closed markets > Unsupported markets:
-  const now = Date.now();
-  const marketWeight = (a: LiteMarket) => {
-    if (a.outcomeType !== 'BINARY') return 3;
-    if (a.closeTime < now) return 2;
-    return 1;
-  };
+  const marketWeight = (a: LiteMarket) => getMarketDisplayability(a)[1];
   markets.sort((a, b) => marketWeight(a) - marketWeight(b));
 
   return markets;

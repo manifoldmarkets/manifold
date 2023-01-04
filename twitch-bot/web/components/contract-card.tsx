@@ -3,6 +3,7 @@ import { SparklesIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
 import { LiteMarket } from '@common/types/manifold-api-types';
 import { DAY_MS, formatMoney } from 'web/lib/utils';
+import { getMarketDisplayability } from 'web/pages/dock';
 import { Avatar } from './avatar';
 import { ConfirmationButton } from './confirmation-button';
 import { Col } from './layout/col';
@@ -10,15 +11,12 @@ import { Row } from './layout/row';
 
 export default function ContractCard(props: { controlUserID: string; contract: LiteMarket; onFeature: () => void }) {
   const { controlUserID, contract, onFeature } = props;
-  const isClosed = contract.closeTime < Date.now();
-  const isResolved = contract.isResolved;
-  const isFeatureable = !isClosed && contract.outcomeType === 'BINARY';
+  const [isFeatureable, , message] = getMarketDisplayability(contract);
   const canResolveMarket = controlUserID === contract.creatorId;
   return (
     <Col className={clsx('group relative gap-3 rounded-lg bg-white py-4 p-4 xs:pl-6 pr-5 shadow-md', !isFeatureable && 'bg-gray-100')}>
       <div className="flex flex-col xs:flex-row">
         <Col className="relative flex-1 gap-3 pr-1">
-          {/* <div className={clsx('absolute -left-6 -top-4 -bottom-4 right-0')}></div> */}
           <AvatarDetails contract={contract} />
           <p
             className={clsx('break-words font-semibold text-indigo-700')}
@@ -36,28 +34,20 @@ export default function ContractCard(props: { controlUserID: string; contract: L
         <Col className="xs:items-end items-stretch">
           <Col className="grow justify-center">
             {contract.outcomeType === 'BINARY' && <BinaryResolutionOrChance className="items-center" contract={contract} />}
-
-            {/* {contract.outcomeType === "PSEUDO_NUMERIC" && <PseudoNumericResolutionOrExpectation className="items-center" contract={contract} />}
-
-            {contract.outcomeType === "NUMERIC" && <NumericResolutionOrExpectation className="items-center" contract={contract} />}
-
-            {(contract.outcomeType === "FREE_RESPONSE" || contract.outcomeType === "MULTIPLE_CHOICE") && (
-                <FreeResponseResolutionOrChance className="self-end text-gray-600" contract={contract} truncate="long" />
-            )} */}
             <ProbBar previewProb={contract.probability} />
           </Col>
           <Row className="items-center mt-2">
-            {(isResolved || contract.outcomeType !== 'BINARY' || isClosed) && (
+            {!isFeatureable && (
               <div
-                className="tooltip tooltip-right xs:tooltip pr-1 before:content-[attr(data-tip)] xs:before:max-w-[15em] before:max-w-[calc(100vw-5rem)] before:z-50 before:!transition-[opacity] before:duration-200"
-                data-tip={isResolved ? 'This market has been resolved' : contract.outcomeType !== 'BINARY' ? 'This type of market is not currently supported' : 'This market is currently closed'}
+                className="tooltip tooltip-right xs:tooltip xs:before:max-w-[15em] pr-1 before:z-50 before:max-w-[calc(100vw-5rem)] before:!transition-[opacity] before:duration-200 before:content-[attr(data-tip)]"
+                data-tip={message}
               >
                 <InformationCircleIcon className="h-5 w-5 text-gray-500" />
               </div>
             )}
             <ConfirmationButton
               openModalBtn={{
-                className: clsx('z-40 btn btn-sm border-2 rounded-lg grow', contract.outcomeType !== 'BINARY' || isClosed ? 'btn-disabled' : 'btn-outline btn-secondary'),
+                className: clsx('z-40 btn btn-sm border-2 rounded-lg grow', !isFeatureable ? 'btn-disabled' : 'btn-outline btn-secondary'),
                 label: 'Feature',
               }}
               cancelBtn={{
