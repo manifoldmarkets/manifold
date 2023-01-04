@@ -60,7 +60,9 @@ export function ManalinkCard(props: {
           </div>
           <div>
             {expiresTime != null
-              ? `Expires ${fromNow(expiresTime)}`
+              ? `Expire${expiresTime < Date.now() ? 'd' : 's'} ${fromNow(
+                  expiresTime
+                )}`
               : 'Never expires'}
           </div>
         </Col>
@@ -129,7 +131,9 @@ export function ManalinkCardFromView(props: {
             </div>
             <div>
               {expiresTime != null
-                ? `Expires ${fromNow(expiresTime)}`
+                ? `Expire${expiresTime < Date.now() ? 'd' : 's'} ${fromNow(
+                    expiresTime
+                  )}`
                 : 'Never expires'}
             </div>
           </Col>
