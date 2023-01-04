@@ -1,5 +1,6 @@
 import React from 'react'
 import {
+  CashIcon,
   HomeIcon,
   SearchIcon,
   BookOpenIcon,
@@ -7,7 +8,6 @@ import {
   ChartBarIcon,
   LogoutIcon,
   BeakerIcon,
-  GiftIcon,
   FireIcon,
   HeartIcon,
 } from '@heroicons/react/outline'
@@ -127,7 +127,6 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
   return buildArray(
     { name: 'Groups', href: '/groups' },
     { name: 'Charity', href: '/charity' },
-    loggedIn && { name: 'Refer a friend', href: '/referrals' },
     { name: 'Labs', href: '/labs' },
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -152,7 +151,7 @@ const getMobileNav = (loggedIn: boolean) => {
       href: '/groups',
       icon: RectangleGroup,
     },
-    loggedIn && { name: 'Refer a friend', href: '/referrals', icon: GiftIcon },
+    loggedIn && { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon }
   )
 }
