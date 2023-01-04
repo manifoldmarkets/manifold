@@ -12,6 +12,10 @@ export const contractMentionSuggestion: Suggestion = {
   char: '%',
   allowSpaces: true,
   allowedPrefixes: [' '],
+  // exit if space right after % symbol
+  allow: ({ state, range }) => {
+    return state.doc.textBetween(range.from + 1, range.from + 2) !== ' '
+  },
   pluginKey: new PluginKey('contract-mention'),
   items: async ({ query }) =>
     (
