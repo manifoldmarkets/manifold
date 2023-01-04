@@ -1,48 +1,52 @@
-import { debounce, sortBy } from 'lodash'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Group, groupPath } from 'common/group'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
-import { useAllGroups, useMemberGroupIds } from 'web/hooks/use-group'
-import { listAllGroups } from 'web/lib/firebase/groups'
+import { useMemberGroupIds } from 'web/hooks/use-group'
 import { User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
 import { SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
 import { Avatar } from 'web/components/widgets/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
-import { searchInAny } from 'common/util/parse'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
 import { Input } from 'web/components/widgets/input'
 import { track } from 'web/lib/service/analytics'
 import { Card } from 'web/components/widgets/card'
 import { FeaturedPill } from 'web/components/contract/contract-card'
+import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { debounce } from 'lodash'
 
 export const getStaticProps = async () => {
-  const groups = await listAllGroups().catch((_) => [])
+  const groups = await searchGroups('', 100).catch((_) => [])
 
   return { props: { groups }, revalidate: 60 }
 }
 
-export default function Groups(props: { groups: Group[] }) {
+export default function Groups(props: { groups: SearchGroupInfo[] }) {
   const user = useUser()
-
-  const groups = useAllGroups() ?? props.groups
   const memberGroupIds = useMemberGroupIds(user) || []
 
   const [query, setQuery] = useState('')
+  const [searchedGroups, setSearchedGroups] = useState<SearchGroupInfo[]>([])
 
-  const matchesOrderedByMostContractAndMembers = sortBy(groups, [
-    (group) => -1 * group.totalContracts,
-    (group) => -1 * group.totalMembers,
-  ]).filter((g) => searchInAny(query, g.name, g.about || ''))
+  const debouncedOnSearch = useMemo(
+    () =>
+      debounce(async (query: string) => {
+        if (query !== '') searchGroups(query, 50).then(setSearchedGroups)
+      }, 100),
+    []
+  )
+  function changeQuery(query: string) {
+    setQuery(query)
+    debouncedOnSearch(query)
+  }
 
-  // Not strictly necessary, but makes the "hold delete" experience less laggy
-  const debouncedQuery = debounce(setQuery, 50)
+  const groups = query !== '' ? searchedGroups : props.groups
 
   return (
     <Page>
@@ -77,17 +81,17 @@ export default function Groups(props: { groups: Group[] }) {
                   <Col>
                     <Input
                       type="text"
-                      onChange={(e) => debouncedQuery(e.target.value)}
+                      onChange={(e) => changeQuery(e.target.value)}
                       placeholder="Search groups"
                       value={query}
                       className="mb-4 w-full"
                     />
 
                     <div className="grid grid-cols-1 flex-wrap justify-center gap-4 sm:grid-cols-2">
-                      {matchesOrderedByMostContractAndMembers.map((group) => (
+                      {groups.map((group) => (
                         <GroupCard
                           key={group.id}
-                          group={group}
+                          group={group as Group}
                           user={user}
                           isMember={memberGroupIds.includes(group.id)}
                         />
@@ -105,20 +109,20 @@ export default function Groups(props: { groups: Group[] }) {
                           <Input
                             type="text"
                             value={query}
-                            onChange={(e) => debouncedQuery(e.target.value)}
+                            onChange={(e) => changeQuery(e.target.value)}
                             placeholder="Search your groups"
                             className="mb-4 w-full"
                           />
 
                           <div className="grid grid-cols-1 flex-wrap justify-center gap-4 sm:grid-cols-2">
-                            {matchesOrderedByMostContractAndMembers
+                            {groups
                               .filter((match) =>
                                 memberGroupIds.includes(match.id)
                               )
                               .map((group) => (
                                 <GroupCard
                                   key={group.id}
-                                  group={group}
+                                  group={group as Group}
                                   user={user}
                                   isMember={memberGroupIds.includes(group.id)}
                                 />
