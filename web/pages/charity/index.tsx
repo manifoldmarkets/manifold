@@ -136,20 +136,15 @@ export default function Charity(props: {
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
           <Title className="!mt-0" text="Manifold for Charity" />
-          {/* <span className="text-gray-600">
-            Through July 15, up to $25k of donations will be matched via{' '}
-            <SiteLink href="https://wtfisqf.com/" className="font-bold">
-              quadratic funding
-            </SiteLink>
-            , courtesy of{' '}
-            <SiteLink href="https://ftxfuturefund.org/" className="font-bold">
-              the FTX Future Fund
-            </SiteLink>
-            !
-          </span> */}
           <span className="text-gray-600">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
-            donations.
+            donations.{' '}
+            <SiteLink
+              href="https://help.manifold.markets/manifold-charitable-donation-program"
+              className="text-indigo-700"
+            >
+              Learn more...
+            </SiteLink>
           </span>
           <DonatedStats
             stats={[
