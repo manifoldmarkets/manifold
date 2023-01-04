@@ -18,14 +18,11 @@ import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { Row } from '../layout/row'
 import { BETTORS, User } from 'common/user'
-import { Button, IconButton } from '../buttons/button'
+import { IconButton } from '../buttons/button'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { Tooltip } from '../widgets/tooltip'
 import { Table } from '../widgets/table'
 import { ShareEmbedButton } from '../buttons/share-embed-button'
-import { CreateChallengeModal } from '../challenges/create-challenge-modal'
-import { CHALLENGES_ENABLED } from 'common/challenge'
-import { withTracking } from 'web/lib/service/analytics'
 import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
@@ -67,14 +64,6 @@ export function ContractInfoDialog(props: {
       : outcomeType === 'MULTIPLE_CHOICE'
       ? 'Multiple choice'
       : 'Numeric'
-
-  const [openCreateChallengeModal, setOpenCreateChallengeModal] =
-    useState(false)
-  const showChallenge =
-    user &&
-    outcomeType === 'BINARY' &&
-    !contract.resolution &&
-    CHALLENGES_ENABLED
 
   const shareUrl = getShareUrl(contract, user?.username)
 
@@ -266,31 +255,6 @@ export function ContractInfoDialog(props: {
               <DuplicateContractButton contract={contract} />
 
               <ShareEmbedButton contract={contract} />
-
-              {showChallenge && (
-                <Button
-                  size="2xs"
-                  color="override"
-                  className="gap-1 border-2  border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white"
-                  onClick={withTracking(
-                    () => setOpenCreateChallengeModal(true),
-                    'click challenge button'
-                  )}
-                >
-                  <ChallengeIcon className="h-4 w-4" /> Challenge
-                  <CreateChallengeModal
-                    isOpen={openCreateChallengeModal}
-                    setOpen={(open) => {
-                      if (!open) {
-                        setOpenCreateChallengeModal(false)
-                        setOpen(false)
-                      } else setOpenCreateChallengeModal(open)
-                    }}
-                    user={user}
-                    contract={contract}
-                  />
-                </Button>
-              )}
             </Row>
 
             <QRCode

@@ -16,9 +16,9 @@ import {
   useAcceptedChallenges,
   useUserChallenges,
 } from 'web/lib/firebase/challenges'
-import { Challenge, CHALLENGES_ENABLED } from 'common/challenge'
+import { Challenge } from 'common/challenge'
 import { Tabs } from 'web/components/layout/tabs'
-import { SiteLink } from 'web/components/widgets/site-link'
+import { linkClass, SiteLink } from 'web/components/widgets/site-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import Router from 'next/router'
 import { contractPathWithoutContract } from 'web/lib/firebase/contracts'
@@ -28,7 +28,6 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import toast from 'react-hot-toast'
 import { Modal } from 'web/components/layout/modal'
 import { QRCode } from 'web/components/widgets/qr-code'
-import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 import { UserLink } from 'web/components/widgets/user-link'
 
 dayjs.extend(customParseFormat)
@@ -72,24 +71,18 @@ export default function ChallengesListPage() {
       <Col className="w-full px-8">
         <Row className="items-center justify-between">
           <Title text="Challenges" />
-          {CHALLENGES_ENABLED && (
-            <Button size="lg" color="gradient" onClick={() => setOpen(true)}>
-              Create Challenge
-              <CreateChallengeModal
-                isOpen={open}
-                setOpen={setOpen}
-                user={user}
-              />
-            </Button>
-          )}
         </Row>
-        <p>
-          Want to create your own challenge?
-          <SiteLink className={'mx-1 font-bold'} href={'/home'}>
-            Find
-          </SiteLink>
-          a market you and a friend disagree on and hit the challenge button, or
-          tap the button above to create a new market & challenge in one.
+        <p className="italic">
+          We no longer support challenges but you can still view old challenges
+          here.
+          <br />
+          If you want to bet mana against your friend directly, try{' '}
+          <a
+            href="https://www.wagerwith.me/"
+            className={clsx('text-indigo-700', linkClass)}
+          >
+            wagerwith.me
+          </a>
         </p>
 
         <Tabs className="mb-4" tabs={[...userTab, ...publicTab]} />
