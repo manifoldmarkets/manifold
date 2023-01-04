@@ -242,7 +242,7 @@ function NotificationGroupItem(props: {
 }) {
   const { notificationGroup } = props
   const { notifications } = notificationGroup
-  const groupHighlighted = notifications.some((n) => !n.isSeen)
+  const [groupHighlighted] = useState(notifications.some((n) => !n.isSeen))
   const { sourceTitle, sourceContractTitle } = notifications[0]
   const incomeTypesToSum = ['bonus', 'tip', 'tip_and_like']
   const combinedNotifs = sortBy(
