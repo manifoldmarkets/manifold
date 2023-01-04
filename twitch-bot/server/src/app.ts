@@ -89,8 +89,7 @@ export default class App {
     await this.metrics.load();
     await this.firestore.loadUsers();
     await this.bot.connect();
-    await this.manifoldFirestore.validateConnection();
-    await this.manifoldFirestore.initialLoadAllUsers();
+    await this.manifoldFirestore.load();
 
     try {
       await fetch('http://localhost:5000/online');
