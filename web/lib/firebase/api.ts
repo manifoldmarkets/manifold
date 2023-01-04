@@ -110,3 +110,7 @@ export function createPost(params: {
 export function validateIapReceipt(params: any) {
   return call(getFunctionUrl('validateiap'), 'POST', params)
 }
+
+export function markAllNotifications(params: any) {
+  return call(getFunctionUrl('markallnotifications'), 'POST', params)
+}

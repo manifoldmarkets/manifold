@@ -12,7 +12,7 @@ import { Button } from './button'
 export function embedContractCode(contract: Contract) {
   const title = contract.question
   const src = `https://${DOMAIN}/embed${contractPath(contract)}`
-  return `<iframe src="${src}" title="${title}" frameborder="0"></iframe>`
+  return `<iframe src="${src}" title="${title}" frameborder="0" width="600" height="300"></iframe>`
 }
 
 // TODO: move this function elsewhere

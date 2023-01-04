@@ -3,7 +3,6 @@ import {
   deleteField,
   doc,
   limit,
-  getDocs,
   orderBy,
   query,
   updateDoc,
@@ -95,17 +94,4 @@ export function listenForUnseenNotifications(
     limit(NOTIFICATIONS_PER_PAGE * 10)
   )
   return listenForValues<Notification>(q, setNotifictions)
-}
-
-export const markAllNotificationsAsSeen = async (userId: string) => {
-  const notifsCollection = collection(db, `/users/${userId}/notifications`)
-  const unseenNotifications = await getDocs(
-    query(notifsCollection, where('isSeen', '==', false))
-  )
-  const now = new Date()
-  return await Promise.all(
-    unseenNotifications.docs.map((d) => {
-      return updateDoc(d.ref, { isSeen: true, viewTime: now })
-    })
-  )
 }

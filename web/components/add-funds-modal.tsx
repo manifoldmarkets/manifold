@@ -8,7 +8,7 @@ import { getNativePlatform } from 'web/lib/native/is-native'
 import { Tabs } from './layout/tabs'
 import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
 import { postMessageToNative } from 'web/components/native-message-listener'
-import { PRESENT_BET } from 'common/user'
+import { SINGULAR_BET } from 'common/user'
 import {
   BETTING_STREAK_BONUS_MAX,
   REFERRAL_AMOUNT,
@@ -144,10 +144,7 @@ export const OtherWaysToGetMana = (props: { includeBuyNote?: boolean }) => {
   return (
     <ul className="space-y-2 text-sm">
       <Item>
-        Add a helpful comment to a market or post to earn tips from other users
-      </Item>
-      <Item>
-        Place your first {PRESENT_BET} of the day to get your streak bonus (up
+        Place your first {SINGULAR_BET} of the day to get your streak bonus (up
         to
         <span className={'mx-1 font-bold'}>
           {formatMoney(BETTING_STREAK_BONUS_MAX)}
@@ -168,7 +165,7 @@ export const OtherWaysToGetMana = (props: { includeBuyNote?: boolean }) => {
       </Item>
       <Item url="https://discord.gg/3Zuth9792G">
         Come by our discord and ask nicely. We pay new users for sharing their
-        experience!
+        experiences!
       </Item>
       <Item url="https://github.com/manifoldmarkets/manifold">
         Contribute to our codebase, even something simple, and we'll pay you a
