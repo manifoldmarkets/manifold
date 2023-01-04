@@ -3,6 +3,9 @@ import { LiteMarket } from '@common/types/manifold-api-types';
 import { Response } from 'node-fetch';
 import * as Manifold from './manifold-api';
 
+/**
+ * This data is written as-is to Firestore. Do not change without being aware of the consquences!
+ */
 export type UserData = {
   twitchLogin: string;
   manifoldID: string;
@@ -11,6 +14,11 @@ export type UserData = {
   botEnabled?: boolean;
   selectedMarket?: string;
   admin?: boolean;
+  metrics?: {
+    lastOverlayFeatured_day?: number;
+    hasUsedBot?: boolean;
+    lastCommand_day?: number;
+  };
 };
 
 export default class User {

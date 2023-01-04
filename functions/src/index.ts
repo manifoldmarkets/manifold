@@ -90,6 +90,7 @@ import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from './validate-iap'
 import { swapcert } from './swap-cert'
 import { dividendcert } from './dividend-cert'
+import { markallnotifications } from './mark-all-notifications'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -125,6 +126,7 @@ const updateLoansFunction = toCloudFunction(updateloans)
 const validateIAPFunction = toCloudFunction(validateiap)
 const swapCertFunction = toCloudFunction(swapcert)
 const dividendCertFunction = toCloudFunction(dividendcert)
+const markAllNotificationsFunction = toCloudFunction(markallnotifications)
 
 export {
   healthFunction as health,
@@ -158,4 +160,5 @@ export {
   validateIAPFunction as validateiap,
   swapCertFunction as swapcert,
   dividendCertFunction as dividendcert,
+  markAllNotificationsFunction as markallnotifications,
 }

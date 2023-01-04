@@ -13,6 +13,7 @@ import { IS_DEV, PORT } from './envs';
 import AppFirestore from './firestore';
 import log from './logger';
 import ManifoldFirestore from './manifold-firestore';
+import { Metrics } from './metrics';
 import { TwitchStream } from './stream';
 import TwitchBot from './twitch-bot';
 import User from './user';
@@ -23,6 +24,7 @@ export default class App {
   readonly bot: TwitchBot;
   readonly firestore: AppFirestore;
   readonly manifoldFirestore: ManifoldFirestore;
+  readonly metrics: Metrics;
   readonly streams: { [twitchChannel: string]: TwitchStream } = {};
   readonly userIdToNameMap: { [k: string]: string } = {};
 
@@ -34,6 +36,7 @@ export default class App {
     this.bot = new TwitchBot(this);
     this.firestore = new AppFirestore();
     this.manifoldFirestore = new ManifoldFirestore();
+    this.metrics = new Metrics(this);
   }
 
   public async getDisplayNameForUserID(userID: string) {
@@ -53,7 +56,6 @@ export default class App {
         displayName = 'A trader';
       }
     }
-    log.info(`Cached display name for user '${displayName}'.`);
     return (this.userIdToNameMap[userID] = displayName);
   }
 
@@ -65,7 +67,7 @@ export default class App {
     return stream;
   }
 
-  public async getUserForTwitchUsername(twitchUsername: string): Promise<User> {
+  public getUserForTwitchUsername(twitchUsername: string): User {
     return this.firestore.getUserForTwitchUsername(twitchUsername);
   }
 
@@ -84,10 +86,10 @@ export default class App {
   }
 
   public async launch() {
+    await this.metrics.load();
     await this.firestore.loadUsers();
     await this.bot.connect();
-    await this.manifoldFirestore.validateConnection();
-    await this.manifoldFirestore.initialLoadAllUsers();
+    await this.manifoldFirestore.load();
 
     try {
       await fetch('http://localhost:5000/online');

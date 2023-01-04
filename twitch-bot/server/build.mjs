@@ -81,7 +81,7 @@ function cleanupPreviousProc() {
 }
 
 function startProc() {
-  const newProc = spawn('node', [config.WAIT_FOR_DEBUGGER.value ? '--inspect-brk' : '--inspect', config.BUILD_FILE.value], { stdio: 'inherit' });
+  const newProc = spawn('node', [config.WAIT_FOR_DEBUGGER.value ? '--inspect-brk' : '--inspect', '--enable-source-maps', config.BUILD_FILE.value], { stdio: 'inherit' });
   currentlyRunningProc = newProc;
 }
 
@@ -112,6 +112,9 @@ esbuild
     ignoreAnnotations: true,
     treeShaking: true,
     logLevel: config.BUILD_ONLY.value ? 'info' : 'silent',
+    define: {
+      'process.env.__BUILD_ID__': JSON.stringify(new Date().toISOString()),
+    },
     watch: !config.BUILD_ONLY.value && {
       onRebuild: (error) => {
         cleanupPreviousProc();

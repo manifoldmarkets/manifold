@@ -44,7 +44,7 @@ export const updateusermetrics = newEndpointNoAuth(
   {
     timeoutSeconds: 2000,
     memory: '16GiB',
-    minInstances: 0,
+    minInstances: 1,
     secrets: ['API_SECRET'],
   },
   async (_req) => {
@@ -192,7 +192,7 @@ const loadUserContractBets = async (userId: string, contractIds: string[]) => {
         .where('userId', '==', userId)
         .get()
     }),
-    100
+    500
   )
   return betDocs
     .map((d) => d.docs)

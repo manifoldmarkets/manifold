@@ -8,21 +8,21 @@ module.exports = {
   staticPageGenerationTimeout: 600, // e.g. stats page
   reactStrictMode: true,
   optimizeFonts: false,
+  modularizeImports: {
+    '@heroicons/react/solid/?(((\\w*)?/?)*)': {
+      transform: '@heroicons/react/solid/{{ matches.[1] }}/{{member}}',
+    },
+    '@heroicons/react/outline/?(((\\w*)?/?)*)': {
+      transform: '@heroicons/react/outline/{{ matches.[1] }}/{{member}}',
+    },
+
+    lodash: {
+      transform: 'lodash/{{member}}',
+    },
+  },
   experimental: {
     scrollRestoration: true,
     externalDir: true,
-    modularizeImports: {
-      '@heroicons/react/solid/?(((\\w*)?/?)*)': {
-        transform: '@heroicons/react/solid/{{ matches.[1] }}/{{member}}',
-      },
-      '@heroicons/react/outline/?(((\\w*)?/?)*)': {
-        transform: '@heroicons/react/outline/{{ matches.[1] }}/{{member}}',
-      },
-
-      lodash: {
-        transform: 'lodash/{{member}}',
-      },
-    },
   },
   images: {
     dangerouslyAllowSVG: true,

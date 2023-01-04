@@ -239,7 +239,6 @@ export function NotificationFrame(props: {
           <SiteLink
             href={link}
             className={clsx('flex w-full flex-col')}
-            followsLinkClass={false}
             onClick={() => {
               if (highlighted) {
                 setHighlighted(false)

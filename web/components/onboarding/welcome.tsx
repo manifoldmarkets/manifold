@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { ExclamationCircleIcon } from '@heroicons/react/solid'
 
 import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
@@ -155,7 +154,8 @@ function Page1() {
         loop
         autoPlay={shouldAutoPlay}
         controls={!shouldAutoPlay}
-        className="my-4 h-full w-full"
+        muted
+        className="hide-video-cast-overlay my-4 h-full w-full"
       >
         <source src="/welcome/mana-example.mp4" type="video/mp4" />
         Your browser does not support video
@@ -167,27 +167,23 @@ function Page1() {
 export function Page2() {
   return (
     <>
+      <Title className="">What is mana ({ENV_CONFIG.moneyMoniker})?</Title>
       <p>
         <span className="mt-4 font-normal text-indigo-700">
           Mana ({ENV_CONFIG.moneyMoniker})
         </span>{' '}
-        is the play money you bet with. You can also turn it into a real
-        donation to charity, at a 100:1 ratio.
+        is Manifold's play money. Use it to create and bet in markets. The more
+        mana you have, the more you can bet and move the market.
       </p>
-      <Row className="mt-4 gap-2 rounded border border-gray-200 bg-gray-50 py-2 pl-2 pr-4 text-sm text-indigo-700">
-        <ExclamationCircleIcon className="h-5 w-5" />
-        Mana can not be traded in for real money.
-      </Row>
-      <div className="mt-8 font-semibold">Example</div>
-      <p className="mt-2">
-        When you donate{' '}
-        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
-        Manifold sends them <span className="font-semibold">$10 USD</span>.
+      <p>
+        Mana <strong>can't be converted to real money</strong>.
       </p>
-      <video loop autoPlay className="z-0 h-full w-full">
-        <source src="/welcome/charity.mp4" type="video/mp4" />
-        Your browser does not support video
-      </video>
+      <img
+        src="logo-flapping-with-money.gif"
+        height={200}
+        width={200}
+        className="place-self-center object-contain"
+      />
     </>
   )
 }
@@ -201,8 +197,32 @@ function Page3() {
         As a thank you for signing up, we’ve sent you{' '}
         <span className="font-normal text-indigo-700">
           {formatMoney(STARTING_BALANCE)}
-        </span>{' '}
+        </span>
+        .
       </p>
+    </>
+  )
+}
+
+export function Page4() {
+  return (
+    <>
+      <Title className="mx-auto" text="Donate" />
+      <p className="mt-2">
+        You can turn your mana earnings into a real donation to charity, at a
+        100:1 ratio. When you donate{' '}
+        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
+        Manifold sends them <span className="font-semibold">$10 USD</span>.
+      </p>
+      <video
+        loop
+        autoPlay
+        muted
+        className="hide-video-cast-overlay z-0 h-full w-full"
+      >
+        <source src="/welcome/charity.mp4" type="video/mp4" />
+        Your browser does not support video
+      </video>
     </>
   )
 }

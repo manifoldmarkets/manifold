@@ -1,10 +1,20 @@
 export type DocumentKind =
-  | 'txn'
-  | 'group'
   | 'user'
+  | 'userFollow'
+  | 'userReaction'
   | 'contract'
+  | 'contractAnswer'
   | 'contractBet'
   | 'contractComment'
+  | 'contractFollow'
+  | 'contractLiquidity'
+  | 'group'
+  | 'groupContract'
+  | 'groupMember'
+  | 'txn'
+  | 'manalink'
+  | 'post'
+  | 'test'
 
 export type WriteKind = 'create' | 'update' | 'delete'
 
@@ -15,7 +25,8 @@ export type TLEntry<T extends WriteDocument = WriteDocument> = {
   docKind: DocumentKind
   writeKind: WriteKind
   docId: string
-  parent: string
+  parentId: string | null
+  path: string
   data: T | null
   ts: number
 }

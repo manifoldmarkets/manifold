@@ -2,10 +2,6 @@
 
 A list of community-created projects built on, or related to, Manifold Markets.
 
-## Data
-
-- [Manifold Market Stats](https://wasabipesto.com/jupyter/manifold/)
-
 ## Sites using Manifold
 
 - [WagerWith.me](https://www.wagerwith.me/) — Bet with your friends, with full Manifold integration to bet with M$.
@@ -22,6 +18,7 @@ A list of community-created projects built on, or related to, Manifold Markets.
 - [ManifoldMarketManager](https://github.com/LivInTheLookingGlass/ManifoldMarketManager) - Python script and library to automatically manage markets
 - [manifold-sdk](https://github.com/keriwarr/manifold-sdk) - TypeScript/JavaScript client for the Manifold API
 - [manifoldr](https://github.com/jcblsn/manifoldr) - R client for the Manifold API
+- [ManifoldMarkets.jl](https://github.com/Zentrik/ManifoldMarkets.jl) - Julia client for the Manifold API
 
 ## Bots
 
@@ -54,4 +51,5 @@ _These projects are no longer active, but were really really cool!_
 - [Research.Bet](https://research.bet/) - Prediction market for scientific papers, using Manifold
 - [CivicDashboard](https://civicdash.org/dashboard) - Uses Manifold to for tracked solutions for the SF city government
 - [manifeed](https://github.com/joy-void-joy/manifeed) - Tool that creates an RSS feed for new Manifold markets
+- [Manifold Market Stats](https://wasabipesto.com/jupyter/manifold/)
 

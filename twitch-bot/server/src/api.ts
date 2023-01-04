@@ -4,6 +4,7 @@ import App from './app';
 import { PUBLIC_FACING_URL, TWITCH_BOT_CLIENT_ID } from './envs';
 import log from './logger';
 import * as Manifold from './manifold-api';
+import { MetricEvent } from './metrics';
 import * as Twitch from './twitch-api';
 import User from './user';
 import { buildURL, getParamsFromURL } from './utils';
@@ -38,6 +39,12 @@ export default function registerAPIEndpoints(app: App, express: Express) {
       const user = app.firestore.getUserForManifoldAPIKey(apiKey);
       await app.bot.joinChannel(user.data.twitchLogin);
       response.json(<APIResponse>{ success: true, message: 'Registered bot.' });
+
+      // TODO: Verify this code:
+      if (!user.data.metrics || (user.data.metrics && !user.data.metrics.hasUsedBot)) {
+        app.metrics.logMetricsEvent(MetricEvent.FIRST_TIME_BOT);
+        app.firestore.updateUser(user, { metrics: { hasUsedBot: true } });
+      }
     } catch (e) {
       log.trace(e);
       response.status(400).json(<APIResponse>{ success: false, error: e.message, message: 'Failed to register bot.' });
@@ -106,6 +113,7 @@ export default function registerAPIEndpoints(app: App, express: Express) {
           APIKey: sessionData.apiKey,
           controlToken: crypto.randomUUID(),
         });
+        app.metrics.logMetricsEvent(MetricEvent.NEW_LINEKD_ACCOUNT);
       }
 
       app.firestore.addNewUser(user);
@@ -120,6 +128,21 @@ export default function registerAPIEndpoints(app: App, express: Express) {
     } catch (e) {
       log.trace(e);
       response.status(400).json({ error: e.message, message: 'Failed to link accounts.' });
+    }
+  });
+
+  express.get('/metric-data', async (request, response) => {
+    const { epochDay } = <{ epochDay: string }>getParamsFromURL(request.url);
+    if (!epochDay || isNaN(<any>epochDay)) {
+      response.status(400).json({ error: 'Bad request', message: 'Invalid or missing epochDay parameter.' });
+      return;
+    } else {
+    }
+    const data = await app.firestore.getMetricData(Number.parseInt(epochDay));
+    if (data) {
+      response.json(data);
+    } else {
+      response.json({});
     }
   });
 }

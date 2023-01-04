@@ -1,16 +1,20 @@
 import { db } from './db'
 import { run } from 'common/supabase/utils'
+import { User } from 'common/user'
 
-export async function searchUsers(prompt: string) {
+export type SearchUserInfo = Pick<
+  User,
+  'id' | 'name' | 'username' | 'avatarUrl'
+>
+
+export async function searchUsers(prompt: string, limit: number) {
   const { data } = await run(
     db
       .from('users')
-      .select('data->username, data->name, data->id, data->avatarUrl')
-      // TODO: use fts (fullTextsearch) instead of ilike
+      .select('id, data->name, data->username, data->avatarUrl')
       .or(`data->>username.ilike.%${prompt}%,data->>name.ilike.%${prompt}%`)
-      .order('data->followerCountCached', { ascending: false } as any)
-      .limit(50)
+      .order('data->followerCountCached')
+      .limit(limit)
   )
-
-  return data
+  return data as SearchUserInfo[]
 }

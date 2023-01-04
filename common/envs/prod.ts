@@ -19,9 +19,9 @@ export type EnvConfig = {
 
   // Branding
   moneyMoniker: string // e.g. 'Ṁ'
-  bettor?: string // e.g. 'bettor' or 'predictor'
-  presentBet?: string // e.g. 'bet' or 'predict'
-  pastBet?: string // e.g. 'bet' or 'prediction'
+  bettor?: string // e.g. 'predictor'
+  nounBet?: string // e.g. 'prediction'
+  verbPastBet?: string // e.g. 'predicted'
   faviconPath?: string // Should be a file in /public
   navbarLogoPath?: string
   newQuestionPlaceholders: string[]
@@ -97,8 +97,8 @@ export const PROD_CONFIG: EnvConfig = {
 
   moneyMoniker: 'Ṁ',
   bettor: 'trader',
-  pastBet: 'traded',
-  presentBet: 'trade',
+  verbPastBet: 'traded',
+  nounBet: 'trade',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
   newQuestionPlaceholders: [

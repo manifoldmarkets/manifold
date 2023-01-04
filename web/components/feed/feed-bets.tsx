@@ -1,4 +1,4 @@
-import React, { memo, useEffect } from 'react'
+import React, { memo } from 'react'
 import dayjs from 'dayjs'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
@@ -10,9 +10,6 @@ import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
-import { Challenge } from 'common/challenge'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BETTOR } from 'common/user'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
@@ -59,15 +56,7 @@ export function BetStatusText(props: {
   const self = useUser()
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const isCPMM2 = mechanism === 'cpmm-2'
-  const { amount, outcome, createdTime, challengeSlug, shares } = bet
-  const [challenge, setChallenge] = React.useState<Challenge>()
-  useEffect(() => {
-    if (challengeSlug) {
-      getChallenge(challengeSlug, contract.id).then((c) => {
-        setChallenge(c)
-      })
-    }
-  }, [challengeSlug, contract.id])
+  const { amount, outcome, createdTime, shares } = bet
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const isShortSell = isCPMM2 && amount > 0 && shares === 0
@@ -132,14 +121,6 @@ export function BetStatusText(props: {
             : `from ${fromProb} to ${toProb}`}
         </>
       )}{' '}
-      {challengeSlug && (
-        <SiteLink
-          href={challenge ? getChallengeUrl(challenge) : ''}
-          className={'mx-1'}
-        >
-          [challenge]
-        </SiteLink>
-      )}
       <RelativeTimestamp time={createdTime} />
     </div>
   )

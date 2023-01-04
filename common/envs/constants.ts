@@ -75,6 +75,10 @@ export const BOT_USERNAMES = [
   'LiquidityBonusBot',
   '538',
   'FairlyRandom',
+  'Anatolii',
+  'Catnee',
+  'JeremyK',
+  'Botmageddon',
 ]
 
 export const CORE_USERNAMES = [
@@ -114,6 +118,10 @@ export const CHECK_USERNAMES = [
   'NcyRocks',
   'MichaelWheatley',
   'dglid',
+  'yaboi69',
+  'TheSkeward',
+  'Duncan',
+  'a',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

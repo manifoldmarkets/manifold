@@ -1,8 +1,8 @@
 import { PlusCircleIcon } from '@heroicons/react/outline';
 import { CheckIcon, PlusCircleIcon as PlusCircleIconSolid, XCircleIcon, XIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
-import * as Packets from '@common/packet-ids';
 import { PacketGroupControlFields } from '@common/packets';
+import SocketWrapper from '@common/socket-wrapper';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import { Col } from './layout/col';
@@ -75,8 +75,8 @@ type Field = {
   channelName?: string;
 };
 
-export function ModalGroupControl(props: { socket: Socket; open: boolean; setOpen: (open: boolean) => void }) {
-  const { socket, open, setOpen } = props;
+export function ModalGroupControl(props: { sw: SocketWrapper<Socket>; open: boolean; setOpen: (open: boolean) => void }) {
+  const { sw, open, setOpen } = props;
 
   const REPEAT_EDIT_TIMEOUT_MS = 200;
 
@@ -94,7 +94,7 @@ export function ModalGroupControl(props: { socket: Socket; open: boolean; setOpe
     fields.current.push({ state: State.VALID, initialValue: location.href, text: location.href, disabled: true });
     fields.current.push(getBlankField());
 
-    socket.on(Packets.GROUP_CONTROL_FIELDS, (p: PacketGroupControlFields) => {
+    sw.on(PacketGroupControlFields, (p) => {
       fields.current = [];
       fields.current.push({ state: State.VALID, initialValue: location.href, text: location.href, disabled: true });
       for (const f of p.fields) {
@@ -124,13 +124,13 @@ export function ModalGroupControl(props: { socket: Socket; open: boolean; setOpe
       sendUpdateTimeout.current = null;
     }
     const checkFields = () => {
-      socket.emit(Packets.GROUP_CONTROL_FIELDS, {
+      sw.emit(PacketGroupControlFields, {
         fields: fields.current
           .filter((f) => !f.disabled)
           .map((f) => {
             return { url: f.text, valid: f.state === State.CHECKING };
           }),
-      } as PacketGroupControlFields);
+      });
       sendUpdateTimeout.current = null;
     };
     sendUpdateTimeout.current = setTimeout(checkFields, REPEAT_EDIT_TIMEOUT_MS);

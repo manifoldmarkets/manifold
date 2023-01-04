@@ -1,6 +1,7 @@
 import { UserNotRegisteredException } from '@common/exceptions';
+import { MetricDay } from '@common/types/metric-types';
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { collection, CollectionReference, deleteField, doc, Firestore, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, CollectionReference, deleteField, doc, Firestore, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { MANIFOLD_DB_LOCATION, TWITCH_BOT_FIREBASE_KEY } from './envs';
 import User, { UserData } from './user';
 
@@ -20,6 +21,7 @@ export default class AppFirestore {
   private readonly db: Firestore;
   private readonly dbCollection: CollectionReference;
   private readonly userCollection: CollectionReference<UserData>;
+  private readonly metricsCollection: CollectionReference<MetricDay>;
   private readonly localUserCache: { [manifoldID: string]: User } = {};
 
   constructor() {
@@ -27,6 +29,15 @@ export default class AppFirestore {
     this.db = getFirestore(this.app);
     this.dbCollection = collection(this.db, 'manifold-db');
     this.userCollection = <CollectionReference<UserData>>collection(this.dbCollection, MANIFOLD_DB_LOCATION, 'users');
+    this.metricsCollection = <CollectionReference<MetricDay>>collection(this.dbCollection, MANIFOLD_DB_LOCATION, 'metrics');
+  }
+
+  public async updateMetricsData(epochDay: number, data: MetricDay) {
+    return setDoc(doc(this.metricsCollection, epochDay.toFixed(0)), data);
+  }
+
+  public async getMetricData(epochDay: number): Promise<MetricDay> {
+    return (await getDoc(doc(this.metricsCollection, epochDay.toFixed(0)))).data();
   }
 
   public async loadUsers() {
@@ -49,6 +60,11 @@ export default class AppFirestore {
     if (!user) throw new UserNotRegisteredException(`No user record for Twitch username ${twitchName}`);
     const data = { selectedMarket: selectedMarket || deleteField() };
     return updateDoc(doc(this.db, this.userCollection.path, user.data.manifoldID), data);
+  }
+
+  // TODO: This is denormalizing the definition of user data. Find a way to not do this.
+  async updateUserMetricsInfo(user: User, metrics: any) {
+    return updateDoc(doc(this.db, this.userCollection.path, user.data.manifoldID), { metrics });
   }
 
   getUserForTwitchUsername(twitchUsername: string): User {

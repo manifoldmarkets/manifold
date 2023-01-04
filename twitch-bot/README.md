@@ -1,14 +1,8 @@
 # Manifold Markets Twitch Bot
 
-This repo has everything required to host the Manifold Twitch Bot, and associated overlay and dock browser sources for OBS.
+This sub-repo has everything required to host the Manifold Twitch Bot and associated overlay and dock browser sources for OBS.
 
-![OBS example](/docs/OBS.png)
-
-## Live demo
-
-There is a live demo of this project hosted as a [DigitalOcean App](https://www.digitalocean.com/products/app-platform). The dock demo is available [here](https://king-prawn-app-5btyw.ondigitalocean.app/dock) and the overlay is available [here](https://king-prawn-app-5btyw.ondigitalocean.app/overlay).
-
-It is worth noting that since this is a public demo with no associated Manifold account, you will not be able to create or resolve questions. You will, however, be able to search for existing questions and feature them on the overlay.
+![OBS example](./docs/OBS.png)
 
 ## Environmental variables
 
@@ -33,22 +27,62 @@ The following environmental variables are available but optional:
 
 These can either be defined as global environmental variables on the system, or as a `.env` file in the root of the repository.
 
-## Getting started
+## Starting development
 
 - Ensure the [environmental variables](#environmental-variables) are correctly configured
 - Ensure [Yarn](https://classic.yarnpkg.com/lang/en/docs/install/#windows-stable) is installed
-- `$ yarn`
-- `$ yarn dev:fullstack`
+- Ensure `concurrently` is installed globally (run `npm install -g concurrently` to install)
+- Run the following commands from the root of the Manifold repository:
+  - `$ yarn`
+  - `$ cd twitch-bot`
+  - `$ yarn`
+  - `$ yarn dev:fullstack`
 
-## Deploying
+The server automatically enables debugging in development mode. If using VSCode, you can attach to the process by pressing F5 and launching the `Debug Twitch bot` session.
 
-This repo can be built into a Docker image for deployment to a hosting site. The container host must have all the [environmental variables](#environmental-variables) set.
+## Quick deployment to prod or dev servers
 
-The Docker image can be built with `docker build -t {IMAGE_NAME} .` in the root of the repository, and run with `docker run --env-file .env -p 9172:9172 -it {IMAGE_NAME}`
+In order to deploy to the Manifold Twitch servers, you will need to have the appropriate permissions on your Google account, and the following software installed:
+
+- [NodeJS](https://nodejs.org/en/download/current/) 16 or higher
+- [Yarn](https://classic.yarnpkg.com/lang/en/docs/install/#windows-stable)
+- [gcloud CLI](https://cloud.google.com/sdk/docs/install) (must be initialized with `gcloud auth login`)
+- [Docker](https://docs.docker.com/get-docker/)
+
+If you are using Windows, it is also recommended to have [Git Bash](https://git-scm.com/downloads) installed, as the deployment script is targeted for use on Unix OSs.
+
+Launch `scripts/deploy-to-remote.sh`. On Windows, this must be done through Git Bash. The script will ask whether you wish to deploy to the development or production server, and should then handle everything else.
+
+> Note: appropriate `.env` files must be copied into the `scripts/build` directory for the deployed bot to launch successfully.
+
+The first time this script is run it will need to download docker images, Yarn dependencies and build all the source from scratch, so be patient! Subsequent runs should only take a matter of seconds to complete.
+
+## Alternative deployment
+
+This repo can be built into a Docker image ready for deployment to a hosting site as-is. The container host must have all the [environmental variables](#environmental-variables) set for this to work.
+
+The Docker image can be built using the `scripts/build-docker.sh` script, and run with the `scripts/launch-docker.sh` script.
+
+## Fixing failed deployments
+
+In the case that the bot fails to deploy, it is possible that future "quick deployments" (i.e. using the `deploy-to-remote` script) will fail due to being unable to instigate a smooth handover of control to the updated bot container.
+
+In order to fix this, all running Docker containers must be killed before the script can be run. This can be done by SSHing into the remote server using `gcloud compute ssh dev-twitch-bot` OR `gcloud compute ssh twitch-bot` and then running `docker kill $(docker ps -q)`
+
+## Viewing logs in production
+
+There are two ways to view the logs of the deployed bot:
+
+1.  Go to https://console.cloud.google.com/logs/query?project=mantic-markets and select either `bot-DEV` or `bot-PROD` under `Log name`.
+2.  SSH into the remote server using `gcloud compute ssh dev-twitch-bot` OR `gcloud compute ssh twitch-bot` and run `docker logs $(docker ps -q) -n 100`
+
+## Viewing usage metrics
+
+- Development: https://dev-twitch-bot.manifold.markets/metrics
+- Production: https://twitch-bot.manifold.markets/metrics
 
 ## Future development
 
-- [ ] Integrate access to Manifold's Firestore fully to decrease latency when loading markets, detecting new bets and detecting market resolution
 - [ ] Port the overlay to a [Twitch Extension](https://www.twitch.tv/p/en/extensions/) to decrease viewer latency when viewing bets
 - [ ] Support market types other than binary
 - [ ] Rate limit management in the Twitch bot to prioritize outgoing messages when there is a risk of Twitch dropping them
@@ -56,3 +90,37 @@ The Docker image can be built with `docker build -t {IMAGE_NAME} .` in the root 
 - [ ] Save which markets are currently featured on each Twitch channel to Firestore to support server rebooting without interruption
 - [ ] Allow docks to set the group within which markets created through chat will be added
 - [ ] Support renewing dock and overlay links in case of a leak
+- [ ] Reduce image sizes loaded from googleusercontent
+- [ ] Use gzip compression for serving webpages
+
+## Potential Kubernetes structure
+
+### Key principles
+
+- Only max one instance of TMI server to prevent multiple bots responding to the same message
+- Streams are sharded by hash to determine which bot responds to said stream's chat messages
+- Bots can come online and go offline as demand increases or decreases (effectively autoscaling without the risk of multiple responses)
+
+```
+                                      ┌───────────►DOCK
+                                      │
+                        stream1   ┌───┴───┐
+                       ┌─────────►│ BOT 1 ├───────►OVERLAY
+                       │          └───┬───┘
+                       │              │
+                       │              └───────────►DOCK
+                       │
+                       │
+                       │
+┌───────────┐       ┌──▼──┐   s2  ┌───────┐
+│ TWITCH.TV │◄─────►│ TMI │◄─────►│ BOT 2 ├──────►DOCK
+│  SERVERS  │       └──▲──┘       └───────┘
+└───────────┘          │
+                       │              .
+                       │              .
+                       │              .
+                       │
+                       │          ┌───────┐
+                       └─────────►│ BOT 9 ├──────►OVERLAY
+                            s9    └───────┘
+```

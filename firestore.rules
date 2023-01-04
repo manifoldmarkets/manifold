@@ -248,5 +248,11 @@ service cloud.firestore {
             allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) ;
           }
       }
+
+      // for testing supabase replication
+      match /test/{id} {
+        allow read;
+        allow write;
+      }
   }
 }

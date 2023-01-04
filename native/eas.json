@@ -9,7 +9,9 @@
       "env": {
         "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
       },
-      "android": {"credentialsSource": "local"},
+      "android": {
+        "credentialsSource": "local"
+      },
       "ios": {}
     },
     "preview": {
@@ -18,15 +20,19 @@
       "env": {
         "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
       },
-      "android": {"credentialsSource": "local"},
+      "android": {
+        "credentialsSource": "local"
+      },
       "ios": {}
     },
     "production": {
       "channel": "default",
       "env": {
-      "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
       },
-      "android": {"credentialsSource": "local"},
+      "android": {
+        "credentialsSource": "local"
+      },
       "ios": {}
     }
   },
