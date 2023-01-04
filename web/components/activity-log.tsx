@@ -81,8 +81,7 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
     (c) =>
       c.commentType === 'contract' &&
       !blockedContractIds.includes(c.contractId) &&
-      !blockedUserIds.includes(c.userId) &&
-      !BOT_USERNAMES.includes(c.userUsername)
+      !blockedUserIds.includes(c.userId)
   ) as ContractComment[]
 
   const rawContracts = useLiveContracts(count * 3)

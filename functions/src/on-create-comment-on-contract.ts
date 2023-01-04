@@ -19,7 +19,6 @@ import { parseMentions, richTextToString } from '../../common/util/parse'
 import { addUserToContractFollowers } from './follow-market'
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
-import { BOT_USERNAMES } from '../../common/envs/constants'
 
 const firestore = admin.firestore()
 
@@ -153,15 +152,13 @@ export const onCreateCommentOnContract = functions
       await change.ref.update(fields)
     }
 
-    if (!BOT_USERNAMES.includes(commentCreator.username)) {
-      await handleCommentNotifications(
-        comment,
-        contract,
-        commentCreator,
-        bet,
-        eventId
-      )
-    }
+    await handleCommentNotifications(
+      comment,
+      contract,
+      commentCreator,
+      bet,
+      eventId
+    )
   })
 
 const getReplyInfo = async (comment: ContractComment, contract: Contract) => {
