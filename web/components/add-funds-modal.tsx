@@ -206,7 +206,7 @@ export function FundsSelector(props: {
   const btnClassName = clsx('!px-2 whitespace-nowrap', props.btnClassName)
 
   return (
-    <Row className={clsx('flex-wrap justify-center gap-3', className)}>
+    <Row className={clsx('flex-wrap gap-3', className)}>
       {Object.entries(fundAmounts).map(([key, amount]) => (
         <Button
           key={amount}

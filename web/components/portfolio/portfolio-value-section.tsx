@@ -285,7 +285,7 @@ function AddFundsButton({ userId }: { userId?: string }) {
     <>
       <Button
         className="ml-auto self-start"
-        color="gray-outline"
+        color="indigo"
         onClick={() => setOpen(true)}
       >
         Get more {ENV_CONFIG.moneyMoniker}
