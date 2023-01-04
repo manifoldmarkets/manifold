@@ -58,9 +58,14 @@ export function CommentInput(props: {
   async function submitComment() {
     if (!editor || editor.isEmpty || isSubmitting) return
     setIsSubmitting(true)
+    // linkify any remaining text by adding and removing a space
+    editor.chain().focus('end').insertContent(' ').run()
+    const endPos = editor.state.selection.from
+    editor.commands.deleteRange({ from: endPos - 1, to: endPos })
+
     onSubmitComment?.(editor)
     setIsSubmitting(false)
-    editor?.commands.clearContent(true)
+    editor.commands.clearContent(true)
     // force clear save, because it can fail if editor unrenders
     localStorage.removeItem(`text ${key}`)
   }
