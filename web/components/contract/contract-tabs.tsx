@@ -455,15 +455,20 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       ? -item.lp.createdTime
       : undefined
   ).slice(start, end)
+  const loading = pageItems.length < ITEMS_PER_PAGE
 
   return (
     <>
       <Col className="mb-4 gap-4">
-        {pageItems.map((item) =>
-          item.type === 'bet' ? (
-            <FeedBet key={item.id} contract={contract} bet={item.bet} />
-          ) : (
-            <FeedLiquidity key={item.id} liquidity={item.lp} />
+        {loading ? (
+          <LoadingIndicator />
+        ) : (
+          pageItems.map((item) =>
+            item.type === 'bet' ? (
+              <FeedBet key={item.id} contract={contract} bet={item.bet} />
+            ) : (
+              <FeedLiquidity key={item.id} liquidity={item.lp} />
+            )
           )
         )}
       </Col>

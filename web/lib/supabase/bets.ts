@@ -10,7 +10,7 @@ export async function getOlderBets(
 ) {
   const { data } = await run(
     db
-      .from('bets')
+      .from('contract_bets')
       .select('data')
       .contains('data', { contractId })
       .lt('data->>createdTime', beforeTime)
