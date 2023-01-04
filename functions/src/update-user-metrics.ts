@@ -21,7 +21,7 @@ import {
   calculateCreatorTraders,
   calculateMetricsByContract,
 } from '../../common/calculate-metrics'
-import { batchedWaitAll } from '../../common/util/promise'
+import { mapAsync } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
 import { CollectionReference } from 'firebase-admin/firestore'
@@ -80,94 +80,90 @@ export async function updateUserMetrics() {
   log(`${metricEligibleContracts.length} contracts need metrics updates.`)
 
   log('Computing metric updates...')
-  const userUpdates = await batchedWaitAll(
-    users.map((staleUser) => async () => {
-      const user = (await getUser(staleUser.id)) ?? staleUser
-      const userContracts = contractsByCreator[user.id] ?? []
-      const metricRelevantBets = await loadUserContractBets(
-        user.id,
-        metricEligibleContracts
-          .filter((c) => c.uniqueBettorIds?.includes(user.id))
-          .map((c) => c.id)
-      )
-      const portfolioHistory = await loadPortfolioHistory(user.id, now)
-      const newCreatorTraders = calculateCreatorTraders(userContracts)
+  const userUpdates = await mapAsync(users, async (staleUser) => {
+    const user = (await getUser(staleUser.id)) ?? staleUser
+    const userContracts = contractsByCreator[user.id] ?? []
+    const metricRelevantBets = await loadUserContractBets(
+      user.id,
+      metricEligibleContracts
+        .filter((c) => c.uniqueBettorIds?.includes(user.id))
+        .map((c) => c.id)
+    )
+    const portfolioHistory = await loadPortfolioHistory(user.id, now)
+    const newCreatorTraders = calculateCreatorTraders(userContracts)
 
-      const newPortfolio = calculateNewPortfolioMetrics(
-        user,
-        contractsById,
-        metricRelevantBets
-      )
-      const currPortfolio = portfolioHistory.current
-      const didPortfolioChange =
-        currPortfolio === undefined ||
-        currPortfolio.balance !== newPortfolio.balance ||
-        currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-        currPortfolio.investmentValue !== newPortfolio.investmentValue
+    const newPortfolio = calculateNewPortfolioMetrics(
+      user,
+      contractsById,
+      metricRelevantBets
+    )
+    const currPortfolio = portfolioHistory.current
+    const didPortfolioChange =
+      currPortfolio === undefined ||
+      currPortfolio.balance !== newPortfolio.balance ||
+      currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+      currPortfolio.investmentValue !== newPortfolio.investmentValue
 
-      const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
+    const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
-      const metricRelevantBetsByContract = groupBy(
-        metricRelevantBets,
-        (b) => b.contractId
-      )
+    const metricRelevantBetsByContract = groupBy(
+      metricRelevantBets,
+      (b) => b.contractId
+    )
 
-      const metricsByContract = calculateMetricsByContract(
-        metricRelevantBetsByContract,
-        contractsById,
-        user
-      )
+    const metricsByContract = calculateMetricsByContract(
+      metricRelevantBetsByContract,
+      contractsById,
+      user
+    )
 
-      const contractRatios = userContracts
-        .map((contract) => {
-          if (
-            !contract.flaggedByUsernames ||
-            contract.flaggedByUsernames?.length === 0
-          ) {
-            return 0
-          }
-          const contractRatio =
-            contract.flaggedByUsernames.length /
-            (contract.uniqueBettorCount || 1)
+    const contractRatios = userContracts
+      .map((contract) => {
+        if (
+          !contract.flaggedByUsernames ||
+          contract.flaggedByUsernames?.length === 0
+        ) {
+          return 0
+        }
+        const contractRatio =
+          contract.flaggedByUsernames.length / (contract.uniqueBettorCount || 1)
 
-          return contractRatio
-        })
-        .filter((ratio) => ratio > 0)
-      const badResolutions = contractRatios.filter(
-        (ratio) => ratio > BAD_RESOLUTION_THRESHOLD
-      )
-      let newFractionResolvedCorrectly = 1
-      if (userContracts.length > 0) {
-        newFractionResolvedCorrectly =
-          (userContracts.length - badResolutions.length) / userContracts.length
-      }
+        return contractRatio
+      })
+      .filter((ratio) => ratio > 0)
+    const badResolutions = contractRatios.filter(
+      (ratio) => ratio > BAD_RESOLUTION_THRESHOLD
+    )
+    let newFractionResolvedCorrectly = 1
+    if (userContracts.length > 0) {
+      newFractionResolvedCorrectly =
+        (userContracts.length - badResolutions.length) / userContracts.length
+    }
 
-      const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
-        ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
-        : undefined
+    const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
+      ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
+      : undefined
 
-      const userDoc = firestore.collection('users').doc(user.id)
-      if (didPortfolioChange) {
-        writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
-      }
+    const userDoc = firestore.collection('users').doc(user.id)
+    if (didPortfolioChange) {
+      writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
+    }
 
-      const contractMetricsCollection = userDoc.collection('contract-metrics')
-      for (const metrics of metricsByContract) {
-        writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
-      }
+    const contractMetricsCollection = userDoc.collection('contract-metrics')
+    for (const metrics of metricsByContract) {
+      writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
+    }
 
-      return {
-        user: user,
-        fields: {
-          creatorTraders: newCreatorTraders,
-          profitCached: newProfit,
-          nextLoanCached: nextLoanPayout ?? 0,
-          fractionResolvedCorrectly: newFractionResolvedCorrectly,
-        },
-      }
-    }),
-    100
-  )
+    return {
+      user: user,
+      fields: {
+        creatorTraders: newCreatorTraders,
+        profitCached: newProfit,
+        nextLoanCached: nextLoanPayout ?? 0,
+        fractionResolvedCorrectly: newFractionResolvedCorrectly,
+      },
+    }
+  })
 
   for (const { user, fields } of userUpdates) {
     if (hasChanges(user, fields)) {
@@ -183,17 +179,14 @@ export async function updateUserMetrics() {
 }
 
 const loadUserContractBets = async (userId: string, contractIds: string[]) => {
-  const betDocs = await batchedWaitAll(
-    contractIds.map((c) => async () => {
-      return await firestore
-        .collection('contracts')
-        .doc(c)
-        .collection('bets')
-        .where('userId', '==', userId)
-        .get()
-    }),
-    500
-  )
+  const betDocs = await mapAsync(contractIds, async (cid) => {
+    return await firestore
+      .collection('contracts')
+      .doc(cid)
+      .collection('bets')
+      .where('userId', '==', userId)
+      .get()
+  })
   return betDocs
     .map((d) => d.docs)
     .flat()

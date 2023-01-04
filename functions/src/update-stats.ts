@@ -11,7 +11,7 @@ import { log, logMemory } from './utils'
 import { Stats } from '../../common/stats'
 import { DAY_MS } from '../../common/util/time'
 import { average } from '../../common/util/math'
-import { batchedWaitAll } from '../../common/util/promise'
+import { mapAsync } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
@@ -37,19 +37,14 @@ export async function getDailyBets(startTime: number, numberOfDays: number) {
     return getBetsQuery(begin, begin + DAY_MS)
   })
 
-  const betsByDay = await batchedWaitAll(
-    queries.map(
-      (q) => async () => {
-        return (await q.get()).docs.map((d) => ({
-          id: d.id,
-          userId: d.get('userId'),
-          ts: d.get('createdTime'),
-          amount: d.get('amount'),
-        }))
-      },
-      50
-    )
-  )
+  const betsByDay = await mapAsync(queries, async (q) => {
+    return (await q.get()).docs.map((d) => ({
+      id: d.id,
+      userId: d.get('userId'),
+      ts: d.get('createdTime'),
+      amount: d.get('amount'),
+    }))
+  })
   return betsByDay
 }
 

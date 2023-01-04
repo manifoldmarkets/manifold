@@ -4,7 +4,7 @@ import { groupBy, sumBy, mapValues, uniq } from 'lodash'
 
 import { log } from './utils'
 import { Contract } from '../../common/contract'
-import { batchedWaitAll } from '../../common/util/promise'
+import { mapAsync } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
 import { invokeFunction } from './utils'
 const firestore = admin.firestore()
@@ -56,23 +56,20 @@ export async function updateGroupMetrics() {
 
   log('Computing metric updates...')
   const writer = firestore.bulkWriter()
-  await batchedWaitAll(
-    groups.docs.map((doc) => async () => {
-      const contractIds = contractIdsByGroupId[doc.id] ?? []
-      const contracts = contractIds.map((c) => contractsById[c])
-      const creatorScores = scoreCreators(contracts)
-      const traderScores = await scoreTraders(contractIds)
-      const topTraderScores = topUserScores(traderScores)
-      const topCreatorScores = topUserScores(creatorScores)
-      writer.update(doc.ref, {
-        cachedLeaderboard: {
-          topTraders: topTraderScores,
-          topCreators: topCreatorScores,
-        },
-      })
-    }),
-    100
-  )
+  await mapAsync(groups.docs, async (doc) => {
+    const contractIds = contractIdsByGroupId[doc.id] ?? []
+    const contracts = contractIds.map((c) => contractsById[c])
+    const creatorScores = scoreCreators(contracts)
+    const traderScores = await scoreTraders(contractIds)
+    const topTraderScores = topUserScores(traderScores)
+    const topCreatorScores = topUserScores(creatorScores)
+    writer.update(doc.ref, {
+      cachedLeaderboard: {
+        topTraders: topTraderScores,
+        topCreators: topCreatorScores,
+      },
+    })
+  })
 
   log('Committing writes...')
   await writer.close()
@@ -100,9 +97,8 @@ async function scoreTraders(contractIds: string[]) {
   if (contractIds.length === 0) {
     return {}
   }
-  const userScoresByContract = await batchedWaitAll(
-    contractIds.map((c) => () => scoreUsersByContract(c)),
-    100
+  const userScoresByContract = await mapAsync(contractIds, (c) =>
+    scoreUsersByContract(c)
   )
   const userScores: { [userId: string]: number } = {}
   for (const scores of userScoresByContract) {

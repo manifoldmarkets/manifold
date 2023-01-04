@@ -16,7 +16,7 @@ import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
 import { createLoanIncomeNotification } from './create-notification'
 import { filterDefined } from '../../common/util/array'
 import { newEndpointNoAuth } from './api'
-import { batchedWaitAll } from '../../common/util/promise'
+import { mapAsync } from '../../common/util/promise'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
 
 const firestore = admin.firestore()
@@ -53,14 +53,10 @@ async function updateLoansCore() {
     ),
   ])
 
-  const contractBets = await batchedWaitAll(
-    contracts.map(
-      (contract) => async () =>
-        getValues<Bet>(
-          firestore.collection('contracts').doc(contract.id).collection('bets')
-        )
-    ),
-    100
+  const contractBets = await mapAsync(contracts, (contract) =>
+    getValues<Bet>(
+      firestore.collection('contracts').doc(contract.id).collection('bets')
+    )
   )
   const bets = sortBy(contractBets.flat(), (b) => b.createdTime)
 
@@ -103,32 +99,29 @@ async function updateLoansCore() {
   const today = new Date().toDateString().replace(' ', '-')
   const key = `loan-notifications-${today}`
 
-  await batchedWaitAll(
-    userUpdates.map(({ user, result }) => async () => {
-      const { updates, payout } = result
+  await mapAsync(userUpdates, async ({ user, result }) => {
+    const { updates, payout } = result
 
-      const betUpdates = updates.map((update) => ({
-        doc: firestore
-          .collection('contracts')
-          .doc(update.contractId)
-          .collection('bets')
-          .doc(update.betId),
-        fields: {
-          loanAmount: update.loanTotal,
-        },
-      }))
+    const betUpdates = updates.map((update) => ({
+      doc: firestore
+        .collection('contracts')
+        .doc(update.contractId)
+        .collection('bets')
+        .doc(update.betId),
+      fields: {
+        loanAmount: update.loanTotal,
+      },
+    }))
 
-      await writeAsync(firestore, betUpdates)
-      await payUser(user.id, payout)
+    await writeAsync(firestore, betUpdates)
+    await payUser(user.id, payout)
 
-      if (payout >= 1) {
-        // Don't send a notification if the payout is < Ṁ1,
-        // because a Ṁ0 loan is confusing.
-        await createLoanIncomeNotification(user, key, payout)
-      }
-    }),
-    100
-  )
+    if (payout >= 1) {
+      // Don't send a notification if the payout is < Ṁ1,
+      // because a Ṁ0 loan is confusing.
+      await createLoanIncomeNotification(user, key, payout)
+    }
+  })
 
   log(`${userUpdates.length} user loans paid out!`)
 }
