@@ -193,6 +193,13 @@ export default function GroupPage(props: {
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
+      {user && (
+        <AddContractButton
+          group={group}
+          user={user}
+          className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
+        />
+      )}
       {isMobile && (
         <TopGroupNavBar
           group={group}
@@ -202,13 +209,6 @@ export default function GroupPage(props: {
           isEditable={isEditable}
           setWritingNewAbout={setWritingNewAbout}
           bannerVisible={bannerVisible}
-        />
-      )}
-      {user && (
-        <AddContractButton
-          group={group}
-          user={user}
-          className="fixed bottom-16 right-2 z-50 fill-white lg:right-4 lg:bottom-4 "
         />
       )}
       <div className="relative">
