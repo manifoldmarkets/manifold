@@ -90,6 +90,8 @@ There are two ways to view the logs of the deployed bot:
 - [ ] Save which markets are currently featured on each Twitch channel to Firestore to support server rebooting without interruption
 - [ ] Allow docks to set the group within which markets created through chat will be added
 - [ ] Support renewing dock and overlay links in case of a leak
+- [ ] Reduce image sizes loaded from googleusercontent
+- [ ] Use gzip compression for serving webpages
 
 ## Potential Kubernetes structure
 
