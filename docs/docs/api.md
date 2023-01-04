@@ -88,7 +88,7 @@ Lists all markets, ordered by creation date descending.
 
 Parameters:
 
-- `limit`: Optional. How many markets to return. The maximum is 1000 and the default are 500.
+- `limit`: Optional. How many markets to return. The maximum is 1000 and the default is 500.
 - `before`: Optional. The ID of the market before which the list will start. For
   example, if you ask for the most recent 10 markets, and then perform a second
   query for 10 more markets with `before=[the id of the 10th market]`, you will
