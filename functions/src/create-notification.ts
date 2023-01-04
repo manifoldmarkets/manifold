@@ -486,6 +486,10 @@ export const createBetFillNotification = async (
   const fillAmount = fill?.amount ?? 0
   const remainingAmount =
     limitBet.orderAmount - sum(limitBet.fills.map((f) => f.amount))
+  const limitAt =
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? limitBet.limitProb * (contract.max - contract.min) + contract.min
+      : Math.round(limitBet.limitProb * 100) + '%'
 
   const notificationRef = firestore
     .collection(`/users/${toUser.id}/notifications`)
@@ -514,6 +518,7 @@ export const createBetFillNotification = async (
       probability: limitBet.limitProb,
       limitOrderTotal: limitBet.orderAmount,
       limitOrderRemaining: remainingAmount,
+      limitAt,
     } as BetFillData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))

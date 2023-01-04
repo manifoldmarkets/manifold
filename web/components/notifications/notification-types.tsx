@@ -218,9 +218,18 @@ function BetFillNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceText, data, sourceContractTitle } = notification
-  const { creatorOutcome, probability, limitOrderRemaining } =
-    (data as BetFillData) ?? {}
+  const {
+    creatorOutcome,
+    probability,
+    limitOrderRemaining,
+    limitAt: dataLimitAt,
+  } = (data as BetFillData) ?? {}
   const amount = formatMoney(parseInt(sourceText ?? '0'))
+  const limitAt =
+    dataLimitAt !== undefined
+      ? dataLimitAt
+      : Math.round(probability * 100) + '%'
+
   const color =
     creatorOutcome === 'YES'
       ? 'text-teal-600'
@@ -243,8 +252,8 @@ function BetFillNotification(props: {
       {limitOrderRemaining ? (
         <>
           You are buying <span className={clsx(color)}>{creatorOutcome}</span>{' '}
-          at <b>{Math.round(probability * 100)}%</b>. You have{' '}
-          {formatMoney(limitOrderRemaining)} remaining.
+          at <b>{limitAt}</b>. You have {formatMoney(limitOrderRemaining)}{' '}
+          remaining.
         </>
       ) : (
         ''
@@ -520,6 +529,7 @@ function NewMarketNotification(props: {
     </NotificationFrame>
   )
 }
+
 function MarketUpdateNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -708,6 +718,7 @@ function TaggedUserNotification(props: {
     </NotificationFrame>
   )
 }
+
 function UserLikeNotification(props: {
   notification: Notification
   highlighted: boolean

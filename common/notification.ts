@@ -265,6 +265,7 @@ export type BetFillData = {
   fillAmount: number
   limitOrderTotal?: number
   limitOrderRemaining?: number
+  limitAt?: string
 }
 
 export type ContractResolutionData = {
