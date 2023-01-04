@@ -6,7 +6,7 @@ initAdmin()
 import { PrivateUser, User } from 'common/user'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
 import { getAllUsers, isProd } from 'functions/src/utils'
-import { batchedWaitAll } from 'common/lib/util/promise'
+import { mapAsync } from 'common/lib/util/promise'
 import { FieldValue } from 'firebase-admin/lib/firestore'
 
 const firestore = admin.firestore()
@@ -147,18 +147,15 @@ async function cleanUsersEmails() {
   const users = await getAllUsers()
   console.log('Loaded', users.length, 'users')
 
-  await batchedWaitAll(
-    users.map((user) => async () => {
-      const u = user as any
-      if (!u.email) return
+  await mapAsync(users, async (user) => {
+    const u = user as any
+    if (!u.email) return
 
-      console.log('delete email for', u.id, u.email)
-      await firestore.collection('users').doc(user.id).update({
-        email: FieldValue.delete(),
-      })
-    }),
-    100
-  )
+    console.log('delete email for', u.id, u.email)
+    await firestore.collection('users').doc(user.id).update({
+      email: FieldValue.delete(),
+    })
+  })
 }
 
 async function deleteCollection(

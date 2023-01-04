@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { CPMMContract } from '../../common/contract'
-import { batchedWaitAll } from '../../common/util/promise'
+import { mapAsync } from '../../common/util/promise'
 import { APIError } from '../../common/api'
 import { addCpmmLiquidity } from '../../common/calculate-cpmm'
 import { formatMoneyWithDecimals } from '../../common/util/format'
@@ -19,10 +19,7 @@ export const drizzleLiquidity = async () => {
   console.log('found', contractIds.length, 'markets to drizzle')
   console.log()
 
-  await batchedWaitAll(
-    contractIds.map((cid) => () => drizzleMarket(cid)),
-    10
-  )
+  await mapAsync(contractIds, (cid) => drizzleMarket(cid), 10)
 }
 
 export const drizzleLiquidityScheduler = functions.pubsub

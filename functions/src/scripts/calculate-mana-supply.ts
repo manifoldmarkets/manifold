@@ -1,6 +1,6 @@
 import { PortfolioMetrics, User } from 'common/user'
 import { formatLargeNumber } from 'common/util/format'
-import { batchedWaitAll } from 'common/util/promise'
+import { mapAsync } from 'common/util/promise'
 import { DAY_MS } from 'common/util/time'
 import * as admin from 'firebase-admin'
 import { CollectionReference } from 'firebase-admin/firestore'
@@ -20,14 +20,12 @@ async function calculateManaSupply() {
 
   const now = Date.now()
 
-  const portfolioValues = await batchedWaitAll(
-    users.map((user) => async () => {
-      const portfolioHistory = await loadPortfolioHistory(user.id, now)
-      const { current } = portfolioHistory
-      if (!current) return 0
-      return current.investmentValue + current.balance
-    })
-  )
+  const portfolioValues = await mapAsync(users, async (user) => {
+    const portfolioHistory = await loadPortfolioHistory(user.id, now)
+    const { current } = portfolioHistory
+    if (!current) return 0
+    return current.investmentValue + current.balance
+  })
 
   const totalMana = sum(portfolioValues)
   console.log(

@@ -9,7 +9,7 @@ import { Contract, CPMM, CPMMContract } from '../../common/contract'
 import { DAY_MS } from '../../common/util/time'
 import { computeElasticity } from '../../common/calculate-metrics'
 import { getProbability } from '../../common/calculate'
-import { batchedWaitAll } from '../../common/util/promise'
+import { mapAsync } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
 
@@ -43,16 +43,13 @@ export async function updateContractMetrics() {
   const now = Date.now()
 
   const writer = firestore.bulkWriter()
-  await batchedWaitAll(
-    contracts.map((contract) => async () => {
-      const update = await computeContractMetricUpdates(contract, now)
-      if (hasChanges(contract, update)) {
-        const contractDoc = firestore.collection('contracts').doc(contract.id)
-        writer.update(contractDoc, update)
-      }
-    }),
-    100
-  )
+  await mapAsync(contracts, async (contract) => {
+    const update = await computeContractMetricUpdates(contract, now)
+    if (hasChanges(contract, update)) {
+      const contractDoc = firestore.collection('contracts').doc(contract.id)
+      writer.update(contractDoc, update)
+    }
+  })
 
   log('Committing writes...')
   await writer.close()
