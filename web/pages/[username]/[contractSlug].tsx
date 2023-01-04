@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef, useState } from 'react'
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { first } from 'lodash'
 
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -15,7 +15,12 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import { Bet, getTotalBetCount, listBets } from 'web/lib/firebase/bets'
+import {
+  Bet,
+  BetFilter,
+  getTotalBetCount,
+  listBets,
+} from 'web/lib/firebase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -57,9 +62,10 @@ import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { BackRow } from 'web/components/contract/back-row'
 
-const CONTRACT_BET_FILTER = {
+const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
   filterChallenges: true,
+  filterAntes: true,
 }
 
 type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
@@ -191,13 +197,20 @@ export function ContractPageContent(
     ...CONTRACT_BET_FILTER,
   })
   const totalBets = props.totalBets + (newBets?.length ?? 0)
-  const bets = props.historyData.bets.concat(newBets ?? [])
-  const betPoints = props.historyData.points.concat(
-    newBets?.map((bet) => ({
-      x: bet.createdTime,
-      y: bet.probAfter,
-      obj: { userAvatarUrl: bet.userAvatarUrl },
-    })) ?? []
+  const bets = useMemo(
+    () => props.historyData.bets.concat(newBets ?? []),
+    [props.historyData.bets, newBets]
+  )
+  const betPoints = useMemo(
+    () =>
+      props.historyData.points.concat(
+        newBets?.map((bet) => ({
+          x: bet.createdTime,
+          y: bet.probAfter,
+          obj: { userAvatarUrl: bet.userAvatarUrl },
+        })) ?? []
+      ),
+    [props.historyData.points, newBets]
   )
 
   const creator = useUserById(contract.creatorId) ?? null

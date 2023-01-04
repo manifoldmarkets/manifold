@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
@@ -199,23 +200,27 @@ const PseudoNumericOverview = (props: {
   )
 }
 
-export const ContractOverview = (props: {
-  contract: Contract
-  bets: Bet[]
-  betPoints: HistoryPoint<Partial<Bet>>[]
-}) => {
-  const { betPoints, contract, bets } = props
-  switch (contract.outcomeType) {
-    case 'BINARY':
-      return <BinaryOverview betPoints={betPoints} contract={contract} />
-    case 'NUMERIC':
-      return <NumericOverview contract={contract} />
-    case 'PSEUDO_NUMERIC':
-      return <PseudoNumericOverview contract={contract} betPoints={betPoints} />
-    case 'CERT':
-      return <CertOverview contract={contract} />
-    case 'FREE_RESPONSE':
-    case 'MULTIPLE_CHOICE':
-      return <ChoiceOverview contract={contract} bets={bets} />
+export const ContractOverview = memo(
+  (props: {
+    contract: Contract
+    bets: Bet[]
+    betPoints: HistoryPoint<Partial<Bet>>[]
+  }) => {
+    const { betPoints, contract, bets } = props
+    switch (contract.outcomeType) {
+      case 'BINARY':
+        return <BinaryOverview betPoints={betPoints} contract={contract} />
+      case 'NUMERIC':
+        return <NumericOverview contract={contract} />
+      case 'PSEUDO_NUMERIC':
+        return (
+          <PseudoNumericOverview contract={contract} betPoints={betPoints} />
+        )
+      case 'CERT':
+        return <CertOverview contract={contract} />
+      case 'FREE_RESPONSE':
+      case 'MULTIPLE_CHOICE':
+        return <ChoiceOverview contract={contract} bets={bets} />
+    }
   }
-}
+)

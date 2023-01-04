@@ -413,7 +413,6 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   }, [props.bets])
 
   const lps = useLiquidity(contract.id) ?? []
-  const visibleBets = bets.filter((bet) => !bet.isAnte) // on top of main contract page bet filters
   const visibleLps = lps.filter(
     (l) =>
       !l.isAnte &&
@@ -422,7 +421,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       l.amount > 0
   )
   const items = [
-    ...visibleBets.map((bet) => ({
+    ...bets.map((bet) => ({
       type: 'bet' as const,
       id: bet.id + '-' + bet.createdTime,
       bet,
