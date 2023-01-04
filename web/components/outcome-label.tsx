@@ -151,14 +151,19 @@ export function AnswerLabel(props: {
 }) {
   const { answer, truncate, className } = props
   const { text } = answer
+  const ELLIPSES_LENGTH = 3
 
   let truncated = text
-  if (truncate === 'short' && text.length > 20) {
-    truncated = text.slice(0, 10) + '...' + text.slice(-10)
-  } else if (truncate === 'medium' && text.length > 30) {
-    truncated = text.slice(0, 20) + '...' + text.slice(-10)
-  } else if (truncate === 'long' && text.length > 75) {
-    truncated = text.slice(0, 75) + '...'
+  let truncatedLength =
+    truncate === 'short'
+      ? 20
+      : truncated === 'medium'
+      ? 30
+      : truncated === 'long'
+      ? 75
+      : undefined
+  if (truncatedLength && text.length > truncatedLength + ELLIPSES_LENGTH) {
+    truncated = text.slice(0, truncatedLength) + '...'
   }
 
   return (
