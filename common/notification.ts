@@ -1,6 +1,7 @@
 import { notification_preference } from './user-notification-preferences'
 import { groupPath } from './group'
 import { PAST_BET } from './user'
+import { outcomeType } from 'common/contract'
 
 export type Notification = {
   id: string
@@ -266,6 +267,7 @@ export type BetFillData = {
   limitOrderTotal?: number
   limitOrderRemaining?: number
   limitAt?: string
+  outcomeType?: outcomeType
 }
 
 export type ContractResolutionData = {

@@ -223,6 +223,7 @@ function BetFillNotification(props: {
     probability,
     limitOrderRemaining,
     limitAt: dataLimitAt,
+    outcomeType,
   } = (data as BetFillData) ?? {}
   const amount = formatMoney(parseInt(sourceText ?? '0'))
   const limitAt =
@@ -230,6 +231,12 @@ function BetFillNotification(props: {
       ? dataLimitAt
       : Math.round(probability * 100) + '%'
 
+  const outcome =
+    outcomeType === 'PSEUDO_NUMERIC'
+      ? creatorOutcome === 'YES'
+        ? ' HIGHER'
+        : ' LOWER'
+      : creatorOutcome
   const color =
     creatorOutcome === 'YES'
       ? 'text-teal-600'
@@ -240,7 +247,7 @@ function BetFillNotification(props: {
     creatorOutcome && probability ? (
       <span>
         {amount} of your
-        <span className={clsx('mx-1', color)}>{creatorOutcome}</span>
+        <span className={clsx('mx-1', color)}>{outcome}</span>
         limit order at was filled{' '}
       </span>
     ) : (
@@ -251,8 +258,8 @@ function BetFillNotification(props: {
     <>
       {limitOrderRemaining ? (
         <>
-          You are buying <span className={clsx(color)}>{creatorOutcome}</span>{' '}
-          at <b>{limitAt}</b>. You have {formatMoney(limitOrderRemaining)}{' '}
+          You are buying <span className={clsx(color)}>{outcome}</span> at{' '}
+          <b>{limitAt}</b>. You have {formatMoney(limitOrderRemaining)}{' '}
           remaining.
         </>
       ) : (

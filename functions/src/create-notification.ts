@@ -518,7 +518,8 @@ export const createBetFillNotification = async (
       probability: limitBet.limitProb,
       limitOrderTotal: limitBet.orderAmount,
       limitOrderRemaining: remainingAmount,
-      limitAt,
+      limitAt: limitAt.toString(),
+      outcomeType: contract.outcomeType,
     } as BetFillData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
