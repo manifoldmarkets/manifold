@@ -306,21 +306,39 @@ export const FeedComment = memo(function FeedComment(props: {
 
 function CommentStatus(props: {
   contract: Contract
-  outcome: string
-  prob?: number
+  comment: ContractComment
 }) {
-  const { contract, outcome, prob } = props
-  return (
-    <>
-      {contract.resolution ? 'predicted ' : `is predicting `}
-      <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
-      {prob !== undefined ? (
-        ' at ' + Math.round((prob > 1 ? prob / 100 : prob) * 100) + '%'
-      ) : (
-        <div />
-      )}
-    </>
+  const { contract, comment } = props
+  const { resolutionTime, resolution } = contract
+  const {
+    commenterPositionProb: prob,
+    commenterPositionOutcome,
+    commenterPositionShares,
+    createdTime,
+  } = comment
+
+  if (
+    comment.betId == null &&
+    prob != null &&
+    commenterPositionOutcome != null &&
+    commenterPositionShares != null &&
+    commenterPositionShares > 0 &&
+    contract.outcomeType !== 'NUMERIC'
   )
+    return (
+      <>
+        {resolution ? 'predicted ' : `is predicting `}
+        <OutcomeLabel
+          outcome={commenterPositionOutcome}
+          contract={contract}
+          truncate="short"
+        />
+        {(resolutionTime ? resolutionTime > createdTime : true) &&
+          ' at ' + Math.round((prob > 1 ? prob / 100 : prob) * 100) + '%'}
+      </>
+    )
+
+  return <span />
 }
 
 export function ContractCommentInput(props: {
@@ -368,14 +386,7 @@ export function FeedCommentHeader(props: {
   contract: Contract
 }) {
   const { comment, contract } = props
-  const {
-    userUsername,
-    userName,
-    commenterPositionProb,
-    commenterPositionShares,
-    commenterPositionOutcome,
-    createdTime,
-  } = comment
+  const { userUsername, userName, createdTime } = comment
   const betOutcome = comment.betOutcome
   let bought: string | undefined
   let money: string | undefined
@@ -388,20 +399,7 @@ export function FeedCommentHeader(props: {
       <div className="mt-0.5 text-sm text-gray-600">
         <UserLink username={userUsername} name={userName} />{' '}
         <span className="text-gray-400">
-          {comment.betId == null &&
-            commenterPositionProb != null &&
-            commenterPositionOutcome != null &&
-            commenterPositionShares != null &&
-            commenterPositionShares > 0 &&
-            contract.outcomeType !== 'NUMERIC' && (
-              <>
-                <CommentStatus
-                  prob={commenterPositionProb}
-                  outcome={commenterPositionOutcome}
-                  contract={contract}
-                />
-              </>
-            )}
+          <CommentStatus contract={contract} comment={comment} />
           {bought} {money}
           {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
             <>
