@@ -312,9 +312,13 @@ function CommentStatus(props: {
   const { contract, outcome, prob } = props
   return (
     <>
-      {` predicting `}
+      {contract.resolution ? 'predicted ' : `is predicting `}
       <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
-      {prob && ' at ' + Math.round((prob > 1 ? prob / 100 : prob) * 100) + '%'}
+      {prob !== undefined ? (
+        ' at ' + Math.round((prob > 1 ? prob / 100 : prob) * 100) + '%'
+      ) : (
+        <div />
+      )}
     </>
   )
 }
@@ -391,7 +395,6 @@ export function FeedCommentHeader(props: {
             commenterPositionShares > 0 &&
             contract.outcomeType !== 'NUMERIC' && (
               <>
-                {'is '}
                 <CommentStatus
                   prob={commenterPositionProb}
                   outcome={commenterPositionOutcome}
