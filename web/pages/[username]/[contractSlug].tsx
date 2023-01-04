@@ -48,7 +48,6 @@ import {
   getBinaryContractUserContractMetrics,
   ContractMetricsByOutcome,
   getTopContractMetrics,
-  getTotalContractMetricsCount,
 } from 'web/lib/firebase/contract-metrics'
 import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
@@ -107,9 +106,6 @@ export async function getStaticPropz(props: {
   const topContractMetrics = contractId
     ? await getTopContractMetrics(contractId, 10)
     : []
-  const totalPositions = contractId
-    ? await getTotalContractMetricsCount(contractId)
-    : 0
 
   return {
     props: {
@@ -122,7 +118,6 @@ export async function getStaticPropz(props: {
       userPositionsByOutcome,
       totalBets,
       topContractMetrics,
-      totalPositions,
     },
     revalidate: 60,
   }
@@ -139,7 +134,6 @@ export default function ContractPage(props: {
   userPositionsByOutcome: ContractMetricsByOutcome
   totalBets: number
   topContractMetrics: ContractMetric[]
-  totalPositions: number
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -148,7 +142,6 @@ export default function ContractPage(props: {
     userPositionsByOutcome: {},
     totalBets: 0,
     topContractMetrics: [],
-    totalPositions: 0,
   }
 
   const inIframe = useIsIframe()
@@ -170,12 +163,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const {
-    userPositionsByOutcome,
-    comments,
-    topContractMetrics,
-    totalPositions,
-  } = props
+  const { userPositionsByOutcome, comments, topContractMetrics } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
@@ -350,7 +338,6 @@ export function ContractPageContent(
 
         <div ref={tabsContainerRef}>
           <ContractTabs
-            totalPositions={totalPositions}
             contract={contract}
             bets={bets}
             totalBets={totalBets}
