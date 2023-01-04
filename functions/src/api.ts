@@ -128,6 +128,7 @@ const DEFAULT_OPTS = {
   memory: '2GiB',
   cpu: 1,
   cors: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
+  secrets: ['MAILGUN_KEY', 'SUPABASE_KEY', 'API_SECRET'],
 }
 
 export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
