@@ -212,6 +212,7 @@ function RichContent(props: {
     <div className={className}>
       <div
         className={clsx(
+          'ProseMirror',
           proseClass(size),
           String.raw`empty:prose-p:after:content-["\00a0"]` // make empty paragraphs have height
         )}
