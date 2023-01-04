@@ -37,7 +37,6 @@ const amountClass = columnClass + ' max-w-[75px] font-bold'
 export default function ChallengesListPage() {
   const user = useUser()
   const challenges = useAcceptedChallenges()
-  const [open, setOpen] = React.useState(false)
   const userChallenges = useUserChallenges(user?.id)
     .concat(
       user ? challenges.filter((c) => c.acceptances[0].userId === user.id) : []

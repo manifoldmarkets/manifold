@@ -2,8 +2,6 @@ import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { capitalize } from 'lodash'
-import ChallengeIcon from 'web/lib/icons/challenge-icon'
-
 import { Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { contractPool, updateContract } from 'web/lib/firebase/contracts'
