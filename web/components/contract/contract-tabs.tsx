@@ -435,10 +435,10 @@ const BetsTabContent = memo(function BetsTabContent(props: {
     })
   }, [contract.id, totalItems, visibleLps.length])
 
+  const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
+  const shouldLoadMore = limit > 0 && bets.length < totalItems
   useEffect(() => {
-    const uiPage = page + 1
-    const limit = (items.length - uiPage * ITEMS_PER_PAGE) * -1
-    if (limit <= 0) return
+    if (!shouldLoadMore) return
     getOlderBets(contract.id, oldestBet.createdTime, limit)
       .then((olderBets) => {
         setBets((bets) => [...bets, ...olderBets])
@@ -446,7 +446,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       .catch((err) => {
         console.error(err)
       })
-  }, [contract.id, items.length, oldestBet.createdTime, page])
+  }, [contract.id, limit, oldestBet.createdTime, shouldLoadMore])
 
   const pageItems = sortBy(items, (item) =>
     item.type === 'bet'
@@ -455,12 +455,11 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       ? -item.lp.createdTime
       : undefined
   ).slice(start, end)
-  const loading = pageItems.length < ITEMS_PER_PAGE
 
   return (
     <>
       <Col className="mb-4 gap-4">
-        {loading ? (
+        {shouldLoadMore ? (
           <LoadingIndicator />
         ) : (
           pageItems.map((item) =>
