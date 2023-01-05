@@ -227,6 +227,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
             <ProfilePublicStats
               className="sm:text-md hidden text-sm text-gray-600 md:inline"
               user={user}
+              isCurrentUser={isCurrentUser}
             />
           </Col>
         </Row>
@@ -235,6 +236,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
           <ProfilePublicStats
             className="text-sm text-gray-600 md:hidden"
             user={user}
+            isCurrentUser={isCurrentUser}
           />
           <Spacer h={1} />
           {user.bio && (
@@ -395,12 +397,20 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
 
 type FollowsDialogTab = 'following' | 'followers'
 
-function ProfilePublicStats(props: { user: User; className?: string }) {
-  const { user, className } = props
+function ProfilePublicStats(props: {
+  user: User
+  isCurrentUser: boolean
+  className?: string
+}) {
+  const { user, className, isCurrentUser } = props
   const [isOpen, setIsOpen] = useState(false)
   const [followsTab, setFollowsTab] = useState<FollowsDialogTab>('following')
   const followingIds = useFollows(user.id)
   const followerIds = useFollowers(user.id)
+  const createdTime = new Date(user.createdTime).toLocaleDateString('en-us', {
+    year: 'numeric',
+    month: 'short',
+  })
 
   const openDialog = (tabName: FollowsDialogTab) => {
     setIsOpen(true)
@@ -408,7 +418,14 @@ function ProfilePublicStats(props: { user: User; className?: string }) {
   }
 
   return (
-    <Row className="flex-wrap items-center gap-3">
+    <Row
+      className={clsx(
+        'flex-wrap items-center gap-3 text-sm text-gray-600',
+        className
+      )}
+    >
+      <span>{`Joined ${createdTime}`}</span>
+
       <TextButton onClick={() => openDialog('following')} className={className}>
         <span className={clsx('font-semibold')}>
           {followingIds?.length ?? ''}
@@ -430,9 +447,11 @@ function ProfilePublicStats(props: { user: User; className?: string }) {
         isOpen={isOpen}
         setIsOpen={setIsOpen}
       />
-      <ReferralsButton user={user} className={className} />
       <GroupsButton user={user} className={className} />
-      <UserLikedContractsButton user={user} className={className} />
+      {isCurrentUser && <ReferralsButton user={user} className={className} />}
+      {isCurrentUser && (
+        <UserLikedContractsButton user={user} className={className} />
+      )}
     </Row>
   )
 }

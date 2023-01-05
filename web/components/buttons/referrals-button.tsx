@@ -23,7 +23,7 @@ export function ReferralsButton(props: { user: User; className?: string }) {
   return (
     <>
       <TextButton onClick={() => setIsOpen(true)} className={className}>
-        <span className="font-semibold">{referralIds?.length ?? ''}</span>{' '}
+        <span className="font-semibold">{referralIds?.length ?? '0'}</span>{' '}
         Referrals
       </TextButton>
       <ReferralsDialog

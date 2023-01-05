@@ -26,7 +26,7 @@ export function UserLikedContractsButton(props: {
   return (
     <>
       <TextButton onClick={() => setIsOpen(true)} className={className}>
-        <span className="font-semibold">{likedContracts?.length ?? ''}</span>{' '}
+        <span className="font-semibold">{likedContracts?.length ?? '0'}</span>{' '}
         Likes
       </TextButton>
       <Modal open={isOpen} setOpen={setIsOpen}>
