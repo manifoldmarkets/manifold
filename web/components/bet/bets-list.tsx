@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { keyBy, sortBy, partition, sumBy, uniq, groupBy, max } from 'lodash'
 import dayjs from 'dayjs'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet } from 'web/lib/firebase/bets'
@@ -42,10 +42,8 @@ import { BetsSummary } from './bet-summary'
 import { ProfitBadge } from '../profit-badge'
 import {
   inMemoryStore,
-  storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { Select } from '../widgets/select'
 import { Table } from '../widgets/table'
 import { SellRow } from './sell-row'
@@ -91,21 +89,30 @@ export function BetsList(props: { user: User }) {
 
   const [sort, setSort] = usePersistentState<BetSort>('newest', {
     key: 'bets-list-sort',
-    store: storageStore(safeLocalStorage()),
+    store: inMemoryStore(),
   })
   const [filter, setFilter] = usePersistentState<BetFilter>('all', {
     key: 'bets-list-filter',
-    store: storageStore(safeLocalStorage()),
+    store: inMemoryStore(),
   })
 
-  const [page, setPage] = useState(0)
+  const [page, setPage] = usePersistentState(0, {
+    key: 'portfolio-page',
+    store: inMemoryStore(),
+  })
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
 
-  // reset to first page when changing filter
+  const isFirstRenderRef = useRef(true)
+
+  // Reset to first page when changing filter, except on first render.
   useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false
+      return
+    }
     setPage(0)
-  }, [filter])
+  }, [filter, setPage])
 
   if (!metrics || !openLimitBets || !loadingContracts.every((c) => c)) {
     return <LoadingIndicator />
