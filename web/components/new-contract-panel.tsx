@@ -414,7 +414,12 @@ export function NewContractPanel(props: {
               <Input
                 type={'date'}
                 onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setCloseDate(e.target.value)}
+                onChange={(e) => {
+                  setCloseDate(e.target.value)
+                  if (!closeHoursMinutes) {
+                    setCloseHoursMinutes(initTime)
+                  }
+                }}
                 min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
                 disabled={isSubmitting}
                 value={closeDate}
