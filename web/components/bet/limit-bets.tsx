@@ -135,12 +135,13 @@ function LimitBet(props: {
     <tr>
       {!isYou && (
         <td>
-          <a href={bet.userAvatarUrl}>
+          <a href={`/${bet.userUsername}`}>
             <Tooltip text={bet.userName}>
               <Avatar
                 size={'sm'}
                 avatarUrl={bet.userAvatarUrl}
                 username={bet.userUsername}
+                noLink={true}
               />
             </Tooltip>
           </a>
