@@ -212,8 +212,6 @@ export function ContractPageContent(
     [props.historyData.points, newBets]
   )
 
-  const creator = useUserById(contract.creatorId) ?? null
-
   const { isResolved, question, outcomeType, resolution } = contract
 
   const allowTrade = tradingAllowed(contract)
