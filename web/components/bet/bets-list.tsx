@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { keyBy, sortBy, partition, sumBy, uniq, groupBy, max } from 'lodash'
 import dayjs from 'dayjs'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet } from 'web/lib/firebase/bets'
@@ -95,24 +95,23 @@ export function BetsList(props: { user: User }) {
     key: 'bets-list-filter',
     store: inMemoryStore(),
   })
-
   const [page, setPage] = usePersistentState(0, {
     key: 'portfolio-page',
     store: inMemoryStore(),
   })
+
+  const onSetSort = (s: BetSort) => {
+    setSort(s)
+    setPage(0)
+  }
+
+  const onSetFilter = (f: BetFilter) => {
+    setFilter(f)
+    setPage(0)
+  }
+
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
-
-  const isFirstRenderRef = useRef(true)
-
-  // Reset to first page when changing filter, except on first render.
-  useEffect(() => {
-    if (isFirstRenderRef.current) {
-      isFirstRenderRef.current = false
-      return
-    }
-    setPage(0)
-  }, [filter, setPage])
 
   if (!metrics || !openLimitBets || !loadingContracts.every((c) => c)) {
     return <LoadingIndicator />
@@ -202,7 +201,7 @@ export function BetsList(props: { user: User }) {
         <Row className="gap-2">
           <Select
             value={filter}
-            onChange={(e) => setFilter(e.target.value as BetFilter)}
+            onChange={(e) => onSetFilter(e.target.value as BetFilter)}
           >
             <option value="open">Active</option>
             <option value="limit_bet">Limit orders</option>
@@ -214,7 +213,7 @@ export function BetsList(props: { user: User }) {
 
           <Select
             value={sort}
-            onChange={(e) => setSort(e.target.value as BetSort)}
+            onChange={(e) => onSetSort(e.target.value as BetSort)}
           >
             <option value="newest">Recent</option>
             <option value="value">Value</option>

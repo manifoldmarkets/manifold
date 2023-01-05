@@ -63,10 +63,12 @@ export function Pagination(props: {
   const { p: pageQuery } = query
 
   useEffect(() => {
-    if (pageQuery && page !== parseInt(pageQuery as string)) {
-      setPage(parseInt(pageQuery as string))
-    } else if (!pageQuery && page !== 0) {
-      setPage(0)
+    if (savePageToQuery) {
+      if (pageQuery && page !== parseInt(pageQuery as string)) {
+        setPage(parseInt(pageQuery as string))
+      } else if (!pageQuery && page !== 0) {
+        setPage(0)
+      }
     }
     if (scrollToTop) {
       window.scrollTo(0, 0)
