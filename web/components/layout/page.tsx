@@ -47,8 +47,10 @@ export function Page(props: {
           >
             {children}
           </main>
-          <aside className="top-0 bottom-0 col-span-3 h-screen overflow-y-auto py-6 xl:sticky">
-            {rightSidebar}
+          <aside className="col-span-3">
+            <div className="xl:sticky xl:top-0 xl:bottom-0 xl:h-screen xl:overflow-y-auto xl:py-6">
+              {rightSidebar}
+            </div>
           </aside>
         </div>
       </div>
