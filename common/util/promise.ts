@@ -35,11 +35,6 @@ export const mapAsync = <T, U>(
   let currRequests = 0
   const results: U[] = []
 
-  // Hack to get around Node bug: https://github.com/nodejs/node/issues/22088
-  const intervalId = setInterval(() => {
-    // Do nothing, but prevent early process exit.
-  }, 10000)
-
   return new Promise((resolve: (results: U[]) => void, reject) => {
     const doWork = () => {
       while (index < items.length && currRequests < maxConcurrentRequests) {
@@ -58,6 +53,7 @@ export const mapAsync = <T, U>(
       }
     }
 
-    doWork()
-  }).finally(() => clearInterval(intervalId))
+    if (items.length === 0) resolve([])
+    else doWork()
+  })
 }
