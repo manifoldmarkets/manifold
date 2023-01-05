@@ -4,7 +4,7 @@ import { first } from 'lodash'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
-import { usePrivateUser, useUser, useUserById } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Spacer } from 'web/components/layout/spacer'
 import {
