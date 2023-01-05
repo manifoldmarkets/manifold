@@ -58,10 +58,13 @@ export function CommentInput(props: {
   async function submitComment() {
     if (!editor || editor.isEmpty || isSubmitting) return
     setIsSubmitting(true)
-    // linkify any remaining text by adding and removing a space
-    editor.chain().focus('end').insertContent(' ').run()
-    const endPos = editor.state.selection.from
-    editor.commands.deleteRange({ from: endPos - 1, to: endPos })
+    editor.commands.focus('end')
+    // if last item is text, try to linkify it by adding and deleting a space
+    if (editor.state.selection.empty) {
+      editor.commands.insertContent(' ')
+      const endPos = editor.state.selection.from
+      editor.commands.deleteRange({ from: endPos - 1, to: endPos })
+    }
 
     onSubmitComment?.(editor)
     setIsSubmitting(false)
