@@ -15,6 +15,7 @@ import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
+import { Tooltip } from '../widgets/tooltip'
 
 export function LimitBets(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -134,11 +135,16 @@ function LimitBet(props: {
     <tr>
       {!isYou && (
         <td>
-          <Avatar
-            size={'sm'}
-            avatarUrl={bet.userAvatarUrl}
-            username={bet.userUsername}
-          />
+          <a href={`/${bet.userUsername}`}>
+            <Tooltip text={bet.userName}>
+              <Avatar
+                size={'sm'}
+                avatarUrl={bet.userAvatarUrl}
+                username={bet.userUsername}
+                noLink={true}
+              />
+            </Tooltip>
+          </a>
         </td>
       )}
       <td>
