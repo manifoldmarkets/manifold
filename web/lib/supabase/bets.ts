@@ -32,7 +32,5 @@ export async function getTotalBetCount(contractId: string) {
       .eq('data->isAnte', false)
   )
 
-  // should never happen
-  if (count === null) throw new Error("Couldn't fetch bet count from database")
-  return count
+  return count as number
 }
