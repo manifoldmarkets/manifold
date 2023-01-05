@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listenForFollowers, listenForFollows } from 'web/lib/firebase/users'
 import { listenForContractFollows } from 'web/lib/firebase/contracts'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useFollows = (userId: string | null | undefined) => {
   const [followIds, setFollowIds] = useState<string[] | undefined>()
@@ -8,6 +9,7 @@ export const useFollows = (userId: string | null | undefined) => {
   useEffect(() => {
     if (userId) {
       const key = `follows:${userId}`
+      const localStorage = safeLocalStorage()
       const follows = localStorage.getItem(key)
       if (follows) setFollowIds(JSON.parse(follows))
 
