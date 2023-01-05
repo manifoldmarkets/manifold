@@ -135,7 +135,6 @@ function Page0() {
 }
 
 function Page1() {
-  const { isNative, platform } = getNativePlatform()
   return (
     <>
       <p>
