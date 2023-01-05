@@ -68,7 +68,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   dailyScore?: number
   followerCount?: number
   likedByUserCount?: number
-  flaggedByUsernames?: string[]
+  flaggedByUsernames?: string[] // Deprecated as of 2023-01-05
   unlistedById?: string
   featuredLabel?: string
   isTwitchContract?: boolean

@@ -48,7 +48,6 @@ import { Answer } from 'common/answer'
 import { useEvent } from 'web/hooks/use-event'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
-import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
 import {
   getBinaryContractUserContractMetrics,
   ContractMetricsByOutcome,
@@ -269,15 +268,6 @@ export function ContractPageContent(
           bets={bets}
           betPoints={betPoints}
         />
-        {creator?.fractionResolvedCorrectly != null &&
-          creator.fractionResolvedCorrectly < BAD_CREATOR_THRESHOLD && (
-            <div className="pt-2">
-              <AlertBox
-                title="Warning"
-                text="This creator has a track record of resolving their markets incorrectly."
-              />
-            </div>
-          )}
 
         <ContractDescription className="mt-6 mb-2 px-2" contract={contract} />
 
