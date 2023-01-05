@@ -6,6 +6,7 @@ import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { AddFundsModal } from '../add-funds-modal'
+import { PlusIcon } from '@heroicons/react/outline'
 
 export function ProfileSummary(props: { user: User }) {
   const { user } = props
@@ -21,16 +22,17 @@ export function ProfileSummary(props: { user: User }) {
       <Avatar avatarUrl={user.avatarUrl} username={user.username} noLink />
       <div className="truncate">
         <div>{user.name}</div>
-        <div className="text-sm">
+        <div className="flex items-center text-sm">
           <span className="mr-2">{formatMoney(Math.floor(user.balance))}</span>
           <button
-            className="rounded-md py-0.5 px-2 text-xs ring-2 ring-inset ring-current hover:bg-gray-300"
+            className="rounded-md p-1 ring-[1.5px] ring-inset ring-current hover:bg-gray-300"
             onClick={(e) => {
               e.preventDefault()
               setBuyModalOpen(true)
             }}
           >
-            Buy
+            <div className="sr-only">Get mana</div>
+            <PlusIcon className="h-2 w-2" strokeWidth="4.5" />
           </button>
           <AddFundsModal open={buyModalOpen} setOpen={setBuyModalOpen} />
         </div>
