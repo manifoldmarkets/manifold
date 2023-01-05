@@ -13,7 +13,7 @@ export const safeLocalStorage = () => {
       }
     },
     removeItem: (key: string) => localStorage?.removeItem(key),
-  }
+  } as Storage
 }
 
 export const safeSessionStorage = () => {
@@ -31,7 +31,7 @@ export const safeSessionStorage = () => {
       }
     },
     removeItem: (key: string) => sessionStorage?.removeItem(key),
-  }
+  } as Storage
 }
 
 const ls = () => {
