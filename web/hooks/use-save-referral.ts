@@ -27,5 +27,5 @@ export const useSaveReferral = (
         groupId: options?.groupId,
       })
     }
-  }, [user, router, options])
+  }, [user, router, JSON.stringify(options)])
 }
