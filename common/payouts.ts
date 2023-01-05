@@ -101,6 +101,14 @@ export const getFixedPayouts = (
       )
     default:
     case 'CANCEL':
+      if (contract.mechanism === 'cpmm-2' && outcome !== 'CANCEL')
+        return getStandardFixedPayouts(
+          outcome ?? '',
+          contract,
+          bets,
+          liquidities
+        )
+
       return getFixedCancelPayouts(bets, liquidities)
   }
 }

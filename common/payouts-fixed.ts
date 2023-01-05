@@ -93,7 +93,7 @@ export const getMktFixedPayouts = (
       return { YES: p, NO: 1 - p }
     }
 
-    if (resolutionProbs) return resolutionProbs
+    if (resolutionProbs) return mapValues(resolutionProbs, (p) => p / 100)
     return mapValues(contract.pool, (_, o) =>
       getOutcomeProbability(contract, o)
     )
