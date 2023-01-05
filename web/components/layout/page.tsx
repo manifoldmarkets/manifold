@@ -35,7 +35,7 @@ export function Page(props: {
         />
         <Sidebar
           logoSubheading={logoSubheading}
-          className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex"
+          className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex "
         />
         {/* put right sidebar below main content on small or medium screens */}
         <div className="lg:col-span-8 xl:contents">
@@ -47,8 +47,8 @@ export function Page(props: {
           >
             {children}
           </main>
-          <aside className="col-span-3">
-            <div className="top-6 xl:sticky">{rightSidebar}</div>
+          <aside className="top-0 bottom-0 col-span-3 h-screen overflow-y-auto py-6 xl:sticky">
+            {rightSidebar}
           </aside>
         </div>
       </div>
