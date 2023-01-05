@@ -77,6 +77,16 @@ export function AuthProvider(props: {
   }, [setAuthUser, serverUser])
 
   useEffect(() => {
+    if (authUser) {
+      // Persist to local storage, to reduce login blink next time.
+      // Note: Cap on localStorage size is ~5mb
+      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
+    } else if (authUser === null) {
+      localStorage.removeItem(CACHED_USER_KEY)
+    }
+  }, [authUser])
+
+  useEffect(() => {
     return onIdTokenChanged(
       auth,
       async (fbUser) => {
@@ -88,9 +98,7 @@ export function AuthProvider(props: {
             current = (await createUser({ deviceToken })) as UserAndPrivateUser
             setCachedReferralInfoForUser(current.user)
           }
-
           setAuthUser(current)
-          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(current))
           webviewPassUsers(
             JSON.stringify({
               fbUser: fbUser.toJSON(),
@@ -101,7 +109,6 @@ export function AuthProvider(props: {
           // User logged out; reset to null
           setUserCookie(undefined)
           setAuthUser(null)
-          localStorage.removeItem(CACHED_USER_KEY)
           webviewSignOut()
         }
       },
