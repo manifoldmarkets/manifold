@@ -88,7 +88,7 @@ Lists all markets, ordered by creation date descending.
 
 Parameters:
 
-- `limit`: Optional. How many markets to return. The maximum and the default are 1000.
+- `limit`: Optional. How many markets to return. The maximum is 1000 and the default is 500.
 - `before`: Optional. The ID of the market before which the list will start. For
   example, if you ask for the most recent 10 markets, and then perform a second
   query for 10 more markets with `before=[the id of the 10th market]`, you will
@@ -317,20 +317,20 @@ Requires no authorization.
   ```json
   [
     {
-      "id":"igi2zGXsfxYPgB0DJTXVJVmwCOr2",
-      "createdTime":1639011767273,
-      "name":"Austin",
-      "username":"Austin",
-      "url":"https://manifold.markets/Austin",
-      "avatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GiZyl1lBehuBMGyJYJhZd-N-mstaUtgE4xdI22lLw=s96-c",
-      "bio":"I build Manifold! Always happy to chat; reach out on Discord or find a time on https://calendly.com/austinchen/manifold!",
-      "bannerUrl":"https://images.unsplash.com/photo-1501523460185-2aa5d2a0f981?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1531&q=80",
-      "website":"https://blog.austn.io",
-      "twitterHandle":"akrolsmir",
-      "discordHandle":"akrolsmir#4125",
-      "balance":9122.607163564959,
-      "totalDeposits":10339.004780544328,
-      "totalPnLCached":9376.601262721899,
+      "id": "igi2zGXsfxYPgB0DJTXVJVmwCOr2",
+      "createdTime": 1639011767273,
+      "name": "Austin",
+      "username": "Austin",
+      "url": "https://manifold.markets/Austin",
+      "avatarUrl": "https://lh3.googleusercontent.com/a-/AOh14GiZyl1lBehuBMGyJYJhZd-N-mstaUtgE4xdI22lLw=s96-c",
+      "bio": "I build Manifold! Always happy to chat; reach out on Discord or find a time on https://calendly.com/austinchen/manifold!",
+      "bannerUrl": "https://images.unsplash.com/photo-1501523460185-2aa5d2a0f981?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1531&q=80",
+      "website": "https://blog.austn.io",
+      "twitterHandle": "akrolsmir",
+      "discordHandle": "akrolsmir#4125",
+      "balance": 9122.607163564959,
+      "totalDeposits": 10339.004780544328,
+      "totalPnLCached": 9376.601262721899
     }
   ]
   ```
