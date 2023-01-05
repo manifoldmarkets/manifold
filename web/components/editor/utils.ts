@@ -84,7 +84,8 @@ export const generateReact = (doc: JSONContent, extensions: Extensions) => {
 
     // TODO: collapse adjacent marks of the same type
     if (content.marks) {
-      content.marks.forEach((m) => {
+      const reversedMarks = [...content.marks].reverse()
+      reversedMarks.forEach((m) => {
         const e = exts[m.type]
         const renderReact = getField(e, 'renderReact')
         if (renderReact) {

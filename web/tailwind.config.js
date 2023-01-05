@@ -293,6 +293,7 @@ module.exports = {
             'blockquote p:last-of-type::after': false,
             'code::before': false,
             'code::after': false,
+            '--tw-prose-bold': 'inherit',
           },
         },
       },
