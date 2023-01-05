@@ -2,7 +2,7 @@ import { CheckCircleIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 import { useFollows } from 'web/hooks/use-follows'
-import { useUser } from 'web/hooks/use-user'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from './button'
@@ -48,8 +48,9 @@ export function UserFollowButton(props: { userId: string }) {
   const user = useUser()
   const following = useFollows(user?.id)
   const isFollowing = following?.includes(userId)
-
+  const privateUser = usePrivateUser()
   if (!user || user.id === userId) return null
+  if (isBlocked(privateUser, userId)) return <div />
 
   return (
     <FollowButton
@@ -63,6 +64,7 @@ export function UserFollowButton(props: { userId: string }) {
 export function MiniUserFollowButton(props: { userId: string }) {
   const { userId } = props
   const user = useUser()
+  const privateUser = usePrivateUser()
   const following = useFollows(user?.id)
   const isFollowing = following?.includes(userId)
   const isFirstRender = useRef(true)
@@ -82,6 +84,7 @@ export function MiniUserFollowButton(props: { userId: string }) {
       }, 1000)
     }
   }, [isFollowing])
+  if (isBlocked(privateUser, userId)) return <div />
 
   if (justFollowed) {
     return (

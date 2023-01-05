@@ -4,7 +4,7 @@ import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import React from 'react'
 import { arrayRemove, arrayUnion, doc, updateDoc } from 'firebase/firestore'
-import { privateUsers } from 'web/lib/firebase/users'
+import { privateUsers, unfollow } from 'web/lib/firebase/users'
 import { toast } from 'react-hot-toast'
 import { PrivateUser, User } from 'common/user'
 
@@ -24,6 +24,7 @@ export const BlockUser = (props: {
     await updateDoc(doc(privateUsers, userId), {
       blockedByUserIds: arrayUnion(currentUser.id),
     })
+    await unfollow(currentUser.id, userId)
   }
 
   const unblockUser = async () => {

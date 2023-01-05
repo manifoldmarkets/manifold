@@ -28,6 +28,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { HOME_BLOCKED_GROUP_SLUGS } from 'common/envs/constants'
 import { ContractCardView, ContractView } from 'common/events'
 import { DAY_MS } from 'common/util/time'
+import { PrivateUser } from 'common/user'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -49,6 +50,16 @@ export const useUsersById = (userIds: string[]) => {
 
 export const usePrefetchUsers = (userIds: string[]) => {
   useStoreItems(userIds, listenForUser)
+}
+
+export const isBlocked = (
+  privateUser: PrivateUser | null | undefined,
+  otherUserId: string
+) => {
+  return (
+    privateUser?.blockedUserIds.includes(otherUserId) ||
+    privateUser?.blockedByUserIds.includes(otherUserId)
+  )
 }
 
 // Note: we don't filter out blocked contracts/users/groups here like we do in unbet-on contracts

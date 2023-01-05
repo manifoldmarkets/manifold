@@ -110,10 +110,7 @@ export const LikeButton = memo(function LikeButton(props: {
     : undefined
 
   const hasSafePolygon =
-    (likedUserInfo != null &&
-      likedUserInfo != undefined &&
-      likedUserInfo.length > 0) ||
-    userLiked
+    (likedUserInfo != undefined && likedUserInfo.length > 0) || userLiked
   return (
     <>
       <Tooltip
