@@ -135,13 +135,12 @@ function LimitBet(props: {
     <tr>
       {!isYou && (
         <td>
-          <a href={`/${bet.userUsername}`}>
+          <a href={bet.userAvatarUrl}>
             <Tooltip text={bet.userName}>
               <Avatar
                 size={'sm'}
                 avatarUrl={bet.userAvatarUrl}
                 username={bet.userUsername}
-                noLink={true}
               />
             </Tooltip>
           </a>
@@ -193,11 +192,7 @@ export function OrderBookButton(props: {
   )
 
   const yesBets = sortedBets.filter((bet) => bet.outcome === 'YES')
-  const noBets = sortBy(
-    sortedBets.filter((bet) => bet.outcome === 'NO'),
-    (bet) => bet.limitProb,
-    (bet) => bet.createdTime
-  )
+  const noBets = sortedBets.filter((bet) => bet.outcome === 'NO')
 
   return (
     <>
