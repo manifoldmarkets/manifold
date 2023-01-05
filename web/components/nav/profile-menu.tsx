@@ -25,7 +25,10 @@ export function ProfileSummary(props: { user: User }) {
           <span className="mr-2">{formatMoney(Math.floor(user.balance))}</span>
           <button
             className="rounded-md py-0.5 px-2 text-xs ring-2 ring-inset ring-current hover:bg-gray-300"
-            onClick={() => setBuyModalOpen(true)}
+            onClick={(e) => {
+              e.preventDefault()
+              setBuyModalOpen(true)
+            }}
           >
             Buy
           </button>
