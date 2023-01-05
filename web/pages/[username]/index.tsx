@@ -224,17 +224,15 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                 {!isCurrentUser && <MoreOptionsUserButton user={user} />}
               </Row>
             </div>
-            <ProfilePublicStats
-              className="sm:text-md hidden text-sm text-gray-600 md:inline"
-              user={user}
-              isCurrentUser={isCurrentUser}
-            />
+            <div className={'hidden md:block'}>
+              <ProfilePublicStats user={user} isCurrentUser={isCurrentUser} />
+            </div>
           </Col>
         </Row>
         <Col className="mx-4 mt-2">
           <Spacer h={1} />
           <ProfilePublicStats
-            className="text-sm text-gray-600 md:hidden"
+            className="md:hidden"
             user={user}
             isCurrentUser={isCurrentUser}
           />
@@ -534,6 +532,7 @@ function FollowsDialog(props: {
 function firestoreUserConsolePath(userId: string) {
   return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fusers~2F${userId}`
 }
+
 function firestorePrivateConsolePath(userId: string) {
   return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fprivate-users~2F${userId}`
 }
