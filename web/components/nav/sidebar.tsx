@@ -8,7 +8,6 @@ import {
   ChartBarIcon,
   LogoutIcon,
   BeakerIcon,
-  FireIcon,
   HeartIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
