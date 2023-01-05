@@ -32,6 +32,7 @@ export const PortfolioValueSection = memo(
     const onClickNumber = useEvent((mode: GraphMode) => {
       setGraphMode(mode)
       setGraphDisplayNumber(null)
+      setGraphViewYScale(undefined)
     })
     const [graphViewXScale, setGraphViewXScale] =
       useState<ScaleTime<number, number>>()
