@@ -9,14 +9,22 @@ export type SearchUserInfo = Pick<
 >
 
 export async function searchUsers(prompt: string, limit: number) {
-  const { data } = await run(
-    db
-      .from('users')
-      .select('id, data->name, data->username, data->avatarUrl')
-      .eq('data->>username', prompt)
-      .order('data->followerCountCached')
-      .limit(limit)
-  )
+  const { data } =
+    prompt != ''
+      ? await run(
+          db
+            .from('users')
+            .select('id, data->name, data->username, data->avatarUrl')
+            .eq('data->>username', prompt)
+            .limit(limit)
+        )
+      : await run(
+          db
+            .from('users')
+            .select('id, data->name, data->username, data->avatarUrl')
+            .order('data->followerCountCached', { ascending: false } as any)
+            .limit(limit)
+        )
   const { data: similarData } = await run(
     db
       .from('users')
