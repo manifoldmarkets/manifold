@@ -45,8 +45,7 @@ import { formatWithCommas, shortFormatNumber } from 'common/util/format'
 import { useBets } from 'web/hooks/use-bets'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
-import { getOlderBets } from 'web/lib/supabase/bets'
-import { getTotalBetCount } from 'web/lib/firebase/bets'
+import { getOlderBets, getTotalBetCount } from 'web/lib/supabase/bets'
 
 export function ContractTabs(props: {
   contract: Contract

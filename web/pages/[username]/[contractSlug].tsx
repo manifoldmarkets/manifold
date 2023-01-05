@@ -15,12 +15,8 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import {
-  Bet,
-  BetFilter,
-  getTotalBetCount,
-  listBets,
-} from 'web/lib/firebase/bets'
+import { Bet, BetFilter, listBets } from 'web/lib/firebase/bets'
+import { getTotalBetCount } from 'web/lib/supabase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'

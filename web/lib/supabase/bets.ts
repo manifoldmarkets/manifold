@@ -20,3 +20,19 @@ export async function getOlderBets(
 
   return data.map((d: JsonData<Bet>) => d.data)
 }
+
+export async function getTotalBetCount(contractId: string) {
+  const { count } = await run(
+    db
+      .from('contract_bets')
+      .select('*', { count: 'exact', head: true })
+      .eq('contract_id', contractId)
+      .eq('data->isChallenge', false)
+      .eq('data->isRedemption', false)
+      .eq('data->isAnte', false)
+  )
+
+  // should never happen
+  if (count === null) throw new Error("Couldn't fetch bet count from database")
+  return count
+}
