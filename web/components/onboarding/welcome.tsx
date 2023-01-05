@@ -2,20 +2,20 @@ import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
+import { STARTING_BALANCE } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
+import { buildArray } from 'common/util/array'
+import { formatMoney } from 'common/util/format'
+import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
+import { getNativePlatform } from 'web/lib/native/is-native'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
-import { formatMoney } from 'common/util/format'
-import { STARTING_BALANCE } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { buildArray } from 'common/util/array'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import { Button } from 'web/components/buttons/button'
 
 export default function Welcome() {
   const user = useUser()
@@ -27,8 +27,9 @@ export default function Welcome() {
   const availablePages = buildArray([
     <Page0 />,
     <Page1 />,
-    isNative && platform === 'ios' ? null : <Page2 />,
-    <Page3 />,
+    <Page2 />,
+    isNative && platform === 'ios' ? null : <Page3 />,
+    <Page4 />,
   ])
   const TOTAL_PAGES = availablePages.length
 
@@ -135,7 +136,6 @@ function Page0() {
 
 function Page1() {
   const { isNative, platform } = getNativePlatform()
-  const shouldAutoPlay = !(isNative && platform === 'ios')
   return (
     <>
       <p>
@@ -150,16 +150,10 @@ function Page1() {
         If people have to put their mana where their mouth is, you’ll get a
         pretty accurate answer!
       </div>
-      <video
-        loop
-        autoPlay={shouldAutoPlay}
-        controls={!shouldAutoPlay}
-        muted
-        className="hide-video-cast-overlay my-4 h-full w-full"
-      >
-        <source src="/welcome/mana-example.mp4" type="video/mp4" />
-        Your browser does not support video
-      </video>
+      <img
+        src="/welcome/manifold-example.gif"
+        className="my-4 h-full w-full object-contain"
+      />
     </>
   )
 }
@@ -188,7 +182,25 @@ export function Page2() {
   )
 }
 
-function Page3() {
+export function Page3() {
+  return (
+    <>
+      <Title text="Donate" />
+      <p className="mt-2">
+        You can turn your mana earnings into a real donation to charity, at a
+        100:1 ratio. When you donate{' '}
+        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
+        Manifold sends them <span className="font-semibold">$10 USD</span>.
+      </p>
+      <img
+        src="/welcome/charity.gif"
+        className="my-4 h-full w-full object-contain"
+      />
+    </>
+  )
+}
+
+function Page4() {
   return (
     <>
       <img className="mx-auto object-contain" src="/welcome/treasure.png" />
@@ -200,29 +212,6 @@ function Page3() {
         </span>
         .
       </p>
-    </>
-  )
-}
-
-export function Page4() {
-  return (
-    <>
-      <Title className="mx-auto" text="Donate" />
-      <p className="mt-2">
-        You can turn your mana earnings into a real donation to charity, at a
-        100:1 ratio. When you donate{' '}
-        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
-        Manifold sends them <span className="font-semibold">$10 USD</span>.
-      </p>
-      <video
-        loop
-        autoPlay
-        muted
-        className="hide-video-cast-overlay z-0 h-full w-full"
-      >
-        <source src="/welcome/charity.mp4" type="video/mp4" />
-        Your browser does not support video
-      </video>
     </>
   )
 }
