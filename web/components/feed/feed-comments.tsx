@@ -6,7 +6,7 @@ import clsx from 'clsx'
 
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -376,7 +376,7 @@ export function ContractCommentInput(props: {
       onSubmitComment={onSubmitComment}
       pageId={contract.id}
       className={className}
-      blocked={privateUser?.blockedByUserIds.includes(contract.creatorId)}
+      blocked={isBlocked(privateUser, contract.creatorId)}
     />
   )
 }

@@ -14,7 +14,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { createCommentOnPost } from 'web/lib/firebase/comments'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
@@ -94,7 +94,7 @@ export function PostCommentInput(props: {
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
       pageId={post.id}
-      blocked={privateUser?.blockedByUserIds.includes(post.creatorId)}
+      blocked={isBlocked(privateUser, post.creatorId)}
     />
   )
 }

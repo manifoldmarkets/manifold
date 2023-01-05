@@ -77,7 +77,7 @@ export function CommentInput(props: {
 
   return blocked ? (
     <div className={'my-4 text-sm text-gray-500'}>
-      The creator blocked you so you can't comment
+      One of you blocked the other, so you can't comment.
     </div>
   ) : (
     <Row className={clsx(props.className, 'mb-2 gap-1 sm:gap-2')}>
