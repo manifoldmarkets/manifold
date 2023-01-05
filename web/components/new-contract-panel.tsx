@@ -81,7 +81,6 @@ export function NewContractPanel(props: {
       getGroup(groupId).then((group) => {
         if (group) {
           setSelectedGroup(group)
-          setShowGroupSelector(false)
         }
       })
   }, [creator.id, groupId])
@@ -108,7 +107,6 @@ export function NewContractPanel(props: {
   const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(
     undefined
   )
-  const [showGroupSelector, setShowGroupSelector] = useState(true)
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
@@ -374,9 +372,9 @@ export function NewContractPanel(props: {
               selectedGroup={selectedGroup}
               setSelectedGroup={setSelectedGroup}
               creator={creator}
-              options={{ showSelector: showGroupSelector, showLabel: true }}
+              options={{ showSelector: true, showLabel: true }}
             />
-            {showGroupSelector && selectedGroup && (
+            {selectedGroup && (
               <a target="_blank" href={groupPath(selectedGroup.slug)}>
                 <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
               </a>
