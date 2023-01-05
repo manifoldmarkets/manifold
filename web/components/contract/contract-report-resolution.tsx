@@ -48,7 +48,7 @@ export function ContractReportResolution(props: { contract: Contract }) {
         openModalBtn={{
           label: '',
           icon: <FlagIcon className="h-5 w-5" />,
-          disabled: reporting,
+          disabled: reporting || userReported,
           className: clsx(flagClass),
         }}
         onSubmitWithSuccess={onSubmit}
