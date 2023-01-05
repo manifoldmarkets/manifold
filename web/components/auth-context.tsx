@@ -19,7 +19,6 @@ import {
   webviewPassUsers,
   webviewSignOut,
 } from 'web/lib/native/webview-messages'
-import { safeLocalStorage } from 'web/lib/util/local'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -27,7 +26,14 @@ export type AuthUser = undefined | null | UserAndPrivateUser
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
 
 // Proxy localStorage in case it's not available (eg in incognito iframe)
-const localStorage = safeLocalStorage()
+const localStorage =
+  typeof window !== 'undefined'
+    ? window.localStorage
+    : {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+      }
 
 const ensureDeviceToken = () => {
   let deviceToken = localStorage.getItem('device-token')

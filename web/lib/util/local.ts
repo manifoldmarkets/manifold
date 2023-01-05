@@ -1,53 +1,24 @@
-export const safeLocalStorage = () => {
-  const localStorage = ls()
+export const safeLocalStorage = () =>
+  isLocalStorage() ? localStorage : undefined
+export const safeSessionStorage = () =>
+  isSessionStorage() ? sessionStorage : undefined
 
-  return {
-    getItem: (key: string) => localStorage?.getItem(key),
-    setItem: (key: string, value: string) => {
-      try {
-        localStorage?.setItem(key, value)
-      } catch (e) {
-        localStorage?.clear()
-        // try again
-        localStorage?.setItem(key, value)
-      }
-    },
-    removeItem: (key: string) => localStorage?.removeItem(key),
-  }
-}
-
-export const safeSessionStorage = () => {
-  const sessionStorage = ss()
-
-  return {
-    getItem: (key: string) => sessionStorage?.getItem(key),
-    setItem: (key: string, value: string) => {
-      try {
-        sessionStorage?.setItem(key, value)
-      } catch (e) {
-        sessionStorage?.clear()
-        // try again
-        sessionStorage?.setItem(key, value)
-      }
-    },
-    removeItem: (key: string) => sessionStorage?.removeItem(key),
-  }
-}
-
-const ls = () => {
+const isLocalStorage = () => {
   try {
     localStorage.getItem('test')
-    return localStorage
+    localStorage.setItem('hi', 'mom')
+    return true
   } catch (e) {
-    return undefined
+    return false
   }
 }
 
-const ss = () => {
+const isSessionStorage = () => {
   try {
     sessionStorage.getItem('test')
-    return sessionStorage
+    sessionStorage.setItem('hi', 'mom')
+    return true
   } catch (e) {
-    return undefined
+    return false
   }
 }
