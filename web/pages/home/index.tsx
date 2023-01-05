@@ -271,8 +271,8 @@ const HOME_SECTIONS = [
   { label: 'Trending', id: 'score', icon: '🔥' },
   { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   { label: 'Your daily movers', id: 'daily-movers' },
-  { label: 'Featured', id: 'featured', icon: '⭐' },
-  { label: 'New', id: 'newest', icon: '✨' },
+  { label: 'Featured', id: 'featured', icon: '📌' },
+  { label: 'New', id: 'newest', icon: '🗞️' },
   { label: 'Live feed', id: 'live-feed', icon: '🔴' },
 ] as const
 
@@ -380,7 +380,7 @@ const YourFeedSection = (props: { user: User }) => {
 
   return (
     <Col>
-      <HomeSectionHeader label="Discover" href="/discover" icon={'📖'} />
+      <HomeSectionHeader label="Discover" href="/discover" icon={'✨'} />
       <VisibilityObserver
         className="relative -top-[300px] h-1"
         onVisibilityUpdated={(visible) => visible && setHasViewedBottom(true)}
@@ -516,7 +516,7 @@ export function FeaturedSection(props: {
 
   return (
     <Col className="relative">
-      <HomeSectionHeader label={'Featured'} icon={'⭐'} />
+      <HomeSectionHeader label={'Featured'} icon={'📌'} />
       <PinnedItems
         posts={posts}
         isEditable={isAdmin}
