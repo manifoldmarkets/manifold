@@ -59,10 +59,10 @@ function UploadButton(props: { upload: UploadMutation }) {
   const { upload } = props
 
   return (
-    <Tooltip text="Upload image" noTap noFade>
+    <Tooltip text="Upload image" noTap noFade className="w-12 flex-initial">
       <FileUploadButton
         onFiles={(files) => upload?.mutate(files)}
-        className="relative flex h-full w-12 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300"
+        className="relative flex h-full w-full items-center justify-center text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300"
       >
         <PhotographIcon className="h-5 w-5" aria-hidden="true" />
         {upload?.isLoading && (
@@ -84,11 +84,11 @@ function ToolbarButton(props: {
   const { label, onClick, children } = props
 
   return (
-    <Tooltip text={label} noTap noFade>
+    <Tooltip text={label} noTap noFade className="w-12 flex-initial">
       <button
         type="button"
         onClick={onClick}
-        className="flex h-full w-12 items-center justify-center text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300"
+        className="flex h-full w-full items-center justify-center text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300"
       >
         {children}
       </button>
