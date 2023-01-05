@@ -193,11 +193,7 @@ export function OrderBookButton(props: {
   )
 
   const yesBets = sortedBets.filter((bet) => bet.outcome === 'YES')
-  const noBets = sortBy(
-    sortedBets.filter((bet) => bet.outcome === 'NO'),
-    (bet) => bet.limitProb,
-    (bet) => bet.createdTime
-  )
+  const noBets = sortedBets.filter((bet) => bet.outcome === 'NO')
 
   return (
     <>
