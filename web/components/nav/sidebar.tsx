@@ -143,15 +143,14 @@ const getMobileNav = (loggedIn: boolean) => {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
   return buildArray(
-    loggedIn && { name: 'Swipe', href: '/swipe', icon: FireIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
-    { name: 'Charity', href: '/charity', icon: HeartIcon },
     loggedIn && {
-      name: 'Topics',
+      name: 'Groups',
       href: '/groups',
       icon: RectangleGroup,
     },
     loggedIn && { name: 'Get mana', href: '/add-funds', icon: CashIcon },
+    { name: 'Charity', href: '/charity', icon: HeartIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon }
   )
 }
