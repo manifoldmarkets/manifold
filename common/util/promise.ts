@@ -26,7 +26,7 @@ export async function withRetries<T>(q: PromiseLike<T>, policy?: RetryPolicy) {
   throw err
 }
 
-export const mapAsync = async <T, U>(
+export const mapAsync = <T, U>(
   items: T[],
   f: (item: T, index: number) => Promise<U>,
   maxConcurrentRequests = 100
@@ -34,6 +34,11 @@ export const mapAsync = async <T, U>(
   let index = 0
   let currRequests = 0
   const results: U[] = []
+
+  // Hack to get around Node bug: https://github.com/nodejs/node/issues/22088
+  const intervalId = setInterval(() => {
+    // Do nothing, but prevent early process exit.
+  }, 10000)
 
   return new Promise((resolve: (results: U[]) => void, reject) => {
     const doWork = () => {
@@ -54,5 +59,5 @@ export const mapAsync = async <T, U>(
     }
 
     doWork()
-  })
+  }).finally(() => clearInterval(intervalId))
 }
