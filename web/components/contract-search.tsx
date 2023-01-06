@@ -4,8 +4,7 @@ import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
-import { Row } from './layout/row'
-import { useEffect, useRef, useMemo, ReactNode, useState } from 'react'
+import { useEffect, useRef, useMemo, ReactNode } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   historyStore,
@@ -24,10 +23,6 @@ import {
   searchClient,
   searchIndexName,
 } from 'web/lib/service/algolia'
-import { AdjustmentsIcon } from '@heroicons/react/solid'
-import { Button } from './buttons/button'
-import { Modal } from './layout/modal'
-import { Title } from './widgets/title'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SimpleLinkButton } from './buttons/simple-link-button'
