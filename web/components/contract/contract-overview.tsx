@@ -29,7 +29,6 @@ import {
   BinaryContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
-import { ContractReportResolution } from './contract-report-resolution'
 import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
 
@@ -95,7 +94,6 @@ const BinaryOverview = (props: {
               contract={contract}
               large
             />
-            <ContractReportResolution contract={contract} />
           </Row>
         </Row>
       </Col>
@@ -139,7 +137,6 @@ const ChoiceOverview = (props: {
               contract={contract}
               truncate="none"
             />
-            <ContractReportResolution contract={contract} />
           </Row>
         )}
       </Col>
@@ -174,14 +171,10 @@ const PseudoNumericOverview = (props: {
             contract={contract}
             className="hidden items-end xl:flex"
           />
-          <div className="hidden items-end xl:flex">
-            <ContractReportResolution contract={contract} />
-          </div>
         </Row>
         <Row className="items-center justify-between gap-4 xl:hidden">
           <Row className={'items-center gap-2'}>
             <PseudoNumericResolutionOrExpectation contract={contract} />
-            <ContractReportResolution contract={contract} />
           </Row>
           {tradingAllowed(contract) && <BetWidget contract={contract} />}
         </Row>

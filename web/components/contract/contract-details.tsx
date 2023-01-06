@@ -1,9 +1,5 @@
 import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
-import {
-  DotsCircleHorizontalIcon,
-  ExclamationIcon,
-  PencilIcon,
-} from '@heroicons/react/solid'
+import { DotsCircleHorizontalIcon, PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
@@ -16,7 +12,7 @@ import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
 import { useState } from 'react'
 import { MiniUserFollowButton } from '../buttons/follow-button'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -137,8 +133,6 @@ export function MarketSubheader(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const user = useUser()
-  const creator = useUserById(creatorId)
-  const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   return (
     <Row className="relative grow">
@@ -160,17 +154,6 @@ export function MarketSubheader(props: { contract: Contract }) {
             name={creatorName}
             username={creatorUsername}
           />
-          {/* <BadgeDisplay user={creator} className="mr-1" /> */}
-          {correctResolutionPercentage != null &&
-            correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
-              <Tooltip
-                text="This creator has a track record of creating markets that are resolved incorrectly."
-                placement="bottom"
-                className="w-fit"
-              >
-                <ExclamationIcon className="h-6 w-6 text-yellow-500" />
-              </Tooltip>
-            )}
         </Row>
         <div className="text-2xs text-gray-400 sm:text-xs">
           <CloseOrResolveTime contract={contract} isCreator={isCreator} />
@@ -462,5 +445,3 @@ function EditableCloseDate(props: {
     </>
   )
 }
-
-export const BAD_CREATOR_THRESHOLD = 0.8

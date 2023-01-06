@@ -4,7 +4,7 @@ import { first } from 'lodash'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
-import { usePrivateUser, useUser, useUserById } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Spacer } from 'web/components/layout/spacer'
 import {
@@ -48,7 +48,6 @@ import { Answer } from 'common/answer'
 import { useEvent } from 'web/hooks/use-event'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
-import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
 import {
   getBinaryContractUserContractMetrics,
   ContractMetricsByOutcome,
@@ -213,8 +212,6 @@ export function ContractPageContent(
     [props.historyData.points, newBets]
   )
 
-  const creator = useUserById(contract.creatorId) ?? null
-
   const { isResolved, question, outcomeType, resolution } = contract
 
   const allowTrade = tradingAllowed(contract)
@@ -269,15 +266,6 @@ export function ContractPageContent(
           bets={bets}
           betPoints={betPoints}
         />
-        {creator?.fractionResolvedCorrectly != null &&
-          creator.fractionResolvedCorrectly < BAD_CREATOR_THRESHOLD && (
-            <div className="pt-2">
-              <AlertBox
-                title="Warning"
-                text="This creator has a track record of resolving their markets incorrectly."
-              />
-            </div>
-          )}
 
         <ContractDescription className="mt-6 mb-2 px-2" contract={contract} />
 

@@ -74,7 +74,6 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     followerCountCached: 0,
     streakForgiveness: 1,
     shouldShowWelcome: true,
-    fractionResolvedCorrectly: 1,
     achievements: {},
     creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
   })

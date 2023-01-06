@@ -26,8 +26,6 @@ import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
 import { CollectionReference } from 'firebase-admin/firestore'
 
-const BAD_RESOLUTION_THRESHOLD = 0.1
-
 const firestore = admin.firestore()
 
 export const scheduleUpdateUserMetrics = functions.pubsub
@@ -117,29 +115,6 @@ export async function updateUserMetrics() {
       user
     )
 
-    const contractRatios = userContracts
-      .map((contract) => {
-        if (
-          !contract.flaggedByUsernames ||
-          contract.flaggedByUsernames?.length === 0
-        ) {
-          return 0
-        }
-        const contractRatio =
-          contract.flaggedByUsernames.length / (contract.uniqueBettorCount || 1)
-
-        return contractRatio
-      })
-      .filter((ratio) => ratio > 0)
-    const badResolutions = contractRatios.filter(
-      (ratio) => ratio > BAD_RESOLUTION_THRESHOLD
-    )
-    let newFractionResolvedCorrectly = 1
-    if (userContracts.length > 0) {
-      newFractionResolvedCorrectly =
-        (userContracts.length - badResolutions.length) / userContracts.length
-    }
-
     const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
       ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
       : undefined
@@ -160,7 +135,6 @@ export async function updateUserMetrics() {
         creatorTraders: newCreatorTraders,
         profitCached: newProfit,
         nextLoanCached: nextLoanPayout ?? 0,
-        fractionResolvedCorrectly: newFractionResolvedCorrectly,
       },
     }
   })
