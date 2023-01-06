@@ -123,6 +123,22 @@ async function importDatabase(kinds?: string[]) {
       (_) => true,
       2500
     )
+  if (shouldImport('userEvent'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('events'),
+      'userEvent',
+      (_) => true,
+      2500
+    )
+  if (shouldImport('userSeenMarket'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('seenMarkets'),
+      'userSeenMarket',
+      (_) => true,
+      2500
+    )
   if (shouldImport('contract'))
     await importCollection(
       client,

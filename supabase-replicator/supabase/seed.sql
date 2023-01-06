@@ -50,6 +50,30 @@ drop policy if exists "public read" on user_reactions;
 create policy "public read" on user_reactions for select using (true);
 create index concurrently if not exists user_reactions_data_gin on user_reactions using GIN (data);
 
+create table if not exists user_events (
+    user_id text not null,
+    event_id text not null,
+    data jsonb not null,
+    fs_updated_time timestamp not null,
+    primary key(user_id, event_id)
+);
+alter table user_events enable row level security;
+drop policy if exists "public read" on user_events;
+create policy "public read" on user_events for select using (true);
+create index concurrently if not exists user_events_data_gin on user_events using GIN (data);
+
+create table if not exists user_seen_markets (
+    user_id text not null,
+    contract_id text not null,
+    data jsonb not null,
+    fs_updated_time timestamp not null,
+    primary key(user_id, contract_id)
+);
+alter table user_seen_markets enable row level security;
+drop policy if exists "public read" on user_seen_markets;
+create policy "public read" on user_seen_markets for select using (true);
+create index concurrently if not exists user_seen_markets_data_gin on user_seen_markets using GIN (data);
+
 create table if not exists contracts (
     id text not null primary key,
     data jsonb not null,
@@ -200,6 +224,8 @@ begin;
   alter publication supabase_realtime add table users;
   alter publication supabase_realtime add table user_follows;
   alter publication supabase_realtime add table user_reactions;
+  alter publication supabase_realtime add table user_events;
+  alter publication supabase_realtime add table user_seen_markets;
   alter publication supabase_realtime add table contracts;
   alter publication supabase_realtime add table contract_answers;
   alter publication supabase_realtime add table contract_bets;
@@ -242,6 +268,8 @@ begin
     when 'user' then cast(('users', null, 'id') as table_spec)
     when 'userFollow' then cast(('user_follows', 'user_id', 'follow_id') as table_spec)
     when 'userReaction' then cast(('user_reactions', 'user_id', 'reaction_id') as table_spec)
+    when 'userEvent' then cast(('user_events', 'user_id', 'event_id') as table_spec)
+    when 'userSeenMarket' then cast(('user_seen_markets', 'user_id', 'contract_id') as table_spec)
     when 'contract' then cast(('contracts', null, 'id') as table_spec)
     when 'contractAnswer' then cast(('contract_answers', 'contract_id', 'answer_id') as table_spec)
     when 'contractBet' then cast(('contract_bets', 'contract_id', 'bet_id') as table_spec)

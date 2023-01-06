@@ -53,6 +53,14 @@ export const logUserReactions = logger(
   'users/{parent}/reactions/{id}',
   'userReaction'
 )
+export const logUserEvents = logger(
+  'users/{parent}/events/{id}',
+  'userEvent'
+)
+export const logUserSeenMarkets = logger(
+  'private-users/{parent}/seenMarkets/{id}',
+  'userSeenMarket'
+)
 export const logContracts = logger('contracts/{id}', 'contract')
 export const logContractAnswers = logger(
   'contracts/{parent}/answers/{id}',
