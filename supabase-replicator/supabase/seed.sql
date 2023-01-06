@@ -391,10 +391,11 @@ immutable parallel safe
 language sql
 as $$
   select array_agg(data) as data_array
-  from get_recommended_contract_ids(uid, count) left join contracts
+  from get_recommended_contract_ids(uid, count)
+  left join contracts
   on contracts.id = contract_id
   -- Not resolved.
-  where not (data->'isResolved')::boolean
+  where not (data->>'isResolved')::boolean
   -- Not closed: closeTime is greater than now.
-  and (data->'closeTime')::bigint > extract(epoch from now()) * 1000
+  and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
 $$;
