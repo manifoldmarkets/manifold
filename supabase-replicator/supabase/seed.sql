@@ -1,3 +1,5 @@
+-- noinspection SqlNoDataSourceInspectionForFile
+
 /* GIN trigram indexes */
 create extension if not exists pg_trgm;
 
@@ -83,6 +85,7 @@ alter table contract_bets enable row level security;
 drop policy if exists "public read" on contract_bets;
 create policy "public read" on contract_bets for select using (true);
 create index concurrently if not exists contract_bets_data_gin on contract_bets using GIN (data);
+create index concurrently if not exists contract_bets_created_time on contract_bets (contract_id, (to_jsonb(data)->>'createdTime') desc);
 
 create table if not exists contract_comments (
     contract_id text not null,
