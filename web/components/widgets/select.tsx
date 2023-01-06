@@ -11,7 +11,7 @@ export const Select = (props: JSX.IntrinsicElements['select']) => {
       )}
       {...rest}
     >
-      ß{children}
+      {children}
     </select>
   )
 }
