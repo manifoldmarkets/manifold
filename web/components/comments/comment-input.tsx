@@ -76,8 +76,8 @@ export function CommentInput(props: {
   if (user?.isBannedFromPosting) return <></>
 
   return blocked ? (
-    <div className={'my-4 text-sm text-gray-500'}>
-      One of you blocked the other, so you can't comment.
+    <div className={'mb-3 text-sm text-gray-500'}>
+      You blocked the creator or they blocked you, so you can't comment.
     </div>
   ) : (
     <Row className={clsx(props.className, 'mb-2 gap-1 sm:gap-2')}>

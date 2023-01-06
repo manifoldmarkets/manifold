@@ -173,9 +173,7 @@ export function ContractPageContent(
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
-  const blockedUserIds = (privateUser?.blockedUserIds ?? []).concat(
-    privateUser?.blockedByUserIds ?? []
-  )
+  const blockedUserIds = privateUser?.blockedUserIds ?? []
   const isCreator = user?.id === contract.creatorId
 
   useTracking(
