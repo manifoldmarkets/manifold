@@ -268,11 +268,11 @@ create or replace function replicate_writes_process_one(r incoming_writes)
   language plpgsql
 as
 $$
-declare dest_table table_spec;
+declare dest_spec table_spec;
 begin
   dest_spec = get_document_table_spec(r.doc_kind);
   if dest_spec is null then
-    raise warning 'Invalid document kind.';
+    raise warning 'Invalid document kind: %', r.doc_kind;
     return false;
   end if;
   if r.write_kind = 'create' or r.write_kind = 'update' then
@@ -308,7 +308,7 @@ begin
       );
     end if;
   else
-    raise warning 'Invalid write kind.';
+    raise warning 'Invalid write kind: %', r.write_kind;
     return false;
   end if;
   return true;
