@@ -1,4 +1,4 @@
-import { run } from 'common/lib/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { SearchUserInfo } from 'web/lib/supabase/users'
 
@@ -7,14 +7,17 @@ export async function getReferrals(userId: string) {
     db
       .from('users')
       .select('id, data->name, data->username, data->avatarUrl')
-      .eq('data->>referredByUserId', userId)
+      .contains('data', { referredByUserId: userId })
   )
   return data as SearchUserInfo[]
 }
 
 export async function getReferralCount(userId: string) {
   const { data } = await run(
-    db.from('users').select('count').eq('data->>referredByUserId', userId)
+    db
+      .from('users')
+      .select('count')
+      .contains('data', { referredByUserId: userId })
   )
   return data[0].count as number
 }
