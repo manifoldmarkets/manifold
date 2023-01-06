@@ -5,7 +5,7 @@ import { useUser } from './use-user'
 
 export const useSwipes = () => {
   const user = useUser()
-  const [swipes, setSwipes] = usePersistentState<string[]>([], {
+  const [swipes, setSwipes] = usePersistentState<string[] | undefined>(undefined, {
     store: inMemoryStore(),
     key: 'user-swipes',
   })

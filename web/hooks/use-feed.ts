@@ -3,26 +3,42 @@ import { User } from 'common/user'
 import { useEffect } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
 import { useSwipes } from './use-swipes'
-import { useUserRecommendedMarkets } from './use-user'
+import { db } from 'web/lib/supabase/db'
 
 export const useFeed = (user: User | null | undefined, count: number) => {
+  const alreadySwipedContractIds = useSwipes()
+  const alreadySeenIds = new Set(alreadySwipedContractIds)
+
+  const recommendedContracts = useRecommendedContracts(user, count)
+
+  const computedContracts =
+    recommendedContracts && alreadySwipedContractIds
+      ? recommendedContracts.filter((c) => !alreadySeenIds.has(c.id))
+      : undefined
+
+  return computedContracts
+}
+
+const useRecommendedContracts = (
+  user: User | null | undefined,
+  count: number
+) => {
   const [savedContracts, setSavedContracts] = usePersistentState<
     Contract[] | undefined
-  >(undefined, { key: 'home-your-feed' + count, store: inMemoryStore() })
+  >(undefined, { key: 'home-recommended-contracts', store: inMemoryStore() })
 
-  const alreadySwipedContractIds = useSwipes()
-
-  const computedContracts = useUserRecommendedMarkets(
-    user?.id,
-    count,
-    alreadySwipedContractIds
-  )
+  const userId = user?.id
 
   useEffect(() => {
-    if (computedContracts && !savedContracts)
-      setSavedContracts(computedContracts)
-  }, [computedContracts, savedContracts, setSavedContracts])
+    if (userId) {
+      db.rpc('get_recommended_contracts' as any, { uid: userId, count }).then(
+        (res) => {
+          const contracts = res.data as Contract[]
+          setSavedContracts(contracts)
+        }
+      )
+    }
+  }, [setSavedContracts, userId, count])
 
-  // Show only the first loaded batch of contracts, so users can come back to them.
-  return savedContracts ?? computedContracts
+  return savedContracts
 }

@@ -351,3 +351,50 @@ after insert on incoming_writes
 referencing new table as new_table
 for each statement
 execute function replicate_writes_process_new();
+
+-- Get the dot product of two vectors stored as rows in two tables.
+create or replace function dot(
+  urf user_recommendation_features,
+  crf contract_recommendation_features
+) returns real
+immutable parallel safe
+language plpgsql as $$
+BEGIN
+  return (
+    urf.f0 * crf.f0 +
+    urf.f1 * crf.f1 +
+    urf.f2 * crf.f2 +
+    urf.f3 * crf.f3 +
+    urf.f4 * crf.f4
+  );
+END;
+$$;
+
+-- Use cached tables of user and contract features to computed the top scoring
+-- markets for a user.
+create or replace function get_recommended_contract_ids(uid text, count int)
+returns table (contract_id text)
+immutable parallel safe
+language sql
+as $$
+  select crf.contract_id
+  from user_recommendation_features as urf
+  LEFT JOIN contract_recommendation_features as crf ON true
+  where user_id = uid
+  order by dot(urf, crf) desc
+  limit count
+$$;
+
+create or replace function get_recommended_contracts(uid text, count int)
+returns JSONB[]
+immutable parallel safe
+language sql
+as $$
+  select array_agg(data) as data_array
+  from get_recommended_contract_ids(uid, count) left join contracts
+  on contracts.id = contract_id
+  -- Not resolved.
+  where not (data->'isResolved')::boolean
+  -- Not closed: closeTime is greater than now.
+  and (data->'closeTime')::bigint > extract(epoch from now()) * 1000
+$$;
