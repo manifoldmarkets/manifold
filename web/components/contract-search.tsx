@@ -34,11 +34,11 @@ import { SimpleLinkButton } from './buttons/simple-link-button'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 export const SORTS = [
-  { label: 'Newest', value: 'newest' },
+  { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: 'Daily changed', value: 'daily-score' },
+  { label: 'Daily change', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
-  { label: 'Most popular', value: 'most-popular' },
+  { label: 'Total traders', value: 'most-popular' },
   { label: 'Liquidity', value: 'liquidity' },
   { label: 'Last updated', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
@@ -390,9 +390,9 @@ function ContractSearchControls(props: {
           <SearchFilters
             filter={filter}
             selectFilter={selectFilter}
-              hideOrderSelector={hideOrderSelector}
-              selectSort={selectSort}
-              sort={sort}
+            hideOrderSelector={hideOrderSelector}
+            selectSort={selectSort}
+            sort={sort}
             className={'flex flex-row gap-2'}
             includeProbSorts={includeProbSorts}
           />
