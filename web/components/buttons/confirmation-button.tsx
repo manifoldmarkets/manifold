@@ -17,6 +17,7 @@ export function ConfirmationButton(props: {
   cancelBtn?: {
     label?: string
     color?: ColorType
+    disabled?: boolean
   }
   submitBtn?: {
     label?: string
@@ -56,6 +57,7 @@ export function ConfirmationButton(props: {
             <Button
               color={cancelBtn?.color ?? 'gray-white'}
               onClick={() => updateOpen(false)}
+              disabled={cancelBtn?.disabled}
             >
               {cancelBtn?.label ?? 'Cancel'}
             </Button>

@@ -62,10 +62,12 @@ export function WarningConfirmationButton(props: {
       cancelBtn={{
         label: 'Cancel',
         color: 'yellow',
+        disabled: isSubmitting,
       }}
       submitBtn={{
         label: 'Submit',
-        color: 'gray',
+        color: 'indigo',
+        isSubmitting,
       }}
       onSubmit={onSubmit}
     >

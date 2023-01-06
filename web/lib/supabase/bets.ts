@@ -8,15 +8,14 @@ export async function getOlderBets(
   beforeTime: number,
   limit: number
 ) {
-  const { data } = await run(
-    db
-      .from('contract_bets')
-      .select('data')
-      .contains('data', { contractId })
-      .lt('data->>createdTime', beforeTime)
-      .order('data->>createdTime', { ascending: false } as any)
-      .limit(limit)
-  )
+  const query = db
+    .from('contract_bets')
+    .select('data')
+    .eq('contract_id', contractId)
+    .lt('data->>createdTime', beforeTime)
+    .order('data->>createdTime', { ascending: false } as any)
+    .limit(limit)
+  const { data } = await run(query)
 
   return data.map((d: JsonData<Bet>) => d.data)
 }

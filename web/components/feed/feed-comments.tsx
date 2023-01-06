@@ -191,6 +191,8 @@ export function CommentActions(props: {
   const { onReplyClick, comment, showLike, contract } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
+  const privateUser = usePrivateUser()
+
   return (
     <Row className="grow items-center justify-end">
       {onReplyClick && (
@@ -207,6 +209,9 @@ export function CommentActions(props: {
           totalLikes={comment.likes ?? 0}
           contract={contract}
           contentText={richTextToString(comment.content)}
+          className={
+            isBlocked(privateUser, comment.userId) ? 'pointer-events-none' : ''
+          }
         />
       )}
       <ReportModal
