@@ -29,6 +29,7 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { RectangleGroup } from 'web/components/icons/outline'
+import { SearchButton } from './search-button'
 
 export default function Sidebar(props: {
   className?: string
@@ -69,6 +70,8 @@ export default function Sidebar(props: {
 
       {user && !isMobile && <ProfileSummary user={user} />}
 
+      {!isMobile && <SearchButton />}
+
       <div className="flex flex-col gap-1">
         {navOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
@@ -102,7 +105,6 @@ const logout = async () => {
 const getDesktopNav = (loggedIn: boolean) =>
   buildArray(
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Search', href: '/search', icon: SearchIcon },
     loggedIn && {
       name: 'Notifications',
       href: `/notifications`,
@@ -142,6 +144,7 @@ const getMobileNav = (loggedIn: boolean) => {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
   return buildArray(
+    { name: 'Search', href: '/search', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     loggedIn && {
       name: 'Groups',
