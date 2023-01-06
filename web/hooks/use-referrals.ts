@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
-import { listenForReferrals } from 'web/lib/firebase/users'
+import { SearchUserInfo } from 'web/lib/supabase/users'
+import { getReferrals } from 'web/lib/supabase/referrals'
 
-export const useReferrals = (userId: string | null | undefined) => {
-  const [referralIds, setReferralIds] = useState<string[] | undefined>()
+export const useReferrals = (userId: string) => {
+  const [referredUsers, setReferredUsers] = useState<
+    SearchUserInfo[] | undefined
+  >()
 
   useEffect(() => {
-    if (userId) return listenForReferrals(userId, setReferralIds)
+    getReferrals(userId).then((referrals) => {
+      setReferredUsers(referrals)
+    })
   }, [userId])
 
-  return referralIds
+  return referredUsers
 }
