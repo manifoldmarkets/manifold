@@ -268,7 +268,7 @@ create or replace function replicate_writes_process_one(r incoming_writes)
   language plpgsql
 as
 $$
-declare dest_table table_spec;
+declare dest_spec table_spec;
 begin
   dest_spec = get_document_table_spec(r.doc_kind);
   if dest_spec is null then
