@@ -22,6 +22,7 @@ import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
 import { Post } from '../../common/post'
 import { getFunctionUrl } from '../../common/api'
+import { mapAsync } from 'common/util/promise'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -140,25 +141,31 @@ export const processPaginated = async <T extends DocumentData, U>(
   return results
 }
 
-export const processPartitioned = async <T extends DocumentData, U>(
+export const processPartitioned = async <T extends DocumentData>(
   group: CollectionGroup<T>,
   partitions: number,
-  fn: (ts: QueryDocumentSnapshot<T>[]) => Promise<U>
+  fn: (ts: QueryDocumentSnapshot<T>[]) => Promise<void>
 ) => {
   const parts = group.getPartitions(partitions)
-  const results = []
-  let processed = 0
+  const queries: Query<T>[] = []
   for await (const part of parts) {
-    const i = results.length
-    const tag = `${i + 1}/${partitions}`
-    log(`[${tag}] Loading partition.`)
-    const ts = await part.toQuery().get()
-    log(`[${tag}] Loaded ${ts.size} documents.`)
-    results.push(await fn(ts.docs))
-    processed += ts.size
-    log(`[${tag}] Processed ${ts.size} documents. Total: ${processed}`)
+    queries.push(part.toQuery())
   }
-  return results
+
+  let i = 0
+  let docsProcessed = 0
+  await mapAsync(queries, async (query, index) => {
+    const tag = `${i + 1}/${partitions} (#${index})`
+    i++
+    log(`[${tag}] Loading partition.`)
+
+    const ts = await query.get()
+    log(`[${tag}] Loaded ${ts.size} documents.`)
+
+    await fn(ts.docs)
+    docsProcessed += ts.size
+    log(`[${tag}] Processed ${ts.size} documents. Total: ${docsProcessed}`)
+  })
 }
 
 export const tryOrLogError = async <T>(task: Promise<T>) => {
