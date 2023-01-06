@@ -64,7 +64,7 @@ export function DailyStats(props: {
       )}
       {showLoans && (
         <Col
-          className="hidden cursor-pointer sm:flex"
+          className="flex cursor-pointer"
           onClick={() => setShowLoansModal(true)}
         >
           <div className={dailyStatsHeaderClass}>Next loan</div>
