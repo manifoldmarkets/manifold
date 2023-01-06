@@ -66,6 +66,7 @@ export function WarningConfirmationButton(props: {
       submitBtn={{
         label: 'Submit',
         color: 'indigo',
+        isSubmitting,
       }}
       onSubmit={onSubmit}
     >
