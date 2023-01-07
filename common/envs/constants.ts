@@ -125,6 +125,7 @@ export const CHECK_USERNAMES = [
   'Duncan',
   'a',
   'NuñoSempere',
+  'CarsonGale',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

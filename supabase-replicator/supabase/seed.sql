@@ -51,6 +51,9 @@ alter table user_reactions enable row level security;
 drop policy if exists "public read" on user_reactions;
 create policy "public read" on user_reactions for select using (true);
 create index if not exists user_reactions_data_gin on user_reactions using GIN (data);
+-- useful for getting just 'likes', we may want to index contentType as well
+create index if not exists user_reactions_type
+    on user_reactions (user_id, (to_jsonb(data)->>'type') desc);
 
 create table if not exists user_events (
     user_id text not null,
