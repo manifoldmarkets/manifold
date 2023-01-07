@@ -422,7 +422,7 @@ create or replace function dot(
 ) returns real
 immutable parallel safe
 language plpgsql as $$
-BEGIN
+begin
   return (
     urf.f0 * crf.f0 +
     urf.f1 * crf.f1 +
@@ -430,7 +430,7 @@ BEGIN
     urf.f3 * crf.f3 +
     urf.f4 * crf.f4
   );
-END;
+end;
 $$;
 
 -- Use cached tables of user and contract features to computed the top scoring
@@ -442,7 +442,7 @@ language sql
 as $$
   select crf.contract_id
   from user_recommendation_features as urf
-  LEFT JOIN contract_recommendation_features as crf ON true
+  left join contract_recommendation_features as crf on true
   where user_id = uid
   order by dot(urf, crf) desc
   limit count
