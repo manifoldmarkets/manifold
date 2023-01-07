@@ -7,7 +7,10 @@ import { db } from 'web/lib/supabase/db'
 export const useFeed = (user: User | null | undefined, count: number) => {
   const [savedContracts, setSavedContracts] = usePersistentState<
     Contract[] | undefined
-  >(undefined, { key: 'home-recommended-contracts', store: inMemoryStore() })
+  >(undefined, {
+    key: `recommended-contracts-${user?.id}-${count}`,
+    store: inMemoryStore(),
+  })
 
   const userId = user?.id
 
