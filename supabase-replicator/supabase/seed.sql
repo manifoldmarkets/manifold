@@ -446,7 +446,7 @@ language sql
 as $$
   select crf.contract_id
   from user_recommendation_features as urf
-  left join contract_recommendation_features as crf on true
+  cross join contract_recommendation_features as crf
   where user_id = uid
   -- That has not been viewed.
   and not exists (
