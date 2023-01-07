@@ -66,6 +66,8 @@ alter table user_events enable row level security;
 drop policy if exists "public read" on user_events;
 create policy "public read" on user_events for select using (true);
 create index if not exists user_events_data_gin on user_events using GIN (data);
+create index if not exists user_events_user_id_name
+    on user_events (user_id, (to_jsonb(data)->>'name'));
 
 create table if not exists user_seen_markets (
     user_id text not null,
@@ -425,28 +427,26 @@ create or replace function dot(
   crf contract_recommendation_features
 ) returns real
 immutable parallel safe
-language plpgsql as $$
-begin
-  return (
+language sql as $$
+  select (
     urf.f0 * crf.f0 +
     urf.f1 * crf.f1 +
     urf.f2 * crf.f2 +
     urf.f3 * crf.f3 +
     urf.f4 * crf.f4
   );
-end;
 $$;
 
 -- Use cached tables of user and contract features to computed the top scoring
 -- markets for a user.
-create or replace function get_recommended_contract_ids(uid text, count int)
+create or replace function get_recommended_contract_ids(uid text)
 returns table (contract_id text)
 immutable parallel safe
 language sql
 as $$
   select crf.contract_id
   from user_recommendation_features as urf
-  left join contract_recommendation_features as crf on true
+  cross join contract_recommendation_features as crf
   where user_id = uid
   -- That has not been viewed.
   and not exists (
@@ -462,7 +462,6 @@ as $$
     and user_seen_markets.contract_id = crf.contract_id
   )
   order by dot(urf, crf) desc
-  limit count
 $$;
 
 create or replace function get_recommended_contracts(uid text, count int)
