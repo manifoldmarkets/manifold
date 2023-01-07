@@ -18,7 +18,7 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { SwipeCard } from 'web/components/contract/swipe-card'
+import { SwipeCard } from 'web/components/swipe/swipe-card'
 import { formatMoney } from 'common/util/format'
 import { placeBet } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
