@@ -32,7 +32,7 @@ import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
-import { getCloseDate, getGroupForMarket } from './helpers/openai-utils'
+import { getCloseDate } from './helpers/openai-utils'
 import { marked } from 'marked'
 import { mintAndPoolCert } from './helpers/cert-txns'
 import { Bet } from 'common/bet'
@@ -172,9 +172,6 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
         'User must be a member/creator of the group or group must be open to add markets to it.'
       )
     }
-  } else {
-    // generate group using AI
-    group = (await getGroupForMarket(question)) ?? null
   }
 
   const slug = await getSlug(question)
