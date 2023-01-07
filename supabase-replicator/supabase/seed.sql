@@ -291,6 +291,7 @@ create table if not exists incoming_writes (
 );
 alter table incoming_writes enable row level security;
 create index if not exists incoming_writes_ts on incoming_writes (ts desc);
+create index if not exists incoming_writes_doc_kind_ts on incoming_writes (doc_kind, ts desc);
 
 drop function if exists get_document_table_spec;
 drop type if exists table_spec;
