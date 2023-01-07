@@ -128,7 +128,7 @@ async function importDatabase(kinds?: string[]) {
       client,
       firestore.collectionGroup('events'),
       'userEvent',
-      (_) => true,
+      (c) => c.ref.parent.parent?.parent.path === 'users',
       2500
     )
   if (shouldImport('userSeenMarket'))

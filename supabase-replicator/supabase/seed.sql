@@ -1,5 +1,8 @@
 -- noinspection SqlNoDataSourceInspectionForFile
 
+/* allow our backend to have a long statement timeout */
+alter role service_role set statement_timeout = '120s';
+
 /* GIN trigram indexes */
 create extension if not exists pg_trgm;
 
