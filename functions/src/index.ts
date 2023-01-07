@@ -16,6 +16,7 @@ export { scheduleUpdateLoans } from './update-loans'
 export { scheduleUpdateRecommended } from './update-recommended'
 export * from './update-stats'
 export * from './backup-db'
+export * from './mana-signup-bonus'
 export * from './market-close-notifications'
 export * from './on-create-answer'
 export * from './on-update-contract'
@@ -39,28 +40,6 @@ export * from './log-writes'
 export * from './increment-streak-forgiveness'
 
 // v2
-export * from './health'
-export * from './transact'
-export * from './change-user-info'
-export * from './create-user'
-export * from './create-answer'
-export * from './place-bet'
-export * from './cancel-bet'
-export * from './sell-bet'
-export * from './sell-shares'
-export * from './claim-manalink'
-export * from './create-market'
-export * from './create-group'
-export * from './resolve-market'
-export * from './unsubscribe'
-export * from './stripe'
-export * from './mana-signup-bonus'
-export * from './close-market'
-export * from './add-subsidy'
-export * from './test-scheduled-function'
-export * from './validate-iap'
-export * from './claim-destiny-sub'
-
 import { health } from './health'
 import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
@@ -93,6 +72,7 @@ import { validateiap } from './validate-iap'
 import { swapcert } from './swap-cert'
 import { dividendcert } from './dividend-cert'
 import { markallnotifications } from './mark-all-notifications'
+import { claimdestinysub } from './claim-destiny-sub'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -130,6 +110,7 @@ const validateIAPFunction = toCloudFunction(validateiap)
 const swapCertFunction = toCloudFunction(swapcert)
 const dividendCertFunction = toCloudFunction(dividendcert)
 const markAllNotificationsFunction = toCloudFunction(markallnotifications)
+const claimDestinySubFunction = toCloudFunction(claimdestinysub)
 
 export {
   healthFunction as health,
@@ -165,4 +146,5 @@ export {
   swapCertFunction as swapcert,
   dividendCertFunction as dividendcert,
   markAllNotificationsFunction as markallnotifications,
+  claimDestinySubFunction as claimdestinysub,
 }

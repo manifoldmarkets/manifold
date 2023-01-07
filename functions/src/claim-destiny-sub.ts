@@ -3,7 +3,7 @@ import { z } from 'zod'
 import fetch from 'node-fetch'
 import { FieldValue } from 'firebase-admin/firestore'
 
-import { APIError, cloudFunction, validate } from './api'
+import { APIError, newEndpoint, validate } from './api'
 import { PrivateUser, User } from '../../common/user'
 import { DestinySub, DESTINY_SUB_COST } from '../../common/destiny-sub'
 
@@ -11,7 +11,7 @@ const bodySchema = z.object({
   destinyUsername: z.string().trim().min(1),
 })
 
-export const claimdestinysub = cloudFunction(
+export const claimdestinysub = newEndpoint(
   { secrets: ['DESTINY_API_KEY'] },
   async (req, auth) => {
     const { destinyUsername } = validate(bodySchema, req.body)
