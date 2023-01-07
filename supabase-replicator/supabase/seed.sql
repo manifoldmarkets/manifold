@@ -439,7 +439,7 @@ $$;
 
 -- Use cached tables of user and contract features to computed the top scoring
 -- markets for a user.
-create or replace function get_recommended_contract_ids(uid text, count int)
+create or replace function get_recommended_contract_ids(uid text)
 returns table (contract_id text)
 immutable parallel safe
 language sql
@@ -462,7 +462,6 @@ as $$
     and user_seen_markets.contract_id = crf.contract_id
   )
   order by dot(urf, crf) desc
-  limit count
 $$;
 
 create or replace function get_recommended_contracts(uid text, count int)
