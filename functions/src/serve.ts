@@ -33,6 +33,7 @@ import { savetwitchcredentials } from './save-twitch-credentials'
 import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from 'functions/src/validate-iap'
 import { markallnotifications } from 'functions/src/mark-all-notifications'
+import { claimdestinysub } from 'functions/src/claim-destiny-sub'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -79,6 +80,7 @@ addEndpointRoute('/createpost', createpost)
 addEndpointRoute('/testscheduledfunction', testscheduledfunction)
 addJsonEndpointRoute('/validateIap', validateiap)
 addJsonEndpointRoute('/markallnotifications', markallnotifications)
+addJsonEndpointRoute('/claimdestinysub', claimdestinysub)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)
