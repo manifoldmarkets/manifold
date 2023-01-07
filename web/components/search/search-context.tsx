@@ -35,7 +35,7 @@ export const SearchProvider = (props: { children: ReactNode }) => {
         open={open}
         setOpen={setOpen}
         size="lg"
-        className="relative h-[70vh] overflow-y-auto rounded-md bg-white p-2"
+        className="relative h-[70vh] overflow-y-auto rounded-2xl bg-white"
       >
         <OmniSearch />
       </Modal>
