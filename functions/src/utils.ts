@@ -22,7 +22,6 @@ import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
 import { Post } from '../../common/post'
 import { getFunctionUrl } from '../../common/api'
-import { mapAsync } from 'common/util/promise'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -141,29 +140,44 @@ export const processPaginated = async <T extends DocumentData, U>(
   return results
 }
 
-export const processPartitioned = async <T extends DocumentData>(
+export const processPartitioned = async <T extends DocumentData, U>(
   group: CollectionGroup<T>,
   partitions: number,
-  fn: (ts: QueryDocumentSnapshot<T>[]) => Promise<void>
+  fn: (ts: QueryDocumentSnapshot<T>[]) => Promise<U>
 ) => {
-  const parts = group.getPartitions(partitions)
-  const queries: Query<T>[] = []
-  for await (const part of parts) {
-    queries.push(part.toQuery())
+  const logProgress = (i: number, msg: string) => {
+    log(`[${i + 1}/~${partitions}] ${msg}`)
   }
-
+  const parts = group.getPartitions(partitions)
+  const results: U[] = []
+  let i = 0
   let docsProcessed = 0
-  await mapAsync(queries, async (query, i) => {
-    const tag = `${i + 1}/${partitions}`
-    log(`[${tag}] Loading partition.`)
-
-    const ts = await query.get()
-    log(`[${tag}] Loaded ${ts.size} documents.`)
-
-    await fn(ts.docs)
-    docsProcessed += ts.size
-    log(`[${tag}] Processed ${ts.size} documents. Total: ${docsProcessed}`)
-  })
+  let currentlyProcessing: { i: number; n: number; job: Promise<U> } | undefined
+  for await (const part of parts) {
+    logProgress(i, 'Loading partition.')
+    const ts = await part.toQuery().get()
+    logProgress(i, `Loaded ${ts.size} documents.`)
+    if (currentlyProcessing != null) {
+      results.push(await currentlyProcessing.job)
+      docsProcessed += currentlyProcessing.n
+      logProgress(
+        currentlyProcessing.i,
+        `Processed ${currentlyProcessing.n} documents: Total: ${docsProcessed}`
+      )
+    }
+    logProgress(i, `Processing ${ts.size} documents.`)
+    currentlyProcessing = { i: i, n: ts.size, job: fn(ts.docs) }
+    i++
+  }
+  if (currentlyProcessing != null) {
+    results.push(await currentlyProcessing.job)
+    docsProcessed += currentlyProcessing.n
+    logProgress(
+      currentlyProcessing.i,
+      `Processed ${currentlyProcessing.n} documents: Total: ${docsProcessed}`
+    )
+  }
+  return results
 }
 
 export const tryOrLogError = async <T>(task: Promise<T>) => {
