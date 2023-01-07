@@ -425,16 +425,14 @@ create or replace function dot(
   crf contract_recommendation_features
 ) returns real
 immutable parallel safe
-language plpgsql as $$
-begin
-  return (
+language sql as $$
+  select (
     urf.f0 * crf.f0 +
     urf.f1 * crf.f1 +
     urf.f2 * crf.f2 +
     urf.f3 * crf.f3 +
     urf.f4 * crf.f4
   );
-end;
 $$;
 
 -- Use cached tables of user and contract features to computed the top scoring
