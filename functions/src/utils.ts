@@ -152,11 +152,9 @@ export const processPartitioned = async <T extends DocumentData>(
     queries.push(part.toQuery())
   }
 
-  let i = 0
   let docsProcessed = 0
-  await mapAsync(queries, async (query, index) => {
-    const tag = `${i + 1}/${partitions} (#${index})`
-    i++
+  await mapAsync(queries, async (query, i) => {
+    const tag = `${i + 1}/${partitions}`
     log(`[${tag}] Loading partition.`)
 
     const ts = await query.get()

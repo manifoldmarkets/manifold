@@ -444,6 +444,19 @@ as $$
   from user_recommendation_features as urf
   left join contract_recommendation_features as crf on true
   where user_id = uid
+  -- That has not been viewed.
+  and not exists (
+    select 1 from user_events
+    where user_events.user_id = uid
+    and user_events.data->>'name' = 'view market'
+    and user_events.data->>'contractId' = crf.contract_id
+  )
+  -- That has not been swiped on.
+    and not exists (
+    select 1 from user_seen_markets
+    where user_seen_markets.user_id = uid
+    and user_seen_markets.contract_id = crf.contract_id
+  )
   order by dot(urf, crf) desc
   limit count
 $$;
