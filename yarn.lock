@@ -5004,18 +5004,17 @@ grapheme-splitter@^1.0.4:
   resolved "https://registry.yarnpkg.com/grapheme-splitter/-/grapheme-splitter-1.0.4.tgz#9cf3a665c6247479896834af35cf1dbb4400767e"
   integrity sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==
 
-gridjs-react@5.0.2:
-  version "5.0.2"
-  resolved "https://registry.yarnpkg.com/gridjs-react/-/gridjs-react-5.0.2.tgz#5c561b89a391615fc8242223649e56808fcdd824"
-  integrity sha512-K8bEUL8MuRRbu6o9hCc/bn+H7UfstN0yRIb/UMzVIbJ7ROR0ns9UA63mr4xcMP5keqolCPuLuM1manlH17BZCA==
+gridjs-react@5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/gridjs-react/-/gridjs-react-5.1.0.tgz#3934d9677d84cfdd4a92cd2634ff1af4269c04b1"
+  integrity sha512-FBrXEVKI4poixjBLgRIeW4xH4RZTjqDFL+mU5fR332La7CVjMo/IwMJPrEjs70eIFRRaKzUe3pOhKFDIykrV2g==
 
-gridjs@5.0.2:
-  version "5.0.2"
-  resolved "https://registry.yarnpkg.com/gridjs/-/gridjs-5.0.2.tgz#27c4bd7399d07770e68b45bcca20c3b1fea828b6"
-  integrity sha512-7EaMc4/IhqRcSbdOYvHOlHETciWmbbhMU6rDr2e0UfzIXSkb7X3Lhf9+bGv+v4JaWnJW5GBillgIIHrAvIIoFg==
+gridjs@5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/gridjs/-/gridjs-5.1.0.tgz#77563e766c1faf6e8042577404098bb05ec514d0"
+  integrity sha512-ElT4RccHVZXR6mAn0Neh7jRv0yLPYLl9tWr9EC1tIJ7UC035kScGc/VMSJlPmOTyUU6qPUz1mtmzg/i8+IT24g==
   dependencies:
-    preact "^10.5.12"
-    tslib "^2.0.1"
+    preact "^10.10.6"
 
 gtoken@^6.1.0:
   version "6.1.2"
@@ -7024,10 +7023,10 @@ postcss@8.4.14, postcss@^8.4.14:
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
 
-preact@^10.5.12:
-  version "10.7.2"
-  resolved "https://registry.yarnpkg.com/preact/-/preact-10.7.2.tgz#5c632ba194b87345dcaee6598b3b6529b58e6a12"
-  integrity sha512-GLjn0I3r6ka+NvxJUppsVFqb4V0qDTEHT/QxHlidPuClGaxF/4AI2Qti4a0cv3XMh5n1+D3hLScW10LRIm5msQ==
+preact@^10.10.6:
+  version "10.11.3"
+  resolved "https://registry.yarnpkg.com/preact/-/preact-10.11.3.tgz#8a7e4ba19d3992c488b0785afcc0f8aa13c78d19"
+  integrity sha512-eY93IVpod/zG3uMF22Unl8h9KkrcKIRs2EGar8hwLZZDU1lkjph303V9HZBwufh2s736U6VXuhD109LYqPoffg==
 
 prelude-ls@^1.2.1:
   version "1.2.1"
