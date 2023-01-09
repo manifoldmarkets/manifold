@@ -31,6 +31,19 @@ create index if not exists users_name_gin on users using GIN ((data->>'name') gi
 create index if not exists users_username_gin on users using GIN ((data->>'username') gin_trgm_ops);
 create index if not exists users_follower_count_cached on users ((to_jsonb(data->'followerCountCached')) desc);
 
+create table if not exists user_portfolio_history (
+    user_id text not null,
+    portfolio_id text not null,
+    data jsonb not null,
+    fs_updated_time timestamp not null,
+    primary key(user_id, portfolio_id)
+);
+alter table user_portfolio_history enable row level security;
+drop policy if exists "public read" on user_portfolio_history;
+create policy "public read" on user_portfolio_history for select using (true);
+create index if not exists user_portfolio_history_gin on user_portfolio_history using GIN (data);
+create index if not exists user_portfolio_history_timestamp on user_portfolio_history (user_id, (to_jsonb(data->'timestamp')) desc);
+
 create table if not exists user_follows (
     user_id text not null,
     follow_id text not null,
@@ -282,6 +295,7 @@ begin;
   alter publication supabase_realtime add table manalinks;
   alter publication supabase_realtime add table posts;
   alter publication supabase_realtime add table test;
+  alter publication supabase_realtime add table user_portfolio_history;
 commit;
 
 create table if not exists incoming_writes (
@@ -327,6 +341,7 @@ begin
     when 'manalink' then cast(('manalinks', null, 'id') as table_spec)
     when 'post' then cast(('posts', null, 'id') as table_spec)
     when 'test' then cast(('test', null, 'id') as table_spec)
+    when 'userPortfolioHistory' then cast(('user_portfolio_history', 'user_id', 'portfolio_id') as table_spec)
     else null
   end;
 end
