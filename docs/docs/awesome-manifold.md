@@ -38,6 +38,7 @@ A list of community-created projects built on, or related to, Manifold Markets.
 - [Scoring Midterm Election Forecasts](https://mikesaintantoine.substack.com/p/scoring-midterm-election-forecasts) by Mike Saint-Antoine
 - [Notes on an Experiment with Markets](https://aiimpacts.org/notes-on-an-experiment-with-markets/) by Jeffrey Heninger
 - [How People Are Buying and Selling Streamer Stocks](https://epicstream.com/article/manifold-markets-how-people-are-buying-and-selling-streamer-stocks) by Ruben Circelli
+- [What If We Took a Fun Cool Platform and Made it Do Imaginary Politics](https://strainhardening.substack.com/p/what-if-we-took-a-fun-cool-platform) by Gavriel K
 
 ## Art
 
