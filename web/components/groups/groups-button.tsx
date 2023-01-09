@@ -120,7 +120,7 @@ export function JoinOrLeaveGroupButton(props: {
         leaveGroup(group.id, user.id)
           .then(() => setIsMember(false))
           .catch(() => {
-            toast.error('Failed to leave group')
+            toast.error('Failed to unfollow group')
           })
       }, 'leave group')
     : firebaseLogin
@@ -129,7 +129,7 @@ export function JoinOrLeaveGroupButton(props: {
         joinGroup(group.id, user.id)
           .then(() => setIsMember(true))
           .catch(() => {
-            toast.error('Failed to join group')
+            toast.error('Failed to follow group')
           })
       }, 'join group')
     : firebaseLogin
