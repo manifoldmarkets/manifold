@@ -272,7 +272,7 @@ begin
     when 'manalink' then cast(('manalinks', null, 'id') as table_spec)
     when 'post' then cast(('posts', null, 'id') as table_spec)
     when 'test' then cast(('test', null, 'id') as table_spec)
-    when 'portfolioHistory' then cast(('user_portfolio_history', 'user_id', 'portfolio_id') as table_spec)
+    when 'userPortfolioHistory' then cast(('user_portfolio_history', 'user_id', 'portfolio_id') as table_spec)
     else null
   end;
 end

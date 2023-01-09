@@ -15,7 +15,7 @@ export type DocumentKind =
   | 'manalink'
   | 'post'
   | 'test'
-  | 'portfolioHistory'
+  | 'userPortfolioHistory'
 
 export type WriteKind = 'create' | 'update' | 'delete'
 

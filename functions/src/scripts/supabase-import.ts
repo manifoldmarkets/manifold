@@ -107,11 +107,11 @@ async function importDatabase(kinds?: string[]) {
 
   if (shouldImport('user'))
     await importCollection(client, firestore.collection('users'), 'user', 500)
-  if (shouldImport('portfolioHistory'))
+  if (shouldImport('userPortfolioHistory'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('portfolioHistory'),
-      'portfolioHistory',
+      'userPortfolioHistory',
       (_) => true,
       2500
     )

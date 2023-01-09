@@ -47,7 +47,7 @@ function logger(path: string, docKind: DocumentKind) {
 export const logUsers = logger('users/{id}', 'user')
 export const logUserPortfolioHistories = logger(
   'users/{parent}/portfolioHistory/{id}',
-  'portfolioHistory'
+  'userPortfolioHistory'
 )
 export const logUserFollows = logger(
   'users/{parent}/follows/{id}',
