@@ -803,6 +803,22 @@ The goal of the project is to clearly present and organize the considerations wh
 `,
     tags: ['New'] as const,
   },
+  {
+    name: 'MSI Reproductive Choices',
+    website: 'https://www.msichoices.org/',
+    photo: 'https://i.imgur.com/9cBHwWd.png',
+    preview: `MSI Reproductive Choices provides contraception and safe abortion services that enable women all over the world to choose their own futures.`,
+    description: `MSI Reproductive Choices provides contraception and safe abortion services that enable women all over the world to choose their own futures.
+
+MSI Reproductive Choices is an international non-governmental organization providing contraception and safe abortion services in 37 countries around the world. MSI Reproductive Choices as an organisation lobbies in favour of access to abortion, and provides a variety of sexual and reproductive healthcare services including advice, vasectomies, and abortions in the UK and other countries where it is legal to do so. It is based in London and is a registered charity under English law.
+
+Around the world, 32.6 million people are using a method of contraception provided by MSI Reproductive Choices, and across the 37 countries where they work, one in five women who want contraception are using a method provided by MSI Reproductive Choices. They reached 17.3 million people with high-quality sexual and reproductive health services in 2021 alone.
+
+The organization's core services include family planning; safe abortion and post-abortion care; maternal and child health care, including safe delivery and obstetrics; diagnosis and treatment of sexually transmitted infections; and HIV/AIDS prevention.
+
+The organization reports for the year 2021 to have prevented 14.1 million unintended pregnancies, averted 6.6 million unsafe abortions, and saved 39,000 women's lives.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
