@@ -9,8 +9,11 @@ export const SignInButton = (props: { className?: string }) => {
 
   return (
     <Button
+      // Don't change this color to gradient!
+      // The most prominent CTA when signed out
+      // should be the signup button, not this one.
+      color="gray-outline"
       size="lg"
-      color="gradient"
       onClick={async () => {
         // login, and then reload the page, to hit any SSR redirect (e.g.
         // redirecting from / to /home for logged in users)

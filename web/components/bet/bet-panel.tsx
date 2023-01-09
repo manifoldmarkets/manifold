@@ -41,7 +41,6 @@ import { YesNoSelector } from './yes-no-selector'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { MarketIntroPanel } from '../market-intro-panel'
 import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
 import toast from 'react-hot-toast'
@@ -63,6 +62,8 @@ export function BetPanel(props: {
 
   const [isLimitOrder, setIsLimitOrder] = useState(false)
 
+  if (!user) return <></>
+
   return (
     <Col className={className}>
       <SellRow
@@ -77,34 +78,28 @@ export function BetPanel(props: {
           className
         )}
       >
-        {user ? (
-          <>
-            <QuickOrLimitBet
-              isLimitOrder={isLimitOrder}
-              setIsLimitOrder={setIsLimitOrder}
-              hideToggle={!user}
-            />
-            <BuyPanel
-              hidden={isLimitOrder}
-              contract={contract}
-              user={user}
-              unfilledBets={unfilledBets}
-              balanceByUserId={balanceByUserId}
-            />
-            <LimitOrderPanel
-              hidden={!isLimitOrder}
-              contract={contract}
-              user={user}
-              unfilledBets={unfilledBets}
-              balanceByUserId={balanceByUserId}
-            />
-          </>
-        ) : (
-          <MarketIntroPanel />
-        )}
+        <QuickOrLimitBet
+          isLimitOrder={isLimitOrder}
+          setIsLimitOrder={setIsLimitOrder}
+          hideToggle={!user}
+        />
+        <BuyPanel
+          hidden={isLimitOrder}
+          contract={contract}
+          user={user}
+          unfilledBets={unfilledBets}
+          balanceByUserId={balanceByUserId}
+        />
+        <LimitOrderPanel
+          hidden={!isLimitOrder}
+          contract={contract}
+          user={user}
+          unfilledBets={unfilledBets}
+          balanceByUserId={balanceByUserId}
+        />
       </Col>
 
-      {user && unfilledBets.length > 0 && (
+      {unfilledBets.length > 0 && (
         <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
       )}
     </Col>

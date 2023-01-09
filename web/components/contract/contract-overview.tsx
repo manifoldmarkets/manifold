@@ -1,4 +1,5 @@
 import { memo } from 'react'
+
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
@@ -18,7 +19,7 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import BetButton, { BinaryMobileBetting } from '../bet/bet-button'
+import BetButton, { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import {
   Contract,
   CPMMContract,
@@ -31,6 +32,33 @@ import {
 import { ContractDetails } from './contract-details'
 import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
+import { BetSignUpPrompt } from '../sign-up-prompt'
+import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
+
+export const ContractOverview = memo(
+  (props: {
+    contract: Contract
+    bets: Bet[]
+    betPoints: HistoryPoint<Partial<Bet>>[]
+  }) => {
+    const { betPoints, contract, bets } = props
+    switch (contract.outcomeType) {
+      case 'BINARY':
+        return <BinaryOverview betPoints={betPoints} contract={contract} />
+      case 'NUMERIC':
+        return <NumericOverview contract={contract} />
+      case 'PSEUDO_NUMERIC':
+        return (
+          <PseudoNumericOverview contract={contract} betPoints={betPoints} />
+        )
+      case 'CERT':
+        return <CertOverview contract={contract} />
+      case 'FREE_RESPONSE':
+      case 'MULTIPLE_CHOICE':
+        return <ChoiceOverview contract={contract} bets={bets} />
+    }
+  }
+)
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -82,6 +110,8 @@ const BinaryOverview = (props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
   const { contract, betPoints } = props
+  const user = useUser()
+
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-1 px-2">
@@ -107,11 +137,19 @@ const BinaryOverview = (props: {
           />
         )}
       </SizedContainer>
-      <Row className="items-center justify-between gap-4 xl:hidden">
-        {tradingAllowed(contract) && (
-          <BinaryMobileBetting contract={contract} />
-        )}
-      </Row>
+
+      {!user ? (
+        <Col className="w-full">
+          <BetSignUpPrompt className="xl:self-center" size="xl" />
+          <PlayMoneyDisclaimer />
+        </Col>
+      ) : (
+        tradingAllowed(contract) && (
+          <Row className={'items-center justify-between gap-4 xl:hidden'}>
+            <SignedInBinaryMobileBetting contract={contract} user={user} />
+          </Row>
+        )
+      )}
     </Col>
   )
 }
@@ -192,28 +230,3 @@ const PseudoNumericOverview = (props: {
     </Col>
   )
 }
-
-export const ContractOverview = memo(
-  (props: {
-    contract: Contract
-    bets: Bet[]
-    betPoints: HistoryPoint<Partial<Bet>>[]
-  }) => {
-    const { betPoints, contract, bets } = props
-    switch (contract.outcomeType) {
-      case 'BINARY':
-        return <BinaryOverview betPoints={betPoints} contract={contract} />
-      case 'NUMERIC':
-        return <NumericOverview contract={contract} />
-      case 'PSEUDO_NUMERIC':
-        return (
-          <PseudoNumericOverview contract={contract} betPoints={betPoints} />
-        )
-      case 'CERT':
-        return <CertOverview contract={contract} />
-      case 'FREE_RESPONSE':
-      case 'MULTIPLE_CHOICE':
-        return <ChoiceOverview contract={contract} bets={bets} />
-    }
-  }
-)

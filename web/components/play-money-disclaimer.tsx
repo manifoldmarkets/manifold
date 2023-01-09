@@ -3,8 +3,9 @@ import { InfoBox } from './widgets/info-box'
 
 export const PlayMoneyDisclaimer = () => (
   <InfoBox
-    title={`Mana (${ENV_CONFIG.moneyMoniker}) is play money`}
+    title={`Play-money predictions`}
     className="mt-4"
-    text={`Manifold Markets tracks your predictions in mana, not real cash. Sign up for free!`}
+    text={`Manifold Markets lets you predict on any question using mana (${ENV_CONFIG.moneyMoniker}),
+     our play-money currency. Sign up for free!`}
   />
 )

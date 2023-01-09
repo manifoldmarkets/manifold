@@ -65,7 +65,7 @@ export default function Sidebar(props: {
       {user === undefined && <div className="h-[56px]" />}
       {user === null && <SignInButton className="mb-3" />}
       {user === null && (
-        <AppBadgesOrGetAppButton size={'lg'} className={'mb-4'} />
+        <AppBadgesOrGetAppButton size="md" className={'mb-4'} />
       )}
 
       {user && !isMobile && <ProfileSummary user={user} />}
