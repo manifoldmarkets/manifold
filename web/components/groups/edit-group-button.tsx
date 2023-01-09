@@ -32,7 +32,9 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
   const onSubmit = async () => {
     setIsSubmitting(true)
 
-    await Promise.all(addMemberUsers.map((user) => joinGroup(group, user.id)))
+    await Promise.all(
+      addMemberUsers.map((user) => joinGroup(group.id, user.id))
+    )
     await updateGroup(group, { name })
 
     setIsSubmitting(false)

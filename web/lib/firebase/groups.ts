@@ -165,21 +165,27 @@ export async function addUserToGroupViaId(groupId: string, userId: string) {
     console.error(`Group not found: ${groupId}`)
     return
   }
-  return await joinGroup(group, userId)
+  return await joinGroup(group.id, userId)
 }
 
-export async function joinGroup(group: Group, userId: string): Promise<void> {
+export async function joinGroup(
+  groupId: string,
+  userId: string
+): Promise<void> {
   // create a new member document in grouoMembers collection
-  const memberDoc = doc(groupMembers(group.id), userId)
+  const memberDoc = doc(groupMembers(groupId), userId)
   return await setDoc(memberDoc, {
     userId,
     createdTime: Date.now(),
   })
 }
 
-export async function leaveGroup(group: Group, userId: string): Promise<void> {
+export async function leaveGroup(
+  groupId: string,
+  userId: string
+): Promise<void> {
   // delete the member document in groupMembers collection
-  const memberDoc = doc(groupMembers(group.id), userId)
+  const memberDoc = doc(groupMembers(groupId), userId)
   return await deleteDoc(memberDoc)
 }
 
