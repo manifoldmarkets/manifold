@@ -806,7 +806,7 @@ The goal of the project is to clearly present and organize the considerations wh
   {
   name: 'MSI Reproductive Choices',
   website: 'https://www.msichoices.org/',
-  photo: https://imgur.com/9cBHwWd',
+  photo: 'https://imgur.com/9cBHwWd',
   preview:
     `MSI Reproductive Choices provides contraception and safe abortion services that enable women all over the world to choose their own futures.`,
   tags: ['New'] as const,
