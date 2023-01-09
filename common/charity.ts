@@ -803,6 +803,14 @@ The goal of the project is to clearly present and organize the considerations wh
 `,
     tags: ['New'] as const,
   },
+  {
+  name: 'MSI Reproductive Choices',
+  website: 'https://www.msichoices.org/',
+  photo: https://imgur.com/9cBHwWd',
+  preview:
+    `MSI Reproductive Choices provides contraception and safe abortion services that enable women all over the world to choose their own futures.`,
+  tags: ['New'] as const,
+},
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
