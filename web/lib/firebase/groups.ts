@@ -165,7 +165,7 @@ export async function addUserToGroupViaId(groupId: string, userId: string) {
     console.error(`Group not found: ${groupId}`)
     return
   }
-  return await joinGroup(group, userId)
+  return await joinGroup(group.id, userId)
 }
 
 export async function joinGroup(
