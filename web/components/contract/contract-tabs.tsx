@@ -125,7 +125,7 @@ export function ContractTabs(props: {
         setActiveIndex(i)
       }}
       tabs={buildArray(
-        {
+        (comments.length > 0 || user) && {
           title: commentTitle,
           content: (
             <CommentsTabContent
@@ -309,7 +309,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     key: `comments-sort-${contract.id}`,
     store: storageStore(safeLocalStorage()),
   })
-  const me = useUser()
+  const user = useUser()
 
   if (comments == null) {
     return <LoadingIndicator />
@@ -329,7 +329,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           // Is this too magic? If there are likes, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
           likes &&
           c.createdTime > Date.now() - 10 * MINUTE_MS &&
-          c.userId === me?.id &&
+          c.userId === user?.id &&
           shouldBeNewestFirst(c)
             ? -Infinity
             : -(c?.likes ?? 0)
@@ -345,7 +345,8 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   return (
     <>
-      <ContractCommentInput className="mb-5" contract={contract} />
+      {user && <ContractCommentInput className="mb-5" contract={contract} />}
+
       <SortRow
         comments={comments}
         contract={contract}

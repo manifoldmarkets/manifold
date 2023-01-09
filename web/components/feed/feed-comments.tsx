@@ -34,6 +34,7 @@ import LinkIcon from 'web/lib/icons/link-icon'
 import { FlagIcon } from '@heroicons/react/outline'
 import { LikeButton } from 'web/components/contract/like-button'
 import { richTextToString } from 'common/util/parse'
+import { buildArray } from 'common/util/array'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -195,7 +196,7 @@ export function CommentActions(props: {
 
   return (
     <Row className="grow items-center justify-end">
-      {onReplyClick && (
+      {user && onReplyClick && (
         <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
           <ReplyIcon className="h-5 w-5" />
         </IconButton>
@@ -228,7 +229,7 @@ export function CommentActions(props: {
       />
       <DropdownMenu
         buttonClass="px-2 py-1"
-        Items={[
+        Items={buildArray(
           {
             name: 'Copy Link',
             icon: <LinkIcon className="h-5 w-5" />,
@@ -240,15 +241,15 @@ export function CommentActions(props: {
               )
             },
           },
-          {
+          user && {
             name: 'Report',
             icon: <FlagIcon className="h-5 w-5" />,
             onClick: () => {
               if (user?.id !== comment.userId) setIsModalOpen(true)
               else toast.error(`You can't report your own comment`)
             },
-          },
-        ]}
+          }
+        )}
       />
     </Row>
   )
