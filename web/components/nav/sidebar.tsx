@@ -9,6 +9,7 @@ import {
   LogoutIcon,
   BeakerIcon,
   HeartIcon,
+  LightningBoltIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -125,9 +126,10 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
 
   return buildArray(
     { name: 'Groups', href: '/groups' },
+    { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
-    { name: 'Blog', href: 'https://news.manifold.markets' },
+    // { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     {
       name: 'Help & About',
@@ -148,6 +150,7 @@ const getMobileNav = (loggedIn: boolean) => {
       href: '/groups',
       icon: RectangleGroup,
     },
+    { name: 'Referrals', href: '/referrals', icon: LightningBoltIcon },
     loggedIn && { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon }
