@@ -107,7 +107,11 @@ export function JoinOrLeaveGroupButton(props: {
   disabled?: boolean
 }) {
   const { group, className, user, isMobile, disabled } = props
+
+  // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
+  useEffect(() => setIsMember(props.isMember), [props.isMember])
+
   if (!group.anyoneCanJoin) {
     return <></>
   }
