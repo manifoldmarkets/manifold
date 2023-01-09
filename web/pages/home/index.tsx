@@ -701,14 +701,14 @@ export const TrendingGroupsSection = memo(
               key={g.id}
               selected={myGroupIds.has(g.id)}
               onSelect={() => {
-                if (myGroupIds.has(g.id)) leaveGroup(g, user.id)
+                if (myGroupIds.has(g.id)) leaveGroup(g.id, user.id)
                 else {
                   const homeSections = (user.homeSections ?? [])
                     .filter((id) => id !== g.id)
                     .concat(g.id)
                   updateUser(user.id, { homeSections })
 
-                  toast.promise(joinGroup(g, user.id), {
+                  toast.promise(joinGroup(g.id, user.id), {
                     loading: 'Following group...',
                     success: `Followed ${g.name}`,
                     error: "Couldn't follow group, try again?",

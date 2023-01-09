@@ -2,13 +2,12 @@ import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { User } from 'common/user'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { TextButton } from 'web/components/buttons/text-button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { useMemberGroupsSubscription } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -16,21 +15,37 @@ import { withTracking } from 'web/lib/service/analytics'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { GroupLinkItem } from 'web/pages/groups'
 import { Button } from '../buttons/button'
+import {
+  getMemberGroups,
+  getMemberGroupsCount,
+  SearchGroupInfo,
+} from 'web/lib/supabase/groups'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
-  const groups = useMemberGroupsSubscription(user)
+  const [groups, setGroups] = useState<SearchGroupInfo[] | undefined>(undefined)
+  const [groupsCount, setGroupsCount] = useState(0)
+  useEffect(() => {
+    if (isOpen) return
+    getMemberGroupsCount(user.id).then(setGroupsCount)
+  }, [user.id, isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    getMemberGroups(user.id).then(setGroups)
+  }, [isOpen, user.id])
 
   return (
     <>
       <TextButton onClick={() => setIsOpen(true)} className={className}>
-        <span className="font-semibold">{groups?.length ?? ''}</span> Groups
+        <span className="font-semibold">{groupsCount}</span> Groups
       </TextButton>
 
       <GroupsDialog
         user={user}
-        groups={groups ?? []}
+        groups={groups}
         isOpen={isOpen}
         setIsOpen={setIsOpen}
       />
@@ -40,11 +55,11 @@ export function GroupsButton(props: { user: User; className?: string }) {
 
 function GroupsDialog(props: {
   user: User
-  groups: Group[]
+  groups: SearchGroupInfo[] | undefined
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
 }) {
-  const { user, groups, isOpen, setIsOpen } = props
+  const { user, isOpen, setIsOpen, groups } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
@@ -54,12 +69,12 @@ function GroupsDialog(props: {
         <div className="p-2 pb-1 text-xl">{user.name}</div>
         <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
         <Col className="gap-2">
-          {groups.length === 0 && (
+          {groups === undefined ? (
+            <LoadingIndicator />
+          ) : groups.length === 0 ? (
             <div className="text-gray-500">No groups yet...</div>
-          )}
-          {groups
-            .sort((group1, group2) => group2.createdTime - group1.createdTime)
-            .map((group) => (
+          ) : (
+            groups.map((group) => (
               <Row
                 className={clsx('items-center justify-between gap-2 p-2')}
                 key={group.id}
@@ -75,7 +90,8 @@ function GroupsDialog(props: {
                   />
                 )}
               </Row>
-            ))}
+            ))
+          )}
         </Col>{' '}
       </Col>
     </Modal>
@@ -83,30 +99,34 @@ function GroupsDialog(props: {
 }
 
 export function JoinOrLeaveGroupButton(props: {
-  group: Group
+  group: Group | SearchGroupInfo
   isMember: boolean | undefined
   user: User | undefined | null
   className?: string
   isMobile?: boolean
   disabled?: boolean
 }) {
-  const { group, className, isMember, user, isMobile, disabled } = props
-
+  const { group, className, user, isMobile, disabled } = props
+  const [isMember, setIsMember] = useState(props.isMember)
   if (!group.anyoneCanJoin) {
     return <></>
   }
   const unfollow = user
     ? withTracking(() => {
-        leaveGroup(group, user.id).catch(() => {
-          toast.error('Failed to leave group')
-        })
+        leaveGroup(group.id, user.id)
+          .then(() => setIsMember(false))
+          .catch(() => {
+            toast.error('Failed to leave group')
+          })
       }, 'leave group')
     : firebaseLogin
   const follow = user
     ? withTracking(() => {
-        joinGroup(group, user.id).catch(() => {
-          toast.error('Failed to join group')
-        })
+        joinGroup(group.id, user.id)
+          .then(() => setIsMember(true))
+          .catch(() => {
+            toast.error('Failed to join group')
+          })
       }, 'join group')
     : firebaseLogin
 
