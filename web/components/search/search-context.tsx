@@ -31,12 +31,7 @@ export const SearchProvider = (props: { children: ReactNode }) => {
 
   return (
     <SearchCtx.Provider value={{ open, setOpen }}>
-      <Modal
-        open={open}
-        setOpen={setOpen}
-        size="lg"
-        className="relative h-[70vh] overflow-y-auto rounded-2xl bg-white"
-      >
+      <Modal open={open} setOpen={setOpen} size="lg" className="h-[70vh]">
         <OmniSearch />
       </Modal>
       {children}

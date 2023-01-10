@@ -34,7 +34,7 @@ export const OmniSearch = () => {
         setOpen?.(false)
         option && router.push(option.slug)
       }}
-      className="flex h-full flex-col"
+      className="flex max-h-full flex-col overflow-hidden rounded-2xl bg-white"
     >
       <Combobox.Input
         autoFocus
@@ -45,7 +45,7 @@ export const OmniSearch = () => {
       />
       <Combobox.Options
         static
-        className="flex flex-1 flex-col overflow-y-auto px-2 text-gray-700"
+        className="flex flex-col overflow-y-auto px-2 text-gray-700"
       >
         {query ? <Results query={query} /> : <DefaultResults />}
       </Combobox.Options>
