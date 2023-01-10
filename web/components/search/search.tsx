@@ -2,13 +2,10 @@ import { Combobox } from '@headlessui/react'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { formatPercent } from 'common/util/format'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode, useState } from 'react'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
-import { Col } from '../layout/col'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { useMarketSearchResults } from './query-contracts'
@@ -55,41 +52,14 @@ export const OmniSearch = () => {
 
 const DefaultResults = () => {
   const contracts = useTrendingContracts(7)
-
   return (
     <>
       {contracts?.map((c) => (
         <MarketResult market={c} />
       ))}
-      <div className="grow" />
-      <div className="columns-2 px-10 pb-6">
-        <Col>
-          <DefaultLink href="/groups">Groups</DefaultLink>
-          <DefaultLink href="/add-funds">Get Mana</DefaultLink>
-          <DefaultLink href="/labs">Labs</DefaultLink>
-        </Col>
-        <Col>
-          <DefaultLink href="">Blog</DefaultLink>
-          <DefaultLink href="https://discord.com/invite/eHQBNBqXuh">
-            Discord
-          </DefaultLink>
-          <DefaultLink href="https://help.manifold.markets">
-            Help & About
-          </DefaultLink>
-        </Col>
-      </div>
     </>
   )
 }
-
-const DefaultLink = (props: { href: string; children: string }) => (
-  <Link
-    className="my-1 text-sm text-indigo-500 decoration-indigo-300 hover:underline"
-    href={props.href}
-  >
-    {props.children}
-  </Link>
-)
 
 const Results = (props: { query: string }) => {
   const { query } = props
