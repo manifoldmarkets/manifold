@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { last, max, sortBy } from 'lodash'
 import { curveStepAfter } from 'd3-shape'
 
