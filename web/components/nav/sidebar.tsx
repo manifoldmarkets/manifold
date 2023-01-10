@@ -70,7 +70,7 @@ export default function Sidebar(props: {
 
       {user && !isMobile && <ProfileSummary user={user} />}
 
-      {!isMobile && <SearchButton />}
+      {!isMobile && <SearchButton className="mb-5" />}
 
       <div className="flex flex-col gap-1">
         {navOptions.map((item) => (
@@ -144,7 +144,7 @@ const getMobileNav = (loggedIn: boolean) => {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
   return buildArray(
-    { name: 'Search', href: '/search', icon: SearchIcon },
+    { name: 'Search Markets', href: '/search', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     loggedIn && {
       name: 'Groups',

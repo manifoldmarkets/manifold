@@ -1,9 +1,5 @@
 import { PlusCircleIcon } from '@heroicons/react/outline'
-import {
-  DotsVerticalIcon,
-  PencilAltIcon,
-  SearchIcon,
-} from '@heroicons/react/solid'
+import { DotsVerticalIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { difference, isArray, keyBy, shuffle, uniqBy } from 'lodash'
 import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
@@ -77,7 +73,7 @@ import { track } from 'web/lib/service/analytics'
 import { GroupCard } from '../groups'
 import { useFeed } from 'web/hooks/use-feed'
 import { Title } from 'web/components/widgets/title'
-import Link from 'next/link'
+import { SearchButton } from 'web/components/nav/search-button'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -220,12 +216,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
       <Col className="pm:mx-10 gap-4 p-2 pb-8">
         <Row className={'mb-2 w-full items-center justify-between gap-4'}>
           <Title text="Home" className="!my-0 hidden sm:block" />
-          <Link
-            href="/search"
-            className="rounded-md p-2 transition-colors focus:bg-gray-300 sm:hidden"
-          >
-            <SearchIcon className="h-8 w-8 text-gray-700" />
-          </Link>
+          <SearchButton className="flex-1 text-gray-700 lg:hidden" />
           <Row className="items-center gap-4">
             <DailyStats user={user} showLoans />
             <CustomizeButton router={Router} />

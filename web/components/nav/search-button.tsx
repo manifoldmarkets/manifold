@@ -1,9 +1,10 @@
 import { SearchIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { isMac } from 'web/lib/util/device'
 import { useSearchContext } from '../search/search-context'
 
-export const SearchButton = () => {
+export const SearchButton = (props: { className?: string }) => {
   const { setOpen } = useSearchContext() ?? {}
   const isClient = useIsClient()
 
@@ -14,11 +15,14 @@ export const SearchButton = () => {
   return (
     <button
       onClick={() => setOpen(true)}
-      className="mb-5 flex w-full items-center rounded-md border border-gray-300 bg-white p-2 text-sm text-gray-400 hover:border-indigo-300"
+      className={clsx(
+        'flex items-center rounded-md border border-gray-300 bg-white p-2 text-sm text-gray-400 hover:border-indigo-300',
+        props.className
+      )}
     >
-      <SearchIcon className="mr-3 h-6 w-6 text-gray-400" />
-      <span className="text-md">Search</span>
-      <span className="ml-auto mr-1">
+      <SearchIcon className="h-6 w-6 text-gray-700 sm:text-inherit" />
+      <span className="text-md ml-3 hidden sm:inline">Search</span>
+      <span className="ml-auto mr-1 hidden sm:inline">
         {isClient && isMac() ? '⌘' : 'Ctrl '}K
       </span>
     </button>
