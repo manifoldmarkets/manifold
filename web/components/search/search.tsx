@@ -27,9 +27,9 @@ export const OmniSearch = () => {
   return (
     <Combobox
       as="div"
-      onChange={(option: Option) => {
+      onChange={({ slug }: Option) => {
         setOpen?.(false)
-        option && router.push(option.slug)
+        router.push(slug)
       }}
       className="flex max-h-full flex-col overflow-hidden rounded-2xl bg-white"
     >
