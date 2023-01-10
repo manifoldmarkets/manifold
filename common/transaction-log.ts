@@ -18,6 +18,7 @@ export type DocumentKind =
   | 'post'
   | 'test'
   | 'userPortfolioHistory'
+  | 'userContractMetrics'
 
 export type WriteKind = 'create' | 'update' | 'delete'
 
