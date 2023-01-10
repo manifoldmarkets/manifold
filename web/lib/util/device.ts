@@ -16,3 +16,7 @@ export function isIOS() {
 export function isAndroid() {
   return navigator.userAgent.includes('Android')
 }
+
+export function isMac() {
+  return navigator.platform.indexOf('Mac') === 0
+}

@@ -32,7 +32,6 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { PostCard } from 'web/components/posts/post-card'
-import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
@@ -73,6 +72,8 @@ import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { track } from 'web/lib/service/analytics'
 import { GroupCard } from '../groups'
 import { useFeed } from 'web/hooks/use-feed'
+import { Title } from 'web/components/widgets/title'
+import { SearchButton } from 'web/components/nav/search-button'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -213,19 +214,12 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 p-2 pb-8">
-        <Row className={'z-30 mb-2 w-full items-center gap-4'}>
-          <Input
-            type="text"
-            placeholder={'Search'}
-            className="flex w-1/3 min-w-0 grow justify-between sm:w-max sm:justify-start"
-            onClick={() => Router.push('/search')}
-            onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
-          />
+        <Row className={'mb-2 w-full items-center justify-between gap-4'}>
+          <Title text="Home" className="!my-0 hidden sm:block" />
+          <SearchButton className="flex-1 text-gray-700 lg:hidden" />
           <Row className="items-center gap-4">
-            <DailyStats user={user} />
-            <div className="mr-2">
-              <CustomizeButton router={Router} />
-            </div>
+            <DailyStats user={user} showLoans />
+            <CustomizeButton router={Router} />
           </Row>
         </Row>
 

@@ -98,7 +98,7 @@ export default function ContractSearchFirestore(props: {
         />
         <Select value={sort} onChange={(e) => setSort(e.target.value)}>
           <option value="score">Trending</option>
-          <option value="newest">Newest</option>
+          <option value="newest">New</option>
           <option value="most-traded">Most ${PAST_BET}</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
