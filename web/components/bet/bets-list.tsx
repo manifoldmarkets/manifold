@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { keyBy, sortBy, partition, sumBy, uniq, groupBy, max } from 'lodash'
-import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
@@ -55,6 +54,7 @@ import { getUserContractMetrics } from 'web/lib/firebase/contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { buildArray, filterDefined } from 'common/util/array'
 import { useBets, useOpenLimitBets } from 'web/hooks/use-bets'
+import { formatTimeShort } from 'web/lib/util/time'
 
 type BetSort = 'newest' | 'profit' | 'loss' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -642,7 +642,7 @@ function BetRow(props: {
           )}
         </td>
       )}
-      <td>{dayjs(createdTime).format('MMM D, h:mma')}</td>
+      <td>{formatTimeShort(createdTime)}</td>
     </tr>
   )
 }

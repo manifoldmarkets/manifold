@@ -1,5 +1,6 @@
 import { CertTxn } from 'common/txn'
 import { sortBy, sum } from 'lodash'
+import { calculatePrice } from './uniswap2'
 
 // e.g. { 'user/jasldfjdkl': 900, 'contract/afsdjkla': 100 }
 export function getCertOwnership(txns: CertTxn[]) {
@@ -57,4 +58,43 @@ export function getDividendPayouts(
       (ownerId === providerId ? totalDividend : 0),
   }))
   return payouts
+}
+export function toPayoutsMap(payouts: { userId: string; payout: number }[]) {
+  return Object.fromEntries(
+    payouts.map(({ userId, payout }) => [userId, payout])
+  )
+}
+
+// For each cert txn, calculate a point: {x: timestamp, y: price}
+// Right now, txns don't have a "priceAfter" field
+// so instead we calculate the current pool at each step after the latest txn has been applied
+export function getCertPoints(txns: CertTxn[]) {
+  const points: { x: number; y: number }[] = []
+  const sortedTxns = sortBy(txns, 'createdTime')
+  const currentPool = { SHARE: 0, M$: 0 }
+  for (const txn of sortedTxns) {
+    const fromId = `${txn.fromType}/${txn.fromId}`
+    const toId = `${txn.toType}/${txn.toId}`
+    const certId = `CONTRACT/${txn.certId}`
+    switch (txn.category) {
+      case 'CERT_TRANSFER':
+        if (toId === certId) {
+          currentPool.SHARE += txn.amount
+        } else if (fromId === certId) {
+          currentPool.SHARE -= txn.amount
+        }
+        break
+      case 'CERT_PAY_MANA':
+        if (toId === certId) {
+          currentPool['M$'] += txn.amount
+        } else if (fromId === certId) {
+          currentPool['M$'] -= txn.amount
+        }
+        break
+    }
+    const price = calculatePrice(currentPool)
+    // Only add point if price is valid and not 0
+    if (price) points.push({ x: txn.createdTime, y: price })
+  }
+  return points
 }
