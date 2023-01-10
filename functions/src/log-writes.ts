@@ -49,6 +49,10 @@ export const logUserPortfolioHistories = logger(
   'users/{parent}/portfolioHistory/{id}',
   'userPortfolioHistory'
 )
+export const logUserContractMetrics = logger(
+  'users/{parent}/contract-metrics/{id}',
+  'userContractMetrics'
+)
 export const logUserFollows = logger(
   'users/{parent}/follows/{id}',
   'userFollow'

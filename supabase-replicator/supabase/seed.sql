@@ -44,6 +44,18 @@ create policy "public read" on user_portfolio_history for select using (true);
 create index if not exists user_portfolio_history_gin on user_portfolio_history using GIN (data);
 create index if not exists user_portfolio_history_timestamp on user_portfolio_history (user_id, (to_jsonb(data->'timestamp')) desc);
 
+create table if not exists user_contract_metrics (
+    user_id text not null,
+    contract_id text not null,
+    data jsonb not null,
+    fs_updated_time timestamp not null,
+    primary key(user_id, contract_id)
+);
+alter table user_contract_metrics enable row level security;
+drop policy if exists "public read" on user_contract_metrics;
+create policy "public read" on user_contract_metrics for select using (true);
+create index if not exists user_contract_metrics_gin on user_contract_metrics using GIN (data);
+
 create table if not exists user_follows (
     user_id text not null,
     follow_id text not null,
@@ -296,6 +308,7 @@ begin;
   alter publication supabase_realtime add table posts;
   alter publication supabase_realtime add table test;
   alter publication supabase_realtime add table user_portfolio_history;
+  alter publication supabase_realtime add table user_contract_metrics;
 commit;
 
 create table if not exists incoming_writes (
@@ -342,6 +355,7 @@ begin
     when 'post' then cast(('posts', null, 'id') as table_spec)
     when 'test' then cast(('test', null, 'id') as table_spec)
     when 'userPortfolioHistory' then cast(('user_portfolio_history', 'user_id', 'portfolio_id') as table_spec)
+    when 'userContractMetrics' then cast(('user_contract_metrics', 'user_id', 'contract_id') as table_spec)
     else null
   end;
 end

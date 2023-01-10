@@ -151,6 +151,14 @@ async function importDatabase(kinds?: string[]) {
       0,
       'timestamp'
     )
+  if (shouldImport('userContractMetrics'))
+    await importCollectionGroup(
+      client,
+      firestore.collectionGroup('contract-metrics'),
+      'userContractMetrics',
+      (_) => true,
+      2500,
+    )
   if (shouldImport('userFollow'))
     await importCollectionGroup(
       client,
