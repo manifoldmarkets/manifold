@@ -131,21 +131,9 @@ function formatPrice(price: number) {
 
 export function CertOverview(props: { contract: CertContract }) {
   const { contract } = props
+  const price = formatPrice(calculatePrice(contract.pool))
   const txns = useCertTxns(contract.id)
   const certPoints = useMemo(() => getCertPoints(txns), [txns])
-  const [amount, setAmount] = useState<number | undefined>(10)
-
-  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
-  const isBuy = tradeType === 'BUY'
-
-  const realAmount = (isBuy ? 1 : -1) * (amount ?? 0)
-
-  const shares = calculateShares(contract.pool, realAmount)
-
-  const price = formatPrice(calculatePrice(contract.pool))
-  const after = formatPrice(calculatePriceAfterBuy(contract.pool, realAmount))
-
-  const pricePerShare = formatPrice(realAmount / shares)
 
   return (
     <Col>
@@ -162,7 +150,6 @@ export function CertOverview(props: { contract: CertContract }) {
           <span className="text-4xl">{price}</span>
         </div>
       </div>
-      {/* TODO: tabs */}
 
       {/* Show a graph for the trades */}
       <SizedContainer fullHeight={250} mobileHeight={150}>
@@ -176,6 +163,29 @@ export function CertOverview(props: { contract: CertContract }) {
         )}
       </SizedContainer>
 
+      <BuySellWidget contract={contract} />
+    </Col>
+  )
+}
+
+function BuySellWidget(props: { contract: CertContract }) {
+  const { contract } = props
+  const [amount, setAmount] = useState<number | undefined>(10)
+
+  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
+  const isBuy = tradeType === 'BUY'
+
+  const realAmount = (isBuy ? 1 : -1) * (amount ?? 0)
+
+  const shares = calculateShares(contract.pool, realAmount)
+
+  const price = formatPrice(calculatePrice(contract.pool))
+  const after = formatPrice(calculatePriceAfterBuy(contract.pool, realAmount))
+
+  const pricePerShare = formatPrice(realAmount / shares)
+
+  return (
+    <>
       <RadioGroup
         value={tradeType}
         onChange={setTradeType}
@@ -266,7 +276,7 @@ export function CertOverview(props: { contract: CertContract }) {
           </Button>
         </Row>
       </Col>
-    </Col>
+    </>
   )
 }
 
