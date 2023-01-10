@@ -1,17 +1,17 @@
 import { User } from 'common/user'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { searchUsers } from 'web/lib/supabase/users'
-
-// use nonce to make sure only latest result gets used
-let nonce = 0
 
 export function useUserSearchResults(query: string) {
   const [results, setResults] = useState([] as User[])
+  // use nonce to make sure only latest result gets used
+  const nonce = useRef(0)
+
   useEffect(() => {
-    ++nonce
-    const thisNonce = nonce
+    ++nonce.current
+    const thisNonce = nonce.current
     searchUsers(query, 2).then((users) => {
-      if (thisNonce === nonce) setResults(users)
+      if (thisNonce === nonce.current) setResults(users)
     })
   }, [query])
   return results
