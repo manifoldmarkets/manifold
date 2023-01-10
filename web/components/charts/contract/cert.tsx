@@ -50,8 +50,6 @@ export const CertContractChart = (props: {
   const startP = props.certPoints[0]?.y ?? 1
   const endP = last(props.certPoints)?.y ?? 1
 
-  // Note: this memo might be worthless, because props.certPoints is an array
-  // that gets recomputed with each render https://stackoverflow.com/a/65127981/1222351
   const certPoints = useMemo(
     () => sortBy(props.certPoints, (p) => p.x),
     [props.certPoints]

@@ -19,7 +19,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { keyBy } from 'lodash'
 import Image from 'next/image'
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
 import { useUser, useUsersById } from 'web/hooks/use-user'
 import { dividendCert, swapCert } from 'web/lib/firebase/api'
@@ -132,6 +132,7 @@ function formatPrice(price: number) {
 export function CertOverview(props: { contract: CertContract }) {
   const { contract } = props
   const txns = useCertTxns(contract.id)
+  const certPoints = useMemo(() => getCertPoints(txns), [txns])
   const [amount, setAmount] = useState<number | undefined>(10)
 
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
@@ -169,7 +170,7 @@ export function CertOverview(props: { contract: CertContract }) {
           <CertContractChart
             width={w}
             height={h}
-            certPoints={getCertPoints(txns)}
+            certPoints={certPoints}
             cert={contract}
           />
         )}
