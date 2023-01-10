@@ -11,6 +11,7 @@ import { run, SupabaseClient } from '../../../common/supabase/utils'
 import { createSupabaseClient, log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 import { DocumentKind } from '../../../common/transaction-log'
+import { DAY_MS } from 'common/util/time'
 
 // strategy for live importing collection C without dropping data (times are firestore server times)
 // 1. optional - clear supabase table for collection C
@@ -80,6 +81,40 @@ async function importCollectionGroup(
     await withRetries(run(client.from('incoming_writes').insert(rows)))
   })
 }
+async function importCollectionGroupAtTimestamp(
+  client: SupabaseClient,
+  source: CollectionGroup,
+  docKind: DocumentKind,
+  predicate: (d: QueryDocumentSnapshot) => boolean,
+  startTime = 0,
+  timePropName = 'createdTime'
+) {
+  log(`Preparing to import ${docKind} documents.`)
+  const t1 = await getServerTimestamp()
+  const n = (await source.count().get()).data().count
+  if (startTime === 0) {
+    startTime = await source.orderBy(timePropName, 'asc').limit(1).get().then((snap) => {
+      return snap.docs[0].data()[timePropName]
+    })
+  }
+  log(`Documents to import: ${n}. Timestamp: ${t1.toISOString()}. Starting from: ${startTime}.`)
+  // go from startTime to t1 via 1 day chunks
+  const delta = 1 * DAY_MS
+  while (startTime < t1.getTime()) {
+    const endTime = Math.min(startTime + delta, t1.getTime())
+    const snap = await source
+      .where(timePropName, '>=', startTime)
+      .where(timePropName, '<', endTime)
+      .get()
+    log(`Loaded ${snap.size} documents.`)
+    for (const batch of chunk(snap.docs, 2000)) {
+      const rows = batch.map((d) => getWriteRow(d, docKind, t1))
+      await withRetries(run(client.from('incoming_writes').insert(rows)))
+    }
+    log(`Processed ${snap.size} documents from ${startTime} to ${endTime}`)
+    startTime = endTime
+  }
+}
 
 async function clearFailedWrites() {
   const firestore = admin.firestore()
@@ -108,12 +143,13 @@ async function importDatabase(kinds?: string[]) {
   if (shouldImport('user'))
     await importCollection(client, firestore.collection('users'), 'user', 500)
   if (shouldImport('userPortfolioHistory'))
-    await importCollectionGroup(
+    await importCollectionGroupAtTimestamp(
       client,
       firestore.collectionGroup('portfolioHistory'),
       'userPortfolioHistory',
       (_) => true,
-      2500
+      0,
+      'timestamp'
     )
   if (shouldImport('userFollow'))
     await importCollectionGroup(
