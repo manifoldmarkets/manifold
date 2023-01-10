@@ -26,6 +26,8 @@ import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { useTracking } from 'web/hooks/use-tracking'
 
+const SWIPE_THRESHOLD = 100 // in px
+
 export default function Swipe() {
   useTracking('view swipe page')
 
@@ -152,10 +154,12 @@ export default function Swipe() {
       }
       if (!down) {
         // Scroll to next or previous card.
-        if (my < 0) newIndex = Math.min(cards.length - 1, index + 1)
-        else if (my > 0) newIndex = Math.max(0, index - 1)
+        if (my <= -SWIPE_THRESHOLD)
+          newIndex = Math.min(cards.length - 1, index + 1)
+        else if (my >= SWIPE_THRESHOLD) newIndex = Math.max(0, index - 1)
+
         setIndex(newIndex)
-        setAmount(10)
+        if (newIndex !== index) setAmount(10)
       }
       const y = -newIndex * cardHeight + (down ? my : 0)
 

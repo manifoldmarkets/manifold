@@ -121,6 +121,12 @@ export const SwipeCard = memo(
                 onTouchEndCapture={() => {
                   setPressState(undefined)
                 }}
+                onMouseDown={() => {
+                  setPressState('sub')
+                }}
+                onMouseUp={() => {
+                  setPressState(undefined)
+                }}
                 className="pl-5 pr-4 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
               >
                 <MinusIcon className="h-4" />
@@ -133,6 +139,12 @@ export const SwipeCard = memo(
                   setPressState('add')
                 }}
                 onTouchEndCapture={() => {
+                  setPressState(undefined)
+                }}
+                onMouseDown={() => {
+                  setPressState('add')
+                }}
+                onMouseUp={() => {
                   setPressState(undefined)
                 }}
                 className="pl-4 pr-5 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
