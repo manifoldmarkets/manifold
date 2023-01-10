@@ -90,7 +90,7 @@ const ResultOption = (props: { value: Option; children: ReactNode }) => (
     {({ active }) => (
       <div
         className={clsx(
-          'mb-1 rounded-md px-3 py-2',
+          'mb-1 cursor-pointer select-none rounded-md px-3 py-2',
           active && 'bg-indigo-100 text-indigo-800'
         )}
       >
