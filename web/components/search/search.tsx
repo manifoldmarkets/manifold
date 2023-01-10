@@ -37,7 +37,7 @@ export const OmniSearch = () => {
         autoFocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search markets, users, groups"
+        placeholder="Search markets and users"
         className="border-0 border-b !border-gray-100 py-4 px-6 text-xl ring-0 placeholder:text-gray-400 focus:ring-transparent"
       />
       <Combobox.Options
