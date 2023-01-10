@@ -39,7 +39,7 @@ A list of community-created projects built on, or related to, Manifold Markets.
 - [Notes on an Experiment with Markets](https://aiimpacts.org/notes-on-an-experiment-with-markets/) by Jeffrey Heninger
 - [How People Are Buying and Selling Streamer Stocks](https://epicstream.com/article/manifold-markets-how-people-are-buying-and-selling-streamer-stocks) by Ruben Circelli
 - [What If We Took a Fun Cool Platform and Made it Do Imaginary Politics](https://strainhardening.substack.com/p/what-if-we-took-a-fun-cool-platform) by Gavriel K
-- [https://www.fortressofdoors.com/ai-markets-for-lemons-and-the-great-logging-off/](https://www.fortressofdoors.com/ai-markets-for-lemons-and-the-great-logging-off/) by Lars Doucet
+- [AI: Markets for Lemons, and the Great Logging Off](https://www.fortressofdoors.com/ai-markets-for-lemons-and-the-great-logging-off/) by Lars Doucet
 
 ## Media
 - Podcast: [Stephen Grugett (Manifold Markets Founder) - Predictions Markets & Revolutionizing Governance](https://www.dwarkeshpatel.com/p/stephen-grugett)
