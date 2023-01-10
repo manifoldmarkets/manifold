@@ -349,6 +349,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     // Unlike other contracts which initializing info into the contract's doc or subcollection,
     // certs have the mint and pool specified in txn
     await mintAndPoolCert(providerId, contract.id, DEFAULT_SHARES, ante)
+  } else if (outcomeType === 'QUADRATIC_FUNDING') {
+    // TODO: Could create a QFPoolTxn using the ante
   }
 
   return contract

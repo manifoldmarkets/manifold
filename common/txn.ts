@@ -15,6 +15,9 @@ type AnyTxnType =
   | CertPayMana
   | CertDividend
   | CertBurn
+  | QFPayment
+  | QFPool
+  | QFDividend
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -45,6 +48,9 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'CERT_PAY_MANA' // Transfer mana for a cert
     | 'CERT_DIVIDEND' // Cert holder pays out dividends
     | 'CERT_BURN' // Destroy a cert
+    | 'QF_PAYMENT' // Pay one of the entries in a QF pool
+    | 'QF_POOL' // Fund a QF pool
+    | 'QF_DIVIDEND' // Pay out QF dividends
 
   // Any extra data
   data?: { [key: string]: any }
@@ -169,6 +175,28 @@ type SignupBonus = {
   category: 'SIGNUP_BONUS'
 }
 
+type QFId = {
+  qfId: string
+}
+
+type QFPayment = {
+  category: 'QF_PAYMENT'
+  fromType: 'USER'
+  toType: 'USER'
+}
+
+type QFPool = {
+  category: 'QF_POOL'
+  fromType: 'USER'
+  toType: 'CONTRACT'
+}
+
+type QFDividend = {
+  category: 'QF_DIVIDEND'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -184,3 +212,7 @@ export type CertTransferTxn = CertTxn & CertTransfer
 export type CertPayManaTxn = CertTxn & CertPayMana
 export type CertDividendTxn = CertTxn & CertDividend
 export type CertBurnTxn = CertTxn & CertBurn
+export type QFTxn = Txn & QFId
+export type QFPaymentTxn = QFTxn & QFPayment
+export type QFPoolTxn = QFTxn & QFPool
+export type QFDividendTxn = QFTxn & QFDividend

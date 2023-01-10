@@ -259,6 +259,7 @@ export function NewContractPanel(props: {
                     PSEUDO_NUMERIC:
                       '[EXPERIMENTAL] Predict the value of a number.',
                     CERT: '[EXPERIMENTAL] Tradeable shares of a stock',
+                    QUADRATIC_FUNDING: '[EXPERIMENTAL] Radically fund projects',
                   }[choice] ?? ''
                 setMarketInfoText(text)
                 setOutcomeType(choice as outcomeType)
@@ -269,7 +270,9 @@ export function NewContractPanel(props: {
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
                 // Only show cert option in dev, for now
-                ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
+                ...(ENV !== 'PROD'
+                  ? { Cert: 'CERT', 'Quadratic Funding': 'QUADRATIC_FUNDING' }
+                  : {}),
               }}
               isSubmitting={isSubmitting}
               className={'col-span-4'}

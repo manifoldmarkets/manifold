@@ -138,6 +138,12 @@ export type Cert = {
   outcomeType: 'CERT'
 }
 
+export type QuadraticFunding = {
+  outcomeType: 'QUADRATIC_FUNDING'
+  answers: Answer[]
+  pool: number
+}
+
 export type Binary = {
   outcomeType: 'BINARY'
   initialProbability: number
@@ -190,6 +196,7 @@ export const OUTCOME_TYPES = [
   'PSEUDO_NUMERIC',
   'NUMERIC',
   'CERT',
+  'QUADRATIC_FUNDING',
 ] as const
 
 export const MAX_QUESTION_LENGTH = 240
