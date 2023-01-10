@@ -28,7 +28,7 @@ import { CertContractChart } from '../charts/contract/cert'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { SizedContainer } from '../sized-container'
-import { AmountInput } from '../widgets/amount-input'
+import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { Avatar } from '../widgets/avatar'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
@@ -227,54 +227,48 @@ function BuySellWidget(props: { contract: CertContract }) {
       </RadioGroup>
       <Col
         className={clsx(
-          'flex-1 gap-2 rounded-b-md border-2 p-4 transition-colors',
+          'flex-1 gap-4 rounded-b-md border-2 p-4 transition-colors md:gap-8',
           isBuy
             ? 'border-teal-300 bg-teal-50'
             : 'border-scarlet-300 bg-scarlet-50'
         )}
       >
+        <Col>
+          <label className="text-xs text-gray-400">Amount</label>
+          <BuyAmountInput
+            inputClassName="w-full max-w-none"
+            amount={amount}
+            onChange={setAmount}
+            error={undefined}
+            setError={() => {}}
+            showSlider={true}
+            binaryOutcome={isBuy ? 'YES' : 'NO'}
+          />
+        </Col>
         <Row>
           <div className="flex-1">
+            <div className="text-xl">{formatLargeNumber(shares)}</div>
             <div className="text-xs text-gray-400">Shares</div>
-            {formatLargeNumber(shares)}
           </div>
           <div className="flex-1">
-            <div className="text-xs text-gray-400">Price</div>
-            <div className="flex items-center gap-2">
-              {price}
-              {price !== after && (
-                <>
-                  <ArrowRightIcon className="h-4 w-4" /> {after}
-                  <span className="whitespace-nowrap">
-                    ({pricePerShare} avg)
-                  </span>
-                </>
-              )}
+            <div className="text-xl">{shares ? pricePerShare : price}</div>
+            <div className="flex items-center text-xs text-gray-400">
+              Price <ArrowRightIcon className="ml-2 h-3 w-3" /> {after}
             </div>
           </div>
         </Row>
-        <Row className="items-end justify-between">
-          <div>
-            <label className="text-xs text-gray-400">Amount</label>
-            <AmountInput
-              inputClassName="!w-32"
-              label={ENV_CONFIG.moneyMoniker}
-              amount={amount}
-              onChange={setAmount}
-            />
-          </div>
-          <Button
-            color={isBuy ? 'green' : 'red'}
-            size="xl"
-            className="w-40 transition-colors"
-            disabled={!amount}
-            onClick={async () =>
-              await swapCert({ certId: contract.id, amount: realAmount })
-            }
-          >
-            {isBuy ? 'Buy' : 'Sell'}
-          </Button>
-        </Row>
+
+        <Button
+          color={isBuy ? 'green' : 'red'}
+          size="xl"
+          className="w-full transition-colors"
+          disabled={!amount}
+          onClick={async () =>
+            await swapCert({ certId: contract.id, amount: realAmount })
+          }
+        >
+          {isBuy ? 'Buy' : 'Sell'}
+        </Button>
       </Col>
     </>
   )
