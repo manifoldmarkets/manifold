@@ -172,6 +172,7 @@ const getCertProps = (ante: number) => {
 const getQFProps = (_ante: number) => {
   const system: QuadraticFunding = {
     outcomeType: 'QUADRATIC_FUNDING',
+    mechanism: 'qf',
     answers: [],
     pool: 0, // TODO: Set to ante when we set up payments
   }

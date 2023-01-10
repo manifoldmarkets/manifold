@@ -3,7 +3,6 @@ import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 
-export type AnyMechanism = DPM | CPMM | CPMM2
 export type AnyOutcomeType =
   | Binary
   | MultipleChoice
@@ -11,6 +10,7 @@ export type AnyOutcomeType =
   | FreeResponse
   | Numeric
   | Cert
+  | QuadraticFunding
 
 export type AnyContractType =
   | (CPMM & Binary)
@@ -21,6 +21,7 @@ export type AnyContractType =
   | (DPM & MultipleChoice)
   | (Uniswap2 & Cert)
   | (CPMM2 & MultipleChoice)
+  | QuadraticFunding
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -140,6 +141,7 @@ export type Cert = {
 
 export type QuadraticFunding = {
   outcomeType: 'QUADRATIC_FUNDING'
+  mechanism: 'qf'
   answers: Answer[]
   pool: number
 }
