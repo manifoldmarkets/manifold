@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { Group, groupPath } from 'common/group'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Col } from 'web/components/layout/col'
@@ -19,7 +19,7 @@ import { track } from 'web/lib/service/analytics'
 import { Card } from 'web/components/widgets/card'
 import { FeaturedPill } from 'web/components/contract/contract-card'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
-import { debounce } from 'lodash'
+import { useGroupSearchResults } from 'web/components/search/query-groups'
 
 export const getStaticProps = async () => {
   const groups = await searchGroups('', 100).catch((_) => [])
@@ -32,19 +32,7 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
   const memberGroupIds = useMemberGroupIds(user) || []
 
   const [query, setQuery] = useState('')
-  const [searchedGroups, setSearchedGroups] = useState<SearchGroupInfo[]>([])
-
-  const debouncedOnSearch = useMemo(
-    () =>
-      debounce(async (query: string) => {
-        if (query !== '') searchGroups(query, 50).then(setSearchedGroups)
-      }, 100),
-    []
-  )
-  function changeQuery(query: string) {
-    setQuery(query)
-    debouncedOnSearch(query)
-  }
+  const searchedGroups = useGroupSearchResults(query, 50)
 
   const groups = query !== '' ? searchedGroups : props.groups
 
@@ -81,7 +69,7 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
                   <Col>
                     <Input
                       type="text"
-                      onChange={(e) => changeQuery(e.target.value)}
+                      onChange={(e) => setQuery(e.target.value)}
                       placeholder="Search groups"
                       value={query}
                       className="mb-4 w-full"
@@ -109,7 +97,7 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
                           <Input
                             type="text"
                             value={query}
-                            onChange={(e) => changeQuery(e.target.value)}
+                            onChange={(e) => setQuery(e.target.value)}
                             placeholder="Search your groups"
                             className="mb-4 w-full"
                           />

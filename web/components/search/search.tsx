@@ -1,4 +1,5 @@
 import { Combobox } from '@headlessui/react'
+import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
@@ -6,9 +7,11 @@ import { useRouter } from 'next/router'
 import { ReactNode, useState } from 'react'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import { SearchGroupInfo } from 'web/lib/supabase/groups'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { useMarketSearchResults } from './query-contracts'
+import { useGroupSearchResults } from './query-groups'
 import { useUserSearchResults } from './query-users'
 import { useSearchContext } from './search-context'
 
@@ -37,7 +40,7 @@ export const OmniSearch = () => {
         autoFocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search markets and users"
+        placeholder="Search markets, users, & groups"
         className="border-0 border-b !border-gray-100 py-4 px-6 text-xl ring-0 placeholder:text-gray-400 focus:ring-transparent"
       />
       <Combobox.Options
@@ -65,6 +68,7 @@ const Results = (props: { query: string }) => {
   const { query } = props
 
   const userHits = useUserSearchResults(query)
+  const groupHits = useGroupSearchResults(query, 2)
   const marketHits = useMarketSearchResults(query)
 
   return (
@@ -72,6 +76,10 @@ const Results = (props: { query: string }) => {
       {userHits.length ? <SectionTitle>Users</SectionTitle> : null}
       {userHits.map((user) => (
         <UserResult user={user} />
+      ))}
+      {groupHits.length ? <SectionTitle>Groups</SectionTitle> : null}
+      {groupHits.map((group) => (
+        <GroupResult group={group} />
       ))}
       {marketHits.length ? <SectionTitle>Markets</SectionTitle> : null}
       {marketHits.map((market) => (
@@ -134,6 +142,19 @@ const UserResult = (props: { user: User }) => {
         <Avatar username={username} avatarUrl={avatarUrl} size="xs" noLink />
         {name}
         {username !== name && <span className="font-light">@{username}</span>}
+      </div>
+    </ResultOption>
+  )
+}
+
+const GroupResult = (props: { group: SearchGroupInfo }) => {
+  const { id, name, slug, totalMembers } = props.group
+  return (
+    <ResultOption value={{ id, slug: `/group/${slug}` }}>
+      <div className="flex items-center">
+        <span className="mr-3">{name}</span>
+        <UsersIcon className="mr-1 h-4 w-4" />
+        {totalMembers}
       </div>
     </ResultOption>
   )
