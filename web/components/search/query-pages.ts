@@ -1,5 +1,5 @@
 import { beginsWith, searchInAny } from 'common/util/parse'
-import { orderBy } from 'lodash'
+import { keyBy, orderBy } from 'lodash'
 
 export interface PageData {
   label: string
@@ -21,7 +21,7 @@ const pages: PageData[] = [
   { label: 'Referrals', slug: '/referrals' },
   { label: 'Live Feed', slug: '/live' },
 
-  { label: 'New', slug: '/search?s=newest&f=open' },
+  { label: 'Newest', slug: '/search?s=newest&f=open' },
   { label: 'Trending', slug: '/search?s=score&f=open' },
   { label: 'Daily Changed', slug: '/search?s=daily-score&f=open' },
   { label: '24h Volume', slug: '/search?s=24-hour-vol&f=open' },
@@ -30,7 +30,7 @@ const pages: PageData[] = [
     slug: '/search?s=most-popular&f=open',
     keywords: ['most popular'],
   },
-  { label: 'Closing soon', slug: '/search?s=close-date&f=open' },
+  { label: 'Closing Soon', slug: '/search?s=close-date&f=open' },
 ]
 
 export function searchPages(query: string, limit: number) {
@@ -46,3 +46,11 @@ export function searchPages(query: string, limit: number) {
     ['desc']
   ).slice(0, limit)
 }
+
+const pagesByLabel = keyBy(pages, 'label')
+
+export const defaultPages = [
+  pagesByLabel['Newest'],
+  pagesByLabel['Daily Changed'],
+  pagesByLabel['Trending'],
+]

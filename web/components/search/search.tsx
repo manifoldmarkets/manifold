@@ -12,7 +12,7 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { useMarketSearchResults } from './query-contracts'
 import { useGroupSearchResults } from './query-groups'
-import { PageData, searchPages } from './query-pages'
+import { defaultPages, PageData, searchPages } from './query-pages'
 import { useUserSearchResults } from './query-users'
 import { useSearchContext } from './search-context'
 
@@ -54,9 +54,11 @@ export const OmniSearch = () => {
 }
 
 const DefaultResults = () => {
-  const markets = useTrendingContracts(7) ?? []
+  const markets = useTrendingContracts(5) ?? []
+
   return (
     <>
+      <PageResults pages={defaultPages} />
       <MarketResults markets={markets} />
       <div className="mx-2 my-2 text-xs">
         <span className="uppercase text-teal-500">💹 Protip:</span> Start
@@ -76,18 +78,12 @@ const Results = (props: { query: string }) => {
   const prefix = query.match(/^(%|#|@)/) ? query.charAt(0) : ''
   const search = prefix ? query.slice(1) : query
 
-  const userHits = useUserSearchResults(
-    search,
-    !prefix ? 2 : prefix === '@' ? 25 : 0
-  )
-  const groupHits = useGroupSearchResults(
-    search,
-    !prefix ? 2 : prefix === '#' ? 25 : 0
-  )
-  const marketHits = useMarketSearchResults(
-    search,
-    !prefix ? 20 : prefix === '%' ? 25 : 0
-  )
+  const userHitLimit = !prefix ? 2 : prefix === '@' ? 25 : 0
+  const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
+  const marketHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
+  const userHits = useUserSearchResults(search, userHitLimit)
+  const groupHits = useGroupSearchResults(search, groupHitLimit)
+  const marketHits = useMarketSearchResults(search, marketHitLimit)
 
   const pageHits = prefix ? [] : searchPages(query, 2)
 
@@ -97,12 +93,15 @@ const Results = (props: { query: string }) => {
       <UserResults users={userHits} />
       <GroupResults groups={groupHits} />
       <MarketResults markets={marketHits} />
+      {marketHits.length > 0 && marketHits.length === marketHitLimit && (
+        <MoreMarketResults search={search} />
+      )}
     </>
   )
 }
 
 const SectionTitle = (props: { children: ReactNode }) => (
-  <h2 className="mt-1 text-sm text-gray-500">{props.children}</h2>
+  <h2 className="mt-2 mb-1 px-1 text-sm text-gray-500">{props.children}</h2>
 )
 
 const ResultOption = (props: { value: Option; children: ReactNode }) => (
@@ -205,5 +204,18 @@ const PageResults = (props: { pages: PageData[] }) => {
         <ResultOption value={{ id: label, slug }}>{label}</ResultOption>
       ))}
     </>
+  )
+}
+
+const MoreMarketResults = (props: { search: string }) => {
+  return (
+    <ResultOption
+      value={{
+        id: 'more',
+        slug: `/search?q=${encodeURIComponent(props.search)}`,
+      }}
+    >
+      <span className="italic">See more markets for "{props.search}"</span>
+    </ResultOption>
   )
 }
