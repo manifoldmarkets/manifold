@@ -10,7 +10,7 @@ import { range, zip, uniq, sum, sumBy, countBy } from 'lodash'
 import { log, logMemory } from './utils'
 import { Stats } from '../../common/stats'
 import { DAY_MS } from '../../common/util/time'
-import { average } from '../../common/util/math'
+import { average, median } from '../../common/util/math'
 import { mapAsync } from '../../common/util/promise'
 
 const firestore = admin.firestore()
@@ -201,7 +201,7 @@ export const updateStatsCore = async () => {
       if (allIds.length === 0) return 0
 
       const userIdCounts = countBy(allIds, (id) => id)
-      return average(Object.values(userIdCounts))
+      return median(Object.values(userIdCounts).filter((c) => c > 1))
     }
   )
 

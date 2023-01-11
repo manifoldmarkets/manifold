@@ -142,7 +142,7 @@ export function CustomAnalytics(props: Stats) {
 
       <Title text="Average activity" />
       <p className="text-gray-500">
-        Average number of DAU-qualifying actions per user per day.
+        Median number of DAU-qualifying actions per multi-action user per day.
       </p>
 
       <Spacer h={4} />
