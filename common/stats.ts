@@ -2,8 +2,10 @@ export type Stats = {
   startDate: number
   dailyActiveUsers: number[]
   dailyActiveUsersWeeklyAvg: number[]
+  avgDailyUserActions: number[]
   weeklyActiveUsers: number[]
   monthlyActiveUsers: number[]
+  dailySales: number[]
   d1: number[]
   d1WeeklyAvg: number[]
   nd1: number[]
