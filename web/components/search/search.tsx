@@ -78,18 +78,12 @@ const Results = (props: { query: string }) => {
   const prefix = query.match(/^(%|#|@)/) ? query.charAt(0) : ''
   const search = prefix ? query.slice(1) : query
 
-  const userHits = useUserSearchResults(
-    search,
-    !prefix ? 2 : prefix === '@' ? 25 : 0
-  )
-  const groupHits = useGroupSearchResults(
-    search,
-    !prefix ? 2 : prefix === '#' ? 25 : 0
-  )
-  const marketHits = useMarketSearchResults(
-    search,
-    !prefix ? 20 : prefix === '%' ? 25 : 0
-  )
+  const userHitLimit = !prefix ? 2 : prefix === '@' ? 25 : 0
+  const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
+  const marketHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
+  const userHits = useUserSearchResults(search, userHitLimit)
+  const groupHits = useGroupSearchResults(search, groupHitLimit)
+  const marketHits = useMarketSearchResults(search, marketHitLimit)
 
   const pageHits = prefix ? [] : searchPages(query, 2)
 
@@ -99,6 +93,9 @@ const Results = (props: { query: string }) => {
       <UserResults users={userHits} />
       <GroupResults groups={groupHits} />
       <MarketResults markets={marketHits} />
+      {marketHits.length > 0 && marketHits.length === marketHitLimit && (
+        <MoreMarketResults search={search} />
+      )}
     </>
   )
 }
@@ -207,5 +204,18 @@ const PageResults = (props: { pages: PageData[] }) => {
         <ResultOption value={{ id: label, slug }}>{label}</ResultOption>
       ))}
     </>
+  )
+}
+
+const MoreMarketResults = (props: { search: string }) => {
+  return (
+    <ResultOption
+      value={{
+        id: 'more',
+        slug: `/search?q=${encodeURIComponent(props.search)}`,
+      }}
+    >
+      <span className="italic">See more markets for "{props.search}"</span>
+    </ResultOption>
   )
 }
