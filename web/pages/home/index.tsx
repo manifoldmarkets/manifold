@@ -380,18 +380,14 @@ const YourFeedSection = (props: { user: User }) => {
         onVisibilityUpdated={(visible) => visible && setHasViewedBottom(true)}
       />
 
-      {hasViewedBottom ? (
-        <DiscoverFeed user={user} count={100} />
-      ) : (
-        <LoadingIndicator />
-      )}
+      {hasViewedBottom ? <DiscoverFeed user={user} /> : <LoadingIndicator />}
     </Col>
   )
 }
 
-export const DiscoverFeed = (props: { user: User; count: number }) => {
-  const { user, count } = props
-  const contracts = useFeed(user, count)
+export const DiscoverFeed = (props: { user: User }) => {
+  const { user } = props
+  const { contracts, loadMore } = useFeed(user, 'home')
 
   if (!contracts) return <LoadingIndicator />
   return (
@@ -399,6 +395,7 @@ export const DiscoverFeed = (props: { user: User; count: number }) => {
       contracts={contracts}
       showImageOnTopContract
       trackCardViews={true}
+      loadMore={loadMore}
     />
   )
 }

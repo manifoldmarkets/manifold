@@ -493,6 +493,14 @@ as $$
     where user_seen_markets.user_id = uid
     and user_seen_markets.contract_id = crf.contract_id
   )
+  -- That has not been viewed as a card recently.
+  and not exists (
+    select 1 from user_events
+    where user_events.user_id = uid
+    and user_events.data->>'name' = 'view market card'
+    and user_events.data->>'contractId' = crf.contract_id
+    and user_events.ts > now() - interval '1 day'
+  )
   order by dot(urf, crf) desc
 $$;
 
@@ -501,12 +509,15 @@ returns JSONB[]
 immutable parallel safe
 language sql
 as $$
-  select array_agg(data) as data_array
-  from get_recommended_contract_ids(uid, count)
-  left join contracts
-  on contracts.id = contract_id
-  -- Not resolved.
-  where not (data->>'isResolved')::boolean
-  -- Not closed: closeTime is greater than now.
-  and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
+  select array_agg(data) from (
+    select data
+    from get_recommended_contract_ids(uid)
+    left join contracts
+    on contracts.id = contract_id
+    -- Not resolved.
+    where not (data->>'isResolved')::boolean
+    -- Not closed: closeTime is greater than now.
+    and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
+    limit count
+  ) as rec_contracts
 $$;
