@@ -10,6 +10,7 @@ export function TouchButton(props: {
   pressState: string
   setPressState: (pressState: string | undefined) => void
   children: ReactNode
+  disabled?: boolean
   className?: string
   color?: colorType
 }) {
@@ -17,11 +18,13 @@ export function TouchButton(props: {
     pressState,
     setPressState,
     children,
+    disabled,
     className,
     color = 'white-icon',
   } = props
   return (
     <button
+      disabled={disabled}
       onTouchStartCapture={() => {
         setPressState(pressState)
       }}
