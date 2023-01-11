@@ -5,13 +5,12 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Row } from 'web/components/layout/row'
-import { XIcon } from '@heroicons/react/outline'
-import { unReact } from 'web/lib/firebase/reactions'
 import {
-  getLikedContracts,
-  getLikedContractsCount,
-  SearchContractLike,
+  getLikedContent,
+  getLikedContentCount,
+  SearchLikedContent,
 } from 'web/lib/supabase/reactions'
+import { Input } from 'web/components/widgets/input'
 
 // Note: this button does NOT live update
 export const UserLikedContractsButton = memo(
@@ -19,55 +18,68 @@ export const UserLikedContractsButton = memo(
     const { user, className } = props
     const [isOpen, setIsOpen] = useState(false)
 
-    const [contractLikes, setContractLikes] = useState<
-      SearchContractLike[] | undefined
+    const [likedContent, setLikedContent] = useState<
+      SearchLikedContent[] | undefined
     >(undefined)
-    const [likedContractsCount, setLikedContractsCount] = useState(0)
-
+    const [likedContentCount, setLikedContentCount] = useState(0)
+    const [query, setQuery] = useState('')
     useEffect(() => {
-      getLikedContractsCount(user.id).then(setLikedContractsCount)
+      getLikedContentCount(user.id).then(setLikedContentCount)
     }, [user.id])
 
     useEffect(() => {
-      if (!isOpen || contractLikes !== undefined) return
-      getLikedContracts(user.id).then(setContractLikes)
-    }, [contractLikes, isOpen, user.id])
+      if (!isOpen || likedContent !== undefined) return
+      getLikedContent(user.id).then(setLikedContent)
+    }, [likedContent, isOpen, user.id])
+
+    // filter by query
+    const filteredLikedContent = likedContent?.filter((c) => {
+      return (
+        query === '' ||
+        c.title.toLowerCase().includes(query.toLowerCase()) ||
+        c.text.toLowerCase().includes(query.toLowerCase())
+      )
+    })
 
     return (
       <>
         <TextButton onClick={() => setIsOpen(true)} className={className}>
-          <span className="font-semibold">{likedContractsCount}</span> Likes
+          <span className="font-semibold">{likedContentCount}</span> Likes
         </TextButton>
-        <Modal open={isOpen} setOpen={setIsOpen}>
+        <Modal
+          open={isOpen}
+          setOpen={setIsOpen}
+          size={'lg'}
+        >
           <Col className="rounded bg-white p-6">
-            <span className={'mb-4 text-xl'}>Liked Markets</span>
+            <Row className={'ml-2 mb-4 items-center justify-between gap-4 '}>
+              <span className={'text-xl'}>Likes</span>
+              <Input
+                placeholder="Search your likes"
+                className={'!h-10'}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </Row>
             <Col className={'gap-4'}>
-              {contractLikes?.map((likedContract) => (
-                <Row key={likedContract.id} className={'justify-between gap-2'}>
-                  <SiteLink
-                    href={likedContract.slug}
-                    className={'truncate text-indigo-700'}
-                  >
-                    {likedContract.title}
-                  </SiteLink>
-                  <XIcon
-                    className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
-                    onClick={() => {
-                      unReact(
-                        user.id,
-                        likedContract.contentId,
-                        'contract',
-                        'like'
-                      )
-                      setContractLikes(
-                        contractLikes.filter(
-                          (contract) =>
-                            contract.contentId !== likedContract.contentId
-                        )
-                      )
-                      setLikedContractsCount(likedContractsCount - 1)
-                    }}
-                  />
+              {filteredLikedContent?.map((like) => (
+                <Row
+                  key={like.id}
+                  className={'items-center justify-between gap-2'}
+                >
+                  <Col className={'w-full'}>
+                    <SiteLink
+                      href={like.slug}
+                      className={'truncate text-sm text-indigo-700'}
+                    >
+                      {like.title}
+                    </SiteLink>
+                    {like.contentType === 'comment' && (
+                    <SiteLink href={like.slug} className={'line-clamp-3 text-sm text-gray-700'}>
+                        {like.text}
+                      </SiteLink>
+                    )}
+                  </Col>
                 </Row>
               ))}
             </Col>
