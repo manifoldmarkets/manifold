@@ -11,6 +11,7 @@ import {
   SearchLikedContent,
 } from 'web/lib/supabase/reactions'
 import { Input } from 'web/components/widgets/input'
+import { withTracking } from 'web/lib/service/analytics'
 
 // Note: this button does NOT live update
 export const UserLikedContractsButton = memo(
@@ -43,7 +44,13 @@ export const UserLikedContractsButton = memo(
 
     return (
       <>
-        <TextButton onClick={() => setIsOpen(true)} className={className}>
+        <TextButton
+          onClick={withTracking(
+            () => setIsOpen(true),
+            'click user likes button'
+          )}
+          className={className}
+        >
           <span className="font-semibold">{likedContentCount}</span> Likes
         </TextButton>
         <Modal open={isOpen} setOpen={setIsOpen} size={'lg'}>
