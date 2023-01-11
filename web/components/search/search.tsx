@@ -12,7 +12,7 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { useMarketSearchResults } from './query-contracts'
 import { useGroupSearchResults } from './query-groups'
-import { PageData, searchPages } from './query-pages'
+import { defaultPages, PageData, searchPages } from './query-pages'
 import { useUserSearchResults } from './query-users'
 import { useSearchContext } from './search-context'
 
@@ -54,9 +54,11 @@ export const OmniSearch = () => {
 }
 
 const DefaultResults = () => {
-  const markets = useTrendingContracts(7) ?? []
+  const markets = useTrendingContracts(5) ?? []
+
   return (
     <>
+      <PageResults pages={defaultPages} />
       <MarketResults markets={markets} />
       <div className="mx-2 my-2 text-xs">
         <span className="uppercase text-teal-500">💹 Protip:</span> Start
@@ -102,7 +104,7 @@ const Results = (props: { query: string }) => {
 }
 
 const SectionTitle = (props: { children: ReactNode }) => (
-  <h2 className="mt-1 text-sm text-gray-500">{props.children}</h2>
+  <h2 className="mt-2 mb-1 px-1 text-sm text-gray-500">{props.children}</h2>
 )
 
 const ResultOption = (props: { value: Option; children: ReactNode }) => (
