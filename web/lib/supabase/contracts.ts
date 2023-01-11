@@ -1,4 +1,4 @@
-import { run } from 'common/lib/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { Contract } from 'common/contract'
 import { JsonData } from 'web/lib/supabase/json-data'
