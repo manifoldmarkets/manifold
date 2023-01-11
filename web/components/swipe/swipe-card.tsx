@@ -201,7 +201,6 @@ export const SwipeCard = memo(
         </div>
         <div className="relative grow bg-black">
           <div className="absolute z-0 min-h-[30%] w-full bg-gradient-to-b from-black to-transparent pb-4" />
-          <div className="absolute bottom-0 z-0 min-h-[30%] w-full bg-gradient-to-b from-transparent to-black pb-4" />
           <SiteLink
             className="absolute -top-9 z-10"
             href={contractPath(contract)}
@@ -216,7 +215,7 @@ export const SwipeCard = memo(
               {question}
             </div>
           </SiteLink>
-          <div className="absolute top-32 left-24 z-10 mx-auto">
+          <div className="absolute top-32 left-[calc(50%-80px)] z-10 mx-auto">
             <Percent
               contract={contract}
               amount={amount}
@@ -224,8 +223,8 @@ export const SwipeCard = memo(
             />
           </div>
 
-          <div className="absolute -bottom-20 z-10 w-full">
-            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
+          <Col className="absolute -bottom-20 z-10 w-full gap-6">
+            <div className="prose prose-invert prose-sm line-clamp-3 mx-3 text-gray-50">
               {typeof description === 'string'
                 ? description
                 : richTextToString(description)}
@@ -235,7 +234,8 @@ export const SwipeCard = memo(
               amount={amount}
               disabled={!isPrimaryCard}
             />
-          </div>
+          </Col>
+          <div className="absolute bottom-0 z-0 min-h-[30%] w-full bg-gradient-to-b from-transparent to-black pb-4" />
           <img src={image} alt="" className="h-full object-cover" />
         </div>
         <div className="h-20 w-full bg-black" />
