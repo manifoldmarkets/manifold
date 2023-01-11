@@ -22,7 +22,6 @@ export interface Option {
 
 export const OmniSearch = () => {
   const [query, setQuery] = useState('')
-  // const [selected, setSelected] = useState<Option>()
 
   const { setOpen } = useSearchContext() ?? {}
   const router = useRouter()
@@ -54,38 +53,47 @@ export const OmniSearch = () => {
 }
 
 const DefaultResults = () => {
-  const contracts = useTrendingContracts(7)
+  const markets = useTrendingContracts(7) ?? []
   return (
     <>
-      {contracts?.map((c) => (
-        <MarketResult market={c} />
-      ))}
+      <MarketResults markets={markets} />
+      <div className="mx-2 my-2 text-xs">
+        <span className="uppercase text-teal-500">💹 Protip:</span> Start
+        searches with <Key>%</Key> <Key>@</Key> <Key>#</Key> to narrow results
+      </div>
     </>
   )
 }
 
+const Key = (props: { children: ReactNode }) => (
+  <code className="rounded bg-gray-300 p-0.5">{props.children}</code>
+)
+
 const Results = (props: { query: string }) => {
   const { query } = props
 
-  const userHits = useUserSearchResults(query)
-  const groupHits = useGroupSearchResults(query, 2)
-  const marketHits = useMarketSearchResults(query)
+  const prefix = query.match(/^(%|#|@)/) ? query.charAt(0) : ''
+  const search = prefix ? query.slice(1) : query
+
+  const userHits = useUserSearchResults(
+    search,
+    !prefix ? 2 : prefix === '@' ? 25 : 0
+  )
+  const groupHits = useGroupSearchResults(
+    search,
+    !prefix ? 2 : prefix === '#' ? 25 : 0
+  )
+  const marketHits = useMarketSearchResults(
+    search,
+    !prefix ? 20 : prefix === '%' ? 25 : 0
+  )
 
   return (
-    <div>
-      {userHits.length ? <SectionTitle>Users</SectionTitle> : null}
-      {userHits.map((user) => (
-        <UserResult user={user} />
-      ))}
-      {groupHits.length ? <SectionTitle>Groups</SectionTitle> : null}
-      {groupHits.map((group) => (
-        <GroupResult group={group} />
-      ))}
-      {marketHits.length ? <SectionTitle>Markets</SectionTitle> : null}
-      {marketHits.map((market) => (
-        <MarketResult market={market} />
-      ))}
-    </div>
+    <>
+      <UserResults users={userHits} />
+      <GroupResults groups={groupHits} />
+      <MarketResults markets={marketHits} />
+    </>
   )
 }
 
@@ -108,54 +116,78 @@ const ResultOption = (props: { value: Option; children: ReactNode }) => (
   </Combobox.Option>
 )
 
-const MarketResult = (props: { market: Contract }) => {
-  const market = props.market
+const MarketResults = (props: { markets: Contract[] }) => {
+  const markets = props.markets
+  if (!markets.length) return null
+
   return (
-    <ResultOption
-      value={{
-        id: market.id,
-        slug: `/${market.creatorUsername}/${market.slug}`,
-      }}
-    >
-      {market.question}
-      {market.outcomeType === 'BINARY' && (
-        <span className="ml-2 font-bold">
-          {market.resolution ? (
-            <BinaryContractOutcomeLabel
-              contract={market}
-              resolution={market.resolution}
-            />
-          ) : (
-            getBinaryProbPercent(market)
+    <>
+      <SectionTitle>Markets</SectionTitle>
+      {props.markets.map((market) => (
+        <ResultOption
+          value={{
+            id: market.id,
+            slug: `/${market.creatorUsername}/${market.slug}`,
+          }}
+        >
+          {market.question}
+          {market.outcomeType === 'BINARY' && (
+            <span className="ml-2 font-bold">
+              {market.resolution ? (
+                <BinaryContractOutcomeLabel
+                  contract={market}
+                  resolution={market.resolution}
+                />
+              ) : (
+                getBinaryProbPercent(market)
+              )}
+            </span>
           )}
-        </span>
-      )}
-    </ResultOption>
+        </ResultOption>
+      ))}
+    </>
   )
 }
 
-const UserResult = (props: { user: User }) => {
-  const { id, name, username, avatarUrl } = props.user
+const UserResults = (props: { users: User[] }) => {
+  if (!props.users.length) return null
   return (
-    <ResultOption value={{ id, slug: `/${username}` }}>
-      <div className="flex items-center gap-2">
-        <Avatar username={username} avatarUrl={avatarUrl} size="xs" noLink />
-        {name}
-        {username !== name && <span className="font-light">@{username}</span>}
-      </div>
-    </ResultOption>
+    <>
+      <SectionTitle>Users</SectionTitle>
+      {props.users.map(({ id, name, username, avatarUrl }) => (
+        <ResultOption value={{ id, slug: `/${username}` }}>
+          <div className="flex items-center gap-2">
+            <Avatar
+              username={username}
+              avatarUrl={avatarUrl}
+              size="xs"
+              noLink
+            />
+            {name}
+            {username !== name && (
+              <span className="font-light">@{username}</span>
+            )}
+          </div>
+        </ResultOption>
+      ))}
+    </>
   )
 }
 
-const GroupResult = (props: { group: SearchGroupInfo }) => {
-  const { id, name, slug, totalMembers } = props.group
+const GroupResults = (props: { groups: SearchGroupInfo[] }) => {
+  if (!props.groups.length) return null
   return (
-    <ResultOption value={{ id, slug: `/group/${slug}` }}>
-      <div className="flex items-center">
-        <span className="mr-3">{name}</span>
-        <UsersIcon className="mr-1 h-4 w-4" />
-        {totalMembers}
-      </div>
-    </ResultOption>
+    <>
+      <SectionTitle>Groups</SectionTitle>
+      {props.groups.map(({ id, name, slug, totalMembers }) => (
+        <ResultOption value={{ id, slug: `/group/${slug}` }}>
+          <div className="flex items-center">
+            <span className="mr-3">{name}</span>
+            <UsersIcon className="mr-1 h-4 w-4" />
+            {totalMembers}
+          </div>
+        </ResultOption>
+      ))}
+    </>
   )
 }
