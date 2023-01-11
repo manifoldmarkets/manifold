@@ -25,6 +25,7 @@ export const SearchProvider = (props: { children: ReactNode }) => {
     window.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         setOpen(true)
+        e.preventDefault()
       }
     })
   }, [])
