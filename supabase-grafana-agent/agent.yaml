@@ -1,0 +1,29 @@
+server:
+  log_level: debug
+
+integrations:
+  agent:
+    enabled: false
+  node_exporter:
+    enabled: false
+
+metrics:
+  wal_directory: /tmp/wal
+  global:
+    scrape_interval: 5s
+  configs:
+    - name: supa_prom_scraper
+      scrape_configs:
+        - job_name: supa_prom_scraper
+          metrics_path: '/customer/v1/privileged/metrics'
+          basic_auth:
+            username: service_role
+            password: ${SUPABASE_KEY}
+          static_configs:
+            - targets: ['pxidrgkatumlvfqaxcll.supabase.co']
+
+      remote_write:
+        - url: https://prometheus-us-central1.grafana.net/api/prom/push
+          basic_auth:
+            username: 724327
+            password: ${GRAFANA_CLOUD_API_KEY}
