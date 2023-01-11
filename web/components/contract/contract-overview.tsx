@@ -53,6 +53,8 @@ export const ContractOverview = memo(
         )
       case 'CERT':
         return <CertOverview contract={contract} />
+      case 'QUADRATIC_FUNDING':
+        return <div>TODO Quadratic funding overview</div>
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         return <ChoiceOverview contract={contract} bets={bets} />

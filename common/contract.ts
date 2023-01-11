@@ -143,7 +143,9 @@ export type QuadraticFunding = {
   outcomeType: 'QUADRATIC_FUNDING'
   mechanism: 'qf'
   answers: Answer[]
-  pool: number
+  // Mapping of how much each user has contributed to the matching pool
+  // Note: Our codebase assumes every contract has a pool, which is why this isn't just a constant
+  pool: { M$: number }
 }
 
 export type Binary = {

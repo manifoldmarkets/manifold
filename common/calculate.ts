@@ -46,15 +46,19 @@ export function getInitialProbability(
 }
 
 export function getOutcomeProbability(contract: Contract, outcome: string) {
-  if (contract.mechanism === 'uniswap-2')
-    throw new Error('getOutcomeProbability not implemented')
-  return contract.mechanism === 'cpmm-1'
-    ? outcome === 'YES'
-      ? getCpmmProbability(contract.pool, contract.p)
-      : 1 - getCpmmProbability(contract.pool, contract.p)
-    : contract.mechanism === 'cpmm-2'
-    ? getProb(contract.pool, outcome)
-    : getDpmOutcomeProbability(contract.totalShares, outcome)
+  const { mechanism, pool } = contract
+  switch (mechanism) {
+    case 'cpmm-1':
+      return outcome === 'YES'
+        ? getCpmmProbability(pool, contract.p)
+        : 1 - getCpmmProbability(pool, contract.p)
+    case 'cpmm-2':
+      return getProb(pool, outcome)
+    case 'dpm-2':
+      return getDpmOutcomeProbability(contract.totalShares, outcome)
+    default:
+      throw new Error('getOutcomeProbability not implemented')
+  }
 }
 
 export function getOutcomeProbabilityAfterBet(
@@ -62,14 +66,21 @@ export function getOutcomeProbabilityAfterBet(
   outcome: string,
   bet: number
 ) {
-  if (contract.mechanism === 'uniswap-2')
-    throw new Error('getOutcomeProbabilityAfterBet not implemented')
   const { mechanism, pool } = contract
-  return mechanism === 'cpmm-1'
-    ? getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
-    : mechanism === 'cpmm-2'
-    ? getProb(buy(pool, outcome, bet).newPool, outcome)
-    : getDpmOutcomeProbabilityAfterBet(contract.totalShares, outcome, bet)
+  switch (mechanism) {
+    case 'cpmm-1':
+      return getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
+    case 'cpmm-2':
+      return getProb(buy(pool, outcome, bet).newPool, outcome)
+    case 'dpm-2':
+      return getDpmOutcomeProbabilityAfterBet(
+        contract.totalShares,
+        outcome,
+        bet
+      )
+    default:
+      throw new Error('getOutcomeProbabilityAfterBet not implemented')
+  }
 }
 
 export function calculateSharesBought(
@@ -77,14 +88,17 @@ export function calculateSharesBought(
   outcome: string,
   amount: number
 ) {
-  if (contract.mechanism === 'uniswap-2')
-    throw new Error('calculateSharesBought not implemented')
   const { mechanism, pool } = contract
-  return mechanism === 'cpmm-1'
-    ? calculateCpmmPurchase(contract, amount, outcome).shares
-    : mechanism === 'cpmm-2'
-    ? buy(pool, outcome, amount).shares
-    : calculateDpmShares(contract.totalShares, amount, outcome)
+  switch (mechanism) {
+    case 'cpmm-1':
+      return calculateCpmmPurchase(contract, amount, outcome).shares
+    case 'cpmm-2':
+      return buy(pool, outcome, amount).shares
+    case 'dpm-2':
+      return calculateDpmShares(contract.totalShares, amount, outcome)
+    default:
+      throw new Error('calculateSharesBought not implemented')
+  }
 }
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
