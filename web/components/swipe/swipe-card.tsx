@@ -29,6 +29,7 @@ import toast from 'react-hot-toast'
 import { logView } from 'web/lib/firebase/views'
 import { placeBet } from 'web/lib/firebase/api'
 import { track } from '@amplitude/analytics-browser'
+import getQuestionSize from './swipe-helpers'
 
 const betTapAdd = 10
 const horizontalSwipeDist = 80
@@ -156,9 +157,6 @@ export function PrimarySwipeCard(props: {
           contract.description + contract.question + contract.creatorUsername
         }
         contract={contract}
-        index={index}
-        setIndex={setIndex}
-        cardHeight={cardHeight}
         amount={amount}
         setAmount={setAmount}
         isPrimaryCard={true}
@@ -172,27 +170,13 @@ export function PrimarySwipeCard(props: {
 export const SwipeCard = memo(
   (props: {
     contract: BinaryContract
-    // swipeDirection: 'YES' | 'NO' | undefined
-    index: number
-    setIndex: (next: SetStateAction<number>) => void
-    // onBet: (outcome: 'YES' | 'NO') => void
     amount: number
     setAmount: (amount: number) => void
-    cardHeight: number
     isPrimaryCard?: boolean
     className?: string
     user?: User
   }) => {
-    const {
-      index,
-      setIndex,
-      amount,
-      setAmount,
-      cardHeight,
-      isPrimaryCard,
-      className,
-      user,
-    } = props
+    const { amount, setAmount, isPrimaryCard, className, user } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
     const { question, description, coverImageUrl } = contract
@@ -212,50 +196,49 @@ export const SwipeCard = memo(
         className={clsx(className, 'rounded drop-shadow-lg')}
         onClick={(e) => e.preventDefault()}
       >
-        <div className="flex h-full flex-col bg-black">
-          <div className="relative mb-24 grow">
-            <img
-              src={image}
-              alt=""
-              className="h-full object-cover"
-              style={{ filter: 'brightness(0.60)' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
-          </div>
-        </div>
-
-        {/* content */}
-        <div className="absolute inset-0 flex select-none flex-col gap-4">
+        <div className="h-24 w-full bg-black">
           <CornerDetails contract={contract} />
+        </div>
+        <div className="relative grow bg-black">
+          <div className="absolute z-0 min-h-[30%] w-full bg-gradient-to-b from-black to-transparent pb-4" />
+          <div className="absolute bottom-0 z-0 min-h-[30%] w-full bg-gradient-to-b from-transparent to-black pb-4" />
           <SiteLink
-            className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white"
+            className="absolute -top-9 z-10"
             href={contractPath(contract)}
             followsLinkClass
           >
-            {question}
+            <div
+              className={clsx(
+                'mx-3 text-white drop-shadow',
+                getQuestionSize(question)
+              )}
+            >
+              {question}
+            </div>
           </SiteLink>
-          <div className="grid grid-cols-3">
-            <div />
+          <div className="absolute top-32 left-24 z-10 mx-auto">
             <Percent
               contract={contract}
               amount={amount}
               outcome={swipeDirection}
             />
-            <Actions contract={contract} user={user} />
           </div>
 
-          {/* TODO: use editor excluding widgets */}
-          <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
-            {typeof description === 'string'
-              ? description
-              : richTextToString(description)}
+          <div className="absolute -bottom-20 z-10 w-full">
+            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
+              {typeof description === 'string'
+                ? description
+                : richTextToString(description)}
+            </div>
+            <SwipeBetPanel
+              setAmount={() => setAmount}
+              amount={amount}
+              disabled={!isPrimaryCard}
+            />
           </div>
-          <SwipeBetPanel
-            setAmount={() => setAmount}
-            amount={amount}
-            disabled={!isPrimaryCard}
-          />
+          <img src={image} alt="" className="h-full object-cover" />
         </div>
+        <div className="h-20 w-full bg-black" />
       </Col>
     )
   }
@@ -303,7 +286,9 @@ export function SwipeBetPanel(props: {
           className={'opacity-70'}
         />
 
-        <span className="mx-1 py-4">{disabled ? 10 : formatMoney(amount)}</span>
+        <span className="mx-1 py-4">
+          {disabled ? formatMoney(10) : formatMoney(amount)}
+        </span>
 
         <TouchButton
           pressState={'add'}
@@ -322,12 +307,12 @@ export function SwipeBetPanel(props: {
   )
 }
 
-const CornerDetails = (props: { contract: Contract }) => {
-  const { contract } = props
+const CornerDetails = (props: { contract: Contract; className?: string }) => {
+  const { contract, className } = props
   const { creatorName, creatorAvatarUrl, closeTime } = contract
 
   return (
-    <div className="m-3 flex gap-2 self-start drop-shadow">
+    <div className={clsx('m-3 flex gap-2 self-start', className)}>
       <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
       <div className="text-xs">
         <div className="text-white">{creatorName} </div>
@@ -340,38 +325,6 @@ const CornerDetails = (props: { contract: Contract }) => {
     </div>
   )
 }
-
-// const SwipeStatus = (props: { outcome: 'YES' | 'NO' | undefined }) => {
-//   const { outcome } = props
-
-//   if (outcome === 'NO') {
-//     return (
-//       <Row className="text-scarlet-100 mr-8 items-center justify-end gap-1">
-//         <ArrowLeftIcon className="h-5" /> Betting NO
-//       </Row>
-//     )
-//   }
-//   if (outcome === 'YES') {
-//     return (
-//       <Row className="ml-8 items-center justify-start gap-1 text-teal-100">
-//         Betting YES <ArrowRightIcon className="h-5" />
-//       </Row>
-//     )
-//   }
-//   return (
-//     <Row className="items-center justify-center text-yellow-100">
-//       <Row className="gap-1">
-//         <YesLabel /> <ArrowRightIcon className="h-6 text-teal-600" />
-//       </Row>
-//       <span className="mx-8 whitespace-nowrap text-yellow-100">
-//         Swipe to bet
-//       </span>
-//       <Row className="gap-1">
-//         <ArrowLeftIcon className="text-scarlet-600 h-6" /> <NoLabel />
-//       </Row>
-//     </Row>
-//   )
-// }
 
 function Percent(props: {
   contract: BinaryContract

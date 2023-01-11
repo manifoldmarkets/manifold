@@ -120,11 +120,8 @@ export default function Swipe() {
               cards[1].question +
               cards[1].creatorUsername
             }
-            index={index}
             amount={amount}
             setAmount={setAmount}
-            setIndex={setIndex}
-            cardHeight={cardHeight}
             user={user}
             isPrimaryCard={false}
             className="user-select-none absolute inset-1 z-10 max-w-lg touch-none"
