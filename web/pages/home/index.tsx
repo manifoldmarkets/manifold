@@ -223,6 +223,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
           </Row>
         </Row>
 
+        <HomeSectionHeader label="Browse markets" href="/search" />
+
         {isLoading ? (
           <LoadingIndicator />
         ) : (
