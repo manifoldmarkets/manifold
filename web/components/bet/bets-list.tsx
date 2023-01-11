@@ -215,7 +215,7 @@ export function BetsList(props: { user: User }) {
     <Col>
       <Col className="justify-between gap-4 sm:flex-row">
         <Row className="gap-4">
-          <Col>
+          <Col className={'shrink-0'}>
             <div className="text-xs text-gray-600 sm:text-sm">
               Investment value
             </div>
@@ -230,7 +230,7 @@ export function BetsList(props: { user: User }) {
           </Col>
           <Input
             placeholder="Search"
-            className={'w-24 sm:w-32'}
+            className={'w-24 sm:w-full'}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
