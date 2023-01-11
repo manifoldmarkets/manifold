@@ -18,7 +18,7 @@ export default function DiscoverPage() {
           <Title className="mx-4 !mb-0 !mt-0 sm:mx-0" text="Discover" />
           <DailyProfit user={user} />
         </Row>
-        {user && <DiscoverFeed user={user} count={500} />}
+        {user && <DiscoverFeed user={user} />}
       </Col>
     </Page>
   )
