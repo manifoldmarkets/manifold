@@ -12,6 +12,7 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { useMarketSearchResults } from './query-contracts'
 import { useGroupSearchResults } from './query-groups'
+import { PageData, searchPages } from './query-pages'
 import { useUserSearchResults } from './query-users'
 import { useSearchContext } from './search-context'
 
@@ -88,8 +89,11 @@ const Results = (props: { query: string }) => {
     !prefix ? 20 : prefix === '%' ? 25 : 0
   )
 
+  const pageHits = prefix ? [] : searchPages(query, 2)
+
   return (
     <>
+      <PageResults pages={pageHits} />
       <UserResults users={userHits} />
       <GroupResults groups={groupHits} />
       <MarketResults markets={marketHits} />
@@ -187,6 +191,18 @@ const GroupResults = (props: { groups: SearchGroupInfo[] }) => {
             {totalMembers}
           </div>
         </ResultOption>
+      ))}
+    </>
+  )
+}
+
+const PageResults = (props: { pages: PageData[] }) => {
+  if (!props.pages.length) return null
+  return (
+    <>
+      <SectionTitle>Pages</SectionTitle>
+      {props.pages.map(({ label, slug }) => (
+        <ResultOption value={{ id: label, slug }}>{label}</ResultOption>
       ))}
     </>
   )
