@@ -224,7 +224,7 @@ export function BetsList(props: { user: User }) {
               <ProfitBadge profitPercent={investedProfitPercent} />
             </div>
           </Col>
-          <Col>
+          <Col className={'shrink-0'}>
             <div className="text-xs text-gray-600 sm:text-sm">Total loans</div>
             <div className="text-lg">{formatMoney(currentLoan)}</div>
           </Col>
