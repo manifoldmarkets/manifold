@@ -819,6 +819,19 @@ The organization's core services include family planning; safe abortion and post
 The organization reports for the year 2021 to have prevented 14.1 million unintended pregnancies, averted 6.6 million unsafe abortions, and saved 39,000 women's lives.`,
     tags: ['New'] as const,
   },
+  {
+    name: 'Fish Welfare Initiative',
+    website: 'https://www.fishwelfareinitiative.org/',
+    photo: 'https://i.imgur.com/gd8O71v.png',
+    preview: `Fish Welfare Initiative's mission is to improve the welfare of fish as much as possible, focusing specifically on farmed fish.`,
+    description: `Fish Welfare Initiative is a startup organization whose mission is to improve the welfare of fish as much as possible. They focus specifically on farmed fish, i.e., fish raised in aquaculture.
+    
+    They collaborate with corporations, governments, and producers to improve fish welfare standards and practices with a simple broad approach: researching the most promising ways of improving fish welfare, and then enabling stakeholders to do so. 
+    Following their initial research, their team now partners with NGOs to help farmers introduce higher welfare farming methods in the second-highest fish producing country in the world, India.
+    
+    As of December 30 2022, they have potentially helped 1.14 and 1.4 million fish and shrimp respectively, with every $1 potentially helping 1.3 fish and every $100 13 fish.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
