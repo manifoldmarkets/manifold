@@ -70,7 +70,7 @@ export function BetsList(props: { user: User }) {
 
   const [metrics, setMetrics] = usePersistentState<
     ContractMetric[] | undefined
-  >(undefined, { key: 'user-contract-metrics', store: inMemoryStore() })
+  >(undefined, { key: `user-contract-metrics-${user.id}`, store: inMemoryStore() })
 
   useEffect(() => {
     getUserContractMetrics(user.id).then(setMetrics)
