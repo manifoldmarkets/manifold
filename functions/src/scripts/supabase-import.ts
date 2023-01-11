@@ -93,13 +93,19 @@ async function importCollectionGroupAtTimestamp(
   const t1 = await getServerTimestamp()
   const n = (await source.count().get()).data().count
   if (startTime === 0) {
-    startTime = await source.orderBy(timePropName, 'asc').limit(1).get().then((snap) => {
-      return snap.docs[0].data()[timePropName]
-    })
+    startTime = await source
+      .orderBy(timePropName, 'asc')
+      .limit(1)
+      .get()
+      .then((snap) => {
+        return snap.docs[0].data()[timePropName]
+      })
   }
-  log(`Documents to import: ${n}. Timestamp: ${t1.toISOString()}. Starting from: ${startTime}.`)
+  log(
+    `Documents to import: ${n}. Timestamp: ${t1.toISOString()}. Starting from: ${startTime}.`
+  )
   // go from startTime to t1 via 1 day chunks
-  const delta = 1 * DAY_MS
+  const delta = 0.25 * DAY_MS
   while (startTime < t1.getTime()) {
     const endTime = Math.min(startTime + delta, t1.getTime())
     const snap = await source
@@ -148,7 +154,7 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('portfolioHistory'),
       'userPortfolioHistory',
       (_) => true,
-      0,
+      1670725675605,
       'timestamp'
     )
   if (shouldImport('userContractMetrics'))
@@ -157,7 +163,7 @@ async function importDatabase(kinds?: string[]) {
       firestore.collectionGroup('contract-metrics'),
       'userContractMetrics',
       (_) => true,
-      2500,
+      2500
     )
   if (shouldImport('userFollow'))
     await importCollectionGroup(
