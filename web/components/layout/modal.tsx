@@ -46,10 +46,10 @@ export function Modal(props: {
       >
         <Transition.Child
           as={Fragment}
-          enter="ease-linear duration-300"
+          enter="ease-linear duration-150"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="ease-linear duration-200"
+          leave="ease-linear duration-75"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
@@ -58,10 +58,10 @@ export function Modal(props: {
 
         <Transition.Child
           as={Fragment}
-          enter="ease-in sm:ease-out duration-300"
+          enter="ease-in sm:ease-out duration-150"
           enterFrom="sm:opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
           enterTo="opacity-100 translate-y-0 sm:scale-100"
-          leave="ease-out sm:ease-in duration-200"
+          leave="ease-out sm:ease-in duration-75"
           leaveFrom="opacity-100 translate-y-0 sm:scale-100"
           leaveTo="sm:opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
         >
