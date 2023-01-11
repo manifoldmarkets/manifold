@@ -50,7 +50,7 @@ export function DailyChart(props: {
   const { dailyValues, startDate, excludeFirstDays, pct } = props
 
   const data = useMemo(
-    () => getPoints(startDate, dailyValues).slice(excludeFirstDays ?? 0),
+    () => getPoints(startDate, dailyValues ?? []).slice(excludeFirstDays ?? 0),
     [startDate, dailyValues, excludeFirstDays]
   )
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
