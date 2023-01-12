@@ -25,7 +25,6 @@ import {
 } from 'web/lib/service/algolia'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
-import { SimpleLinkButton } from './buttons/simple-link-button'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 export const SORTS = [
@@ -217,7 +216,6 @@ export function ContractSearch(props: {
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
         autoFocus={autoFocus}
-        isWholePage={isWholePage}
       />
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
@@ -249,7 +247,6 @@ function ContractSearchControls(props: {
   useQueryUrlParam?: boolean
   noControls?: boolean
   autoFocus?: boolean
-  isWholePage?: boolean
 }) {
   const {
     className,
@@ -263,7 +260,6 @@ function ContractSearchControls(props: {
     noControls,
     autoFocus,
     includeProbSorts,
-    isWholePage,
   } = props
 
   const router = useRouter()
@@ -379,14 +375,7 @@ function ContractSearchControls(props: {
           className="w-full"
           autoFocus={autoFocus}
         />
-        {query ? (
-          isWholePage && (
-            <SimpleLinkButton
-              getUrl={() => window.location.href}
-              tooltip="Copy link to search results"
-            />
-          )
-        ) : (
+        {!query && (
           <SearchFilters
             filter={filter}
             selectFilter={selectFilter}
