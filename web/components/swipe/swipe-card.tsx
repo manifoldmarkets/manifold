@@ -29,7 +29,10 @@ import toast from 'react-hot-toast'
 import { logView } from 'web/lib/firebase/views'
 import { placeBet } from 'web/lib/firebase/api'
 import { track } from '@amplitude/analytics-browser'
-import getQuestionSize from './swipe-helpers'
+import getQuestionSize, {
+  BUFFER_CARD_COLOR,
+  BUFFER_CARD_OPACITY,
+} from './swipe-helpers'
 
 const betTapAdd = 10
 const horizontalSwipeDist = 80
@@ -61,15 +64,15 @@ const onBet = (
   const shortQ = contract.question.slice(0, 20)
   const message = `Bet ${formatMoney(amount)} ${outcome} on "${shortQ}"...`
 
-  toast.promise(
-    promise,
-    {
-      loading: message,
-      success: message,
-      error: (err) => `Error placing bet: ${err.message}`,
-    },
-    { position: 'top-center' }
-  )
+  // toast.promise(
+  //   promise,
+  //   {
+  //     loading: message,
+  //     success: message,
+  //     error: (err) => `Error placing bet: ${err.message}`,
+  //   },
+  //   { position: 'top-center' }
+  // )
 
   if (user) logView({ amount, outcome, contractId, userId: user.id })
   track('swipe bet', {
@@ -99,7 +102,7 @@ export function PrimarySwipeCard(props: {
 
   //
   const [isFreshCard, setIsFreshCard] = useState(true)
-  setTimeout(() => setIsFreshCard(false), 50)
+  setTimeout(() => setIsFreshCard(false), 10)
 
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
@@ -172,8 +175,9 @@ export function PrimarySwipeCard(props: {
     <>
       <Col
         className={clsx(
-          'pointer-events-none absolute inset-1 z-10 max-w-lg bg-gray-300 transition-opacity duration-200',
-          isFreshCard ? 'opacity-50' : 'opacity-0'
+          'pointer-events-none absolute inset-1 z-10 max-w-lg transition-opacity duration-300 ease-in-out',
+          BUFFER_CARD_COLOR,
+          isFreshCard ? BUFFER_CARD_OPACITY : 'opacity-0'
         )}
       />
 
@@ -257,7 +261,7 @@ export const SwipeCard = memo(
                 {question}
               </div>
             </SiteLink>
-            <div className="absolute top-32 left-[calc(50%-80px)] z-10 mx-auto">
+            <div className="absolute top-28 left-[calc(50%-80px)] z-10 mx-auto">
               <Percent
                 contract={contract}
                 amount={amount}
@@ -344,12 +348,12 @@ export function SwipeBetPanel(props: {
       <Row className="relative items-center gap-0.5 text-white">
         <button
           className={clsx(
-            'absolute -left-[88px] z-20 flex h-16 flex-col justify-center rounded-[4rem] border-2 transition-all',
+            'absolute -left-[88px] z-20 flex h-16 flex-col justify-center rounded-[4rem] border-2 font-semibold transition-all',
             !disabled
               ? 'active:bg-scarlet-500 active:border-scarlet-500 active:text-white'
               : 'w-16 border-gray-200 pl-4 text-gray-200',
             !disabled && (buttonAction === 'NO' || swipeAction === 'left')
-              ? 'bg-scarlet-500 border-scarlet-500 w-[182px] pl-20 text-white'
+              ? 'bg-scarlet-500 border-scarlet-500 w-[188px] pl-[84px] text-white'
               : 'border-scarlet-200 text-scarlet-200 w-16 pl-4'
           )}
           disabled={disabled}
@@ -371,9 +375,9 @@ export function SwipeBetPanel(props: {
           className={'opacity-70'}
         />
 
-        <span className="z-30 mx-1 py-4">
+        <Row className="z-30 mx-1 w-10 justify-center py-4">
           {disabled ? formatMoney(10) : formatMoney(amount)}
-        </span>
+        </Row>
 
         <TouchButton
           pressState={'add'}
@@ -386,10 +390,10 @@ export function SwipeBetPanel(props: {
         />
         <button
           className={clsx(
-            'absolute -right-[88px] z-20 flex h-16 flex-col justify-center rounded-full border-2 transition-all active:border-teal-600 active:bg-teal-600 active:text-white',
+            'absolute -right-[88px] z-20 flex h-16 flex-col justify-center rounded-full border-2 font-semibold transition-all active:border-teal-600 active:bg-teal-600 active:text-white',
             !disabled && (buttonAction === 'YES' || swipeAction === 'right')
-              ? 'w-[182px] border-teal-600 bg-teal-600 pl-[71px] text-white'
-              : 'w-16 border-teal-300 bg-inherit pl-[15px] text-teal-300'
+              ? 'w-[188px] border-teal-600 bg-teal-600 pl-[74px] text-white'
+              : 'w-16 border-teal-300 bg-inherit pl-[13px] text-teal-300'
           )}
           disabled={disabled}
           onClick={() => {
@@ -415,7 +419,7 @@ const CornerDetails = (props: { contract: Contract; className?: string }) => {
       <div className="text-xs">
         <div className="text-white">{creatorName} </div>
         {closeTime != undefined && (
-          <div className="text-gray-50 ">
+          <div className="text-gray-400 ">
             trading closes {fromNow(closeTime)}
           </div>
         )}

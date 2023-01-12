@@ -6,3 +6,6 @@ export default function getQuestionSize(
   if (questionLength < 100 && questionLength >= 40) return 'text-2xl'
   return 'text-4xl'
 }
+
+export const BUFFER_CARD_COLOR = 'bg-gray-700'
+export const BUFFER_CARD_OPACITY = 'opacity-70'

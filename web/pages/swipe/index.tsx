@@ -26,6 +26,10 @@ import { useTracking } from 'web/hooks/use-tracking'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
 import dayjs from 'dayjs'
+import {
+  BUFFER_CARD_COLOR,
+  BUFFER_CARD_OPACITY,
+} from 'web/components/swipe/swipe-helpers'
 
 export default function Swipe() {
   useTracking('view swipe page')
@@ -123,9 +127,11 @@ export default function Swipe() {
         {cards.length > 1 && (
           <>
             <Col
-              className={
-                'absolute inset-1 z-20 max-w-lg rounded-2xl bg-gray-300 opacity-50'
-              }
+              className={clsx(
+                'absolute inset-1 z-20 max-w-lg rounded-2xl',
+                BUFFER_CARD_COLOR,
+                BUFFER_CARD_OPACITY
+              )}
             />
             <SwipeCard
               contract={cards[1]}
