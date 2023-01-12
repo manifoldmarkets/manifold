@@ -7,7 +7,7 @@ import {
   ReactionNotificationTypes,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
@@ -28,6 +28,7 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -354,7 +355,18 @@ function MarketResolvedNotification(props: {
   } = notification
   const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
   const profit = userPayout - userInvestment
-  const profitable = profit >= 0
+  const profitable = profit >= 0 && userInvestment > 0
+  const [opacity, setOpacity] = useState(highlighted && profitable ? 1 : 0)
+  const [isVisible, setIsVisible] = useState(false)
+  const { ref } = useIsVisible(() => setIsVisible(true), true)
+
+  useEffect(() => {
+    if (opacity > 0 && isVisible)
+      setTimeout(() => {
+        setOpacity(opacity - 0.02)
+      }, opacity * 100)
+  }, [isVisible, opacity])
+
   const subtitle =
     userInvestment > 0 ? (
       sourceText === 'CANCEL' ? (
@@ -446,6 +458,18 @@ function MarketResolvedNotification(props: {
       </>
     )
 
+  const confettiBg = highlighted ? (
+    <div
+      ref={ref}
+      className={clsx(
+        ' bg-confetti-animated pointer-events-none absolute inset-0'
+      )}
+      style={{
+        opacity,
+      }}
+    />
+  ) : undefined
+
   return (
     <NotificationFrame
       notification={notification}
@@ -456,12 +480,13 @@ function MarketResolvedNotification(props: {
       icon={
         <AvatarNotificationIcon
           notification={notification}
-          symbol={sourceText === 'CANCEL' ? '🚫' : '☑️'}
+          symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
         />
       }
+      customBackground={confettiBg}
       link={getSourceUrl(notification)}
     >
-      <>{content}</>
+      {content}
     </NotificationFrame>
   )
 }
