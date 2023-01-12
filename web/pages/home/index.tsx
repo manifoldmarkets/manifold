@@ -77,6 +77,7 @@ import {
   MobileSearchButton,
   SearchButton,
 } from 'web/components/nav/search-button'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -198,7 +199,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     privateUser?.blockedUserIds,
     setPinned,
   ])
-
+  const isMobile = useIsMobile()
   const isLoading =
     !user ||
     !privateUser ||
@@ -216,7 +217,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />
           <MobileSearchButton className="flex-1 md:hidden" />
           <Row className="items-center gap-4">
-            <DailyStats user={user} showLoans />
+            <DailyStats user={user} showLoans={!isMobile} />
             <CustomizeButton router={Router} />
           </Row>
         </Row>
