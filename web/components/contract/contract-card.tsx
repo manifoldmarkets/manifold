@@ -471,13 +471,9 @@ function LoadedMetricsFooter(props: {
     contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
 
   return (
-    <Row
-      className={clsx(
-        'items-center gap-4 bg-gray-100 pl-4 pr-4 pt-1 pb-2 text-sm'
-      )}
-    >
-      <Col className="w-1/2">
-        <span className="text-xs text-gray-400"> Your position </span>
+    <div className="columns-2 items-center gap-4 rounded-b-[7px] bg-gray-100 px-4 pt-1 pb-2 text-sm">
+      <Col>
+        <span className="text-xs text-gray-400">Your position</span>
         <div className="text-sm text-gray-600">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
@@ -488,23 +484,16 @@ function LoadedMetricsFooter(props: {
           {' shares'}
         </div>
       </Col>
-      <Col className="w-1/2">
+      <Col>
         <div className="text-xs text-gray-400">
           {' '}
           Your {showDailyProfit ? 'daily' : 'total'} profit{' '}
         </div>
-        <div
-          className={clsx(
-            'text-sm font-semibold text-gray-600'
-            // : profit > 0
-            // ? 'text-teal-500'
-            // : 'text-red-600'
-          )}
-        >
+        <div className={clsx('text-sm font-semibold text-gray-600')}>
           {profit ? formatMoney(profit) : '--'}
         </div>
       </Col>
-    </Row>
+    </div>
   )
 }
 
