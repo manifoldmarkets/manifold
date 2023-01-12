@@ -267,7 +267,6 @@ const App = () => {
         }
       }
       setUser(null)
-      setWaitingForAuth(false)
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
