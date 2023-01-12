@@ -24,14 +24,16 @@ import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { useTracking } from 'web/hooks/use-tracking'
 import clsx from 'clsx'
+import { Col } from 'web/components/layout/col'
+import dayjs from 'dayjs'
 
 export default function Swipe() {
   useTracking('view swipe page')
 
   const user = useUser()
-  const feed = useFeed(user, 400)?.filter((c) => c.outcomeType === 'BINARY') as
-    | BinaryContract[]
-    | undefined
+  const feed = useFeed(user, 400)?.filter(
+    (c) => c.outcomeType === 'BINARY' && dayjs().isBefore(c.closeTime)
+  ) as BinaryContract[] | undefined
 
   const [index, setIndex] = usePersistentState(0, {
     key: 'swipe-index',
@@ -73,6 +75,7 @@ export default function Swipe() {
     }
   }, [])
 
+  const [cardBufferClass, setCardBufferClass] = useState('opacity-70')
   if (user === undefined || feed === undefined) {
     return (
       <Page>
@@ -100,32 +103,43 @@ export default function Swipe() {
         style={{ height: cardHeight }}
       >
         {cards.length > 0 && (
-          <PrimarySwipeCard
-            key={
-              cards[0].description +
-              cards[0].question +
-              cards[0].creatorUsername
-            }
-            contract={cards[0]}
-            index={index}
-            setIndex={setIndex}
-            cardHeight={cardHeight}
-            user={user}
-          />
+          <>
+            <div className="z-30">
+              <PrimarySwipeCard
+                key={
+                  cards[0].description +
+                  cards[0].question +
+                  cards[0].creatorUsername
+                }
+                contract={cards[0]}
+                index={index}
+                setIndex={setIndex}
+                cardHeight={cardHeight}
+                user={user}
+              />
+            </div>
+          </>
         )}
         {cards.length > 1 && (
-          <SwipeCard
-            contract={cards[1]}
-            key={
-              cards[1].description +
-              cards[1].question +
-              cards[1].creatorUsername
-            }
-            amount={amount}
-            setAmount={setAmount}
-            isPrimaryCard={false}
-            className="user-select-none absolute inset-1 z-10 max-w-lg touch-none"
-          />
+          <>
+            <Col
+              className={
+                'absolute inset-1 z-20 max-w-lg rounded-2xl bg-gray-300 opacity-50'
+              }
+            />
+            <SwipeCard
+              contract={cards[1]}
+              key={
+                cards[1].description +
+                cards[1].question +
+                cards[1].creatorUsername
+              }
+              amount={amount}
+              setAmount={setAmount}
+              isPrimaryCard={false}
+              className="user-select-none absolute inset-1 z-10 max-w-lg touch-none"
+            />
+          </>
         )}
         {!cards.length && (
           <div className="flex h-full w-full flex-col items-center justify-center">

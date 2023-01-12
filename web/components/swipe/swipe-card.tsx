@@ -97,6 +97,10 @@ export function PrimarySwipeCard(props: {
     undefined
   )
 
+  //
+  const [isFreshCard, setIsFreshCard] = useState(true)
+  setTimeout(() => setIsFreshCard(false), 50)
+
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
     y: 0,
@@ -165,29 +169,38 @@ export function PrimarySwipeCard(props: {
     { axis: 'lock' }
   )
   return (
-    <animated.div
-      {...bind()}
-      className={clsx(
-        'user-select-none absolute inset-1 z-20 max-w-lg touch-none'
-      )}
-      style={{ x, y }}
-      onClick={(e) => e.preventDefault()}
-    >
-      <SwipeCard
-        key={
-          contract.description + contract.question + contract.creatorUsername
-        }
-        contract={contract}
-        amount={amount}
-        setAmount={setAmount}
-        isPrimaryCard={true}
-        className="h-full"
-        action={action}
-        onButtonBet={onButtonBet}
-        buttonAction={buttonAction}
-        user={user}
+    <>
+      <Col
+        className={clsx(
+          'pointer-events-none absolute inset-1 z-10 max-w-lg bg-gray-300 transition-opacity duration-200',
+          isFreshCard ? 'opacity-50' : 'opacity-0'
+        )}
       />
-    </animated.div>
+
+      <animated.div
+        {...bind()}
+        className={clsx(
+          'user-select-none pointer-events-auto absolute inset-1 max-w-lg touch-none'
+        )}
+        style={{ x, y }}
+        onClick={(e) => e.preventDefault()}
+      >
+        <SwipeCard
+          key={
+            contract.description + contract.question + contract.creatorUsername
+          }
+          contract={contract}
+          amount={amount}
+          setAmount={setAmount}
+          isPrimaryCard={true}
+          className="h-full"
+          action={action}
+          onButtonBet={onButtonBet}
+          buttonAction={buttonAction}
+          user={user}
+        />
+      </animated.div>
+    </>
   )
 }
 
