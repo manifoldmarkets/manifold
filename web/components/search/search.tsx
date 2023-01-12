@@ -21,7 +21,12 @@ export interface Option {
   slug: string
 }
 
-export const OmniSearch = () => {
+export const OmniSearch = (props: {
+  className?: string
+  inputClassName?: string
+}) => {
+  const { className, inputClassName } = props
+
   const [query, setQuery] = useState('')
 
   const { setOpen } = useSearchContext() ?? {}
@@ -34,14 +39,17 @@ export const OmniSearch = () => {
         setOpen?.(false)
         router.push(slug)
       }}
-      className="flex max-h-full flex-col overflow-hidden rounded-2xl bg-white"
+      className={clsx('flex flex-col bg-white', className)}
     >
       <Combobox.Input
         autoFocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search markets, users, & groups"
-        className="border-0 border-b !border-gray-100 py-4 px-6 text-xl ring-0 placeholder:text-gray-400 focus:ring-transparent"
+        className={clsx(
+          'border-0 border-b !border-gray-100 py-4 px-6 text-xl ring-0 ring-transparent placeholder:text-gray-400 focus:ring-transparent',
+          inputClassName
+        )}
       />
       <Combobox.Options
         static
