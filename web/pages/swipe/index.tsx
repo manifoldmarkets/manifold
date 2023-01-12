@@ -19,8 +19,6 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { PrimarySwipeCard, SwipeCard } from 'web/components/swipe/swipe-card'
-import { formatMoney } from 'common/util/format'
-import { placeBet } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { postMessageToNative } from 'web/components/native-message-listener'
@@ -97,7 +95,10 @@ export default function Swipe() {
 
   return (
     <Page>
-      <Row className={clsx('relative w-screen')} style={{ height: cardHeight }}>
+      <Row
+        className={clsx('relative w-screen overflow-hidden')}
+        style={{ height: cardHeight }}
+      >
         {cards.length > 0 && (
           <PrimarySwipeCard
             key={
@@ -122,7 +123,6 @@ export default function Swipe() {
             }
             amount={amount}
             setAmount={setAmount}
-            user={user}
             isPrimaryCard={false}
             className="user-select-none absolute inset-1 z-10 max-w-lg touch-none"
           />

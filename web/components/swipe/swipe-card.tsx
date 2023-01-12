@@ -157,7 +157,7 @@ export function PrimarySwipeCard(props: {
       const x = down ? mx : 0
       const y = down ? (my < 0 ? my : 0) : 0
 
-      console.log(mx, my, action)
+      // console.log(mx, my, action)
       if (action === 'none') {
         api.start({ x, y })
       }
@@ -183,8 +183,9 @@ export function PrimarySwipeCard(props: {
         isPrimaryCard={true}
         className="h-full"
         action={action}
-        onBet={onButtonBet}
+        onButtonBet={onButtonBet}
         buttonAction={buttonAction}
+        user={user}
       />
     </animated.div>
   )
@@ -198,8 +199,9 @@ export const SwipeCard = memo(
     isPrimaryCard?: boolean
     className?: string
     action?: SwipeAction
-    onBet?: (outcome: 'YES' | 'NO') => void
+    onButtonBet?: (outcome: 'YES' | 'NO') => void
     buttonAction?: 'YES' | 'NO' | undefined
+    user?: User
   }) => {
     const {
       amount,
@@ -207,8 +209,9 @@ export const SwipeCard = memo(
       isPrimaryCard,
       className,
       action,
-      onBet,
+      onButtonBet,
       buttonAction,
+      user,
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
@@ -216,59 +219,73 @@ export const SwipeCard = memo(
     const image =
       coverImageUrl ??
       `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
-    // useEffect(() => {
-    //   // In case of height resize, reset the y position.
-    //   api.start({ y: -index * cardHeight })
-    //   // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [api, cardHeight])}
     return (
-      <Col
-        className={clsx(className, 'rounded drop-shadow-lg')}
-        onClick={(e) => e.preventDefault()}
-      >
-        <div className="h-24 w-full bg-black">
-          <CornerDetails contract={contract} />
-        </div>
-        <div className="relative grow bg-black">
-          <div className="absolute z-0 min-h-[30%] w-full bg-gradient-to-b from-black to-transparent pb-60" />
-          <SiteLink
-            className="absolute -top-9 z-10"
-            href={contractPath(contract)}
-            followsLinkClass
-          >
-            <div
-              className={clsx(
-                'mx-3 text-white drop-shadow',
-                getQuestionSize(question)
-              )}
-            >
-              {question}
-            </div>
-          </SiteLink>
-          <div className="absolute top-32 left-[calc(50%-80px)] z-10 mx-auto">
-            <Percent contract={contract} amount={amount} />
+      <>
+        <Col
+          className={clsx(className, 'drop-shadow-2xl')}
+          onClick={(e) => e.preventDefault()}
+        >
+          <div className="h-24 w-full rounded-t-2xl bg-black">
+            <CornerDetails contract={contract} />
           </div>
-
-          <Col className="absolute -bottom-20 z-10 w-full gap-6">
-            <div className="prose prose-invert prose-sm line-clamp-3 mx-3 text-gray-50">
-              {typeof description === 'string'
-                ? description
-                : richTextToString(description)}
+          <div className="relative grow bg-black">
+            <div className="absolute z-0 min-h-[30%] w-full bg-gradient-to-b from-black to-transparent pb-60" />
+            <SiteLink
+              className="absolute -top-9 z-10"
+              href={contractPath(contract)}
+              followsLinkClass
+            >
+              <div
+                className={clsx(
+                  'mx-4 text-white drop-shadow',
+                  getQuestionSize(question)
+                )}
+              >
+                {question}
+              </div>
+            </SiteLink>
+            <div className="absolute top-32 left-[calc(50%-80px)] z-10 mx-auto">
+              <Percent
+                contract={contract}
+                amount={amount}
+                outcome={
+                  buttonAction === 'YES'
+                    ? 'YES'
+                    : buttonAction === 'NO'
+                    ? 'NO'
+                    : action === 'left'
+                    ? 'NO'
+                    : action === 'right'
+                    ? 'YES'
+                    : undefined
+                }
+              />
             </div>
-            <SwipeBetPanel
-              setAmount={setAmount as any}
-              amount={amount}
-              disabled={!isPrimaryCard}
-              swipeAction={action}
-              onBet={onBet}
-              buttonAction={buttonAction}
-            />
-          </Col>
-          <div className="absolute bottom-0 z-0 min-h-[30%] w-full bg-gradient-to-b from-transparent to-black pb-4" />
-          <img src={image} alt="" className="h-full object-cover" />
-        </div>
-        <div className="h-20 w-full bg-black" />
-      </Col>
+            <div className="absolute right-4 bottom-24">
+              <Actions user={user} contract={contract} />
+            </div>
+
+            <Col className="absolute -bottom-20 z-10 w-full gap-6">
+              <div className="prose prose-invert prose-sm line-clamp-3 mx-4 text-gray-50">
+                {typeof description === 'string'
+                  ? description
+                  : richTextToString(description)}
+              </div>
+              <SwipeBetPanel
+                setAmount={setAmount as any}
+                amount={amount}
+                disabled={!isPrimaryCard}
+                swipeAction={action}
+                onButtonBet={onButtonBet}
+                buttonAction={buttonAction}
+              />
+            </Col>
+            <div className="absolute bottom-0 z-0 min-h-[30%] w-full bg-gradient-to-b from-transparent to-black pb-4" />
+            <img src={image} alt="" className="h-full object-cover" />
+          </div>
+          <div className="h-20 w-full rounded-b-2xl bg-black" />
+        </Col>
+      </>
     )
   }
 )
@@ -278,11 +295,17 @@ export function SwipeBetPanel(props: {
   amount: number
   disabled?: boolean
   swipeAction?: SwipeAction
-  onBet?: (outcome: 'YES' | 'NO') => void
+  onButtonBet?: (outcome: 'YES' | 'NO') => void
   buttonAction?: 'YES' | 'NO' | undefined
 }) {
-  const { setAmount, amount, disabled, swipeAction, onBet, buttonAction } =
-    props
+  const {
+    setAmount,
+    amount,
+    disabled,
+    swipeAction,
+    onButtonBet,
+    buttonAction,
+  } = props
   const [pressState, setPressState] = useState<string | undefined>(undefined)
 
   const processPress = () => {
@@ -308,15 +331,18 @@ export function SwipeBetPanel(props: {
       <Row className="relative items-center gap-0.5 text-white">
         <button
           className={clsx(
-            'active:bg-scarlet-500 active:border-scarlet-500 absolute -left-[88px] z-20 flex h-16 flex-col justify-center rounded-[4rem] border-2 transition-all active:text-white',
+            'absolute -left-[88px] z-20 flex h-16 flex-col justify-center rounded-[4rem] border-2 transition-all',
+            !disabled
+              ? 'active:bg-scarlet-500 active:border-scarlet-500 active:text-white'
+              : 'w-16 border-gray-200 pl-4 text-gray-200',
             !disabled && (buttonAction === 'NO' || swipeAction === 'left')
               ? 'bg-scarlet-500 border-scarlet-500 w-[182px] pl-20 text-white'
               : 'border-scarlet-200 text-scarlet-200 w-16 pl-4'
           )}
           disabled={disabled}
           onClick={() => {
-            if (onBet) {
-              onBet('NO')
+            if (onButtonBet) {
+              onButtonBet('NO')
             }
           }}
         >
@@ -347,15 +373,15 @@ export function SwipeBetPanel(props: {
         />
         <button
           className={clsx(
-            'absolute -right-[88px] z-20 flex h-16 flex-col justify-center rounded-full border-2 transition-all',
+            'absolute -right-[88px] z-20 flex h-16 flex-col justify-center rounded-full border-2 transition-all active:border-teal-600 active:bg-teal-600 active:text-white',
             !disabled && (buttonAction === 'YES' || swipeAction === 'right')
               ? 'w-[182px] border-teal-600 bg-teal-600 pl-[71px] text-white'
               : 'w-16 border-teal-300 bg-inherit pl-[15px] text-teal-300'
           )}
           disabled={disabled}
           onClick={() => {
-            if (onBet) {
-              onBet('YES')
+            if (onButtonBet) {
+              onButtonBet('YES')
             }
           }}
         >
@@ -371,7 +397,7 @@ const CornerDetails = (props: { contract: Contract; className?: string }) => {
   const { creatorName, creatorAvatarUrl, closeTime } = contract
 
   return (
-    <div className={clsx('m-3 flex gap-2 self-start', className)}>
+    <div className={clsx('m-4 flex gap-2 self-start', className)}>
       <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
       <div className="text-xs">
         <div className="text-white">{creatorName} </div>
@@ -427,7 +453,7 @@ function Actions(props: { user?: User; contract: BinaryContract }) {
   const { user, contract } = props
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <Col className="flex flex-col items-center justify-center">
       <LikeButton
         contentId={contract.id}
         contentCreatorId={contract.creatorId}
@@ -436,10 +462,12 @@ function Actions(props: { user?: User; contract: BinaryContract }) {
         totalLikes={contract.likedByUserCount ?? 0}
         contract={contract}
         contentText={contract.question}
-        className="scale-200 text-white"
-        size="xl"
+        // className="scale-200 text-white"
+        size={'lg'}
+        showTotalLikesUnder={true}
+        color={'white'}
       />
       {/* TODO Share button */}
-    </div>
+    </Col>
   )
 }
