@@ -65,9 +65,7 @@ if (Device.isDevice) {
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const baseUri =
-  ENV === 'DEV'
-    ? 'https://dev.manifold.markets/'
-    : 'https://994c-71-33-136-43.ngrok.io'
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets'
 const query = `?nativePlatform=${Platform.OS}`
 const defaultUri = baseUri + query
 const isIOS = Platform.OS === 'ios'
