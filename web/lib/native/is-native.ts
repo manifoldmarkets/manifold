@@ -1,27 +1,33 @@
-import { safeLocalStorage } from 'web/lib/util/local'
+import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 
 const IS_NATIVE_KEY = 'is-native'
 const PLATFORM_KEY = 'native-platform'
 
 export const getIsNative = () => {
-  if (typeof window === 'undefined') return false
-  const local = safeLocalStorage()
-  const isNative = local?.getItem(IS_NATIVE_KEY)
-  return isNative === 'true'
+  const { isNative } = getNativeInfo()
+  return isNative
 }
 
 export const getNativePlatform = () => {
+  return getNativeInfo()
+}
+
+const getNativeInfo = () => {
   if (typeof window === 'undefined') return { isNative: false, platform: '' }
   const local = safeLocalStorage()
-  const isNative = local?.getItem(IS_NATIVE_KEY)
-  const platform = local?.getItem(PLATFORM_KEY)
+  const ss = safeSessionStorage()
+  const isNative = local.getItem(IS_NATIVE_KEY) || ss.getItem(IS_NATIVE_KEY)
+  const platform = local.getItem(PLATFORM_KEY) || ss.getItem(PLATFORM_KEY)
   return { isNative: isNative === 'true', platform }
 }
 
 export const setIsNative = (isNative: boolean, platform: string) => {
   const local = safeLocalStorage()
-  local?.setItem(IS_NATIVE_KEY, isNative ? 'true' : 'false')
+  const ss = safeSessionStorage()
+  local.setItem(IS_NATIVE_KEY, isNative ? 'true' : 'false')
+  ss.setItem(IS_NATIVE_KEY, isNative ? 'true' : 'false')
   if (platform) {
-    local?.setItem(PLATFORM_KEY, platform)
+    local.setItem(PLATFORM_KEY, platform)
+    ss.setItem(PLATFORM_KEY, platform)
   }
 }

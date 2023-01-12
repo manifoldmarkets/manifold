@@ -64,8 +64,10 @@ if (Device.isDevice) {
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
-const homeUri =
-  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+const baseUri =
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets'
+const query = `?nativePlatform=${Platform.OS}`
+const defaultUri = baseUri + query
 const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
@@ -95,7 +97,7 @@ const App = () => {
   }, [auth])
 
   // Url management
-  const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
+  const [urlToLoad, setUrlToLoad] = useState<string>(defaultUri)
   const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
@@ -120,7 +122,7 @@ const App = () => {
       const notification = response.notification.request.content
         .data as Notification
       const sourceUrl = getSourceUrl(notification)
-      setUrlToLoad(homeUri + sourceUrl)
+      setUrlToLoad(baseUri + sourceUrl)
     }
   }
 
@@ -264,6 +266,7 @@ const App = () => {
           })
         }
       }
+      setUser(null)
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -293,6 +296,7 @@ const App = () => {
           })
       })
     } else if (type === 'signOut') {
+      setUser(null)
       try {
         auth.signOut()
       } catch (err) {
@@ -342,18 +346,18 @@ const App = () => {
     )
   }
 
-  const shouldShowWebView = loadedWebView && user
+  const webViewAndUserLoaded = loadedWebView && user
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
-      display: shouldShowWebView ? 'flex' : 'none',
+      display: webViewAndUserLoaded ? 'flex' : 'none',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
     },
     webView: {
-      display: shouldShowWebView ? 'flex' : 'none',
+      display: webViewAndUserLoaded ? 'flex' : 'none',
       overflow: 'hidden',
       marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
       marginBottom: !isIOS ? 10 : 0,
@@ -362,14 +366,15 @@ const App = () => {
 
   return (
     <>
-      {!shouldShowWebView && waitingForAuth ? (
+      {!webViewAndUserLoaded && waitingForAuth ? (
         <SplashLoading
           height={height}
           width={width}
           source={require('./assets/splash.png')}
         />
       ) : (
-        !shouldShowWebView &&
+        loadedWebView &&
+        !user &&
         !waitingForAuth && (
           <AuthPage webview={webview} height={height} width={width} />
         )
@@ -401,13 +406,15 @@ const App = () => {
             source={{ uri: urlToLoad }}
             //@ts-ignore
             ref={webview}
-            onError={(e) => handleWebviewError(e, () => setUrlToLoad(homeUri))}
+            onError={(e) =>
+              handleWebviewError(e, () => setUrlToLoad(defaultUri))
+            }
             renderError={(e) => handleRenderError(e, width, height)}
             onTouchStart={tellWebviewToSetNativeFlag}
             // On navigation state change changes on every url change
             onNavigationStateChange={(navState) => {
               const { url } = navState
-              if (!url.startsWith(homeUri)) {
+              if (!url.startsWith(baseUri)) {
                 setExternalUrl(url)
                 webview.current?.stopLoading()
               } else {
