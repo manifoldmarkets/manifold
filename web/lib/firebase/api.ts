@@ -1,6 +1,7 @@
 import { auth } from './users'
 import { APIError, getFunctionUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
+import { QFAnswerReq } from 'web/pages/api/v0/qf/answer'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -113,4 +114,8 @@ export function validateIapReceipt(params: any) {
 
 export function markAllNotifications(params: any) {
   return call(getFunctionUrl('markallnotifications'), 'POST', params)
+}
+
+export function createQfAnswer(params: QFAnswerReq) {
+  return call('/api/v0/qf/answer', 'POST', params)
 }
