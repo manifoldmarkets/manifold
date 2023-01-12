@@ -43,7 +43,3 @@ export const SearchProvider = (props: { children: ReactNode }) => {
 export function useSearchContext() {
   return useContext(SearchCtx)
 }
-
-// keyboard controls
-
-// search button

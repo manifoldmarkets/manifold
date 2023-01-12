@@ -362,7 +362,12 @@ function ContractSearchControls(props: {
   }
 
   return (
-    <Col className={clsx('top-0 z-20 mb-1 gap-3 bg-gray-50 pb-2', className)}>
+    <Col
+      className={clsx(
+        'sticky top-0 z-20 mb-1 gap-3 bg-gray-50 pb-2',
+        className
+      )}
+    >
       <div className="mt-px flex flex-col items-stretch gap-3 sm:flex-row sm:gap-2">
         <Input
           type="text"

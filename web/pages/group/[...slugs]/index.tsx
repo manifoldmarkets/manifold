@@ -282,7 +282,6 @@ export default function GroupPage(props: {
               title: 'Markets',
               content: (
                 <ContractSearch
-                  headerClassName="md:sticky"
                   defaultSort={'score'}
                   defaultFilter={suggestedFilter}
                   additionalFilter={{
