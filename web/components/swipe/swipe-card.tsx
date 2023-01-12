@@ -36,9 +36,9 @@ const horizontalSwipeDist = 80
 const verticalSwipeDist = -100
 const overrideVerticalSwipeDist = -150
 
-type SwipeDirection = 'left' | 'right' | 'up' | 'none'
+type SwipeAction = 'left' | 'right' | 'up' | 'none'
 
-function getSwipeDirection(mx: number, my: number): SwipeDirection {
+function getSwipeAction(mx: number, my: number): SwipeAction {
   if (Math.abs(mx) > horizontalSwipeDist && my > overrideVerticalSwipeDist) {
     return mx < 0 ? 'left' : 'right'
   }
@@ -46,6 +46,38 @@ function getSwipeDirection(mx: number, my: number): SwipeDirection {
     return 'up'
   }
   return 'none'
+}
+
+const onBet = (
+  outcome: 'YES' | 'NO',
+  contract: BinaryContract,
+  amount: number,
+  user?: User
+) => {
+  const contractId = contract.id
+
+  const promise = placeBet({ amount, outcome, contractId })
+
+  const shortQ = contract.question.slice(0, 20)
+  const message = `Bet ${formatMoney(amount)} ${outcome} on "${shortQ}"...`
+
+  toast.promise(
+    promise,
+    {
+      loading: message,
+      success: message,
+      error: (err) => `Error placing bet: ${err.message}`,
+    },
+    { position: 'top-center' }
+  )
+
+  if (user) logView({ amount, outcome, contractId, userId: user.id })
+  track('swipe bet', {
+    slug: contract.slug,
+    contractId,
+    amount,
+    outcome,
+  })
 }
 
 export function PrimarySwipeCard(props: {
@@ -60,33 +92,10 @@ export function PrimarySwipeCard(props: {
     props.contract) as BinaryContract
 
   const [amount, setAmount] = useState(10)
-
-  const onBet = (outcome: 'YES' | 'NO') => {
-    const contractId = contract.id
-
-    const promise = placeBet({ amount, outcome, contractId })
-
-    const shortQ = contract.question.slice(0, 20)
-    const message = `Bet ${formatMoney(amount)} ${outcome} on "${shortQ}"...`
-
-    toast.promise(
-      promise,
-      {
-        loading: message,
-        success: message,
-        error: (err) => `Error placing bet: ${err.message}`,
-      },
-      { position: 'top-center' }
-    )
-
-    if (user) logView({ amount, outcome, contractId, userId: user.id })
-    track('swipe bet', {
-      slug: contract.slug,
-      contractId,
-      amount,
-      outcome,
-    })
-  }
+  const [action, setAction] = useState<SwipeAction>('none')
+  const [buttonAction, setButtonAction] = useState<'YES' | 'NO' | undefined>(
+    undefined
+  )
 
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
@@ -94,49 +103,61 @@ export function PrimarySwipeCard(props: {
     config: { tension: 1000, friction: 70 },
   }))
 
+  const onButtonBet = (outcome: 'YES' | 'NO') => {
+    onBet(outcome, contract, amount, user)
+    setButtonAction(outcome)
+  }
+
+  useEffect(() => {
+    if (buttonAction) {
+      const direction = buttonAction === 'YES' ? 1 : -1
+      setTimeout(() => {
+        const x = direction * window.innerWidth
+        api.start({ x })
+      }, 450)
+
+      setTimeout(() => {
+        setIndex(index + 1)
+      }, 550)
+    }
+  }, [buttonAction])
+
   const bind = useDrag(
     ({ down, movement: [mx, my] }) => {
-      let action: SwipeDirection = 'none'
       let direction = 0
-
-      // See if thresholds show if an action was made once thumb is lifted
+      setAction(getSwipeAction(mx, my))
       if (!down) {
-        action = getSwipeDirection(mx, my)
+        // See if thresholds show if an action was made once thumb is lifted
         if (action === 'right' || action === 'left') {
           // Horizontal swipe is triggered, places bet
           direction = Math.sign(mx)
           const outcome = direction > 0 ? 'YES' : 'NO'
-          onBet(outcome)
+          onBet(outcome, contract, amount, user)
+          setTimeout(() => {
+            const x = direction * window.innerWidth
+            api.start({ x })
+          }, 200)
+
+          setTimeout(() => {
+            setIndex(index + 1)
+          }, 300)
         }
-      }
+        if (action === 'up') {
+          // Executes vertical swipe animation
+          setTimeout(() => {
+            const y = -1 * window.innerHeight
+            api.start({ y })
+          }, 100)
 
-      if (action === 'right' || action === 'left') {
-        // Executes horizontal swipe animation
-        setTimeout(() => {
-          const x = direction * window.innerWidth
-          api.start({ x })
-        }, 100)
-
-        setTimeout(() => {
-          setIndex(index + 1)
-        }, 200)
-      }
-
-      if (action === 'up') {
-        // Executes vertical swipe animation
-        setTimeout(() => {
-          const y = -1 * window.innerHeight
-          api.start({ y })
-        }, 100)
-
-        setTimeout(() => {
-          setIndex(index + 1)
-        }, 200)
+          setTimeout(() => {
+            setIndex(index + 1)
+          }, 200)
+        }
       }
       const x = down ? mx : 0
       const y = down ? (my < 0 ? my : 0) : 0
 
-      console.log(mx, my, getSwipeDirection(mx, my))
+      console.log(mx, my, action)
       if (action === 'none') {
         api.start({ x, y })
       }
@@ -160,8 +181,10 @@ export function PrimarySwipeCard(props: {
         amount={amount}
         setAmount={setAmount}
         isPrimaryCard={true}
-        user={user}
         className="h-full"
+        action={action}
+        onBet={onButtonBet}
+        buttonAction={buttonAction}
       />
     </animated.div>
   )
@@ -174,18 +197,25 @@ export const SwipeCard = memo(
     setAmount: (amount: number) => void
     isPrimaryCard?: boolean
     className?: string
-    user?: User
+    action?: SwipeAction
+    onBet?: (outcome: 'YES' | 'NO') => void
+    buttonAction?: 'YES' | 'NO' | undefined
   }) => {
-    const { amount, setAmount, isPrimaryCard, className, user } = props
+    const {
+      amount,
+      setAmount,
+      isPrimaryCard,
+      className,
+      action,
+      onBet,
+      buttonAction,
+    } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
     const { question, description, coverImageUrl } = contract
     const image =
       coverImageUrl ??
       `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
-    const [swipeDirection, setSwipeDirection] = useState<
-      'YES' | 'NO' | undefined
-    >(undefined)
     // useEffect(() => {
     //   // In case of height resize, reset the y position.
     //   api.start({ y: -index * cardHeight })
@@ -200,7 +230,7 @@ export const SwipeCard = memo(
           <CornerDetails contract={contract} />
         </div>
         <div className="relative grow bg-black">
-          <div className="absolute z-0 min-h-[30%] w-full bg-gradient-to-b from-black to-transparent pb-4" />
+          <div className="absolute z-0 min-h-[30%] w-full bg-gradient-to-b from-black to-transparent pb-60" />
           <SiteLink
             className="absolute -top-9 z-10"
             href={contractPath(contract)}
@@ -216,11 +246,7 @@ export const SwipeCard = memo(
             </div>
           </SiteLink>
           <div className="absolute top-32 left-[calc(50%-80px)] z-10 mx-auto">
-            <Percent
-              contract={contract}
-              amount={amount}
-              outcome={swipeDirection}
-            />
+            <Percent contract={contract} amount={amount} />
           </div>
 
           <Col className="absolute -bottom-20 z-10 w-full gap-6">
@@ -230,9 +256,12 @@ export const SwipeCard = memo(
                 : richTextToString(description)}
             </div>
             <SwipeBetPanel
-              setAmount={() => setAmount}
+              setAmount={setAmount as any}
               amount={amount}
               disabled={!isPrimaryCard}
+              swipeAction={action}
+              onBet={onBet}
+              buttonAction={buttonAction}
             />
           </Col>
           <div className="absolute bottom-0 z-0 min-h-[30%] w-full bg-gradient-to-b from-transparent to-black pb-4" />
@@ -248,8 +277,12 @@ export function SwipeBetPanel(props: {
   setAmount: (setAmount: (amount: number) => void) => void
   amount: number
   disabled?: boolean
+  swipeAction?: SwipeAction
+  onBet?: (outcome: 'YES' | 'NO') => void
+  buttonAction?: 'YES' | 'NO' | undefined
 }) {
-  const { setAmount, amount, disabled } = props
+  const { setAmount, amount, disabled, swipeAction, onBet, buttonAction } =
+    props
   const [pressState, setPressState] = useState<string | undefined>(undefined)
 
   const processPress = () => {
@@ -272,21 +305,34 @@ export function SwipeBetPanel(props: {
 
   return (
     <Row className="mb-4 w-full justify-center gap-5">
-      <Col className="border-scarlet-200 text-scarlet-200 relative h-16 w-16 items-center justify-center rounded-[4rem] border-2">
-        NO
-      </Col>
-      <Row className="items-center gap-0.5 text-white">
+      <Row className="relative items-center gap-0.5 text-white">
+        <button
+          className={clsx(
+            'active:bg-scarlet-500 active:border-scarlet-500 absolute -left-[88px] z-20 flex h-16 flex-col justify-center rounded-[4rem] border-2 transition-all active:text-white',
+            !disabled && (buttonAction === 'NO' || swipeAction === 'left')
+              ? 'bg-scarlet-500 border-scarlet-500 w-[182px] pl-20 text-white'
+              : 'border-scarlet-200 text-scarlet-200 w-16 pl-4'
+          )}
+          disabled={disabled}
+          onClick={() => {
+            if (onBet) {
+              onBet('NO')
+            }
+          }}
+        >
+          NO
+        </button>
         <TouchButton
           pressState={'sub'}
           setPressState={setPressState}
           disabled={disabled}
           children={
-            <MinusIcon className="h-6 w-6 rounded-full border p-1 transition-colors active:bg-white active:text-black" />
+            <MinusIcon className="active:text-blackz z-10 h-6 w-6 rounded-full border p-1 transition-colors active:bg-white" />
           }
           className={'opacity-70'}
         />
 
-        <span className="mx-1 py-4">
+        <span className="z-30 mx-1 py-4">
           {disabled ? formatMoney(10) : formatMoney(amount)}
         </span>
 
@@ -295,14 +341,27 @@ export function SwipeBetPanel(props: {
           setPressState={setPressState}
           disabled={disabled}
           children={
-            <PlusIcon className="h-6 w-6 rounded-full border p-1 transition-colors active:bg-white active:text-black" />
+            <PlusIcon className="z-10 h-6 w-6 rounded-full border p-1 transition-colors active:bg-white active:text-black" />
           }
           className={'opacity-70'}
         />
+        <button
+          className={clsx(
+            'absolute -right-[88px] z-20 flex h-16 flex-col justify-center rounded-full border-2 transition-all',
+            !disabled && (buttonAction === 'YES' || swipeAction === 'right')
+              ? 'w-[182px] border-teal-600 bg-teal-600 pl-[71px] text-white'
+              : 'w-16 border-teal-300 bg-inherit pl-[15px] text-teal-300'
+          )}
+          disabled={disabled}
+          onClick={() => {
+            if (onBet) {
+              onBet('YES')
+            }
+          }}
+        >
+          YES
+        </button>
       </Row>
-      <Col className="relative h-16 w-16 items-center justify-center rounded-full border-2 border-teal-300 bg-inherit text-teal-300">
-        YES
-      </Col>
     </Row>
   )
 }
