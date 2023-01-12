@@ -92,6 +92,7 @@ export type CertContract = Contract & Cert
 export type Uniswap2CertContract = CertContract & Uniswap2
 export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
 export type CPMMMultipleChoiceContract = Contract & MultipleChoice & CPMM2
+export type QuadraticFundingContract = Contract & QuadraticFunding
 
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract

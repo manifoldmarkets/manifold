@@ -183,6 +183,9 @@ type QFPayment = {
   category: 'QF_PAYMENT'
   fromType: 'USER'
   toType: 'USER'
+  data: {
+    answerId: string
+  }
 }
 
 type QFPool = {
