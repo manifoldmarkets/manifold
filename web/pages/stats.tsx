@@ -12,7 +12,7 @@ import { Stats } from 'common/stats'
 import { PLURAL_BETS } from 'common/user'
 import { capitalize } from 'lodash'
 import { formatLargeNumber } from 'common/util/format'
-import { formatWithCommas } from 'common/lib/util/format'
+import { formatWithCommas } from 'common/util/format'
 
 export default function Analytics() {
   const [stats, setStats] = useState<Stats | undefined>(undefined)
