@@ -73,7 +73,7 @@ export default function Sidebar(props: {
 
       {!isMobile && <SearchButton className="mb-5" />}
 
-      <div className="flex flex-col gap-1">
+      <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
@@ -88,6 +88,7 @@ export default function Sidebar(props: {
         {createMarketButton}
       </div>
       <div className="mt-auto mb-6 flex flex-col gap-1">
+        {user !== null && <AppBadgesOrGetAppButton hideOnDesktop={true} />}
         {bottomNavOptions.map((item) => (
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}

@@ -1,7 +1,7 @@
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { MobileAppsQRCodeButton } from 'web/components/buttons/mobile-apps-qr-code-button'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
@@ -9,14 +9,29 @@ import clsx from 'clsx'
 export const AppBadgesOrGetAppButton = (props: {
   size?: 'lg' | 'md'
   className?: string
+  hideOnDesktop?: boolean
 }) => {
+  const { size, className, hideOnDesktop } = props
   const { isNative } = getNativePlatform()
-  if (isNative) return <div />
+  const [navigatorReady, setNavigatorReady] = React.useState(false)
+  useEffect(() => {
+    if (navigator) setNavigatorReady(true)
+  }, [])
 
-  const { size, className } = props
+  if (isNative || !navigatorReady) return <div />
+
+  const isIOSDevice = isIOS()
+  const isAndroidDevice = isAndroid()
   return (
-    <Col className={clsx('w-full', className)}>
-      {isAndroid() ? (
+    <Col
+      className={clsx(
+        'w-full',
+        isIOSDevice && 'ml-1',
+        isAndroidDevice && '-ml-1',
+        className
+      )}
+    >
+      {isAndroidDevice ? (
         <a className="badge" href={GOOGLE_PLAY_APP_URL}>
           <img
             className={size === 'lg' ? 'w-44' : 'w-36'}
@@ -24,7 +39,7 @@ export const AppBadgesOrGetAppButton = (props: {
             src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
           />
         </a>
-      ) : isIOS() ? (
+      ) : isIOSDevice ? (
         <a className="badge" href={APPLE_APP_URL}>
           <img
             className={size === 'lg' ? 'w-36' : 'w-26'}
@@ -33,7 +48,7 @@ export const AppBadgesOrGetAppButton = (props: {
           />
         </a>
       ) : (
-        <MobileAppsQRCodeButton size={size} />
+        !hideOnDesktop && <MobileAppsQRCodeButton size={size} />
       )}
     </Col>
   )
