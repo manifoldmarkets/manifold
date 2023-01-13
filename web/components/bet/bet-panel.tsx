@@ -436,7 +436,6 @@ export function BuyPanel(props: {
         <Modal
           open={seeLimit}
           setOpen={setSeeLimit}
-          position="center"
           className="rounded-lg bg-white px-4 pb-4"
         >
           <Title text="Limit Order" />
