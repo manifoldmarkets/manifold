@@ -1,41 +1,36 @@
 import { db } from './db'
 import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
-import { capitalize, lowerCase, uniqBy } from 'lodash'
+import { uniqBy } from 'lodash'
 
 export type SearchUserInfo = Pick<
   User,
   'id' | 'name' | 'username' | 'avatarUrl'
 >
-const isUpperCase = (str: string) => /^[A-Z]*$/.test(str)
-export async function searchUsers(prompt: string, limit: number) {
-  const { data } =
-    prompt != ''
-      ? await run(
-          db
-            .from('users')
-            .select('id, data->name, data->username, data->avatarUrl')
-            .eq('data->>username', prompt)
-            .limit(limit)
-        )
-      : await run(
-          db
-            .from('users')
-            .select('id, data->name, data->username, data->avatarUrl')
-            .order('data->followerCountCached', { ascending: false } as any)
-            .limit(limit)
-        )
 
-  const casePrompt = isUpperCase(prompt[0])
-    ? lowerCase(prompt)
-    : capitalize(prompt)
-  const { data: caseData } = await run(
+export async function searchUsers(prompt: string, limit: number) {
+  if (prompt === '') {
+    const { data } = await run(
+      db
+        .from('users')
+        .select('id, data->name, data->username, data->avatarUrl')
+        .order('data->followerCountCached', { ascending: false } as any)
+        .limit(limit)
+    )
+    return data
+  }
+
+  const { data: exactData } = await run(
     db
       .from('users')
       .select('id, data->name, data->username, data->avatarUrl')
-      .eq('data->>username', casePrompt)
+      .or(`data->>username.ilike.${prompt},data->>name.ilike.${prompt}`)
       .limit(limit)
   )
+
+  if (exactData.length === limit) {
+    return exactData
+  }
 
   const { data: similarData } = await run(
     db
@@ -48,5 +43,5 @@ export async function searchUsers(prompt: string, limit: number) {
       } as any)
       .limit(limit)
   )
-  return uniqBy([...data, ...caseData, ...similarData], 'id').slice(0, limit)
+  return uniqBy([...exactData, ...similarData], 'id').slice(0, limit)
 }

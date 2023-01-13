@@ -4,8 +4,7 @@ import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
-import { Row } from './layout/row'
-import { useEffect, useRef, useMemo, ReactNode, useState } from 'react'
+import { useEffect, useRef, useMemo, ReactNode } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   historyStore,
@@ -24,21 +23,16 @@ import {
   searchClient,
   searchIndexName,
 } from 'web/lib/service/algolia'
-import { AdjustmentsIcon } from '@heroicons/react/solid'
-import { Button } from './buttons/button'
-import { Modal } from './layout/modal'
-import { Title } from './widgets/title'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
-import { SimpleLinkButton } from './buttons/simple-link-button'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 export const SORTS = [
-  { label: 'Newest', value: 'newest' },
+  { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: 'Daily changed', value: 'daily-score' },
+  { label: 'Daily change', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
-  { label: 'Most popular', value: 'most-popular' },
+  { label: 'Total traders', value: 'most-popular' },
   { label: 'Liquidity', value: 'liquidity' },
   { label: 'Last updated', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
@@ -222,7 +216,6 @@ export function ContractSearch(props: {
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
         autoFocus={autoFocus}
-        isWholePage={isWholePage}
       />
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
@@ -254,7 +247,6 @@ function ContractSearchControls(props: {
   useQueryUrlParam?: boolean
   noControls?: boolean
   autoFocus?: boolean
-  isWholePage?: boolean
 }) {
   const {
     className,
@@ -268,7 +260,6 @@ function ContractSearchControls(props: {
     noControls,
     autoFocus,
     includeProbSorts,
-    isWholePage,
   } = props
 
   const router = useRouter()
@@ -367,8 +358,13 @@ function ContractSearchControls(props: {
   }
 
   return (
-    <Col className={clsx('top-0 z-20 mb-1 gap-3 bg-gray-50 pb-2', className)}>
-      <Row className="mt-px items-center gap-1 sm:gap-2">
+    <Col
+      className={clsx(
+        'sticky top-0 z-20 mb-1 gap-3 bg-gray-50 pb-2',
+        className
+      )}
+    >
+      <div className="mt-px flex flex-col items-stretch gap-3 sm:flex-row sm:gap-2">
         <Input
           type="text"
           inputMode="search"
@@ -379,32 +375,23 @@ function ContractSearchControls(props: {
           className="w-full"
           autoFocus={autoFocus}
         />
-        {query ? (
-          isWholePage && (
-            <SimpleLinkButton
-              getUrl={() => window.location.href}
-              tooltip="Copy link to search results"
-            />
-          )
-        ) : (
-          <ModalOnMobile>
-            <SearchFilters
-              filter={filter}
-              selectFilter={selectFilter}
-              hideOrderSelector={hideOrderSelector}
-              selectSort={selectSort}
-              sort={sort}
-              className={'flex flex-row gap-2'}
-              includeProbSorts={includeProbSorts}
-            />
-          </ModalOnMobile>
+        {!query && (
+          <SearchFilters
+            filter={filter}
+            selectFilter={selectFilter}
+            hideOrderSelector={hideOrderSelector}
+            selectSort={selectSort}
+            sort={sort}
+            className={'flex flex-row gap-2'}
+            includeProbSorts={includeProbSorts}
+          />
         )}
-      </Row>
+      </div>
     </Col>
   )
 }
 
-export function SearchFilters(props: {
+function SearchFilters(props: {
   filter: string
   selectFilter: (newFilter: filter) => void
   hideOrderSelector: boolean | undefined
@@ -432,6 +419,7 @@ export function SearchFilters(props: {
       <Select
         value={filter}
         onChange={(e) => selectFilter(e.target.value as filter)}
+        className="!h-full grow py-1"
       >
         <option value="open">Open</option>
         <option value="closed">Closed</option>
@@ -442,6 +430,7 @@ export function SearchFilters(props: {
         <Select
           value={sort}
           onChange={(e) => selectSort(e.target.value as Sort)}
+          className="!h-full grow py-1"
         >
           {sorts.map((option) => (
             <option key={option.value} value={option.value}>
@@ -451,31 +440,5 @@ export function SearchFilters(props: {
         </Select>
       )}
     </div>
-  )
-}
-
-export function ModalOnMobile(props: { children: ReactNode }) {
-  const { children } = props
-  const [openFilters, setOpenFilters] = useState(false)
-  return (
-    <>
-      <div className="contents sm:hidden">
-        <Button color="gray-white" onClick={() => setOpenFilters(true)}>
-          <AdjustmentsIcon className="my-auto h-7" />
-        </Button>
-        <Modal
-          open={openFilters}
-          setOpen={setOpenFilters}
-          position="top"
-          className="rounded-lg bg-white px-4 pb-4"
-        >
-          <Col>
-            <Title text="Filter Markets" />
-            {children}
-          </Col>
-        </Modal>
-      </div>
-      <div className="hidden sm:contents">{children}</div>
-    </>
   )
 }

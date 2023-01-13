@@ -26,7 +26,7 @@ export const BetSlider = (props: {
         <Slider
           min={0}
           marks={{
-            '10': mark(10),
+            '0': mark(0),
             // '25': mark(25),
             '50': mark(50),
             // '75': mark(75),

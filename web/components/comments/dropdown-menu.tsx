@@ -47,7 +47,7 @@ export default function DropdownMenu(props: {
       >
         <Menu.Items
           className={clsx(
-            'absolute right-0 z-10 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none',
+            'absolute right-0 z-30 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none',
             MenuWidth ?? 'w-32'
           )}
         >
@@ -59,7 +59,7 @@ export default function DropdownMenu(props: {
                     onClick={item.onClick}
                     className={clsx(
                       active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                      'z-20 block w-full px-4 py-2 text-sm'
+                      'block w-full px-4 py-2 text-sm'
                     )}
                   >
                     <Row className={'gap-2'}>

@@ -68,3 +68,7 @@ find icons [here](https://icons.expo.fyi/)
   - Try running `yarn clear` and ctrl+c to clear the env variable and try again
 - When in doubt: `yarn clean`
 - Fastlane build failing? Could be a malformed import
+- Pod install erroring out?
+  - I had to reinstall cocoapods via [these instructions](https://github.com/expo/expo/issues/20707#issuecomment-1377790160)
+- Problems with building android and seeing: `However we cannot choose between the following variants of project :react-native-iap: - amazonDebugRuntimeElements - playDebugRuntimeElements`
+  - Fix by adding `missingDimensionStrategy 'store', 'play'` to `android/app/build.gradle` in the `defaultConfig` section

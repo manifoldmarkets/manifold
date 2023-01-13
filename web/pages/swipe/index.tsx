@@ -29,18 +29,28 @@ import { useWindowSize } from 'web/hooks/use-window-size'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { logView } from 'web/lib/firebase/views'
 
+const SWIPE_THRESHOLD = 100 // in px
+
 export default function Swipe() {
   useTracking('view swipe page')
 
   const user = useUser()
-  const feed = useFeed(user, 400)?.filter(
-    (c) => c.outcomeType === 'BINARY' && dayjs().isBefore(c.closeTime)
-  ) as BinaryContract[] | undefined
+  const { contracts, loadMore } = useFeed(user, 'swipe')
+  const feed = contracts?.filter((c) => c.outcomeType === 'BINARY') as
+    | BinaryContract[]
+    | undefined
 
   const [index, setIndex] = usePersistentState(0, {
     key: 'swipe-index',
     store: inMemoryStore(),
   })
+
+  useEffect(() => {
+    if (feed && index + 2 >= feed.length) {
+      loadMore()
+    }
+  }, [feed, index, loadMore])
+
   const contract = feed ? feed[index] : undefined
 
   const cards = useMemo(() => {

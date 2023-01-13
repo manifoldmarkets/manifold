@@ -135,6 +135,7 @@ export const ChoiceContractChart = (props: {
   onMouseOver?: (p: MultiPoint<Bet> | undefined) => void
 }) => {
   const { contract, bets, width, height, onMouseOver } = props
+  const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
   const isDpm = contract.mechanism === 'dpm-2'
   const [start, end] = getDateRange(contract)
   const answers = useChartAnswers(contract)
@@ -160,15 +161,11 @@ export const ChoiceContractChart = (props: {
       answers.length > topN
         ? [...endProbs.slice(0, topN), sum(endProbs.slice(topN))]
         : endProbs
-    return [
-      { x: start, y: startY },
-      ...betPoints,
-      {
-        x: end ?? Date.now() + DAY_MS,
-        y: endY,
-      },
-    ]
-  }, [answers.length, topN, betPoints, endProbs, start, end])
+    return buildArray(isMultipleChoice && { x: start, y: startY }, betPoints, {
+      x: end ?? Date.now() + DAY_MS,
+      y: endY,
+    })
+  }, [answers.length, topN, betPoints, endProbs, start, end, isMultipleChoice])
 
   const rightmostDate = getRightmostVisibleDate(
     end,

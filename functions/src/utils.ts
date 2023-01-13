@@ -145,18 +145,37 @@ export const processPartitioned = async <T extends DocumentData, U>(
   partitions: number,
   fn: (ts: QueryDocumentSnapshot<T>[]) => Promise<U>
 ) => {
+  const logProgress = (i: number, msg: string) => {
+    log(`[${i + 1}/~${partitions}] ${msg}`)
+  }
   const parts = group.getPartitions(partitions)
-  const results = []
-  let processed = 0
+  const results: U[] = []
+  let i = 0
+  let docsProcessed = 0
+  let currentlyProcessing: { i: number; n: number; job: Promise<U> } | undefined
   for await (const part of parts) {
-    const i = results.length
-    const tag = `${i + 1}/${partitions}`
-    log(`[${tag}] Loading partition.`)
+    logProgress(i, 'Loading partition.')
     const ts = await part.toQuery().get()
-    log(`[${tag}] Loaded ${ts.size} documents.`)
-    results.push(await fn(ts.docs))
-    processed += ts.size
-    log(`[${tag}] Processed ${ts.size} documents. Total: ${processed}`)
+    logProgress(i, `Loaded ${ts.size} documents.`)
+    if (currentlyProcessing != null) {
+      results.push(await currentlyProcessing.job)
+      docsProcessed += currentlyProcessing.n
+      logProgress(
+        currentlyProcessing.i,
+        `Processed ${currentlyProcessing.n} documents: Total: ${docsProcessed}`
+      )
+    }
+    logProgress(i, `Processing ${ts.size} documents.`)
+    currentlyProcessing = { i: i, n: ts.size, job: fn(ts.docs) }
+    i++
+  }
+  if (currentlyProcessing != null) {
+    results.push(await currentlyProcessing.job)
+    docsProcessed += currentlyProcessing.n
+    logProgress(
+      currentlyProcessing.i,
+      `Processed ${currentlyProcessing.n} documents: Total: ${docsProcessed}`
+    )
   }
   return results
 }

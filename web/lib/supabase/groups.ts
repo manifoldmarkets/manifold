@@ -26,3 +26,30 @@ export async function searchGroups(prompt: string, limit: number) {
   const { data } = await run(query)
   return data as SearchGroupInfo[]
 }
+
+export async function getMemberGroups(userId: string) {
+  const { data: groupIds } = await run(
+    db.from('group_members').select('group_id').eq('member_id', userId)
+  )
+
+  const { data: groups } = await run(
+    db
+      .from('groups')
+      .select(
+        'id, data->name, data->about, data->slug, data->totalMembers, data->totalContracts, data->anyoneCanJoin'
+      )
+      .in(
+        'id',
+        groupIds.map((d: { group_id: string }) => d.group_id)
+      )
+  )
+
+  return groups as SearchGroupInfo[]
+}
+
+export async function getMemberGroupsCount(userId: string) {
+  const { data } = await run(
+    db.from('group_members').select('count').eq('member_id', userId)
+  )
+  return data[0].count as number
+}

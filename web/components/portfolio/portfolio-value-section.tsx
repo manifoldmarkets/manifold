@@ -52,7 +52,7 @@ export const PortfolioValueSection = memo(
       setGraphViewYScale(undefined)
     })
     // placeholder when loading
-    if (!portfolioHistory || !lastPortfolioMetrics) {
+    if (portfolioHistory === undefined || !lastPortfolioMetrics) {
       return (
         <PortfolioValueSkeleton
           userId={userId}

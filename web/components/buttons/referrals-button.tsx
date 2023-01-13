@@ -1,55 +1,67 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { useState } from 'react'
-import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
+import { memo, useEffect, useState } from 'react'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Tabs } from '../layout/tabs'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { useReferrals } from 'web/hooks/use-referrals'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { updateUser } from 'web/lib/firebase/users'
 import { TextButton } from './text-button'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
+import { getReferralCount, getReferrals } from 'web/lib/supabase/referrals'
 import { SearchUserInfo } from 'web/lib/supabase/users'
 
-export function ReferralsButton(props: { user: User; className?: string }) {
+export const ReferralsButton = memo(function ReferralsButton(props: {
+  user: User
+  className?: string
+}) {
   const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
-  const referralIds = useReferrals(user.id)
+  const [referrals, setReferrals] = useState<SearchUserInfo[] | undefined>(
+    undefined
+  )
+  const [referralCount, setReferralCount] = useState(0)
+  useEffect(() => {
+    getReferralCount(user.id).then(setReferralCount)
+  }, [user.id])
+
+  useEffect(() => {
+    if (!isOpen || referrals !== undefined) return
+    getReferrals(user.id).then(setReferrals)
+  }, [referrals, isOpen, user.id])
 
   return (
     <>
       <TextButton onClick={() => setIsOpen(true)} className={className}>
-        <span className="font-semibold">{referralIds?.length ?? '0'}</span>{' '}
-        Referrals
+        <span className="font-semibold">{referralCount}</span> Referrals
       </TextButton>
       <ReferralsDialog
         user={user}
-        referralIds={referralIds ?? []}
+        referredUsers={referrals ?? []}
         isOpen={isOpen}
         setIsOpen={setIsOpen}
       />
     </>
   )
-}
+})
 
 function ReferralsDialog(props: {
   user: User
-  referralIds: string[]
+  referredUsers: SearchUserInfo[]
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
 }) {
-  const { user, referralIds, isOpen, setIsOpen } = props
+  const { user, referredUsers, isOpen, setIsOpen } = props
   const [referredBy, setReferredBy] = useState<SearchUserInfo[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
 
   const currentUser = useUser()
   const referredByUser = useUserById(user.referredByUserId)
-  usePrefetchUsers(referralIds)
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
@@ -61,7 +73,32 @@ function ReferralsDialog(props: {
           tabs={[
             {
               title: 'Referrals',
-              content: <ReferralsList userIds={referralIds} />,
+              content: (
+                <Col className="gap-2">
+                  {referredUsers.length === 0 && (
+                    <div className="text-gray-500">No users yet...</div>
+                  )}
+                  {referredUsers.map((refUser) => (
+                    <Row
+                      key={refUser.id}
+                      className={clsx('items-center justify-between gap-2 p-2')}
+                    >
+                      <Row className="items-center gap-2">
+                        <Avatar
+                          username={refUser?.username}
+                          avatarUrl={refUser?.avatarUrl}
+                        />
+                        {refUser && (
+                          <UserLink
+                            name={refUser.name}
+                            username={refUser.username}
+                          />
+                        )}
+                      </Row>
+                    </Row>
+                  ))}
+                </Col>
+              ),
             },
             {
               title: 'Referred by',
@@ -134,34 +171,5 @@ function ReferralsDialog(props: {
         />
       </Col>
     </Modal>
-  )
-}
-
-function ReferralsList(props: { userIds: string[] }) {
-  const { userIds } = props
-
-  return (
-    <Col className="gap-2">
-      {userIds.length === 0 && (
-        <div className="text-gray-500">No users yet...</div>
-      )}
-      {userIds.map((userId) => (
-        <UserReferralItem key={userId} userId={userId} />
-      ))}
-    </Col>
-  )
-}
-
-function UserReferralItem(props: { userId: string; className?: string }) {
-  const { userId, className } = props
-  const user = useUserById(userId)
-
-  return (
-    <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
-      <Row className="items-center gap-2">
-        <Avatar username={user?.username} avatarUrl={user?.avatarUrl} />
-        {user && <UserLink name={user.name} username={user.username} />}
-      </Row>
-    </Row>
   )
 }

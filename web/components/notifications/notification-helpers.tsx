@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { getSourceUrl, Notification } from 'common/notification'
 import Link from 'next/link'
-import { ReactNode } from 'react'
+import React, { ReactNode } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
@@ -163,6 +163,7 @@ export function NotificationFrame(props: {
   onClick?: () => void
   subtitle?: string | ReactNode
   isChildOfGroup?: boolean
+  customBackground?: ReactNode
 }) {
   const {
     notification,
@@ -174,6 +175,7 @@ export function NotificationFrame(props: {
     subtitle,
     onClick,
     link,
+    customBackground,
   } = props
   const isMobile = useIsMobile()
 
@@ -230,10 +232,11 @@ export function NotificationFrame(props: {
   return (
     <Row
       className={clsx(
-        'group',
+        'group relative',
         isChildOfGroup ? NESTED_NOTIFICATION_STYLE : NOTIFICATION_STYLE
       )}
     >
+      {customBackground}
       {link && (
         <Col className={clsx(getHighlightClass(highlighted), 'w-full')}>
           <SiteLink

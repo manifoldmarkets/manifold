@@ -1,57 +1,103 @@
 import { User } from 'common/user'
-import { useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { TextButton } from 'web/components/buttons/text-button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { useUserLikes } from 'web/hooks/use-likes'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Row } from 'web/components/layout/row'
+import {
+  getLikedContracts,
+  getLikedContractsCount,
+  SearchLikedContent,
+} from 'web/lib/supabase/reactions'
+import { Input } from 'web/components/widgets/input'
+import { withTracking } from 'web/lib/service/analytics'
 import { XIcon } from '@heroicons/react/outline'
 import { unReact } from 'web/lib/firebase/reactions'
-import { contractPath } from 'web/lib/firebase/contracts'
-import { useContracts } from 'web/hooks/use-contracts'
-import { filterDefined } from 'common/util/array'
 
-export function UserLikedContractsButton(props: {
-  user: User
-  className?: string
-}) {
-  const { user, className } = props
-  const [isOpen, setIsOpen] = useState(false)
+// Note: this button does NOT live update
+export const UserLikedContractsButton = memo(
+  function UserLikedContractsButton(props: { user: User; className?: string }) {
+    const { user, className } = props
+    const [isOpen, setIsOpen] = useState(false)
 
-  const likes = useUserLikes(user.id, 'contract')
-  const likedContracts = filterDefined(
-    useContracts(likes?.map((l) => l.contentId) ?? [])
-  )
-  return (
-    <>
-      <TextButton onClick={() => setIsOpen(true)} className={className}>
-        <span className="font-semibold">{likedContracts?.length ?? '0'}</span>{' '}
-        Likes
-      </TextButton>
-      <Modal open={isOpen} setOpen={setIsOpen}>
-        <Col className="rounded bg-white p-6">
-          <span className={'mb-4 text-xl'}>Liked Markets</span>
-          <Col className={'gap-4'}>
-            {likedContracts?.map((likedContract) => (
-              <Row key={likedContract.id} className={'justify-between gap-2'}>
-                <SiteLink
-                  href={contractPath(likedContract)}
-                  className={'truncate text-indigo-700'}
+    const [likedContent, setLikedContent] = useState<
+      SearchLikedContent[] | undefined
+    >(undefined)
+    const [likedContentCount, setLikedContentCount] = useState(0)
+    const [query, setQuery] = useState('')
+    useEffect(() => {
+      getLikedContractsCount(user.id).then(setLikedContentCount)
+    }, [user.id])
+
+    useEffect(() => {
+      if (!isOpen || likedContent !== undefined) return
+      getLikedContracts(user.id).then(setLikedContent)
+    }, [likedContent, isOpen, user.id])
+
+    // filter by query
+    const filteredLikedContent = likedContent?.filter((c) => {
+      return (
+        query === '' ||
+        c.title.toLowerCase().includes(query.toLowerCase()) ||
+        c.text.toLowerCase().includes(query.toLowerCase())
+      )
+    })
+
+    return (
+      <>
+        <TextButton
+          onClick={withTracking(
+            () => setIsOpen(true),
+            'click user likes button'
+          )}
+          className={className}
+        >
+          <span className="font-semibold">{likedContentCount}</span> Likes
+        </TextButton>
+        <Modal open={isOpen} setOpen={setIsOpen} size={'lg'}>
+          <Col className="rounded bg-white p-6">
+            <Row className={'ml-2 mb-4 items-center justify-between gap-4 '}>
+              <span className={'text-xl'}>Likes</span>
+              <Input
+                placeholder="Search your likes"
+                className={'!h-10'}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </Row>
+            <Col className={'gap-4'}>
+              {filteredLikedContent?.map((like) => (
+                <Row
+                  key={like.id}
+                  className={'items-center justify-between gap-2'}
                 >
-                  {likedContract.question}
-                </SiteLink>
-                <XIcon
-                  className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
-                  onClick={() =>
-                    unReact(user.id, likedContract.id, 'contract', 'like')
-                  }
-                />
-              </Row>
-            ))}
+                  <Col className={'w-full'}>
+                    <SiteLink
+                      href={like.slug}
+                      className={'line-clamp-2 text-sm text-indigo-700'}
+                    >
+                      {like.title}
+                    </SiteLink>
+                  </Col>
+                  <XIcon
+                    className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
+                    onClick={() => {
+                      unReact(user.id, like.contentId, 'contract', 'like')
+                      setLikedContent(
+                        filteredLikedContent.filter(
+                          (c) => c.contentId !== like.contentId
+                        )
+                      )
+                      setLikedContentCount(likedContentCount - 1)
+                    }}
+                  />
+                </Row>
+              ))}
+            </Col>
           </Col>
-        </Col>
-      </Modal>
-    </>
-  )
-}
+        </Modal>
+      </>
+    )
+  }
+)

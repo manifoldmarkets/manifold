@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 
 import { EndpointDefinition } from './api'
-import { getPrivateUser, getUser, isProd, payUser } from './utils'
+import { getPrivateUser, getUser, isProd, payUsers } from './utils'
 import { sendThankYouEmail } from './emails'
 import { track } from './analytics'
 
@@ -124,47 +124,49 @@ export const stripewebhook: EndpointDefinition = {
 
 const issueMoneys = async (session: StripeSession) => {
   const { id: sessionId } = session
-
-  const query = await firestore
-    .collection('stripe-transactions')
-    .where('sessionId', '==', sessionId)
-    .get()
-
-  if (!query.empty) {
-    console.log('session', sessionId, 'already processed')
-    return
-  }
-
   const { userId, manticDollarQuantity } = session.metadata
-  const payout = Number.parseInt(manticDollarQuantity)
+  const deposit = Number.parseInt(manticDollarQuantity)
 
-  const transaction: StripeTransaction = {
-    userId,
-    manticDollarQuantity: payout, // save as number
-    sessionId,
-    session,
-    timestamp: Date.now(),
+  const success = await firestore.runTransaction(async (trans) => {
+    const query = await trans.get(
+      firestore
+        .collection('stripe-transactions')
+        .where('sessionId', '==', sessionId)
+    )
+    if (!query.empty) {
+      console.log('session', sessionId, 'already processed')
+      return false
+    }
+    const stripeDoc = firestore.collection('stripe-transactions').doc()
+    trans.set(stripeDoc, {
+      userId,
+      manticDollarQuantity: deposit, // save as number
+      sessionId,
+      session,
+      timestamp: Date.now(),
+    })
+    payUsers(trans, [{ userId, payout: deposit, deposit }])
+    return true
+  })
+
+  if (success) {
+    console.log('user', userId, 'paid M$', deposit)
+
+    const user = await getUser(userId)
+    if (!user) return
+
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+
+    await sendThankYouEmail(user, privateUser)
+
+    await track(
+      userId,
+      'M$ purchase',
+      { amount: deposit, sessionId },
+      { revenue: deposit / 100 }
+    )
   }
-
-  await firestore.collection('stripe-transactions').add(transaction)
-
-  await payUser(userId, payout, true)
-  console.log('user', userId, 'paid M$', payout)
-
-  const user = await getUser(userId)
-  if (!user) return
-
-  const privateUser = await getPrivateUser(userId)
-  if (!privateUser) return
-
-  await sendThankYouEmail(user, privateUser)
-
-  await track(
-    userId,
-    'M$ purchase',
-    { amount: payout, sessionId },
-    { revenue: payout / 100 }
-  )
 }
 
 const firestore = admin.firestore()

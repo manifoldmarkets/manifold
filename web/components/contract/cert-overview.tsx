@@ -5,7 +5,9 @@ import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import {
   getCertOwnershipUsers,
+  getCertPoints,
   getDividendPayouts,
+  toPayoutsMap,
 } from 'common/calculate/cert'
 import {
   calculatePrice,
@@ -14,22 +16,23 @@ import {
 } from 'common/calculate/uniswap2'
 import { CertContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { CertTxn } from 'common/txn'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { keyBy } from 'lodash'
 import Image from 'next/image'
-import { Fragment, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
 import { useUser, useUsersById } from 'web/hooks/use-user'
 import { dividendCert, swapCert } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
+import { CertContractChart } from '../charts/contract/cert'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { RelativeTimestamp } from '../relative-timestamp'
+import { SizedContainer } from '../sized-container'
 import { AmountInput } from '../widgets/amount-input'
 import { Avatar } from '../widgets/avatar'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
+import CertTradesTable from './cert-trades-table'
 
 export function CertInfo(props: { contract: CertContract }) {
   const { contract } = props
@@ -40,11 +43,17 @@ export function CertInfo(props: { contract: CertContract }) {
   const userArr = useUsersById(Object.keys(ownership))
   const users = userArr ? keyBy(userArr, 'id') : {}
 
+  const user = useUser()
+  const [totalDividend, setTotalDividend] = useState(10_000)
+  const isCreator = user && user.id === contract.creatorId
+  const payouts = getDividendPayouts(user?.id || '', totalDividend, txns)
+  const payoutsMap = toPayoutsMap(payouts)
+
   return (
     <Col className="gap-1 md:gap-2">
       <div className="max-w-full px-2">
         <h2 className="mb-2 text-xl text-indigo-700">Pool</h2>
-        {share} shares <br />
+        {formatLargeNumber(share)} shares <br />
         {formatMoney(mana)}
         <h2 className="mt-4 mb-2 text-xl text-indigo-700">Positions</h2>
         <Table>
@@ -52,6 +61,7 @@ export function CertInfo(props: { contract: CertContract }) {
             <tr>
               <td>User</td>
               <td>Shares</td>
+              <td>Dividend</td>
             </tr>
           </thead>
           <tbody className="align-center">
@@ -75,43 +85,42 @@ export function CertInfo(props: { contract: CertContract }) {
                       {user.name}
                     </div>
                   </td>
-                  <td>{shares}</td>
+                  <td>{formatLargeNumber(shares)}</td>
+                  <td>
+                    {isCreator && payoutsMap[id] ? (
+                      <span className="text-blue-400">
+                        {' '}
+                        {formatMoney(payoutsMap[id])}
+                      </span>
+                    ) : null}
+                  </td>
                 </tr>
               )
             })}
           </tbody>
         </Table>
       </div>
-    </Col>
-  )
-}
-
-function PayDividendWidget(props: { contract: CertContract; txns: CertTxn[] }) {
-  const { contract, txns } = props
-  const user = useUser()
-  const [totalDividend, setTotalDividend] = useState(10_000)
-  if (!user || user.id != contract.creatorId) return null
-  const payouts = getDividendPayouts(user?.id, totalDividend, txns)
-  return (
-    <Col className="gap-2 rounded-lg bg-gray-50 p-4">
-      <Title>Pay Dividend</Title>
-      <input
-        type="number"
-        value={totalDividend}
-        onChange={(e) => setTotalDividend(parseInt(e.target.value))}
-      />
-      <p>{JSON.stringify(payouts)}</p>
-      <Button
-        color="gradient"
-        onClick={async () => {
-          await dividendCert({
-            certId: contract.id,
-            amount: totalDividend,
-          })
-        }}
-      >
-        Pay Dividend
-      </Button>
+      {isCreator && (
+        <Col className="gap-2 rounded-lg bg-gray-50 p-4">
+          <Title>Pay Dividend</Title>
+          <input
+            type="number"
+            value={totalDividend}
+            onChange={(e) => setTotalDividend(parseInt(e.target.value))}
+          />
+          <Button
+            color="gradient"
+            onClick={async () => {
+              await dividendCert({
+                certId: contract.id,
+                amount: totalDividend,
+              })
+            }}
+          >
+            Pay Dividend
+          </Button>
+        </Col>
+      )}
     </Col>
   )
 }
@@ -122,19 +131,9 @@ function formatPrice(price: number) {
 
 export function CertOverview(props: { contract: CertContract }) {
   const { contract } = props
-  const [amount, setAmount] = useState<number | undefined>(10)
-
-  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
-  const isBuy = tradeType === 'BUY'
-
-  const realAmount = (isBuy ? 1 : -1) * (amount ?? 0)
-
-  const shares = calculateShares(contract.pool, realAmount)
-
   const price = formatPrice(calculatePrice(contract.pool))
-  const after = formatPrice(calculatePriceAfterBuy(contract.pool, realAmount))
-
-  const pricePerShare = formatPrice(realAmount / shares)
+  const txns = useCertTxns(contract.id)
+  const certPoints = useMemo(() => getCertPoints(txns), [txns])
 
   return (
     <Col>
@@ -151,8 +150,42 @@ export function CertOverview(props: { contract: CertContract }) {
           <span className="text-4xl">{price}</span>
         </div>
       </div>
-      {/* TODO: tabs */}
 
+      {/* Show a graph for the trades */}
+      <SizedContainer fullHeight={250} mobileHeight={150}>
+        {(w, h) => (
+          <CertContractChart
+            width={w}
+            height={h}
+            certPoints={certPoints}
+            cert={contract}
+          />
+        )}
+      </SizedContainer>
+
+      <BuySellWidget contract={contract} />
+    </Col>
+  )
+}
+
+function BuySellWidget(props: { contract: CertContract }) {
+  const { contract } = props
+  const [amount, setAmount] = useState<number | undefined>(10)
+
+  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY')
+  const isBuy = tradeType === 'BUY'
+
+  const realAmount = (isBuy ? 1 : -1) * (amount ?? 0)
+
+  const shares = calculateShares(contract.pool, realAmount)
+
+  const price = formatPrice(calculatePrice(contract.pool))
+  const after = formatPrice(calculatePriceAfterBuy(contract.pool, realAmount))
+
+  const pricePerShare = formatPrice(realAmount / shares)
+
+  return (
+    <>
       <RadioGroup
         value={tradeType}
         onChange={setTradeType}
@@ -167,7 +200,7 @@ export function CertOverview(props: { contract: CertContract }) {
           {({ checked }) => (
             <div
               className={clsx(
-                'rounded-t-lg border-2 bg-teal-100 py-2',
+                'cursor-pointer rounded-t-lg border-2 bg-teal-100 py-2 hover:bg-teal-200',
                 checked
                   ? 'border-teal-300 border-b-teal-100'
                   : 'border-b-scarlet-300 border-teal-100'
@@ -181,7 +214,7 @@ export function CertOverview(props: { contract: CertContract }) {
           {({ checked }) => (
             <div
               className={clsx(
-                'bg-scarlet-100 rounded-t-lg border-2 py-2',
+                'bg-scarlet-100 hover:bg-scarlet-200 cursor-pointer rounded-t-lg border-2 py-2',
                 checked
                   ? 'border-scarlet-300 border-b-scarlet-100'
                   : 'border-scarlet-100 border-b-teal-300'
@@ -243,21 +276,12 @@ export function CertOverview(props: { contract: CertContract }) {
           </Button>
         </Row>
       </Col>
-    </Col>
+    </>
   )
 }
 
 export function CertTrades(props: { contract: CertContract }) {
   const { contract } = props
   const txns = useCertTxns(contract.id)
-  return (
-    <>
-      {txns.map((txn, i) => (
-        <div key={i} className="rounded-lg px-2 py-1 text-gray-500">
-          {txn.description} <RelativeTimestamp time={txn.createdTime} />
-        </div>
-      ))}
-      <PayDividendWidget contract={contract} txns={txns} />
-    </>
-  )
+  return <CertTradesTable txns={txns} />
 }

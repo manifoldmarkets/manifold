@@ -8,16 +8,16 @@ export const delay = (ms: number) => {
 }
 
 export async function withRetries<T>(q: PromiseLike<T>, policy?: RetryPolicy) {
-  let err: any
+  let err: Error | undefined
   let delaySec = policy?.initialBackoffSec ?? 5
   const maxRetries = policy?.retries ?? 5
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await q
     } catch (e) {
-      err = e
+      err = e as Error
       if (i < maxRetries) {
-        console.debug(`Error: ${e?.toString()} - Retrying in ${delaySec}s.`)
+        console.debug(`Error: ${err.message} - Retrying in ${delaySec}s.`)
         await delay(delaySec * 1000)
         delaySec *= 2
       }

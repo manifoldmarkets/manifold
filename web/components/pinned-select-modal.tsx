@@ -152,7 +152,7 @@ export function PinnedSelectModal(props: {
               highlightCards={[selectedItem?.itemId ?? '']}
               additionalFilter={group ? { groupSlug: group.slug } : undefined}
               persistPrefix={group ? `group-${group.slug}` : undefined}
-              headerClassName="bg-white sticky"
+              headerClassName="bg-white"
               {...contractSearchOptions}
             />
           </div>

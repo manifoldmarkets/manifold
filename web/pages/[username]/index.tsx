@@ -308,7 +308,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   onClick={(e) => {
                     e.preventDefault()
                     copyToClipboard(referralUrl)
-                    toast.success('Referral link copied!', {
+                    toast.success('Copied your referral link!', {
                       icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
                     })
                     track('copy referral link')
@@ -316,7 +316,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    Earn {ENV_CONFIG.moneyMoniker}250 per friend referred
+                    Referrals (earn {ENV_CONFIG.moneyMoniker}250)
                   </Row>
                 </div>
               )}
@@ -445,7 +445,7 @@ function ProfilePublicStats(props: {
         isOpen={isOpen}
         setIsOpen={setIsOpen}
       />
-      <GroupsButton user={user} className={className} />
+      {isCurrentUser && <GroupsButton user={user} className={className} />}
       {isCurrentUser && <ReferralsButton user={user} className={className} />}
       {isCurrentUser && (
         <UserLikedContractsButton user={user} className={className} />

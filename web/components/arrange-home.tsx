@@ -122,7 +122,7 @@ const SectionItem = (props: {
               )
               updateUser(user.id, { homeSections })
 
-              toast.promise(leaveGroup(group, user.id), {
+              toast.promise(leaveGroup(group.id, user.id), {
                 loading: 'Unfollowing group...',
                 success: `Unfollowed ${group.name}`,
                 error: "Couldn't unfollow group, try again?",

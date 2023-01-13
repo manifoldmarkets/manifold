@@ -1,28 +1,45 @@
+import { uniqBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
-import { useSwipes } from './use-swipes'
-import { useUserRecommendedMarkets } from './use-user'
+import { db } from 'web/lib/supabase/db'
+import { buildArray } from 'common/util/array'
+import { usePrivateUser } from './use-user'
+import { isContractBlocked } from 'web/lib/firebase/users'
 
-export const useFeed = (user: User | null | undefined, count: number) => {
+const PAGE_SIZE = 20
+
+export const useFeed = (user: User | null | undefined, key: string) => {
   const [savedContracts, setSavedContracts] = usePersistentState<
     Contract[] | undefined
-  >(undefined, { key: 'home-your-feed' + count, store: inMemoryStore() })
+  >(undefined, {
+    key: `recommended-contracts-${user?.id}-${key}`,
+    store: inMemoryStore(),
+  })
 
-  const alreadySwipedContractIds = useSwipes()
+  const privateUser = usePrivateUser()
+  const userId = user?.id
 
-  const computedContracts = useUserRecommendedMarkets(
-    user?.id,
-    count,
-    alreadySwipedContractIds
-  )
+  const loadMore = useCallback(() => {
+    if (userId) {
+      db.rpc('get_recommended_contracts' as any, {
+        uid: userId,
+        count: PAGE_SIZE,
+      }).then((res) => {
+        const newContracts = res.data as Contract[] | undefined
+        setSavedContracts((contracts) =>
+          uniqBy(buildArray(contracts, newContracts), (c) => c.id).filter(
+            (c) => !isContractBlocked(privateUser, c)
+          )
+        )
+      })
+    }
+  }, [userId, setSavedContracts, privateUser])
 
   useEffect(() => {
-    if (computedContracts && !savedContracts)
-      setSavedContracts(computedContracts)
-  }, [computedContracts, savedContracts, setSavedContracts])
+    loadMore()
+  }, [loadMore])
 
-  // Show only the first loaded batch of contracts, so users can come back to them.
-  return savedContracts ?? computedContracts
+  return { contracts: savedContracts, loadMore }
 }

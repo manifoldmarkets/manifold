@@ -34,6 +34,7 @@ import utc from 'dayjs/plugin/utc'
 import { track } from '../service/analytics'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
+import { Contract } from 'common/contract'
 
 dayjs.extend(utc)
 
@@ -405,6 +406,22 @@ export const getUsersBlockFacetFilters = (
     )
   )
   return facetFilters
+}
+
+export const isContractBlocked = (
+  privateUser: PrivateUser | undefined | null,
+  contract: Contract
+) => {
+  if (!privateUser) return false
+
+  const { blockedContractIds, blockedByUserIds, blockedGroupSlugs } =
+    privateUser
+
+  return (
+    blockedContractIds?.includes(contract.id) ||
+    contract.groupSlugs?.some((slug) => blockedGroupSlugs?.includes(slug)) ||
+    blockedByUserIds?.includes(contract.creatorId)
+  )
 }
 
 export async function getTotalContractCreated(userId: string) {

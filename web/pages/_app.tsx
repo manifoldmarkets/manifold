@@ -8,6 +8,7 @@ import { NativeMessageListener } from 'web/components/native-message-listener'
 import { Analytics } from '@vercel/analytics/react'
 import '../styles/globals.css'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
+import { SearchProvider } from 'web/components/search/search-context'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -76,8 +77,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
       <AuthProvider serverUser={pageProps.auth}>
         <NativeMessageListener />
         <QueryClientProvider client={queryClient}>
-          <Welcome />
-          <Component {...pageProps} />
+          <SearchProvider>
+            <Welcome />
+            <Component {...pageProps} />
+          </SearchProvider>
         </QueryClientProvider>
       </AuthProvider>
       <Analytics />

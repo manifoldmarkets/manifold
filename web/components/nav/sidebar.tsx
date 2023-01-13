@@ -9,6 +9,7 @@ import {
   LogoutIcon,
   BeakerIcon,
   HeartIcon,
+  LightningBoltIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -29,6 +30,7 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { RectangleGroup } from 'web/components/icons/outline'
+import { SearchButton } from './search-button'
 
 export default function Sidebar(props: {
   className?: string
@@ -64,10 +66,12 @@ export default function Sidebar(props: {
       {user === undefined && <div className="h-[56px]" />}
       {user === null && <SignInButton className="mb-3" />}
       {user === null && (
-        <AppBadgesOrGetAppButton size={'lg'} className={'mb-4'} />
+        <AppBadgesOrGetAppButton size="md" className={'mb-4'} />
       )}
 
       {user && !isMobile && <ProfileSummary user={user} />}
+
+      {!isMobile && <SearchButton className="mb-5" />}
 
       <div className="flex flex-col gap-1">
         {navOptions.map((item) => (
@@ -102,7 +106,6 @@ const logout = async () => {
 const getDesktopNav = (loggedIn: boolean) =>
   buildArray(
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Search', href: '/search', icon: SearchIcon },
     loggedIn && {
       name: 'Notifications',
       href: `/notifications`,
@@ -125,9 +128,10 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
 
   return buildArray(
     { name: 'Groups', href: '/groups' },
+    { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
-    { name: 'Blog', href: 'https://news.manifold.markets' },
+    // { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     {
       name: 'Help & About',
@@ -142,12 +146,14 @@ const getMobileNav = (loggedIn: boolean) => {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
   return buildArray(
+    { name: 'Search Markets', href: '/search', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     loggedIn && {
       name: 'Groups',
       href: '/groups',
       icon: RectangleGroup,
     },
+    { name: 'Referrals', href: '/referrals', icon: LightningBoltIcon },
     loggedIn && { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon }

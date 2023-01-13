@@ -9,9 +9,18 @@ import { useRouter } from 'next/router'
 import { getIsNative, setIsNative } from 'web/lib/native/is-native'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { webToNativeMessageType } from 'common/native-message'
+import { useEffect } from 'react'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
+
+  useEffect(() => {
+    const { nativePlatform } = router.query
+    if (nativePlatform !== undefined) {
+      setIsNative(true, nativePlatform as string)
+    }
+  }, [router.query])
+
   const handleNativeMessage = async (type: string, data: any) => {
     if (type === 'setIsNative') {
       setIsNative(true, data.platform)

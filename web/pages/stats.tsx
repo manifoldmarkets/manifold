@@ -46,6 +46,8 @@ export function CustomAnalytics(props: Stats) {
     startDate,
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
+    avgDailyUserActions,
+    dailySales,
     weeklyActiveUsers,
     monthlyActiveUsers,
     d1,
@@ -132,6 +134,49 @@ export function CustomAnalytics(props: Stats) {
                 dailyValues={monthlyActiveUsers}
                 startDate={startDate}
               />
+            ),
+          },
+        ]}
+      />
+      <Spacer h={8} />
+
+      <Title text="Average activity" />
+      <p className="text-gray-500">
+        Median number of DAU-qualifying actions per multi-action user per day.
+      </p>
+
+      <Spacer h={4} />
+
+      <Tabs
+        className="mb-4"
+        defaultIndex={0}
+        tabs={[
+          {
+            title: 'Daily',
+            content: (
+              <DailyChart
+                dailyValues={avgDailyUserActions}
+                startDate={startDate}
+              />
+            ),
+          },
+        ]}
+      />
+      <Spacer h={8} />
+
+      <Title text="Sales" />
+      <p className="text-gray-500">Daily mana sales (in USD)</p>
+
+      <Spacer h={4} />
+
+      <Tabs
+        className="mb-4"
+        defaultIndex={0}
+        tabs={[
+          {
+            title: 'Daily',
+            content: (
+              <DailyChart dailyValues={dailySales} startDate={startDate} />
             ),
           },
         ]}

@@ -24,7 +24,7 @@ import {
 import { mapAsync } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
-import { CollectionReference } from 'firebase-admin/firestore'
+import { CollectionReference, Query } from 'firebase-admin/firestore'
 
 const firestore = admin.firestore()
 
@@ -153,18 +153,16 @@ export async function updateUserMetrics() {
 }
 
 const loadUserContractBets = async (userId: string, contractIds: string[]) => {
-  const betDocs = await mapAsync(contractIds, async (cid) => {
-    return await firestore
-      .collection('contracts')
-      .doc(cid)
-      .collection('bets')
-      .where('userId', '==', userId)
-      .get()
+  const betDocs = await mapAsync(contractIds, (cid) => {
+    return loadPaginated(
+      firestore
+        .collection('contracts')
+        .doc(cid)
+        .collection('bets')
+        .where('userId', '==', userId) as Query<Bet>
+    )
   })
-  return betDocs
-    .map((d) => d.docs)
-    .flat()
-    .map((d) => d.data() as Bet)
+  return betDocs.flat()
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {

@@ -10,7 +10,7 @@ A list of community-created projects built on, or related to, Manifold Markets.
 - [Asterisk Mag](https://asteriskmag.com/issues/1/modeling-the-end-of-monkeypox) - A quarterly journal of writing and clear thinking about things that matter
 - [DGG Exchange](https://www.dgg.exchange/) and [manifold.watch](https://manifold.watch) - Trade on streamer sentiments in the [Destiny](https://www.destiny.gg/) community
 
-## API / Dev
+## For Developers
 
 - [PyManifold](https://github.com/bcongdon/PyManifold) - Python client for the Manifold API
   - [PyManifold fork](https://github.com/LivInTheLookingGlass/PyManifold/) - Fork maintained by [@LivInTheLookingGlass](https://manifold.markets/LivInTheLookingGlass)
@@ -38,6 +38,12 @@ A list of community-created projects built on, or related to, Manifold Markets.
 - [Scoring Midterm Election Forecasts](https://mikesaintantoine.substack.com/p/scoring-midterm-election-forecasts) by Mike Saint-Antoine
 - [Notes on an Experiment with Markets](https://aiimpacts.org/notes-on-an-experiment-with-markets/) by Jeffrey Heninger
 - [How People Are Buying and Selling Streamer Stocks](https://epicstream.com/article/manifold-markets-how-people-are-buying-and-selling-streamer-stocks) by Ruben Circelli
+- [What If We Took a Fun Cool Platform and Made it Do Imaginary Politics](https://strainhardening.substack.com/p/what-if-we-took-a-fun-cool-platform) by Gavriel K
+- [AI: Markets for Lemons, and the Great Logging Off](https://www.fortressofdoors.com/ai-markets-for-lemons-and-the-great-logging-off/) by Lars Doucet
+
+## Media
+- Podcast: [Stephen Grugett (Manifold Markets Founder) - Predictions Markets & Revolutionizing Governance](https://www.dwarkeshpatel.com/p/stephen-grugett)
+- Podcast: [Mana from Heaven | Stephen Grugett, James Grugett, & Richard Hanania](https://www.cspicenter.com/p/43-mana-from-heaven-steven-grugett)
 
 ## Art
 

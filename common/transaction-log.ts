@@ -2,6 +2,8 @@ export type DocumentKind =
   | 'user'
   | 'userFollow'
   | 'userReaction'
+  | 'userEvent'
+  | 'userSeenMarket'
   | 'contract'
   | 'contractAnswer'
   | 'contractBet'
@@ -15,6 +17,8 @@ export type DocumentKind =
   | 'manalink'
   | 'post'
   | 'test'
+  | 'userPortfolioHistory'
+  | 'userContractMetrics'
 
 export type WriteKind = 'create' | 'update' | 'delete'
 

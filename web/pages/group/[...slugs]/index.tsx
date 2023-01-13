@@ -53,7 +53,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePost, usePosts } from 'web/hooks/use-post'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
-import { listPosts } from 'web/lib/firebase/posts'
+import { getPost, listPosts } from 'web/lib/firebase/posts'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -84,6 +84,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   const creator = await creatorPromise
 
+  const aboutPost = group?.aboutPostId ? await getPost(group.aboutPostId) : null
   const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
     (p) => p != null
   ) as Post[]
@@ -96,6 +97,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       topCreators,
       messages,
       suggestedFilter,
+      aboutPost,
       posts,
     },
 
@@ -114,8 +116,8 @@ export default function GroupPage(props: {
   topTraders: { user: User; score: number }[]
   topCreators: { user: User; score: number }[]
   messages: GroupComment[]
-  aboutPost: Post | null
   suggestedFilter: 'open' | 'all'
+  aboutPost: Post | null
   posts: Post[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
@@ -126,6 +128,7 @@ export default function GroupPage(props: {
     topCreators: [],
     messages: [],
     suggestedFilter: 'open',
+    aboutPost: null,
     posts: [],
   }
   const {
@@ -146,7 +149,7 @@ export default function GroupPage(props: {
   )
 
   const group = useGroup(props.group?.id) ?? props.group
-  const aboutPost = usePost(group?.aboutPostId) ?? null
+  const aboutPost = usePost(group?.aboutPostId) ?? props.aboutPost
 
   let groupPosts = usePosts(group?.postIds ?? []) ?? posts
 
@@ -279,7 +282,6 @@ export default function GroupPage(props: {
               title: 'Markets',
               content: (
                 <ContractSearch
-                  headerClassName="md:sticky"
                   defaultSort={'score'}
                   defaultFilter={suggestedFilter}
                   additionalFilter={{

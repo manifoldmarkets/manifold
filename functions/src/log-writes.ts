@@ -45,6 +45,14 @@ function logger(path: string, docKind: DocumentKind) {
 }
 
 export const logUsers = logger('users/{id}', 'user')
+export const logUserPortfolioHistories = logger(
+  'users/{parent}/portfolioHistory/{id}',
+  'userPortfolioHistory'
+)
+export const logUserContractMetrics = logger(
+  'users/{parent}/contract-metrics/{id}',
+  'userContractMetrics'
+)
 export const logUserFollows = logger(
   'users/{parent}/follows/{id}',
   'userFollow'
@@ -52,6 +60,14 @@ export const logUserFollows = logger(
 export const logUserReactions = logger(
   'users/{parent}/reactions/{id}',
   'userReaction'
+)
+export const logUserEvents = logger(
+  'users/{parent}/events/{id}',
+  'userEvent'
+)
+export const logUserSeenMarkets = logger(
+  'private-users/{parent}/seenMarkets/{id}',
+  'userSeenMarket'
 )
 export const logContracts = logger('contracts/{id}', 'contract')
 export const logContractAnswers = logger(

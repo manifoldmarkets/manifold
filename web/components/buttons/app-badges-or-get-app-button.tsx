@@ -7,7 +7,7 @@ import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
 
 export const AppBadgesOrGetAppButton = (props: {
-  size?: 'lg'
+  size?: 'lg' | 'md'
   className?: string
 }) => {
   const { isNative } = getNativePlatform()

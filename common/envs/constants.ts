@@ -81,6 +81,7 @@ export const BOT_USERNAMES = [
   'Botmageddon',
   'SmartBot',
   'ShifraGazsi',
+  'Bot',
 ]
 
 export const CORE_USERNAMES = [
@@ -125,6 +126,7 @@ export const CHECK_USERNAMES = [
   'Duncan',
   'a',
   'NuñoSempere',
+  'CarsonGale',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

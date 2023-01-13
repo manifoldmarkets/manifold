@@ -1,8 +1,8 @@
 import { postMessageToNative } from 'web/components/native-message-listener'
 
-export const webviewPassUsers = (userJson: string) => {
+export const nativePassUsers = (userJson: string) => {
   postMessageToNative('users', userJson)
 }
-export const webviewSignOut = () => {
+export const nativeSignOut = () => {
   postMessageToNative('signOut', {})
 }

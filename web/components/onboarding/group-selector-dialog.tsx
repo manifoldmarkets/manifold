@@ -50,8 +50,8 @@ export default function GroupSelectorDialog(props: {
                 onSelect={withTracking(
                   () =>
                     memberGroupIds.includes(group.id)
-                      ? leaveGroup(group, user.id)
-                      : joinGroup(group, user.id),
+                      ? leaveGroup(group.id, user.id)
+                      : joinGroup(group.id, user.id),
                   'toggle group pill',
                   { group: group.slug }
                 )}
