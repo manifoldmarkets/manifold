@@ -45,9 +45,9 @@ export const DailyProfit = memo(function DailyProfit(props: {
     <>
       <button
         className={clsx(
-          'rounded-md px-2 py-1 text-center transition-colors disabled:cursor-not-allowed',
+          'rounded-md py-1 text-center transition-colors disabled:cursor-not-allowed',
           !seen
-            ? 'from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r'
+            ? 'from-indigo-500 to-blue-500 px-1.5 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r'
             : ''
         )}
         onClick={withTracking(() => {
