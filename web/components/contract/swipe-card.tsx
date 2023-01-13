@@ -159,7 +159,7 @@ export const SwipeCard = memo(
   }
 )
 
-const CornerDetails = (props: { contract: Contract }) => {
+export const CornerDetails = (props: { contract: Contract }) => {
   const { contract } = props
   const { creatorName, creatorAvatarUrl, closeTime } = contract
 

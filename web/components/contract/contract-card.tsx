@@ -48,6 +48,9 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import Image from 'next/image'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { ContractCardView } from 'common/events'
+import { richTextToString } from 'common/util/parse'
+import { SiteLink } from '../widgets/site-link'
+import { CornerDetails } from './swipe-card'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -94,12 +97,15 @@ export const ContractCard = memo(function ContractCard(props: {
   const user = useUser()
   const { ref } = trackCardViews
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useIsVisible(() =>
-        track('view market card', {
-          contractId: contract.id,
-          creatorId: contract.creatorId,
-          slug: contract.slug,
-        } as ContractCardView)
+      useIsVisible(
+        () =>
+          track('view market card', {
+            contractId: contract.id,
+            creatorId: contract.creatorId,
+            slug: contract.slug,
+          } as ContractCardView),
+        // Track only first view.
+        true
       )
     : { ref: undefined }
   const marketClosed =
@@ -516,3 +522,172 @@ export function FeaturedPill(props: { label?: string }) {
     </div>
   )
 }
+
+export const BigContractCard = memo(function ContractCard(props: {
+  contract: Contract
+  showTime?: ShowTime
+  className?: string
+  hideQuickBet?: boolean
+  trackingPostfix?: string
+  newTab?: boolean
+  children?: ReactNode
+}) {
+  const {
+    showTime,
+    className,
+    hideQuickBet,
+    trackingPostfix,
+    newTab,
+    children,
+  } = props
+  const contract = useContract(props.contract.id) ?? props.contract
+  const {
+    isResolved,
+    createdTime,
+    question,
+    outcomeType,
+    resolution,
+    description,
+  } = contract
+
+  const user = useUser()
+  const { ref } = useIsVisible(
+    () =>
+      track('view market card', {
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        slug: contract.slug,
+      } as ContractCardView),
+    // Track only first view.
+    true
+  )
+  const marketClosed =
+    (contract.closeTime || Infinity) < Date.now() || !!resolution
+
+  const showBinaryQuickBet =
+    !marketClosed &&
+    (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
+    !hideQuickBet
+
+  const isNew = createdTime > Date.now() - DAY_MS && !isResolved
+  const defaultImage = `https://picsum.photos/id/${
+    parseInt(contract.id, 36) % 1000
+  }/512`
+  return (
+    <Card
+      className={clsx(
+        'ub-cover-image group relative flex w-full leading-normal',
+        className
+      )}
+      ref={ref}
+    >
+      <Col className="relative flex-1 gap-1">
+        {/* <Row className="justify-between px-4 ">
+          <AvatarDetails
+            contract={contract}
+            noLink={noLinkAvatar}
+            className="z-10"
+          />
+        </Row>
+        <div className="relative mb-2">
+          <div className={clsx('relative h-[420px]')}>
+            <Image
+              fill
+              alt={contract.question}
+              sizes="100vw"
+              className="object-cover"
+              src={contract.coverImageUrl ?? defaultImage}
+              style={{ filter: 'brightness(0.60)' }}
+            />
+          </div>
+
+          <Col className="absolute top-0 h-full w-full justify-between">
+            <div className="break-anywhere bg-slate-800 bg-opacity-50 px-4 pb-4 pt-6 text-xl font-semibold text-white">
+              <div className="drop-shadow-lg">{question}</div>
+            </div>
+            <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
+              {typeof description === 'string'
+                ? description
+                : richTextToString(description)}
+            </div>
+          </Col>
+        </div> */}
+
+        {/* background */}
+        <div className="flex h-[420px] flex-col bg-black">
+          <div className="relative mb-24 grow">
+            <Image
+              fill
+              alt={contract.question}
+              sizes="100vw"
+              className="h-full object-cover"
+              src={contract.coverImageUrl ?? defaultImage}
+              style={{ filter: 'brightness(0.60)' }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
+          </div>
+        </div>
+
+        {/* content */}
+        <div className="absolute inset-0 flex select-none flex-col gap-4">
+          <CornerDetails contract={contract} />
+          <SiteLink
+            className="line-clamp-6 mx-8 mt-auto mb-4 text-2xl text-white"
+            href={contractPath(contract)}
+            followsLinkClass
+          >
+            {question}
+          </SiteLink>
+
+          {/* TODO: use editor excluding widgets */}
+          <div className="prose prose-invert prose-sm line-clamp-3 mx-8 mb-2 text-gray-50">
+            {typeof description === 'string'
+              ? description
+              : richTextToString(description)}
+          </div>
+        </div>
+
+        <Col className="gap-1 px-4 pb-1">
+          {showBinaryQuickBet ? (
+            <QuickBet contract={contract} user={user} className="z-10" />
+          ) : (
+            <QuickOutcomeView
+              contract={contract}
+              numAnswersFR={
+                outcomeType === 'FREE_RESPONSE' ||
+                outcomeType === 'MULTIPLE_CHOICE'
+                  ? contract.answers.length
+                  : undefined
+              }
+            />
+          )}
+        </Col>
+        <Row className={clsx('gap-1 px-4', children ? '' : 'mb-2')}>
+          <MiscDetails contract={contract} showTime={showTime} />
+
+          {!isNew &&
+            (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
+              <Tooltip text={'Daily price change'} className={'z-10'}>
+                <ProbOrNumericChange
+                  className="py-2 px-2"
+                  contract={contract as CPMMContract}
+                  user={user}
+                />
+              </Tooltip>
+            )}
+        </Row>
+        {children}
+      </Col>
+
+      <Link
+        href={contractPath(contract)}
+        onClick={trackCallback('click market card' + (trackingPostfix ?? ''), {
+          slug: contract.slug,
+          contractId: contract.id,
+        })}
+        className="absolute top-0 left-0 right-0 bottom-0"
+        target={newTab ? '_blank' : '_self'}
+      />
+    </Card>
+  )
+})

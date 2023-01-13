@@ -24,7 +24,10 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Sort } from 'web/components/contract-search'
 import { ContractCard } from 'web/components/contract/contract-card'
-import { ContractsGrid } from 'web/components/contract/contracts-grid'
+import {
+  ContractsGrid,
+  ContractsList,
+} from 'web/components/contract/contracts-grid'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { DailyStats } from 'web/components/daily-stats'
 import { PinnedItems } from 'web/components/groups/group-post-section'
@@ -382,14 +385,7 @@ export const DiscoverFeed = (props: { user: User }) => {
   const { contracts, loadMore } = useFeed(user, 'home')
 
   if (!contracts) return <LoadingIndicator />
-  return (
-    <ContractsGrid
-      contracts={contracts}
-      showImageOnTopContract
-      trackCardViews={true}
-      loadMore={loadMore}
-    />
-  )
+  return <ContractsList contracts={contracts} loadMore={loadMore} />
 }
 
 function HomeSectionHeader(props: {
