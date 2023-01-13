@@ -1,5 +1,3 @@
-export type UserEvent = ClickEvent
-
 export type ClickEvent = {
   type: 'click'
   contractId: string
