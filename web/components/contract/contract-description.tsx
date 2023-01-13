@@ -21,8 +21,11 @@ import { Editor, Content as ContentType } from '@tiptap/react'
 import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
+import { NumericResolutionPanel } from '../numeric-resolution-panel'
+import { ResolutionPanel } from '../resolution-panel'
+import { User } from 'common/user'
 
-export function ContractDescription(props: {
+export function ContractDescriptionAndResolution(props: {
   contract: Contract
   className?: string
 }) {
@@ -30,10 +33,15 @@ export function ContractDescription(props: {
   const isAdmin = useAdmin()
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
+
   return (
     <div className={clsx('text-gray-700', className)}>
-      {isCreator || isAdmin ? (
-        <RichEditContract contract={contract} isAdmin={isAdmin && !isCreator} />
+      {user && (isCreator || isAdmin) && !contract.isResolved ? (
+        <ContractActions
+          contract={contract}
+          isAdmin={isAdmin && !isCreator}
+          user={user}
+        />
       ) : (
         <CollapsibleContent
           content={contract.description}
@@ -48,8 +56,18 @@ function editTimestamp() {
   return `${dayjs().format('MMM D, h:mma')}: `
 }
 
-function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
-  const { contract, isAdmin } = props
+function ContractActions(props: {
+  contract: Contract
+  isAdmin?: boolean
+  user: User
+}) {
+  const { contract, isAdmin, user } = props
+  const { outcomeType, closeTime } = contract
+  const isClosed = (closeTime ?? 0) < Date.now()
+  const isBinary = outcomeType === 'BINARY'
+
+  const [showResolver, setShowResolver] = useState(isClosed && isBinary)
+
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
 
@@ -93,8 +111,17 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
         contractId={contract.id}
       />
       <Spacer h={4} />
-      <Row className="items-center gap-2 text-xs">
+      <Row className="my-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
+        {isBinary && !isClosed && (
+          <Button
+            color={'gray'}
+            size={'2xs'}
+            onClick={() => setShowResolver(true)}
+          >
+            Resolve
+          </Button>
+        )}
         <Button
           color="gray"
           size="2xs"
@@ -114,6 +141,24 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
         editing={editingQ}
         setEditing={setEditingQ}
       />
+      {showResolver &&
+        (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
+          <NumericResolutionPanel
+            isAdmin={!!isAdmin}
+            creator={user}
+            isCreator={!isAdmin}
+            contract={contract}
+          />
+        ) : (
+          outcomeType === 'BINARY' && (
+            <ResolutionPanel
+              isAdmin={!!isAdmin}
+              creator={user}
+              isCreator={!isAdmin}
+              contract={contract}
+            />
+          )
+        ))}
     </>
   )
 }

@@ -5,7 +5,6 @@ import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Spacer } from 'web/components/layout/spacer'
 import {
   Contract,
@@ -26,7 +25,6 @@ import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
-import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
@@ -35,7 +33,7 @@ import { AlertBox } from 'web/components/widgets/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getOpenGraphProps } from 'common/contract-details'
-import { ContractDescription } from 'web/components/contract/contract-description'
+import { ContractDescriptionAndResolution } from 'web/components/contract/contract-description'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/widgets/title'
@@ -46,7 +44,6 @@ import { ContractComment } from 'common/comment'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { Answer } from 'common/answer'
 import { useEvent } from 'web/hooks/use-event'
-import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
 import {
   getBinaryContractUserContractMetrics,
@@ -174,7 +171,6 @@ export function ContractPageContent(
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
-  const isCreator = user?.id === contract.creatorId
 
   useTracking(
     'view market',
@@ -213,8 +209,6 @@ export function ContractPageContent(
   const { isResolved, question, outcomeType, resolution } = contract
 
   const allowTrade = tradingAllowed(contract)
-  const isAdmin = useAdmin()
-  const allowResolve = !isResolved && (isCreator || isAdmin) && !!user
 
   const ogCardProps = getOpenGraphProps(contract)
 
@@ -265,13 +259,10 @@ export function ContractPageContent(
           betPoints={betPoints}
         />
 
-        <ContractDescription className="mt-6 mb-2 px-2" contract={contract} />
-
-        {isCreator ? (
-          <CreatorSharePanel contract={contract} />
-        ) : (
-          <Spacer h={4} />
-        )}
+        <ContractDescriptionAndResolution
+          className="mt-6 mb-2 px-2"
+          contract={contract}
+        />
 
         {outcomeType === 'NUMERIC' && (
           <AlertBox
@@ -295,25 +286,6 @@ export function ContractPageContent(
         {outcomeType === 'NUMERIC' && allowTrade && (
           <NumericBetPanel className="xl:hidden" contract={contract} />
         )}
-
-        {allowResolve &&
-          (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
-            <NumericResolutionPanel
-              isAdmin={isAdmin}
-              creator={user}
-              isCreator={isCreator}
-              contract={contract}
-            />
-          ) : (
-            outcomeType === 'BINARY' && (
-              <ResolutionPanel
-                isAdmin={isAdmin}
-                creator={user}
-                isCreator={isCreator}
-                contract={contract}
-              />
-            )
-          ))}
 
         {isResolved && resolution !== 'CANCEL' && (
           <>

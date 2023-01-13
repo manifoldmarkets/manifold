@@ -62,7 +62,14 @@ export function ResolutionPanel(props: {
   }
 
   return (
-    <Col className={clsx('relative rounded-md py-6', className)}>
+    <Col
+      className={clsx(
+        'relative rounded-md py-6',
+        'rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-4 sm:grid-cols-3',
+        className
+      )}
+    >
+      <Col className="w-full justify-between rounded bg-white pb-6 pt-4 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
       {isAdmin && !isCreator && (
         <span className="bg-scarlet-50 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
           ADMIN
@@ -138,7 +145,8 @@ export function ResolutionPanel(props: {
           onResolve={resolve}
           isSubmitting={isSubmitting}
         />
-      </Row>
+        </Row>
+        </Col>
     </Col>
   )
 }
