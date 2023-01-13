@@ -3,7 +3,7 @@ import TwitterLogo from 'web/lib/icons/twitter-logo'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
 
-export function TweetButton(props: { tweetText: string, className?: string }) {
+export function TweetButton(props: { tweetText: string; className?: string }) {
   const { tweetText, className } = props
 
   return (
