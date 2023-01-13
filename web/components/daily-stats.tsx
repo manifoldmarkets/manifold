@@ -20,7 +20,7 @@ import Link from 'next/link'
 
 const dailyStatsHeaderClass = 'text-gray-500 text-xs font-thin'
 const dailyStatsClass = 'items-center text-lg'
-
+const rainbowClass = 'text-rainbow'
 export function DailyStats(props: {
   user: User | null | undefined
   showLoans?: boolean
@@ -103,10 +103,18 @@ export function DailyProfit(props: { user: User | null | undefined }) {
       m.from ? m.from.day.profit : 0
     ) ?? []
   )
+  const profitable = profit > 0
   return (
-    <Link className="flex flex-col" href="/daily-movers">
-      <div className={dailyStatsHeaderClass}>Daily profit</div>
-      <Row className={dailyStatsClass}>
+    <Link className="mr-2 flex flex-col" href="/daily-movers">
+      <div
+        className={clsx(dailyStatsHeaderClass, profitable && rainbowClass)}
+        style={
+          profitable ? { textShadow: '-0.1px -0.1px rgba(0,0,0,0.2)' } : {}
+        }
+      >
+        Daily profit
+      </div>
+      <Row className={clsx(dailyStatsClass, profitable && 'text-teal-500')}>
         <span>{formatMoney(profit)}</span>{' '}
       </Row>
     </Link>

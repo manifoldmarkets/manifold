@@ -43,52 +43,48 @@ export default function AddFundsPage() {
         url="/add-funds"
       />
 
-      <Col className="items-center">
-        <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
-          <Title className="!mt-0" text="Get Mana" />
+      <Col className="mx-auto w-[700px] rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
+        <Title className="!mt-0" text="Get Mana" />
 
-          <div className="mb-6">
-            Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
-            markets.
-            <div className="italic">Not redeemable for cash.</div>
-          </div>
+        <div className="mb-6">
+          Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
+          markets.
+          <div className="italic">Not redeemable for cash.</div>
+        </div>
 
-          <div className="mb-2 text-sm text-gray-500">Amount</div>
-          <FundsSelector
-            fundAmounts={WEB_PRICES}
-            className="max-w-md"
-            selected={amountSelected}
-            onSelect={setAmountSelected}
-          />
+        <div className="mb-2 text-sm text-gray-500">Amount</div>
+        <FundsSelector
+          fundAmounts={WEB_PRICES}
+          className="max-w-md"
+          selected={amountSelected}
+          onSelect={setAmountSelected}
+        />
 
-          <div className="mt-6">
-            <div className="mb-1 text-sm text-gray-500">Price USD</div>
-            <div className="text-xl">
-              ${Math.round(amountSelected / 100)}.00
-            </div>
-          </div>
+        <div className="mt-6">
+          <div className="mb-1 text-sm text-gray-500">Price USD</div>
+          <div className="text-xl">${Math.round(amountSelected / 100)}.00</div>
+        </div>
 
-          <form
-            action={checkoutURL(user?.id || '', amountSelected)}
-            method="POST"
-            className="mt-8"
+        <form
+          action={checkoutURL(user?.id || '', amountSelected)}
+          method="POST"
+          className="mt-8"
+        >
+          <Button
+            type="submit"
+            color="gradient"
+            size="xl"
+            className="w-full"
+            onClick={trackCallback('checkout', { amount: amountSelected })}
           >
-            <Button
-              type="submit"
-              color="gradient"
-              size="xl"
-              className="w-full"
-              onClick={trackCallback('checkout', { amount: amountSelected })}
-            >
-              Checkout
-            </Button>
-          </form>
+            Checkout
+          </Button>
+        </form>
 
-          <div className="mb-4 mt-12">
-            Short on cash? Here are some other ways to get mana:
-          </div>
-          <OtherWaysToGetMana />
-        </Col>
+        <div className="mb-4 mt-12">
+          Short on cash? Here are some other ways to get mana:
+        </div>
+        <OtherWaysToGetMana />
       </Col>
     </Page>
   )

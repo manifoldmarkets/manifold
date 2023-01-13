@@ -70,7 +70,6 @@ export function UserContractsList(props: { creator: User }) {
         />
       </Row>
       <ContractSearch
-        headerClassName="sticky"
         defaultSort="newest"
         defaultFilter="all"
         additionalFilter={{

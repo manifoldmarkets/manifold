@@ -56,6 +56,8 @@ import { useBets } from 'web/hooks/use-bets'
 import { formatTimeShort } from 'web/lib/util/time'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { getBets } from 'web/lib/supabase/bets'
+import { Input } from 'web/components/widgets/input'
+import { searchInAny } from 'common/util/parse'
 
 type BetSort = 'newest' | 'profit' | 'loss' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -104,7 +106,9 @@ export function BetsList(props: { user: User }) {
   >(undefined)
   useEffect(() => {
     if (!metrics) return
-    getContracts(contractIds).then(setLoadingContracts)
+    getContracts(contractIds).then((contracts) =>
+      setLoadingContracts(filterDefined(contracts))
+    )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contractIds.length, metrics])
 
@@ -120,6 +124,7 @@ export function BetsList(props: { user: User }) {
     key: 'portfolio-page',
     store: inMemoryStore(),
   })
+  const [query, setQuery] = useState('')
 
   const onSetSort = (s: BetSort) => {
     setSort(s)
@@ -139,7 +144,12 @@ export function BetsList(props: { user: User }) {
   }
   if (metrics.length === 0) return <NoBets user={user} />
 
-  const contracts = filterDefined(loadingContracts)
+  const contracts =
+    query !== ''
+      ? loadingContracts.filter((c) =>
+          searchInAny(query, ...[c.question, c.creatorName, c.creatorUsername])
+        )
+      : loadingContracts
   const initialMetricsByContract = keyBy(metrics, (m) => m.contractId)
   const metricsByContract = Object.fromEntries(
     contractIds.map((cid) => [
@@ -205,7 +215,7 @@ export function BetsList(props: { user: User }) {
     <Col>
       <Col className="justify-between gap-4 sm:flex-row">
         <Row className="gap-4">
-          <Col>
+          <Col className={'shrink-0'}>
             <div className="text-xs text-gray-600 sm:text-sm">
               Investment value
             </div>
@@ -214,10 +224,16 @@ export function BetsList(props: { user: User }) {
               <ProfitBadge profitPercent={investedProfitPercent} />
             </div>
           </Col>
-          <Col>
+          <Col className={'shrink-0'}>
             <div className="text-xs text-gray-600 sm:text-sm">Total loans</div>
             <div className="text-lg">{formatMoney(currentLoan)}</div>
           </Col>
+          <Input
+            placeholder="Search"
+            className={'w-24 sm:w-full'}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </Row>
 
         <Row className="gap-2">

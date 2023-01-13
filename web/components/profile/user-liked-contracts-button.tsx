@@ -6,12 +6,14 @@ import { Col } from 'web/components/layout/col'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Row } from 'web/components/layout/row'
 import {
-  getLikedContent,
-  getLikedContentCount,
+  getLikedContracts,
+  getLikedContractsCount,
   SearchLikedContent,
 } from 'web/lib/supabase/reactions'
 import { Input } from 'web/components/widgets/input'
 import { withTracking } from 'web/lib/service/analytics'
+import { XIcon } from '@heroicons/react/outline'
+import { unReact } from 'web/lib/firebase/reactions'
 
 // Note: this button does NOT live update
 export const UserLikedContractsButton = memo(
@@ -25,12 +27,12 @@ export const UserLikedContractsButton = memo(
     const [likedContentCount, setLikedContentCount] = useState(0)
     const [query, setQuery] = useState('')
     useEffect(() => {
-      getLikedContentCount(user.id).then(setLikedContentCount)
+      getLikedContractsCount(user.id).then(setLikedContentCount)
     }, [user.id])
 
     useEffect(() => {
       if (!isOpen || likedContent !== undefined) return
-      getLikedContent(user.id).then(setLikedContent)
+      getLikedContracts(user.id).then(setLikedContent)
     }, [likedContent, isOpen, user.id])
 
     // filter by query
@@ -73,19 +75,23 @@ export const UserLikedContractsButton = memo(
                   <Col className={'w-full'}>
                     <SiteLink
                       href={like.slug}
-                      className={'truncate text-sm text-indigo-700'}
+                      className={'line-clamp-2 text-sm text-indigo-700'}
                     >
                       {like.title}
                     </SiteLink>
-                    {like.contentType === 'comment' && (
-                      <SiteLink
-                        href={like.slug}
-                        className={'line-clamp-3 text-sm text-gray-700'}
-                      >
-                        {like.text}
-                      </SiteLink>
-                    )}
                   </Col>
+                  <XIcon
+                    className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
+                    onClick={() => {
+                      unReact(user.id, like.contentId, 'contract', 'like')
+                      setLikedContent(
+                        filteredLikedContent.filter(
+                          (c) => c.contentId !== like.contentId
+                        )
+                      )
+                      setLikedContentCount(likedContentCount - 1)
+                    }}
+                  />
                 </Row>
               ))}
             </Col>

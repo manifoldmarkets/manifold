@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Contract,
   MAX_DESCRIPTION_LENGTH,
@@ -54,7 +54,6 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
   const [editingQ, setEditingQ] = useState(false)
 
   const editor = useTextEditor({
-    key: `description ${contract.id}`,
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: contract.description,
   })
@@ -63,6 +62,11 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
     if (!editor) return
     await updateContract(contract.id, { description: editor.getJSON() })
   }
+
+  useEffect(() => {
+    if (!editing) editor?.commands?.setContent(contract.description)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, contract.description])
 
   return editing ? (
     <>

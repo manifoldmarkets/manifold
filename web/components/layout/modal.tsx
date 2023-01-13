@@ -16,7 +16,7 @@ export function Modal(props: {
 }) {
   const {
     children,
-    position = 'bottom',
+    position = 'center',
     open,
     setOpen,
     size = 'md',
@@ -74,7 +74,7 @@ export function Modal(props: {
             >
               <Dialog.Panel
                 className={clsx(
-                  'w-full transform transition-all sm:my-8 sm:mx-6 sm:self-center',
+                  'w-full transform transition-all sm:my-8 sm:mx-6',
                   sizeClass,
                   className
                 )}

@@ -218,7 +218,6 @@ function OpenAnswer(props: {
       <Modal
         open={!!betMode}
         setOpen={(open) => setBetMode(open ? 'buy' : undefined)}
-        position="center"
       >
         {betMode && (
           <AnswerBetPanel

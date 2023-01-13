@@ -67,7 +67,7 @@ export default function BetButton(props: {
         )}
       </Col>
 
-      <Modal open={open} setOpen={setOpen} position="center">
+      <Modal open={open} setOpen={setOpen}>
         <SimpleBetPanel
           className={betPanelClassName}
           contract={contract}

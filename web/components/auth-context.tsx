@@ -15,10 +15,7 @@ import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 import { AUTH_COOKIE_NAME, TEN_YEARS_SECS } from 'common/envs/constants'
 import { setCookie } from 'web/lib/util/cookie'
 import { UserAndPrivateUser } from 'common/user'
-import {
-  webviewPassUsers,
-  webviewSignOut,
-} from 'web/lib/native/webview-messages'
+import { nativePassUsers, nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from 'web/lib/util/local'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
@@ -99,7 +96,7 @@ export function AuthProvider(props: {
             setCachedReferralInfoForUser(current.user)
           }
           setAuthUser(current)
-          webviewPassUsers(
+          nativePassUsers(
             JSON.stringify({
               fbUser: fbUser.toJSON(),
               privateUser: current.privateUser,
@@ -109,7 +106,7 @@ export function AuthProvider(props: {
           // User logged out; reset to null
           setUserCookie(undefined)
           setAuthUser(null)
-          webviewSignOut()
+          nativeSignOut()
         }
       },
       (e) => {

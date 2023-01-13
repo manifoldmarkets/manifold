@@ -32,8 +32,14 @@ export const SearchProvider = (props: { children: ReactNode }) => {
 
   return (
     <SearchCtx.Provider value={{ open, setOpen }}>
-      <Modal open={open} setOpen={setOpen} size="lg" className="h-[70vh]">
-        <OmniSearch />
+      <Modal
+        open={open}
+        setOpen={setOpen}
+        size="lg"
+        className="sm:mt-[15vh]"
+        position="top"
+      >
+        <OmniSearch className="max-h-[70vh] overflow-hidden rounded-2xl" />
       </Modal>
       {children}
     </SearchCtx.Provider>
@@ -43,7 +49,3 @@ export const SearchProvider = (props: { children: ReactNode }) => {
 export function useSearchContext() {
   return useContext(SearchCtx)
 }
-
-// keyboard controls
-
-// search button

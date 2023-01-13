@@ -6,7 +6,7 @@ export type SearchLikedContent = Pick<
   Reaction,
   'id' | 'title' | 'slug' | 'contentId' | 'contentType' | 'text'
 >
-export async function getLikedContent(userId: string) {
+export async function getLikedContracts(userId: string) {
   const { data } = await run(
     db
       .from('user_reactions')
@@ -17,18 +17,20 @@ export async function getLikedContent(userId: string) {
       )
       .eq('user_id', userId)
       .eq('data->>type', 'like')
+      .contains('data', { contentType: 'contract' })
       .order('data->>createdTime', { ascending: false })
   )
   return data as SearchLikedContent[]
 }
 
-export async function getLikedContentCount(userId: string) {
+export async function getLikedContractsCount(userId: string) {
   const { data } = await run(
     db
       .from('user_reactions')
       .select('count')
       .eq('user_id', userId)
       .eq('data->>type', 'like')
+      .contains('data', { contentType: 'contract' })
   )
   return data[0].count as number
 }
