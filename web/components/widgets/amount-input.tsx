@@ -10,6 +10,7 @@ import { Input } from './input'
 import 'rc-slider/assets/index.css'
 import { binaryOutcomes } from '../bet/bet-panel'
 import { BetSlider } from 'web/components/bet/bet-slider'
+import { Button, ColorType } from 'web/components/buttons/button'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -21,6 +22,7 @@ export function AmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
+  showQuickAddColor?: ColorType
 }) {
   const {
     amount,
@@ -31,6 +33,7 @@ export function AmountInput(props: {
     className,
     inputClassName,
     inputRef,
+    showQuickAddColor,
   } = props
 
   const parse = (str: string) => parseInt(str.replace(/\D/g, ''))
@@ -48,26 +51,45 @@ export function AmountInput(props: {
           <span className="absolute top-1/2 my-auto ml-2 -translate-y-1/2 text-gray-400">
             {label}
           </span>
-          <Input
-            className={clsx('pl-9 !text-lg', inputClassName)}
-            ref={inputRef}
-            type="text"
-            pattern="[0-9]*"
-            inputMode="numeric"
-            placeholder="0"
-            maxLength={6}
-            value={amount ?? ''}
-            error={!!error}
-            disabled={disabled}
-            onChange={(e) => onAmountChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowUp') {
-                onChange((amount ?? 0) + 5)
-              } else if (e.key === 'ArrowDown') {
-                onChange(Math.max(0, (amount ?? 0) - 5))
-              }
-            }}
-          />
+          <Row>
+            <Input
+              className={clsx(
+                'pl-9 !text-lg',
+                showQuickAddColor && 'pr-12',
+                inputClassName
+              )}
+              ref={inputRef}
+              type="text"
+              pattern="[0-9]*"
+              inputMode="numeric"
+              placeholder="0"
+              maxLength={6}
+              value={amount ?? ''}
+              error={!!error}
+              disabled={disabled}
+              onChange={(e) => onAmountChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowUp') {
+                  onChange((amount ?? 0) + 5)
+                } else if (e.key === 'ArrowDown') {
+                  onChange(Math.max(0, (amount ?? 0) - 5))
+                }
+              }}
+            />
+            {showQuickAddColor && (
+              <Button
+                size={'xs'}
+                color={showQuickAddColor}
+                className={clsx(
+                  '-ml-11',
+                  showQuickAddColor === 'gray-white' && 'text-gray-400'
+                )}
+                onClick={() => onChange((amount ?? 0) + 10)}
+              >
+                +10
+              </Button>
+            )}
+          </Row>
         </label>
 
         {error && (
@@ -150,6 +172,13 @@ export function BuyAmountInput(props: {
               className={className}
               inputClassName={inputClassName}
               inputRef={inputRef}
+              showQuickAddColor={
+                binaryOutcome === 'YES'
+                  ? 'green-white'
+                  : binaryOutcome === 'NO'
+                  ? 'red-white'
+                  : 'gray-white'
+              }
             />
           )}
           {showSlider && (

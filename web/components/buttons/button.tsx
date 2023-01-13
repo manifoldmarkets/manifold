@@ -12,6 +12,10 @@ export type ColorType =
   | 'gray'
   | 'dark-gray'
   | 'gray-outline'
+  | 'green-outline'
+  | 'red-outline'
+  | 'green-white'
+  | 'red-white'
   | 'gradient'
   | 'gradient-pink'
   | 'gray-white'
@@ -35,6 +39,10 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
       'disabled:bg-gray-200 bg-teal-500 text-white hover:bg-teal-600',
     color === 'red' &&
       'disabled:bg-gray-200 bg-scarlet-300 text-white hover:bg-scarlet-400',
+    color === 'green-outline' &&
+      'ring-2 ring-teal-500 text-teal-500 enabled:hover:bg-teal-500 enabled:hover:text-white disabled:opacity-50',
+    color === 'red-outline' &&
+      'ring-2 ring-scarlet-300 text-scarlet-300 enabled:hover:bg-scarlet-300 enabled:hover:text-white disabled:opacity-50',
     color === 'yellow' &&
       'disabled:bg-gray-200 bg-yellow-400 text-white hover:bg-yellow-500',
     color === 'blue' &&
@@ -53,6 +61,10 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
       'disabled:bg-gray-200 enabled:bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white',
     color === 'gray-white' &&
       'text-gray-600 hover:bg-gray-200 shadow-none disabled:opacity-50',
+    color === 'green-white' &&
+      'text-teal-500 hover:bg-teal-500 hover:text-white shadow-none disabled:opacity-50',
+    color === 'red-white' &&
+      'text-scarlet-300 hover:bg-scarlet-300 hover:text-white shadow-none disabled:opacity-50',
     color === 'indigo-text-only' &&
       'text-indigo-500 hover:text-indigo-700 shadow-none disabled:text-gray-400 bg-inherit'
   )
