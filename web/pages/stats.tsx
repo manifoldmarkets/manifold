@@ -12,6 +12,7 @@ import { Stats } from 'common/stats'
 import { PLURAL_BETS } from 'common/user'
 import { capitalize } from 'lodash'
 import { formatLargeNumber } from 'common/util/format'
+import { formatWithCommas } from 'common/lib/util/format'
 
 export default function Analytics() {
   const [stats, setStats] = useState<Stats | undefined>(undefined)
@@ -79,6 +80,7 @@ export function CustomAnalytics(props: Stats) {
   const currentDAUs = dailyActiveUsers[dailyActiveUsers.length - 1]
   const avgDAUs =
     dailyActiveUsersWeeklyAvg[dailyActiveUsersWeeklyAvg.length - 1]
+  const last30dSales = dailySales.slice(-30).reduce((a, b) => a + b, 0)
 
   return (
     <Col className="px-2 sm:px-0">
@@ -88,11 +90,8 @@ export function CustomAnalytics(props: Stats) {
         market.
       </p>
       <div className="mt-2 text-gray-500">
-        Current DAUs:
-        <span className="mx-2 font-bold text-gray-500">
-          {formatLargeNumber(currentDAUs)}
-        </span>
-        ({formatLargeNumber(avgDAUs)} avg)
+        <b>{formatLargeNumber(currentDAUs)} DAUs</b> yesterday;{' '}
+        {formatLargeNumber(avgDAUs)} avg DAUs last week
       </div>
       <Spacer h={4} />
 
@@ -164,8 +163,10 @@ export function CustomAnalytics(props: Stats) {
       />
       <Spacer h={8} />
 
-      <Title text="Sales" />
-      <p className="text-gray-500">Daily mana sales (in USD)</p>
+      <Title text="Revenue" />
+      <p className="text-gray-500">
+        <b>${formatWithCommas(last30dSales)}</b> of mana sold in the last 30d
+      </p>
 
       <Spacer h={4} />
 
