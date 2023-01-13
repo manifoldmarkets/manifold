@@ -23,16 +23,9 @@ export const AppBadgesOrGetAppButton = (props: {
   const isIOSDevice = isIOS()
   const isAndroidDevice = isAndroid()
   return (
-    <Col
-      className={clsx(
-        'w-full',
-        isIOSDevice && 'ml-1',
-        isAndroidDevice && '-ml-1',
-        className
-      )}
-    >
+    <Col className={clsx('w-full', className)}>
       {isAndroidDevice ? (
-        <a className="badge" href={GOOGLE_PLAY_APP_URL}>
+        <a className="-ml-1" href={GOOGLE_PLAY_APP_URL}>
           <img
             className={size === 'lg' ? 'w-44' : 'w-36'}
             alt="Get it on Google Play"
@@ -40,7 +33,7 @@ export const AppBadgesOrGetAppButton = (props: {
           />
         </a>
       ) : isIOSDevice ? (
-        <a className="badge" href={APPLE_APP_URL}>
+        <a className="ml-1" href={APPLE_APP_URL}>
           <img
             className={size === 'lg' ? 'w-36' : 'w-26'}
             src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&amp;releaseDate=1668902400&h=9016541b6bb4c335b714be9b2a57b4bf"
