@@ -137,7 +137,7 @@ function ProfitChangeTable(props: {
 
   const marketRow = (c: CPMMBinaryContract) =>
     _(
-      <div className={'mb-3 ml-2 text-lg'}>
+      <div className={'ml-2 text-lg'}>
         <ContractMention
           contract={c}
           probChange={
@@ -176,6 +176,12 @@ function ProfitChangeTable(props: {
       <Col className="flex-1 gap-4">
         <Grid
           data={rows}
+          style={{
+            td: {
+              paddingBottom: '0.5rem',
+              paddingTop: '0.5rem',
+            },
+          }}
           columns={[
             {
               name: columnHeader('Market'),
