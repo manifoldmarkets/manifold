@@ -240,7 +240,7 @@ function ProfitChangeTable(props: {
 
   const marketRow = (c: CPMMBinaryContract) =>
     _(
-      <div className={' mb-2'}>
+      <div className={'mb-3 ml-2 text-lg'}>
         <ContractMention
           contract={c}
           probChange={
