@@ -81,7 +81,7 @@ export function AmountInput(props: {
                 size={'xs'}
                 color={showQuickAddColor}
                 className={clsx(
-                  '-ml-11',
+                  '-ml-11 rounded-l-none',
                   showQuickAddColor === 'gray-white' && 'text-gray-400'
                 )}
                 onClick={() => onChange((amount ?? 0) + 10)}
