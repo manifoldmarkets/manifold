@@ -29,7 +29,6 @@ import { DAY_MS } from 'common/util/time'
 import { getUserContractMetricsByProfit } from 'web/lib/supabase/contract-metrics'
 
 const dailyStatsClass = 'items-center text-lg'
-const rainbowClass = 'text-rainbow'
 export function DailyStats(props: {
   user: User | null | undefined
   showLoans?: boolean
@@ -113,24 +112,17 @@ export const DailyProfit = memo(function DailyProfit(props: {
   const [seen, setSeen] = useState(true)
   const dailyProfitEventName = 'click daily profit button'
   useEffect(() => {
-    // get start of today in ms since epoch
+    if (!user) return
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const todayMs = today.getTime()
     const todayMsEnd = todayMs + DAY_MS
-    if (user?.id) {
-      getUserEvents(user.id, dailyProfitEventName, todayMs, todayMsEnd).then(
-        (events) => {
-          if (events.length === 0) {
-            setSeen(false)
-          }
-        }
-      )
-    }
+    getUserEvents(user.id, dailyProfitEventName, todayMs, todayMsEnd).then(
+      (events) => setSeen(events.length > 0)
+    )
   }, [user])
 
   const profit = user?.profitCached.daily ?? 0
-  const profitable = profit > 0
   // emoji options: ⌛ 💰 🕛
   return (
     <>
@@ -139,8 +131,6 @@ export const DailyProfit = memo(function DailyProfit(props: {
           'rounded-md px-2 py-1 text-center transition-colors disabled:cursor-not-allowed',
           !seen
             ? 'from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r'
-            : profitable
-            ? rainbowClass
             : ''
         )}
         onClick={withTracking(() => {
@@ -220,18 +210,10 @@ function ProfitChangeTable(props: {
       positive,
       (c) => -(metricsByContractId[c.id].from?.day.profit ?? 0)
     )
-      .map((c) => [
-        c,
-        // c.probChanges.day,
-        metricsByContractId[c.id].from?.day.profit ?? 0,
-      ])
+      .map((c) => [c, metricsByContractId[c.id].from?.day.profit ?? 0])
       .slice(0, maxRows),
     ...sortBy(negative, (c) => metricsByContractId[c.id].from?.day.profit ?? 0)
-      .map((c) => [
-        c,
-        // c.probChanges.day,
-        metricsByContractId[c.id].from?.day.profit ?? 0,
-      ])
+      .map((c) => [c, metricsByContractId[c.id].from?.day.profit ?? 0])
       .slice(0, maxRows),
   ]
 
