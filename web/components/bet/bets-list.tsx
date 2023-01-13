@@ -412,6 +412,7 @@ function ContractBets(props: {
             className="mt-8 mr-5 flex-1 sm:mr-8"
             contract={contract}
             metrics={metrics}
+            hideTweet
           />
 
           {isYourBets &&
