@@ -15,10 +15,11 @@ import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { keyBy, partition, sortBy } from 'lodash'
-import { _, Grid } from 'gridjs-react'
+import { _ as r, Grid } from 'gridjs-react'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { dailyStatsClass } from 'web/components/daily-stats'
+import { Pagination } from 'web/components/widgets/pagination'
 
 export const DailyProfit = memo(function DailyProfit(props: {
   user: User | null | undefined
@@ -99,7 +100,6 @@ function DailyProfitModal(props: {
           <ProfitChangeTable
             contracts={data.contracts}
             metrics={data.metrics}
-            maxRows={4}
           />
         )}
       </div>
@@ -110,12 +110,20 @@ function DailyProfitModal(props: {
 function ProfitChangeTable(props: {
   contracts: CPMMBinaryContract[]
   metrics: ContractMetrics[]
-  maxRows?: number
 }) {
-  const { contracts, metrics, maxRows } = props
+  const { metrics } = props
+  const rowsPerSection = 5
+  const [page, setPage] = useState(0)
+  const currentSlice = page * rowsPerSection
 
   const metricsByContractId = keyBy(metrics, (m) => m.contractId)
-
+  const [nonZeroProfitMetrics, _] = partition(
+    metrics,
+    (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
+  )
+  const contracts = props.contracts.filter((c) =>
+    nonZeroProfitMetrics.some((m) => m.contractId === c.id)
+  )
   const [positive, negative] = partition(
     contracts,
     (c) => (metricsByContractId[c.id].from?.day.profit ?? 0) > 0
@@ -126,17 +134,17 @@ function ProfitChangeTable(props: {
       (c) => -(metricsByContractId[c.id].from?.day.profit ?? 0)
     )
       .map((c) => [c, metricsByContractId[c.id].from?.day.profit ?? 0])
-      .slice(0, maxRows),
+      .slice(currentSlice, currentSlice + rowsPerSection),
     ...sortBy(negative, (c) => metricsByContractId[c.id].from?.day.profit ?? 0)
       .map((c) => [c, metricsByContractId[c.id].from?.day.profit ?? 0])
-      .slice(0, maxRows),
+      .slice(currentSlice, currentSlice + rowsPerSection),
   ]
 
   if (positive.length === 0 && negative.length === 0)
     return <div className="px-4 text-gray-500">None</div>
 
   const marketRow = (c: CPMMBinaryContract) =>
-    _(
+    r(
       <div className={'ml-2 text-lg'}>
         <ContractMention
           contract={c}
@@ -150,7 +158,7 @@ function ProfitChangeTable(props: {
     )
 
   const columnHeader = (text: string) =>
-    _(
+    r(
       <Row className={'mx-2 cursor-pointer items-center gap-2 text-gray-600'}>
         {text}
         <Col className={'items-center'}>
@@ -160,7 +168,7 @@ function ProfitChangeTable(props: {
       </Row>
     )
   const profitRow = (profit: number) =>
-    _(
+    r(
       <div
         className={clsx(
           'mx-2 min-w-[2rem] text-center ',
@@ -201,6 +209,12 @@ function ProfitChangeTable(props: {
             },
           ]}
           sort={true}
+        />
+        <Pagination
+          page={page}
+          itemsPerPage={rowsPerSection * 2}
+          totalItems={contracts.length}
+          setPage={setPage}
         />
       </Col>
     </Col>
