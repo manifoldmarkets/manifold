@@ -17,7 +17,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { keyBy, partition, sortBy } from 'lodash'
 import { _ as r, Grid } from 'gridjs-react'
 import { ContractMention } from 'web/components/contract/contract-mention'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { dailyStatsClass } from 'web/components/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
 
@@ -89,9 +88,8 @@ function DailyProfitModal(props: {
         <Col className={'mb-4'}>
           <Title className={'mb-1'}>Daily profit</Title>
           <span className="text-sm text-gray-500">
-            This is the 24-hour change in expected value of your positions. It
-            includes positions you held in markets that recently resolved.
-            Updates every 15 minutes.
+            Change in the value of your positions over the last 24 hours.
+            (Updates every 15 min)
           </span>
         </Col>
         {!data ? (
@@ -158,15 +156,7 @@ function ProfitChangeTable(props: {
     )
 
   const columnHeader = (text: string) =>
-    r(
-      <Row className={'mx-2 cursor-pointer items-center gap-2 text-gray-600'}>
-        {text}
-        <Col className={'items-center'}>
-          <ChevronUpIcon className="h-2 w-2" />
-          <ChevronDownIcon className=" h-2 w-2" />
-        </Col>
-      </Row>
-    )
+    r(<Row className={'mx-2 items-center gap-2 text-gray-600'}>{text}</Row>)
   const profitRow = (profit: number) =>
     r(
       <div
@@ -195,12 +185,6 @@ function ProfitChangeTable(props: {
               name: columnHeader('Market'),
               formatter: (c: CPMMBinaryContract) => marketRow(c),
               id: 'market',
-              sort: {
-                compare: (a: CPMMBinaryContract, b: CPMMBinaryContract) => {
-                  const diff = b.probChanges.day - a.probChanges.day
-                  return diff < 0 ? -1 : diff > 0 ? 1 : 0
-                },
-              },
             },
             {
               name: columnHeader('Profit'),
@@ -208,7 +192,7 @@ function ProfitChangeTable(props: {
               id: 'profit',
             },
           ]}
-          sort={true}
+          sort={false}
         />
         <Pagination
           page={page}
