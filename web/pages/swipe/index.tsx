@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react'
 
 import clsx from 'clsx'
 import type { BinaryContract } from 'common/contract'
-import dayjs from 'dayjs'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -28,8 +27,6 @@ import { useUser } from 'web/hooks/use-user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { logView } from 'web/lib/firebase/views'
-
-const SWIPE_THRESHOLD = 100 // in px
 
 export default function Swipe() {
   useTracking('view swipe page')
