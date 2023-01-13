@@ -50,10 +50,20 @@ export function manaToUSD(mana: number) {
   })
 }
 
+function getPercentDecimalPlaces(zeroToOne: number) {
+  return zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
+}
+
 export function formatPercent(zeroToOne: number) {
   // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
-  const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
+  const decimalPlaces = getPercentDecimalPlaces(zeroToOne)
   return (zeroToOne * 100).toFixed(decimalPlaces) + '%'
+}
+
+export function formatPercentNumber(zeroToOne: number) {
+  // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
+  const decimalPlaces = getPercentDecimalPlaces(zeroToOne)
+  return Math.round((zeroToOne * 100 * 1) ^ decimalPlaces) / (1 ^ decimalPlaces)
 }
 
 const showPrecision = (x: number, sigfigs: number) =>

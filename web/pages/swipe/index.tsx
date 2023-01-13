@@ -29,7 +29,9 @@ import dayjs from 'dayjs'
 import {
   BUFFER_CARD_COLOR,
   BUFFER_CARD_OPACITY,
+  STARTING_BET_AMOUNT,
 } from 'web/components/swipe/swipe-helpers'
+import { SwipeBetPanel } from 'web/components/swipe/swipe-bet-panel'
 
 export default function Swipe() {
   useTracking('view swipe page')
@@ -49,8 +51,6 @@ export default function Swipe() {
     if (!feed) return []
     return feed.slice(index, index + 2)
   }, [feed, index])
-
-  const [amount, setAmount] = useState(10)
 
   // Measure height manually to accommodate mobile web.
   const { height: computedHeight } = useWindowSize()
@@ -78,8 +78,6 @@ export default function Swipe() {
       postMessageToNative('onPageVisit', { page: undefined })
     }
   }, [])
-
-  const [cardBufferClass, setCardBufferClass] = useState('opacity-70')
   if (user === undefined || feed === undefined) {
     return (
       <Page>
@@ -134,15 +132,16 @@ export default function Swipe() {
               )}
             />
             <SwipeCard
+              amount={STARTING_BET_AMOUNT}
               contract={cards[1]}
               key={
                 cards[1].description +
                 cards[1].question +
                 cards[1].creatorUsername
               }
-              amount={amount}
-              setAmount={setAmount}
-              isPrimaryCard={false}
+              swipeBetPanel={
+                <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
+              }
               className="user-select-none absolute inset-1 z-10 max-w-lg touch-none"
             />
           </>
