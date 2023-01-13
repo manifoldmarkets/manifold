@@ -11,7 +11,12 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
+import {
+  BinaryOutcomeLabel,
+  NoLabel,
+  PseudoNumericOutcomeLabel,
+  YesLabel,
+} from '../outcome-label'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
@@ -70,8 +75,9 @@ export function LimitOrderTable(props: {
   limitBets: LimitBet[]
   contract: CPMMBinaryContract | PseudoNumericContract
   isYou: boolean
+  side?: 'YES' | 'NO'
 }) {
-  const { limitBets, contract, isYou } = props
+  const { limitBets, contract, isYou, side } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [isCancelling, setIsCancelling] = useState(false)
   const onCancel = () => {
@@ -83,33 +89,49 @@ export function LimitOrderTable(props: {
     )
   }
   return (
-    <Table className="rounded">
-      <thead>
-        <tr>
-          {!isYou && <th></th>}
-          <th>Outcome</th>
-          <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
-          <th>Amount</th>
-          {isYou && (
-            <th>
-              <Button
-                loading={isCancelling}
-                size={'2xs'}
-                color={'gray-outline'}
-                onClick={onCancel}
-              >
-                Cancel all
-              </Button>
-            </th>
+    <Col>
+      {side && (
+        <Row className="self-center">
+          <span className="mr-2">Buy</span>{' '}
+          {side === 'YES' ? <YesLabel /> : <NoLabel />}
+        </Row>
+      )}
+      <Table className="rounded">
+        <thead>
+          {!side && (
+            <tr>
+              {!isYou && <th></th>}
+              <th>Outcome</th>
+              <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
+              <th>Amount</th>
+              {isYou && (
+                <th>
+                  <Button
+                    loading={isCancelling}
+                    size={'2xs'}
+                    color={'gray-outline'}
+                    onClick={onCancel}
+                  >
+                    Cancel all
+                  </Button>
+                </th>
+              )}
+            </tr>
           )}
-        </tr>
-      </thead>
-      <tbody>
-        {limitBets.map((bet) => (
-          <LimitBet key={bet.id} bet={bet} contract={contract} isYou={isYou} />
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {limitBets.map((bet) => (
+            <LimitBet
+              key={bet.id}
+              bet={bet}
+              contract={contract}
+              isYou={isYou}
+              showOutcome={!side}
+            />
+          ))}
+        </tbody>
+      </Table>
+    </Col>
   )
 }
 
@@ -117,8 +139,9 @@ function LimitBet(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   bet: LimitBet
   isYou: boolean
+  showOutcome?: boolean
 }) {
-  const { contract, bet, isYou } = props
+  const { contract, bet, isYou, showOutcome } = props
   const { orderAmount, amount, limitProb, outcome } = bet
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
@@ -147,15 +170,17 @@ function LimitBet(props: {
           </a>
         </td>
       )}
-      <td>
-        <div className="pl-2">
-          {isPseudoNumeric ? (
-            <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
-          ) : (
-            <BinaryOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
-          )}
-        </div>
-      </td>
+      {showOutcome && (
+        <td>
+          <div className="pl-2">
+            {isPseudoNumeric ? (
+              <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
+            ) : (
+              <BinaryOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
+            )}
+          </div>
+        </td>
+      )}
       <td>
         {isPseudoNumeric
           ? getFormattedMappedValue(contract)(limitProb)
@@ -193,7 +218,7 @@ export function OrderBookButton(props: {
   )
 
   const yesBets = sortedBets.filter((bet) => bet.outcome === 'YES')
-  const noBets = sortedBets.filter((bet) => bet.outcome === 'NO')
+  const noBets = sortedBets.filter((bet) => bet.outcome === 'NO').reverse()
 
   return (
     <>
@@ -206,28 +231,23 @@ export function OrderBookButton(props: {
         Order book ({limitBets.length})
       </Button>
 
-      <Modal open={open} setOpen={setOpen} size="lg">
+      <Modal open={open} setOpen={setOpen} size="md">
         <Col className="rounded bg-white p-4 py-6">
           <Title className="!mt-0" text="Order book" />
-          <Row className="hidden items-start justify-start gap-2 md:flex">
+          <Row className="items-start justify-around gap-2">
             <LimitOrderTable
               limitBets={yesBets}
               contract={contract}
               isYou={false}
+              side="YES"
             />
             <LimitOrderTable
               limitBets={noBets}
               contract={contract}
               isYou={false}
+              side="NO"
             />
           </Row>
-          <Col className="md:hidden">
-            <LimitOrderTable
-              limitBets={sortedBets}
-              contract={contract}
-              isYou={false}
-            />
-          </Col>
         </Col>
       </Modal>
     </>
