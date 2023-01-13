@@ -24,7 +24,7 @@ import getQuestionSize, {
   BUFFER_CARD_OPACITY,
   isStatusAFailure,
 } from './swipe-helpers'
-import Percent from './swipe-widgets'
+import Percent, { DescriptionAndModal } from './swipe-widgets'
 
 const horizontalSwipeDist = 80
 const verticalSwipeDist = -100
@@ -182,13 +182,15 @@ export function PrimarySwipeCard(props: {
     },
     { axis: 'lock' }
   )
+  const [isModalOpen, setIsModalOpen] = useState(false)
   return (
     <>
       <Col
         className={clsx(
-          'pointer-events-none absolute inset-1 z-10 max-w-lg transition-opacity duration-300 ease-in-out',
+          'absolute inset-1 z-10 max-w-lg transition-opacity duration-300 ease-in-out',
           BUFFER_CARD_COLOR,
-          isFreshCard ? BUFFER_CARD_OPACITY : 'opacity-0'
+          isFreshCard ? BUFFER_CARD_OPACITY : 'opacity-0',
+          isModalOpen ? 'pointer-events-auto' : 'pointer-events-none'
         )}
       />
 
@@ -222,6 +224,8 @@ export function PrimarySwipeCard(props: {
           buttonAction={buttonAction}
           user={user}
           betStatus={betStatus}
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
         />
       </animated.div>
     </>
@@ -238,6 +242,8 @@ export const SwipeCard = memo(
     buttonAction?: 'YES' | 'NO' | undefined
     user?: User
     betStatus?: 'loading' | 'success' | string | undefined
+    isModalOpen?: boolean
+    setIsModalOpen?: (open: boolean) => void
   }) => {
     const {
       amount,
@@ -247,6 +253,8 @@ export const SwipeCard = memo(
       buttonAction,
       user,
       betStatus,
+      isModalOpen,
+      setIsModalOpen,
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
@@ -309,19 +317,19 @@ export const SwipeCard = memo(
                 }
               />
             </div>
-            <div className="absolute right-4 bottom-24">
+            <div className="absolute right-4 bottom-32 z-10">
               <Actions user={user} contract={contract} />
             </div>
 
             <Col className="absolute -bottom-16 z-10 w-full gap-6">
-              <div className="prose prose-invert prose-sm line-clamp-3 mx-4 text-gray-50">
-                {typeof description === 'string'
-                  ? description
-                  : richTextToString(description)}
-              </div>
+              <DescriptionAndModal
+                description={description}
+                isModalOpen={isModalOpen}
+                setIsModalOpen={setIsModalOpen}
+              />
               {swipeBetPanel}
             </Col>
-            <div className="absolute bottom-0 z-0 min-h-[30%] w-full bg-gradient-to-b from-transparent to-black pb-4" />
+            <div className="absolute bottom-0 z-0 min-h-[50%] w-full bg-gradient-to-b from-transparent to-black pb-4" />
             <img src={image} alt="" className="h-full object-cover" />
           </div>
           <div className="h-20 w-full rounded-b-2xl bg-black" />
@@ -366,6 +374,7 @@ function Actions(props: { user?: User; contract: BinaryContract }) {
         size={'lg'}
         showTotalLikesUnder={true}
         color={'white'}
+        className={'drop-shadow-sm'}
       />
       {/* TODO Share button */}
     </Col>

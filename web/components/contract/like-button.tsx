@@ -181,7 +181,7 @@ export const LikeButton = memo(function LikeButton(props: {
         />
       )}
       {showTotalLikesUnder && (
-        <div className="mx-auto -mt-1.5 h-6 text-sm text-white">
+        <div className="mx-auto -mt-1.5 h-6 text-sm text-white drop-shadow-sm disabled:opacity-50">
           {totalLikes > 0 ? totalLikes : ''}
         </div>
       )}
