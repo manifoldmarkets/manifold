@@ -55,7 +55,12 @@ export const DailyProfit = memo(function DailyProfit(props: {
         }, dailyProfitEventName)}
       >
         <Tooltip text={'Daily profit'}>
-          <Row className={clsx(dailyStatsClass, profit > 0 && 'text-teal-500')}>
+          <Row
+            className={clsx(
+              dailyStatsClass,
+              profit > 0 && seen && 'text-teal-500'
+            )}
+          >
             <span>💰{formatMoney(profit)}</span>
           </Row>
         </Tooltip>
