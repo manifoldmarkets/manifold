@@ -25,7 +25,7 @@ import { ContractMention } from 'web/components/contract/contract-mention'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { withTracking } from 'web/lib/service/analytics'
 import { getUserEvents } from 'web/lib/supabase/user-events'
-import { DAY_MS } from 'common/lib/util/time'
+import { DAY_MS } from 'common/util/time'
 import { getUserContractMetricsByProfit } from 'web/lib/supabase/contract-metrics'
 
 const dailyStatsClass = 'items-center text-lg'
