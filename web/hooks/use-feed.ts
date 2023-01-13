@@ -5,8 +5,10 @@ import { useCallback, useEffect } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
 import { db } from 'web/lib/supabase/db'
 import { buildArray } from 'common/util/array'
+import { usePrivateUser } from './use-user'
+import { isContractBlocked } from 'web/lib/firebase/users'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 20
 
 export const useFeed = (user: User | null | undefined, key: string) => {
   const [savedContracts, setSavedContracts] = usePersistentState<
@@ -16,6 +18,7 @@ export const useFeed = (user: User | null | undefined, key: string) => {
     store: inMemoryStore(),
   })
 
+  const privateUser = usePrivateUser()
   const userId = user?.id
 
   const loadMore = useCallback(() => {
@@ -26,11 +29,13 @@ export const useFeed = (user: User | null | undefined, key: string) => {
       }).then((res) => {
         const newContracts = res.data as Contract[] | undefined
         setSavedContracts((contracts) =>
-          uniqBy(buildArray(contracts, newContracts), (c) => c.id)
+          uniqBy(buildArray(contracts, newContracts), (c) => c.id).filter(
+            (c) => !isContractBlocked(privateUser, c)
+          )
         )
       })
     }
-  }, [userId, setSavedContracts])
+  }, [userId, setSavedContracts, privateUser])
 
   useEffect(() => {
     loadMore()
