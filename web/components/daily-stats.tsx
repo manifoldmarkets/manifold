@@ -247,7 +247,7 @@ function ProfitChangeTable(props: {
             (c.probChanges.day > 0 ? '+' : '') +
             formatPercent(c.probChanges.day).replace('%', '')
           }
-          className={' line-clamp-2 !whitespace-normal'}
+          className={' line-clamp-3 !whitespace-normal'}
         />
       </div>
     )
