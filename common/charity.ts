@@ -832,6 +832,15 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
     As of December 30 2022, they have potentially helped 1.14 and 1.4 million fish and shrimp respectively, with every $1 potentially helping 1.3 fish and every $100 13 fish.`,
     tags: ['New'] as const,
   },
+  {
+    name: 'Camfed',
+    website: 'https://camfed.org/us/',
+    photo: 'https://i.imgur.com/7b2aiRL.jpg',
+    preview: `Campaigns for female education.`,
+    description: `Camfed (also known as the Campaign for Female Education) was founded in 1993 and operates in Zimbabwe, Zambia, Ghana, Tanzania and Malawi with the goal of educating women. 
+    Education is a very important resourse that is unfortunately not always made available, especially to women. Allowing someone to get an education allows them to do great things`
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
