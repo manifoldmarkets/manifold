@@ -89,7 +89,7 @@ function DailyProfitModal(props: {
         <Col className={'mb-4'}>
           <Title className={'mb-1'}>Daily profit</Title>
           <span className="text-sm text-gray-500">
-            This is the 24-hour expected value change of your positions. It
+            This is the 24-hour change in expected value of your positions. It
             includes positions you held in markets that recently resolved.
             Updates every 15 minutes.
           </span>
@@ -152,7 +152,7 @@ function ProfitChangeTable(props: {
             (c.probChanges.day > 0 ? '+' : '') +
             formatPercent(c.probChanges.day).replace('%', '')
           }
-          className={' line-clamp-3 !whitespace-normal'}
+          className={'line-clamp-6 sm:line-clamp-4 !whitespace-normal'}
         />
       </div>
     )
