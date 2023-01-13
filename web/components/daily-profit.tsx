@@ -161,7 +161,7 @@ function ProfitChangeTable(props: {
     r(
       <div
         className={clsx(
-          'mx-2 min-w-[2rem] text-center ',
+          'mx-2 min-w-[2rem] text-right',
           profit > 0 ? 'text-teal-500' : 'text-scarlet-600'
         )}
       >
