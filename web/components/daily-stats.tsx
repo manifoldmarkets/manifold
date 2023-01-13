@@ -204,7 +204,6 @@ function ProfitChangeTable(props: {
     contracts,
     (c) => (metricsByContractId[c.id].from?.day.profit ?? 0) > 0
   )
-  // create an array with three columns: contract question, profit, daily change
   const rows = [
     ...sortBy(
       positive,
