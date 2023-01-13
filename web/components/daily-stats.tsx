@@ -182,9 +182,9 @@ function DailyProfitModal(props: {
         <Col className={'mb-4'}>
           <Title className={'mb-1'}>Daily profit</Title>
           <span className="text-sm text-gray-500">
-            This is the daily expected value change of all your positions. It
-            includes positions you held in markets that resolved within the past
-            24 hours.
+            This is the 24-hour expected value change of your positions. It
+            includes positions you held in markets that recently resolved.
+            Updates every 15 minutes.
           </span>
         </Col>
         {!data ? (
