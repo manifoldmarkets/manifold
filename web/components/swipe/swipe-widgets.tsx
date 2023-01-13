@@ -2,11 +2,9 @@ import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { formatPercentNumber } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
-import { useState } from 'react'
 import CountUp from 'react-countup'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
-import { Row } from '../layout/row'
 import { Content } from '../widgets/editor'
 
 export default function Percent(props: {

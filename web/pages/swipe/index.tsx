@@ -1,37 +1,33 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useSpring, animated } from '@react-spring/web'
-import { rubberbandIfOutOfBounds, useDrag } from '@use-gesture/react'
-import toast from 'react-hot-toast'
+import { useEffect, useMemo } from 'react'
 
-import type { BinaryContract } from 'common/contract'
-import { useUser } from 'web/hooks/use-user'
-import { logView } from 'web/lib/firebase/views'
-import { track } from 'web/lib/service/analytics'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { Button } from 'web/components/buttons/button'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { Page } from 'web/components/layout/page'
-import { useFeed } from 'web/hooks/use-feed'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { useWindowSize } from 'web/hooks/use-window-size'
-import { PrimarySwipeCard, SwipeCard } from 'web/components/swipe/swipe-card'
-import { Row } from 'web/components/layout/row'
-import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
-import { postMessageToNative } from 'web/components/native-message-listener'
-import { useTracking } from 'web/hooks/use-tracking'
 import clsx from 'clsx'
-import { Col } from 'web/components/layout/col'
+import type { BinaryContract } from 'common/contract'
 import dayjs from 'dayjs'
+import { Button } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { postMessageToNative } from 'web/components/native-message-listener'
+import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
+import { SwipeBetPanel } from 'web/components/swipe/swipe-bet-panel'
+import { PrimarySwipeCard, SwipeCard } from 'web/components/swipe/swipe-card'
 import {
   BUFFER_CARD_COLOR,
   BUFFER_CARD_OPACITY,
   STARTING_BET_AMOUNT,
 } from 'web/components/swipe/swipe-helpers'
-import { SwipeBetPanel } from 'web/components/swipe/swipe-bet-panel'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { useFeed } from 'web/hooks/use-feed'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useUser } from 'web/hooks/use-user'
+import { useWindowSize } from 'web/hooks/use-window-size'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { logView } from 'web/lib/firebase/views'
 
 export default function Swipe() {
   useTracking('view swipe page')
@@ -116,7 +112,6 @@ export default function Swipe() {
                 contract={cards[0]}
                 index={index}
                 setIndex={setIndex}
-                cardHeight={cardHeight}
                 user={user}
               />
             </div>

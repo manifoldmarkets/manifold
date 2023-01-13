@@ -7,7 +7,6 @@ import { getOutcomeProbabilityAfterBet } from 'common/calculate'
 import { BinaryContract, Contract } from 'common/contract'
 import { getBinaryProb } from 'common/contract-details'
 import { User } from 'common/user'
-import { richTextToString } from 'common/util/parse'
 import { memo, ReactNode, SetStateAction, useEffect, useState } from 'react'
 import { LikeButton } from 'web/components/contract/like-button'
 import { useContract } from 'web/hooks/use-contracts'
@@ -77,10 +76,9 @@ export function PrimarySwipeCard(props: {
   contract: BinaryContract
   index: number
   setIndex: (next: SetStateAction<number>) => void
-  cardHeight: number
   user?: User
 }) {
-  const { index, setIndex, cardHeight, user } = props
+  const { index, setIndex, user } = props
   const contract = (useContract(props.contract.id) ??
     props.contract) as BinaryContract
 
@@ -93,7 +91,6 @@ export function PrimarySwipeCard(props: {
     undefined
   )
 
-  //
   const [isFreshCard, setIsFreshCard] = useState(true)
   setTimeout(() => setIsFreshCard(false), 10)
 
@@ -133,6 +130,7 @@ export function PrimarySwipeCard(props: {
       const x = 0
       api.start({ x })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [betStatus])
 
   const bind = useDrag(
@@ -174,8 +172,6 @@ export function PrimarySwipeCard(props: {
       }
       const x = down ? Math.sign(mx) * cappedDist : 0
       const y = down ? (my < 0 ? my : 0) : 0
-
-      console.log(mx, my, action)
       if (action === 'none') {
         api.start({ x, y })
       }
@@ -223,7 +219,6 @@ export function PrimarySwipeCard(props: {
           action={action}
           buttonAction={buttonAction}
           user={user}
-          betStatus={betStatus}
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
@@ -241,7 +236,6 @@ export const SwipeCard = memo(
     action?: SwipeAction
     buttonAction?: 'YES' | 'NO' | undefined
     user?: User
-    betStatus?: 'loading' | 'success' | string | undefined
     isModalOpen?: boolean
     setIsModalOpen?: (open: boolean) => void
   }) => {
@@ -252,7 +246,6 @@ export const SwipeCard = memo(
       action,
       buttonAction,
       user,
-      betStatus,
       isModalOpen,
       setIsModalOpen,
     } = props
@@ -262,7 +255,7 @@ export const SwipeCard = memo(
     const image =
       coverImageUrl ??
       `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
-    const [currPercent, setCurrPercent] = useState(getBinaryProb(contract))
+    const [currPercent, _setCurrPercent] = useState(getBinaryProb(contract))
     const [noPercent, setNoPercent] = useState(
       1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount)
     )
@@ -273,6 +266,7 @@ export const SwipeCard = memo(
     useEffect(() => {
       setNoPercent(1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount))
       setYesPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amount])
     return (
       <>

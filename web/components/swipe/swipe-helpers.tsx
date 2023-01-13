@@ -15,8 +15,6 @@ export function isStatusAFailure(
 
 export const BUFFER_CARD_COLOR = 'bg-gray-700'
 export const BUFFER_CARD_OPACITY = 'opacity-70'
+
 export const STARTING_BET_AMOUNT = 10
 export const BET_TAP_ADD = 10
-
-export const DESCRIPTION_MAX_LENGTH = 130
-export const DESCRIPTION_SEE_MORE_BUFFER = 14
