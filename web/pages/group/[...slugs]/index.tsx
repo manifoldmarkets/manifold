@@ -15,7 +15,7 @@ import {
 } from 'web/hooks/use-group'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 import {
   addContractToGroup,
   getGroupBySlug,
