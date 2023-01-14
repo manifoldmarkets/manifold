@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   CashIcon,
   HomeIcon,
@@ -10,6 +10,7 @@ import {
   BeakerIcon,
   HeartIcon,
   LightningBoltIcon,
+  DeviceMobileIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -31,6 +32,7 @@ import { Spacer } from '../layout/spacer'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { RectangleGroup } from 'web/components/icons/outline'
 import { SearchButton } from './search-button'
+import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 
 export default function Sidebar(props: {
   className?: string
@@ -42,8 +44,12 @@ export default function Sidebar(props: {
   const currentPage = router.pathname
 
   const user = useUser()
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const navOptions = isMobile ? getMobileNav(!!user) : getDesktopNav(!!user)
+  const navOptions = isMobile
+    ? getMobileNav(!!user)
+    : getDesktopNav(!!user, () => setIsModalOpen(true))
+
   const bottomNavOptions = bottomNav(!!isMobile, !!user)
 
   const createMarketButton = user && !user.isBannedFromPosting && (
@@ -64,21 +70,24 @@ export default function Sidebar(props: {
       <Spacer h={6} />
 
       {user === undefined && <div className="h-[56px]" />}
-      {user === null && <SignInButton className="mb-3" />}
-      {user === null && (
-        <AppBadgesOrGetAppButton size="md" className={'mb-4'} />
-      )}
 
       {user && !isMobile && <ProfileSummary user={user} />}
 
-      {!isMobile && <SearchButton className="mb-5" />}
+      {user && !isMobile && <SearchButton className="mb-5" />}
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
-
-        {!isMobile && (
+        <MobileAppsQRCodeDialog
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+        />
+        {user === null && <SignInButton className="mt-3" />}
+        {/* {user === null && (
+          <AppBadgesOrGetAppButton size="md" className={'mb-4'} />
+        )} */}
+        {user && !isMobile && (
           <MenuButton
             menuItems={getMoreDesktopNavigation(!!user)}
             buttonContent={<MoreButton />}
@@ -104,23 +113,32 @@ const logout = async () => {
   await Router.replace(Router.asPath)
 }
 
-const getDesktopNav = (loggedIn: boolean) =>
-  buildArray(
-    { name: 'Home', href: '/home', icon: HomeIcon },
-    loggedIn && {
-      name: 'Notifications',
-      href: `/notifications`,
-      icon: NotificationsIcon,
-    },
-
-    !IS_PRIVATE_MANIFOLD && [
-      loggedIn && {
+const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
+  if (loggedIn)
+    return buildArray(
+      { name: 'Home', href: '/home', icon: HomeIcon },
+      {
+        name: 'Notifications',
+        href: `/notifications`,
+        icon: NotificationsIcon,
+      },
+      !IS_PRIVATE_MANIFOLD && {
         name: 'Leaderboards',
         href: '/leaderboards',
         icon: ChartBarIcon,
-      },
-    ]
+      }
+    )
+
+  return buildArray(
+    { name: 'Home', href: '/home', icon: HomeIcon },
+    {
+      name: 'About',
+      href: 'https://help.manifold.markets/',
+      icon: BookOpenIcon,
+    },
+    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
+}
 
 function getMoreDesktopNavigation(loggedIn: boolean) {
   if (IS_PRIVATE_MANIFOLD) {
@@ -147,33 +165,38 @@ const getMobileNav = (loggedIn: boolean) => {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
   return buildArray(
-    { name: 'Search Markets', href: '/search', icon: SearchIcon },
+    !loggedIn && {
+      name: 'Help & About',
+      href: 'https://help.manifold.markets/',
+      icon: BookOpenIcon,
+    },
+    loggedIn && { name: 'Search Markets', href: '/search', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     loggedIn && {
       name: 'Groups',
       href: '/groups',
       icon: RectangleGroup,
     },
-    { name: 'Referrals', href: '/referrals', icon: LightningBoltIcon },
+    loggedIn && {
+      name: 'Referrals',
+      href: '/referrals',
+      icon: LightningBoltIcon,
+    },
     loggedIn && { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
-    { name: 'Labs', href: '/labs', icon: BeakerIcon }
+    loggedIn && { name: 'Labs', href: '/labs', icon: BeakerIcon }
   )
 }
 
 const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
   buildArray(
     !IS_PRIVATE_MANIFOLD &&
+      loggedIn &&
       isMobile && {
         name: 'Discord',
         href: 'https://discord.gg/eHQBNBqXuh',
         icon: ChatIcon,
       },
-    isMobile && {
-      name: 'Help & About',
-      href: 'https://help.manifold.markets/',
-      icon: BookOpenIcon,
-    },
     isMobile &&
       loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )

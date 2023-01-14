@@ -21,37 +21,49 @@ export const MobileAppsQRCodeButton = (props: { size?: 'md' | 'lg' }) => {
       >
         Get the app
       </Button>
-
-      <Modal open={isModalOpen} setOpen={setIsModalOpen}>
-        <Col className={'rounded-2xl bg-white p-4'}>
-          <span className={'py-2 text-2xl text-indigo-700'}>
-            Get the Manifold app
-          </span>
-          <span className={'py-2 '}>
-            Scan this QR code to download the app now
-          </span>
-          <Tabs
-            tabs={[
-              {
-                title: 'Apple',
-                content: (
-                  <Col className={'w-full items-center justify-center p-4'}>
-                    <QRCode url={APPLE_APP_URL} />
-                  </Col>
-                ),
-              },
-              {
-                title: 'Android',
-                content: (
-                  <Col className={'w-full items-center justify-center p-4'}>
-                    <QRCode url={GOOGLE_PLAY_APP_URL} />
-                  </Col>
-                ),
-              },
-            ]}
-          />
-        </Col>
-      </Modal>
+      <MobileAppsQRCodeDialog
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+      />
     </>
+  )
+}
+
+export const MobileAppsQRCodeDialog = (props: {
+  isModalOpen: boolean
+  setIsModalOpen: (isOpen: boolean) => void
+}) => {
+  const { isModalOpen, setIsModalOpen } = props
+  return (
+    <Modal open={isModalOpen} setOpen={setIsModalOpen}>
+      <Col className={'rounded-2xl bg-white p-4'}>
+        <span className={'py-2 text-2xl text-indigo-700'}>
+          Get the Manifold app
+        </span>
+        <span className={'py-2 '}>
+          Scan this QR code to download the app now
+        </span>
+        <Tabs
+          tabs={[
+            {
+              title: 'Apple',
+              content: (
+                <Col className={'w-full items-center justify-center p-4'}>
+                  <QRCode url={APPLE_APP_URL} />
+                </Col>
+              ),
+            },
+            {
+              title: 'Android',
+              content: (
+                <Col className={'w-full items-center justify-center p-4'}>
+                  <QRCode url={GOOGLE_PLAY_APP_URL} />
+                </Col>
+              ),
+            },
+          ]}
+        />
+      </Col>
+    </Modal>
   )
 }
