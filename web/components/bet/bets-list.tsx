@@ -172,7 +172,7 @@ export function BetsList(props: { user: User }) {
     loss: (c) => -metricsByContract[c.id].profit,
     value: (c) => metricsByContract[c.id].payout,
     newest: (c) =>
-      metricsByContract[c.id].lastBetTime ??
+      metricsByContract[c.id]?.lastBetTime ??
       max(limitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
       0,
     closeTime: (c) =>
