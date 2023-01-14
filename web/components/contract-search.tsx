@@ -28,13 +28,14 @@ import { Select } from './widgets/select'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 export const SORTS = [
+  { label: 'Relevance', value: 'relevance' },
   { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
   { label: 'Daily change', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: 'Total traders', value: 'most-popular' },
   { label: 'Liquidity', value: 'liquidity' },
-  { label: 'Last updated', value: 'last-updated' },
+  { label: 'Last activity', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
   { label: 'Highest %', value: 'prob-descending' },
@@ -76,11 +77,8 @@ export function ContractSearch(props: {
   }
   headerClassName?: string
   persistPrefix?: string
-  useQueryUrlParam?: boolean
   isWholePage?: boolean
   includeProbSorts?: boolean
-  noControls?: boolean
-  maxResults?: number
   renderContracts?: (
     contracts: Contract[] | undefined,
     loadMore: () => void
@@ -98,11 +96,8 @@ export function ContractSearch(props: {
     highlightCards,
     headerClassName,
     persistPrefix,
-    useQueryUrlParam,
     includeProbSorts,
     isWholePage,
-    noControls,
-    maxResults,
     renderContracts,
     autoFocus,
     profile,
@@ -145,9 +140,10 @@ export function ContractSearch(props: {
     const id = ++requestId.current
     const requestedPage = freshQuery ? 0 : state.pages.length
     if (freshQuery || requestedPage < state.numPages) {
-      const index = query
-        ? searchIndex
-        : searchClient.initIndex(getIndexName(sort))
+      const index =
+        sort === 'relevance'
+          ? searchIndex
+          : searchClient.initIndex(getIndexName(sort))
       const numericFilters = query
         ? []
         : [
@@ -195,8 +191,7 @@ export function ContractSearch(props: {
   const contracts = state.pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
-  const renderedContracts =
-    state.pages.length === 0 ? undefined : contracts.slice(0, maxResults)
+  const renderedContracts = state.pages.length === 0 ? undefined : contracts
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
@@ -211,10 +206,9 @@ export function ContractSearch(props: {
         additionalFilter={additionalFilter}
         persistPrefix={persistPrefix}
         hideOrderSelector={hideOrderSelector}
-        useQueryUrlParam={useQueryUrlParam}
+        useQueryUrlParam={isWholePage}
         includeProbSorts={includeProbSorts}
         onSearchParametersChanged={onSearchParametersChanged}
-        noControls={noControls}
         autoFocus={autoFocus}
       />
       {renderContracts ? (
@@ -224,7 +218,6 @@ export function ContractSearch(props: {
       ) : (
         <ContractsGrid
           contracts={renderedContracts}
-          loadMore={noControls ? undefined : performQuery}
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
           highlightCards={highlightCards}
@@ -245,19 +238,17 @@ function ContractSearchControls(props: {
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
-  noControls?: boolean
   autoFocus?: boolean
 }) {
   const {
     className,
-    defaultSort,
-    defaultFilter,
+    defaultSort = 'relevance',
+    defaultFilter = 'all',
     additionalFilter,
     persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
     useQueryUrlParam,
-    noControls,
     autoFocus,
     includeProbSorts,
   } = props
@@ -277,7 +268,7 @@ function ContractSearchControls(props: {
   const savedSort = safeLocalStorage()?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
-    savedSort ?? defaultSort ?? 'score',
+    savedSort ?? defaultSort,
     !useQueryUrlParam
       ? undefined
       : {
@@ -286,7 +277,7 @@ function ContractSearchControls(props: {
         }
   )
   const [filter, setFilter] = usePersistentState(
-    defaultFilter ?? 'open',
+    defaultFilter,
     !useQueryUrlParam
       ? undefined
       : {
@@ -353,41 +344,33 @@ function ContractSearchControls(props: {
     })
   }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
 
-  if (noControls) {
-    return <></>
-  }
-
   return (
-    <Col
+    <div
       className={clsx(
-        'sticky top-0 z-20 mb-1 gap-3 bg-gray-50 pb-2',
+        'sticky top-0 z-20 mb-1 flex flex-col items-stretch gap-3 bg-gray-50 pb-2 pt-px sm:flex-row sm:gap-2',
         className
       )}
     >
-      <div className="mt-px flex flex-col items-stretch gap-3 sm:flex-row sm:gap-2">
-        <Input
-          type="text"
-          inputMode="search"
-          value={query}
-          onChange={(e) => updateQuery(e.target.value)}
-          onBlur={trackCallback('search', { query: query })}
-          placeholder="Search"
-          className="w-full"
-          autoFocus={autoFocus}
-        />
-        {!query && (
-          <SearchFilters
-            filter={filter}
-            selectFilter={selectFilter}
-            hideOrderSelector={hideOrderSelector}
-            selectSort={selectSort}
-            sort={sort}
-            className={'flex flex-row gap-2'}
-            includeProbSorts={includeProbSorts}
-          />
-        )}
-      </div>
-    </Col>
+      <Input
+        type="text"
+        inputMode="search"
+        value={query}
+        onChange={(e) => updateQuery(e.target.value)}
+        onBlur={trackCallback('search', { query: query })}
+        placeholder="Search"
+        className="w-full"
+        autoFocus={autoFocus}
+      />
+      <SearchFilters
+        filter={filter}
+        selectFilter={selectFilter}
+        hideOrderSelector={hideOrderSelector}
+        selectSort={selectSort}
+        sort={sort}
+        className={'flex flex-row gap-2'}
+        includeProbSorts={includeProbSorts}
+      />
+    </div>
   )
 }
 
