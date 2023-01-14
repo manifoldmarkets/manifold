@@ -519,6 +519,8 @@ as $$
     where not (data->>'isResolved')::boolean
     -- Not closed: closeTime is greater than now.
     and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
+    -- Not unlisted.
+    and not (data->>'visibility') = 'unlisted'
     limit count
   ) as rec_contracts
 $$;
