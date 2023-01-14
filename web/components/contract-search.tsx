@@ -222,6 +222,7 @@ export function ContractSearch(props: {
           onContractClick={onContractClick}
           highlightCards={highlightCards}
           cardUIOptions={cardUIOptions}
+          loadMore={performQuery}
         />
       )}
     </Col>
