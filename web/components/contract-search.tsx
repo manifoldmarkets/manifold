@@ -76,11 +76,8 @@ export function ContractSearch(props: {
   }
   headerClassName?: string
   persistPrefix?: string
-  useQueryUrlParam?: boolean
   isWholePage?: boolean
   includeProbSorts?: boolean
-  noControls?: boolean
-  maxResults?: number
   renderContracts?: (
     contracts: Contract[] | undefined,
     loadMore: () => void
@@ -98,11 +95,8 @@ export function ContractSearch(props: {
     highlightCards,
     headerClassName,
     persistPrefix,
-    useQueryUrlParam,
     includeProbSorts,
     isWholePage,
-    noControls,
-    maxResults,
     renderContracts,
     autoFocus,
     profile,
@@ -195,8 +189,7 @@ export function ContractSearch(props: {
   const contracts = state.pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
-  const renderedContracts =
-    state.pages.length === 0 ? undefined : contracts.slice(0, maxResults)
+  const renderedContracts = state.pages.length === 0 ? undefined : contracts
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
@@ -211,10 +204,9 @@ export function ContractSearch(props: {
         additionalFilter={additionalFilter}
         persistPrefix={persistPrefix}
         hideOrderSelector={hideOrderSelector}
-        useQueryUrlParam={useQueryUrlParam}
+        useQueryUrlParam={isWholePage}
         includeProbSorts={includeProbSorts}
         onSearchParametersChanged={onSearchParametersChanged}
-        noControls={noControls}
         autoFocus={autoFocus}
       />
       {renderContracts ? (
@@ -224,7 +216,6 @@ export function ContractSearch(props: {
       ) : (
         <ContractsGrid
           contracts={renderedContracts}
-          loadMore={noControls ? undefined : performQuery}
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
           highlightCards={highlightCards}
@@ -245,7 +236,6 @@ function ContractSearchControls(props: {
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
-  noControls?: boolean
   autoFocus?: boolean
 }) {
   const {
@@ -257,7 +247,6 @@ function ContractSearchControls(props: {
     hideOrderSelector,
     onSearchParametersChanged,
     useQueryUrlParam,
-    noControls,
     autoFocus,
     includeProbSorts,
   } = props
@@ -352,10 +341,6 @@ function ContractSearchControls(props: {
       facetFilters: facetFilters,
     })
   }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
-
-  if (noControls) {
-    return <></>
-  }
 
   return (
     <Col
