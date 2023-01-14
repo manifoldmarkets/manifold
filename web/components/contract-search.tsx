@@ -28,13 +28,14 @@ import { Select } from './widgets/select'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 export const SORTS = [
+  { label: 'Relevance', value: 'relevance' },
   { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
   { label: 'Daily change', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: 'Total traders', value: 'most-popular' },
   { label: 'Liquidity', value: 'liquidity' },
-  { label: 'Last updated', value: 'last-updated' },
+  { label: 'Last activity', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
   { label: 'Highest %', value: 'prob-descending' },
@@ -139,9 +140,10 @@ export function ContractSearch(props: {
     const id = ++requestId.current
     const requestedPage = freshQuery ? 0 : state.pages.length
     if (freshQuery || requestedPage < state.numPages) {
-      const index = query
-        ? searchIndex
-        : searchClient.initIndex(getIndexName(sort))
+      const index =
+        sort === 'relevance'
+          ? searchIndex
+          : searchClient.initIndex(getIndexName(sort))
       const numericFilters = query
         ? []
         : [
@@ -240,8 +242,8 @@ function ContractSearchControls(props: {
 }) {
   const {
     className,
-    defaultSort,
-    defaultFilter,
+    defaultSort = 'relevance',
+    defaultFilter = 'all',
     additionalFilter,
     persistPrefix,
     hideOrderSelector,
@@ -266,7 +268,7 @@ function ContractSearchControls(props: {
   const savedSort = safeLocalStorage()?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
-    savedSort ?? defaultSort ?? 'score',
+    savedSort ?? defaultSort,
     !useQueryUrlParam
       ? undefined
       : {
@@ -275,7 +277,7 @@ function ContractSearchControls(props: {
         }
   )
   const [filter, setFilter] = usePersistentState(
-    defaultFilter ?? 'open',
+    defaultFilter,
     !useQueryUrlParam
       ? undefined
       : {
@@ -343,36 +345,32 @@ function ContractSearchControls(props: {
   }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
 
   return (
-    <Col
+    <div
       className={clsx(
-        'sticky top-0 z-20 mb-1 gap-3 bg-gray-50 pb-2',
+        'sticky top-0 z-20 mb-1 flex flex-col items-stretch gap-3 bg-gray-50 pb-2 pt-px sm:flex-row sm:gap-2',
         className
       )}
     >
-      <div className="mt-px flex flex-col items-stretch gap-3 sm:flex-row sm:gap-2">
-        <Input
-          type="text"
-          inputMode="search"
-          value={query}
-          onChange={(e) => updateQuery(e.target.value)}
-          onBlur={trackCallback('search', { query: query })}
-          placeholder="Search"
-          className="w-full"
-          autoFocus={autoFocus}
-        />
-        {!query && (
-          <SearchFilters
-            filter={filter}
-            selectFilter={selectFilter}
-            hideOrderSelector={hideOrderSelector}
-            selectSort={selectSort}
-            sort={sort}
-            className={'flex flex-row gap-2'}
-            includeProbSorts={includeProbSorts}
-          />
-        )}
-      </div>
-    </Col>
+      <Input
+        type="text"
+        inputMode="search"
+        value={query}
+        onChange={(e) => updateQuery(e.target.value)}
+        onBlur={trackCallback('search', { query: query })}
+        placeholder="Search"
+        className="w-full"
+        autoFocus={autoFocus}
+      />
+      <SearchFilters
+        filter={filter}
+        selectFilter={selectFilter}
+        hideOrderSelector={hideOrderSelector}
+        selectSort={selectSort}
+        sort={sort}
+        className={'flex flex-row gap-2'}
+        includeProbSorts={includeProbSorts}
+      />
+    </div>
   )
 }
 
