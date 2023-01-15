@@ -120,7 +120,7 @@ function ContractActions(props: {
           <Button
             color={'gray'}
             size={'2xs'}
-            onClick={() => setShowResolver(true)}
+            onClick={() => setShowResolver(!showResolver)}
           >
             Resolve
           </Button>
