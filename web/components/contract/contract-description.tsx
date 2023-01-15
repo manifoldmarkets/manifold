@@ -21,26 +21,27 @@ import { Editor, Content as ContentType } from '@tiptap/react'
 import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
-import { NumericResolutionPanel } from '../numeric-resolution-panel'
-import { ResolutionPanel } from '../resolution-panel'
-import { User } from 'common/user'
 
 export function ContractDescriptionAndResolution(props: {
   contract: Contract
+  toggleResolver?: () => void
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, toggleResolver } = props
   const isAdmin = useAdmin()
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
 
   return (
     <div className={clsx('text-gray-700', className)}>
-      {user && (isCreator || isAdmin) && !contract.isResolved ? (
+      {user &&
+      (isCreator || isAdmin) &&
+      !contract.isResolved &&
+      toggleResolver ? (
         <ContractActions
           contract={contract}
           isAdmin={isAdmin && !isCreator}
-          user={user}
+          toggleResolver={toggleResolver}
         />
       ) : (
         <CollapsibleContent
@@ -59,17 +60,11 @@ function editTimestamp() {
 function ContractActions(props: {
   contract: Contract
   isAdmin?: boolean
-  user: User
+  toggleResolver: () => void
 }) {
-  const { contract, isAdmin, user } = props
-  const { outcomeType, closeTime } = contract
+  const { contract, isAdmin, toggleResolver } = props
+  const { closeTime } = contract
   const isClosed = (closeTime ?? 0) < Date.now()
-  const isBinaryOrNumeric =
-    outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC'
-
-  const [showResolver, setShowResolver] = useState(
-    isClosed && isBinaryOrNumeric
-  )
 
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
@@ -116,12 +111,8 @@ function ContractActions(props: {
       <Spacer h={4} />
       <Row className="my-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
-        {isBinaryOrNumeric && !isClosed && (
-          <Button
-            color={'gray'}
-            size={'2xs'}
-            onClick={() => setShowResolver(!showResolver)}
-          >
+        {!isClosed && (
+          <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
             Resolve
           </Button>
         )}
@@ -144,24 +135,6 @@ function ContractActions(props: {
         editing={editingQ}
         setEditing={setEditingQ}
       />
-      {showResolver &&
-        (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
-          <NumericResolutionPanel
-            isAdmin={!!isAdmin}
-            creator={user}
-            isCreator={!isAdmin}
-            contract={contract}
-          />
-        ) : (
-          outcomeType === 'BINARY' && (
-            <ResolutionPanel
-              isAdmin={!!isAdmin}
-              creator={user}
-              isCreator={!isAdmin}
-              contract={contract}
-            />
-          )
-        ))}
     </>
   )
 }

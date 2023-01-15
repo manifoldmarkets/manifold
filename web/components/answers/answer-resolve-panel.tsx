@@ -103,7 +103,7 @@ export function AnswerResolvePanel(props: {
           onSelect={setResolveOption}
         />
 
-        <Row className="justify-end gap-1">
+        <Row className="mb-4 justify-end gap-1">
           {resolveOption && (
             <Button
               color="gray-white"

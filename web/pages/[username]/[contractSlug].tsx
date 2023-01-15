@@ -57,6 +57,8 @@ import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { BackRow } from 'web/components/contract/back-row'
+import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
+import { ResolutionPanel } from 'web/components/resolution-panel'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -206,7 +208,21 @@ export function ContractPageContent(
     [props.historyData.points, newBets]
   )
 
-  const { isResolved, question, outcomeType, resolution } = contract
+  const {
+    isResolved,
+    question,
+    outcomeType,
+    resolution,
+    closeTime,
+    creatorId,
+  } = contract
+
+  const isAdmin = useAdmin()
+  const isCreator = creatorId === user?.id
+
+  const [showResolver, setShowResolver] = useState(
+    (isCreator || isAdmin) && !isResolved && (closeTime ?? 0) < Date.now()
+  )
 
   const allowTrade = tradingAllowed(contract)
 
@@ -262,14 +278,28 @@ export function ContractPageContent(
         <ContractDescriptionAndResolution
           className="mt-6 mb-2 px-2"
           contract={contract}
+          toggleResolver={() => setShowResolver(!showResolver)}
         />
 
-        {outcomeType === 'NUMERIC' && (
-          <AlertBox
-            title="Warning"
-            text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
-          />
-        )}
+        {showResolver &&
+          user &&
+          (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
+            <NumericResolutionPanel
+              isAdmin={!!isAdmin}
+              creator={user}
+              isCreator={!isAdmin}
+              contract={contract}
+            />
+          ) : (
+            outcomeType === 'BINARY' && (
+              <ResolutionPanel
+                isAdmin={!!isAdmin}
+                creator={user}
+                isCreator={!isAdmin}
+                contract={contract}
+              />
+            )
+          ))}
 
         {(outcomeType === 'FREE_RESPONSE' ||
           outcomeType === 'MULTIPLE_CHOICE') && (
@@ -278,9 +308,17 @@ export function ContractPageContent(
             <AnswersPanel
               contract={contract}
               onAnswerCommentClick={onAnswerCommentClick}
+              showResolver={showResolver}
             />
             <Spacer h={4} />
           </>
+        )}
+
+        {outcomeType === 'NUMERIC' && (
+          <AlertBox
+            title="Warning"
+            text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
+          />
         )}
 
         {outcomeType === 'NUMERIC' && allowTrade && (
