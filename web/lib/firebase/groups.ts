@@ -169,12 +169,20 @@ export async function addUserToGroupViaId(groupId: string, userId: string) {
 }
 
 export async function joinGroup(group: Group, userId: string): Promise<void> {
-  // create a new member document in grouoMembers collection
+  // create a new member document in groupMembers collection
   const memberDoc = doc(groupMembers(group.id), userId)
-  return await setDoc(memberDoc, {
-    userId,
-    createdTime: Date.now(),
-  })
+  if (userId === group.creatorId) {
+    return await setDoc(memberDoc, {
+      userId,
+      createdTime: Date.now(),
+      role: 'admin',
+    })
+  } else {
+    return await setDoc(memberDoc, {
+      userId,
+      createdTime: Date.now(),
+    })
+  }
 }
 
 export async function leaveGroup(group: Group, userId: string): Promise<void> {
