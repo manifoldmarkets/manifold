@@ -63,8 +63,6 @@ function ContractActions(props: {
   toggleResolver: () => void
 }) {
   const { contract, isAdmin, toggleResolver } = props
-  const { closeTime } = contract
-  const isClosed = (closeTime ?? 0) < Date.now()
 
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
@@ -111,11 +109,9 @@ function ContractActions(props: {
       <Spacer h={4} />
       <Row className="my-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
-        {!isClosed && (
-          <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
-            Resolve
-          </Button>
-        )}
+        <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
+          Resolve
+        </Button>
         <Button
           color="gray"
           size="2xs"
