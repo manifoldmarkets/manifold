@@ -64,9 +64,12 @@ function ContractActions(props: {
   const { contract, isAdmin, user } = props
   const { outcomeType, closeTime } = contract
   const isClosed = (closeTime ?? 0) < Date.now()
-  const isBinary = outcomeType === 'BINARY'
+  const isBinaryOrNumeric =
+    outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC'
 
-  const [showResolver, setShowResolver] = useState(isClosed && isBinary)
+  const [showResolver, setShowResolver] = useState(
+    isClosed && isBinaryOrNumeric
+  )
 
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
@@ -113,7 +116,7 @@ function ContractActions(props: {
       <Spacer h={4} />
       <Row className="my-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
-        {isBinary && !isClosed && (
+        {isBinaryOrNumeric && !isClosed && (
           <Button
             color={'gray'}
             size={'2xs'}
