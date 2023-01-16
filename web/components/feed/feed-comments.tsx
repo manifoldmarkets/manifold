@@ -400,6 +400,7 @@ export function FeedCommentHeader(props: {
     bought = comment.betAmount >= 0 ? 'bought' : 'sold'
     money = formatMoney(Math.abs(comment.betAmount))
   }
+  const shouldDisplayOutcome = betOutcome && !comment.answerOutcome
   return (
     <Row>
       <div className="mt-0.5 text-sm text-gray-600">
@@ -407,7 +408,7 @@ export function FeedCommentHeader(props: {
         <span className="text-gray-400">
           <CommentStatus contract={contract} comment={comment} />
           {bought} {money}
-          {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
+          {shouldDisplayOutcome && (
             <>
               {' '}
               of{' '}
