@@ -1,5 +1,9 @@
 -- noinspection SqlNoDataSourceInspectionForFile
 
+/***************************************************************/
+/* 0. database-wide configuration */
+/***************************************************************/
+
 /* allow our backend to have a long statement timeout */
 alter role service_role set statement_timeout = '120s';
 
@@ -15,6 +19,10 @@ notify pgrst, 'reload config';
 create or replace function to_jsonb(jsonb) returns jsonb
 immutable parallel safe strict
 language sql as $$ select $1 $$;
+
+/******************************************/
+/* 1. tables containing firestore content */
+/******************************************/
 
 create table if not exists users (
     id text not null primary key,
@@ -312,7 +320,9 @@ begin;
   alter publication supabase_realtime add table user_contract_metrics;
 commit;
 
-/* internal machinery for making replication work follows. */
+/***************************************************************/
+/* 2. internal machinery for making firestore replication work */
+/***************************************************************/
 
 /* records all incoming writes to any logged firestore document */
 create table if not exists incoming_writes (
@@ -531,6 +541,10 @@ after insert on incoming_writes
 referencing new table as new_table
 for each statement
 execute function replicate_writes_process_new();
+
+/**************************************************/
+/* 3. stuff that has nothing to do with firestore */
+/**************************************************/
 
 -- Get the dot product of two vectors stored as rows in two tables.
 create or replace function dot(
