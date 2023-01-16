@@ -107,8 +107,8 @@ export async function getStaticPropz(props: {
     contractId && contract?.outcomeType === 'BINARY'
       ? await getBinaryContractUserContractMetrics(contractId, 100)
       : {}
-  const topContractMetrics = contractId
-    ? await getTopContractMetrics(contractId, 10)
+  const topContractMetrics = contract?.resolution
+    ? await getTopContractMetrics(contract.id, 10)
     : []
 
   return {
@@ -167,12 +167,22 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositionsByOutcome, comments, topContractMetrics } = props
+  const { userPositionsByOutcome, comments } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
+  const [topContractMetrics, setTopContractMetrics] = useState<
+    ContractMetric[]
+  >(props.topContractMetrics)
+
+  useEffect(() => {
+    // if contract.resolution changes, get new contract metrics
+    if (contract.resolution && topContractMetrics.length === 0) {
+      getTopContractMetrics(contract.id, 10).then(setTopContractMetrics)
+    }
+  }, [contract.resolution, contract.id, topContractMetrics.length])
 
   useTracking(
     'view market',

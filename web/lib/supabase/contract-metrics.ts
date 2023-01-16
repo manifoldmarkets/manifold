@@ -16,6 +16,7 @@ export async function getUserContractMetrics(userId: string) {
     'desc'
   )
 }
+
 export async function getUserContractMetricsByProfit(
   userId: string,
   limit = 20
@@ -51,4 +52,22 @@ export async function getUserContractMetricsByProfit(
     metrics: cms,
     contracts,
   }
+}
+
+export async function getTopContractUserMetrics(
+  contractId: string,
+  limit: number
+) {
+  const { data } = await run(
+    db
+      .from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contractId)
+      .gt('data->>profit', 0)
+      .order('data->>profit', {
+        ascending: false,
+      })
+      .limit(limit)
+  )
+  return data.map((d: JsonData<ContractMetrics>) => d.data)
 }
