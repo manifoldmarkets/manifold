@@ -139,7 +139,12 @@ export function BetsSummary(props: {
           <div>
             You're betting {position > 0 ? <YesLabel /> : <NoLabel />}.{' '}
             <TweetButton
-              tweetText={getPositionTweet(position, invested, contract, username)}
+              tweetText={getPositionTweet(
+                position,
+                invested,
+                contract,
+                username
+              )}
               className="ml-2"
             />
           </div>
@@ -182,7 +187,11 @@ const getPositionTweet = (
   )} on\n'${contract.question}' ${getShareUrl(contract, username)}`
 }
 
-const getWinningTweet = (profit: number, contract: Contract, username: string) => {
+const getWinningTweet = (
+  profit: number,
+  contract: Contract,
+  username: string
+) => {
   return `I made M$${formatMoneyNumber(profit)} in profit trading on\n'${
     contract.question
   }'! ${getShareUrl(contract, username)}`
