@@ -76,7 +76,6 @@ export const BOT_USERNAMES = [
   '538',
   'FairlyRandom',
   'Anatolii',
-  'Catnee',
   'JeremyK',
   'Botmageddon',
   'SmartBot',
