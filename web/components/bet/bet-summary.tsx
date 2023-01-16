@@ -7,7 +7,7 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { Col } from '../layout/col'
-import { Contract, contractUrl } from 'web/lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { YesLabel, NoLabel } from '../outcome-label'
 import { getContractBetMetrics, getProbability } from 'common/calculate'
@@ -18,6 +18,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { TweetButton } from '../buttons/tweet-button'
+import { getShareUrl } from 'common/util/share'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -42,6 +43,8 @@ export function BetsSummary(props: {
   const { contract, metrics, className, hideTweet } = props
   const { resolution, outcomeType } = contract
   const userBets = useUserContractBets(metrics.userId, contract.id)
+  const username = metrics.userUsername
+
   const { payout, invested, totalShares, profit, profitPercent } = userBets
     ? getContractBetMetrics(contract, userBets)
     : metrics
@@ -136,7 +139,7 @@ export function BetsSummary(props: {
           <div>
             You're betting {position > 0 ? <YesLabel /> : <NoLabel />}.{' '}
             <TweetButton
-              tweetText={getPositionTweet(position, invested, contract)}
+              tweetText={getPositionTweet(position, invested, contract, username)}
               className="ml-2"
             />
           </div>
@@ -148,7 +151,7 @@ export function BetsSummary(props: {
           <div>
             You made {formatMoney(profit)} in profit!{' '}
             <TweetButton
-              tweetText={getWinningTweet(profit, contract)}
+              tweetText={getWinningTweet(profit, contract, username)}
               className="ml-2"
             />
           </div>
@@ -161,7 +164,8 @@ export function BetsSummary(props: {
 const getPositionTweet = (
   position: number,
   invested: number,
-  contract: Contract
+  contract: Contract,
+  username: string
 ) => {
   const r = invested / (invested + Math.abs(position))
   const set1 = clamp(Math.round((1 - r) * 10), 1, 10)
@@ -175,13 +179,13 @@ const getPositionTweet = (
     position > 0 ? 'YES' : 'NO'
   } at M$${formatMoneyNumber(invested)} to M$${formatMoneyNumber(
     Math.abs(position)
-  )} on\n'${contract.question}' ${contractUrl(contract)}`
+  )} on\n'${contract.question}' ${getShareUrl(contract, username)}`
 }
 
-const getWinningTweet = (profit: number, contract: Contract) => {
+const getWinningTweet = (profit: number, contract: Contract, username: string) => {
   return `I made M$${formatMoneyNumber(profit)} in profit trading on\n'${
     contract.question
-  }'! ${contractUrl(contract)}`
+  }'! ${getShareUrl(contract, username)}`
 }
 
 const repeat = (str: string, n: number) => new Array(n).fill(str).join('')
