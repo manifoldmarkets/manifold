@@ -178,7 +178,7 @@ export function ContractPageContent(
   >(props.topContractMetrics)
 
   useEffect(() => {
-    // if contract.resolution changes, get new contract metrics
+    // If the contract resolves while the user is on the page, get the top contract metrics
     if (contract.resolution && topContractMetrics.length === 0) {
       getTopContractMetrics(contract.id, 10).then(setTopContractMetrics)
     }
