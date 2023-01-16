@@ -3,11 +3,12 @@ import * as admin from 'firebase-admin'
 import { Query } from 'firebase-admin/firestore'
 import { uniq } from 'lodash'
 
-import { createSupabaseClient, invokeFunction, loadPaginated } from './utils'
+import { invokeFunction, loadPaginated } from './utils'
 import { newEndpointNoAuth } from './api'
 import { getMarketRecommendations } from '../../common/recommendation'
 import { run } from '../../common/supabase/utils'
 import { mapAsync } from '../../common/util/promise'
+import { createSupabaseClient } from './supabase/init'
 
 const firestore = admin.firestore()
 

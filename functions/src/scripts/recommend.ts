@@ -6,7 +6,8 @@ import * as admin from 'firebase-admin'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
 import { sortBy, uniq } from 'lodash'
 import { readJson, writeJson } from '../helpers/file'
-import { createSupabaseClient, getContract, loadPaginated } from '../utils'
+import { getContract, loadPaginated } from '../utils'
+import { createSupabaseClient } from '../supabase/init'
 
 import { initAdmin } from './script-init'
 initAdmin()
