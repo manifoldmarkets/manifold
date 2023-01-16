@@ -22,7 +22,7 @@ import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 
-export function ContractDescriptionAndResolution(props: {
+export function ContractDescription(props: {
   contract: Contract
   toggleResolver?: () => void
   className?: string

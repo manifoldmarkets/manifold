@@ -8,7 +8,7 @@ export const getShareUrl = (contract: Contract, username: string | undefined) =>
 
 const queryString = (username: string) => {
   try {
-    return '?r=' + btoa(username).replace('=', '')
+    return '?r=' + btoa(username).replace(/=/g, '')
   } catch (e) {
     return '?referrer=' + username
   }

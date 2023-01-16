@@ -28,7 +28,7 @@ import { AlertBox } from 'web/components/widgets/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getOpenGraphProps } from 'common/contract-details'
-import { ContractDescriptionAndResolution } from 'web/components/contract/contract-description'
+import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/widgets/title'
@@ -55,6 +55,7 @@ import { BackRow } from 'web/components/contract/back-row'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { getBets } from 'web/lib/supabase/bets'
+import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -226,6 +227,9 @@ export function ContractPageContent(
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
 
+  // check if market is less than an hour old
+  const isRecent = (contract.createdTime ?? 0) > Date.now() - 60 * 60 * 1000
+
   const [showResolver, setShowResolver] = useState(
     (isCreator || isAdmin) && !isResolved && (closeTime ?? 0) < Date.now()
   )
@@ -281,7 +285,7 @@ export function ContractPageContent(
           betPoints={betPoints}
         />
 
-        <ContractDescriptionAndResolution
+        <ContractDescription
           className="mt-6 mb-2 px-2"
           contract={contract}
           toggleResolver={() => setShowResolver(!showResolver)}
@@ -326,6 +330,13 @@ export function ContractPageContent(
             title="Warning"
             text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
           />
+        )}
+
+        {isCreator && isRecent && (
+          <>
+            {showResolver && <Spacer h={4} />}
+            <CreatorSharePanel contract={contract} />
+          </>
         )}
 
         {outcomeType === 'NUMERIC' && allowTrade && (
