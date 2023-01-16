@@ -1,3 +1,5 @@
+import { Database } from './supabase/schema'
+
 export type DocumentKind =
   | 'user'
   | 'userFollow'
@@ -26,6 +28,7 @@ export type WriteDocument = { [k: string]: any }
 
 export type TLEntry<T extends WriteDocument = WriteDocument> = {
   eventId: string
+  tableId: keyof Database['public']['Tables']
   docKind: DocumentKind
   writeKind: WriteKind
   docId: string
