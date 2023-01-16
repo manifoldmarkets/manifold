@@ -10,6 +10,7 @@ import { Spacer } from '../layout/spacer'
 import {
   formatLargeNumber,
   formatMoney,
+  formatOutcomeLabel,
   formatPercent,
 } from 'common/util/format'
 import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
@@ -267,7 +268,8 @@ export function BuyPanel(props: {
     })
   }
 
-  const betDisabled = isSubmitting || !betAmount || !!error
+  const betDisabled =
+    isSubmitting || !betAmount || !!error || outcome === undefined
 
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
     outcome ?? 'YES',
@@ -421,10 +423,17 @@ export function BuyPanel(props: {
             warning={warning}
             onSubmit={submitBet}
             isSubmitting={isSubmitting}
-            disabled={!!betDisabled || outcome === undefined}
+            disabled={betDisabled}
             size="xl"
             color={outcome === 'NO' ? 'red' : 'green'}
-            actionLabel="Wager"
+            actionLabel={
+              betDisabled
+                ? `Select ${formatOutcomeLabel(
+                    contract,
+                    'YES'
+                  )} or ${formatOutcomeLabel(contract, 'NO')}`
+                : 'Wager'
+            }
           />
         )}
         <button

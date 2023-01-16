@@ -1,4 +1,5 @@
 import { ENV_CONFIG } from '../envs/constants'
+import { BinaryContract, PseudoNumericContract } from 'common/contract'
 
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -89,4 +90,14 @@ export function toCamelCase(words: string) {
   // Remove non-alpha-numeric-underscore chars.
   const regex = /(?:^|\s)(?:[a-z0-9_]+)/gi
   return (camelCase.match(regex) || [])[0] ?? ''
+}
+
+export const formatOutcomeLabel = (
+  contract: BinaryContract | PseudoNumericContract,
+  outcomeLabel: 'YES' | 'NO'
+) => {
+  if (contract.outcomeType === 'BINARY') {
+    return outcomeLabel
+  }
+  return outcomeLabel === 'YES' ? 'HIGHER' : 'LOWER'
 }
