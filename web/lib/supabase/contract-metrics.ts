@@ -26,7 +26,7 @@ export async function getUserContractMetricsByProfit(
       .from('user_contract_metrics')
       .select('data')
       .eq('user_id', userId)
-      .order('data->from->day->profit', {
+      .order('data->from->day->profit' as any, {
         ascending: true,
       })
       .limit(limit)
@@ -36,7 +36,7 @@ export async function getUserContractMetricsByProfit(
       .from('user_contract_metrics')
       .select('data')
       .eq('user_id', userId)
-      .order('data->from->day->profit', {
+      .order('data->from->day->profit' as any, {
         ascending: false,
         nullsFirst: false,
       })
@@ -64,7 +64,7 @@ export async function getTopContractUserMetrics(
       .select('data')
       .eq('contract_id', contractId)
       .gt('data->>profit', 0)
-      .order('data->>profit', {
+      .order('data->>profit' as any, {
         ascending: false,
       })
       .limit(limit)

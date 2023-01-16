@@ -18,7 +18,7 @@ export async function getLikedContracts(userId: string) {
       .eq('user_id', userId)
       .eq('data->>type', 'like')
       .contains('data', { contentType: 'contract' })
-      .order('data->>createdTime', { ascending: false })
+      .order('data->>createdTime' as any, { ascending: false })
   )
   return data as SearchLikedContent[]
 }
