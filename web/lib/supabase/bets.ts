@@ -1,7 +1,7 @@
 import { db } from './db'
 import { run } from 'common/supabase/utils'
 import { Bet } from 'common/bet'
-import { JsonData } from 'web/lib/supabase/json-data'
+import { JsonData } from 'common/supabase/json-data'
 import { BetFilter } from 'web/lib/firebase/bets'
 
 export async function getOlderBets(

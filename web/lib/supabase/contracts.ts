@@ -1,7 +1,7 @@
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { Contract } from 'common/contract'
-import { JsonData } from 'web/lib/supabase/json-data'
+import { JsonData } from 'common/supabase/json-data'
 import { chunk } from 'lodash'
 
 export const getContracts = async (contractIds: string[]) => {

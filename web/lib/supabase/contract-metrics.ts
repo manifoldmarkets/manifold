@@ -1,7 +1,7 @@
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { JsonData } from 'web/lib/supabase/json-data'
+import { JsonData } from 'common/supabase/json-data'
 import { orderBy } from 'lodash'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { CPMMBinaryContract } from 'common/contract'
