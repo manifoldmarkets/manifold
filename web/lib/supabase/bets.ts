@@ -23,8 +23,8 @@ export async function getOlderBets(
 
 export const getBets = async (options?: BetFilter) => {
   const query = getBetsQuery(options)
-  const { data } = await run(query)
-  return data.map((d: JsonData<Bet>) => d.data)
+  const { data } = (await run(query)) as { data: JsonData<Bet>[] }
+  return data.map((d) => d.data)
 }
 
 export const getBetsQuery = (options?: BetFilter) => {

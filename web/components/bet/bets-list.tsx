@@ -84,7 +84,7 @@ export function BetsList(props: { user: User }) {
   const [openLimitBets, setOpenLimitBets] = useState<LimitBet[]>([])
   useEffect(() => {
     getBets({ userId: user.id, isOpenLimitOrder: true, limit: 1000 }).then(
-      setOpenLimitBets
+      (b) => setOpenLimitBets(b as LimitBet[])
     )
   }, [user.id])
   const limitBetsByContract = useMemo(

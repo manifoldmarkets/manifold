@@ -20,7 +20,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { listBets } from 'web/lib/firebase/bets'
 import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
@@ -30,6 +29,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { OrderByDirection } from 'firebase/firestore'
 import { useUser } from 'web/hooks/use-user'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
+import { getBets } from 'web/lib/supabase/bets'
 
 type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
@@ -42,7 +42,7 @@ async function getHistoryData(contract: Contract) {
   if (contract.outcomeType === 'NUMERIC') {
     return null
   }
-  const bets = await listBets({
+  const bets = await getBets({
     contractId: contract.id,
     ...CONTRACT_BET_LOADING_OPTS,
     limit: 10000,
