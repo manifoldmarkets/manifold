@@ -80,6 +80,7 @@ export type PrivateUser = {
   blockedContractIds: string[]
   blockedGroupSlugs: string[]
   hasSeenAppBannerInNotificationsOn?: number
+  installedAppPlatforms?: string[]
 }
 
 export type PortfolioMetrics = {
