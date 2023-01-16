@@ -24,7 +24,10 @@ import {
 import { mapAsync } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
-import { CollectionReference, Query } from 'firebase-admin/firestore'
+import { CollectionReference } from 'firebase-admin/firestore'
+import { createSupabaseClient } from './supabase/init'
+import { SupabaseClient, run } from '../../common/supabase/utils'
+import { JsonData } from 'common/supabase/json-data'
 
 const firestore = admin.firestore()
 
@@ -52,6 +55,8 @@ export const updateusermetrics = newEndpointNoAuth(
 )
 
 export async function updateUserMetrics() {
+  const db = createSupabaseClient()
+
   log('Loading users...')
   const users = await loadPaginated(
     firestore.collection('users') as CollectionReference<User>
@@ -78,66 +83,72 @@ export async function updateUserMetrics() {
   log(`${metricEligibleContracts.length} contracts need metrics updates.`)
 
   log('Computing metric updates...')
-  const userUpdates = await mapAsync(users, async (staleUser) => {
-    const user = (await getUser(staleUser.id)) ?? staleUser
-    const userContracts = contractsByCreator[user.id] ?? []
-    const metricRelevantBets = await loadUserContractBets(
-      user.id,
-      metricEligibleContracts
-        .filter((c) => c.uniqueBettorIds?.includes(user.id))
-        .map((c) => c.id)
-    )
-    const portfolioHistory = await loadPortfolioHistory(user.id, now)
-    const newCreatorTraders = calculateCreatorTraders(userContracts)
+  const userUpdates = await mapAsync(
+    users,
+    async (staleUser) => {
+      const user = (await getUser(staleUser.id)) ?? staleUser
+      const userContracts = contractsByCreator[user.id] ?? []
+      const metricRelevantBets = await loadUserContractBets(
+        db,
+        user.id,
+        metricEligibleContracts
+          .filter((c) => c.uniqueBettorIds?.includes(user.id))
+          .map((c) => c.id)
+      )
 
-    const newPortfolio = calculateNewPortfolioMetrics(
-      user,
-      contractsById,
-      metricRelevantBets
-    )
-    const currPortfolio = portfolioHistory.current
-    const didPortfolioChange =
-      currPortfolio === undefined ||
-      currPortfolio.balance !== newPortfolio.balance ||
-      currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      currPortfolio.investmentValue !== newPortfolio.investmentValue
+      const portfolioHistory = await loadPortfolioHistory(user.id, now)
+      const newCreatorTraders = calculateCreatorTraders(userContracts)
 
-    const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
+      const newPortfolio = calculateNewPortfolioMetrics(
+        user,
+        contractsById,
+        metricRelevantBets
+      )
+      const currPortfolio = portfolioHistory.current
+      const didPortfolioChange =
+        currPortfolio === undefined ||
+        currPortfolio.balance !== newPortfolio.balance ||
+        currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+        currPortfolio.investmentValue !== newPortfolio.investmentValue
 
-    const metricRelevantBetsByContract = groupBy(
-      metricRelevantBets,
-      (b) => b.contractId
-    )
+      const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
-    const metricsByContract = calculateMetricsByContract(
-      metricRelevantBetsByContract,
-      contractsById,
-      user
-    )
+      const metricRelevantBetsByContract = groupBy(
+        metricRelevantBets,
+        (b) => b.contractId
+      )
 
-    const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
-      ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
-      : undefined
+      const metricsByContract = calculateMetricsByContract(
+        metricRelevantBetsByContract,
+        contractsById,
+        user
+      )
 
-    const userDoc = firestore.collection('users').doc(user.id)
-    if (didPortfolioChange) {
-      writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
-    }
+      const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
+        ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
+        : undefined
 
-    const contractMetricsCollection = userDoc.collection('contract-metrics')
-    for (const metrics of metricsByContract) {
-      writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
-    }
+      const userDoc = firestore.collection('users').doc(user.id)
+      if (didPortfolioChange) {
+        writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
+      }
 
-    return {
-      user: user,
-      fields: {
-        creatorTraders: newCreatorTraders,
-        profitCached: newProfit,
-        nextLoanCached: nextLoanPayout ?? 0,
-      },
-    }
-  })
+      const contractMetricsCollection = userDoc.collection('contract-metrics')
+      for (const metrics of metricsByContract) {
+        writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
+      }
+
+      return {
+        user: user,
+        fields: {
+          creatorTraders: newCreatorTraders,
+          profitCached: newProfit,
+          nextLoanCached: nextLoanPayout ?? 0,
+        },
+      }
+    },
+    10
+  )
 
   for (const { user, fields } of userUpdates) {
     if (hasChanges(user, fields)) {
@@ -152,15 +163,19 @@ export async function updateUserMetrics() {
   log('Done.')
 }
 
-const loadUserContractBets = async (userId: string, contractIds: string[]) => {
-  const betDocs = await mapAsync(contractIds, (cid) => {
-    return loadPaginated(
-      firestore
-        .collection('contracts')
-        .doc(cid)
-        .collection('bets')
-        .where('userId', '==', userId) as Query<Bet>
-    )
+const loadUserContractBets = async (
+  db: SupabaseClient,
+  userId: string,
+  contractIds: string[]
+) => {
+  const betDocs = await mapAsync(contractIds, async (cid) => {
+    const query = db
+      .from('contract_bets')
+      .select('data')
+      .eq('data->>userId', userId)
+      .eq('contract_id', cid)
+    const { data } = (await run(query)) as { data: JsonData<Bet>[] }
+    return data.map((d) => d.data)
   })
   return betDocs.flat()
 }
