@@ -283,6 +283,7 @@ export function ContractPageContent(
 
         {showResolver &&
           user &&
+          !resolution &&
           (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
             <NumericResolutionPanel
               isAdmin={!!isAdmin}
