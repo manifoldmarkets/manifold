@@ -9,7 +9,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import {
   Contract,
   getContractFromSlug,
-  getRecommendedContracts,
+  getRelatedContracts,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
@@ -371,7 +371,7 @@ export function ContractPageContent(
           />
         </div>
       </Col>
-      <RecommendedContractsWidget contract={contract} />
+      <RelatedContractsWidget contract={contract} />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
@@ -408,25 +408,25 @@ function ContractPageSidebar(props: { contract: Contract }) {
   ) : null
 }
 
-const RecommendedContractsWidget = memo(
-  function RecommendedContractsWidget(props: { contract: Contract }) {
-    const { contract } = props
-    const user = useUser()
-    const [recommendations, setRecommendations] = useState<Contract[]>([])
-    useEffect(() => {
-      if (user) {
-        getRecommendedContracts(contract, user.id, 6).then(setRecommendations)
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [contract.id, user?.id])
-    if (recommendations.length === 0) {
-      return null
+const RelatedContractsWidget = memo(function RecommendedContractsWidget(props: {
+  contract: Contract
+}) {
+  const { contract } = props
+  const user = useUser()
+  const [recommendations, setRecommendations] = useState<Contract[]>([])
+  useEffect(() => {
+    if (user) {
+      getRelatedContracts(contract, user.id, 6).then(setRecommendations)
     }
-    return (
-      <Col className="mt-2 gap-2 px-2 sm:px-1">
-        <Title className="text-gray-700" text="Related markets" />
-        <ContractsGrid contracts={recommendations} trackingPostfix=" related" />
-      </Col>
-    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contract.id, user?.id])
+  if (recommendations.length === 0) {
+    return null
   }
-)
+  return (
+    <Col className="mt-2 gap-2 px-2 sm:px-1">
+      <Title className="text-gray-700" text="Related markets" />
+      <ContractsGrid contracts={recommendations} trackingPostfix=" related" />
+    </Col>
+  )
+})

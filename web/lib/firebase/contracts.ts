@@ -303,7 +303,7 @@ export const getTopGroupContracts = async (
   return await getValues<Contract>(creatorContractsQuery)
 }
 
-export const getRecommendedContracts = async (
+export const getRelatedContracts = async (
   contract: Contract,
   excludeBettorId: string,
   count: number
