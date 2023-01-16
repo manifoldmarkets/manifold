@@ -26,6 +26,7 @@ import { getShareUrl } from 'common/util/share'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { formatTime } from 'web/lib/util/time'
 import { ReportButton } from 'web/components/buttons/report-button'
+import { TweetButton } from '../buttons/tweet-button'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -252,7 +253,12 @@ export function ContractInfoDialog(props: {
 
               <DuplicateContractButton contract={contract} />
 
-              <ShareEmbedButton contract={contract} />
+              <ShareEmbedButton
+                contract={contract}
+                className="hidden md:flex"
+              />
+
+              <TweetButton tweetText={getShareUrl(contract, user?.username)} />
             </Row>
 
             <QRCode
