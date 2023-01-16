@@ -8,10 +8,11 @@ import { chunk } from 'lodash'
 
 import { withRetries } from '../../../common/util/promise'
 import { run, SupabaseClient } from '../../../common/supabase/utils'
-import { createSupabaseClient, log, processPartitioned } from '../utils'
+import { log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 import { DocumentKind } from '../../../common/transaction-log'
 import { DAY_MS } from 'common/util/time'
+import { createSupabaseClient } from 'functions/src/supabase/init'
 
 // strategy for live importing collection C without dropping data (times are firestore server times)
 // 1. optional - clear supabase table for collection C
