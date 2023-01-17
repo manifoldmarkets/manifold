@@ -54,6 +54,7 @@ export async function replicateWrites(
       entries.map((e) => ({
         event_id: e.eventId,
         doc_kind: e.docKind,
+        table_id: e.tableId,
         write_kind: e.writeKind,
         parent_id: e.parentId,
         doc_id: e.docId,
