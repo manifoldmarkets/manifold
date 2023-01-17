@@ -17,8 +17,6 @@ async function main() {
 
   await Promise.all(
     users.map(async (user) => {
-      const { id } = user
-
       const privateUser: PrivateUser = {
         id: user.id,
         notificationPreferences: getDefaultNotificationPreferences(true),

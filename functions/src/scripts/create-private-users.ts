@@ -16,8 +16,6 @@ async function main() {
   for (const user of users) {
     const fbUser = await admin.auth().getUser(user.id)
     const email = fbUser.email
-    const { username } = user
-
     const privateUser: PrivateUser = {
       id: user.id,
       email,

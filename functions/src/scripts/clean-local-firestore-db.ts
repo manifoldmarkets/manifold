@@ -121,7 +121,6 @@ async function cleanPrivateUsers() {
   await Promise.all(
     users.map(async (user) => {
       if (!user || !user.id) return
-      const { id } = user
       const privateUser: PrivateUser = {
         id: user.id,
         notificationPreferences: getDefaultNotificationPreferences(true),
