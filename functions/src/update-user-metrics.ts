@@ -27,8 +27,8 @@ import { newEndpointNoAuth } from './api'
 import { CollectionReference } from 'firebase-admin/firestore'
 import { createSupabaseClient } from './supabase/init'
 import { SupabaseClient, run } from '../../common/supabase/utils'
-import { JsonData } from 'common/supabase/json-data'
-import { filterDefined } from 'common/util/array'
+import { JsonData } from '../../common/supabase/json-data'
+import { filterDefined } from '../../common/util/array'
 
 const firestore = admin.firestore()
 
