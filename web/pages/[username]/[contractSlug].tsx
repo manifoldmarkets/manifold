@@ -14,7 +14,12 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import { Bet, BetFilter, getTotalBetCount } from 'web/lib/firebase/bets'
+import {
+  Bet,
+  BetFilter,
+  getTotalBetCount,
+  listBets,
+} from 'web/lib/firebase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -54,7 +59,6 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { BackRow } from 'web/components/contract/back-row'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { getBets } from 'web/lib/supabase/bets'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 
 const CONTRACT_BET_FILTER: BetFilter = {
@@ -78,7 +82,7 @@ export async function getStaticPropz(props: {
     contract?.outcomeType === 'PSEUDO_NUMERIC'
   // Prioritize newer bets via descending order
   const bets = contractId
-    ? await getBets({
+    ? await listBets({
         contractId,
         ...CONTRACT_BET_FILTER,
         limit: useBetPoints ? 10000 : 4000,
