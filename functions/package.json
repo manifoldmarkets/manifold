@@ -36,6 +36,7 @@
     "@tiptap/html": "2.0.0-beta.199",
     "@tiptap/starter-kit": "2.0.0-beta.199",
     "@tiptap/suggestion": "2.0.0-beta.199",
+    "commander": "10.0.0",
     "cors": "2.8.5",
     "dayjs": "1.11.4",
     "expo-server-sdk": "3.6.0",
