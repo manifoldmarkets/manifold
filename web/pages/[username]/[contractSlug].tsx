@@ -64,7 +64,7 @@ import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
   filterChallenges: true,
-  filterAntes: true,
+  filterAntes: false,
 }
 
 type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
