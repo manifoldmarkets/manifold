@@ -21,7 +21,6 @@ async function main() {
     const privateUser: PrivateUser = {
       id: user.id,
       email,
-      username,
       notificationPreferences: getDefaultNotificationPreferences(),
       blockedUserIds: [],
       blockedByUserIds: [],

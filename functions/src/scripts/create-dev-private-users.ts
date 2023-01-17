@@ -17,11 +17,10 @@ async function main() {
 
   await Promise.all(
     users.map(async (user) => {
-      const { username } = user
+      const { id } = user
 
       const privateUser: PrivateUser = {
         id: user.id,
-        username,
         notificationPreferences: getDefaultNotificationPreferences(true),
         blockedUserIds: [],
         blockedByUserIds: [],
@@ -34,9 +33,9 @@ async function main() {
           .doc(user.id)
           .set(privateUser)
 
-        console.log('created private user for:', user.username)
+        console.log('created private user for:', user.id)
       } catch (e) {
-        console.log('error creating private user for:', user.username, e)
+        console.log('error creating private user for:', user.id, e)
       }
     })
   )
