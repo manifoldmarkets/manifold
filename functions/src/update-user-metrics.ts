@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { chunk, groupBy, sortBy } from 'lodash'
+import { groupBy } from 'lodash'
 
 import {
   getUser,
@@ -24,10 +24,7 @@ import {
 import { mapAsync } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
-import { CollectionReference } from 'firebase-admin/firestore'
-import { createSupabaseClient } from './supabase/init'
-import { SupabaseClient, run } from '../../common/supabase/utils'
-import { JsonData } from '../../common/supabase/json-data'
+import { CollectionReference, Query } from 'firebase-admin/firestore'
 import { filterDefined } from '../../common/util/array'
 
 const firestore = admin.firestore()
@@ -56,8 +53,6 @@ export const updateusermetrics = newEndpointNoAuth(
 )
 
 export async function updateUserMetrics() {
-  const db = createSupabaseClient()
-
   log('Loading users...')
   const users = await loadPaginated(
     firestore.collection('users') as CollectionReference<User>
@@ -90,7 +85,6 @@ export async function updateUserMetrics() {
       const user = (await getUser(staleUser.id)) ?? staleUser
       const userContracts = contractsByCreator[user.id] ?? []
       const metricRelevantBets = await loadUserContractBets(
-        db,
         user.id,
         metricEligibleContracts
           .filter((c) => c.uniqueBettorIds?.includes(user.id))
@@ -171,23 +165,20 @@ export async function updateUserMetrics() {
   log('Done.')
 }
 
-const loadUserContractBets = async (
-  db: SupabaseClient,
-  userId: string,
-  contractIds: string[]
-) => {
-  const contractIdChunks = chunk(contractIds, 100)
-  const bets: Bet[] = []
-  for (const contractIdChunk of contractIdChunks) {
-    const query = db
-      .from('contract_bets')
-      .select('data')
-      .eq('data->>userId', userId)
-      .in('contract_id', contractIdChunk)
-    const { data } = (await run(query)) as { data: JsonData<Bet>[] }
-    bets.push(...data.map((d) => d.data))
+const loadUserContractBets = async (userId: string, contractIds: string[]) => {
+  const bets = []
+  for (const cid of contractIds) {
+    bets.push(
+      ...(await loadPaginated(
+        firestore
+          .collection('contracts')
+          .doc(cid)
+          .collection('bets')
+          .where('userId', '==', userId) as Query<Bet>
+      ))
+    )
   }
-  return sortBy(bets, bet => bet.createdTime)
+  return bets
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {
