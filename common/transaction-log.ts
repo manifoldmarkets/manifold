@@ -1,24 +1,4 @@
-export type DocumentKind =
-  | 'user'
-  | 'userFollow'
-  | 'userReaction'
-  | 'userEvent'
-  | 'userSeenMarket'
-  | 'contract'
-  | 'contractAnswer'
-  | 'contractBet'
-  | 'contractComment'
-  | 'contractFollow'
-  | 'contractLiquidity'
-  | 'group'
-  | 'groupContract'
-  | 'groupMember'
-  | 'txn'
-  | 'manalink'
-  | 'post'
-  | 'test'
-  | 'userPortfolioHistory'
-  | 'userContractMetrics'
+import { Database } from './supabase/schema'
 
 export type WriteKind = 'create' | 'update' | 'delete'
 
@@ -26,7 +6,7 @@ export type WriteDocument = { [k: string]: any }
 
 export type TLEntry<T extends WriteDocument = WriteDocument> = {
   eventId: string
-  docKind: DocumentKind
+  tableId: keyof Database['public']['Tables']
   writeKind: WriteKind
   docId: string
   parentId: string | null
