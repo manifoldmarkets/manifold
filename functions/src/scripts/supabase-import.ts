@@ -35,7 +35,7 @@ function getWriteRow(
   ts: Date
 ) {
   return {
-    write_kind: 'update',
+    write_kind: 'upsert',
     table_id: tableName,
     doc_id: snap.id,
     parent_id: snap.ref.parent.parent?.id,

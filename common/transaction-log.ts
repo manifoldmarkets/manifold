@@ -1,6 +1,6 @@
 import { Database } from './supabase/schema'
 
-export type WriteKind = 'create' | 'update' | 'delete'
+export type WriteKind = 'create' | 'update' | 'upsert' | 'delete'
 
 export type WriteDocument = { [k: string]: any }
 

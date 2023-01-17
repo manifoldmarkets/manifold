@@ -419,7 +419,40 @@ begin
     raise warning 'Invalid table ID: %', r.table_id;
     return false;
   end if;
-  if r.write_kind = 'create' then
+  if r.write_kind = 'upsert' then
+    /* possible cases:
+       - if this is the most recent write to the document:
+         1. common case: the document exists; update it
+         2. other common case: the document does not exist yet; insert it
+       - if this is not the most recent write to the document:
+         3. the document exists but has more recent updates; do nothing
+         4. the document has been more recently deleted; do nothing
+    */
+    if exists (
+      select from tombstones as t
+      where t.table_id = r.table_id and t.doc_id = r.doc_id and t.fs_deleted_at > r.ts
+      and t.parent_id is not distinct from r.parent_id /* mind nulls */
+    ) then
+      return true; /* case 4 */
+    end if;
+    if dest_spec.parent_id_col_name is not null then
+      execute format(
+        'insert into %1$I (%2$I, %3$I, data, fs_updated_time) values (%4$L, %5$L, %6$L, %7$L)
+         on conflict (%2$I, %3$I) do update set data = %6$L, fs_updated_time = %7$L
+         where %1$I.fs_updated_time <= %7$L;',
+        r.table_id, dest_spec.parent_id_col_name, dest_spec.id_col_name,
+        r.parent_id, r.doc_id, r.data, r.ts
+      );
+    else
+      execute format(
+        'insert into %1$I (%2$I, data, fs_updated_time) values (%3$L, %4$L, %5$L)
+         on conflict (%2$I) do update set data = %4$L, fs_updated_time = %5$L
+         where %1$I.fs_updated_time <= %5$L;',
+        r.table_id, dest_spec.id_col_name,
+        r.doc_id, r.data, r.ts
+      );
+    end if;
+  elsif r.write_kind = 'create' then
     /* possible cases:
        - if this is the most recent write to the document:
          1. common case: the document must not exist and this is a brand new document; insert it
@@ -453,32 +486,21 @@ begin
     /* possible cases:
        - if this is the most recent write to the document:
          1. common case: the document exists; update it
-         2. *special case*: we are in the middle of an import, and we are replicating updates, but
-           the document does not exist in supabase because we have not yet imported it. insert it
        - if this is not the most recent write to the document:
-         3. the document exists but has more recent updates; do nothing
-         4. the document has been more recently deleted; do nothing
+         2. the document exists but has more recent updates; do nothing
+         3. the document has been more recently deleted; do nothing
     */
-    if exists (
-      select from tombstones as t
-      where t.table_id = r.table_id and t.doc_id = r.doc_id and t.fs_deleted_at > r.ts
-      and t.parent_id is not distinct from r.parent_id /* mind nulls */
-    ) then
-      return true; /* case 4 */
-    end if;
     if dest_spec.parent_id_col_name is not null then
       execute format(
-        'insert into %1$I (%2$I, %3$I, data, fs_updated_time) values (%4$L, %5$L, %6$L, %7$L)
-         on conflict (%2$I, %3$I) do update set data = %6$L, fs_updated_time = %7$L
-         where %1$I.fs_updated_time <= %7$L;',
+        'update %1$I set data = %6$L, fs_updated_time = %7$L
+         where %1$I.%2$I = %4$L and %1$I.%3$I = %5$L and %1$I.fs_updated_time <= %7$L;',
         r.table_id, dest_spec.parent_id_col_name, dest_spec.id_col_name,
         r.parent_id, r.doc_id, r.data, r.ts
       );
     else
       execute format(
-        'insert into %1$I (%2$I, data, fs_updated_time) values (%3$L, %4$L, %5$L)
-         on conflict (%2$I) do update set data = %4$L, fs_updated_time = %5$L
-         where %1$I.fs_updated_time <= %5$L;',
+        'update %1$I set data = %4$L, fs_updated_time = %5$L
+         where %1$I.%2$I = %3$L and %1$I.fs_updated_time <= %5$L;',
         r.table_id, dest_spec.id_col_name,
         r.doc_id, r.data, r.ts
       );
