@@ -453,8 +453,7 @@ begin
     /* possible cases:
        - if this is the most recent write to the document:
          1. common case: the document exists; update it
-         2. *special case*: we are in the middle of an import, and we are replicating updates, but
-           the document does not exist in supabase because we have not yet imported it. insert it
+         2. less common case: the document doesn't exist yet because there is an insert we haven't got; insert it
        - if this is not the most recent write to the document:
          3. the document exists but has more recent updates; do nothing
          4. the document has been more recently deleted; do nothing
