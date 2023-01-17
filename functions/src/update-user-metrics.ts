@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy } from 'lodash'
+import { chunk, groupBy } from 'lodash'
 
 import {
   getUser,
@@ -176,17 +176,18 @@ const loadUserContractBets = async (
   userId: string,
   contractIds: string[]
 ) => {
+  const contractIdChunks = chunk(contractIds, 100)
   const bets: Bet[] = []
-  for (const cid of contractIds) {
+  for (const contractIdChunk of contractIdChunks) {
     const query = db
       .from('contract_bets')
       .select('data')
       .eq('data->>userId', userId)
-      .eq('contract_id', cid)
+      .in('contract_id', contractIdChunk)
     const { data } = (await run(query)) as { data: JsonData<Bet>[] }
     bets.push(...data.map((d) => d.data))
   }
-  return bets.flat()
+  return bets
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {
