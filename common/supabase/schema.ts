@@ -525,6 +525,14 @@ export interface Database {
         Args: { uid: string; count: number }
         Returns: Json[]
       }
+      get_related_contract_ids: {
+        Args: { source_id: string }
+        Returns: { contract_id: string; distance: number }[]
+      }
+      get_related_contracts: {
+        Args: { cid: string; count: number }
+        Returns: Json[]
+      }
       gtrgm_compress: {
         Args: { "": unknown }
         Returns: unknown
