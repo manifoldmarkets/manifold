@@ -213,30 +213,30 @@ export interface Database {
         Row: {
           data: Json | null
           doc_id: string
-          doc_kind: string
           event_id: string | null
           id: number
           parent_id: string | null
+          table_id: string | null
           ts: string
           write_kind: string
         }
         Insert: {
           data?: Json | null
           doc_id: string
-          doc_kind: string
           event_id?: string | null
           id?: never
           parent_id?: string | null
+          table_id?: string | null
           ts: string
           write_kind: string
         }
         Update: {
           data?: Json | null
           doc_id?: string
-          doc_kind?: string
           event_id?: string | null
           id?: never
           parent_id?: string | null
+          table_id?: string | null
           ts?: string
           write_kind?: string
         }
@@ -295,24 +295,24 @@ export interface Database {
       tombstones: {
         Row: {
           doc_id: string
-          doc_kind: string
           fs_deleted_at: string
           id: number
           parent_id: string | null
+          table_id: string
         }
         Insert: {
           doc_id: string
-          doc_kind: string
           fs_deleted_at: string
           id?: never
           parent_id?: string | null
+          table_id: string
         }
         Update: {
           doc_id?: string
-          doc_kind?: string
           fs_deleted_at?: string
           id?: never
           parent_id?: string | null
+          table_id?: string
         }
       }
       txns: {
@@ -509,7 +509,7 @@ export interface Database {
         Returns: string
       }
       get_document_table_spec: {
-        Args: { doc_kind: string }
+        Args: { table_id: string }
         Returns: unknown
       }
       get_recommended_contract_ids:
