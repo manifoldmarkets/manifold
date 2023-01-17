@@ -616,7 +616,7 @@ as $$
     where user_events.user_id = uid
     and user_events.data->>'name' = 'view market card'
     and user_events.data->>'contractId' = crf.contract_id
-    and (user_events.data->>'timestamp')::bigint > now() - interval '1 day'
+    and (user_events.data->>'timestamp')::bigint > extract(epoch from (now() - interval '1 day'))
   )
   order by dot(urf, crf) desc
 $$;
