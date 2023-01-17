@@ -562,6 +562,30 @@ language sql as $$
   );
 $$;
 
+create or replace function get_related_contract_ids(source_id text)
+    returns table(contract_id text, distance float)
+    immutable parallel safe
+    language sql
+as $$
+
+WITH target_contract AS (
+    SELECT *
+    FROM contract_recommendation_features
+    WHERE contract_id = source_id
+)
+-- I couldn't figure out how to extract the distance algorithm into a function accepting a row/record from
+-- contract_recommendation_features as a parameter so it's inline here.
+SELECT crf.contract_id,
+       sqrt((crf.f0 - target_contract.f0)^2 +
+            (crf.f1 - target_contract.f1)^2 +
+            (crf.f2 - target_contract.f2)^2 +
+            (crf.f3 - target_contract.f3)^2 +
+            (crf.f4 - target_contract.f4)^2) AS distance
+FROM contract_recommendation_features as crf, target_contract
+WHERE crf.contract_id != target_contract.contract_id
+ORDER BY distance
+$$;
+
 -- Use cached tables of user and contract features to computed the top scoring
 -- markets for a user.
 create or replace function get_recommended_contract_ids(uid text)
@@ -592,7 +616,7 @@ as $$
     where user_events.user_id = uid
     and user_events.data->>'name' = 'view market card'
     and user_events.data->>'contractId' = crf.contract_id
-    and user_events.ts > now() - interval '1 day'
+    and (user_events.data->>'timestamp')::bigint > now() - interval '1 day'
   )
   order by dot(urf, crf) desc
 $$;
@@ -605,6 +629,26 @@ as $$
   select array_agg(data) from (
     select data
     from get_recommended_contract_ids(uid)
+    left join contracts
+    on contracts.id = contract_id
+    -- Not resolved.
+    where not (data->>'isResolved')::boolean
+    -- Not closed: closeTime is greater than now.
+    and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
+    -- Not unlisted.
+    and not (data->>'visibility') = 'unlisted'
+    limit count
+  ) as rec_contracts
+$$;
+
+create or replace function get_related_contracts(cid text, count int)
+returns JSONB[]
+immutable parallel safe
+language sql
+as $$
+  select array_agg(data) from (
+    select data
+    from get_related_contract_ids(cid)
     left join contracts
     on contracts.id = contract_id
     -- Not resolved.
