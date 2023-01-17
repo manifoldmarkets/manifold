@@ -2,9 +2,7 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import { log } from '../utils'
-import { updateContractMetrics } from '../update-contract-metrics'
 import { updateUserMetrics } from '../update-user-metrics'
-import { updateGroupMetrics } from '../update-group-metrics'
 
 async function updateMetrics() {
   log('Updating user metrics...')
