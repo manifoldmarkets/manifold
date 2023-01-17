@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { chunk, groupBy } from 'lodash'
+import { chunk, groupBy, sortBy } from 'lodash'
 
 import {
   getUser,
@@ -187,7 +187,7 @@ const loadUserContractBets = async (
     const { data } = (await run(query)) as { data: JsonData<Bet>[] }
     bets.push(...data.map((d) => d.data))
   }
-  return bets
+  return sortBy(bets, bet => bet.createdTime)
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {
