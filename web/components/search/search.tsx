@@ -2,14 +2,13 @@ import { Combobox } from '@headlessui/react'
 import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { searchContracts } from 'web/lib/service/algolia'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
-import { searchUsers } from 'web/lib/supabase/users'
+import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { defaultPages, PageData, searchPages } from './query-pages'
@@ -92,7 +91,7 @@ const Results = (props: { query: string }) => {
   const [{ pageHits, userHits, groupHits, marketHits }, setSearchResults] =
     useState({
       pageHits: [] as PageData[],
-      userHits: [] as User[],
+      userHits: [] as UserSearchResult[],
       groupHits: [] as SearchGroupInfo[],
       marketHits: [] as Contract[],
     })
@@ -181,7 +180,7 @@ const MarketResults = (props: { markets: Contract[] }) => {
   )
 }
 
-const UserResults = (props: { users: User[] }) => {
+const UserResults = (props: { users: UserSearchResult[] }) => {
   if (!props.users.length) return null
   return (
     <>
