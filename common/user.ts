@@ -53,9 +53,6 @@ export type User = {
 
 export type PrivateUser = {
   id: string // same as User.id
-  /** @deprecated - username on private user is not kept up to date **/
-  username: string // denormalized from User
-
   email?: string
   // TODO: move these to non-optional in a couple weeks so we can include them in a fb query
   weeklyTrendingEmailSent?: boolean
