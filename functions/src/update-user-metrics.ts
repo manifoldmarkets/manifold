@@ -28,6 +28,7 @@ import { CollectionReference } from 'firebase-admin/firestore'
 import { createSupabaseClient } from './supabase/init'
 import { SupabaseClient, run } from '../../common/supabase/utils'
 import { JsonData } from 'common/supabase/json-data'
+import { filterDefined } from 'common/util/array'
 
 const firestore = admin.firestore()
 
@@ -46,7 +47,7 @@ export const updateusermetrics = newEndpointNoAuth(
     timeoutSeconds: 2000,
     memory: '16GiB',
     minInstances: 1,
-    secrets: ['API_SECRET'],
+    secrets: ['API_SECRET', 'SUPABASE_KEY'],
   },
   async (_req) => {
     await updateUserMetrics()
@@ -94,7 +95,14 @@ export async function updateUserMetrics() {
         metricEligibleContracts
           .filter((c) => c.uniqueBettorIds?.includes(user.id))
           .map((c) => c.id)
-      )
+      ).catch((e) => {
+        console.error(`Error fetching bets for user ${user.id}: ${e.message}`)
+        return undefined
+      })
+
+      if (!metricRelevantBets) {
+        return undefined
+      }
 
       const portfolioHistory = await loadPortfolioHistory(user.id, now)
       const newCreatorTraders = calculateCreatorTraders(userContracts)
@@ -150,7 +158,7 @@ export async function updateUserMetrics() {
     10
   )
 
-  for (const { user, fields } of userUpdates) {
+  for (const { user, fields } of filterDefined(userUpdates)) {
     if (hasChanges(user, fields)) {
       writer.update(firestore.collection('users').doc(user.id), fields)
     }
@@ -168,16 +176,17 @@ const loadUserContractBets = async (
   userId: string,
   contractIds: string[]
 ) => {
-  const betDocs = await mapAsync(contractIds, async (cid) => {
+  const bets: Bet[] = []
+  for (const cid of contractIds) {
     const query = db
       .from('contract_bets')
       .select('data')
       .eq('data->>userId', userId)
       .eq('contract_id', cid)
     const { data } = (await run(query)) as { data: JsonData<Bet>[] }
-    return data.map((d) => d.data)
-  })
-  return betDocs.flat()
+    bets.push(...data.map((d) => d.data))
+  }
+  return bets.flat()
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {
