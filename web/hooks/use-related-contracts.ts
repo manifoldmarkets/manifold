@@ -10,7 +10,6 @@ const PAGE_SIZE = 5
 
 export const useRelatedMarkets = (contract: Contract) => {
   const [savedContracts, setSavedContracts] = useState<Contract[]>()
-  const lastDistance = useRef(0)
   const page = useRef(0)
   const privateUser = usePrivateUser()
   const loadMore = useCallback(async () => {
@@ -18,7 +17,7 @@ export const useRelatedMarkets = (contract: Contract) => {
       .rpc('get_related_contracts' as any, {
         cid: contract.id,
         lim: PAGE_SIZE,
-        start: lastDistance.current,
+        start: page,
       })
       .then((res) => {
         if (!res.data || res.data.length <= 0) return []
@@ -26,7 +25,6 @@ export const useRelatedMarkets = (contract: Contract) => {
         res.data.map((d: { data: Contract; distance: number }) => {
           newContracts.push(d.data)
         })
-        lastDistance.current = res.data[res.data.length - 1].distance
         return newContracts
       })
     const groupContracts = contract.groupSlugs
@@ -40,10 +38,10 @@ export const useRelatedMarkets = (contract: Contract) => {
             if (!res.data || res.data.length <= 0) return []
 
             const newContracts = res.data.map((d: { data: Contract }) => d.data)
-            page.current++
             return newContracts
           })
       : []
+    page.current++
 
     const shuffledContracts = relatedContracts
       .concat(groupContracts)
@@ -56,7 +54,7 @@ export const useRelatedMarkets = (contract: Contract) => {
     )
 
     // get markets in the same group
-  }, [contract.id, privateUser])
+  }, [contract.groupSlugs, contract.id, privateUser])
 
   useEffect(() => {
     loadMore()

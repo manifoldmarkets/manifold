@@ -631,12 +631,7 @@ as $$
     from get_recommended_contract_ids(uid)
     left join contracts
     on contracts.id = contract_id
-    -- Not resolved.
-    where not (data->>'isResolved')::boolean
-    -- Not closed: closeTime is greater than now.
-    and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
-    -- Not unlisted.
-    and not (data->>'visibility') = 'unlisted'
+    where is_valid_contract(data)
     limit count
   ) as rec_contracts
 $$;
@@ -667,12 +662,7 @@ select * from (
   from get_related_contract_ids(cid)
     left join contracts
     on contracts.id = contract_id
-    -- Not resolved.
-    where not (data->>'isResolved')::boolean
-    -- Not closed: closeTime is greater than now.
-    and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
-    -- Not unlisted.
-    and not (data->>'visibility') = 'unlisted'
+    where is_valid_contract(data)
   limit lim
   offset start
   ) as rec_contracts
@@ -685,8 +675,33 @@ immutable parallel safe
 language sql
 as $$
 SELECT data FROM contracts, jsonb_array_elements(data->'groupSlugs')
-    AS elem WHERE elem ?| group_slugs
-    order by (to_jsonb(data)->>'popularityScore')::float desc
+    AS elem WHERE elem ?| group_slugs and
+    is_valid_contract(data)
+    order by (to_jsonb(data)->>'uniqueBettors7Days')::float desc
     offset start
     limit lim;
+$$;
+
+CREATE OR REPLACE FUNCTION is_valid_contract(data JSONB)
+    RETURNS BOOLEAN
+AS $$
+BEGIN
+    RETURN (
+        -- Not resolved.
+        NOT (data->>'isResolved')::BOOLEAN
+        -- Not closed: closeTime is greater than now + 10 minutes.
+        AND (data->>'closeTime')::BIGINT > get_time() + 10 * 60000
+        -- Not unlisted.
+        AND NOT (data->>'visibility') = 'unlisted'
+        );
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION get_time()
+    RETURNS BIGINT
+    LANGUAGE SQL
+    IMMUTABLE PARALLEL SAFE
+AS $$
+SELECT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT;
 $$;
