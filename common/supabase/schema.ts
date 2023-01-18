@@ -565,19 +565,10 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
-      is_valid_contract:
-        | {
-            Args: { data: Json; now: number }
-            Returns: boolean
-          }
-        | {
-            Args: { data: Json; now: string }
-            Returns: boolean
-          }
-        | {
-            Args: { data: Json }
-            Returns: boolean
-          }
+      is_valid_contract: {
+        Args: { data: Json }
+        Returns: boolean
+      }
       replicate_writes_process_one: {
         Args: { r: unknown }
         Returns: boolean
