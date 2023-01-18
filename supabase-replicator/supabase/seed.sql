@@ -641,7 +641,12 @@ language sql
 as $$
   select array_agg(data) from (
     select data
-    from get_recommended_contract_ids(uid)
+    from (
+      select * from get_recommended_contract_ids(uid)
+      union 
+      -- Default recommendations from this particular user if none for you.
+      select * from get_recommended_contract_ids('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
+    ) as rec_contract_ids
     left join contracts
     on contracts.id = contract_id
     -- Not resolved.
