@@ -670,14 +670,14 @@ $$;
 
 -- create a function that searches for contracts with any groupSlug in the given array
 create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, start int)
-returns table(data jsonb)
-immutable parallel safe
-language sql
+    returns table(data jsonb)
+    immutable parallel safe
+    language sql
 as $$
 SELECT data FROM contracts, jsonb_array_elements(data->'groupSlugs')
     AS elem WHERE elem ?| group_slugs and
     is_valid_contract(data)
-    order by (to_jsonb(data)->>'uniqueBettors7Days')::float desc
+    order by (to_jsonb(data)->>'uniqueBettors7Days')::int desc, to_jsonb(data)->>'slug'
     offset start
     limit lim;
 $$;
