@@ -6,7 +6,8 @@ import { usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
 
-const PAGE_SIZE = 5
+const GROUPS_PAGE_SIZE = 6
+const RELATED_PAGE_SIZE = 3
 
 export const useRelatedMarkets = (contract: Contract) => {
   const [savedContracts, setSavedContracts] = useState<Contract[]>()
@@ -16,8 +17,8 @@ export const useRelatedMarkets = (contract: Contract) => {
     const relatedContracts = await db
       .rpc('get_related_contracts' as any, {
         cid: contract.id,
-        lim: PAGE_SIZE,
-        start: page,
+        lim: RELATED_PAGE_SIZE,
+        start: page.current * RELATED_PAGE_SIZE,
       })
       .then((res) => {
         if (!res.data || res.data.length <= 0) return []
@@ -31,8 +32,8 @@ export const useRelatedMarkets = (contract: Contract) => {
       ? await db
           .rpc('search_contracts_by_group_slugs' as any, {
             group_slugs: contract.groupSlugs,
-            lim: PAGE_SIZE,
-            start: page.current * PAGE_SIZE,
+            lim: GROUPS_PAGE_SIZE,
+            start: page.current * GROUPS_PAGE_SIZE,
           })
           .then((res) => {
             if (!res.data || res.data.length <= 0) return []
