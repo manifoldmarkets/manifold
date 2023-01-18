@@ -668,7 +668,6 @@ select array_agg(data) from (
   ) as rel_contracts
 $$;
 
--- create a function that searches for contracts with any groupSlug in the given array
 create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, start int)
     returns JSONB[]
     immutable parallel safe
