@@ -1,9 +1,6 @@
 import clsx from 'clsx'
 
-import {
-  formatMoney,
-  formatWithCommas,
-} from 'common/util/format'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
