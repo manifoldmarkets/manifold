@@ -9,7 +9,6 @@ import { Spacer } from 'web/components/layout/spacer'
 import {
   Contract,
   getContractFromSlug,
-  getRelatedContracts,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
@@ -60,6 +59,7 @@ import { BackRow } from 'web/components/contract/back-row'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
+import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -417,21 +417,19 @@ const RelatedContractsWidget = memo(function RecommendedContractsWidget(props: {
   contract: Contract
 }) {
   const { contract } = props
-  const user = useUser()
-  const [recommendations, setRecommendations] = useState<Contract[]>([])
-  useEffect(() => {
-    if (user) {
-      getRelatedContracts(contract, user.id, 6).then(setRecommendations)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contract.id, user?.id])
-  if (recommendations.length === 0) {
+  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(contract)
+
+  if (!relatedMarkets || relatedMarkets.length === 0) {
     return null
   }
   return (
     <Col className="mt-2 gap-2 px-2 sm:px-1">
       <Title className="text-gray-700" text="Related markets" />
-      <ContractsGrid contracts={recommendations} trackingPostfix=" related" />
+      <ContractsGrid
+        contracts={relatedMarkets ?? []}
+        trackingPostfix=" related"
+        loadMore={loadMore}
+      />
     </Col>
   )
 })

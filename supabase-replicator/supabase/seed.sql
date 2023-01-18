@@ -575,28 +575,15 @@ language sql as $$
   );
 $$;
 
-create or replace function get_related_contract_ids(source_id text)
-    returns table(contract_id text, distance float)
-    immutable parallel safe
+create or replace function calculate_distance(row1 contract_recommendation_features, row2 contract_recommendation_features)
+    returns float
     language sql
 as $$
-
-WITH target_contract AS (
-    SELECT *
-    FROM contract_recommendation_features
-    WHERE contract_id = source_id
-)
--- I couldn't figure out how to extract the distance algorithm into a function accepting a row/record from
--- contract_recommendation_features as a parameter so it's inline here.
-SELECT crf.contract_id,
-       sqrt((crf.f0 - target_contract.f0)^2 +
-            (crf.f1 - target_contract.f1)^2 +
-            (crf.f2 - target_contract.f2)^2 +
-            (crf.f3 - target_contract.f3)^2 +
-            (crf.f4 - target_contract.f4)^2) AS distance
-FROM contract_recommendation_features as crf, target_contract
-WHERE crf.contract_id != target_contract.contract_id
-ORDER BY distance
+select sqrt((row1.f0 - row2.f0)^2 +
+            (row1.f1 - row2.f1)^2 +
+            (row1.f2 - row2.f2)^2 +
+            (row1.f3 - row2.f3)^2 +
+            (row1.f4 - row2.f4)^2)
 $$;
 
 -- Use cached tables of user and contract features to computed the top scoring
@@ -649,32 +636,92 @@ as $$
     ) as rec_contract_ids
     left join contracts
     on contracts.id = contract_id
-    -- Not resolved.
-    where not (data->>'isResolved')::boolean
-    -- Not closed: closeTime is greater than now.
-    and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
-    -- Not unlisted.
-    and not (data->>'visibility') = 'unlisted'
+    where is_valid_contract(data)
     limit count
   ) as rec_contracts
 $$;
 
-create or replace function get_related_contracts(cid text, count int)
-returns JSONB[]
-immutable parallel safe
-language sql
+create or replace function get_related_contract_ids(source_id text)
+    returns table(contract_id text, distance float)
+    immutable parallel safe
+    language sql
 as $$
-  select array_agg(data) from (
-    select data
-    from get_related_contract_ids(cid)
+with target_contract as (
+    select *
+    from contract_recommendation_features
+    where contract_id = source_id
+)
+select crf.contract_id, calculate_distance(crf, target_contract) as distance
+from contract_recommendation_features as crf, target_contract
+where crf.contract_id != target_contract.contract_id
+order by distance
+$$;
+
+create or replace function get_related_contracts(cid text, lim int, start int)
+    returns JSONB[]
+    immutable parallel safe
+    language sql
+as $$
+select array_agg(data) from (
+  select data
+  from get_related_contract_ids(cid)
     left join contracts
     on contracts.id = contract_id
-    -- Not resolved.
-    where not (data->>'isResolved')::boolean
-    -- Not closed: closeTime is greater than now.
-    and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
-    -- Not unlisted.
-    and not (data->>'visibility') = 'unlisted'
-    limit count
-  ) as rec_contracts
+    where is_valid_contract(data)
+  limit lim
+  offset start
+  ) as rel_contracts
+$$;
+
+create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, start int)
+    returns jsonb[]
+    immutable parallel safe
+    language sql
+as $$
+select array_agg(data) from (
+    select data
+    from contracts,
+      jsonb_array_elements(data -> 'groupSlugs')
+          as elem
+    where elem ?| group_slugs
+    and is_valid_contract(data)
+    order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
+    offset start limit lim
+    ) as search_contracts
+$$;
+
+create or replace function is_valid_contract(data jsonb)
+    returns boolean
+as $$
+select
+        not (data->>'isResolved')::boolean
+        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
+        and not (data->>'visibility') = 'unlisted'
+$$ language sql;
+
+create or replace function get_time()
+    returns bigint
+    language sql
+    immutable parallel safe
+as $$
+select (extract(epoch from now()) * 1000)::bigint;
+$$;
+
+
+create or replace function search_contracts_by_group_slugs_for_creator(creator_id text,group_slugs text[], lim int, start int)
+    returns jsonb[]
+    immutable parallel safe
+    language sql
+as $$
+select array_agg(data) from (
+    select data
+    from contracts,
+         jsonb_array_elements(data -> 'groupSlugs')
+             as elem
+    where elem ?| group_slugs
+      and is_valid_contract(data)
+      and to_jsonb(data)->>'creatorId' = creator_id
+    order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
+    offset start limit lim
+) as search_contracts
 $$;
