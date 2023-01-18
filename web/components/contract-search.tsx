@@ -144,12 +144,10 @@ export function ContractSearch(props: {
         sort === 'relevance'
           ? searchIndex
           : searchClient.initIndex(getIndexName(sort))
-      const numericFilters = query
-        ? []
-        : [
-            openClosedFilter === 'open' ? `closeTime > ${Date.now()}` : '',
-            openClosedFilter === 'closed' ? `closeTime <= ${Date.now()}` : '',
-          ].filter((f) => f)
+      const numericFilters = [
+        openClosedFilter === 'open' ? `closeTime > ${Date.now()}` : '',
+        openClosedFilter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+      ].filter((f) => f)
       const results = await index.search(query, {
         facetFilters,
         numericFilters,
@@ -303,19 +301,17 @@ function ContractSearchControls(props: {
       : '',
     ...(additionalFilter?.facetFilters ?? []),
   ]
-  const facetFilters = query
-    ? additionalFilters
-    : [
-        ...additionalFilters,
-        ...(additionalFilter?.nonQueryFacetFilters ?? []),
-        additionalFilter?.creatorId || additionalFilter?.groupSlug
-          ? ''
-          : 'visibility:public',
+  const facetFilters = [
+    ...additionalFilters,
+    ...(additionalFilter?.nonQueryFacetFilters ?? []),
+    additionalFilter?.creatorId || additionalFilter?.groupSlug
+      ? ''
+      : 'visibility:public',
 
-        filter === 'open' ? 'isResolved:false' : '',
-        filter === 'closed' ? 'isResolved:false' : '',
-        filter === 'resolved' ? 'isResolved:true' : '',
-      ].filter((f) => f)
+    filter === 'open' ? 'isResolved:false' : '',
+    filter === 'closed' ? 'isResolved:false' : '',
+    filter === 'resolved' ? 'isResolved:true' : '',
+  ].filter((f) => f)
 
   const openClosedFilter =
     filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
