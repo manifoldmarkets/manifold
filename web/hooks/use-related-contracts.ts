@@ -37,21 +37,26 @@ export const useRelatedMarkets = (contract: Contract) => {
           .then((res) => {
             if (!res.data || res.data.length <= 0) return []
 
-            const newContracts = res.data.map((d: { data: Contract }) => d.data)
-            return newContracts
+            return res.data
+              .map((d: { data: Contract }) => d.data)
+              .filter((c) => c.id !== contract.id)
           })
       : []
-    page.current++
 
     const shuffledContracts = relatedContracts
       .concat(groupContracts)
       .sort(() => Math.random() - 0.5)
 
-    setSavedContracts((contracts) =>
-      uniqBy(buildArray(contracts, shuffledContracts), (c) => c.id).filter(
-        (c) => !isContractBlocked(privateUser, c)
+    setSavedContracts((contracts) => {
+      const newContracts = uniqBy(
+        buildArray(contracts, shuffledContracts),
+        (c) => c.id
       )
-    )
+      // if we actually got a new batch of contracts, increment the page
+      if (newContracts.length > (contracts?.length ?? 0)) page.current += 1
+
+      return newContracts.filter((c) => !isContractBlocked(privateUser, c))
+    })
 
     // get markets in the same group
   }, [contract.groupSlugs, contract.id, privateUser])
