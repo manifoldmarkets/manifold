@@ -1,6 +1,12 @@
 import { uniqBy } from 'lodash'
 import { Contract } from 'common/contract'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { buildArray } from 'common/util/array'
 import { usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
@@ -11,49 +17,54 @@ const RELATED_PAGE_SIZE = 3
 
 export const useRelatedMarkets = (contract: Contract) => {
   const [savedContracts, setSavedContracts] = useState<Contract[]>()
-  const page = useRef(0)
+  const relatedPage = useRef(0)
+  const groupsPage = useRef(0)
+  const creatorPage = useRef(0)
   const privateUser = usePrivateUser()
   const loadMore = useCallback(async () => {
-    // Perhaps we should prioritize the market creator's markets in the group
-    const relatedContracts = await db
-      .rpc('get_related_contracts' as any, {
-        cid: contract.id,
-        lim: RELATED_PAGE_SIZE,
-        start: page.current * RELATED_PAGE_SIZE,
+    const setContracts = (
+      contracts: Contract[],
+      page: MutableRefObject<number>
+    ) => {
+      setSavedContracts((sc) => {
+        const newContracts = uniqBy(buildArray(sc, contracts), (c) => c.id)
+        page.current += 1
+        return newContracts.filter(
+          (c) => !isContractBlocked(privateUser, c) && c.id !== contract.id
+        )
       })
-      .then((res) => res.data ?? ([] as Contract[]))
-    const groupContracts = contract.groupSlugs
-      ? await db
-          .rpc('search_contracts_by_group_slugs' as any, {
-            group_slugs: contract.groupSlugs,
-            lim: GROUPS_PAGE_SIZE,
-            start: page.current * GROUPS_PAGE_SIZE,
-          })
-          .then((res) =>
-            ((res.data ?? []) as Contract[]).filter((c) => c.id !== contract.id)
-          )
-      : []
+    }
 
-    const shuffledContracts = relatedContracts
-      .concat(groupContracts)
-      .sort(() => Math.random() - 0.5)
+    db.rpc('get_related_contracts' as any, {
+      cid: contract.id,
+      lim: RELATED_PAGE_SIZE,
+      start: relatedPage.current * RELATED_PAGE_SIZE,
+    }).then((res) =>
+      res.data ? setContracts(res.data, relatedPage) : undefined
+    )
 
-    setSavedContracts((contracts) => {
-      const newContracts = uniqBy(
-        buildArray(contracts, shuffledContracts),
-        (c) => c.id
-      )
-      // if we actually got a new batch of contracts, increment the page
-      if (newContracts.length > (contracts?.length ?? 0)) page.current += 1
-
-      return newContracts.filter((c) => !isContractBlocked(privateUser, c))
-    })
-
-    // get markets in the same group
-  }, [contract.groupSlugs, contract.id, privateUser])
+    if (!contract.groupSlugs?.length) return
+    db.rpc('search_contracts_by_group_slugs' as any, {
+      group_slugs: contract.groupSlugs,
+      lim: GROUPS_PAGE_SIZE,
+      start: groupsPage.current * GROUPS_PAGE_SIZE,
+    }).then((res) =>
+      res.data ? setContracts(res.data, groupsPage) : undefined
+    )
+    db.rpc('search_contracts_by_group_slugs_for_creator' as any, {
+      creator_id: contract.creatorId,
+      group_slugs: contract.groupSlugs,
+      lim: GROUPS_PAGE_SIZE,
+      start: creatorPage.current * GROUPS_PAGE_SIZE,
+    }).then((res) =>
+      res.data ? setContracts(res.data, creatorPage) : undefined
+    )
+  }, [contract.creatorId, contract.groupSlugs, contract.id, privateUser])
 
   useEffect(() => {
-    loadMore()
+    // Don't fire multiple times on load so that we lose the page number
+    const timeout = setTimeout(loadMore, 1000)
+    return () => clearTimeout(timeout)
   }, [loadMore])
 
   return { contracts: savedContracts, loadMore }

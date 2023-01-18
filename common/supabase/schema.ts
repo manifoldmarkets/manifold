@@ -530,7 +530,7 @@ export interface Database {
         Returns: Json[]
       }
       get_related_contract_ids: {
-        Args: { source_id: string; minimum_distance: number }
+        Args: { source_id: string }
         Returns: { contract_id: string; distance: number }[]
       }
       get_related_contracts: {
@@ -579,6 +579,15 @@ export interface Database {
       }
       search_contracts_by_group_slugs: {
         Args: { group_slugs: string[]; lim: number; start: number }
+        Returns: Json[]
+      }
+      search_contracts_by_group_slugs_for_creator: {
+        Args: {
+          creator_id: string
+          group_slugs: string[]
+          lim: number
+          start: number
+        }
         Returns: Json[]
       }
       set_limit: {
