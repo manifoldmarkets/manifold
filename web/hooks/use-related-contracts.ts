@@ -14,6 +14,7 @@ export const useRelatedMarkets = (contract: Contract) => {
   const page = useRef(0)
   const privateUser = usePrivateUser()
   const loadMore = useCallback(async () => {
+    // Perhaps we should prioritize the market creator's markets in the group
     const relatedContracts = await db
       .rpc('get_related_contracts' as any, {
         cid: contract.id,
