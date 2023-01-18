@@ -28,7 +28,14 @@ export const onUpdateContract = functions
       await handleUpdatedCloseTime(previousContract, contract, eventId)
     }
 
-    await revalidateContractStaticProps(contract)
+    if (
+      !isEqual(
+        getPropsThatTriggerRevalidation(previousContract),
+        getPropsThatTriggerRevalidation(contract)
+      )
+    ) {
+      await revalidateContractStaticProps(contract)
+    }
   })
 
 async function handleUpdatedCloseTime(
@@ -91,6 +98,17 @@ async function handleContractGroupUpdated(
       .collection(`groups/${groupId}/groupContracts`)
       .doc(contract.id)
       .delete()
+  }
+}
+
+const getPropsThatTriggerRevalidation = (contract: Contract) => {
+  const { volume, question, closeTime, description, groupLinks } = contract
+  return {
+    volume,
+    question,
+    closeTime,
+    description,
+    groupLinks,
   }
 }
 
