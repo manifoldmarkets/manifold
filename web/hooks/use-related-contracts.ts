@@ -44,8 +44,11 @@ export const useRelatedMarkets = (contract: Contract) => {
     )
 
     if (!contract.groupSlugs?.length) return
+    const groupSlugsToUse = contract.groupSlugs.filter(
+      (slug) => !['spam', 'improperly-resolved'].includes(slug)
+    )
     db.rpc('search_contracts_by_group_slugs' as any, {
-      group_slugs: contract.groupSlugs,
+      group_slugs: groupSlugsToUse,
       lim: GROUPS_PAGE_SIZE,
       start: groupsPage.current * GROUPS_PAGE_SIZE,
     }).then((res) =>
@@ -53,7 +56,7 @@ export const useRelatedMarkets = (contract: Contract) => {
     )
     db.rpc('search_contracts_by_group_slugs_for_creator' as any, {
       creator_id: contract.creatorId,
-      group_slugs: contract.groupSlugs,
+      group_slugs: groupSlugsToUse,
       lim: GROUPS_PAGE_SIZE,
       start: creatorPage.current * GROUPS_PAGE_SIZE,
     }).then((res) =>
