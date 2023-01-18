@@ -30,7 +30,7 @@ import { filterDefined } from '../../common/util/array'
 const firestore = admin.firestore()
 
 export const scheduleUpdateUserMetrics = functions.pubsub
-  .schedule('every 15 minutes')
+  .schedule('every 30 minutes')
   .onRun(async () => {
     try {
       console.log(await invokeFunction('updateusermetrics'))
@@ -41,7 +41,7 @@ export const scheduleUpdateUserMetrics = functions.pubsub
 
 export const updateusermetrics = newEndpointNoAuth(
   {
-    timeoutSeconds: 2000,
+    timeoutSeconds: 4000,
     memory: '16GiB',
     minInstances: 1,
     secrets: ['API_SECRET', 'SUPABASE_KEY'],
