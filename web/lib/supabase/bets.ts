@@ -1,7 +1,5 @@
 import { db } from './db'
-import { run } from 'common/supabase/utils'
-import { Bet } from 'common/bet'
-import { JsonData } from 'common/supabase/json-data'
+import { run, selectJson } from 'common/supabase/utils'
 import { BetFilter } from 'web/lib/firebase/bets'
 
 export async function getOlderBets(
@@ -9,29 +7,26 @@ export async function getOlderBets(
   beforeTime: number,
   limit: number
 ) {
-  const query = db
-    .from('contract_bets')
-    .select('data')
+  const query = selectJson(db, 'contract_bets')
     .eq('contract_id', contractId)
     .lt('data->>createdTime', beforeTime)
     .order('data->>createdTime', { ascending: false } as any)
     .limit(limit)
   const { data } = await run(query)
 
-  return data.map((d: JsonData<Bet>) => d.data)
+  return data.map((r) => r.data)
 }
 
 export const getBets = async (options?: BetFilter) => {
   const query = getBetsQuery(options)
-  const { data } = (await run(query)) as { data: JsonData<Bet>[] }
-  return data.map((d) => d.data)
+  const { data } = await run(query)
+  return data.map((r) => r.data)
 }
 
 export const getBetsQuery = (options?: BetFilter) => {
-  let q = db
-    .from('contract_bets')
-    .select('data')
-    .order('data->>createdTime', { ascending: options?.order === 'asc' } as any)
+  let q = selectJson(db, 'contract_bets').order('data->>createdTime', {
+    ascending: options?.order === 'asc',
+  } as any)
 
   if (options?.contractId) {
     q = q.eq('contract_id', options.contractId)

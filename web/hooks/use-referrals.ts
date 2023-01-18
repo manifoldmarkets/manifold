@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { SearchUserInfo } from 'web/lib/supabase/users'
 import { getReferrals } from 'web/lib/supabase/referrals'
+
+type UserSearchResult = Awaited<ReturnType<typeof getReferrals>>[number]
 
 export const useReferrals = (userId: string) => {
   const [referredUsers, setReferredUsers] = useState<
-    SearchUserInfo[] | undefined
+    UserSearchResult[] | undefined
   >()
 
   useEffect(() => {

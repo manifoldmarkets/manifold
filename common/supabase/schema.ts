@@ -530,7 +530,7 @@ export interface Database {
         Returns: Json[]
       }
       get_related_contract_ids: {
-        Args: { source_id: string }
+        Args: { source_id: string; minimum_distance: number }
         Returns: { contract_id: string; distance: number }[]
       }
       get_related_contracts: {

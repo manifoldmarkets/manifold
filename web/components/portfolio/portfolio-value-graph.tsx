@@ -31,38 +31,26 @@ export const PortfolioTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
   )
 }
 
-const getY = (mode: GraphMode, p: PortfolioMetrics) =>
-  p.balance + p.investmentValue - (mode === 'profit' ? p.totalDeposits : 0)
-
-export function getPoints(mode: GraphMode, history: PortfolioMetrics[]) {
-  return history.map((p) => ({
-    x: p.timestamp,
-    y: getY(mode, p),
-    obj: p,
-  }))
-}
-
 export const PortfolioGraph = (props: {
   mode: 'profit' | 'value'
-  history: PortfolioMetrics[]
+  points: HistoryPoint<Partial<PortfolioMetrics>>[]
   width: number
   height: number
   viewScaleProps: viewScale
-  onMouseOver?: (p: HistoryPoint<PortfolioMetrics> | undefined) => void
+  onMouseOver?: (p: HistoryPoint<Partial<PortfolioMetrics>> | undefined) => void
 }) => {
-  const { mode, history, onMouseOver, width, height, viewScaleProps } = props
-  const { data, minDate, maxDate, minValue, maxValue } = useMemo(() => {
-    const data = getPoints(mode, history)
+  const { mode, points, onMouseOver, width, height, viewScaleProps } = props
+  const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const minDate = min(data.map((d) => d.x))!
+    const minDate = min(points.map((d) => d.x))!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const maxDate = max(data.map((d) => d.x))!
+    const maxDate = max(points.map((d) => d.x))!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const minValue = min(data.map((d) => d.y))!
+    const minValue = min(points.map((d) => d.y))!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const maxValue = max(data.map((d) => d.y))!
-    return { data, minDate, maxDate, minValue, maxValue }
-  }, [mode, history])
+    const maxValue = max(points.map((d) => d.y))!
+    return { minDate, maxDate, minValue, maxValue }
+  }, [points])
 
   return (
     <ControllableSingleValueHistoryChart
@@ -73,7 +61,7 @@ export const PortfolioGraph = (props: {
       yScale={scaleLinear([minValue, maxValue], [height - MARGIN_Y, 0])}
       viewScaleProps={viewScaleProps}
       yKind="Ṁ"
-      data={data}
+      data={points}
       curve={curveStepAfter}
       Tooltip={PortfolioTooltip}
       onMouseOver={onMouseOver}

@@ -397,7 +397,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   bets: Bet[]
 }) {
   const { contract } = props
-  const [bets, setBets] = useState(props.bets)
+  const [bets, setBets] = useState(() => props.bets.filter((b) => !b.isAnte))
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
   const oldestBet = bets[bets.length - 1]

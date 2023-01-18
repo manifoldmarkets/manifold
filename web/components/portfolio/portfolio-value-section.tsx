@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
-import { memo, ReactNode, useState } from 'react'
+import { memo, ReactNode, useState, useMemo } from 'react'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -22,6 +22,19 @@ export const PortfolioValueSection = memo(
     const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('weekly')
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
     const [graphMode, setGraphMode] = useState<GraphMode>('profit')
+    const graphPoints = useMemo(
+      () =>
+        portfolioHistory?.map((p) => ({
+          x: p.timestamp,
+          y:
+            p.balance +
+            p.investmentValue -
+            (graphMode === 'profit' ? p.totalDeposits : 0),
+          obj: p,
+        })),
+      [portfolioHistory, graphMode]
+    )
+
     const [graphDisplayNumber, setGraphDisplayNumber] = useState<
       number | string | null
     >(null)
@@ -52,7 +65,7 @@ export const PortfolioValueSection = memo(
       setGraphViewYScale(undefined)
     })
     // placeholder when loading
-    if (portfolioHistory === undefined || !lastPortfolioMetrics) {
+    if (graphPoints === undefined || !lastPortfolioMetrics) {
       return (
         <PortfolioValueSkeleton
           userId={userId}
@@ -70,7 +83,7 @@ export const PortfolioValueSection = memo(
               ---
             </div>
           }
-          graphElement={(width, height) => (
+          graphElement={(_width, height) => (
             <div
               style={{
                 height: `${height - 40}px`,
@@ -131,7 +144,7 @@ export const PortfolioValueSection = memo(
           <PortfolioGraph
             key={graphMode} // we need to reset axis scale state if mode changes
             mode={graphMode}
-            history={portfolioHistory}
+            points={graphPoints}
             width={width}
             height={height}
             viewScaleProps={viewScaleProps}

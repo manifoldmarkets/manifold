@@ -1,4 +1,4 @@
-import { isArray, uniq, zip } from 'lodash'
+import { uniq, zip } from 'lodash'
 import { dotProduct, factorizeMatrix } from './util/matrix'
 
 export type user_data = {
@@ -8,15 +8,13 @@ export type user_data = {
   viewedCardIds: string[]
   viewedPageIds: string[]
   likedIds: string[]
+  groupIds: string[]
 }
 
 export function getMarketRecommendations(
   userData: user_data[],
   iterations = 2000
 ) {
-  userData = userData.filter((userData) =>
-    Object.values(userData).some((obj) => isArray(obj) && obj.length > 0)
-  )
   const userIds = userData.map(({ userId }) => userId)
   const userIdToIndex = Object.fromEntries(userIds.map((id, i) => [id, i]))
 
@@ -30,6 +28,7 @@ export function getMarketRecommendations(
     viewedPageIds,
     betOnIds,
     likedIds,
+    groupIds,
   } of userData) {
     const userIndex = userIdToIndex[userId]
 
@@ -61,27 +60,35 @@ export function getMarketRecommendations(
         sparseMatrix[userIndex]['swiped-' + contractId] = 1
       }
     }
+
+    // Add new columns for groups.
+    for (const groupId of groupIds) {
+      sparseMatrix[userIndex]['group-' + groupId] = 1
+      columnSet.add('group-' + groupId)
+    }
   }
 
   const columns = Array.from(columnSet)
   console.log('rows', sparseMatrix.length, 'columns', columns.length)
 
-  // Fill in a few random 0's for each user and contract.
+  // Fill in a few random 0's for each user and contract/group column.
   // When users click a link directly to a market or search for it,
   // and bet on it, then we start to get only 1's in the matrix,
   // which is bad for the algorithm to distinguish between good and bad contracts:
   // it will just predict 1 for all contracts.
-  const contractColumns = Array.from(columnSet).filter(
+  const contractAndGroupColumns = Array.from(columnSet).filter(
     (column) => !column.startsWith('swiped-')
   )
   for (const row of sparseMatrix) {
     for (let i = 0; i < 10; i++) {
       const randColumn =
-        contractColumns[Math.floor(Math.random() * contractColumns.length)]
+        contractAndGroupColumns[
+          Math.floor(Math.random() * contractAndGroupColumns.length)
+        ]
       if (row[randColumn] === undefined) row[randColumn] = 0
     }
   }
-  for (const column of contractColumns) {
+  for (const column of contractAndGroupColumns) {
     for (let i = 0; i < 10; i++) {
       const randUser = Math.floor(Math.random() * sparseMatrix.length)
       if (sparseMatrix[randUser][column] === undefined)

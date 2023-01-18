@@ -23,6 +23,9 @@ export const dailyScoreIndex = searchClient.initIndex(
 
 const searchIndex = searchClient.initIndex(searchIndexName)
 export const searchContracts = async (query: string, limit: number) => {
-  const { hits } = await searchIndex.search(query, { hitsPerPage: limit })
+  const { hits } = await searchIndex.search(query, {
+    hitsPerPage: limit,
+    advancedSyntax: true,
+  })
   return hits as any as Contract[]
 }
