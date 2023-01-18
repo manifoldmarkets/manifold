@@ -535,7 +535,7 @@ export interface Database {
       }
       get_related_contracts: {
         Args: { cid: string; lim: number; start: number }
-        Returns: { data: Json; distance: number }[]
+        Returns: Json[]
       }
       get_time: {
         Args: Record<PropertyKey, never>
@@ -579,7 +579,7 @@ export interface Database {
       }
       search_contracts_by_group_slugs: {
         Args: { group_slugs: string[]; lim: number; start: number }
-        Returns: { data: Json }[]
+        Returns: Json[]
       }
       set_limit: {
         Args: { "": number }

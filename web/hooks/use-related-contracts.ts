@@ -21,12 +21,9 @@ export const useRelatedMarkets = (contract: Contract) => {
         start: page.current * RELATED_PAGE_SIZE,
       })
       .then((res) => {
-        if (!res.data || res.data.length <= 0) return []
-        const newContracts: Contract[] = []
-        res.data.map((d: { data: Contract; distance: number }) => {
-          newContracts.push(d.data)
-        })
-        return newContracts
+        if (!res.data) return []
+
+        return res.data as Contract[]
       })
     const groupContracts = contract.groupSlugs
       ? await db
@@ -36,11 +33,9 @@ export const useRelatedMarkets = (contract: Contract) => {
             start: page.current * GROUPS_PAGE_SIZE,
           })
           .then((res) => {
-            if (!res.data || res.data.length <= 0) return []
+            if (!res.data) return []
 
-            return res.data
-              .map((d: { data: Contract }) => d.data)
-              .filter((c) => c.id !== contract.id)
+            return (res.data as Contract[]).filter((c) => c.id !== contract.id)
           })
       : []
 

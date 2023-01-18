@@ -653,33 +653,37 @@ ORDER BY distance
 $$;
 
 create or replace function get_related_contracts(cid text, lim int, start int)
-    returns table(data jsonb, distance float)
+    returns JSONB[]
     immutable parallel safe
     language sql
 as $$
-select * from (
-  select data, distance
+select array_agg(data) from (
+  select data
   from get_related_contract_ids(cid)
     left join contracts
     on contracts.id = contract_id
     where is_valid_contract(data)
   limit lim
   offset start
-  ) as rec_contracts
+  ) as rel_contracts
 $$;
 
 -- create a function that searches for contracts with any groupSlug in the given array
 create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, start int)
-    returns table(data jsonb)
+    returns JSONB[]
     immutable parallel safe
     language sql
 as $$
-SELECT data FROM contracts, jsonb_array_elements(data->'groupSlugs')
-    AS elem WHERE elem ?| group_slugs and
-    is_valid_contract(data)
-    order by (to_jsonb(data)->>'uniqueBettors7Days')::int desc, to_jsonb(data)->>'slug'
-    offset start
-    limit lim;
+select array_agg(data) from (
+    SELECT data
+    FROM contracts,
+      jsonb_array_elements(data -> 'groupSlugs')
+          AS elem
+    WHERE elem ?| group_slugs
+    and is_valid_contract(data)
+    order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
+    offset start limit lim
+    ) as search_contracts
 $$;
 
 CREATE OR REPLACE FUNCTION is_valid_contract(data JSONB)
