@@ -216,7 +216,7 @@ export interface Database {
           event_id: string | null
           id: number
           parent_id: string | null
-          table_id: string | null
+          table_id: string
           ts: string
           write_kind: string
         }
@@ -226,7 +226,7 @@ export interface Database {
           event_id?: string | null
           id?: never
           parent_id?: string | null
-          table_id?: string | null
+          table_id: string
           ts: string
           write_kind: string
         }
@@ -236,7 +236,7 @@ export interface Database {
           event_id?: string | null
           id?: never
           parent_id?: string | null
-          table_id?: string | null
+          table_id?: string
           ts?: string
           write_kind?: string
         }
@@ -500,6 +500,10 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      calculate_distance: {
+        Args: { row1: unknown; row2: unknown }
+        Returns: number
+      }
       dot: {
         Args: { urf: unknown; crf: unknown }
         Returns: number
@@ -526,12 +530,12 @@ export interface Database {
         Returns: Json[]
       }
       get_related_contract_ids: {
-        Args: { source_id: string }
+        Args: { source_id: string; minimum_distance: number }
         Returns: { contract_id: string; distance: number }[]
       }
       get_related_contracts: {
-        Args: { cid: string; count: number }
-        Returns: Json[]
+        Args: { cid: string; count: number; minimum_distance: number }
+        Returns: { data: Json; distance: number }[]
       }
       gtrgm_compress: {
         Args: { "": unknown }
@@ -564,6 +568,10 @@ export interface Database {
       replicate_writes_process_since: {
         Args: { since: string }
         Returns: { id: number; succeeded: boolean }[]
+      }
+      search_contracts_by_group_slugs: {
+        Args: { group_slugs: string[]; lim: number; off: number }
+        Returns: { data: Json }[]
       }
       set_limit: {
         Args: { "": number }
