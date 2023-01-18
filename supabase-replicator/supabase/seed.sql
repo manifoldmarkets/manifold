@@ -575,11 +575,11 @@ language sql as $$
   );
 $$;
 
-CREATE OR REPLACE FUNCTION calculate_distance(row1 contract_recommendation_features, row2 contract_recommendation_features)
-    RETURNS float
-    LANGUAGE SQL
-AS $$
-SELECT sqrt((row1.f0 - row2.f0)^2 +
+create or replace function calculate_distance(row1 contract_recommendation_features, row2 contract_recommendation_features)
+    returns float
+    language sql
+as $$
+select sqrt((row1.f0 - row2.f0)^2 +
             (row1.f1 - row2.f1)^2 +
             (row1.f2 - row2.f2)^2 +
             (row1.f3 - row2.f3)^2 +
@@ -636,20 +636,20 @@ as $$
   ) as rec_contracts
 $$;
 
-CREATE OR REPLACE FUNCTION get_related_contract_ids(source_id text)
-    RETURNS table(contract_id text, distance float)
-    IMMUTABLE PARALLEL SAFE
-    LANGUAGE SQL
-AS $$
-WITH target_contract AS (
-    SELECT *
-    FROM contract_recommendation_features
-    WHERE contract_id = source_id
+create or replace function get_related_contract_ids(source_id text)
+    returns table(contract_id text, distance float)
+    immutable parallel safe
+    language sql
+as $$
+with target_contract as (
+    select *
+    from contract_recommendation_features
+    where contract_id = source_id
 )
-SELECT crf.contract_id, calculate_distance(crf, target_contract) AS distance
-FROM contract_recommendation_features as crf, target_contract
-WHERE crf.contract_id != target_contract.contract_id
-ORDER BY distance
+select crf.contract_id, calculate_distance(crf, target_contract) as distance
+from contract_recommendation_features as crf, target_contract
+where crf.contract_id != target_contract.contract_id
+order by distance
 $$;
 
 create or replace function get_related_contracts(cid text, lim int, start int)
@@ -669,42 +669,35 @@ select array_agg(data) from (
 $$;
 
 create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, start int)
-    returns JSONB[]
+    returns jsonb[]
     immutable parallel safe
     language sql
 as $$
 select array_agg(data) from (
-    SELECT data
-    FROM contracts,
+    select data
+    from contracts,
       jsonb_array_elements(data -> 'groupSlugs')
-          AS elem
-    WHERE elem ?| group_slugs
+          as elem
+    where elem ?| group_slugs
     and is_valid_contract(data)
     order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
     offset start limit lim
     ) as search_contracts
 $$;
 
-CREATE OR REPLACE FUNCTION is_valid_contract(data JSONB)
-    RETURNS BOOLEAN
-AS $$
-BEGIN
-    RETURN (
-        -- Not resolved.
-        NOT (data->>'isResolved')::BOOLEAN
-        -- Not closed: closeTime is greater than now + 10 minutes.
-        AND (data->>'closeTime')::BIGINT > get_time() + 10 * 60000
-        -- Not unlisted.
-        AND NOT (data->>'visibility') = 'unlisted'
-        );
-END;
-$$ LANGUAGE plpgsql;
+create or replace function is_valid_contract(data jsonb)
+    returns boolean
+as $$
+select
+        not (data->>'isResolved')::boolean
+        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
+        and not (data->>'visibility') = 'unlisted'
+$$ language sql;
 
-
-CREATE OR REPLACE FUNCTION get_time()
-    RETURNS BIGINT
-    LANGUAGE SQL
-    IMMUTABLE PARALLEL SAFE
-AS $$
-SELECT (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT;
+create or replace function get_time()
+    returns bigint
+    language sql
+    immutable parallel safe
+as $$
+select (extract(epoch from now()) * 1000)::bigint;
 $$;
