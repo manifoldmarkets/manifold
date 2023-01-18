@@ -20,11 +20,7 @@ export const useRelatedMarkets = (contract: Contract) => {
         lim: RELATED_PAGE_SIZE,
         start: page.current * RELATED_PAGE_SIZE,
       })
-      .then((res) => {
-        if (!res.data) return []
-
-        return res.data as Contract[]
-      })
+      .then((res) => res.data ?? ([] as Contract[]))
     const groupContracts = contract.groupSlugs
       ? await db
           .rpc('search_contracts_by_group_slugs' as any, {
@@ -32,11 +28,9 @@ export const useRelatedMarkets = (contract: Contract) => {
             lim: GROUPS_PAGE_SIZE,
             start: page.current * GROUPS_PAGE_SIZE,
           })
-          .then((res) => {
-            if (!res.data) return []
-
-            return (res.data as Contract[]).filter((c) => c.id !== contract.id)
-          })
+          .then((res) =>
+            ((res.data ?? []) as Contract[]).filter((c) => c.id !== contract.id)
+          )
       : []
 
     const shuffledContracts = relatedContracts
