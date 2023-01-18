@@ -9,7 +9,7 @@ import { getMarketRecommendations } from '../../common/recommendation'
 import { run } from '../../common/supabase/utils'
 import { mapAsync } from '../../common/util/promise'
 import { createSupabaseClient } from './supabase/init'
-import { filterDefined } from 'common/util/array'
+import { filterDefined } from '../../common/util/array'
 
 const firestore = admin.firestore()
 
