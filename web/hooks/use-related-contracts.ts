@@ -17,8 +17,8 @@ export const useRelatedMarkets = (contract: Contract) => {
     const relatedContracts = await db
       .rpc('get_related_contracts' as any, {
         cid: contract.id,
-        count: PAGE_SIZE,
-        minimum_distance: lastDistance.current,
+        lim: PAGE_SIZE,
+        start: lastDistance.current,
       })
       .then((res) => {
         if (!res.data || res.data.length <= 0) return []
@@ -34,7 +34,7 @@ export const useRelatedMarkets = (contract: Contract) => {
           .rpc('search_contracts_by_group_slugs' as any, {
             group_slugs: contract.groupSlugs,
             lim: PAGE_SIZE,
-            off: page.current * PAGE_SIZE,
+            start: page.current * PAGE_SIZE,
           })
           .then((res) => {
             if (!res.data || res.data.length <= 0) return []

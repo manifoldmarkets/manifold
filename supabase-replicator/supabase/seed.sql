@@ -586,23 +586,6 @@ SELECT sqrt((row1.f0 - row2.f0)^2 +
             (row1.f4 - row2.f4)^2)
 $$;
 
-CREATE OR REPLACE FUNCTION get_related_contract_ids(source_id text, minimum_distance float default 0)
-    RETURNS table(contract_id text, distance float)
-    IMMUTABLE PARALLEL SAFE
-    LANGUAGE SQL
-AS $$
-WITH target_contract AS (
-    SELECT *
-    FROM contract_recommendation_features
-    WHERE contract_id = source_id
-)
-SELECT crf.contract_id, calculate_distance(crf, target_contract) AS distance
-FROM contract_recommendation_features as crf, target_contract
-WHERE crf.contract_id != target_contract.contract_id
- AND calculate_distance(crf, target_contract) > minimum_distance
-ORDER BY distance
-$$;
-
 -- Use cached tables of user and contract features to computed the top scoring
 -- markets for a user.
 create or replace function get_recommended_contract_ids(uid text)
@@ -658,14 +641,30 @@ as $$
   ) as rec_contracts
 $$;
 
-create or replace function get_related_contracts(cid text, count int, minimum_distance float default 0)
-returns table(data jsonb, distance float)
-immutable parallel safe
-language sql
+CREATE OR REPLACE FUNCTION get_related_contract_ids(source_id text)
+    RETURNS table(contract_id text, distance float)
+    IMMUTABLE PARALLEL SAFE
+    LANGUAGE SQL
+AS $$
+WITH target_contract AS (
+    SELECT *
+    FROM contract_recommendation_features
+    WHERE contract_id = source_id
+)
+SELECT crf.contract_id, calculate_distance(crf, target_contract) AS distance
+FROM contract_recommendation_features as crf, target_contract
+WHERE crf.contract_id != target_contract.contract_id
+ORDER BY distance
+$$;
+
+create or replace function get_related_contracts(cid text, lim int, start int)
+    returns table(data jsonb, distance float)
+    immutable parallel safe
+    language sql
 as $$
 select * from (
   select data, distance
-  from get_related_contract_ids(cid, minimum_distance)
+  from get_related_contract_ids(cid)
     left join contracts
     on contracts.id = contract_id
     -- Not resolved.
@@ -674,12 +673,13 @@ select * from (
     and (data->>'closeTime')::bigint > extract(epoch from now()) * 1000
     -- Not unlisted.
     and not (data->>'visibility') = 'unlisted'
-    limit count
+  limit lim
+  offset start
   ) as rec_contracts
 $$;
 
 -- create a function that searches for contracts with any groupSlug in the given array
-create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, off int)
+create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, start int)
 returns table(data jsonb)
 immutable parallel safe
 language sql
@@ -687,6 +687,6 @@ as $$
 SELECT data FROM contracts, jsonb_array_elements(data->'groupSlugs')
     AS elem WHERE elem ?| group_slugs
     order by (to_jsonb(data)->>'popularityScore')::float desc
-    offset off
+    offset start
     limit lim;
 $$;
