@@ -47,6 +47,29 @@ export async function getMemberGroups(userId: string) {
   return groups as SearchGroupInfo[]
 }
 
+export async function getGroupAdmins(groupId: string) {
+  const groupMembers = await run(
+    db
+      .from('group_members')
+      .select('member_id, data->createdTime, data->role')
+      .eq('group_id', groupId)
+  )
+
+  // const { data: groups } = await run(
+  //   db
+  //     .from('groups')
+  //     .select(
+  //       'id, data->name, data->about, data->slug, data->totalMembers, data->totalContracts, data->anyoneCanJoin'
+  //     )
+  //     .in(
+  //       'id',
+  //       groupIds.map((d: { group_id: string }) => d.group_id)
+  //     )
+  // )
+
+  return groupMembers
+}
+
 export async function getMemberGroupsCount(userId: string) {
   const { data } = await run(
     db.from('group_members').select('count').eq('member_id', userId)

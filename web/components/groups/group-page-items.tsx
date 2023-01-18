@@ -6,6 +6,7 @@ import {
   default as ClosedDoorIcon,
   default as OpenDoorIcon,
 } from 'web/lib/icons/open-door-icon'
+import { getGroupAdmins } from 'web/lib/supabase/groups'
 import { Row } from '../layout/row'
 import { MultiUserTransactionModal } from '../multi-user-transaction-link'
 
@@ -33,16 +34,20 @@ export default function GroupOpenClosedWidget(props: { group: Group }) {
 export function GroupMembersWidget(props: { group: Group }) {
   const { group } = props
   const [open, setOpen] = useState(false)
-  const groupMembers = useMembers(group.id)
-  const groupMembersItems = groupMembers
-    .filter((groupMember) => groupMember)
-    .map((groupMember) => {
-      return {
-        name: groupMember.name,
-        username: groupMember.username,
-        avatarUrl: groupMember.avatarUrl,
-      }
-    })
+  // const groupMembers = useMembers(group.id)
+  // const groupMembersItems = groupMembers
+  //   .filter((groupMember) => groupMember)
+  //   .map((groupMember) => {
+  //     return {
+  //       name: groupMember.name,
+  //       username: groupMember.username,
+  //       avatarUrl: groupMember.avatarUrl,
+  //     }
+  //   })
+  const groupAdmins = getGroupAdmins(group.id).then((result) =>
+    console.log(result)
+  )
+  console.log(groupAdmins)
   return (
     <>
       <button onClick={() => setOpen(true)}>
@@ -52,12 +57,12 @@ export function GroupMembersWidget(props: { group: Group }) {
           <span>{group.totalMembers} members</span>
         </Row>
       </button>
-      <MultiUserTransactionModal
+      {/* <MultiUserTransactionModal
         userInfos={groupMembersItems}
         modalLabel="Members"
         open={open}
         setOpen={setOpen}
-      />
+      /> */}
     </>
   )
 }
