@@ -530,12 +530,16 @@ export interface Database {
         Returns: Json[]
       }
       get_related_contract_ids: {
-        Args: { source_id: string; minimum_distance: number }
+        Args: { source_id: string }
         Returns: { contract_id: string; distance: number }[]
       }
       get_related_contracts: {
-        Args: { cid: string; count: number; minimum_distance: number }
+        Args: { cid: string; lim: number; start: number }
         Returns: { data: Json; distance: number }[]
+      }
+      get_time: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       gtrgm_compress: {
         Args: { "": unknown }
@@ -561,6 +565,19 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_valid_contract:
+        | {
+            Args: { data: Json; now: number }
+            Returns: boolean
+          }
+        | {
+            Args: { data: Json; now: string }
+            Returns: boolean
+          }
+        | {
+            Args: { data: Json }
+            Returns: boolean
+          }
       replicate_writes_process_one: {
         Args: { r: unknown }
         Returns: boolean
@@ -568,6 +585,10 @@ export interface Database {
       replicate_writes_process_since: {
         Args: { since: string }
         Returns: { id: number; succeeded: boolean }[]
+      }
+      search_contracts_by_group_slugs: {
+        Args: { group_slugs: string[]; lim: number; start: number }
+        Returns: { data: Json }[]
       }
       set_limit: {
         Args: { "": number }
