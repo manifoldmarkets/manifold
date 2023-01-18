@@ -575,27 +575,31 @@ language sql as $$
   );
 $$;
 
-create or replace function get_related_contract_ids(source_id text)
-    returns table(contract_id text, distance float)
-    immutable parallel safe
-    language sql
-as $$
+CREATE OR REPLACE FUNCTION calculate_distance(row1 contract_recommendation_features, row2 contract_recommendation_features)
+    RETURNS float
+    LANGUAGE SQL
+AS $$
+SELECT sqrt((row1.f0 - row2.f0)^2 +
+            (row1.f1 - row2.f1)^2 +
+            (row1.f2 - row2.f2)^2 +
+            (row1.f3 - row2.f3)^2 +
+            (row1.f4 - row2.f4)^2)
+$$;
 
+CREATE OR REPLACE FUNCTION get_related_contract_ids(source_id text, minimum_distance float default 0)
+    RETURNS table(contract_id text, distance float)
+    IMMUTABLE PARALLEL SAFE
+    LANGUAGE SQL
+AS $$
 WITH target_contract AS (
     SELECT *
     FROM contract_recommendation_features
     WHERE contract_id = source_id
 )
--- I couldn't figure out how to extract the distance algorithm into a function accepting a row/record from
--- contract_recommendation_features as a parameter so it's inline here.
-SELECT crf.contract_id,
-       sqrt((crf.f0 - target_contract.f0)^2 +
-            (crf.f1 - target_contract.f1)^2 +
-            (crf.f2 - target_contract.f2)^2 +
-            (crf.f3 - target_contract.f3)^2 +
-            (crf.f4 - target_contract.f4)^2) AS distance
+SELECT crf.contract_id, calculate_distance(crf, target_contract) AS distance
 FROM contract_recommendation_features as crf, target_contract
 WHERE crf.contract_id != target_contract.contract_id
+ AND calculate_distance(crf, target_contract) > minimum_distance
 ORDER BY distance
 $$;
 
@@ -654,14 +658,14 @@ as $$
   ) as rec_contracts
 $$;
 
-create or replace function get_related_contracts(cid text, count int)
-returns JSONB[]
+create or replace function get_related_contracts(cid text, count int, minimum_distance float default 0)
+returns table(data jsonb, distance float)
 immutable parallel safe
 language sql
 as $$
-  select array_agg(data) from (
-    select data
-    from get_related_contract_ids(cid)
+select * from (
+  select data, distance
+  from get_related_contract_ids(cid, minimum_distance)
     left join contracts
     on contracts.id = contract_id
     -- Not resolved.
@@ -672,4 +676,17 @@ as $$
     and not (data->>'visibility') = 'unlisted'
     limit count
   ) as rec_contracts
+$$;
+
+-- create a function that searches for contracts with any groupSlug in the given array
+create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, off int)
+returns table(data jsonb)
+immutable parallel safe
+language sql
+as $$
+SELECT data FROM contracts, jsonb_array_elements(data->'groupSlugs')
+    AS elem WHERE elem ?| group_slugs
+    order by (to_jsonb(data)->>'popularityScore')::float desc
+    offset off
+    limit lim;
 $$;
