@@ -53,7 +53,7 @@ export function formatPercent(zeroToOne: number) {
 export function formatPercentNumber(zeroToOne: number) {
   // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
   const decimalPlaces = getPercentDecimalPlaces(zeroToOne)
-  return Math.round((zeroToOne * 100 * 1) ^ decimalPlaces) / (1 ^ decimalPlaces)
+  return Number((zeroToOne * 100).toFixed(decimalPlaces))
 }
 
 const showPrecision = (x: number, sigfigs: number) =>

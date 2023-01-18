@@ -4,7 +4,7 @@ import { track } from '@amplitude/analytics-browser'
 import { animated, useSpring } from '@react-spring/web'
 import { rubberbandIfOutOfBounds, useDrag } from '@use-gesture/react'
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
-import { BinaryContract, Contract } from 'common/contract'
+import { BinaryContract, Contract, MAX_QUESTION_LENGTH } from 'common/contract'
 import { getBinaryProb } from 'common/contract-details'
 import { User } from 'common/user'
 import { memo, ReactNode, SetStateAction, useEffect, useState } from 'react'
@@ -24,6 +24,7 @@ import getQuestionSize, {
   isStatusAFailure,
 } from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
+import { Row } from '../layout/row'
 
 const horizontalSwipeDist = 80
 const verticalSwipeDist = -100
@@ -199,9 +200,7 @@ export function PrimarySwipeCard(props: {
         onClick={(e) => e.preventDefault()}
       >
         <SwipeCard
-          key={
-            contract.description + contract.question + contract.creatorUsername
-          }
+          key={contract.id}
           contract={contract}
           amount={amount}
           swipeBetPanel={
@@ -293,7 +292,7 @@ export const SwipeCard = memo(
                 {question}
               </div>
             </SiteLink>
-            <div className="absolute top-28 left-[calc(50%-80px)] z-10 mx-auto">
+            <Row className="absolute top-[45%] z-10 mx-auto w-full justify-between">
               <Percent
                 currPercent={currPercent}
                 yesPercent={yesPercent}
@@ -310,10 +309,8 @@ export const SwipeCard = memo(
                     : undefined
                 }
               />
-            </div>
-            <div className="absolute right-4 bottom-32 z-10">
               <Actions user={user} contract={contract} />
-            </div>
+            </Row>
 
             <Col className="absolute -bottom-16 z-10 w-full gap-6">
               <DescriptionAndModal

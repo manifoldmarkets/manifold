@@ -111,11 +111,7 @@ export default function Swipe() {
           <>
             <div className="z-30">
               <PrimarySwipeCard
-                key={
-                  cards[0].description +
-                  cards[0].question +
-                  cards[0].creatorUsername
-                }
+                key={cards[0].id}
                 contract={cards[0]}
                 index={index}
                 setIndex={setIndex}
@@ -136,11 +132,7 @@ export default function Swipe() {
             <SwipeCard
               amount={STARTING_BET_AMOUNT}
               contract={cards[1]}
-              key={
-                cards[1].description +
-                cards[1].question +
-                cards[1].creatorUsername
-              }
+              key={cards[1].id}
               swipeBetPanel={
                 <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
               }

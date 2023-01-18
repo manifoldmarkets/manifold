@@ -1,11 +1,14 @@
 export default function getQuestionSize(
   question: string
-): 'text-lg' | 'text-2xl' | 'text-4xl' {
+): 'text-2xl' | 'text-3xl' | 'text-4xl' | 'text-5xl' {
   const questionLength = question.length
-  if (questionLength >= 100) return 'text-lg'
-  if (questionLength < 100 && questionLength >= 40) return 'text-2xl'
-  return 'text-4xl'
+  if (questionLength >= 200) return 'text-2xl'
+  if (questionLength >= 100 && questionLength < 200) return 'text-3xl'
+  if (questionLength >= 40 && questionLength < 100) return 'text-4xl'
+  return 'text-5xl'
 }
+
+import { MAX_QUESTION_LENGTH } from 'common/contract'
 
 export function isStatusAFailure(
   betStatus: 'loading' | 'success' | string | undefined

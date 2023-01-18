@@ -21,6 +21,8 @@ import { UserLink } from '../widgets/user-link'
 const LIKES_SHOWN = 3
 
 const ButtonReactionType = 'like' as ReactionTypes
+export type LikeButtonSizeType = 'md' | 'lg' | 'xl'
+
 export const LikeButton = memo(function LikeButton(props: {
   contentId: string
   contentCreatorId: string
@@ -30,7 +32,7 @@ export const LikeButton = memo(function LikeButton(props: {
   contract: Contract
   contentText: string
   className?: string
-  size?: 'md' | 'lg' | 'xl'
+  size?: LikeButtonSizeType
   showTotalLikesUnder?: boolean
   color?: 'gray' | 'white'
 }) {
