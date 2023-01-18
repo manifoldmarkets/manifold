@@ -391,32 +391,26 @@ export function ContractPageContent(
 
 function ContractPageSidebar(props: { contract: Contract }) {
   const { contract } = props
-  const { creatorId, isResolved, outcomeType } = contract
-  const user = useUser()
-  const isCreator = user?.id === creatorId
+  const { outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
-  const isAdmin = useAdmin()
-  const allowResolve = !isResolved && (isCreator || isAdmin) && !!user
 
-  const hasSidePanel =
-    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
+  const hasSidePanel = (isBinary || isNumeric || isPseudoNumeric) && allowTrade
 
-  return hasSidePanel ? (
-    <Col className="gap-4">
-      {allowTrade &&
-        (isNumeric ? (
-          <NumericBetPanel className="hidden xl:flex" contract={contract} />
-        ) : (
-          <BetPanel
-            className="hidden xl:flex"
-            contract={contract as CPMMBinaryContract}
-          />
-        ))}
-    </Col>
-  ) : null
+  if (!hasSidePanel) {
+    return null
+  }
+
+  return isNumeric ? (
+    <NumericBetPanel className="hidden xl:flex" contract={contract} />
+  ) : (
+    <BetPanel
+      className="hidden xl:flex"
+      contract={contract as CPMMBinaryContract}
+    />
+  )
 }
 
 const RelatedContractsWidget = memo(function RecommendedContractsWidget(props: {
