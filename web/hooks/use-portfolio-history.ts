@@ -1,9 +1,11 @@
 import { useQueryClient } from 'react-query'
 import { DAY_MS, HOUR_MS, MINUTE_MS, sleep } from 'common/util/time'
 import { Period } from 'web/lib/firebase/users'
-import { getPortfolioHistory } from 'web/lib/supabase/portfolio-history'
+import {
+  getPortfolioHistory,
+  PortfolioSnapshot,
+} from 'web/lib/supabase/portfolio-history'
 import { useEffect, useState } from 'react'
-import { PortfolioMetrics } from 'common/user'
 
 const getCutoff = (period: Period) => {
   const nowRounded = Math.round(Date.now() / HOUR_MS) * HOUR_MS
@@ -23,7 +25,7 @@ export const usePrefetchPortfolioHistory = (userId: string, period: Period) => {
 export const usePortfolioHistory = (userId: string, period: Period) => {
   const cutoff = getCutoff(period)
   const [portfolioHistory, setPortfolioHistory] = useState<
-    PortfolioMetrics[] | undefined
+    PortfolioSnapshot[] | undefined
   >()
   useEffect(() => {
     setPortfolioHistory(undefined)

@@ -13,7 +13,7 @@ import { TextButton } from './text-button'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
 import { getReferralCount, getReferrals } from 'web/lib/supabase/referrals'
-import { SearchUserInfo } from 'web/lib/supabase/users'
+import { UserSearchResult } from 'web/lib/supabase/users'
 
 export const ReferralsButton = memo(function ReferralsButton(props: {
   user: User
@@ -21,7 +21,7 @@ export const ReferralsButton = memo(function ReferralsButton(props: {
 }) {
   const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
-  const [referrals, setReferrals] = useState<SearchUserInfo[] | undefined>(
+  const [referrals, setReferrals] = useState<UserSearchResult[] | undefined>(
     undefined
   )
   const [referralCount, setReferralCount] = useState(0)
@@ -51,12 +51,12 @@ export const ReferralsButton = memo(function ReferralsButton(props: {
 
 function ReferralsDialog(props: {
   user: User
-  referredUsers: SearchUserInfo[]
+  referredUsers: UserSearchResult[]
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
 }) {
   const { user, referredUsers, isOpen, setIsOpen } = props
-  const [referredBy, setReferredBy] = useState<SearchUserInfo[]>([])
+  const [referredBy, setReferredBy] = useState<UserSearchResult[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
 
