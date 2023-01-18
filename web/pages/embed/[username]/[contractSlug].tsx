@@ -74,7 +74,6 @@ export async function getStaticPropz(props: {
   const historyData = await getHistoryData(contract)
   return {
     props: { contract, historyData },
-    revalidate: 60, // regenerate after a minute
   }
 }
 

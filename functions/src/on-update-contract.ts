@@ -28,10 +28,7 @@ export const onUpdateContract = functions
       await handleUpdatedCloseTime(previousContract, contract, eventId)
     }
 
-    // i.e. if someone made a bet
-    if (previousContract.volume !== contract.volume) {
-      await revalidateStaticProps(getContractPath(contract))
-    }
+    await revalidateContractStaticProps(contract)
   })
 
 async function handleUpdatedCloseTime(
@@ -96,4 +93,10 @@ async function handleContractGroupUpdated(
       .delete()
   }
 }
+
+async function revalidateContractStaticProps(contract: Contract) {
+  await revalidateStaticProps(getContractPath(contract))
+  await revalidateStaticProps(`/embed${getContractPath(contract)}`)
+}
+
 const firestore = admin.firestore()
