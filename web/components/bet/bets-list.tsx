@@ -423,6 +423,7 @@ function ContractBets(props: {
                 className="mt-4 items-start"
                 contract={contract}
                 user={user}
+                showTweet
               />
             )}
 

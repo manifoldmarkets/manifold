@@ -1,9 +1,7 @@
 import clsx from 'clsx'
-import { clamp } from 'lodash'
 
 import {
   formatMoney,
-  formatMoneyNumber,
   formatWithCommas,
 } from 'common/util/format'
 import { Col } from '../layout/col'
@@ -17,8 +15,11 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { TweetButton } from '../buttons/tweet-button'
-import { getShareUrl } from 'common/util/share'
+import {
+  getPositionTweet,
+  getWinningTweet,
+  TweetButton,
+} from '../buttons/tweet-button'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -165,36 +166,3 @@ export function BetsSummary(props: {
     </Col>
   )
 }
-
-const getPositionTweet = (
-  position: number,
-  invested: number,
-  contract: Contract,
-  username: string
-) => {
-  const r = invested / (invested + Math.abs(position))
-  const set1 = clamp(Math.round((1 - r) * 10), 1, 10)
-  const set2 = clamp(Math.round(r * 10), 1, 10)
-  const blockString =
-    position > 0
-      ? repeat('🟩', set1) + ':' + repeat('🟥', set2)
-      : repeat('🟥', set1) + ':' + repeat('🟩', set2)
-
-  return `${blockString}\nI'm betting ${
-    position > 0 ? 'YES' : 'NO'
-  } at M$${formatMoneyNumber(invested)} to M$${formatMoneyNumber(
-    Math.abs(position)
-  )} on\n'${contract.question}' ${getShareUrl(contract, username)}`
-}
-
-const getWinningTweet = (
-  profit: number,
-  contract: Contract,
-  username: string
-) => {
-  return `I made M$${formatMoneyNumber(profit)} in profit trading on\n'${
-    contract.question
-  }'! ${getShareUrl(contract, username)}`
-}
-
-const repeat = (str: string, n: number) => new Array(n).fill(str).join('')
