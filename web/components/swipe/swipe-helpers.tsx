@@ -1,11 +1,24 @@
-export default function getQuestionSize(
-  question: string
-): 'text-2xl' | 'text-3xl' | 'text-4xl' | 'text-5xl' {
+export default function getQuestionSize(question: string) {
+  const height2width = window.innerHeight / window.innerWidth
+  console.log(height2width)
   const questionLength = question.length
-  if (questionLength >= 200) return 'text-2xl'
-  if (questionLength >= 100 && questionLength < 200) return 'text-3xl'
-  if (questionLength >= 40 && questionLength < 100) return 'text-4xl'
-  return 'text-5xl'
+  if (height2width < 2.1) {
+    if (questionLength >= 160) return 'text-lg'
+    if (questionLength >= 100 && questionLength < 160) return 'text-xl'
+    if (questionLength >= 40 && questionLength < 100) return 'text-2xl'
+    return 'text-3xl'
+  } else if (height2width > 2.3) {
+    if (questionLength >= 160) return 'text-md'
+    if (questionLength >= 100 && questionLength < 160) return 'text-lg'
+    if (questionLength >= 40 && questionLength < 100) return 'text-xl'
+    return 'text-2xl'
+  } else {
+    if (questionLength > 230) return 'text-xl'
+    if (questionLength < 230 && questionLength >= 160) return 'text-2xl'
+    if (questionLength >= 100 && questionLength < 160) return 'text-3xl'
+    if (questionLength >= 40 && questionLength < 100) return 'text-4xl'
+    return 'text-5xl'
+  }
 }
 
 import { MAX_QUESTION_LENGTH } from 'common/contract'

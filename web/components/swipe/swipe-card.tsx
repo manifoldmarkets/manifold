@@ -267,6 +267,8 @@ export const SwipeCard = memo(
       setYesPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amount])
+    const quenstion =
+      'Apart from counting words and characters, our online editor can help you to improve word choice and'
     return (
       <>
         <Col
@@ -286,13 +288,13 @@ export const SwipeCard = memo(
               <div
                 className={clsx(
                   'mx-4 text-white drop-shadow',
-                  getQuestionSize(question)
+                  getQuestionSize(quenstion)
                 )}
               >
-                {question}
+                {quenstion}
               </div>
             </SiteLink>
-            <Row className="absolute top-[45%] z-10 mx-auto w-full justify-between">
+            <Row className="absolute top-[40%] z-10 mx-auto w-full px-4">
               <Percent
                 currPercent={currPercent}
                 yesPercent={yesPercent}
@@ -309,9 +311,10 @@ export const SwipeCard = memo(
                     : undefined
                 }
               />
+            </Row>
+            <Row className="absolute bottom-24 w-full justify-end px-4">
               <Actions user={user} contract={contract} />
             </Row>
-
             <Col className="absolute -bottom-16 z-10 w-full gap-6">
               <DescriptionAndModal
                 description={description}
@@ -353,7 +356,7 @@ function Actions(props: { user?: User; contract: BinaryContract }) {
   const { user, contract } = props
 
   return (
-    <Col className="flex flex-col items-center justify-center">
+    <Col className="flex flex-col items-center justify-end">
       <LikeButton
         contentId={contract.id}
         contentCreatorId={contract.creatorId}
