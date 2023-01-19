@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import { capitalize } from 'lodash'
 import { Contract } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { contractPool, updateContract } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -176,15 +176,15 @@ export function ContractInfoDialog(props: {
                       <InfoTooltip
                         text={
                           mechanism === 'cpmm-1'
-                            ? 'Probability change between a Ṁ50 bet on YES and NO'
+                            ? 'Log-odds change between a Ṁ50 bet on YES and NO'
                             : mechanism === 'cpmm-2'
-                            ? 'Probability change between a Ṁ50 bet for and against each outcome'
-                            : 'Probability change from a Ṁ100 bet'
+                            ? 'Log-odds change between a Ṁ50 bet for and against each outcome'
+                            : 'Log-odds change from a Ṁ100 bet'
                         }
                       />
                     </Row>
                   </td>
-                  <td>{formatPercent(elasticity)}</td>
+                  <td>{elasticity.toFixed(2)}</td>
                 </tr>
 
                 <tr>
