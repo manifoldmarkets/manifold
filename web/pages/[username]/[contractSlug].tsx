@@ -61,9 +61,6 @@ import { ResolutionPanel } from 'web/components/resolution-panel'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 
-import { db } from 'web/lib/supabase/db'
-import { run } from 'common/supabase/utils'
-
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
   filterChallenges: true,
@@ -76,21 +73,7 @@ export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(ctx: {
   params: { username: string; contractSlug: string }
 }) {
-  console.log('revalidating the freaking static props again')
-
   const { contractSlug } = ctx.params
-
-  try {
-    await run(
-      db.from('revalidations').insert({
-        ctx: ctx,
-        ts: new Date().toISOString(),
-      })
-    )
-  } catch (e) {
-    console.error(e)
-  }
-
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
