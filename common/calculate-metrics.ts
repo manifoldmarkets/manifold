@@ -63,10 +63,12 @@ export const computeInvestmentValueCustomProb = (
   })
 }
 
+export const ELASTICITY_BET_AMOUNT = 100
+
 export const computeElasticity = (
   unfilledBets: LimitBet[],
   contract: Contract,
-  betAmount = 50
+  betAmount = ELASTICITY_BET_AMOUNT
 ) => {
   switch (contract.mechanism) {
     case 'cpmm-1':
@@ -124,7 +126,7 @@ export const computeBinaryCpmmElasticity = (
 
 export const computeBinaryCpmmElasticityFromAnte = (
   ante: number,
-  betAmount = 50
+  betAmount = ELASTICITY_BET_AMOUNT
 ) => {
   const pool = { YES: ante, NO: ante }
   const p = 0.5

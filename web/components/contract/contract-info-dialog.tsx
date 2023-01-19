@@ -27,6 +27,7 @@ import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { formatTime } from 'web/lib/util/time'
 import { ReportButton } from 'web/components/buttons/report-button'
 import { TweetButton } from '../buttons/tweet-button'
+import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -176,10 +177,16 @@ export function ContractInfoDialog(props: {
                       <InfoTooltip
                         text={
                           mechanism === 'cpmm-1'
-                            ? 'Log-odds change between a Ṁ50 bet on YES and NO'
+                            ? `Log-odds change between a ${formatMoney(
+                                ELASTICITY_BET_AMOUNT
+                              )} bet on YES and NO`
                             : mechanism === 'cpmm-2'
-                            ? 'Log-odds change between a Ṁ50 bet for and against each outcome'
-                            : 'Log-odds change from a Ṁ50 bet'
+                            ? `Log-odds change between a ${formatMoney(
+                                ELASTICITY_BET_AMOUNT
+                              )}bet for and against each outcome`
+                            : `Log-odds change from a ${formatMoney(
+                                ELASTICITY_BET_AMOUNT
+                              )} bet`
                         }
                       />
                     </Row>
