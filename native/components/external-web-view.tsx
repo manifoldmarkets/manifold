@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native'
 import { AntDesign, Feather } from '@expo/vector-icons'
-import React, { useRef, useState } from 'react'
+import React, { MutableRefObject, useRef, useState } from 'react'
 import {
   WebViewErrorEvent,
   WebViewRenderProcessGoneEvent,
@@ -34,7 +34,7 @@ export const sharedWebViewProps: WebViewProps = {
 }
 
 export const handleWebviewCrash = (
-  webview: WebView | undefined,
+  webview: MutableRefObject<WebView | undefined>,
   syntheticEvent: WebViewTerminatedEvent | WebViewRenderProcessGoneEvent
 ) => {
   const { nativeEvent } = syntheticEvent
@@ -42,7 +42,7 @@ export const handleWebviewCrash = (
     `Content process terminated, reloading ${Platform.OS} `,
     nativeEvent
   )
-  webview?.reload()
+  webview.current?.reload()
 }
 
 export const handleWebviewError = (
@@ -187,10 +187,8 @@ export const ExternalWebView = (props: {
         // @ts-ignore
         ref={webview}
         renderError={(e) => handleRenderError(e, width, height)}
-        onRenderProcessGone={(e) => handleWebviewCrash(webview.current, e)}
-        onContentProcessDidTerminate={(e) =>
-          handleWebviewCrash(webview.current, e)
-        }
+        onRenderProcessGone={(e) => handleWebviewCrash(webview, e)}
+        onContentProcessDidTerminate={(e) => handleWebviewCrash(webview, e)}
       />
     </View>
   )
