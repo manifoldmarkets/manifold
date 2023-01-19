@@ -699,7 +699,7 @@ as $$
 select array_agg(data) from (
     select data
     from contracts
-    where data->'groupSlugs' ?| elem
+    where data->'groupSlugs' ?| group_slugs
     and is_valid_contract(data)
     order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
@@ -714,9 +714,9 @@ as $$
 select array_agg(data) from (
     select data
     from contracts
-    where data->'groupSlugs' ?| elem
+    where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(data)
-      and data->'creatorId' = creator_id
+      and data->>'creatorId' = creator_id
     order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
 ) as search_contracts
