@@ -642,6 +642,23 @@ as $$
   ) as rec_contracts
 $$;
 
+create or replace function get_time()
+    returns bigint
+    language sql
+    stable parallel safe
+as $$
+select (extract(epoch from now()) * 1000)::bigint;
+$$;
+
+create or replace function is_valid_contract(data jsonb)
+    returns boolean
+as $$
+select
+        not (data->>'isResolved')::boolean
+        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
+        and not (data->>'visibility') = 'unlisted'
+$$ language sql;
+
 create or replace function get_related_contract_ids(source_id text)
     returns table(contract_id text, distance float)
     immutable parallel safe
@@ -673,23 +690,6 @@ select array_agg(data) from (
   offset start
   ) as rel_contracts
 $$;
-
-create or replace function get_time()
-    returns bigint
-    language sql
-    stable parallel safe
-as $$
-select (extract(epoch from now()) * 1000)::bigint;
-$$;
-
-create or replace function is_valid_contract(data jsonb)
-    returns boolean
-as $$
-select
-        not (data->>'isResolved')::boolean
-        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
-        and not (data->>'visibility') = 'unlisted'
-$$ language sql;
 
 create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, start int)
     returns jsonb[]
