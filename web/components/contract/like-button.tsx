@@ -21,8 +21,6 @@ import { UserLink } from '../widgets/user-link'
 const LIKES_SHOWN = 3
 
 const ButtonReactionType = 'like' as ReactionTypes
-export type LikeButtonSizeType = 'md' | 'lg' | 'xl'
-
 export const LikeButton = memo(function LikeButton(props: {
   contentId: string
   contentCreatorId: string
@@ -32,9 +30,7 @@ export const LikeButton = memo(function LikeButton(props: {
   contract: Contract
   contentText: string
   className?: string
-  size?: LikeButtonSizeType
-  showTotalLikesUnder?: boolean
-  color?: 'gray' | 'white'
+  size?: 'md' | 'xl'
 }) {
   const {
     user,
@@ -45,8 +41,6 @@ export const LikeButton = memo(function LikeButton(props: {
     contentText,
     className,
     size = 'md',
-    showTotalLikesUnder,
-    color = 'gray',
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
@@ -118,7 +112,7 @@ export const LikeButton = memo(function LikeButton(props: {
   const hasSafePolygon =
     (likedUserInfo != undefined && likedUserInfo.length > 0) || userLiked
   return (
-    <Col className="relative">
+    <>
       <Tooltip
         text={
           <UserLikedList
@@ -135,35 +129,29 @@ export const LikeButton = memo(function LikeButton(props: {
         <button
           disabled={disabled}
           className={clsx(
-            'transition-transform disabled:cursor-not-allowed',
             size === 'md' && 'p-2',
             size === 'xl' && 'p-4',
-            color === 'white'
-              ? 'text-white disabled:opacity-50'
-              : 'text-gray-500',
-            !disabled && color === 'gray' ? 'hover:text-gray-600' : '',
+            'text-gray-500 transition-transform disabled:cursor-not-allowed',
+            !disabled ? 'hover:text-gray-600' : '',
             className
           )}
           {...likeLongPress}
         >
           <div className="relative">
-            {!showTotalLikesUnder && (
-              <div
-                className={clsx(
-                  totalLikes > 0 ? 'bg-gray-500' : '',
-                  'absolute rounded-full text-center text-white',
-                  size === 'md' &&
-                    '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
-                  size === 'xl' && 'bottom-0 right-0 min-w-[24px] p-0.5 text-sm'
-                )}
-              >
-                {totalLikes > 0 ? totalLikes : ''}
-              </div>
-            )}
+            <div
+              className={clsx(
+                totalLikes > 0 ? 'bg-gray-500' : '',
+                'absolute rounded-full text-center text-white',
+                size === 'md' &&
+                  '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
+                size === 'xl' && 'bottom-0 right-0 min-w-[24px] p-0.5 text-sm'
+              )}
+            >
+              {totalLikes > 0 ? totalLikes : ''}
+            </div>
             <HeartIcon
               className={clsx(
                 size === 'md' && 'h-5 w-5',
-                size === 'lg' && 'h-8 w-8',
                 size === 'xl' && 'h-12 w-12',
                 liked ? 'fill-pink-400 stroke-pink-400' : ''
               )}
@@ -182,12 +170,7 @@ export const LikeButton = memo(function LikeButton(props: {
           short={true}
         />
       )}
-      {showTotalLikesUnder && (
-        <div className="mx-auto -mt-1.5 h-6 text-sm text-white drop-shadow-sm disabled:opacity-50">
-          {totalLikes > 0 ? totalLikes : ''}
-        </div>
-      )}
-    </Col>
+    </>
   )
 })
 
