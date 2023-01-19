@@ -105,16 +105,19 @@ type notification_descriptions = {
     simple: string
     detailed: string
     necessary?: boolean
+    verb?: string
   }
 }
 export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   all_answers_on_my_markets: {
     simple: 'Answers on your markets',
     detailed: 'Answers on your own markets',
+    verb: 'answered your question',
   },
   all_comments_on_my_markets: {
     simple: 'Comments on your markets',
     detailed: 'Comments on your own markets',
+    verb: 'commented on your market',
   },
   answers_by_followed_users_on_watched_markets: {
     simple: 'Only answers by users you follow',
@@ -189,6 +192,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   tagged_user: {
     simple: 'A user tagged you',
     detailed: 'When another use tags you',
+    verb: 'tagged you',
   },
   thank_you_for_purchases: {
     simple: 'Thank you notes for your purchases',
@@ -230,10 +234,12 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   all_replies_to_my_comments_on_watched_markets: {
     simple: 'Only replies to your comments',
     detailed: "Only replies to your comments on markets you're watching",
+    verb: 'replied to you',
   },
   all_replies_to_my_answers_on_watched_markets: {
     simple: 'Only replies to your answers',
     detailed: "Only replies to your answers on markets you're watching",
+    verb: 'replied to you',
   },
   all_answers_on_watched_markets: {
     simple: 'All new answers',
