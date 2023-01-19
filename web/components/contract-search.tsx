@@ -36,7 +36,7 @@ export const SORTS = [
   { label: 'Total traders', value: 'most-popular' },
   { label: 'Liquidity', value: 'liquidity' },
   { label: 'Last activity', value: 'last-updated' },
-  { label: 'Closing soon', value: 'close-date' },
+  { label: 'Close date', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
   { label: 'Highest %', value: 'prob-descending' },
   { label: 'Lowest %', value: 'prob-ascending' },
