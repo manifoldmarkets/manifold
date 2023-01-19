@@ -267,8 +267,6 @@ export const SwipeCard = memo(
       setYesPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amount])
-    const quenstion =
-      'Apart from counting words and characters, our online editor can help you to improve word choice and'
     return (
       <>
         <Col
@@ -278,8 +276,8 @@ export const SwipeCard = memo(
           <div className="h-24 w-full rounded-t-2xl bg-black">
             <CornerDetails contract={contract} />
           </div>
-          <div className="relative grow bg-black">
-            <div className="absolute z-0 min-h-[30%] w-full bg-gradient-to-b from-black to-transparent pb-60" />
+          <div className="relative grow bg-black py-1">
+            <div className="absolute z-0 min-h-[30%] w-full bg-gradient-to-b from-black via-black/60 to-transparent pb-60" />
             <SiteLink
               className="absolute -top-9 z-10"
               href={contractPath(contract)}
@@ -288,10 +286,10 @@ export const SwipeCard = memo(
               <div
                 className={clsx(
                   'mx-4 text-white drop-shadow',
-                  getQuestionSize(quenstion)
+                  getQuestionSize(question)
                 )}
               >
-                {quenstion}
+                {question}
               </div>
             </SiteLink>
             <Row className="absolute top-[40%] z-10 mx-auto w-full px-4">
@@ -312,7 +310,7 @@ export const SwipeCard = memo(
                 }
               />
             </Row>
-            <Row className="absolute bottom-24 w-full justify-end px-4">
+            <Row className="absolute bottom-[104px] z-10 w-full justify-end px-4">
               <Actions user={user} contract={contract} />
             </Row>
             <Col className="absolute -bottom-16 z-10 w-full gap-6">
