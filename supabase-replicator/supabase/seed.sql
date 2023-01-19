@@ -701,7 +701,7 @@ $$ language sql;
 create or replace function get_time()
     returns bigint
     language sql
-    immutable parallel safe
+    stable parallel safe
 as $$
 select (extract(epoch from now()) * 1000)::bigint;
 $$;
