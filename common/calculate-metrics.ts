@@ -76,9 +76,11 @@ export const computeElasticity = (
     case 'dpm-2':
       return computeDpmElasticity(contract, betAmount)
     default: // there are some contracts on the dev DB with crazy mechanisms
-      return 0
+      return 1
   }
 }
+
+const logit = (x: number) => Math.log(x / (1 - x))
 
 export const computeBinaryCpmmElasticity = (
   unfilledBets: LimitBet[],
@@ -117,7 +119,7 @@ export const computeBinaryCpmmElasticity = (
   const safeYes = Number.isFinite(resultYes) ? resultYes : 1
   const safeNo = Number.isFinite(resultNo) ? resultNo : 0
 
-  return safeYes - safeNo
+  return logit(safeYes) - logit(safeNo)
 }
 
 export const computeBinaryCpmmElasticityFromAnte = (
@@ -152,7 +154,7 @@ export const computeBinaryCpmmElasticityFromAnte = (
   const safeYes = Number.isFinite(resultYes) ? resultYes : 1
   const safeNo = Number.isFinite(resultNo) ? resultNo : 0
 
-  return safeYes - safeNo
+  return logit(safeYes) - logit(safeNo)
 }
 
 export const computeCPMM2Elasticity = (
@@ -169,7 +171,7 @@ export const computeCPMM2Elasticity = (
     const sellProb = getProb(sellPool, a.id)
     const safeBuy = Number.isFinite(buyProb) ? buyProb : 1
     const safeSell = Number.isFinite(sellProb) ? sellProb : 0
-    return safeBuy - safeSell
+    return logit(safeBuy) - logit(safeSell)
   })
 
   return average(probDiffs)
@@ -179,7 +181,12 @@ export const computeDpmElasticity = (
   contract: DPMContract,
   betAmount: number
 ) => {
-  return getNewMultiBetInfo('', 2 * betAmount, contract).newBet.probAfter
+  const afterProb = getNewMultiBetInfo('', betAmount + 1, contract).newBet
+    .probAfter
+
+  const initialProb = getNewMultiBetInfo('', 1, contract).newBet.probAfter
+
+  return logit(afterProb) - logit(initialProb)
 }
 
 export const calculateCreatorTraders = (userContracts: Contract[]) => {
