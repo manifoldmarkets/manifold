@@ -631,7 +631,7 @@ as $$
     select data
     from (
       select * from get_recommended_contract_ids(uid)
-      union 
+      union
       -- Default recommendations from this particular user if none for you.
       select * from get_recommended_contract_ids('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
     ) as rec_contract_ids
@@ -705,7 +705,6 @@ create or replace function get_time()
 as $$
 select (extract(epoch from now()) * 1000)::bigint;
 $$;
-
 
 create or replace function search_contracts_by_group_slugs_for_creator(creator_id text,group_slugs text[], lim int, start int)
     returns jsonb[]
