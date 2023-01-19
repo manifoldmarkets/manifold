@@ -112,6 +112,7 @@ export function LimitOrderTable(props: {
                     size={'2xs'}
                     color={'gray-outline'}
                     onClick={onCancel}
+                    className={'whitespace-normal'}
                   >
                     Cancel all
                   </Button>
