@@ -95,3 +95,18 @@ export function listenForUnseenNotifications(
   )
   return listenForValues<Notification>(q, setNotifictions)
 }
+
+export const markNotificationAsSeen = async (
+  userId: string,
+  notificationId: string
+) => {
+  console.log('marking notification as seen', userId, notificationId)
+  const notificationsCollection = collection(
+    db,
+    `/users/${userId}/notifications`
+  )
+  await updateDoc(doc(notificationsCollection, notificationId), {
+    isSeen: true,
+    viewTime: Date.now(),
+  })
+}

@@ -13,7 +13,12 @@ We're using Expo to help with android and ios builds. You can find more informat
 1. Connect your phone to your computer  
 2. `yarn android:dev` or `yarn ios:dev` or `yarn ios:prod`   
 3. Scan the QR code with the app (it opens automatically after installing)    
-**Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.  
+**Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.
+4. Want to see console logs? (Only works on android):
+   - `$ ngrok http 3000` in a separate terminal
+   - Change the `baseUri` in `App.tsx` to the ngrok url
+   - `$ yarn android:prod` to start the app on your device
+   - On your computer, navigate to `chrome://inspect/#devices` in chrome and click inspect on the app
 
 
 ## Building  
