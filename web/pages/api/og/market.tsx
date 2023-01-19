@@ -4,9 +4,7 @@ import React from 'react'
 import { OgMarket } from 'web/pages/og/og-market'
 import { OgCardProps } from 'common/contract-details'
 
-export const config = {
-  runtime: 'experimental-edge',
-}
+export const config = { runtime: 'edge' }
 
 const READEX_PRO_URL = new URL('ReadexPro-Regular.ttf', import.meta.url)
 const READEX_PRO_DATA = fetch(READEX_PRO_URL).then((res) => res.arrayBuffer())
