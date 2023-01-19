@@ -505,7 +505,7 @@ export function SortRow(props: {
       <Row className="items-center gap-1">
         <div className="text-sm text-gray-400">Sort by:</div>
         <button className="w-20 text-sm text-gray-600" onClick={onSortClick}>
-          <Tooltip text={sort === 'Best' ? 'Most likes first.' : ''}>
+          <Tooltip text={sort === 'Best' ? 'Most likes first' : ''}>
             <Row className="items-center gap-1">
               {sort}
               <TriangleDownFillIcon className=" h-2 w-2" />
