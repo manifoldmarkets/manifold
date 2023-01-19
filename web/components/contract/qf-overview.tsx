@@ -6,7 +6,7 @@ import { formatMoney } from 'common/util/format'
 import { Button } from '../buttons/button'
 import { useState } from 'react'
 import { Spacer } from '../layout/spacer'
-import { createQfAnswer } from 'web/lib/firebase/api'
+import { createQfAnswer, payQfAnswer } from 'web/lib/firebase/api'
 import { ContractDetails } from './contract-details'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Answer } from 'common/answer'
@@ -20,6 +20,14 @@ import { getAnswerColor } from '../answers/answers-panel'
 import { Modal } from '../layout/modal'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { UserAvatarAndBadge } from '../widgets/user-link'
+import { useQfTxns } from 'web/hooks/txns/use-qf-txns'
+import { QFTxn } from 'common/txn'
+import {
+  calculateMatches,
+  calculateTotals,
+  totalPaid,
+} from 'common/calculate/qf'
+import { sumBy } from 'lodash'
 
 export function QFOverview(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
@@ -57,6 +65,7 @@ export function QFOverview(props: { contract: QuadraticFundingContract }) {
 function QfAnswersPanel(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
   const { answers } = contract
+  const qfTxns = useQfTxns(contract.id)
 
   return (
     <Col className="flex-1 gap-4">
@@ -66,7 +75,12 @@ function QfAnswersPanel(props: { contract: QuadraticFundingContract }) {
       </div>
       <Col className="gap-4">
         {answers.map((answer) => (
-          <QfAnswer contract={contract} answer={answer} />
+          <QfAnswer
+            contract={contract}
+            answer={answer}
+            qfTxns={qfTxns}
+            key={answer.id}
+          />
         ))}
       </Col>
     </Col>
@@ -104,7 +118,20 @@ function QfPayPanel(props: {
         <div className="text-2xl">{formatMoney(0)}</div> quadratic match
       </Row>
 
-      <Button size="xl" color="indigo" onClick={() => {}}>
+      <Button
+        size="xl"
+        color="indigo"
+        disabled={betAmount === undefined}
+        onClick={async () => {
+          await payQfAnswer({
+            qfId: contract.id,
+            answerId: answer.id,
+            amount: betAmount ?? 0,
+          })
+          // Clear inputs
+          setBetAmount(undefined)
+        }}
+      >
         Pay
       </Button>
     </Col>
@@ -114,17 +141,21 @@ function QfPayPanel(props: {
 function QfAnswer(props: {
   contract: QuadraticFundingContract
   answer: Answer
+  qfTxns: QFTxn[]
 }) {
-  const { contract, answer } = props
+  const { contract, answer, qfTxns } = props
   const { username, avatarUrl, text } = answer
   const color = getAnswerColor(
     answer,
     contract.answers.map((a) => a.text)
   )
   const [showModal, setShowModal] = useState(false)
+  const matchingPool = contract.pool.M$ + 1000
 
-  const prob = 0.5
-  const colorWidth = 100 * Math.max(prob, 0.01)
+  const total = calculateTotals(qfTxns)[answer.id] ?? 0
+  const match = calculateMatches(qfTxns, matchingPool)[answer.id] ?? 0
+  const fraction = (total + match) / (totalPaid(qfTxns) + matchingPool)
+  const colorWidth = 100 * Math.max(fraction, 0.01)
   return (
     <Col
       className={clsx(
@@ -148,7 +179,14 @@ function QfAnswer(props: {
           <Linkify className="text-md whitespace-pre-line" text={text} />
         </Row>
         <Row className="gap-2">
-          <div className="my-auto text-xl">1234</div>
+          <div className="my-auto text-xl">
+            {formatMoney(total)}{' '}
+            {match ? (
+              <span className="text-sm text-green-800">
+                +{formatMoney(match)}
+              </span>
+            ) : null}
+          </div>
           {tradingAllowed(contract) && (
             <Button
               size="2xs"

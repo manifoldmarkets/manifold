@@ -2,6 +2,7 @@ import { auth } from './users'
 import { APIError, getFunctionUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
 import { QFAnswerReq } from 'web/pages/api/v0/qf/answer'
+import { QFPayReq } from 'web/pages/api/v0/qf/pay'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -118,4 +119,8 @@ export function markAllNotifications(params: any) {
 
 export function createQfAnswer(params: QFAnswerReq) {
   return call('/api/v0/qf/answer', 'POST', params)
+}
+
+export function payQfAnswer(params: QFPayReq) {
+  return call('/api/v0/qf/pay', 'POST', params)
 }

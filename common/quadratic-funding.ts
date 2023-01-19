@@ -3,12 +3,14 @@ import { Txn } from './txn'
 
 // Returns a map of charity ids to the amount of M$ matched
 export function quadraticMatches(
-  allCharityTxns: Txn[],
-  matchingPool: number
+  txns: Txn[],
+  matchingPool: number,
+  // What txn field uniquely identifies the recipients
+  groupField: 'toId' | 'data.answerId'
 ): Record<string, number> {
   // For each charity, group the donations by each individual donor
-  const donationsByCharity = groupBy(allCharityTxns, 'toId')
-  const donationsByDonors = mapValues(donationsByCharity, (txns) =>
+  const donationsByRecipient = groupBy(txns, groupField)
+  const donationsByDonors = mapValues(donationsByRecipient, (txns) =>
     groupBy(txns, 'fromId')
   )
 

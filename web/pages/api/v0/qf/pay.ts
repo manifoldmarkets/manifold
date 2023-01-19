@@ -65,10 +65,12 @@ async function payAnswer(req: NextApiRequest, userId: string) {
       {
         userId: userId,
         payout: -amount,
+        deposit: -amount,
       },
       {
         userId: answer.userId,
         payout: amount,
+        deposit: amount,
       },
     ])
 
@@ -90,7 +92,10 @@ async function payAnswer(req: NextApiRequest, userId: string) {
       },
     }
     tx.set(qfPaymentTxnDoc, qfPaymentTxn)
-  })
 
-  payUsers
+    // Commit the transaction and return the result
+    return {
+      success: true,
+    }
+  })
 }
