@@ -21,13 +21,15 @@ import { Modal } from '../layout/modal'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { useQfTxns } from 'web/hooks/txns/use-qf-txns'
-import { QFTxn } from 'common/txn'
+import { QFPaymentTxn, QFTxn } from 'common/txn'
 import {
   calculateMatches,
   calculateTotals,
   totalPaid,
 } from 'common/calculate/qf'
-import { sumBy } from 'lodash'
+import { useUser } from 'web/hooks/use-user'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import QFTradesTable from './qf-trades-table'
 
 export function QFOverview(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
@@ -69,16 +71,13 @@ function QfAnswersPanel(props: { contract: QuadraticFundingContract }) {
 
   return (
     <Col className="flex-1 gap-4">
-      <div className="flex justify-between">
-        <Title className="!my-0">Answers</Title>
-        <div className="text-2xl">{answers.length}</div>
-      </div>
+      <div className="flex justify-between">{answers.length} entries</div>
       <Col className="gap-4">
         {answers.map((answer) => (
           <QfAnswer
             contract={contract}
             answer={answer}
-            qfTxns={qfTxns}
+            txns={qfTxns}
             key={answer.id}
           />
         ))}
@@ -90,14 +89,39 @@ function QfAnswersPanel(props: { contract: QuadraticFundingContract }) {
 function QfPayPanel(props: {
   contract: QuadraticFundingContract
   answer: Answer
+  txns: QFTxn[]
 }) {
-  const { contract, answer } = props
+  const { contract, answer, txns } = props
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const user = useUser()
+
+  const newTxn: QFPaymentTxn = {
+    category: 'QF_PAYMENT',
+    id: 'unused',
+    qfId: contract.id,
+    createdTime: Date.now(),
+    fromType: 'USER',
+    fromId: user?.id ?? 'unused',
+    toType: 'USER',
+    toId: answer.userId,
+    token: 'M$',
+    amount: betAmount ?? 0,
+    data: {
+      answerId: answer.id,
+    },
+  }
+  const oldMatch =
+    calculateMatches(txns, contract.pool.M$ + 1000)[answer.id] ?? 0
+  const newMatch = calculateMatches([...txns, newTxn], contract.pool.M$ + 1000)[
+    answer.id
+  ]
+  const deltaMatch = newMatch - oldMatch
+
   return (
     <Col className="sm:max-w-84 gap-4 !rounded-md bg-white !px-8 !py-6">
       {/* Add information about the answer */}
       <Row className="justify-between">
-        <div className="text-2xl">Pay "{answer.text}"</div>
+        <div className="text-2xl">Fund "{answer.text}"</div>
         <UserAvatarAndBadge
           name={answer.name}
           username={answer.username}
@@ -114,14 +138,15 @@ function QfPayPanel(props: {
         setError={() => {}}
       />
 
-      <Row className="mt-2 items-baseline gap-2 text-gray-500">
-        <div className="text-2xl">{formatMoney(0)}</div> quadratic match
+      <Row className="mt-8 items-baseline gap-1.5 text-gray-500">
+        <div className="text-2xl">{formatMoney(deltaMatch)}</div>
+        match <InfoTooltip text="Match may change after more people pay" />
       </Row>
 
       <Button
         size="xl"
         color="indigo"
-        disabled={betAmount === undefined}
+        disabled={!betAmount}
         onClick={async () => {
           await payQfAnswer({
             qfId: contract.id,
@@ -132,7 +157,7 @@ function QfPayPanel(props: {
           setBetAmount(undefined)
         }}
       >
-        Pay
+        Pay {answer.name} {formatMoney(betAmount ?? 0)}
       </Button>
     </Col>
   )
@@ -141,9 +166,9 @@ function QfPayPanel(props: {
 function QfAnswer(props: {
   contract: QuadraticFundingContract
   answer: Answer
-  qfTxns: QFTxn[]
+  txns: QFTxn[]
 }) {
-  const { contract, answer, qfTxns } = props
+  const { contract, answer, txns } = props
   const { username, avatarUrl, text } = answer
   const color = getAnswerColor(
     answer,
@@ -152,9 +177,9 @@ function QfAnswer(props: {
   const [showModal, setShowModal] = useState(false)
   const matchingPool = contract.pool.M$ + 1000
 
-  const total = calculateTotals(qfTxns)[answer.id] ?? 0
-  const match = calculateMatches(qfTxns, matchingPool)[answer.id] ?? 0
-  const fraction = (total + match) / (totalPaid(qfTxns) + matchingPool)
+  const total = calculateTotals(txns)[answer.id] ?? 0
+  const match = calculateMatches(txns, matchingPool)[answer.id] ?? 0
+  const fraction = (total + match) / (totalPaid(txns) + matchingPool)
   const colorWidth = 100 * Math.max(fraction, 0.01)
   return (
     <Col
@@ -167,7 +192,7 @@ function QfAnswer(props: {
       }}
     >
       <Modal open={showModal} setOpen={setShowModal} position="center">
-        <QfPayPanel contract={contract} answer={answer} />
+        <QfPayPanel contract={contract} answer={answer} txns={txns} />
       </Modal>
       <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
         <Row>
@@ -194,7 +219,7 @@ function QfAnswer(props: {
               onClick={() => setShowModal(!showModal)}
               className="my-auto"
             >
-              Buy
+              Fund
             </Button>
           )}
           <button className="p-1" onClick={() => {}}>
@@ -242,4 +267,10 @@ function CreateAnswerWidget(props: { contract: QuadraticFundingContract }) {
       </Col>
     </Col>
   )
+}
+
+export function QFTrades(props: { contract: QuadraticFundingContract }) {
+  const { contract } = props
+  const txns = useQfTxns(contract.id)
+  return <QFTradesTable contract={contract} txns={txns} />
 }
