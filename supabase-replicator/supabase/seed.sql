@@ -684,7 +684,7 @@ select array_agg(data) from (
     from contracts
     where data->'groupSlugs' ?| elem
     and is_valid_contract(data)
-    order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
+    order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
     ) as search_contracts
 $$;
@@ -717,8 +717,8 @@ select array_agg(data) from (
     from contracts
     where data->'groupSlugs' ?| elem
       and is_valid_contract(data)
-      and to_jsonb(data)->>'creatorId' = creator_id
-    order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
+      and data->'creatorId' = creator_id
+    order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
 ) as search_contracts
 $$;
