@@ -141,7 +141,6 @@ export async function getStaticPropz(ctx: {
       totalBets,
       topContractMetrics,
     },
-    revalidate: 60,
   }
 }
 
