@@ -5,7 +5,11 @@ import {
   getPortfolioHistory,
   PortfolioSnapshot,
 } from 'web/lib/supabase/portfolio-history'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
 
 const getCutoff = (period: Period) => {
   const nowRounded = Math.round(Date.now() / HOUR_MS) * HOUR_MS
@@ -24,14 +28,27 @@ export const usePrefetchPortfolioHistory = (userId: string, period: Period) => {
 
 export const usePortfolioHistory = (userId: string, period: Period) => {
   const cutoff = getCutoff(period)
-  const [portfolioHistory, setPortfolioHistory] = useState<
-    PortfolioSnapshot[] | undefined
-  >()
+  const [portfolioHistories, setPortfolioHistories] = usePersistentState<
+    Record<string, PortfolioSnapshot[] | undefined>
+  >(
+    {},
+    {
+      store: inMemoryStore(),
+      key: `user-portfolio-history-${userId}`,
+    }
+  )
+
   useEffect(() => {
-    setPortfolioHistory(undefined)
-    getPortfolioHistory(userId, cutoff).then(setPortfolioHistory)
-  }, [userId, cutoff])
-  return portfolioHistory
+    // We could remove this next line or set a lastUpdatedTime in order to re-fetch new data.
+    if (portfolioHistories[cutoff]) return
+    getPortfolioHistory(userId, cutoff).then((portfolioHistory) => {
+      setPortfolioHistories((prev) => ({
+        ...prev,
+        [cutoff]: portfolioHistory,
+      }))
+    })
+  }, [userId, cutoff, setPortfolioHistories, portfolioHistories])
+  return portfolioHistories[cutoff]
 }
 
 const periodToCutoff = (now: number, period: Period) => {
