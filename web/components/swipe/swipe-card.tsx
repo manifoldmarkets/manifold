@@ -21,15 +21,17 @@ import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize, {
   BUFFER_CARD_COLOR,
   BUFFER_CARD_OPACITY,
+  STARTING_BET_AMOUNT,
   isStatusAFailure,
 } from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
 import { Row } from '../layout/row'
+import { minIndex } from 'd3-array'
 
 const horizontalSwipeDist = 80
 const verticalSwipeDist = -100
 
-export type SwipeAction = 'left' | 'right' | 'up' | 'none'
+export type SwipeAction = 'left' | 'right' | 'up' | 'down' | 'none'
 
 function getSwipeAction(
   mx: number,
@@ -41,6 +43,9 @@ function getSwipeAction(
   }
   if (my <= verticalSwipeDist) {
     return 'up'
+  }
+  if (my >= Math.abs(verticalSwipeDist)) {
+    return 'down'
   }
   return 'none'
 }
@@ -73,15 +78,70 @@ const onBet = (
   })
 }
 
+export function PreviousSwipeCard(props: {
+  contract: BinaryContract
+  yPosition: number | undefined
+  cardHeight: number
+}) {
+  const { yPosition, contract, cardHeight } = props
+  const [{ x, y }, api] = useSpring(() => ({
+    x: 0,
+    y: -window.innerHeight,
+    config: { tension: 1000, friction: 70 },
+  }))
+
+  useEffect(() => {
+    const y = yPosition ? -window.innerHeight + yPosition : -window.innerHeight
+    api.start({ y })
+  }, [yPosition])
+
+  return (
+    <>
+      <animated.div
+        className={clsx(
+          'user-select-none pointer-events-auto absolute inset-1 z-20 max-w-lg touch-none'
+        )}
+        style={{ x, y, height: cardHeight }}
+        onClick={(e) => e.preventDefault()}
+      >
+        <SwipeCard
+          key={contract.id}
+          contract={contract}
+          amount={STARTING_BET_AMOUNT}
+          swipeBetPanel={
+            <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
+          }
+          className="h-full"
+        />
+      </animated.div>
+    </>
+  )
+}
+
 export function PrimarySwipeCard(props: {
   contract: BinaryContract
   index: number
   setIndex: (next: SetStateAction<number>) => void
+  cardHeight: number
+  wentToPreviousCard: boolean
+  setWentToPreviousCard: (wtpc: SetStateAction<boolean>) => void
   user?: User
+  previousContract?: BinaryContract
 }) {
-  const { index, setIndex, user } = props
+  const {
+    index,
+    setIndex,
+    user,
+    cardHeight,
+    wentToPreviousCard,
+    setWentToPreviousCard,
+  } = props
   const contract = (useContract(props.contract.id) ??
     props.contract) as BinaryContract
+  const previousContract = props.previousContract
+    ? ((useContract(props.previousContract.id) ??
+        props.previousContract) as BinaryContract)
+    : undefined
 
   const [amount, setAmount] = useState(10)
   const [action, setAction] = useState<SwipeAction>('none')
@@ -91,9 +151,14 @@ export function PrimarySwipeCard(props: {
   const [buttonAction, setButtonAction] = useState<'YES' | 'NO' | undefined>(
     undefined
   )
+  const [isFreshCard, setIsFreshCard] = useState(!wentToPreviousCard)
+  if (isFreshCard) {
+    setTimeout(() => setIsFreshCard(false), 10)
+  }
 
-  const [isFreshCard, setIsFreshCard] = useState(true)
-  setTimeout(() => setIsFreshCard(false), 10)
+  const [previousCardY, setPreviousCardY] = useState<number | undefined>(
+    undefined
+  )
 
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
@@ -147,6 +212,7 @@ export function PrimarySwipeCard(props: {
         // See if thresholds show if an action was made once thumb is lifted
         if (action === 'right' || action === 'left') {
           // Horizontal swipe is triggered, places bet
+          setWentToPreviousCard(false)
           direction = Math.sign(mx)
           const outcome = direction > 0 ? 'YES' : 'NO'
           onBet(
@@ -165,14 +231,32 @@ export function PrimarySwipeCard(props: {
             const y = -1 * window.innerHeight
             api.start({ y })
           }, 100)
-
+          setWentToPreviousCard(false)
           setTimeout(() => {
             setIndex(index + 1)
           }, 200)
         }
+        if (action === 'down') {
+          // Executes vertical swipe animation
+          if (previousContract) {
+            setTimeout(() => {
+              setPreviousCardY(window.innerHeight + 4)
+            }, 100)
+
+            setTimeout(() => {
+              setIndex(index - 1)
+              setWentToPreviousCard(true)
+            }, 300)
+          }
+        }
       }
       const x = down ? Math.sign(mx) * cappedDist : 0
       const y = down ? (my < 0 ? my : 0) : 0
+      if (my > 0) {
+        setPreviousCardY(my)
+      } else {
+        setPreviousCardY(undefined)
+      }
       if (action === 'none') {
         api.start({ x, y })
       }
@@ -182,14 +266,25 @@ export function PrimarySwipeCard(props: {
   const [isModalOpen, setIsModalOpen] = useState(false)
   return (
     <>
-      <Col
-        className={clsx(
-          'absolute inset-1 z-10 max-w-lg transition-opacity duration-300 ease-in-out',
-          BUFFER_CARD_COLOR,
-          isFreshCard ? BUFFER_CARD_OPACITY : 'opacity-0',
-          isModalOpen ? 'pointer-events-auto' : 'pointer-events-none'
-        )}
-      />
+      {previousContract && (
+        <PreviousSwipeCard
+          contract={previousContract}
+          yPosition={previousCardY}
+          cardHeight={cardHeight}
+        />
+      )}
+      {!wentToPreviousCard && (
+        <Col
+          className={clsx(
+            'absolute inset-1 z-10 max-w-lg rounded-2xl transition-opacity duration-300 ease-in-out',
+            BUFFER_CARD_COLOR,
+            isFreshCard || (action === 'down' && previousContract)
+              ? BUFFER_CARD_OPACITY
+              : 'opacity-0',
+            isModalOpen ? 'pointer-events-auto' : 'pointer-events-none'
+          )}
+        />
+      )}
 
       <animated.div
         {...bind()}

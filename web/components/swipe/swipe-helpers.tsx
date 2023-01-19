@@ -1,6 +1,5 @@
 export default function getQuestionSize(question: string) {
   const height2width = window.innerHeight / window.innerWidth
-  console.log(height2width)
   const questionLength = question.length
   if (height2width < 2.1) {
     if (questionLength >= 160) return 'text-lg'

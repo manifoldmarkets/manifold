@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import clsx from 'clsx'
 import type { BinaryContract } from 'common/contract'
@@ -81,6 +81,8 @@ export default function Swipe() {
       postMessageToNative('onPageVisit', { page: undefined })
     }
   }, [])
+
+  const [wentToPreviousCard, setWentToPreviousCard] = useState(false)
   if (user === undefined || feed === undefined) {
     return (
       <Page>
@@ -100,7 +102,6 @@ export default function Swipe() {
       </Page>
     )
   }
-
   return (
     <Page>
       <Row
@@ -116,6 +117,10 @@ export default function Swipe() {
                 index={index}
                 setIndex={setIndex}
                 user={user}
+                previousContract={index > 0 ? feed[index - 1] : undefined}
+                cardHeight={cardHeight}
+                wentToPreviousCard={wentToPreviousCard}
+                setWentToPreviousCard={setWentToPreviousCard}
               />
             </div>
           </>
