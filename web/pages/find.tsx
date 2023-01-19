@@ -1,5 +1,5 @@
 import { Page } from 'web/components/layout/page'
-import { OmniSearch } from 'web/components/search/search'
+import { OmniSearch } from 'web/components/search/omni-search'
 
 export default function Find() {
   return (
