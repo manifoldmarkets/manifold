@@ -289,7 +289,7 @@ export function ContractPageContent(
         />
 
         <ContractDescription
-          className="mt-6 mb-2 px-2"
+          className="mt-6 px-2"
           contract={contract}
           toggleResolver={() => setShowResolver(!showResolver)}
         />

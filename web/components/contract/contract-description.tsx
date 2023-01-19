@@ -46,7 +46,7 @@ export function ContractDescription(props: {
       ) : (
         <CollapsibleContent
           content={contract.description}
-          contractId={contract.id}
+          stateKey={`isCollapsed-contract-${contract.id}`}
         />
       )}
     </div>
@@ -104,10 +104,9 @@ function ContractActions(props: {
     <>
       <CollapsibleContent
         content={contract.description}
-        contractId={contract.id}
+        stateKey={`isCollapsed-contract-${contract.id}`}
       />
-      <Spacer h={4} />
-      <Row className="my-4 items-center gap-2 text-xs">
+      <Row className="mb-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
         <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
           Resolve
