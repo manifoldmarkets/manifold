@@ -53,7 +53,7 @@ export function getNewContract(
       getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale),
     NUMERIC: () => getNumericProps(ante, bucketCount, min, max),
     MULTIPLE_CHOICE: () => getDpmMultipleChoiceProps(ante, answers),
-    QUADRATIC_FUNDING: () => getQFProps(ante),
+    QUADRATIC_FUNDING: () => getQfProps(ante),
     CERT: () => getCertProps(ante),
     FREE_RESPONSE: () => getFreeAnswerProps(ante),
   }[outcomeType]()
@@ -169,7 +169,7 @@ const getCertProps = (ante: number) => {
   return system
 }
 
-const getQFProps = (_ante: number) => {
+const getQfProps = (_ante: number) => {
   const system: QuadraticFunding = {
     outcomeType: 'QUADRATIC_FUNDING',
     mechanism: 'qf',

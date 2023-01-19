@@ -10,7 +10,7 @@ import { getUserId, initAdmin, payUsers, safeGet } from '../_firebase-utils'
 import { validate } from '../_validate'
 import { QuadraticFundingContract } from 'common/contract'
 import { APIError } from 'common/api'
-import { QFPaymentTxn } from 'common/txn'
+import { QfPaymentTxn } from 'common/txn'
 import { User } from 'common/user'
 
 export const config = { api: { bodyParser: true } }
@@ -24,7 +24,7 @@ const schema = z.object({
   answerId: z.string(),
   amount: z.number(),
 })
-export type QFPayReq = {
+export type QfPayReq = {
   qfId: string
   answerId: string
   amount: number
@@ -74,9 +74,9 @@ async function payAnswer(req: NextApiRequest, userId: string) {
       },
     ])
 
-    // Create a QFPaymentTxn for this answer id, and save it to the txn table
+    // Create a QfPaymentTxn for this answer id, and save it to the txn table
     const qfPaymentTxnDoc = firestore.collection('txns').doc()
-    const qfPaymentTxn: QFPaymentTxn = {
+    const qfPaymentTxn: QfPaymentTxn = {
       category: 'QF_PAYMENT',
       id: qfPaymentTxnDoc.id,
       qfId,

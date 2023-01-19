@@ -1,12 +1,12 @@
 import { QuadraticFundingContract } from 'common/contract'
-import { QFTxn } from 'common/txn'
+import { QfTxn } from 'common/txn'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useUsersById } from 'web/hooks/use-user'
 import { formatTimeShort } from 'web/lib/util/time'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 
-type QFEntry = {
+type QfEntry = {
   id: string
   from: string
   to: string
@@ -17,9 +17,9 @@ type QFEntry = {
 const titles = ['From', 'Entry', 'Amount', 'Time']
 const keys = ['from', 'answer', 'amount', 'time']
 
-export default function QFTradesTable(props: {
+export default function QfTradesTable(props: {
   contract: QuadraticFundingContract
-  txns: QFTxn[]
+  txns: QfTxn[]
 }) {
   const { contract, txns } = props
 
@@ -60,7 +60,7 @@ export default function QFTradesTable(props: {
     }
   }
 
-  const getText = (txn: QFTxn) =>
+  const getText = (txn: QfTxn) =>
     contract.answers.find((a) => a.id === txn.data?.answerId)?.text
 
   // TODO: Condense PAY_MANA/TRANFER pairs into a single row
@@ -71,7 +71,7 @@ export default function QFTradesTable(props: {
     answer: getText(txn),
     amount: formatMoney(txn.amount),
     time: formatTimeShort(txn.createdTime),
-  })) as QFEntry[]
+  })) as QfEntry[]
 
   return (
     <div className="mt-8 flex flex-col">

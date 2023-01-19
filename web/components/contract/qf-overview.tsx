@@ -21,7 +21,7 @@ import { Modal } from '../layout/modal'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { useQfTxns } from 'web/hooks/txns/use-qf-txns'
-import { QFPaymentTxn, QFTxn } from 'common/txn'
+import { QfPaymentTxn, QfTxn } from 'common/txn'
 import {
   calculateMatches,
   calculateTotals,
@@ -29,10 +29,10 @@ import {
 } from 'common/calculate/qf'
 import { useUser } from 'web/hooks/use-user'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import QFTradesTable from './qf-trades-table'
+import QfTradesTable from './qf-trades-table'
 import { AlertBox } from '../widgets/alert-box'
 
-export function QFOverview(props: { contract: QuadraticFundingContract }) {
+export function QfOverview(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
   const match = formatMoney(contract.pool.M$)
   const qfTxns = useQfTxns(contract.id)
@@ -96,13 +96,13 @@ function QfAnswersPanel(props: { contract: QuadraticFundingContract }) {
 function QfPayPanel(props: {
   contract: QuadraticFundingContract
   answer: Answer
-  txns: QFTxn[]
+  txns: QfTxn[]
 }) {
   const { contract, answer, txns } = props
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
   const user = useUser()
 
-  const newTxn: QFPaymentTxn = {
+  const newTxn: QfPaymentTxn = {
     category: 'QF_PAYMENT',
     id: 'unused',
     qfId: contract.id,
@@ -173,7 +173,7 @@ function QfPayPanel(props: {
 function QfAnswer(props: {
   contract: QuadraticFundingContract
   answer: Answer
-  txns: QFTxn[]
+  txns: QfTxn[]
 }) {
   const { contract, answer, txns } = props
   const { username, avatarUrl, text } = answer
@@ -276,8 +276,8 @@ function CreateAnswerWidget(props: { contract: QuadraticFundingContract }) {
   )
 }
 
-export function QFTrades(props: { contract: QuadraticFundingContract }) {
+export function QfTrades(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
   const txns = useQfTxns(contract.id)
-  return <QFTradesTable contract={contract} txns={txns} />
+  return <QfTradesTable contract={contract} txns={txns} />
 }

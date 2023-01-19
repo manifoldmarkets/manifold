@@ -23,13 +23,13 @@ const schema = z.object({
   text: z.string(),
   receiverId: z.string().optional(),
 })
-export type QFAnswerReq = {
+export type QfAnswerReq = {
   qfId: string
   text: string
   // If set, payments go to this user instead of the requester
-  // TODO: Is this useful for all QF payments?
+  // TODO: Is this useful for all Qf payments?
   // Pro: Allows me to set up an ideal blog prize tourney
-  // Con: Kind of allows lying about who made this. So... maybe only enable for the QF creator?
+  // Con: Kind of allows lying about who made this. So... maybe only enable for the Qf creator?
   receiverId?: string
 }
 

@@ -15,9 +15,9 @@ type AnyTxnType =
   | CertPayMana
   | CertDividend
   | CertBurn
-  | QFPayment
-  | QFPool
-  | QFDividend
+  | QfPayment
+  | QfPool
+  | QfDividend
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -175,11 +175,11 @@ type SignupBonus = {
   category: 'SIGNUP_BONUS'
 }
 
-type QFId = {
+type QfId = {
   qfId: string
 }
 
-type QFPayment = {
+type QfPayment = {
   category: 'QF_PAYMENT'
   fromType: 'USER'
   toType: 'USER'
@@ -188,13 +188,13 @@ type QFPayment = {
   }
 }
 
-type QFPool = {
+type QfPool = {
   category: 'QF_POOL'
   fromType: 'USER'
   toType: 'CONTRACT'
 }
 
-type QFDividend = {
+type QfDividend = {
   category: 'QF_DIVIDEND'
   fromType: 'CONTRACT'
   toType: 'USER'
@@ -215,7 +215,7 @@ export type CertTransferTxn = CertTxn & CertTransfer
 export type CertPayManaTxn = CertTxn & CertPayMana
 export type CertDividendTxn = CertTxn & CertDividend
 export type CertBurnTxn = CertTxn & CertBurn
-export type QFTxn = Txn & QFId
-export type QFPaymentTxn = QFTxn & QFPayment
-export type QFPoolTxn = QFTxn & QFPool
-export type QFDividendTxn = QFTxn & QFDividend
+export type QfTxn = Txn & QfId
+export type QfPaymentTxn = QfTxn & QfPayment
+export type QfPoolTxn = QfTxn & QfPool
+export type QfDividendTxn = QfTxn & QfDividend

@@ -1,4 +1,4 @@
-import { QFTxn, Txn } from 'common/txn'
+import { QfTxn, Txn } from 'common/txn'
 import { orderBy, query, where } from 'firebase/firestore'
 import { coll, listenForValues } from '../utils'
 
@@ -9,7 +9,7 @@ const getQfTxnsQuery = (qfId: string) =>
 
 export function listenForQfTxns(
   qfId: string,
-  setTxns: (txns: QFTxn[]) => void
+  setTxns: (txns: QfTxn[]) => void
 ) {
-  return listenForValues<QFTxn>(getQfTxnsQuery(qfId), setTxns)
+  return listenForValues<QfTxn>(getQfTxnsQuery(qfId), setTxns)
 }

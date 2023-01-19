@@ -34,7 +34,7 @@ import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
-import { QFOverview } from './qf-overview'
+import { QfOverview } from './qf-overview'
 
 export const ContractOverview = memo(
   (props: {
@@ -55,7 +55,7 @@ export const ContractOverview = memo(
       case 'CERT':
         return <CertOverview contract={contract} />
       case 'QUADRATIC_FUNDING':
-        return <QFOverview contract={contract} />
+        return <QfOverview contract={contract} />
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         return <ChoiceOverview contract={contract} bets={bets} />

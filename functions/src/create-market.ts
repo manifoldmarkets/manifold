@@ -350,7 +350,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     // certs have the mint and pool specified in txn
     await mintAndPoolCert(providerId, contract.id, DEFAULT_SHARES, ante)
   } else if (outcomeType === 'QUADRATIC_FUNDING') {
-    // TODO: Could create a QFPoolTxn using the ante
+    // TODO: Could create a QfPoolTxn using the ante
   }
 
   return contract
