@@ -125,6 +125,7 @@ export async function getStaticPropz(props: {
       totalBets,
       topContractMetrics,
     },
+    revalidate: 60,
   }
 }
 
