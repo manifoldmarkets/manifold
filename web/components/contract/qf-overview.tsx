@@ -30,15 +30,18 @@ import {
 import { useUser } from 'web/hooks/use-user'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import QFTradesTable from './qf-trades-table'
+import { AlertBox } from '../widgets/alert-box'
 
 export function QFOverview(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
   const match = formatMoney(contract.pool.M$)
+  const qfTxns = useQfTxns(contract.id)
+  const raised = formatMoney(totalPaid(qfTxns))
 
   return (
-    <Col>
+    <Col className="gap-6">
       <ContractDetails contract={contract} />
-      <Spacer h={8} />
+
       <div className="flex gap-2">
         <Image
           alt=""
@@ -49,15 +52,19 @@ export function QFOverview(props: { contract: QuadraticFundingContract }) {
         />
         <div className="flex grow justify-between gap-4">
           <Title className="!my-0">{contract.question}</Title>
-          <span className="text-4xl">{match}</span>
+          <Col className="items-end">
+            <div className="text-3xl">{raised} raised</div>
+            <div className="text-xl text-green-800">+{match} match</div>
+          </Col>
         </div>
       </div>
 
-      <Spacer h={8} />
+      <AlertBox
+        title="Quadratic funding is experimental."
+        text="This is a quadratic funding contract, which lets you crowdfund entries with a democratic matching pool. For more info, see https://wtfisqf.com/"
+      />
 
       <QfAnswersPanel contract={contract} />
-
-      <Spacer h={8} />
 
       <CreateAnswerWidget contract={contract} />
     </Col>
