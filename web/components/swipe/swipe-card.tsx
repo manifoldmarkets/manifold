@@ -4,7 +4,7 @@ import { track } from '@amplitude/analytics-browser'
 import { animated, useSpring } from '@react-spring/web'
 import { rubberbandIfOutOfBounds, useDrag } from '@use-gesture/react'
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
-import { BinaryContract, Contract, MAX_QUESTION_LENGTH } from 'common/contract'
+import { BinaryContract, Contract } from 'common/contract'
 import { getBinaryProb } from 'common/contract-details'
 import { User } from 'common/user'
 import { memo, ReactNode, SetStateAction, useEffect, useState } from 'react'
@@ -15,18 +15,17 @@ import { contractPath } from 'web/lib/firebase/contracts'
 import { logView } from 'web/lib/firebase/views'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize, {
   BUFFER_CARD_COLOR,
   BUFFER_CARD_OPACITY,
-  STARTING_BET_AMOUNT,
   isStatusAFailure,
+  STARTING_BET_AMOUNT,
 } from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
-import { Row } from '../layout/row'
-import { minIndex } from 'd3-array'
 
 const horizontalSwipeDist = 80
 const verticalSwipeDist = -100
@@ -83,16 +82,20 @@ export function PreviousSwipeCard(props: {
   yPosition: number | undefined
   cardHeight: number
 }) {
-  const { yPosition, contract, cardHeight } = props
+  const { yPosition, cardHeight } = props
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
     y: -window.innerHeight,
     config: { tension: 1000, friction: 70 },
   }))
 
+  const contract = (useContract(props.contract.id) ??
+    props.contract) as BinaryContract
+
   useEffect(() => {
     const y = yPosition ? -window.innerHeight + yPosition : -window.innerHeight
     api.start({ y })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yPosition])
 
   return (
@@ -138,10 +141,8 @@ export function PrimarySwipeCard(props: {
   } = props
   const contract = (useContract(props.contract.id) ??
     props.contract) as BinaryContract
+
   const previousContract = props.previousContract
-    ? ((useContract(props.previousContract.id) ??
-        props.previousContract) as BinaryContract)
-    : undefined
 
   const [amount, setAmount] = useState(10)
   const [action, setAction] = useState<SwipeAction>('none')

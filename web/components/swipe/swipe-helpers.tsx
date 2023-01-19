@@ -20,8 +20,6 @@ export default function getQuestionSize(question: string) {
   }
 }
 
-import { MAX_QUESTION_LENGTH } from 'common/contract'
-
 export function isStatusAFailure(
   betStatus: 'loading' | 'success' | string | undefined
 ) {
