@@ -674,6 +674,23 @@ select array_agg(data) from (
   ) as rel_contracts
 $$;
 
+create or replace function get_time()
+    returns bigint
+    language sql
+    stable parallel safe
+as $$
+select (extract(epoch from now()) * 1000)::bigint;
+$$;
+
+create or replace function is_valid_contract(data jsonb)
+    returns boolean
+as $$
+select
+        not (data->>'isResolved')::boolean
+        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
+        and not (data->>'visibility') = 'unlisted'
+$$ language sql;
+
 create or replace function search_contracts_by_group_slugs(group_slugs text[], lim int, start int)
     returns jsonb[]
     immutable parallel safe
@@ -687,23 +704,6 @@ select array_agg(data) from (
     order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
     ) as search_contracts
-$$;
-
-create or replace function is_valid_contract(data jsonb)
-    returns boolean
-as $$
-select
-        not (data->>'isResolved')::boolean
-        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
-        and not (data->>'visibility') = 'unlisted'
-$$ language sql;
-
-create or replace function get_time()
-    returns bigint
-    language sql
-    stable parallel safe
-as $$
-select (extract(epoch from now()) * 1000)::bigint;
 $$;
 
 create or replace function search_contracts_by_group_slugs_for_creator(creator_id text,group_slugs text[], lim int, start int)
