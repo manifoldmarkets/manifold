@@ -126,6 +126,7 @@ alter table contracts enable row level security;
 drop policy if exists "public read" on contracts;
 create policy "public read" on contracts for select using (true);
 create index if not exists contracts_data_gin on contracts using GIN (data);
+create index if not exists contracts_group_slugs_gin on contracts using GIN ((data->'groupSlugs'));
 
 create table if not exists contract_answers (
     contract_id text not null,
@@ -630,7 +631,7 @@ as $$
     select data
     from (
       select * from get_recommended_contract_ids(uid)
-      union 
+      union
       -- Default recommendations from this particular user if none for you.
       select * from get_recommended_contract_ids('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
     ) as rec_contract_ids
@@ -640,6 +641,23 @@ as $$
     limit count
   ) as rec_contracts
 $$;
+
+create or replace function get_time()
+    returns bigint
+    language sql
+    stable parallel safe
+as $$
+select (extract(epoch from now()) * 1000)::bigint;
+$$;
+
+create or replace function is_valid_contract(data jsonb)
+    returns boolean
+as $$
+select
+        not (data->>'isResolved')::boolean
+        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
+        and not (data->>'visibility') = 'unlisted'
+$$ language sql;
 
 create or replace function get_related_contract_ids(source_id text)
     returns table(contract_id text, distance float)
@@ -680,33 +698,13 @@ create or replace function search_contracts_by_group_slugs(group_slugs text[], l
 as $$
 select array_agg(data) from (
     select data
-    from contracts,
-      jsonb_array_elements(data -> 'groupSlugs')
-          as elem
-    where elem ?| group_slugs
+    from contracts
+    where data->'groupSlugs' ?| group_slugs
     and is_valid_contract(data)
-    order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
+    order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
     ) as search_contracts
 $$;
-
-create or replace function is_valid_contract(data jsonb)
-    returns boolean
-as $$
-select
-        not (data->>'isResolved')::boolean
-        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
-        and not (data->>'visibility') = 'unlisted'
-$$ language sql;
-
-create or replace function get_time()
-    returns bigint
-    language sql
-    immutable parallel safe
-as $$
-select (extract(epoch from now()) * 1000)::bigint;
-$$;
-
 
 create or replace function search_contracts_by_group_slugs_for_creator(creator_id text,group_slugs text[], lim int, start int)
     returns jsonb[]
@@ -715,13 +713,11 @@ create or replace function search_contracts_by_group_slugs_for_creator(creator_i
 as $$
 select array_agg(data) from (
     select data
-    from contracts,
-         jsonb_array_elements(data -> 'groupSlugs')
-             as elem
-    where elem ?| group_slugs
+    from contracts
+    where data->'groupSlugs' ?| group_slugs
       and is_valid_contract(data)
-      and to_jsonb(data)->>'creatorId' = creator_id
-    order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
+      and data->>'creatorId' = creator_id
+    order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
 ) as search_contracts
 $$;
