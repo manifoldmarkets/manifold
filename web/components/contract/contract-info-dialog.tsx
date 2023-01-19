@@ -179,7 +179,7 @@ export function ContractInfoDialog(props: {
                             ? 'Log-odds change between a Ṁ50 bet on YES and NO'
                             : mechanism === 'cpmm-2'
                             ? 'Log-odds change between a Ṁ50 bet for and against each outcome'
-                            : 'Log-odds change from a Ṁ100 bet'
+                            : 'Log-odds change from a Ṁ50 bet'
                         }
                       />
                     </Row>
