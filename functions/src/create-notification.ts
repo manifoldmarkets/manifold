@@ -222,6 +222,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       getNotificationDestinationsForUser(privateUser, reason)
 
     const receivedNotifications = usersToReceivedNotifications[userId] ?? []
+
     // Browser notifications
     if (sendToBrowser && !receivedNotifications.includes('browser')) {
       const notificationRef = firestore
@@ -232,6 +233,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       receivedNotifications.push('browser')
     }
 
+    // Mobile push notifications
     if (
       sendToMobile &&
       !receivedNotifications.includes('mobile') &&
@@ -251,34 +253,35 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       receivedNotifications.push('mobile')
     }
 
-    // Emails notifications
-    if (!sendToEmail || receivedNotifications.includes('email')) return
-    if (sourceType === 'comment') {
-      const { repliedToType, repliedToAnswerText, repliedToId, bet } =
-        repliedUsersInfo?.[userId] ?? {}
-      // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
-      await sendNewCommentEmail(
-        reason,
-        privateUser,
-        sourceUser,
-        sourceContract,
-        sourceText,
-        sourceId,
-        bet,
-        repliedToAnswerText,
-        repliedToType === 'answer' ? repliedToId : undefined
-      )
-      receivedNotifications.push('email')
-    } else if (sourceType === 'answer') {
-      await sendNewAnswerEmail(
-        reason,
-        privateUser,
-        sourceUser.name,
-        sourceText,
-        sourceContract,
-        sourceUser.avatarUrl
-      )
-      receivedNotifications.push('email')
+    // Email notifications
+    if (sendToEmail && !receivedNotifications.includes('email')) {
+      if (sourceType === 'comment') {
+        const { repliedToType, repliedToAnswerText, repliedToId, bet } =
+          repliedUsersInfo?.[userId] ?? {}
+        // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
+        await sendNewCommentEmail(
+          reason,
+          privateUser,
+          sourceUser,
+          sourceContract,
+          sourceText,
+          sourceId,
+          bet,
+          repliedToAnswerText,
+          repliedToType === 'answer' ? repliedToId : undefined
+        )
+        receivedNotifications.push('email')
+      } else if (sourceType === 'answer') {
+        await sendNewAnswerEmail(
+          reason,
+          privateUser,
+          sourceUser.name,
+          sourceText,
+          sourceContract,
+          sourceUser.avatarUrl
+        )
+        receivedNotifications.push('email')
+      }
     }
     usersToReceivedNotifications[userId] = receivedNotifications
   }
