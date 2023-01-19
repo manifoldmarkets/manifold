@@ -681,10 +681,8 @@ create or replace function search_contracts_by_group_slugs(group_slugs text[], l
 as $$
 select array_agg(data) from (
     select data
-    from contracts,
-      jsonb_array_elements(data -> 'groupSlugs')
-          as elem
-    where elem ?| group_slugs
+    from contracts
+    where data->'groupSlugs' ?| elem
     and is_valid_contract(data)
     order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
     offset start limit lim
@@ -716,10 +714,8 @@ create or replace function search_contracts_by_group_slugs_for_creator(creator_i
 as $$
 select array_agg(data) from (
     select data
-    from contracts,
-         jsonb_array_elements(data -> 'groupSlugs')
-             as elem
-    where elem ?| group_slugs
+    from contracts
+    where data->'groupSlugs' ?| elem
       and is_valid_contract(data)
       and to_jsonb(data)->>'creatorId' = creator_id
     order by (to_jsonb(data) ->> 'uniqueBettors7Days')::int desc, to_jsonb(data) ->> 'slug'
