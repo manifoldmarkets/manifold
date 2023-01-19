@@ -9,7 +9,6 @@ import { z } from 'zod'
 import { getUserId, initAdmin, safeGet } from '../_firebase-utils'
 import { validate } from '../_validate'
 import { QuadraticFundingContract } from 'common/contract'
-import { APIError } from 'common/api'
 import { User } from 'common/user'
 import { Answer } from 'common/answer'
 
