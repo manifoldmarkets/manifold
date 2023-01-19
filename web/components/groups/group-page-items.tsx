@@ -47,6 +47,7 @@ export function GroupMembersWidget(props: { group: Group }) {
   const groupAdmins = getGroupAdmins(group.id).then((result) =>
     console.log(result)
   )
+
   console.log(groupAdmins)
   return (
     <>
@@ -57,12 +58,12 @@ export function GroupMembersWidget(props: { group: Group }) {
           <span>{group.totalMembers} members</span>
         </Row>
       </button>
-      {/* <MultiUserTransactionModal
+      <MultiUserTransactionModal
         userInfos={groupMembersItems}
         modalLabel="Members"
         open={open}
         setOpen={setOpen}
-      /> */}
+      />
     </>
   )
 }

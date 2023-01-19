@@ -50,9 +50,10 @@ export async function getMemberGroups(userId: string) {
 export async function getGroupAdmins(groupId: string) {
   const groupMembers = await run(
     db
-      .from('group_members')
-      .select('member_id, data->createdTime, data->role')
+      .from('group_role')
+      .select('*')
       .eq('group_id', groupId)
+      .eq('role', 'admin')
   )
 
   // const { data: groups } = await run(
