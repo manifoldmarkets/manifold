@@ -234,11 +234,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     }
 
     // Mobile push notifications
-    if (
-      sendToMobile &&
-      !receivedNotifications.includes('mobile') &&
-      userId === 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
-    ) {
+    if (sendToMobile && !receivedNotifications.includes('mobile')) {
       const reasonText =
         (notificationPreference &&
           NOTIFICATION_DESCRIPTIONS[notificationPreference].verb) ??
