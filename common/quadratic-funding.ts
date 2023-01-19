@@ -6,6 +6,7 @@ export function quadraticMatches(
   txns: Txn[],
   matchingPool: number,
   // What txn field uniquely identifies the recipients
+  // TODO: Perhaps this should always be toId anyways, to combat sockpuppet adding?
   groupField: 'toId' | 'data.answerId'
 ): Record<string, number> {
   // For each charity, group the donations by each individual donor
