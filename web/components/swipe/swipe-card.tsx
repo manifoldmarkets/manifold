@@ -95,7 +95,6 @@ export function PreviousSwipeCard(props: {
   useEffect(() => {
     const y = yPosition ? -(cardHeight + 8) + yPosition : -(cardHeight + 8)
     api.start({ y })
-    console.log(y)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yPosition])
 
@@ -254,7 +253,6 @@ export function PrimarySwipeCard(props: {
         } else {
           api.start({ x: 0, y: 0 })
           setPreviousCardY(undefined)
-          console.log('HIIII', previousCardY)
         }
       } else {
         const x = down ? Math.sign(mx) * cappedDist : 0
