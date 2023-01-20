@@ -252,6 +252,7 @@ export function PrimarySwipeCard(props: {
             }, 300)
           }
         } else {
+          api.start({ x: 0, y: 0 })
           setPreviousCardY(undefined)
           console.log('HIIII', previousCardY)
         }
@@ -365,6 +366,8 @@ export const SwipeCard = memo(
       getOutcomeProbabilityAfterBet(contract, 'YES', amount)
     )
 
+    const quenstion =
+      'AApart from counting words and characters, our online editor can help you to improve word choice and'
     useEffect(() => {
       setNoPercent(1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount))
       setYesPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))
@@ -392,13 +395,15 @@ export const SwipeCard = memo(
                 <div
                   className={clsx(
                     'text-white drop-shadow',
-                    getQuestionSize(question)
+                    getQuestionSize(quenstion)
                   )}
                 >
-                  {question}
+                  {quenstion}
                 </div>
               </SiteLink>
-              <Row className="mx-auto w-full grow items-center">
+              <Row className="mx-auto w-full grow items-center" />
+
+              <Row className="absolute top-[45%] w-full items-center">
                 <Percent
                   currPercent={currPercent}
                   yesPercent={yesPercent}
@@ -420,13 +425,13 @@ export const SwipeCard = memo(
                 <Actions user={user} contract={contract} />
               </Row>
               <Col className="gap-6">
-                <div className="h-16">
+                <Col className="h-20 w-full justify-end">
                   <DescriptionAndModal
                     description={description}
                     isModalOpen={isModalOpen}
                     setIsModalOpen={setIsModalOpen}
                   />
-                </div>
+                </Col>
                 {swipeBetPanel}
               </Col>
             </Col>

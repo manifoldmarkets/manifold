@@ -61,7 +61,7 @@ export function DescriptionAndModal(props: {
   const { description, isModalOpen, setIsModalOpen } = props
   const descriptionMaxLength = 110
   const descriptionSeeMoreBuffer = 14
-  const descriptionClass = ' px-4 text-sm font-thin text-gray-100 break-words'
+  const descriptionClass = 'text-sm font-thin text-gray-100 break-words'
 
   const descriptionString =
     typeof description === 'string'
@@ -95,7 +95,7 @@ export function DescriptionAndModal(props: {
               )}
             >
               <Col>
-                <Content content={description} />
+                <Content content={descriptionString} />
               </Col>
             </Modal>
           </>

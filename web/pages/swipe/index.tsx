@@ -105,7 +105,9 @@ export default function Swipe() {
   return (
     <Page>
       <Row
-        className={clsx('relative w-full max-w-lg overflow-hidden')}
+        className={clsx(
+          'user-select-none relative w-full max-w-lg overflow-hidden'
+        )}
         style={{ height: cardHeight }}
       >
         {cards.length > 0 && (
@@ -134,7 +136,7 @@ export default function Swipe() {
                 BUFFER_CARD_OPACITY
               )}
             />
-            <Col className="user-select-none absolute inset-1 z-10 touch-none">
+            <Col className="absolute inset-1 z-10 touch-none">
               <SwipeCard
                 amount={STARTING_BET_AMOUNT}
                 contract={cards[1]}
