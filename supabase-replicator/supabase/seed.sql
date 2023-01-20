@@ -721,3 +721,37 @@ select array_agg(data) from (
     offset start limit lim
 ) as search_contracts
 $$;
+
+
+create or replace function get_contract_metrics_with_contracts(uid text, count int)
+    returns table(contract_id text, metrics jsonb, contract jsonb)
+    immutable parallel safe
+    language sql
+as $$
+select contract_metrics.contract_id,  contract_metrics.data as metrics, contracts.data as contract
+from (
+         select * from user_contract_metrics
+         where user_id = uid
+     ) as contract_metrics
+         left join contracts
+         on contracts.id = contract_id
+limit count
+$$;
+
+create or replace function get_open_limit_bets_with_contracts(uid text, count int)
+    returns table(contract_id text, bets jsonb[], contract jsonb)
+    immutable parallel safe
+    language sql
+as $$;
+select bets.contract_id, array_agg(bets.data) as bets, contracts.data as contract
+from (
+         select data,contract_id from contract_bets
+         where (data->>'userId') = uid and
+                 (data->>'isFilled')::boolean = false and
+                 (data->>'isCancelled')::boolean = false
+     ) as bets
+         left join contracts
+         on contracts.id = bets.contract_id
+group by bets.contract_id, contracts.data
+limit count
+$$;

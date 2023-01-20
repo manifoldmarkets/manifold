@@ -1,6 +1,10 @@
 import { db } from './db'
 import { run, selectJson } from 'common/supabase/utils'
 import { BetFilter } from 'web/lib/firebase/bets'
+import { ContractMetrics } from 'common/calculate-metrics'
+import { Contract } from 'common/contract'
+import { Dictionary, flatMap } from 'lodash'
+import { LimitBet } from 'common/bet'
 
 export async function getOlderBets(
   contractId: string,
@@ -53,4 +57,16 @@ export const getBetsQuery = (options?: BetFilter) => {
     q = q.limit(options.limit)
   }
   return q
+}
+
+export const getOpenLimitOrdersWithContracts = async (userId:string, count=1000) => {
+  const {data} = await db.rpc('get_open_limit_bets_with_contracts', {count,uid: userId})
+  const betsByContract = {} as Dictionary<LimitBet[]>
+
+  const contracts = [] as Contract[]
+  flatMap(data).forEach((d) => {
+    betsByContract[d.contract_id] = d.bets as LimitBet[]
+    contracts.push(d.contract as Contract)
+  })
+  return {betsByContract, contracts}
 }

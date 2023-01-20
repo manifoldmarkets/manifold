@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { keyBy, sortBy, partition, sumBy, uniq, groupBy, max } from 'lodash'
-import { useEffect, useMemo, useState } from 'react'
+import { sortBy, partition, sumBy, max, uniqBy, Dictionary } from 'lodash'
+import { useEffect, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet } from 'web/lib/firebase/bets'
@@ -25,7 +25,6 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { SiteLink } from '../widgets/site-link'
 import {
   calculatePayout,
-  getContractBetNullMetrics,
   getOutcomeProbability,
   resolvedPayout,
 } from 'common/calculate'
@@ -49,13 +48,12 @@ import {
   calculateDpmSaleAmount,
   getDpmProbabilityAfterSale,
 } from 'common/calculate-dpm'
-import { getUserContractMetrics } from 'web/lib/supabase/contract-metrics'
+import { getUserContractMetricsWithContracts } from 'web/lib/supabase/contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
-import { buildArray, filterDefined } from 'common/util/array'
+import { buildArray } from 'common/util/array'
 import { useBets } from 'web/hooks/use-bets'
 import { formatTimeShort } from 'web/lib/util/time'
-import { getContracts } from 'web/lib/supabase/contracts'
-import { getBets } from 'web/lib/supabase/bets'
+import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { Input } from 'web/components/widgets/input'
 import { searchInAny } from 'common/util/parse'
 
@@ -70,47 +68,46 @@ export function BetsList(props: { user: User }) {
   const signedInUser = useUser()
   const isYourBets = user.id === signedInUser?.id
 
-  const [metrics, setMetrics] = usePersistentState<
-    ContractMetric[] | undefined
+  const [metricsByContract, setMetricsByContract] = usePersistentState<
+    Dictionary<ContractMetric> | undefined
   >(undefined, {
     key: `user-contract-metrics-${user.id}`,
     store: inMemoryStore(),
   })
 
-  useEffect(() => {
-    getUserContractMetrics(user.id).then(setMetrics)
-  }, [user.id, setMetrics])
-
-  const [openLimitBets, setOpenLimitBets] = useState<LimitBet[]>([])
-  useEffect(() => {
-    getBets({ userId: user.id, isOpenLimitOrder: true, limit: 1000 }).then(
-      (b) => setOpenLimitBets(b as LimitBet[])
-    )
-  }, [user.id])
-  const limitBetsByContract = useMemo(
-    () => groupBy(openLimitBets ?? [], (b) => b.contractId),
-    [openLimitBets]
-  )
-  const contractIds = useMemo(
-    () =>
-      uniq(
-        buildArray(
-          (metrics ?? []).map((m) => m.contractId),
-          Object.keys(limitBetsByContract)
-        )
-      ),
-    [metrics, limitBetsByContract]
-  )
-  const [loadingContracts, setLoadingContracts] = useState<
+  const [initialContracts, setInitialContracts] = usePersistentState<
     Contract[] | undefined
-  >(undefined)
+  >(undefined, {
+    key: `user-contract-metrics-contracts-${user.id}`,
+    store: inMemoryStore(),
+  })
+  const [openLimitBetsByContract, setOpenLimitBetsByContract] =
+    usePersistentState<Dictionary<LimitBet[]> | undefined>(undefined, {
+      key: `user-open-limit-bets-${user.id}`,
+      store: inMemoryStore(),
+    })
+
   useEffect(() => {
-    if (!metrics) return
-    getContracts(contractIds).then((contracts) =>
-      setLoadingContracts(filterDefined(contracts))
+    getUserContractMetricsWithContracts(user.id).then(
+      (metricsWithContracts) => {
+        const { contracts, metricsByContract } = metricsWithContracts
+        setMetricsByContract(metricsByContract)
+        setInitialContracts((c) =>
+          uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
+        )
+      }
     )
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contractIds.length, metrics])
+  }, [user.id, setMetricsByContract, setInitialContracts])
+
+  useEffect(() => {
+    getOpenLimitOrdersWithContracts(user.id).then((betsWithContracts) => {
+      const { contracts, betsByContract } = betsWithContracts
+      setOpenLimitBetsByContract(betsByContract)
+      setInitialContracts((c) =>
+        uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
+      )
+    })
+  }, [setInitialContracts, setOpenLimitBetsByContract, user.id])
 
   const [sort, setSort] = usePersistentState<BetSort>('newest', {
     key: 'bets-list-sort',
@@ -139,24 +136,17 @@ export function BetsList(props: { user: User }) {
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
 
-  if (!metrics || !openLimitBets || !loadingContracts) {
+  if (!metricsByContract || !openLimitBetsByContract || !initialContracts) {
     return <LoadingIndicator />
   }
-  if (metrics.length === 0) return <NoBets user={user} />
+  if (Object.keys(metricsByContract).length === 0) return <NoBets user={user} />
 
   const contracts =
     query !== ''
-      ? loadingContracts.filter((c) =>
+      ? initialContracts.filter((c) =>
           searchInAny(query, ...[c.question, c.creatorName, c.creatorUsername])
         )
-      : loadingContracts
-  const initialMetricsByContract = keyBy(metrics, (m) => m.contractId)
-  const metricsByContract = Object.fromEntries(
-    contractIds.map((cid) => [
-      cid,
-      initialMetricsByContract[cid] ?? getContractBetNullMetrics(),
-    ])
-  )
+      : initialContracts
 
   const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
     resolved: (c) => !!c.resolutionTime,
@@ -173,7 +163,7 @@ export function BetsList(props: { user: User }) {
     value: (c) => metricsByContract[c.id].payout,
     newest: (c) =>
       metricsByContract[c.id]?.lastBetTime ??
-      max(limitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
+      max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
       0,
     closeTime: (c) =>
       // This is in fact the intuitive sort direction.
@@ -189,7 +179,8 @@ export function BetsList(props: { user: User }) {
       const { hasShares } = metricsByContract[c.id]
 
       if (filter === 'sold') return !hasShares
-      if (filter === 'limit_bet') return limitBetsByContract[c.id]?.length > 0
+      if (filter === 'limit_bet')
+        return openLimitBetsByContract[c.id]?.length > 0
       return hasShares
     })
   const displayedContracts = filteredContracts.slice(start, end)

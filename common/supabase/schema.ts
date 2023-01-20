@@ -508,6 +508,10 @@ export interface Database {
         Args: { urf: unknown; crf: unknown }
         Returns: number
       }
+      get_contract_metrics_with_contracts: {
+        Args: { uid: string; count: number }
+        Returns: { contract_id: string; metrics: Json; contract: Json }[]
+      }
       get_document_table: {
         Args: { doc_kind: string }
         Returns: string
@@ -515,6 +519,10 @@ export interface Database {
       get_document_table_spec: {
         Args: { table_id: string }
         Returns: unknown
+      }
+      get_open_limit_bets_with_contracts: {
+        Args: { uid: string; count: number }
+        Returns: { contract_id: string; bets: Json[]; contract: Json }[]
       }
       get_recommended_contract_ids:
         | {

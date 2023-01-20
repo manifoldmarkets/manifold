@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from 'react'
+import React, { memo, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
 import { DAY_MS } from 'common/util/time'
 import { getUserEvents } from 'web/lib/supabase/user-events'
@@ -66,7 +66,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
         </Tooltip>
       </button>
       {user && (
-        <DailyProfitModal userId={user.id} setOpen={setOpen} open={open} />
+        <DailyProfitModal user={user} setOpen={setOpen} open={open} />
       )}
     </>
   )
@@ -75,17 +75,22 @@ export const DailyProfit = memo(function DailyProfit(props: {
 function DailyProfitModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
-  userId: string
+  user: User
 }) {
-  const { open, setOpen, userId } = props
+  const { open, setOpen, user} = props
   const [data, setData] = useState<
     { metrics: ContractMetrics[]; contracts: CPMMBinaryContract[] } | undefined
   >()
 
+  const sum = useMemo(() => {
+    if (!data) return 0
+    return data.metrics.reduce((sum, m) => sum + m.profit, 0)
+  }, [data])
+
   useEffect(() => {
     if (!open || data) return
-    getUserContractMetricsByProfit(userId).then(setData)
-  }, [data, userId, open])
+    getUserContractMetricsByProfit(user.id).then(setData)
+  }, [data, user.id, open])
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -93,8 +98,9 @@ function DailyProfitModal(props: {
         <Col className={'mb-4'}>
           <Title className={'mb-1'}>Daily profit</Title>
           <span className="text-sm text-gray-500">
-            Change in the value of your positions over the last 24 hours.
-            (Updates every 15 min)
+            Change in the value of your Yes/No positions over the last 24 hours.
+            Doesn't include {formatMoney(user.profitCached.daily - sum)} in profit from other market types.
+            (Updates every 30 min)
           </span>
         </Col>
         {!data ? (
