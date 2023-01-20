@@ -75,6 +75,8 @@ const onBet = (
   })
 }
 
+const PREVIOUS_CARD_BUFFER = 16
+
 export function PreviousSwipeCard(props: {
   contract: BinaryContract
   yPosition: number | null
@@ -83,7 +85,7 @@ export function PreviousSwipeCard(props: {
   const { yPosition, cardHeight } = props
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
-    y: -(cardHeight + 8),
+    y: -(cardHeight + PREVIOUS_CARD_BUFFER),
     config: { tension: 1000, friction: 70 },
   }))
 
@@ -92,7 +94,9 @@ export function PreviousSwipeCard(props: {
 
   useEffect(() => {
     const y =
-      yPosition != null ? -(cardHeight + 8) + yPosition : -(cardHeight + 8)
+      yPosition != null
+        ? -(cardHeight + PREVIOUS_CARD_BUFFER) + yPosition
+        : -(cardHeight + PREVIOUS_CARD_BUFFER)
     api.start({ y })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yPosition])
@@ -183,7 +187,7 @@ export function PrimarySwipeCard(props: {
     if (betStatus === 'success') {
       const direction = buttonAction === 'YES' || action === 'right' ? 1 : -1
       setTimeout(() => {
-        const x = direction * (cardHeight + 8)
+        const x = direction * (cardHeight + PREVIOUS_CARD_BUFFER)
         api.start({ x })
       }, 450)
 
@@ -216,7 +220,7 @@ export function PrimarySwipeCard(props: {
     if (action === 'up') {
       // Executes vertical swipe animation
       setTimeout(() => {
-        const y = -1 * (cardHeight + 8)
+        const y = -1 * (cardHeight + PREVIOUS_CARD_BUFFER)
         api.start({ y })
       }, 100)
       setTimeout(() => {
@@ -228,7 +232,7 @@ export function PrimarySwipeCard(props: {
       // Executes vertical swipe animation
       if (previousContract) {
         setTimeout(() => {
-          setPreviousCardY(cardHeight + 8)
+          setPreviousCardY(cardHeight + PREVIOUS_CARD_BUFFER)
         }, 100)
 
         setTimeout(() => {
@@ -237,6 +241,7 @@ export function PrimarySwipeCard(props: {
         }, 300)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [action])
 
   const bind = useDrag(
