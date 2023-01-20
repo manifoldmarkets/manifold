@@ -745,13 +745,13 @@ create or replace function get_open_limit_bets_with_contracts(uid text, count in
 as $$;
 select bets.contract_id, array_agg(bets.data) as bets, contracts.data as contract
 from (
-         select data,contract_id from contract_bets
+         select distinct contract_id, data from contract_bets
          where (data->>'userId') = uid and
                  (data->>'isFilled')::boolean = false and
                  (data->>'isCancelled')::boolean = false
      ) as bets
          left join contracts
-         on contracts.id = bets.contract_id
-group by bets.contract_id, contracts.data
+         on contracts.id = contract_id
+group by contract_id, contracts.data
 limit count
 $$;

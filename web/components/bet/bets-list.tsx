@@ -81,6 +81,7 @@ export function BetsList(props: { user: User }) {
     key: `user-contract-metrics-contracts-${user.id}`,
     store: inMemoryStore(),
   })
+
   const [openLimitBetsByContract, setOpenLimitBetsByContract] =
     usePersistentState<Dictionary<LimitBet[]> | undefined>(undefined, {
       key: `user-open-limit-bets-${user.id}`,
