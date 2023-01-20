@@ -89,7 +89,7 @@ export function BetsList(props: { user: User }) {
     })
 
   useEffect(() => {
-    getUserContractMetricsWithContracts(user.id).then(
+    getUserContractMetricsWithContracts(user.id, 5000).then(
       (metricsWithContracts) => {
         const { contracts, metricsByContract } = metricsWithContracts
         setMetricsByContract(metricsByContract)
@@ -101,7 +101,7 @@ export function BetsList(props: { user: User }) {
   }, [user.id, setMetricsByContract, setInitialContracts])
 
   useEffect(() => {
-    getOpenLimitOrdersWithContracts(user.id).then((betsWithContracts) => {
+    getOpenLimitOrdersWithContracts(user.id, 5000).then((betsWithContracts) => {
       const { contracts, betsByContract } = betsWithContracts
       setOpenLimitBetsByContract(betsByContract)
       setInitialContracts((c) =>
