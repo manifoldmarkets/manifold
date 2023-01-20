@@ -844,6 +844,15 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
 3. Diagnostic development. We're interested in designing a low-cost and simple-to-use platform for LAMP reactions so that generalized diagnostic capabilities are more widespread. We envision a world where it is both cheap and easy to run a panel of tests so one can swiftly determine the exact virus behind an infection.`,
     tags: ['New'] as const,
   },
+  {
+    name: 'The Fred Hollows Foundation',
+    website: 'https://www.hollows.org/au/',
+    photo: 'https://i.imgur.com/GGzXksd.png',
+    preview: `Fred Hollows Foundation focuses on preventable and treatable diseases such as cataract, trachoma and diabetic retinopathy`,
+    description: `The Fred Hollows Foundation has a very clear goal: we’re putting an end to avoidable blindness. 
+    When this day comes, people in developing countries will get the same quality eye care the rest of the world takes for granted – and we won’t stop until this is done.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
