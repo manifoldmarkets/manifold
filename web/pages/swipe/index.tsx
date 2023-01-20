@@ -106,17 +106,15 @@ export default function Swipe() {
         )}
         style={{ height: cardHeight }}
       >
-        {cards.length > 0 && (
-          <PrimarySwipeCard
-            key={cards[0].id}
-            contract={cards[0]}
-            index={index}
-            setIndex={setIndex}
-            user={user}
-            previousContract={index > 0 ? feed[index - 1] : undefined}
-            cardHeight={cardHeight}
-          />
-        )}
+        <PrimarySwipeCard
+          key={cards[0].id}
+          contract={cards[0]}
+          index={index}
+          setIndex={setIndex}
+          user={user}
+          previousContract={index > 0 ? feed[index - 1] : undefined}
+          cardHeight={cardHeight}
+        />
         {/* {cards.length > 1 && (
           <Col className="absolute inset-1 z-10 touch-none">
             <SwipeCard

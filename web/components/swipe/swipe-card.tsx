@@ -260,8 +260,6 @@ export function PrimarySwipeCard(props: {
   )
 
   const [isModalOpen, setIsModalOpen] = useState(false)
-  return (
-    <>
       {/* {previousContract && (
         <PreviousSwipeCard
           key={previousContract.id}
@@ -270,6 +268,7 @@ export function PrimarySwipeCard(props: {
           cardHeight={cardHeight}
         />
       )} */}
+  return (
 
       <animated.div
         {...bind()}
@@ -302,7 +301,6 @@ export function PrimarySwipeCard(props: {
           setIsModalOpen={setIsModalOpen}
         />
       </animated.div>
-    </>
   )
 }
 
