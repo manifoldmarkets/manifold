@@ -732,6 +732,7 @@ select contract_metrics.contract_id,  contract_metrics.data as metrics, contract
 from (
          select * from user_contract_metrics
          where user_id = uid
+         order by (data->>'lastBetTime') desc
      ) as contract_metrics
          left join contracts
          on contracts.id = contract_id
@@ -745,13 +746,14 @@ create or replace function get_open_limit_bets_with_contracts(uid text, count in
 as $$;
 select bets.contract_id, array_agg(bets.data) as bets, contracts.data as contract
 from (
-         select distinct contract_id, data from contract_bets
+         select * from contract_bets
          where (data->>'userId') = uid and
                  (data->>'isFilled')::boolean = false and
                  (data->>'isCancelled')::boolean = false
+                order by (data->>'createdTime') desc
      ) as bets
          left join contracts
-         on contracts.id = contract_id
+         on contracts.id = bets.contract_id
 group by contract_id, contracts.data
 limit count
 $$;
