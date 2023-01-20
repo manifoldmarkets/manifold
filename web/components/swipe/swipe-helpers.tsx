@@ -2,10 +2,10 @@ export default function getQuestionSize(question: string) {
   const height2width = window.innerHeight / window.innerWidth
   const questionLength = question.length
   if (height2width < 2.1) {
-    if (questionLength >= 160) return 'text-lg'
-    if (questionLength >= 100 && questionLength < 160) return 'text-xl'
-    if (questionLength >= 40 && questionLength < 100) return 'text-2xl'
-    return 'text-3xl'
+    if (questionLength >= 160) return 'text-sm'
+    if (questionLength >= 100 && questionLength < 160) return 'text-md'
+    if (questionLength >= 40 && questionLength < 100) return 'text-lg'
+    return 'text-xl'
   } else if (height2width > 2.3) {
     if (questionLength >= 160) return 'text-md'
     if (questionLength >= 100 && questionLength < 160) return 'text-lg'

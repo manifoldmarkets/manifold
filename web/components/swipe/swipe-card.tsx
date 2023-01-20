@@ -27,24 +27,22 @@ import getQuestionSize, {
 } from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
 
-const horizontalSwipeDist = 80
-const verticalSwipeDist = -100
+const horizontalSwipeDist = 50
+const verticalSwipeDist = 80
 
 export type SwipeAction = 'left' | 'right' | 'up' | 'down' | 'none'
 
 function getSwipeAction(
   mx: number,
   my: number,
-  cappedDist: number
+  xCappedDist: number,
+  yCappedDist: number
 ): SwipeAction {
-  if (cappedDist >= horizontalSwipeDist) {
+  if (xCappedDist >= horizontalSwipeDist) {
     return mx < 0 ? 'left' : 'right'
   }
-  if (my <= verticalSwipeDist) {
-    return 'up'
-  }
-  if (my >= Math.abs(verticalSwipeDist)) {
-    return 'down'
+  if (yCappedDist >= verticalSwipeDist) {
+    return my < 0 ? 'up' : 'down'
   }
   return 'none'
 }
@@ -79,7 +77,7 @@ const onBet = (
 
 export function PreviousSwipeCard(props: {
   contract: BinaryContract
-  yPosition: number | undefined
+  yPosition: number | null
   cardHeight: number
 }) {
   const { yPosition, cardHeight } = props
@@ -93,11 +91,11 @@ export function PreviousSwipeCard(props: {
     props.contract) as BinaryContract
 
   useEffect(() => {
-    const y = yPosition ? -(cardHeight + 8) + yPosition : -(cardHeight + 8)
+    const y =
+      yPosition != null ? -(cardHeight + 8) + yPosition : -(cardHeight + 8)
     api.start({ y })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yPosition])
-
   return (
     <>
       <animated.div
@@ -147,6 +145,7 @@ export function PrimarySwipeCard(props: {
 
   const [amount, setAmount] = useState(10)
   const [action, setAction] = useState<SwipeAction>('none')
+  const [swipeAction, setSwipeAction] = useState<SwipeAction>('none')
   const [betStatus, setBetStatus] = useState<
     'loading' | 'success' | string | undefined
   >(undefined)
@@ -158,9 +157,7 @@ export function PrimarySwipeCard(props: {
     setTimeout(() => setIsFreshCard(false), 10)
   }
 
-  const [previousCardY, setPreviousCardY] = useState<number | undefined>(
-    undefined
-  )
+  const [previousCardY, setPreviousCardY] = useState<number | null>(null)
 
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
@@ -201,74 +198,79 @@ export function PrimarySwipeCard(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [betStatus])
 
+  useEffect(() => {
+    if (action === 'right' || action === 'left') {
+      // Horizontal swipe is triggered, places bet
+      setWentToPreviousCard(false)
+      const outcome = action === 'right' ? 'YES' : 'NO'
+      onBet(
+        outcome,
+        contract,
+        amount,
+        setBetStatus,
+        setAction,
+        setButtonAction,
+        user
+      )
+    }
+    if (action === 'up') {
+      // Executes vertical swipe animation
+      setTimeout(() => {
+        const y = -1 * (cardHeight + 8)
+        api.start({ y })
+      }, 100)
+      setTimeout(() => {
+        setWentToPreviousCard(false)
+        setIndex(index + 1)
+      }, 200)
+    }
+    if (action === 'down') {
+      // Executes vertical swipe animation
+      if (previousContract) {
+        setTimeout(() => {
+          setPreviousCardY(cardHeight + 8)
+        }, 100)
+
+        setTimeout(() => {
+          setIndex(index - 1)
+          setWentToPreviousCard(true)
+        }, 300)
+      }
+    }
+  }, [action])
+
   const bind = useDrag(
     ({ down, movement: [mx, my] }) => {
-      let direction = 0
-      const cappedDist = rubberbandIfOutOfBounds(
+      const xCappedDist = rubberbandIfOutOfBounds(
         Math.abs(mx),
         0,
         horizontalSwipeDist
       )
-      setAction(getSwipeAction(mx, my, cappedDist))
+      const yCappedDist = rubberbandIfOutOfBounds(
+        Math.abs(my),
+        0,
+        Math.abs(verticalSwipeDist)
+      )
+      setSwipeAction(getSwipeAction(mx, my, xCappedDist, yCappedDist))
       if (!down) {
         // See if thresholds show if an action was made once thumb is lifted
-        if (action === 'right' || action === 'left') {
-          // Horizontal swipe is triggered, places bet
-          setWentToPreviousCard(false)
-          direction = Math.sign(mx)
-          const outcome = direction > 0 ? 'YES' : 'NO'
-          onBet(
-            outcome,
-            contract,
-            amount,
-            setBetStatus,
-            setAction,
-            setButtonAction,
-            user
-          )
+        setAction(swipeAction)
+        if (swipeAction != 'down') {
+          setPreviousCardY(null)
         }
-        if (action === 'up') {
-          // Executes vertical swipe animation
-          setTimeout(() => {
-            const y = -1 * (cardHeight + 8)
-            api.start({ y })
-          }, 100)
-          setTimeout(() => {
-            setWentToPreviousCard(false)
-            setIndex(index + 1)
-          }, 200)
-        }
-        if (action === 'down') {
-          // Executes vertical swipe animation
-          if (previousContract) {
-            setTimeout(() => {
-              setPreviousCardY(cardHeight + 8)
-            }, 100)
-
-            setTimeout(() => {
-              setIndex(index - 1)
-              setWentToPreviousCard(true)
-            }, 300)
-          }
-        } else {
-          api.start({ x: 0, y: 0 })
-          setPreviousCardY(undefined)
-        }
-      } else {
-        const x = down ? Math.sign(mx) * cappedDist : 0
-        const y = down ? (my < 0 ? my : 0) : 0
-        if (my > 0) {
-          setPreviousCardY(my)
-        } else {
-          setPreviousCardY(undefined)
-        }
-        if (action === 'none') {
-          api.start({ x, y })
-        }
+      }
+      const x = down ? Math.sign(mx) * xCappedDist : 0
+      const y = down && my <= 0 ? Math.sign(my) * yCappedDist : 0
+      if (my >= 0) {
+        setPreviousCardY(yCappedDist)
+      }
+      if (swipeAction === 'none') {
+        api.start({ x, y, immediate: down })
       }
     },
     { axis: 'lock' }
   )
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   return (
     <>
@@ -280,18 +282,6 @@ export function PrimarySwipeCard(props: {
           cardHeight={cardHeight}
         />
       )}
-      {!wentToPreviousCard && (
-        <Col
-          className={clsx(
-            'absolute inset-1 z-10 max-w-lg rounded-2xl transition-opacity duration-300 ease-in-out',
-            BUFFER_CARD_COLOR,
-            isFreshCard || (action === 'down' && previousContract)
-              ? BUFFER_CARD_OPACITY
-              : 'opacity-0',
-            isModalOpen ? 'pointer-events-auto' : 'pointer-events-none'
-          )}
-        />
-      )}
 
       <animated.div
         {...bind()}
@@ -301,6 +291,18 @@ export function PrimarySwipeCard(props: {
         style={{ x, y }}
         onClick={(e) => e.preventDefault()}
       >
+        {!wentToPreviousCard && (
+          <Col
+            className={clsx(
+              'absolute inset-0 z-10 max-w-lg rounded-2xl transition-opacity duration-300 ease-in-out',
+              BUFFER_CARD_COLOR,
+              isFreshCard || (swipeAction === 'down' && previousContract)
+                ? BUFFER_CARD_OPACITY
+                : 'opacity-0',
+              isModalOpen ? 'pointer-events-auto' : 'pointer-events-none'
+            )}
+          />
+        )}
         <SwipeCard
           key={contract.id}
           contract={contract}
@@ -310,14 +312,14 @@ export function PrimarySwipeCard(props: {
               setAmount={setAmount as any}
               amount={amount}
               disabled={false}
-              swipeAction={action}
+              swipeAction={swipeAction}
               onButtonBet={onButtonBet}
               buttonAction={buttonAction}
               betStatus={betStatus}
             />
           }
           className="h-full"
-          action={action}
+          action={swipeAction}
           buttonAction={buttonAction}
           user={user}
           isModalOpen={isModalOpen}
@@ -387,19 +389,20 @@ export const SwipeCard = memo(
           <Col className="absolute inset-0 z-10">
             <Col className="relative h-full gap-2 p-4">
               <CornerDetails contract={contract} />
-              <SiteLink href={contractPath(contract)} followsLinkClass>
-                <div
-                  className={clsx(
-                    'text-white drop-shadow',
-                    getQuestionSize(question)
-                  )}
-                >
-                  {question}
-                </div>
-              </SiteLink>
+              <div className="max-h-24 overflow-ellipsis">
+                <SiteLink href={contractPath(contract)} followsLinkClass>
+                  <div
+                    className={clsx(
+                      'text-white drop-shadow',
+                      getQuestionSize(question)
+                    )}
+                  >
+                    {question}
+                  </div>
+                </SiteLink>
+              </div>
               <Row className="mx-auto w-full grow items-center" />
-
-              <Row className="absolute top-[45%] w-full items-center">
+              <Row className="absolute top-[40%] w-full">
                 <Percent
                   currPercent={currPercent}
                   yesPercent={yesPercent}
