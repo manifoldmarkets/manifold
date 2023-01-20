@@ -153,6 +153,8 @@ export function PrimarySwipeCard(props: {
     config: { tension: 1000, friction: 70 },
   }))
 
+  console.log('render primary swipe card')
+
   const onButtonBet = (outcome: 'YES' | 'NO') => {
     onBet(
       outcome,
@@ -260,19 +262,19 @@ export function PrimarySwipeCard(props: {
   const [isModalOpen, setIsModalOpen] = useState(false)
   return (
     <>
-      {previousContract && (
+      {/* {previousContract && (
         <PreviousSwipeCard
           key={previousContract.id}
           contract={previousContract}
           yPosition={previousCardY}
           cardHeight={cardHeight}
         />
-      )}
+      )} */}
 
       <animated.div
         {...bind()}
         className={clsx(
-          'user-select-none pointer-events-auto absolute inset-1 max-w-lg touch-none transition-transform duration-75'
+          'user-select-none pointer-events-auto absolute inset-1 z-30 max-w-lg touch-none transition-transform duration-75'
         )}
         style={{ x, y }}
         onClick={(e) => e.preventDefault()}
