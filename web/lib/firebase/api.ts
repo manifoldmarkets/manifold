@@ -3,6 +3,7 @@ import { APIError, getFunctionUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
 import { QfAnswerReq } from 'web/pages/api/v0/qf/answer'
 import { QfPayReq } from 'web/pages/api/v0/qf/pay'
+import { QfAddPoolReq } from 'web/pages/api/v0/qf/add-pool'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -123,4 +124,8 @@ export function createQfAnswer(params: QfAnswerReq) {
 
 export function payQfAnswer(params: QfPayReq) {
   return call('/api/v0/qf/pay', 'POST', params)
+}
+
+export function addQfPool(params: QfAddPoolReq) {
+  return call('/api/v0/qf/add-pool', 'POST', params)
 }

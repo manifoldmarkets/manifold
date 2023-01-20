@@ -6,7 +6,7 @@ import { formatMoney } from 'common/util/format'
 import { Button } from '../buttons/button'
 import { useState } from 'react'
 import { Spacer } from '../layout/spacer'
-import { createQfAnswer, payQfAnswer } from 'web/lib/firebase/api'
+import { addQfPool, createQfAnswer, payQfAnswer } from 'web/lib/firebase/api'
 import { ContractDetails } from './contract-details'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Answer } from 'common/answer'
@@ -67,6 +67,8 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
       <QfAnswersPanel contract={contract} />
 
       <CreateAnswerWidget contract={contract} />
+
+      <QfPoolPanel contract={contract} />
     </Col>
   )
 }
@@ -117,9 +119,8 @@ function QfPayPanel(props: {
       answerId: answer.id,
     },
   }
-  const oldMatch =
-    calculateMatches(txns, contract.pool.M$ + 1000)[answer.id] ?? 0
-  const newMatch = calculateMatches([...txns, newTxn], contract.pool.M$ + 1000)[
+  const oldMatch = calculateMatches(txns, contract.pool.M$)[answer.id] ?? 0
+  const newMatch = calculateMatches([...txns, newTxn], contract.pool.M$)[
     answer.id
   ]
   const deltaMatch = newMatch - oldMatch
@@ -182,7 +183,7 @@ function QfAnswer(props: {
     contract.answers.map((a) => a.text)
   )
   const [showModal, setShowModal] = useState(false)
-  const matchingPool = contract.pool.M$ + 1000
+  const matchingPool = contract.pool.M$
 
   const total = calculateTotals(txns)[answer.id] ?? 0
   const match = calculateMatches(txns, matchingPool)[answer.id] ?? 0
@@ -280,4 +281,44 @@ export function QfTrades(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
   const txns = useQfTxns(contract.id)
   return <QfTradesTable contract={contract} txns={txns} />
+}
+
+// Allow the user to contribute funds to the pool
+function QfPoolPanel(props: { contract: QuadraticFundingContract }) {
+  const { contract } = props
+  const [amount, setAmount] = useState<number | undefined>(undefined)
+  const [submitting, setSubmitting] = useState(false)
+
+  return (
+    <Col className="gap-4 rounded-lg bg-blue-50 p-8">
+      <div>Current matching pool: {formatMoney(contract.pool.M$)}</div>
+      <BuyAmountInput
+        inputClassName="w-full max-w-none"
+        amount={amount}
+        onChange={setAmount}
+        showSlider={true}
+        error={undefined}
+        setError={() => {}}
+      />
+      <Spacer h={8} />
+      <Button
+        size="xl"
+        color="indigo"
+        disabled={!amount}
+        loading={submitting}
+        onClick={async () => {
+          setSubmitting(true)
+          await addQfPool({
+            qfId: contract.id,
+            amount: amount ?? 0,
+          })
+          // Clear inputs
+          setAmount(undefined)
+          setSubmitting(false)
+        }}
+      >
+        Contribute {formatMoney(amount ?? 0)}
+      </Button>
+    </Col>
+  )
 }

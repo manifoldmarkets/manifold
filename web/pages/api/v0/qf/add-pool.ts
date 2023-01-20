@@ -10,7 +10,7 @@ import { getUserId, initAdmin, payUsers, safeGet } from '../_firebase-utils'
 import { validate } from '../_validate'
 import { QuadraticFundingContract } from 'common/contract'
 import { APIError } from 'common/api'
-import { QfPaymentTxn } from 'common/txn'
+import { QfPoolTxn } from 'common/txn'
 import { User } from 'common/user'
 
 export const config = { api: { bodyParser: true } }
@@ -20,12 +20,10 @@ const firestore = admin.firestore()
 
 const schema = z.object({
   qfId: z.string(),
-  answerId: z.string(),
   amount: z.number(),
 })
-export type QfPayReq = {
+export type QfAddPoolReq = {
   qfId: string
-  answerId: string
   amount: number
 }
 
@@ -34,63 +32,51 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
     origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
     methods: 'POST',
   })
-
   const userId = await getUserId(req, res)
-
-  const resp = await payAnswer(req, userId)
-
+  const resp = await addPool(req, userId)
   return res.status(200).json(resp)
 }
 
-async function payAnswer(req: NextApiRequest, userId: string) {
+async function addPool(req: NextApiRequest, userId: string) {
   return await firestore.runTransaction(async (tx) => {
-    const { qfId, answerId, amount } = validate(schema, req.body)
+    const { qfId, amount } = validate(schema, req.body)
 
     const qf = await safeGet<QuadraticFundingContract>(`contracts/${qfId}`, tx)
-
-    const answer = qf.answers.find((a) => a.id === answerId)
-    if (!answer) {
-      throw new APIError(404, `Answer not found: ${answerId}`)
-    }
-
     // Verify this user has enough mana to pay for this answer
     const user = await safeGet<User>(`users/${userId}`, tx)
     if (user.balance < amount) {
       throw new APIError(400, `Insufficient mana to pay for answer`)
     }
 
-    // Pay the answer's user
+    // Deduct balance from user
     payUsers(tx, [
       {
         userId: userId,
         payout: -amount,
         deposit: -amount,
       },
-      {
-        userId: answer.userId,
-        payout: amount,
-        deposit: amount,
-      },
     ])
 
-    // Create a QfPaymentTxn for this answer id, and save it to the txn table
-    const qfPaymentTxnDoc = firestore.collection('txns').doc()
-    const qfPaymentTxn: QfPaymentTxn = {
-      category: 'QF_PAYMENT',
-      id: qfPaymentTxnDoc.id,
+    // Update pool.M$ on the qf contract
+    tx.update(firestore.collection('contracts').doc(qfId), {
+      [`pool.M$`]: qf.pool['M$'] + amount,
+    })
+
+    // Create a txn to mark the transfer
+    const txnDoc = firestore.collection('txns').doc()
+    const txn: QfPoolTxn = {
+      category: 'QF_POOL',
+      id: txnDoc.id,
       qfId,
       createdTime: Date.now(),
       fromType: 'USER',
       fromId: userId,
-      toType: 'USER',
-      toId: answer.userId,
+      toType: 'CONTRACT',
+      toId: qfId,
       token: 'M$',
       amount,
-      data: {
-        answerId,
-      },
     }
-    tx.set(qfPaymentTxnDoc, qfPaymentTxn)
+    tx.set(txnDoc, txn)
 
     // Commit the transaction and return the result
     return {
