@@ -629,12 +629,15 @@ language sql
 as $$
   select array_agg(data) from (
     select data
-    from (
-      select * from get_recommended_contract_ids(uid)
-      union
+    from
+    (
+      select *, 1 as priority
+      from get_recommended_contract_ids(uid)
+      union all
       -- Default recommendations from this particular user if none for you.
-      select * from get_recommended_contract_ids('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
+      select *, 2 as priority from get_recommended_contract_ids('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
     ) as rec_contract_ids
+    order by priority
     left join contracts
     on contracts.id = contract_id
     where is_valid_contract(data)
