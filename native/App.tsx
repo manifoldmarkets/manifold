@@ -64,12 +64,14 @@ if (Device.isDevice) {
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
-const homeUri =
-  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+const baseUri =
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets'
+const query = `?nativePlatform=${Platform.OS}`
+const defaultUri = baseUri + query
 const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
-  const [loadedWebView, setLoadedWebView] = useState(false)
+  const hasLoadedWebView = useRef(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const webview = useRef<WebView>()
   const notificationResponseListener = useRef<Subscription | undefined>()
@@ -80,14 +82,13 @@ const App = () => {
   const [user, setUser] = useState(auth.currentUser)
   useEffect(() => {
     // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
-    if (loadedWebView) {
-      console.log('webview loaded, waiting for auth')
+    if (hasLoadedWebView.current) {
       const timeout = setTimeout(() => {
         setWaitingForAuth(false)
       }, 2000)
       return () => clearTimeout(timeout)
     }
-  }, [loadedWebView])
+  }, [hasLoadedWebView.current])
 
   // auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
   useEffect(() => {
@@ -95,7 +96,7 @@ const App = () => {
   }, [auth])
 
   // Url management
-  const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
+  const [urlToLoad, setUrlToLoad] = useState<string>(defaultUri)
   const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
@@ -111,7 +112,8 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
-    if (loadedWebView) {
+    // Perhaps this isn't current if the webview is killed for memory collection? Not sure
+    if (hasLoadedWebView.current) {
       communicateWithWebview(
         'notification',
         response.notification.request.content.data
@@ -120,7 +122,7 @@ const App = () => {
       const notification = response.notification.request.content
         .data as Notification
       const sourceUrl = getSourceUrl(notification)
-      setUrlToLoad(homeUri + sourceUrl)
+      setUrlToLoad(baseUri + sourceUrl)
     }
   }
 
@@ -264,6 +266,7 @@ const App = () => {
           })
         }
       }
+      setUser(null)
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -293,6 +296,7 @@ const App = () => {
           })
       })
     } else if (type === 'signOut') {
+      setUser(null)
       try {
         auth.signOut()
       } catch (err) {
@@ -342,18 +346,18 @@ const App = () => {
     )
   }
 
-  const shouldShowWebView = loadedWebView && user
+  const webViewAndUserLoaded = hasLoadedWebView.current && user
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
-      display: shouldShowWebView ? 'flex' : 'none',
+      display: webViewAndUserLoaded ? 'flex' : 'none',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
     },
     webView: {
-      display: shouldShowWebView ? 'flex' : 'none',
+      display: webViewAndUserLoaded ? 'flex' : 'none',
       overflow: 'hidden',
       marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
       marginBottom: !isIOS ? 10 : 0,
@@ -362,14 +366,15 @@ const App = () => {
 
   return (
     <>
-      {!shouldShowWebView && waitingForAuth ? (
+      {!webViewAndUserLoaded && waitingForAuth ? (
         <SplashLoading
           height={height}
           width={width}
           source={require('./assets/splash.png')}
         />
       ) : (
-        !shouldShowWebView &&
+        hasLoadedWebView.current &&
+        !user &&
         !waitingForAuth && (
           <AuthPage webview={webview} height={height} width={width} />
         )
@@ -397,17 +402,23 @@ const App = () => {
             allowsBackForwardNavigationGestures={allowSystemBack}
             style={styles.webView}
             // Load start and end is for whole website loading, not navigations within manifold
-            onLoadEnd={() => setLoadedWebView(true)}
+            onLoadEnd={() => {
+              // TODO: test if you can find this tag in adb logcat
+              console.log('[Manifold Markets] - WebView onLoadEnd')
+              hasLoadedWebView.current = true
+            }}
             source={{ uri: urlToLoad }}
             //@ts-ignore
             ref={webview}
-            onError={(e) => handleWebviewError(e, () => setUrlToLoad(homeUri))}
+            onError={(e) =>
+              handleWebviewError(e, () => setUrlToLoad(defaultUri))
+            }
             renderError={(e) => handleRenderError(e, width, height)}
             onTouchStart={tellWebviewToSetNativeFlag}
             // On navigation state change changes on every url change
             onNavigationStateChange={(navState) => {
               const { url } = navState
-              if (!url.startsWith(homeUri)) {
+              if (!url.startsWith(baseUri)) {
                 setExternalUrl(url)
                 webview.current?.stopLoading()
               } else {
@@ -415,10 +426,8 @@ const App = () => {
                 tellWebviewToSetNativeFlag()
               }
             }}
-            onRenderProcessGone={(e) => handleWebviewCrash(webview.current, e)}
-            onContentProcessDidTerminate={(e) =>
-              handleWebviewCrash(webview.current, e)
-            }
+            onRenderProcessGone={(e) => handleWebviewCrash(webview, e)}
+            onContentProcessDidTerminate={(e) => handleWebviewCrash(webview, e)}
             onMessage={handleMessageFromWebview}
           />
         </View>

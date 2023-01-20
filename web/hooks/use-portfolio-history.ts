@@ -1,11 +1,15 @@
 import { useQueryClient } from 'react-query'
-import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { DAY_MS, HOUR_MS, MINUTE_MS, sleep } from 'common/util/time'
+import { Period } from 'web/lib/firebase/users'
 import {
   getPortfolioHistory,
-  getPortfolioHistoryQuery,
-  Period,
-} from 'web/lib/firebase/users'
+  PortfolioSnapshot,
+} from 'web/lib/supabase/portfolio-history'
+import { useEffect } from 'react'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
 
 const getCutoff = (period: Period) => {
   const nowRounded = Math.round(Date.now() / HOUR_MS) * HOUR_MS
@@ -24,13 +28,27 @@ export const usePrefetchPortfolioHistory = (userId: string, period: Period) => {
 
 export const usePortfolioHistory = (userId: string, period: Period) => {
   const cutoff = getCutoff(period)
-  const result = useFirestoreQueryData(
-    ['portfolio-history', userId, cutoff],
-    getPortfolioHistoryQuery(userId, cutoff),
+  const [portfolioHistories, setPortfolioHistories] = usePersistentState<
+    Record<string, PortfolioSnapshot[] | undefined>
+  >(
     {},
-    { staleTime: 15 * MINUTE_MS }
+    {
+      store: inMemoryStore(),
+      key: `user-portfolio-history-${userId}`,
+    }
   )
-  return result.data
+
+  useEffect(() => {
+    // We could remove this next line or set a lastUpdatedTime in order to re-fetch new data.
+    if (portfolioHistories[cutoff]) return
+    getPortfolioHistory(userId, cutoff).then((portfolioHistory) => {
+      setPortfolioHistories((prev) => ({
+        ...prev,
+        [cutoff]: portfolioHistory,
+      }))
+    })
+  }, [userId, cutoff, setPortfolioHistories, portfolioHistories])
+  return portfolioHistories[cutoff]
 }
 
 const periodToCutoff = (now: number, period: Period) => {

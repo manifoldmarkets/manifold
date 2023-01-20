@@ -1,5 +1,6 @@
 import algoliasearch from 'algoliasearch/lite'
 import { ENV } from 'common/envs/constants'
+import { Contract } from '../firebase/contracts'
 
 export const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -19,3 +20,12 @@ export const newIndex = searchClient.initIndex(getIndexName('newest'))
 export const dailyScoreIndex = searchClient.initIndex(
   getIndexName('daily-score')
 )
+
+const searchIndex = searchClient.initIndex(searchIndexName)
+export const searchContracts = async (query: string, limit: number) => {
+  const { hits } = await searchIndex.search(query, {
+    hitsPerPage: limit,
+    advancedSyntax: true,
+  })
+  return hits as any as Contract[]
+}

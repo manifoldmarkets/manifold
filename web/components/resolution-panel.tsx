@@ -1,7 +1,5 @@
-import clsx from 'clsx'
 import React, { useState } from 'react'
 
-import { Col } from './layout/col'
 import { User } from 'web/lib/firebase/users'
 import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
@@ -13,6 +11,7 @@ import { BETTORS, PLURAL_BETS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { capitalize } from 'lodash'
 import { ProbabilityInput } from './widgets/probability-input'
+import { GradientContainer } from './widgets/gradient-container'
 
 export function ResolutionPanel(props: {
   isAdmin: boolean
@@ -62,7 +61,7 @@ export function ResolutionPanel(props: {
   }
 
   return (
-    <Col className={clsx('relative rounded-md py-6', className)}>
+    <GradientContainer className={className}>
       {isAdmin && !isCreator && (
         <span className="bg-scarlet-50 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
           ADMIN
@@ -139,6 +138,6 @@ export function ResolutionPanel(props: {
           isSubmitting={isSubmitting}
         />
       </Row>
-    </Col>
+    </GradientContainer>
   )
 }

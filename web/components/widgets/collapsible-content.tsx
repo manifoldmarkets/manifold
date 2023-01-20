@@ -15,7 +15,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { Row } from '../layout/row'
 import { Content } from './editor'
 
-export const COLLAPSIBLE_HEIGHT = 45
+export const COLLAPSIBLE_HEIGHT = 26 * 3 // line height is 26px
 export const SHOW_COLLAPSE_TRESHOLD = 180
 
 export function ShowMoreLessButton(props: {
@@ -51,9 +51,9 @@ export function ShowMoreLessButton(props: {
 
 export function CollapsibleContent(props: {
   content: JSONContent | string
-  contractId: string
+  stateKey: string
 }) {
-  const { content, contractId } = props
+  const { content, stateKey } = props
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -66,9 +66,7 @@ export function CollapsibleContent(props: {
     }
   }, [contentRef.current?.offsetHeight])
   if (shouldAllowCollapseOfContent) {
-    return (
-      <ActuallyCollapsibleContent content={content} contractId={contractId} />
-    )
+    return <ActuallyCollapsibleContent content={content} stateKey={stateKey} />
   }
   return (
     <div ref={contentRef}>
@@ -80,15 +78,15 @@ export function CollapsibleContent(props: {
 // Moved to its own component to reduce unnecessary isCollapsed states in local storage
 function ActuallyCollapsibleContent(props: {
   content: JSONContent | string
-  contractId: string
+  stateKey: string
 }) {
-  const { content, contractId } = props
+  const { content, stateKey } = props
   const [isCollapsed, setIsCollapsed] = usePersistentState<boolean>(false, {
     store: storageStore(safeLocalStorage()),
-    key: `isCollapsed-contract-${contractId}`,
+    key: stateKey,
   })
   return (
-    <div className="relative">
+    <div>
       <div
         style={{ height: isCollapsed ? COLLAPSIBLE_HEIGHT : 'auto' }}
         className={clsx(
@@ -106,18 +104,20 @@ function ActuallyCollapsibleContent(props: {
           </>
         )}
       </div>
-      <ShowMoreLessButton
-        className="absolute right-0 -bottom-8 bg-transparent"
-        onClick={() => {
-          if (!isCollapsed)
-            window.scrollTo({
-              top: 0,
-              behavior: 'smooth',
-            })
-          setIsCollapsed(!isCollapsed)
-        }}
-        isCollapsed={isCollapsed}
-      />
+      <div className="text-right">
+        <ShowMoreLessButton
+          className="bg-transparent"
+          onClick={() => {
+            if (!isCollapsed)
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              })
+            setIsCollapsed(!isCollapsed)
+          }}
+          isCollapsed={isCollapsed}
+        />
+      </div>
     </div>
   )
 }

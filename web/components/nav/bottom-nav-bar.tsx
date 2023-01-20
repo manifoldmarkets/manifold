@@ -32,13 +32,13 @@ const touchItemClass = 'bg-indigo-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Discover', href: '/swipe', icon: SparklesIcon },
+    { name: 'Explore', href: '/swipe', icon: SparklesIcon },
     {
       name: 'Profile',
       href: `/${user.username}?tab=portfolio`,
     },
     {
-      name: 'Notifications',
+      name: 'Notifs',
       href: `/notifications`,
       icon: NotificationsIcon,
     },

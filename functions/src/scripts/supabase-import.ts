@@ -8,10 +8,14 @@ import { chunk } from 'lodash'
 
 import { withRetries } from '../../../common/util/promise'
 import { run, SupabaseClient } from '../../../common/supabase/utils'
-import { createSupabaseClient, log, processPartitioned } from '../utils'
+import { log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
-import { DocumentKind } from '../../../common/transaction-log'
+import { Database } from '../../../common/supabase/schema'
 import { DAY_MS } from 'common/util/time'
+import { createSupabaseClient } from 'functions/src/supabase/init'
+import { program } from 'commander'
+
+type TableName = keyof Database['public']['Tables']
 
 // strategy for live importing collection C without dropping data (times are firestore server times)
 // 1. optional - clear supabase table for collection C
@@ -28,12 +32,12 @@ async function getServerTimestamp() {
 
 function getWriteRow(
   snap: QueryDocumentSnapshot,
-  docKind: DocumentKind,
+  tableName: TableName,
   ts: Date
 ) {
   return {
-    doc_kind: docKind,
-    write_kind: 'create',
+    write_kind: 'update',
+    table_id: tableName,
     doc_id: snap.id,
     parent_id: snap.ref.parent.parent?.id,
     data: snap.data(),
@@ -44,10 +48,10 @@ function getWriteRow(
 async function importCollection(
   client: SupabaseClient,
   source: CollectionReference,
-  docKind: DocumentKind,
+  tableName: TableName,
   batchSize: number
 ) {
-  log(`Preparing to import ${docKind} documents.`)
+  log(`Preparing to import ${tableName} documents.`)
   const t1 = await getServerTimestamp()
   const n = (await source.count().get()).data().count
   log(`Documents to import: ${n}. Timestamp: ${t1.toISOString()}.`)
@@ -55,7 +59,7 @@ async function importCollection(
   const snaps = await source.get()
   log(`Loaded ${snaps.size} documents.`)
   for (const batch of chunk(snaps.docs, batchSize)) {
-    const rows = batch.map((d) => getWriteRow(d, docKind, t1))
+    const rows = batch.map((d) => getWriteRow(d, tableName, t1))
     await withRetries(run(client.from('incoming_writes').insert(rows)))
     log(`Processed ${rows.length} documents.`)
   }
@@ -65,11 +69,11 @@ async function importCollection(
 async function importCollectionGroup(
   client: SupabaseClient,
   source: CollectionGroup,
-  docKind: DocumentKind,
+  tableName: TableName,
   predicate: (d: QueryDocumentSnapshot) => boolean,
   batchSize: number
 ) {
-  log(`Preparing to import ${docKind} documents.`)
+  log(`Preparing to import ${tableName} documents.`)
   const t1 = await getServerTimestamp()
   const n = (await source.count().get()).data().count
   log(`Documents to import: ${n}. Timestamp: ${t1.toISOString()}.`)
@@ -77,29 +81,42 @@ async function importCollectionGroup(
   // partitions are different sizes so be conservative
   const partitions = Math.ceil(n / batchSize) * 2
   await processPartitioned(source, partitions, async (docs) => {
-    const rows = docs.filter(predicate).map((d) => getWriteRow(d, docKind, t1))
+    const rows = docs
+      .filter(predicate)
+      .map((d) => getWriteRow(d, tableName, t1))
     await withRetries(run(client.from('incoming_writes').insert(rows)))
   })
 }
-async function importCollectionGroupAtTimestamp(
+// This function is for importing immutable data in an append-only fashion starting from a given timestamp.
+// In case the import fails, it can be restarted from the last successfully processed timestamp.
+async function importAppendOnlyCollectionGroup(
   client: SupabaseClient,
   source: CollectionGroup,
-  docKind: DocumentKind,
+  tableName: TableName,
   predicate: (d: QueryDocumentSnapshot) => boolean,
+  batchSize: number,
+  chunkTime = 0.25,
   startTime = 0,
-  timePropName = 'createdTime'
+  timePropName = 'timestamp'
 ) {
-  log(`Preparing to import ${docKind} documents.`)
+  log(`Preparing to import ${tableName} documents.`)
   const t1 = await getServerTimestamp()
   const n = (await source.count().get()).data().count
   if (startTime === 0) {
-    startTime = await source.orderBy(timePropName, 'asc').limit(1).get().then((snap) => {
-      return snap.docs[0].data()[timePropName]
-    })
+    startTime = await source
+      .orderBy(timePropName, 'asc')
+      .limit(1)
+      .get()
+      .then((snap) => {
+        return snap.docs[0].data()[timePropName]
+      })
   }
-  log(`Documents to import: ${n}. Timestamp: ${t1.toISOString()}. Starting from: ${startTime}.`)
-  // go from startTime to t1 via 1 day chunks
-  const delta = 1 * DAY_MS
+  const originalStartTime = startTime
+  log(
+    `Total documents in the collection: ${n}. Timestamp: ${t1.toISOString()}. Starting from: ${startTime}. Using ${chunkTime} day chunks.`
+  )
+  let totalProcessed = 0
+  const delta = chunkTime * DAY_MS
   while (startTime < t1.getTime()) {
     const endTime = Math.min(startTime + delta, t1.getTime())
     const snap = await source
@@ -107,12 +124,23 @@ async function importCollectionGroupAtTimestamp(
       .where(timePropName, '<', endTime)
       .get()
     log(`Loaded ${snap.size} documents.`)
-    for (const batch of chunk(snap.docs, 2000)) {
-      const rows = batch.map((d) => getWriteRow(d, docKind, t1))
+
+    for (const batch of chunk(snap.docs, batchSize)) {
+      const rows = batch.map((d) => getWriteRow(d, tableName, t1))
       await withRetries(run(client.from('incoming_writes').insert(rows)))
     }
-    log(`Processed ${snap.size} documents from ${startTime} to ${endTime}`)
+    totalProcessed += snap.size
+    log(`Processed ${snap.size} documents from ${startTime} to ${endTime}.`)
+    log(`Use ${endTime} as the starting point for the next run.`)
     startTime = endTime
+    log(
+      `Total documents processed: ${
+        totalProcessed + snap.size
+      }. Total % time processed: ${(
+        ((endTime - originalStartTime) / (t1.getTime() - originalStartTime)) *
+        100
+      ).toFixed(2)}%.`
+    )
   }
 }
 
@@ -131,148 +159,190 @@ async function clearFailedWrites() {
   await deleter.close()
 }
 
-async function importDatabase(kinds?: string[]) {
+async function importDatabase(
+  tables?: string[],
+  startTime = 0,
+  timeChunk = 0.25
+) {
   const firestore = admin.firestore()
   const client = createSupabaseClient()
-  const shouldImport = (k: DocumentKind) => kinds == null || kinds.includes(k)
+  const shouldImport = (t: TableName) => tables == null || tables.includes(t)
 
-  if (kinds == null) {
+  if (tables == null) {
     await clearFailedWrites()
   }
 
-  if (shouldImport('user'))
-    await importCollection(client, firestore.collection('users'), 'user', 500)
-  if (shouldImport('userPortfolioHistory'))
-    await importCollectionGroupAtTimestamp(
+  if (shouldImport('users'))
+    await importCollection(client, firestore.collection('users'), 'users', 500)
+  if (shouldImport('user_portfolio_history'))
+    await importAppendOnlyCollectionGroup(
       client,
       firestore.collectionGroup('portfolioHistory'),
-      'userPortfolioHistory',
+      'user_portfolio_history',
       (_) => true,
-      0,
-      'timestamp'
+      2000,
+      timeChunk,
+      startTime
     )
-  if (shouldImport('userContractMetrics'))
+  if (shouldImport('user_contract_metrics'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('contract-metrics'),
-      'userContractMetrics',
+      'user_contract_metrics',
       (_) => true,
-      2500,
+      2500
     )
-  if (shouldImport('userFollow'))
+  if (shouldImport('user_follows'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('follows'),
-      'userFollow',
+      'user_follows',
       (c) => c.ref.parent.parent?.parent.path === 'users',
       5000
     )
-  if (shouldImport('userReaction'))
+  if (shouldImport('user_reactions'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('reactions'),
-      'userReaction',
+      'user_reactions',
       (_) => true,
       2500
     )
-  if (shouldImport('userEvent'))
-    await importCollectionGroup(
+  if (shouldImport('user_events'))
+    await importAppendOnlyCollectionGroup(
       client,
       firestore.collectionGroup('events'),
-      'userEvent',
+      'user_events',
       (c) => c.ref.parent.parent?.parent.path === 'users',
-      2500
+      2500,
+      timeChunk,
+      startTime
     )
-  if (shouldImport('userSeenMarket'))
+  if (shouldImport('user_seen_markets'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('seenMarkets'),
-      'userSeenMarket',
+      'user_seen_markets',
       (_) => true,
       2500
     )
-  if (shouldImport('contract'))
+  if (shouldImport('contracts'))
     await importCollection(
       client,
       firestore.collection('contracts'),
-      'contract',
+      'contracts',
       500
     )
-  if (shouldImport('contractAnswer'))
+  if (shouldImport('contract_answers'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('answers'),
-      'contractAnswer',
+      'contract_answers',
       (_) => true,
       2500
     )
-  if (shouldImport('contractBet'))
+  if (shouldImport('contract_bets'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('bets'),
-      'contractBet',
+      'contract_bets',
       (_) => true,
       2500
     )
-  if (shouldImport('contractComment'))
+  if (shouldImport('contract_comments'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('comments'),
-      'contractComment',
+      'contract_comments',
       (c) => c.get('commentType') === 'contract',
       500
     )
-  if (shouldImport('contractFollow'))
+  if (shouldImport('contract_follows'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('follows'),
-      'contractFollow',
+      'contract_follows',
       (c) => c.ref.parent.parent?.parent.path == 'contracts',
       5000
     )
-  if (shouldImport('contractLiquidity'))
+  if (shouldImport('contract_liquidity'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('liquidity'),
-      'contractLiquidity',
+      'contract_liquidity',
       (_) => true,
       2500
     )
-  if (shouldImport('group'))
-    await importCollection(client, firestore.collection('groups'), 'group', 500)
-  if (shouldImport('groupContract'))
+  if (shouldImport('groups'))
+    await importCollection(
+      client,
+      firestore.collection('groups'),
+      'groups',
+      500
+    )
+  if (shouldImport('group_contracts'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('groupContracts'),
-      'groupContract',
+      'group_contracts',
       (_) => true,
       5000
     )
-  if (shouldImport('groupMember'))
+  if (shouldImport('group_members'))
     await importCollectionGroup(
       client,
       firestore.collectionGroup('groupMembers'),
-      'groupMember',
+      'group_members',
       (_) => true,
       5000
     )
-  if (shouldImport('txn'))
-    await importCollection(client, firestore.collection('txns'), 'txn', 2500)
-  if (shouldImport('manalink'))
+  if (shouldImport('txns'))
+    await importAppendOnlyCollectionGroup(
+      client,
+      firestore.collectionGroup('txns'),
+      'txns',
+      (_) => true,
+      2500,
+      timeChunk,
+      startTime,
+      'createdTime'
+    )
+  if (shouldImport('manalinks'))
     await importCollection(
       client,
       firestore.collection('manalinks'),
-      'manalink',
+      'manalinks',
       2500
     )
-  if (shouldImport('post'))
-    await importCollection(client, firestore.collection('posts'), 'post', 100)
+  if (shouldImport('posts'))
+    await importCollection(client, firestore.collection('posts'), 'posts', 100)
 }
 
 if (require.main === module) {
   initAdmin()
-  const args = process.argv.slice(2)
-  importDatabase(args.length > 0 ? args : undefined)
+  program.requiredOption(
+    '-t, --tables <tables>',
+    '(Required) Comma-separated list of tables to import'
+  )
+  program.option(
+    '-ts, --timestamp <timestamp>',
+    'Timestamp to start append only import, (user_events, user_portfolio_history, and txns)',
+    parseInt
+  )
+  program.option(
+    '-c, --chunk <chunk>',
+    'Fraction of a day to chunk append only imports by, (user_events, user_portfolio_history, and txns)',
+    parseFloat
+  )
+  program.parse(process.argv)
+  const options = program.opts()
+  const { timestamp, chunk } = options
+  const tables = options.tables.split(',')
+  log('Importing tables:', tables)
+  if (timestamp != null) log('Starting at timestamp:', timestamp)
+  if (chunk != null) log('Chunking by:', chunk, 'day(s)')
+
+  importDatabase(tables, timestamp, chunk)
     .then(() => {
       log('Finished importing.')
     })

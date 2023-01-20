@@ -4,8 +4,8 @@ import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
-import { DailyProfit } from '../components/daily-stats'
 import { DiscoverFeed } from './home'
+import { DailyProfit } from 'web/components/daily-profit'
 
 export default function DiscoverPage() {
   const user = useUser()
@@ -18,7 +18,7 @@ export default function DiscoverPage() {
           <Title className="mx-4 !mb-0 !mt-0 sm:mx-0" text="Discover" />
           <DailyProfit user={user} />
         </Row>
-        {user && <DiscoverFeed user={user} count={500} />}
+        {user && <DiscoverFeed user={user} />}
       </Col>
     </Page>
   )

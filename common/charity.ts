@@ -819,6 +819,31 @@ The organization's core services include family planning; safe abortion and post
 The organization reports for the year 2021 to have prevented 14.1 million unintended pregnancies, averted 6.6 million unsafe abortions, and saved 39,000 women's lives.`,
     tags: ['New'] as const,
   },
+  {
+    name: 'Fish Welfare Initiative',
+    website: 'https://www.fishwelfareinitiative.org/',
+    photo: 'https://i.imgur.com/gd8O71v.png',
+    preview: `Fish Welfare Initiative's mission is to improve the welfare of fish as much as possible, focusing specifically on farmed fish.`,
+    description: `Fish Welfare Initiative is a startup organization whose mission is to improve the welfare of fish as much as possible. They focus specifically on farmed fish, i.e., fish raised in aquaculture.
+    
+    They collaborate with corporations, governments, and producers to improve fish welfare standards and practices with a simple broad approach: researching the most promising ways of improving fish welfare, and then enabling stakeholders to do so. 
+    Following their initial research, their team now partners with NGOs to help farmers introduce higher welfare farming methods in the second-highest fish producing country in the world, India.
+    
+    As of December 30 2022, they have potentially helped 1.14 and 1.4 million fish and shrimp respectively, with every $1 potentially helping 1.3 fish and every $100 13 fish.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Cavendish Labs',
+    website: 'https://cavendishlabs.org/',
+    photo: 'https://i.imgur.com/UM0It6p.png',
+    preview: `Cavendish Labs is a longtermist research institute focused on AI alignment and pandemic prevention.`,
+    description: `Cavendish Labs is a research institute based in Cavendish, Vermont focused on AI alignment and pandemic prevention. Our main research areas are the following:
+    
+1. Alignment. How do we make sure that AI does what we want? We’ve spent some time thinking about ELK and inverse scaling; however, we think that AGI will most likely be achieved through some sort of model-based RL framework, so that is our current focus. For instance, we know how to induce provable guarantees of behaviour in supervised learning; could we do something similar in RL?
+2. Pandemic prevention. A lot of people have heard of the Far-UVC light idea; however, understanding why it works, and whether it works safely, is useful for developing other broad-spectrum viral prevention tools, as well as preventing the engineering of UV-resistant viruses.
+3. Diagnostic development. We're interested in designing a low-cost and simple-to-use platform for LAMP reactions so that generalized diagnostic capabilities are more widespread. We envision a world where it is both cheap and easy to run a panel of tests so one can swiftly determine the exact virus behind an infection.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {

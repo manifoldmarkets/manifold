@@ -1,29 +1,45 @@
+import { uniqBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
 import { db } from 'web/lib/supabase/db'
+import { buildArray } from 'common/util/array'
+import { usePrivateUser } from './use-user'
+import { isContractBlocked } from 'web/lib/firebase/users'
 
-export const useFeed = (user: User | null | undefined, count: number) => {
+const PAGE_SIZE = 20
+
+export const useFeed = (user: User | null | undefined, key: string) => {
   const [savedContracts, setSavedContracts] = usePersistentState<
     Contract[] | undefined
   >(undefined, {
-    key: `recommended-contracts-${user?.id}-${count}`,
+    key: `recommended-contracts-${user?.id}-${key}`,
     store: inMemoryStore(),
   })
 
+  const privateUser = usePrivateUser()
   const userId = user?.id
 
-  useEffect(() => {
+  const loadMore = useCallback(() => {
     if (userId) {
-      db.rpc('get_recommended_contracts' as any, { uid: userId, count }).then(
-        (res) => {
-          const contracts = res.data as Contract[]
-          setSavedContracts(contracts)
-        }
-      )
+      db.rpc('get_recommended_contracts' as any, {
+        uid: userId,
+        count: PAGE_SIZE,
+      }).then((res) => {
+        const newContracts = res.data as Contract[] | undefined
+        setSavedContracts((contracts) =>
+          uniqBy(buildArray(contracts, newContracts), (c) => c.id).filter(
+            (c) => !isContractBlocked(privateUser, c)
+          )
+        )
+      })
     }
-  }, [setSavedContracts, userId, count])
+  }, [userId, setSavedContracts, privateUser])
 
-  return savedContracts
+  useEffect(() => {
+    loadMore()
+  }, [loadMore])
+
+  return { contracts: savedContracts, loadMore }
 }

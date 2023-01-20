@@ -4,8 +4,7 @@ import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
-import { Row } from './layout/row'
-import { useEffect, useRef, useMemo, ReactNode, useState } from 'react'
+import { useEffect, useRef, useMemo, ReactNode } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   historyStore,
@@ -24,24 +23,20 @@ import {
   searchClient,
   searchIndexName,
 } from 'web/lib/service/algolia'
-import { AdjustmentsIcon } from '@heroicons/react/solid'
-import { Button } from './buttons/button'
-import { Modal } from './layout/modal'
-import { Title } from './widgets/title'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
-import { SimpleLinkButton } from './buttons/simple-link-button'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 export const SORTS = [
-  { label: 'Newest', value: 'newest' },
+  { label: 'Relevance', value: 'relevance' },
+  { label: 'New', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: 'Daily changed', value: 'daily-score' },
+  { label: 'Daily change', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
-  { label: 'Most popular', value: 'most-popular' },
+  { label: 'Total traders', value: 'most-popular' },
   { label: 'Liquidity', value: 'liquidity' },
-  { label: 'Last updated', value: 'last-updated' },
-  { label: 'Closing soon', value: 'close-date' },
+  { label: 'Last activity', value: 'last-updated' },
+  { label: 'Close date', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
   { label: 'Highest %', value: 'prob-descending' },
   { label: 'Lowest %', value: 'prob-ascending' },
@@ -82,11 +77,8 @@ export function ContractSearch(props: {
   }
   headerClassName?: string
   persistPrefix?: string
-  useQueryUrlParam?: boolean
   isWholePage?: boolean
   includeProbSorts?: boolean
-  noControls?: boolean
-  maxResults?: number
   renderContracts?: (
     contracts: Contract[] | undefined,
     loadMore: () => void
@@ -104,11 +96,8 @@ export function ContractSearch(props: {
     highlightCards,
     headerClassName,
     persistPrefix,
-    useQueryUrlParam,
     includeProbSorts,
     isWholePage,
-    noControls,
-    maxResults,
     renderContracts,
     autoFocus,
     profile,
@@ -151,15 +140,14 @@ export function ContractSearch(props: {
     const id = ++requestId.current
     const requestedPage = freshQuery ? 0 : state.pages.length
     if (freshQuery || requestedPage < state.numPages) {
-      const index = query
-        ? searchIndex
-        : searchClient.initIndex(getIndexName(sort))
-      const numericFilters = query
-        ? []
-        : [
-            openClosedFilter === 'open' ? `closeTime > ${Date.now()}` : '',
-            openClosedFilter === 'closed' ? `closeTime <= ${Date.now()}` : '',
-          ].filter((f) => f)
+      const index =
+        sort === 'relevance'
+          ? searchIndex
+          : searchClient.initIndex(getIndexName(sort))
+      const numericFilters = [
+        openClosedFilter === 'open' ? `closeTime > ${Date.now()}` : '',
+        openClosedFilter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+      ].filter((f) => f)
       const results = await index.search(query, {
         facetFilters,
         numericFilters,
@@ -201,8 +189,7 @@ export function ContractSearch(props: {
   const contracts = state.pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
-  const renderedContracts =
-    state.pages.length === 0 ? undefined : contracts.slice(0, maxResults)
+  const renderedContracts = state.pages.length === 0 ? undefined : contracts
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
@@ -217,12 +204,10 @@ export function ContractSearch(props: {
         additionalFilter={additionalFilter}
         persistPrefix={persistPrefix}
         hideOrderSelector={hideOrderSelector}
-        useQueryUrlParam={useQueryUrlParam}
+        useQueryUrlParam={isWholePage}
         includeProbSorts={includeProbSorts}
         onSearchParametersChanged={onSearchParametersChanged}
-        noControls={noControls}
         autoFocus={autoFocus}
-        isWholePage={isWholePage}
       />
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
@@ -231,11 +216,11 @@ export function ContractSearch(props: {
       ) : (
         <ContractsGrid
           contracts={renderedContracts}
-          loadMore={noControls ? undefined : performQuery}
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
           highlightCards={highlightCards}
           cardUIOptions={cardUIOptions}
+          loadMore={performQuery}
         />
       )}
     </Col>
@@ -252,23 +237,19 @@ function ContractSearchControls(props: {
   includeProbSorts?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
-  noControls?: boolean
   autoFocus?: boolean
-  isWholePage?: boolean
 }) {
   const {
     className,
-    defaultSort,
-    defaultFilter,
+    defaultSort = 'relevance',
+    defaultFilter = 'all',
     additionalFilter,
     persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
     useQueryUrlParam,
-    noControls,
     autoFocus,
     includeProbSorts,
-    isWholePage,
   } = props
 
   const router = useRouter()
@@ -286,7 +267,7 @@ function ContractSearchControls(props: {
   const savedSort = safeLocalStorage()?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
-    savedSort ?? defaultSort ?? 'score',
+    savedSort ?? defaultSort,
     !useQueryUrlParam
       ? undefined
       : {
@@ -295,7 +276,7 @@ function ContractSearchControls(props: {
         }
   )
   const [filter, setFilter] = usePersistentState(
-    defaultFilter ?? 'open',
+    defaultFilter,
     !useQueryUrlParam
       ? undefined
       : {
@@ -320,19 +301,17 @@ function ContractSearchControls(props: {
       : '',
     ...(additionalFilter?.facetFilters ?? []),
   ]
-  const facetFilters = query
-    ? additionalFilters
-    : [
-        ...additionalFilters,
-        ...(additionalFilter?.nonQueryFacetFilters ?? []),
-        additionalFilter?.creatorId || additionalFilter?.groupSlug
-          ? ''
-          : 'visibility:public',
+  const facetFilters = [
+    ...additionalFilters,
+    ...(additionalFilter?.nonQueryFacetFilters ?? []),
+    additionalFilter?.creatorId || additionalFilter?.groupSlug
+      ? ''
+      : 'visibility:public',
 
-        filter === 'open' ? 'isResolved:false' : '',
-        filter === 'closed' ? 'isResolved:false' : '',
-        filter === 'resolved' ? 'isResolved:true' : '',
-      ].filter((f) => f)
+    filter === 'open' ? 'isResolved:false' : '',
+    filter === 'closed' ? 'isResolved:false' : '',
+    filter === 'resolved' ? 'isResolved:true' : '',
+  ].filter((f) => f)
 
   const openClosedFilter =
     filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
@@ -362,49 +341,37 @@ function ContractSearchControls(props: {
     })
   }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
 
-  if (noControls) {
-    return <></>
-  }
-
   return (
-    <Col className={clsx('top-0 z-20 mb-1 gap-3 bg-gray-50 pb-2', className)}>
-      <Row className="mt-px items-center gap-1 sm:gap-2">
-        <Input
-          type="text"
-          inputMode="search"
-          value={query}
-          onChange={(e) => updateQuery(e.target.value)}
-          onBlur={trackCallback('search', { query: query })}
-          placeholder="Search"
-          className="w-full"
-          autoFocus={autoFocus}
-        />
-        {query ? (
-          isWholePage && (
-            <SimpleLinkButton
-              getUrl={() => window.location.href}
-              tooltip="Copy link to search results"
-            />
-          )
-        ) : (
-          <ModalOnMobile>
-            <SearchFilters
-              filter={filter}
-              selectFilter={selectFilter}
-              hideOrderSelector={hideOrderSelector}
-              selectSort={selectSort}
-              sort={sort}
-              className={'flex flex-row gap-2'}
-              includeProbSorts={includeProbSorts}
-            />
-          </ModalOnMobile>
-        )}
-      </Row>
-    </Col>
+    <div
+      className={clsx(
+        'sticky top-0 z-20 mb-1 flex flex-col items-stretch gap-3 bg-gray-50 pb-2 pt-px sm:flex-row sm:gap-2',
+        className
+      )}
+    >
+      <Input
+        type="text"
+        inputMode="search"
+        value={query}
+        onChange={(e) => updateQuery(e.target.value)}
+        onBlur={trackCallback('search', { query: query })}
+        placeholder="Search"
+        className="w-full"
+        autoFocus={autoFocus}
+      />
+      <SearchFilters
+        filter={filter}
+        selectFilter={selectFilter}
+        hideOrderSelector={hideOrderSelector}
+        selectSort={selectSort}
+        sort={sort}
+        className={'flex flex-row gap-2'}
+        includeProbSorts={includeProbSorts}
+      />
+    </div>
   )
 }
 
-export function SearchFilters(props: {
+function SearchFilters(props: {
   filter: string
   selectFilter: (newFilter: filter) => void
   hideOrderSelector: boolean | undefined
@@ -432,6 +399,7 @@ export function SearchFilters(props: {
       <Select
         value={filter}
         onChange={(e) => selectFilter(e.target.value as filter)}
+        className="!h-full grow py-1"
       >
         <option value="open">Open</option>
         <option value="closed">Closed</option>
@@ -442,6 +410,7 @@ export function SearchFilters(props: {
         <Select
           value={sort}
           onChange={(e) => selectSort(e.target.value as Sort)}
+          className="!h-full grow py-1"
         >
           {sorts.map((option) => (
             <option key={option.value} value={option.value}>
@@ -451,31 +420,5 @@ export function SearchFilters(props: {
         </Select>
       )}
     </div>
-  )
-}
-
-export function ModalOnMobile(props: { children: ReactNode }) {
-  const { children } = props
-  const [openFilters, setOpenFilters] = useState(false)
-  return (
-    <>
-      <div className="contents sm:hidden">
-        <Button color="gray-white" onClick={() => setOpenFilters(true)}>
-          <AdjustmentsIcon className="my-auto h-7" />
-        </Button>
-        <Modal
-          open={openFilters}
-          setOpen={setOpenFilters}
-          position="top"
-          className="rounded-lg bg-white px-4 pb-4"
-        >
-          <Col>
-            <Title text="Filter Markets" />
-            {children}
-          </Col>
-        </Modal>
-      </div>
-      <div className="hidden sm:contents">{children}</div>
-    </>
   )
 }

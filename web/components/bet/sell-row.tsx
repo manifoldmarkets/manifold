@@ -4,6 +4,7 @@ import {
   PseudoNumericContract,
 } from 'common/contract'
 import { User } from 'common/user'
+import { getContractBetMetrics } from 'common/calculate'
 import { useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -17,13 +18,15 @@ import { Bet } from 'common/bet'
 import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
 import { SellPanel } from './sell-panel'
+import { TweetButton, getPositionTweet } from '../buttons/tweet-button'
 
 export function SellRow(props: {
   contract: BinaryContract | PseudoNumericContract
   user: User | null | undefined
   className?: string
+  showTweet?: boolean
 }) {
-  const { className, contract, user } = props
+  const { className, contract, user, showTweet } = props
 
   const userBets = useUserContractBets(user?.id, contract.id)
   const [showSellModal, setShowSellModal] = useState(false)
@@ -61,6 +64,18 @@ export function SellRow(props: {
               shares={shares}
               sharesOutcome={sharesOutcome}
               setOpen={setShowSellModal}
+            />
+          )}
+
+          {showTweet && userBets && (
+            <TweetButton
+              tweetText={getPositionTweet(
+                (sharesOutcome === 'NO' ? -1 : 1) * shares,
+                getContractBetMetrics(contract, userBets).invested,
+                contract,
+                user.username
+              )}
+              className="ml-2"
             />
           )}
         </Row>

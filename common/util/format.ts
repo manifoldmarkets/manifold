@@ -1,4 +1,5 @@
 import { ENV_CONFIG } from '../envs/constants'
+import { BinaryContract, PseudoNumericContract } from 'common/contract'
 
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -8,17 +9,8 @@ const formatter = new Intl.NumberFormat('en-US', {
 })
 
 export function formatMoney(amount: number) {
-  const formattedNumber = getMoneyNumber(amount)
-  if (formattedNumber < 0) {
-    return (
-      '-' +
-      ENV_CONFIG.moneyMoniker +
-      formatter.format(Math.abs(formattedNumber)).replace('$', '')
-    )
-  }
-  return (
-    ENV_CONFIG.moneyMoniker + formatter.format(formattedNumber).replace('$', '')
-  )
+  const newAmount = getMoneyNumber(amount)
+  return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
 }
 
 export function formatMoneyNumber(amount: number) {
@@ -27,12 +19,11 @@ export function formatMoneyNumber(amount: number) {
 }
 
 export function getMoneyNumber(amount: number) {
-  return Math.round(amount) === 0
-    ? 0
-    : // Handle 499.9999999999999 case
-      (amount > 0 ? Math.floor : Math.ceil)(
-        amount + 0.00000000001 * Math.sign(amount)
-      )
+  // Handle 499.9999999999999 case
+  const plusEpsilon = (amount > 0 ? Math.floor : Math.ceil)(
+    amount + 0.00000000001 * Math.sign(amount)
+  )
+  return Math.round(plusEpsilon) === 0 ? 0 : plusEpsilon
 }
 
 export function formatMoneyWithDecimals(amount: number) {
@@ -99,4 +90,14 @@ export function toCamelCase(words: string) {
   // Remove non-alpha-numeric-underscore chars.
   const regex = /(?:^|\s)(?:[a-z0-9_]+)/gi
   return (camelCase.match(regex) || [])[0] ?? ''
+}
+
+export const formatOutcomeLabel = (
+  contract: BinaryContract | PseudoNumericContract,
+  outcomeLabel: 'YES' | 'NO'
+) => {
+  if (contract.outcomeType === 'BINARY') {
+    return outcomeLabel
+  }
+  return outcomeLabel === 'YES' ? 'HIGHER' : 'LOWER'
 }

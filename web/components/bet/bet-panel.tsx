@@ -10,6 +10,7 @@ import { Spacer } from '../layout/spacer'
 import {
   formatLargeNumber,
   formatMoney,
+  formatOutcomeLabel,
   formatPercent,
 } from 'common/util/format'
 import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
@@ -47,6 +48,7 @@ import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { SINGULAR_BET } from 'common/user'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -267,7 +269,8 @@ export function BuyPanel(props: {
     })
   }
 
-  const betDisabled = isSubmitting || !betAmount || !!error
+  const betDisabled =
+    isSubmitting || !betAmount || !!error || outcome === undefined
 
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
     outcome ?? 'YES',
@@ -361,7 +364,7 @@ export function BuyPanel(props: {
           hideInput={hideInput}
         />
 
-        <Row className="mt-8 w-full gap-3">
+        <Row className="mt-8 w-full">
           <Col className="w-1/2 text-sm">
             <Col className="flex-nowrap whitespace-nowrap text-sm text-gray-500">
               <div>
@@ -376,21 +379,23 @@ export function BuyPanel(props: {
               <span className="whitespace-nowrap text-lg">
                 {formatMoney(currentPayout)}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="pr-3 text-sm text-gray-500">
                 {' '}
                 +{currentReturnPercent}
               </span>
             </div>
           </Col>
           <Col className="w-1/2 text-sm">
-            <Row className={'relative'}>
-              <span className="text-sm text-gray-500">
+            <Row>
+              <span className="whitespace-nowrap text-sm text-gray-500">
                 {isPseudoNumeric ? 'Estimated value' : 'New probability'}
               </span>
-              <InfoTooltip
-                text={'The probability of YES after placing your bet'}
-                className={'absolute top-0 pb-1.5'}
-              />
+              {!isPseudoNumeric && (
+                <InfoTooltip
+                  text={`The probability of YES after your ${SINGULAR_BET}`}
+                  className="ml-1"
+                />
+              )}
             </Row>
             {probStayedSame ? (
               <div className="text-lg">{format(initialProb)}</div>
@@ -421,10 +426,17 @@ export function BuyPanel(props: {
             warning={warning}
             onSubmit={submitBet}
             isSubmitting={isSubmitting}
-            disabled={!!betDisabled || outcome === undefined}
+            disabled={betDisabled}
             size="xl"
             color={outcome === 'NO' ? 'red' : 'green'}
-            actionLabel="Wager"
+            actionLabel={
+              betDisabled
+                ? `Select ${formatOutcomeLabel(
+                    contract,
+                    'YES'
+                  )} or ${formatOutcomeLabel(contract, 'NO')}`
+                : 'Wager'
+            }
           />
         )}
         <button
@@ -436,7 +448,6 @@ export function BuyPanel(props: {
         <Modal
           open={seeLimit}
           setOpen={setSeeLimit}
-          position="center"
           className="rounded-lg bg-white px-4 pb-4"
         >
           <Title text="Limit Order" />

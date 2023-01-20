@@ -6,11 +6,11 @@ import * as timezone from 'dayjs/plugin/timezone'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-import { range, zip, uniq, sum, sumBy } from 'lodash'
+import { range, zip, uniq, sum, sumBy, countBy } from 'lodash'
 import { log, logMemory } from './utils'
 import { Stats } from '../../common/stats'
 import { DAY_MS } from '../../common/util/time'
-import { average } from '../../common/util/math'
+import { average, median } from '../../common/util/math'
 import { mapAsync } from '../../common/util/promise'
 
 const firestore = admin.firestore()
@@ -100,6 +100,34 @@ export async function getDailyContracts(
   return contractsByDay
 }
 
+const getStripeSalesQuery = (startTime: number, endTime: number) =>
+  firestore
+    .collection('stripe-transactions')
+    .where('timestamp', '>=', startTime)
+    .where('timestamp', '<', endTime)
+    .orderBy('timestamp', 'asc')
+    .select('manticDollarQuantity', 'timestamp', 'userId', 'sessionId')
+
+export async function getStripeSales(startTime: number, numberOfDays: number) {
+  const query = getStripeSalesQuery(
+    startTime,
+    startTime + DAY_MS * numberOfDays
+  )
+  const sales = (await query.get()).docs
+
+  const salesByDay = range(0, numberOfDays).map(() => [] as any[])
+  for (const sale of sales) {
+    const ts = sale.get('timestamp')
+    const amount = sale.get('manticDollarQuantity') / 100 // convert to dollars
+    const userId = sale.get('userId')
+    const sessionId = sale.get('sessionId')
+    const dayIndex = Math.floor((ts - startTime) / DAY_MS)
+    salesByDay[dayIndex].push({ id: sessionId, userId, ts, amount })
+  }
+
+  return salesByDay
+}
+
 const getUsersQuery = (startTime: number, endTime: number) =>
   firestore
     .collection('users')
@@ -130,13 +158,19 @@ export const updateStatsCore = async () => {
   const startDate = today - numberOfDays * DAY_MS
 
   log('Fetching data for stats update...')
-  const [dailyBets, dailyContracts, dailyComments, dailyNewUsers] =
-    await Promise.all([
-      getDailyBets(startDate.valueOf(), numberOfDays),
-      getDailyContracts(startDate.valueOf(), numberOfDays),
-      getDailyComments(startDate.valueOf(), numberOfDays),
-      getDailyNewUsers(startDate.valueOf(), numberOfDays),
-    ])
+  const [
+    dailyBets,
+    dailyContracts,
+    dailyComments,
+    dailyNewUsers,
+    dailyStripeSales,
+  ] = await Promise.all([
+    getDailyBets(startDate.valueOf(), numberOfDays),
+    getDailyContracts(startDate.valueOf(), numberOfDays),
+    getDailyComments(startDate.valueOf(), numberOfDays),
+    getDailyNewUsers(startDate.valueOf(), numberOfDays),
+    getStripeSales(startDate.valueOf(), numberOfDays),
+  ])
   logMemory()
 
   const dailyBetCounts = dailyBets.map((bets) => bets.length)
@@ -144,6 +178,10 @@ export const updateStatsCore = async () => {
     (contracts) => contracts.length
   )
   const dailyCommentCounts = dailyComments.map((comments) => comments.length)
+
+  const dailySales = dailyStripeSales.map((sales) =>
+    sum(sales.map((s) => s.amount))
+  )
 
   const dailyUserIds = zip(dailyContracts, dailyBets, dailyComments).map(
     ([contracts, bets, comments]) => {
@@ -153,6 +191,20 @@ export const updateStatsCore = async () => {
       return uniq([...creatorIds, ...betUserIds, ...commentUserIds])
     }
   )
+
+  const avgDailyUserActions = zip(dailyContracts, dailyBets, dailyComments).map(
+    ([contracts, bets, comments]) => {
+      const creatorIds = (contracts ?? []).map((c) => c.userId)
+      const betUserIds = (bets ?? []).map((bet) => bet.userId)
+      const commentUserIds = (comments ?? []).map((comment) => comment.userId)
+      const allIds = [...creatorIds, ...betUserIds, ...commentUserIds]
+      if (allIds.length === 0) return 0
+
+      const userIdCounts = countBy(allIds, (id) => id)
+      return median(Object.values(userIdCounts).filter((c) => c > 1))
+    }
+  )
+
   log(
     `Fetched ${sum(dailyBetCounts)} bets, ${sum(
       dailyContractCounts
@@ -333,6 +385,8 @@ export const updateStatsCore = async () => {
     startDate: startDate.valueOf(),
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
+    avgDailyUserActions,
+    dailySales,
     weeklyActiveUsers,
     monthlyActiveUsers,
     d1,

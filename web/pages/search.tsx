@@ -7,6 +7,7 @@ import { useRouter } from 'next/router'
 import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { useMemberGroupsSubscription } from 'web/hooks/use-group'
+import { Title } from 'web/components/widgets/title'
 
 export default function Search() {
   const user = useUser()
@@ -29,9 +30,9 @@ export default function Search() {
   return (
     <Page>
       <Col className="mx-auto w-full p-2">
+        <Title text="Market search" className="!mt-0" />
         <ContractSearch
           persistPrefix="search"
-          useQueryUrlParam={true}
           autoFocus={autoFocus}
           additionalFilter={{
             facetFilters: getUsersBlockFacetFilters(privateUser),

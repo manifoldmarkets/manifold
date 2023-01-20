@@ -23,6 +23,7 @@ module.exports = {
     'linebreak-style': ['error', 'unix'],
     'lodash/import-scope': [2, 'member'],
     'unused-imports/no-unused-imports': 'warn',
+    'linebreak-style': 0,
   },
   ignorePatterns: ['/public/mtg/*'],
   env: {

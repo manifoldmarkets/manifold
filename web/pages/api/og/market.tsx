@@ -4,22 +4,20 @@ import React from 'react'
 import { OgMarket } from 'web/pages/og/og-market'
 import { OgCardProps } from 'common/contract-details'
 
-export const config = {
-  runtime: 'experimental-edge',
-}
+export const config = { runtime: 'edge' }
 
-async function loadFont(url: URL) {
-  const res = await fetch(url)
-  return await res.arrayBuffer()
-}
-// Note: These URLs must be constructed outside of a function, due to
-// the weird way import.meta.url works
-const readexFontUrl = new URL('ReadexPro-Regular.ttf', import.meta.url)
-const monoFontUrl = new URL('MajorMonoDisplay-Regular.ttf', import.meta.url)
+const READEX_PRO_URL = new URL('ReadexPro-Regular.ttf', import.meta.url)
+const READEX_PRO_DATA = fetch(READEX_PRO_URL).then((res) => res.arrayBuffer())
+const MAJOR_MONO_URL = new URL('MajorMonoDisplay-Regular.ttf', import.meta.url)
+const MAJOR_MONO_DATA = fetch(MAJOR_MONO_URL).then((res) => res.arrayBuffer())
 
 export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
+    const [readexPro, majorMono] = await Promise.all([
+      READEX_PRO_DATA,
+      MAJOR_MONO_DATA,
+    ])
     const OgMarketProps = Object.fromEntries(
       searchParams.entries()
     ) as OgCardProps
@@ -31,12 +29,12 @@ export default async function handler(req: NextRequest) {
       fonts: [
         {
           name: 'Readex Pro',
-          data: await loadFont(readexFontUrl),
+          data: readexPro,
           style: 'normal',
         },
         {
           name: 'Major Mono Display',
-          data: await loadFont(monoFontUrl),
+          data: majorMono,
           style: 'normal',
         },
       ],

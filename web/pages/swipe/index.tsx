@@ -37,7 +37,8 @@ export default function Swipe() {
   })
 
   const user = useUser()
-  const feed = useFeed(user, 400)?.filter((c) => c.outcomeType === 'BINARY') as
+  const { contracts, loadMore } = useFeed(user, 'swipe')
+  const feed = contracts?.filter((c) => c.outcomeType === 'BINARY') as
     | BinaryContract[]
     | undefined
 
@@ -45,6 +46,13 @@ export default function Swipe() {
     key: 'swipe-index',
     store: inMemoryStore(),
   })
+
+  useEffect(() => {
+    if (feed && index + 2 >= feed.length) {
+      loadMore()
+    }
+  }, [feed, index, loadMore])
+
   const contract = feed ? feed[index] : undefined
 
   const cards = useMemo(() => {
