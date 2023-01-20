@@ -106,7 +106,7 @@ function ContractActions(props: {
         content={contract.description}
         stateKey={`isCollapsed-contract-${contract.id}`}
       />
-      <Row className="mb-4 items-center gap-2 text-xs">
+      <Row className="my-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
         <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
           Resolve
