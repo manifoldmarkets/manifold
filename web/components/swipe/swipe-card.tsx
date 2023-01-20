@@ -366,8 +366,6 @@ export const SwipeCard = memo(
       getOutcomeProbabilityAfterBet(contract, 'YES', amount)
     )
 
-    const quenstion =
-      'AApart from counting words and characters, our online editor can help you to improve word choice and'
     useEffect(() => {
       setNoPercent(1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount))
       setYesPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))
@@ -395,10 +393,10 @@ export const SwipeCard = memo(
                 <div
                   className={clsx(
                     'text-white drop-shadow',
-                    getQuestionSize(quenstion)
+                    getQuestionSize(question)
                   )}
                 >
-                  {quenstion}
+                  {question}
                 </div>
               </SiteLink>
               <Row className="mx-auto w-full grow items-center" />
