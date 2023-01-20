@@ -54,6 +54,7 @@ export async function getGroupAdmins(groupId: string) {
       .select('*')
       .eq('group_id', groupId)
       .eq('role', 'admin')
+      .order('name')
   )
 
   // const { data: groups } = await run(
