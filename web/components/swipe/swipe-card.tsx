@@ -158,11 +158,6 @@ export function PrimarySwipeCard(props: {
   const [buttonAction, setButtonAction] = useState<'YES' | 'NO' | undefined>(
     undefined
   )
-  const [isFreshCard, setIsFreshCard] = useState(!wentToPreviousCard)
-  if (isFreshCard) {
-    setTimeout(() => setIsFreshCard(false), 10)
-  }
-
   const [previousCardY, setPreviousCardY] = useState<number | null>(null)
 
   const [{ x, y }, api] = useSpring(() => ({
@@ -300,18 +295,6 @@ export function PrimarySwipeCard(props: {
         style={{ x, y }}
         onClick={(e) => e.preventDefault()}
       >
-        {/* {!wentToPreviousCard && (
-          <Col
-            className={clsx(
-              'absolute inset-0 z-10 max-w-lg rounded-2xl transition-opacity duration-300 ease-in-out',
-              BUFFER_CARD_COLOR,
-              isFreshCard || (swipeAction === 'down' && previousContract)
-                ? BUFFER_CARD_OPACITY
-                : 'opacity-0',
-              isModalOpen ? 'pointer-events-auto' : 'pointer-events-none'
-            )}
-          />
-        )} */}
         <SwipeCard
           key={contract.id}
           contract={contract}
