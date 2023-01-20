@@ -20,8 +20,6 @@ import { Avatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize, {
-  BUFFER_CARD_COLOR,
-  BUFFER_CARD_OPACITY,
   isStatusAFailure,
   STARTING_BET_AMOUNT,
 } from './swipe-helpers'
@@ -81,10 +79,8 @@ export function PreviousSwipeCard(props: {
   contract: BinaryContract
   yPosition: number | null
   cardHeight: number
-  swipeAction: SwipeAction
-  action: SwipeAction
 }) {
-  const { yPosition, cardHeight, swipeAction, action } = props
+  const { yPosition, cardHeight } = props
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
     y: -(cardHeight + PREVIOUS_CARD_BUFFER),
@@ -131,19 +127,10 @@ export function PrimarySwipeCard(props: {
   index: number
   setIndex: (next: SetStateAction<number>) => void
   cardHeight: number
-  wentToPreviousCard: boolean
-  setWentToPreviousCard: (wtpc: SetStateAction<boolean>) => void
   user?: User
   previousContract?: BinaryContract
 }) {
-  const {
-    index,
-    setIndex,
-    user,
-    cardHeight,
-    wentToPreviousCard,
-    setWentToPreviousCard,
-  } = props
+  const { index, setIndex, user, cardHeight } = props
   const contract = (useContract(props.contract.id) ??
     props.contract) as BinaryContract
 
@@ -202,7 +189,6 @@ export function PrimarySwipeCard(props: {
   useEffect(() => {
     if (action === 'right' || action === 'left') {
       // Horizontal swipe is triggered, places bet
-      setWentToPreviousCard(false)
       const outcome = action === 'right' ? 'YES' : 'NO'
       onBet(
         outcome,
@@ -221,7 +207,6 @@ export function PrimarySwipeCard(props: {
         api.start({ y })
       }, 100)
       setTimeout(() => {
-        setWentToPreviousCard(false)
         setIndex(index + 1)
       }, 300)
     }
@@ -234,7 +219,6 @@ export function PrimarySwipeCard(props: {
 
         setTimeout(() => {
           setIndex(index - 1)
-          setWentToPreviousCard(true)
         }, 300)
       }
     }
@@ -282,8 +266,6 @@ export function PrimarySwipeCard(props: {
           contract={previousContract}
           yPosition={previousCardY}
           cardHeight={cardHeight}
-          swipeAction={swipeAction}
-          action={action}
         />
       )}
 
