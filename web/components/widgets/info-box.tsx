@@ -19,8 +19,10 @@ export function InfoBox(props: {
           />
         </div>
         <div className="ml-3">
-          <h3 className="text-sm font-medium text-black">{title}</h3>
-          <div className="mt-2 text-sm text-gray-600">
+          {title && (
+            <h3 className="mb-2 text-sm font-medium text-black">{title}</h3>
+          )}
+          <div className="text-sm text-gray-600">
             <Linkify text={text} />
           </div>
         </div>
