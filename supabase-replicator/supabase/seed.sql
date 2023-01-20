@@ -637,10 +637,10 @@ as $$
       -- Default recommendations from this particular user if none for you.
       select *, 2 as priority from get_recommended_contract_ids('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
     ) as rec_contract_ids
-    order by priority
     left join contracts
     on contracts.id = contract_id
     where is_valid_contract(data)
+    order by priority
     limit count
   ) as rec_contracts
 $$;
