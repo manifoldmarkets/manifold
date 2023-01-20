@@ -105,7 +105,7 @@ export default function Swipe() {
   return (
     <Page>
       <Row
-        className={clsx('relative w-screen overflow-hidden')}
+        className={clsx('relative w-full max-w-lg overflow-hidden')}
         style={{ height: cardHeight }}
       >
         {cards.length > 0 && (
@@ -134,15 +134,16 @@ export default function Swipe() {
                 BUFFER_CARD_OPACITY
               )}
             />
-            <SwipeCard
-              amount={STARTING_BET_AMOUNT}
-              contract={cards[1]}
-              key={cards[1].id}
-              swipeBetPanel={
-                <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
-              }
-              className="user-select-none absolute inset-1 z-10 max-w-lg touch-none"
-            />
+            <Col className="user-select-none absolute inset-1 z-10 touch-none">
+              <SwipeCard
+                amount={STARTING_BET_AMOUNT}
+                contract={cards[1]}
+                key={cards[1].id}
+                swipeBetPanel={
+                  <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
+                }
+              />
+            </Col>
           </>
         )}
         {!cards.length && (

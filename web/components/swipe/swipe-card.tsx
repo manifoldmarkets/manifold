@@ -85,7 +85,7 @@ export function PreviousSwipeCard(props: {
   const { yPosition, cardHeight } = props
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
-    y: -window.innerHeight,
+    y: -(cardHeight + 8),
     config: { tension: 1000, friction: 70 },
   }))
 
@@ -93,16 +93,18 @@ export function PreviousSwipeCard(props: {
     props.contract) as BinaryContract
 
   useEffect(() => {
-    const y = yPosition ? -window.innerHeight + yPosition : -window.innerHeight
+    const y = yPosition ? -(cardHeight + 8) + yPosition : -(cardHeight + 8)
     api.start({ y })
+    console.log(y)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yPosition])
 
   return (
     <>
       <animated.div
+        key={contract.id}
         className={clsx(
-          'user-select-none pointer-events-auto absolute inset-1 z-20 max-w-lg touch-none'
+          'user-select-none pointer-events-auto absolute inset-1 z-20 touch-none'
         )}
         style={{ x, y, height: cardHeight }}
         onClick={(e) => e.preventDefault()}
@@ -185,7 +187,7 @@ export function PrimarySwipeCard(props: {
     if (betStatus === 'success') {
       const direction = buttonAction === 'YES' || action === 'right' ? 1 : -1
       setTimeout(() => {
-        const x = direction * window.innerWidth
+        const x = direction * (cardHeight + 8)
         api.start({ x })
       }, 450)
 
@@ -229,11 +231,11 @@ export function PrimarySwipeCard(props: {
         if (action === 'up') {
           // Executes vertical swipe animation
           setTimeout(() => {
-            const y = -1 * window.innerHeight
+            const y = -1 * (cardHeight + 8)
             api.start({ y })
           }, 100)
-          setWentToPreviousCard(false)
           setTimeout(() => {
+            setWentToPreviousCard(false)
             setIndex(index + 1)
           }, 200)
         }
@@ -241,7 +243,7 @@ export function PrimarySwipeCard(props: {
           // Executes vertical swipe animation
           if (previousContract) {
             setTimeout(() => {
-              setPreviousCardY(window.innerHeight + 4)
+              setPreviousCardY(cardHeight + 8)
             }, 100)
 
             setTimeout(() => {
@@ -249,17 +251,21 @@ export function PrimarySwipeCard(props: {
               setWentToPreviousCard(true)
             }, 300)
           }
+        } else {
+          setPreviousCardY(undefined)
+          console.log('HIIII', previousCardY)
         }
-      }
-      const x = down ? Math.sign(mx) * cappedDist : 0
-      const y = down ? (my < 0 ? my : 0) : 0
-      if (my > 0) {
-        setPreviousCardY(my)
       } else {
-        setPreviousCardY(undefined)
-      }
-      if (action === 'none') {
-        api.start({ x, y })
+        const x = down ? Math.sign(mx) * cappedDist : 0
+        const y = down ? (my < 0 ? my : 0) : 0
+        if (my > 0) {
+          setPreviousCardY(my)
+        } else {
+          setPreviousCardY(undefined)
+        }
+        if (action === 'none') {
+          api.start({ x, y })
+        }
       }
     },
     { axis: 'lock' }
@@ -269,6 +275,7 @@ export function PrimarySwipeCard(props: {
     <>
       {previousContract && (
         <PreviousSwipeCard
+          key={previousContract.id}
           contract={previousContract}
           yPosition={previousCardY}
           cardHeight={cardHeight}
@@ -366,61 +373,64 @@ export const SwipeCard = memo(
     return (
       <>
         <Col
-          className={clsx(className, 'drop-shadow-2xl')}
+          className={clsx(className, 'relative h-full w-full drop-shadow-2xl')}
           onClick={(e) => e.preventDefault()}
         >
-          <div className="h-24 w-full rounded-t-2xl bg-black">
-            <CornerDetails contract={contract} />
-          </div>
-          <div className="relative grow bg-black py-1">
-            <div className="absolute z-0 min-h-[30%] w-full bg-gradient-to-b from-black via-black/60 to-transparent pb-60" />
-            <SiteLink
-              className="absolute -top-9 z-10"
-              href={contractPath(contract)}
-              followsLinkClass
-            >
-              <div
-                className={clsx(
-                  'mx-4 text-white drop-shadow',
-                  getQuestionSize(question)
-                )}
-              >
-                {question}
-              </div>
-            </SiteLink>
-            <Row className="absolute top-[40%] z-10 mx-auto w-full px-4">
-              <Percent
-                currPercent={currPercent}
-                yesPercent={yesPercent}
-                noPercent={noPercent}
-                outcome={
-                  buttonAction === 'YES'
-                    ? 'YES'
-                    : buttonAction === 'NO'
-                    ? 'NO'
-                    : action === 'left'
-                    ? 'NO'
-                    : action === 'right'
-                    ? 'YES'
-                    : undefined
-                }
-              />
-            </Row>
-            <Row className="absolute bottom-[104px] z-10 w-full justify-end px-4">
-              <Actions user={user} contract={contract} />
-            </Row>
-            <Col className="absolute -bottom-16 z-10 w-full gap-6">
-              <DescriptionAndModal
-                description={description}
-                isModalOpen={isModalOpen}
-                setIsModalOpen={setIsModalOpen}
-              />
-              {swipeBetPanel}
+          <Col className="h-full">
+            <div className="h-24 rounded-t-2xl bg-black" />
+            <div className="relative flex grow">
+              <div className="absolute top-0 z-0 h-[40%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
+              <img src={image} alt="" className="flex grow object-cover" />
+              <div className="absolute bottom-0 z-0 h-[40%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
+            </div>
+            <div className="h-20 w-full rounded-b-2xl bg-black" />
+          </Col>
+          <Col className="absolute inset-0 z-10">
+            <Col className="relative h-full gap-2 p-4">
+              <CornerDetails contract={contract} />
+              <SiteLink href={contractPath(contract)} followsLinkClass>
+                <div
+                  className={clsx(
+                    'text-white drop-shadow',
+                    getQuestionSize(question)
+                  )}
+                >
+                  {question}
+                </div>
+              </SiteLink>
+              <Row className="mx-auto w-full grow items-center">
+                <Percent
+                  currPercent={currPercent}
+                  yesPercent={yesPercent}
+                  noPercent={noPercent}
+                  outcome={
+                    buttonAction === 'YES'
+                      ? 'YES'
+                      : buttonAction === 'NO'
+                      ? 'NO'
+                      : action === 'left'
+                      ? 'NO'
+                      : action === 'right'
+                      ? 'YES'
+                      : undefined
+                  }
+                />
+              </Row>
+              <Row className="justify-end">
+                <Actions user={user} contract={contract} />
+              </Row>
+              <Col className="gap-6">
+                <div className="h-16">
+                  <DescriptionAndModal
+                    description={description}
+                    isModalOpen={isModalOpen}
+                    setIsModalOpen={setIsModalOpen}
+                  />
+                </div>
+                {swipeBetPanel}
+              </Col>
             </Col>
-            <div className="absolute bottom-0 z-0 min-h-[50%] w-full bg-gradient-to-b from-transparent to-black pb-4" />
-            <img src={image} alt="" className="h-full object-cover" />
-          </div>
-          <div className="h-20 w-full rounded-b-2xl bg-black" />
+          </Col>
         </Col>
       </>
     )
@@ -432,7 +442,7 @@ const CornerDetails = (props: { contract: Contract; className?: string }) => {
   const { creatorName, creatorAvatarUrl, closeTime } = contract
 
   return (
-    <div className={clsx('m-4 flex gap-2 self-start', className)}>
+    <div className={clsx('flex gap-2 self-start', className)}>
       <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
       <div className="text-xs">
         <div className="text-white">{creatorName} </div>
