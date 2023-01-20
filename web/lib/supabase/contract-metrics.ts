@@ -1,7 +1,7 @@
 import { run, selectJson } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { Dictionary, flatMap, keyBy, orderBy } from 'lodash'
+import { Dictionary, flatMap, orderBy } from 'lodash'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 
@@ -16,23 +16,27 @@ export async function getUserContractMetrics(userId: string) {
   )
 }
 
-export async function getUserContractMetricsWithContracts(userId: string, count=1000
-                                             ) {
-    const {data} = await db.rpc('get_contract_metrics_with_contracts', {count,uid: userId})
-    const metricsByContract = {} as Dictionary<ContractMetrics>
-    const contracts = [] as Contract[]
-    flatMap(data).forEach((d) => {
-      metricsByContract[d.contract_id] =d.metrics as ContractMetrics
-      contracts.push(d.contract as Contract)
-    })
-    return {metricsByContract, contracts}
+export async function getUserContractMetricsWithContracts(
+  userId: string,
+  count = 1000
+) {
+  const { data } = await db.rpc('get_contract_metrics_with_contracts', {
+    count,
+    uid: userId,
+  })
+  const metricsByContract = {} as Dictionary<ContractMetrics>
+  const contracts = [] as Contract[]
+  flatMap(data).forEach((d) => {
+    metricsByContract[d.contract_id] = d.metrics as ContractMetrics
+    contracts.push(d.contract as Contract)
+  })
+  return { metricsByContract, contracts }
 }
 
 export async function getUserContractMetricsByProfit(
   userId: string,
   limit = 20
 ) {
-
   const { data: negative } = await run(
     selectJson(db, 'user_contract_metrics')
       .eq('user_id', userId)
