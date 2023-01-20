@@ -81,8 +81,10 @@ export function PreviousSwipeCard(props: {
   contract: BinaryContract
   yPosition: number | null
   cardHeight: number
+  swipeAction: SwipeAction
+  action: SwipeAction
 }) {
-  const { yPosition, cardHeight } = props
+  const { yPosition, cardHeight, swipeAction, action } = props
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
     y: -(cardHeight + PREVIOUS_CARD_BUFFER),
@@ -105,7 +107,7 @@ export function PreviousSwipeCard(props: {
       <animated.div
         key={contract.id}
         className={clsx(
-          'user-select-none pointer-events-auto absolute inset-1 z-20 touch-none'
+          'user-select-none pointer-events-auto absolute inset-1 z-20 touch-none transition-transform duration-75'
         )}
         style={{ x, y, height: cardHeight }}
         onClick={(e) => e.preventDefault()}
@@ -193,7 +195,7 @@ export function PrimarySwipeCard(props: {
 
       setTimeout(() => {
         setIndex(index + 1)
-      }, 550)
+      }, 600)
     }
     if (isStatusAFailure(betStatus)) {
       const x = 0
@@ -226,7 +228,7 @@ export function PrimarySwipeCard(props: {
       setTimeout(() => {
         setWentToPreviousCard(false)
         setIndex(index + 1)
-      }, 200)
+      }, 300)
     }
     if (action === 'down') {
       // Executes vertical swipe animation
@@ -285,18 +287,20 @@ export function PrimarySwipeCard(props: {
           contract={previousContract}
           yPosition={previousCardY}
           cardHeight={cardHeight}
+          swipeAction={swipeAction}
+          action={action}
         />
       )}
 
       <animated.div
         {...bind()}
         className={clsx(
-          'user-select-none pointer-events-auto absolute inset-1 max-w-lg touch-none'
+          'user-select-none pointer-events-auto absolute inset-1 max-w-lg touch-none transition-transform duration-75'
         )}
         style={{ x, y }}
         onClick={(e) => e.preventDefault()}
       >
-        {!wentToPreviousCard && (
+        {/* {!wentToPreviousCard && (
           <Col
             className={clsx(
               'absolute inset-0 z-10 max-w-lg rounded-2xl transition-opacity duration-300 ease-in-out',
@@ -307,7 +311,7 @@ export function PrimarySwipeCard(props: {
               isModalOpen ? 'pointer-events-auto' : 'pointer-events-none'
             )}
           />
-        )}
+        )} */}
         <SwipeCard
           key={contract.id}
           contract={contract}

@@ -129,13 +129,6 @@ export default function Swipe() {
         )}
         {cards.length > 1 && (
           <>
-            <Col
-              className={clsx(
-                'absolute inset-1 z-20 max-w-lg rounded-2xl',
-                BUFFER_CARD_COLOR,
-                BUFFER_CARD_OPACITY
-              )}
-            />
             <Col className="absolute inset-1 z-10 touch-none">
               <SwipeCard
                 amount={STARTING_BET_AMOUNT}
