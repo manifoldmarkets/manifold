@@ -182,6 +182,8 @@ function QfAnswer(props: {
     answer,
     contract.answers.map((a) => a.text)
   )
+  const user = useUser()
+  const canFund = tradingAllowed(contract) && user && user?.id !== answer.userId
   const [showModal, setShowModal] = useState(false)
   const matchingPool = contract.pool.M$
 
@@ -220,7 +222,7 @@ function QfAnswer(props: {
               </span>
             ) : null}
           </div>
-          {tradingAllowed(contract) && (
+          {canFund && (
             <Button
               size="2xs"
               color="gray-outline"
