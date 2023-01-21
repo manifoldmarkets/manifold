@@ -48,7 +48,7 @@ export async function getMemberGroups(userId: string) {
 }
 
 export async function getGroupAdmins(groupId: string) {
-  const groupMembers = await run(
+  const admins = await run(
     db
       .from('group_role')
       .select('*')
@@ -56,20 +56,22 @@ export async function getGroupAdmins(groupId: string) {
       .eq('role', 'admin')
       .order('name')
   )
+  return admins
+}
 
-  // const { data: groups } = await run(
-  //   db
-  //     .from('groups')
-  //     .select(
-  //       'id, data->name, data->about, data->slug, data->totalMembers, data->totalContracts, data->anyoneCanJoin'
-  //     )
-  //     .in(
-  //       'id',
-  //       groupIds.map((d: { group_id: string }) => d.group_id)
-  //     )
-  // )
+export const MEMBER_LOAD_NUM = 50
 
-  return groupMembers
+export async function getGroupFollowers(groupId: string, offset?: number) {
+  const followers = await run(
+    db
+      .from('group_role')
+      .select('*')
+      .eq('group_id', groupId)
+      .is('role', null)
+      .order('name')
+      .limit(40)
+  )
+  return followers
 }
 
 export async function getMemberGroupsCount(userId: string) {
