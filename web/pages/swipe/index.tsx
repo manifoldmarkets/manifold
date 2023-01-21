@@ -32,7 +32,6 @@ export default function Swipe() {
   const feed = contracts?.filter((c) => c.outcomeType === 'BINARY') as
     | BinaryContract[]
     | undefined
-  console.log('feed', feed?.[0])
 
   const [index, setIndex] = usePersistentState(0, {
     key: 'swipe-index',
@@ -68,7 +67,6 @@ export default function Swipe() {
 
   useEffect(() => {
     if (user && contract) {
-      console.log('log view', contract.id, user.id)
       logView({ contractId: contract.id, userId: user.id })
     }
   }, [user, contract])
@@ -106,27 +104,35 @@ export default function Swipe() {
         )}
         style={{ height: cardHeight }}
       >
-        <PrimarySwipeCard
-          key={cards[0].id}
-          contract={cards[0]}
-          index={index}
-          setIndex={setIndex}
-          user={user}
-          previousContract={index > 0 ? feed[index - 1] : undefined}
-          cardHeight={cardHeight}
-        />
-        {/* {cards.length > 1 && (
-          <Col className="absolute inset-1 z-10 touch-none">
-            <SwipeCard
-              amount={STARTING_BET_AMOUNT}
-              contract={cards[1]}
-              key={cards[1].id}
-              swipeBetPanel={
-                <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
-              }
-            />
-          </Col>
-        )} */}
+        {cards.length > 0 && (
+          <>
+            <div className="z-30">
+              <PrimarySwipeCard
+                key={cards[0].id}
+                contract={cards[0]}
+                index={index}
+                setIndex={setIndex}
+                user={user}
+                previousContract={index > 0 ? feed[index - 1] : undefined}
+                cardHeight={cardHeight}
+              />
+            </div>
+          </>
+        )}
+        {cards.length > 1 && (
+          <>
+            <Col className="absolute inset-1 z-10 touch-none">
+              <SwipeCard
+                amount={STARTING_BET_AMOUNT}
+                contract={cards[1]}
+                key={cards[1].id}
+                swipeBetPanel={
+                  <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
+                }
+              />
+            </Col>
+          </>
+        )}
         {!cards.length && (
           <div className="flex h-full w-full flex-col items-center justify-center">
             No more cards!
