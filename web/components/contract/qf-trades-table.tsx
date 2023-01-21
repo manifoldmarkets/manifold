@@ -61,7 +61,7 @@ export default function QfTradesTable(props: {
   }
 
   const getText = (txn: QfTxn) =>
-    contract.answers.find((a) => a.id === txn.data?.answerId)?.text
+    contract.answers.find((a) => a.id === txn.data?.answerId)?.text || '-'
 
   // TODO: Condense PAY_MANA/TRANFER pairs into a single row
   const entries = txns.map((txn) => ({
