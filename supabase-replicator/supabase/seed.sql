@@ -589,12 +589,12 @@ $$;
 
 -- Use cached tables of user and contract features to computed the top scoring
 -- markets for a user.
-create or replace function get_recommended_contract_ids(uid text)
-returns table (contract_id text)
+create or replace function get_recommended_contract_scores(uid text)
+returns table (contract_id text, rec_score real)
 immutable parallel safe
 language sql
 as $$
-  select crf.contract_id
+  select crf.contract_id, dot(urf, crf) as rec_score
   from user_recommendation_features as urf
   cross join contract_recommendation_features as crf
   where user_id = uid
@@ -619,11 +619,23 @@ as $$
     and user_events.data->>'contractId' = crf.contract_id
     and (user_events.data->>'timestamp')::bigint > extract(epoch from (now() - interval '1 day')) * 1000
   )
-  order by dot(urf, crf) desc
+$$;
+
+create or replace function get_recommended_contracts_by_score(uid text)
+returns table (data jsonb, score real)
+immutable parallel safe
+language sql
+as $$
+  select data, (log(coalesce((data->>'popularityScore')::real, 0) + 3) * rec_score) as score
+  from get_recommended_contract_scores(uid)
+  left join contracts
+  on contracts.id = contract_id
+  where is_valid_contract(data)
+  order by score desc
 $$;
 
 create or replace function get_recommended_contracts(uid text, count int)
-returns JSONB[]
+returns jsonb[]
 immutable parallel safe
 language sql
 as $$
@@ -632,14 +644,11 @@ as $$
     from
     (
       select *, 1 as priority
-      from get_recommended_contract_ids(uid)
+      from get_recommended_contracts_by_score(uid)
       union all
       -- Default recommendations from this particular user if none for you.
-      select *, 2 as priority from get_recommended_contract_ids('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
+      select *, 2 as priority from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
     ) as rec_contract_ids
-    left join contracts
-    on contracts.id = contract_id
-    where is_valid_contract(data)
     order by priority
     limit count
   ) as rec_contracts

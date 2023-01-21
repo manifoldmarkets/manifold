@@ -516,15 +516,6 @@ export interface Database {
         Args: { table_id: string }
         Returns: unknown
       }
-      get_recommended_contract_ids:
-        | {
-            Args: { uid: string; count: number }
-            Returns: { contract_id: string }[]
-          }
-        | {
-            Args: { uid: string }
-            Returns: { contract_id: string }[]
-          }
       get_recommended_contracts: {
         Args: { uid: string; count: number }
         Returns: Json[]
