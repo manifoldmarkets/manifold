@@ -6,6 +6,7 @@ import { Contract } from '../../common/contract'
 import { loadPaginated, log } from './utils'
 import { removeUndefinedProps } from '../../common/util/object'
 import { DAY_MS, HOUR_MS } from '../../common/util/time'
+import { createSupabaseClient } from './supabase/init'
 
 export const scoreContracts = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540 })
@@ -19,6 +20,7 @@ async function scoreContractsInternal() {
   const now = Date.now()
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
+  const weekAgo = now - 7 * DAY_MS
   const activeContracts = await loadPaginated(
     firestore
       .collection('contracts')
@@ -37,8 +39,27 @@ async function scoreContractsInternal() {
   const contracts = activeContracts.concat(previouslyActiveContracts)
   log(`Found ${contracts.length} contracts to score`)
 
+  const db = createSupabaseClient()
+
   for (const contract of contracts) {
+    const [likesTodayResponse, likes7DaysResponse] = await Promise.all([
+      db
+        .from('user_reactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('data->>contentId', contract.id)
+        .gte('data->>createdTime', dayAgo),
+      db
+        .from('user_reactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('data->>contentId', contract.id)
+        .gte('data->>createdTime', weekAgo),
+    ])
+    const likesToday = likesTodayResponse.count ?? 0
+    const likes7Days = likes7DaysResponse.count ?? 0
+
     const popularityScore =
+      likesToday +
+      likes7Days / 10 +
       (contract.uniqueBettors7Days ?? 0) / 10 +
       (contract.uniqueBettors24Hours ?? 0)
     const wasCreatedToday = contract.createdTime > dayAgo
