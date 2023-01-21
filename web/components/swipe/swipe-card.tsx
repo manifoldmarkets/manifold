@@ -355,7 +355,11 @@ export const SwipeCard = memo(
             <div className="h-24 rounded-t-2xl bg-black" />
             <div className="relative flex grow">
               <div className="absolute top-0 z-0 h-[40%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
-              <img src={image} alt="" className="flex grow object-cover" />
+              <img
+                src={image}
+                alt=""
+                className="flex grow bg-black object-cover"
+              />
               <div className="absolute bottom-0 z-0 h-[40%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
             </div>
             <div className="h-20 w-full rounded-b-2xl bg-black" />
