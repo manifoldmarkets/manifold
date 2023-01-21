@@ -26,6 +26,7 @@ import { logView } from 'web/lib/firebase/views'
 
 export default function Swipe() {
   useTracking('view swipe page')
+  console.log('render swipe')
 
   const user = useUser()
   const { contracts, loadMore } = useFeed(user, 'swipe')
