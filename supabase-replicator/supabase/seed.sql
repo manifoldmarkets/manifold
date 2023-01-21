@@ -90,6 +90,9 @@ create index if not exists user_reactions_data_gin on user_reactions using GIN (
 -- useful for getting just 'likes', we may want to index contentType as well
 create index if not exists user_reactions_type
     on user_reactions (user_id, (to_jsonb(data)->>'type') desc);
+-- useful for getting all reactions for a given contentId recently
+create index if not exists user_reactions_content_id
+  on user_reactions ((to_jsonb(data)->>'contentId'), (to_jsonb(data)->>'createdTime') desc);
 
 create table if not exists user_events (
     user_id text not null,
