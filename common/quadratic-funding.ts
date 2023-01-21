@@ -15,16 +15,19 @@ export function quadraticMatches(
     groupBy(txns, 'fromId')
   )
 
-  // Weight for each charity = [sum of sqrt(individual donor)] ^ 2
+  // Weight for each charity = [sum of sqrt(individual donor)] ^ 2 - sum of donations
   const weights = mapValues(donationsByDonors, (byDonor) => {
     const sumByDonor = Object.values(byDonor).map((txns) =>
       sumBy(txns, 'amount')
     )
     const sumOfRoots = sumBy(sumByDonor, Math.sqrt)
-    return sumOfRoots ** 2
+    return sumOfRoots ** 2 - sum(sumByDonor)
   })
 
   // Then distribute the matching pool based on the individual weights
   const totalWeight = sum(Object.values(weights))
-  return mapValues(weights, (weight) => matchingPool * (weight / totalWeight))
+  // Cap factor at 1 so that matching pool isn't always fully used
+  const factor = Math.min(1, matchingPool / totalWeight)
+  // Round to the nearest 0.01 mana
+  return mapValues(weights, (weight) => Math.round(weight * factor * 100) / 100)
 }
