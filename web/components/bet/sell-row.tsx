@@ -83,7 +83,7 @@ export function SellRow(props: {
     )
   }
 
-  return <div />
+  return null
 }
 
 function SellSharesModal(props: {

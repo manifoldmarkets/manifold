@@ -139,15 +139,13 @@ const BinaryOverview = (props: {
       </SizedContainer>
 
       {!user ? (
-        <Col className="w-full">
+        <Col className="mt-1 w-full">
           <BetSignUpPrompt className="xl:self-center" size="xl" />
           <PlayMoneyDisclaimer />
         </Col>
       ) : (
         tradingAllowed(contract) && (
-          <Row className={'items-center justify-between gap-4 xl:hidden'}>
-            <SignedInBinaryMobileBetting contract={contract} user={user} />
-          </Row>
+          <SignedInBinaryMobileBetting contract={contract} user={user} />
         )
       )}
     </Col>

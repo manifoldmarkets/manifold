@@ -322,7 +322,7 @@ export function BuyPanel(props: {
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <YesNoSelector
-        className="mb-4"
+        className="mb-2"
         btnClassName="flex-1"
         selected={outcome}
         onSelect={(choice) => {
