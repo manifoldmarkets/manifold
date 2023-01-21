@@ -9,7 +9,7 @@ import { DAY_MS, HOUR_MS } from '../../common/util/time'
 import { createSupabaseClient } from './supabase/init'
 
 export const scoreContracts = functions
-  .runWith({ memory: '4GB', timeoutSeconds: 540 })
+  .runWith({ memory: '4GB', timeoutSeconds: 540, secrets: ['SUPABASE_KEY'] })
   .pubsub.schedule('every 1 hours')
   .onRun(async () => {
     await scoreContractsInternal()
