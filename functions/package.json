@@ -48,6 +48,7 @@
     "marked": "4.1.1",
     "node-fetch": "2",
     "openai": "3.0.1",
+    "pg": "8.8.0",
     "stripe": "8.194.0",
     "zod": "3.17.2"
   },
@@ -55,6 +56,7 @@
     "@types/mailgun-js": "0.22.12",
     "@types/marked": "4.0.7",
     "@types/node-fetch": "2.6.2",
+    "@types/pg": "8.6.6",
     "puppeteer": "18.0.5"
   },
   "private": true
