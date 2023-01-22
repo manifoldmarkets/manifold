@@ -33,8 +33,10 @@ export function WarningConfirmationButton(props: {
 
   const buttonText = isSubmitting
     ? 'Submitting...'
-    : amount
+    : amount && !disabled
     ? `${actionLabel} ${formatMoney(amount)}`
+    : disabled && !amount
+    ? 'Enter an amount'
     : actionLabel
 
   if (!warning) {

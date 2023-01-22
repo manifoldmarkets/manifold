@@ -94,12 +94,14 @@ export const ContractCard = memo(function ContractCard(props: {
   const user = useUser()
   const { ref } = trackCardViews
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useIsVisible(() =>
-        track('view market card', {
-          contractId: contract.id,
-          creatorId: contract.creatorId,
-          slug: contract.slug,
-        } as ContractCardView)
+      useIsVisible(
+        () =>
+          track('view market card', {
+            contractId: contract.id,
+            creatorId: contract.creatorId,
+            slug: contract.slug,
+          } as ContractCardView),
+        true
       )
     : { ref: undefined }
   const marketClosed =

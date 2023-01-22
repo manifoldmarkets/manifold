@@ -71,7 +71,6 @@ export function UserContractsList(props: { creator: User }) {
       </Row>
       <ContractSearch
         defaultSort="newest"
-        defaultFilter="all"
         additionalFilter={{
           creatorId: creator.id,
         }}

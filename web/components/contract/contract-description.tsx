@@ -24,20 +24,29 @@ import { CollapsibleContent } from '../widgets/collapsible-content'
 
 export function ContractDescription(props: {
   contract: Contract
+  toggleResolver?: () => void
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, toggleResolver } = props
   const isAdmin = useAdmin()
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
+
   return (
     <div className={clsx('text-gray-700', className)}>
-      {isCreator || isAdmin ? (
-        <RichEditContract contract={contract} isAdmin={isAdmin && !isCreator} />
+      {user &&
+      (isCreator || isAdmin) &&
+      !contract.isResolved &&
+      toggleResolver ? (
+        <ContractActions
+          contract={contract}
+          isAdmin={isAdmin && !isCreator}
+          toggleResolver={toggleResolver}
+        />
       ) : (
         <CollapsibleContent
           content={contract.description}
-          contractId={contract.id}
+          stateKey={`isCollapsed-contract-${contract.id}`}
         />
       )}
     </div>
@@ -48,8 +57,13 @@ function editTimestamp() {
   return `${dayjs().format('MMM D, h:mma')}: `
 }
 
-function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
-  const { contract, isAdmin } = props
+function ContractActions(props: {
+  contract: Contract
+  isAdmin?: boolean
+  toggleResolver: () => void
+}) {
+  const { contract, isAdmin, toggleResolver } = props
+
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
 
@@ -90,11 +104,13 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
     <>
       <CollapsibleContent
         content={contract.description}
-        contractId={contract.id}
+        stateKey={`isCollapsed-contract-${contract.id}`}
       />
-      <Spacer h={4} />
-      <Row className="items-center gap-2 text-xs">
+      <Row className="my-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
+        <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>
+          Resolve
+        </Button>
         <Button
           color="gray"
           size="2xs"

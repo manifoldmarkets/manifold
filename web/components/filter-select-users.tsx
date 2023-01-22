@@ -6,11 +6,11 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Input } from './widgets/input'
-import { searchUsers, SearchUserInfo } from 'web/lib/supabase/users'
+import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 
 export function FilterSelectUsers(props: {
-  setSelectedUsers: (users: SearchUserInfo[]) => void
-  selectedUsers: SearchUserInfo[]
+  setSelectedUsers: (users: UserSearchResult[]) => void
+  selectedUsers: UserSearchResult[]
   ignoreUserIds: string[]
   showSelectedUsersTitle?: boolean
   selectedUsersClassName?: string
@@ -25,7 +25,7 @@ export function FilterSelectUsers(props: {
     maxUsers,
   } = props
   const [query, setQuery] = useState('')
-  const [filteredUsers, setFilteredUsers] = useState<SearchUserInfo[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<UserSearchResult[]>([])
 
   const requestId = useRef(0)
   useEffect(() => {
@@ -35,7 +35,7 @@ export function FilterSelectUsers(props: {
         // if there's a more recent request, forget about this one
         if (id === requestId.current) {
           setFilteredUsers(
-            results.filter((user: SearchUserInfo) => {
+            results.filter((user) => {
               return (
                 !selectedUsers.some(({ name }) => name === user.name) &&
                 !ignoreUserIds.includes(user.id)
@@ -135,7 +135,7 @@ export function FilterSelectUsers(props: {
               selectedUsersClassName
             )}
           >
-            {selectedUsers.map((user: SearchUserInfo) => (
+            {selectedUsers.map((user) => (
               <div
                 key={user.id}
                 className="col-span-2 flex flex-row items-center justify-between"

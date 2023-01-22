@@ -84,7 +84,7 @@ export function BetsList(props: { user: User }) {
   const [openLimitBets, setOpenLimitBets] = useState<LimitBet[]>([])
   useEffect(() => {
     getBets({ userId: user.id, isOpenLimitOrder: true, limit: 1000 }).then(
-      setOpenLimitBets
+      (b) => setOpenLimitBets(b as LimitBet[])
     )
   }, [user.id])
   const limitBetsByContract = useMemo(
@@ -172,7 +172,7 @@ export function BetsList(props: { user: User }) {
     loss: (c) => -metricsByContract[c.id].profit,
     value: (c) => metricsByContract[c.id].payout,
     newest: (c) =>
-      metricsByContract[c.id].lastBetTime ??
+      metricsByContract[c.id]?.lastBetTime ??
       max(limitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
       0,
     closeTime: (c) =>
@@ -412,6 +412,7 @@ function ContractBets(props: {
             className="mt-8 mr-5 flex-1 sm:mr-8"
             contract={contract}
             metrics={metrics}
+            hideTweet
           />
 
           {isYourBets &&
@@ -422,6 +423,7 @@ function ContractBets(props: {
                 className="mt-4 items-start"
                 contract={contract}
                 user={user}
+                showTweet
               />
             )}
 

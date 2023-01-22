@@ -8,8 +8,12 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { useIsClient } from 'web/hooks/use-is-client'
 
-export function ContractMention(props: { contract: Contract }) {
-  const { contract } = props
+export function ContractMention(props: {
+  contract: Contract
+  probChange?: string
+  className?: string
+}) {
+  const { contract, probChange, className } = props
   const { outcomeType, resolution } = contract
   const probTextColor = getTextColor(contract)
   const isClient = useIsClient()
@@ -17,7 +21,10 @@ export function ContractMention(props: { contract: Contract }) {
   return (
     <Link
       href={contractPath(contract)}
-      className="group inline whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50"
+      className={clsx(
+        'group inline whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50',
+        className
+      )}
       title={isClient ? tooltipLabel(contract) : undefined}
     >
       <span className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
@@ -39,6 +46,9 @@ export function ContractMention(props: { contract: Contract }) {
             getBinaryProbPercent(contract)
           )}
         </span>
+      )}
+      {!resolution && probChange && (
+        <span className="ml-0.5 text-xs text-gray-500">{probChange}</span>
       )}
       &zwnj;{/* cursor positioning hack */}
     </Link>

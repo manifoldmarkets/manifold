@@ -19,9 +19,9 @@ if (CONFIG == null) {
   throw new Error(`process.env.ENVIRONMENT = ${ENV} - should be DEV or PROD.`)
 }
 
-const SUPABASE_URL = CONFIG.supabaseUrl
-if (!SUPABASE_URL) {
-  throw new Error(`Can't connect to Supabase; no supabaseUrl set for ${ENV}.`)
+const SUPABASE_INSTANCE_ID = CONFIG.supabaseInstanceId
+if (!SUPABASE_INSTANCE_ID) {
+  throw new Error(`Can't connect to Supabase; no instance ID set for ${ENV}.`)
 }
 
 const SUPABASE_KEY = process.env.SUPABASE_KEY
@@ -32,7 +32,7 @@ if (!SUPABASE_KEY) {
 const pubsub = new PubSub()
 const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+const supabase = createClient(SUPABASE_INSTANCE_ID, SUPABASE_KEY)
 
 const app = express()
 app.use(express.json())

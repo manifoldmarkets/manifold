@@ -9,7 +9,6 @@ import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
-import { Spacer } from '../layout/spacer'
 import { getOutcomeProbability } from 'common/calculate'
 import { Answer } from 'common/answer'
 import clsx from 'clsx'
@@ -23,6 +22,7 @@ import { Button } from 'web/components/buttons/button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
+import { GradientContainer } from '../widgets/gradient-container'
 
 export function getAnswerColor(answer: Answer, answersArray: string[]) {
   const colorIndex = answersArray.indexOf(answer.text)
@@ -34,9 +34,10 @@ export function getAnswerColor(answer: Answer, answersArray: string[]) {
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   onAnswerCommentClick: (answer: Answer) => void
+  showResolver?: boolean
 }) {
   const isAdmin = useAdmin()
-  const { contract, onAnswerCommentClick } = props
+  const { contract, onAnswerCommentClick, showResolver } = props
   const { creatorId, resolution, resolutions, outcomeType } = contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
@@ -124,21 +125,37 @@ export function AnswersPanel(props: {
     (answer, _index) => answer.text
   )
 
+  const answerItemComponents = sortedAnswers.map((answer) => (
+    <AnswerItem
+      key={answer.id}
+      answer={answer}
+      contract={contract}
+      showChoice={showChoice}
+      chosenProb={chosenAnswers[answer.id]}
+      totalChosenProb={chosenTotal}
+      onChoose={onChoose}
+      onDeselect={onDeselect}
+    />
+  ))
+
   return (
     <Col className="gap-3">
-      {(resolveOption || resolution) &&
-        sortedAnswers.map((answer) => (
-          <AnswerItem
-            key={answer.id}
-            answer={answer}
+      {showResolver && (
+        <GradientContainer className="mb-4">
+          <AnswerResolvePanel
+            isAdmin={isAdmin}
+            isCreator={user?.id === creatorId}
             contract={contract}
-            showChoice={showChoice}
-            chosenProb={chosenAnswers[answer.id]}
-            totalChosenProb={chosenTotal}
-            onChoose={onChoose}
-            onDeselect={onDeselect}
+            resolveOption={resolveOption}
+            setResolveOption={setResolveOption}
+            chosenAnswers={chosenAnswers}
           />
-        ))}
+
+          {!!resolveOption && answerItemComponents}
+        </GradientContainer>
+      )}
+
+      {resolution && answerItemComponents}
 
       {!resolveOption && (
         <Col
@@ -175,23 +192,10 @@ export function AnswersPanel(props: {
 
       {outcomeType === 'FREE_RESPONSE' &&
         tradingAllowed(contract) &&
+        !resolveOption &&
         !privateUser?.blockedByUserIds.includes(contract.creatorId) && (
           <CreateAnswerPanel contract={contract} />
         )}
-
-      {(user?.id === creatorId || isAdmin) && !resolution && (
-        <>
-          <Spacer h={2} />
-          <AnswerResolvePanel
-            isAdmin={isAdmin}
-            isCreator={user?.id === creatorId}
-            contract={contract}
-            resolveOption={resolveOption}
-            setResolveOption={setResolveOption}
-            chosenAnswers={chosenAnswers}
-          />
-        </>
-      )}
     </Col>
   )
 }

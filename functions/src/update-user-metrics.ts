@@ -25,11 +25,12 @@ import { mapAsync } from '../../common/util/promise'
 import { hasChanges } from '../../common/util/object'
 import { newEndpointNoAuth } from './api'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
+import { filterDefined } from '../../common/util/array'
 
 const firestore = admin.firestore()
 
 export const scheduleUpdateUserMetrics = functions.pubsub
-  .schedule('every 15 minutes')
+  .schedule('every 30 minutes')
   .onRun(async () => {
     try {
       console.log(await invokeFunction('updateusermetrics'))
@@ -40,10 +41,10 @@ export const scheduleUpdateUserMetrics = functions.pubsub
 
 export const updateusermetrics = newEndpointNoAuth(
   {
-    timeoutSeconds: 2000,
+    timeoutSeconds: 3600,
     memory: '16GiB',
     minInstances: 1,
-    secrets: ['API_SECRET'],
+    secrets: ['API_SECRET', 'SUPABASE_KEY'],
   },
   async (_req) => {
     await updateUserMetrics()
@@ -78,68 +79,80 @@ export async function updateUserMetrics() {
   log(`${metricEligibleContracts.length} contracts need metrics updates.`)
 
   log('Computing metric updates...')
-  const userUpdates = await mapAsync(users, async (staleUser) => {
-    const user = (await getUser(staleUser.id)) ?? staleUser
-    const userContracts = contractsByCreator[user.id] ?? []
-    const metricRelevantBets = await loadUserContractBets(
-      user.id,
-      metricEligibleContracts
-        .filter((c) => c.uniqueBettorIds?.includes(user.id))
-        .map((c) => c.id)
-    )
-    const portfolioHistory = await loadPortfolioHistory(user.id, now)
-    const newCreatorTraders = calculateCreatorTraders(userContracts)
+  const userUpdates = await mapAsync(
+    users,
+    async (staleUser) => {
+      const user = (await getUser(staleUser.id)) ?? staleUser
+      const userContracts = contractsByCreator[user.id] ?? []
+      const metricRelevantBets = await loadUserContractBets(
+        user.id,
+        metricEligibleContracts
+          .filter((c) => c.uniqueBettorIds?.includes(user.id))
+          .map((c) => c.id)
+      ).catch((e) => {
+        console.error(`Error fetching bets for user ${user.id}: ${e.message}`)
+        return undefined
+      })
 
-    const newPortfolio = calculateNewPortfolioMetrics(
-      user,
-      contractsById,
-      metricRelevantBets
-    )
-    const currPortfolio = portfolioHistory.current
-    const didPortfolioChange =
-      currPortfolio === undefined ||
-      currPortfolio.balance !== newPortfolio.balance ||
-      currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      currPortfolio.investmentValue !== newPortfolio.investmentValue
+      if (!metricRelevantBets) {
+        return undefined
+      }
 
-    const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
+      const portfolioHistory = await loadPortfolioHistory(user.id, now)
+      const newCreatorTraders = calculateCreatorTraders(userContracts)
 
-    const metricRelevantBetsByContract = groupBy(
-      metricRelevantBets,
-      (b) => b.contractId
-    )
+      const newPortfolio = calculateNewPortfolioMetrics(
+        user,
+        contractsById,
+        metricRelevantBets
+      )
+      const currPortfolio = portfolioHistory.current
+      const didPortfolioChange =
+        currPortfolio === undefined ||
+        currPortfolio.balance !== newPortfolio.balance ||
+        currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+        currPortfolio.investmentValue !== newPortfolio.investmentValue
 
-    const metricsByContract = calculateMetricsByContract(
-      metricRelevantBetsByContract,
-      contractsById,
-      user
-    )
+      const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
-    const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
-      ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
-      : undefined
+      const metricRelevantBetsByContract = groupBy(
+        metricRelevantBets,
+        (b) => b.contractId
+      )
 
-    const userDoc = firestore.collection('users').doc(user.id)
-    if (didPortfolioChange) {
-      writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
-    }
+      const metricsByContract = calculateMetricsByContract(
+        metricRelevantBetsByContract,
+        contractsById,
+        user
+      )
 
-    const contractMetricsCollection = userDoc.collection('contract-metrics')
-    for (const metrics of metricsByContract) {
-      writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
-    }
+      const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
+        ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
+        : undefined
 
-    return {
-      user: user,
-      fields: {
-        creatorTraders: newCreatorTraders,
-        profitCached: newProfit,
-        nextLoanCached: nextLoanPayout ?? 0,
-      },
-    }
-  })
+      const userDoc = firestore.collection('users').doc(user.id)
+      if (didPortfolioChange) {
+        writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
+      }
 
-  for (const { user, fields } of userUpdates) {
+      const contractMetricsCollection = userDoc.collection('contract-metrics')
+      for (const metrics of metricsByContract) {
+        writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
+      }
+
+      return {
+        user: user,
+        fields: {
+          creatorTraders: newCreatorTraders,
+          profitCached: newProfit,
+          nextLoanCached: nextLoanPayout ?? 0,
+        },
+      }
+    },
+    10
+  )
+
+  for (const { user, fields } of filterDefined(userUpdates)) {
     if (hasChanges(user, fields)) {
       writer.update(firestore.collection('users').doc(user.id), fields)
     }
@@ -153,16 +166,19 @@ export async function updateUserMetrics() {
 }
 
 const loadUserContractBets = async (userId: string, contractIds: string[]) => {
-  const betDocs = await mapAsync(contractIds, (cid) => {
-    return loadPaginated(
-      firestore
-        .collection('contracts')
-        .doc(cid)
-        .collection('bets')
-        .where('userId', '==', userId) as Query<Bet>
+  const bets = []
+  for (const cid of contractIds) {
+    bets.push(
+      ...(await loadPaginated(
+        firestore
+          .collection('contracts')
+          .doc(cid)
+          .collection('bets')
+          .where('userId', '==', userId) as Query<Bet>
+      ))
     )
-  })
-  return betDocs.flat()
+  }
+  return bets
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {

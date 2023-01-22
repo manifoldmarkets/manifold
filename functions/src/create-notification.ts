@@ -4,6 +4,7 @@ import {
   BettingStreakData,
   ContractResolutionData,
   Notification,
+  NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
 } from '../../common/notification'
 import { PrivateUser, User } from '../../common/user'
@@ -28,6 +29,7 @@ import {
 import { filterDefined } from '../../common/util/array'
 import {
   getNotificationDestinationsForUser,
+  notification_destination_types,
   userIsBlocked,
 } from '../../common/user-notification-preferences'
 import { ContractFollow } from '../../common/follow'
@@ -154,8 +156,10 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 ) => {
   const { repliedUsersInfo, taggedUserIds } = miscData ?? {}
 
-  const browserRecipientIdsList: string[] = []
-  const emailRecipientIdsList: string[] = []
+  const usersToReceivedNotifications: Record<
+    string,
+    notification_destination_types[]
+  > = {}
 
   const contractFollowersSnap = await firestore
     .collection(`contracts/${sourceContract.id}/follows`)
@@ -166,13 +170,10 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     (doc) => (contractFollowersIds[(doc.data() as ContractFollow).id] = true)
   )
 
-  const createBrowserNotification = async (
+  const constructNotification = (
     userId: string,
     reason: notification_reason_types
   ) => {
-    const notificationRef = firestore
-      .collection(`/users/${userId}/notifications`)
-      .doc(idempotencyKey)
     const notification: Notification = {
       id: idempotencyKey,
       userId,
@@ -193,7 +194,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       sourceSlug: sourceContract.slug,
       sourceTitle: sourceContract.question,
     }
-    return await notificationRef.set(removeUndefinedProps(notification))
+    return removeUndefinedProps(notification)
   }
 
   const needNotFollowContractReasons = ['tagged_user']
@@ -206,6 +207,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     userId: string,
     reason: notification_reason_types
   ) => {
+    // A user doesn't have to follow a market to receive a notification with their tag
     if (
       (!stillFollowingContract(userId) &&
         !needNotFollowContractReasons.includes(reason)) ||
@@ -215,46 +217,69 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
     if (userIsBlocked(privateUser, sourceUser.id)) return
-    const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
-      privateUser,
-      reason
-    )
+
+    const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
+      getNotificationDestinationsForUser(privateUser, reason)
+
+    const receivedNotifications = usersToReceivedNotifications[userId] ?? []
 
     // Browser notifications
-    if (sendToBrowser && !browserRecipientIdsList.includes(userId)) {
-      await createBrowserNotification(userId, reason)
-      browserRecipientIdsList.push(userId)
+    if (sendToBrowser && !receivedNotifications.includes('browser')) {
+      const notificationRef = firestore
+        .collection(`/users/${userId}/notifications`)
+        .doc(idempotencyKey)
+      const notification = constructNotification(userId, reason)
+      await notificationRef.set(notification)
+      receivedNotifications.push('browser')
     }
 
-    // Emails notifications
-    if (!sendToEmail || emailRecipientIdsList.includes(userId)) return
-    if (sourceType === 'comment') {
-      const { repliedToType, repliedToAnswerText, repliedToId, bet } =
-        repliedUsersInfo?.[userId] ?? {}
-      // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
-      await sendNewCommentEmail(
-        reason,
+    // Mobile push notifications
+    if (sendToMobile && !receivedNotifications.includes('mobile')) {
+      const reasonText =
+        (notificationPreference &&
+          NOTIFICATION_DESCRIPTIONS[notificationPreference].verb) ??
+        'commented'
+      const notification = constructNotification(userId, reason)
+      await createPushNotification(
+        notification,
         privateUser,
-        sourceUser,
-        sourceContract,
-        sourceText,
-        sourceId,
-        bet,
-        repliedToAnswerText,
-        repliedToType === 'answer' ? repliedToId : undefined
+        `${sourceUser.name} ${reasonText} on ${sourceContract.question}`,
+        sourceText
       )
-      emailRecipientIdsList.push(userId)
-    } else if (sourceType === 'answer') {
-      await sendNewAnswerEmail(
-        reason,
-        privateUser,
-        sourceUser.name,
-        sourceText,
-        sourceContract,
-        sourceUser.avatarUrl
-      )
-      emailRecipientIdsList.push(userId)
+      receivedNotifications.push('mobile')
     }
+
+    // Email notifications
+    if (sendToEmail && !receivedNotifications.includes('email')) {
+      if (sourceType === 'comment') {
+        const { repliedToType, repliedToAnswerText, repliedToId, bet } =
+          repliedUsersInfo?.[userId] ?? {}
+        // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
+        await sendNewCommentEmail(
+          reason,
+          privateUser,
+          sourceUser,
+          sourceContract,
+          sourceText,
+          sourceId,
+          bet,
+          repliedToAnswerText,
+          repliedToType === 'answer' ? repliedToId : undefined
+        )
+        receivedNotifications.push('email')
+      } else if (sourceType === 'answer') {
+        await sendNewAnswerEmail(
+          reason,
+          privateUser,
+          sourceUser.name,
+          sourceText,
+          sourceContract,
+          sourceUser.avatarUrl
+        )
+        receivedNotifications.push('email')
+      }
+    }
+    usersToReceivedNotifications[userId] = receivedNotifications
   }
 
   const notifyContractFollowers = async () => {

@@ -3,11 +3,13 @@ import * as admin from 'firebase-admin'
 import { Query } from 'firebase-admin/firestore'
 import { uniq } from 'lodash'
 
-import { createSupabaseClient, invokeFunction, loadPaginated } from './utils'
+import { invokeFunction, loadPaginated } from './utils'
 import { newEndpointNoAuth } from './api'
 import { getMarketRecommendations } from '../../common/recommendation'
 import { run } from '../../common/supabase/utils'
 import { mapAsync } from '../../common/util/promise'
+import { createSupabaseClient } from './supabase/init'
+import { filterDefined } from '../../common/util/array'
 
 const firestore = admin.firestore()
 
@@ -33,7 +35,7 @@ export const updaterecommended = newEndpointNoAuth(
 
 export const updateRecommendedMarkets = async () => {
   console.log('Loading user data...')
-  const userData = await loadUserData()
+  const userData = await loadUserDataForRecommendations()
 
   console.log('Computing recommendations...')
 
@@ -68,7 +70,7 @@ export const updateRecommendedMarkets = async () => {
   console.log('Done.')
 }
 
-const loadUserData = async () => {
+export const loadUserDataForRecommendations = async () => {
   const userIds = (
     await loadPaginated(
       firestore.collection('users').select('id') as Query<{ id: string }>
@@ -141,6 +143,17 @@ const loadUserData = async () => {
       ).map(({ contentId }) => contentId)
     )
 
+    const groupMemberSnap = await admin
+      .firestore()
+      .collectionGroup('groupMembers')
+      .where('userId', '==', userId)
+      .select()
+      .get()
+    const groupIds = uniq(
+      filterDefined(
+        groupMemberSnap.docs.map((doc) => doc.ref.parent.parent?.id)
+      )
+    )
     return {
       userId,
       betOnIds,
@@ -148,6 +161,7 @@ const loadUserData = async () => {
       viewedCardIds,
       viewedPageIds,
       likedIds,
+      groupIds,
     }
   })
 }

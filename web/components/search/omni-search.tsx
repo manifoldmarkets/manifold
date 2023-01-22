@@ -1,19 +1,17 @@
 import { Combobox } from '@headlessui/react'
-import { UsersIcon } from '@heroicons/react/solid'
+import { SearchIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { User } from 'common/user'
 import { useRouter } from 'next/router'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
-import { SearchGroupInfo } from 'web/lib/supabase/groups'
+import { searchContracts } from 'web/lib/service/algolia'
+import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
-import { useMarketSearchResults } from './query-contracts'
-import { useGroupSearchResults } from './query-groups'
 import { defaultPages, PageData, searchPages } from './query-pages'
-import { useUserSearchResults } from './query-users'
 import { useSearchContext } from './search-context'
 
 export interface Option {
@@ -89,11 +87,33 @@ const Results = (props: { query: string }) => {
   const userHitLimit = !prefix ? 2 : prefix === '@' ? 25 : 0
   const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
   const marketHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
-  const userHits = useUserSearchResults(search, userHitLimit)
-  const groupHits = useGroupSearchResults(search, groupHitLimit)
-  const marketHits = useMarketSearchResults(search, marketHitLimit)
 
-  const pageHits = prefix ? [] : searchPages(query, 2)
+  const [{ pageHits, userHits, groupHits, marketHits }, setSearchResults] =
+    useState({
+      pageHits: [] as PageData[],
+      userHits: [] as UserSearchResult[],
+      groupHits: [] as SearchGroupInfo[],
+      marketHits: [] as Contract[],
+    })
+
+  // Use nonce to make sure only latest result gets used.
+  const nonce = useRef(0)
+
+  useEffect(() => {
+    nonce.current++
+    const thisNonce = nonce.current
+
+    Promise.all([
+      searchUsers(query, userHitLimit),
+      searchGroups(query, groupHitLimit),
+      searchContracts(query, marketHitLimit),
+    ]).then(([userHits, groupHits, marketHits]) => {
+      if (thisNonce === nonce.current) {
+        const pageHits = prefix ? [] : searchPages(query, 2)
+        setSearchResults({ pageHits, userHits, groupHits, marketHits })
+      }
+    })
+  }, [query, groupHitLimit, marketHitLimit, userHitLimit, prefix])
 
   return (
     <>
@@ -101,9 +121,7 @@ const Results = (props: { query: string }) => {
       <UserResults users={userHits} />
       <GroupResults groups={groupHits} />
       <MarketResults markets={marketHits} />
-      {marketHits.length > 0 && marketHits.length === marketHitLimit && (
-        <MoreMarketResults search={search} />
-      )}
+      {marketHits.length > 0 && <MoreMarketResults search={search} />}
     </>
   )
 }
@@ -160,7 +178,7 @@ const MarketResults = (props: { markets: Contract[] }) => {
   )
 }
 
-const UserResults = (props: { users: User[] }) => {
+const UserResults = (props: { users: UserSearchResult[] }) => {
   if (!props.users.length) return null
   return (
     <>
@@ -223,7 +241,11 @@ const MoreMarketResults = (props: { search: string }) => {
         slug: `/search?q=${encodeURIComponent(props.search)}`,
       }}
     >
-      <span className="italic">See more markets for "{props.search}"</span>
+      <div className="flex items-center text-sm">
+        <SearchIcon className="mr-3 h-5 w-5" />
+        Browse all markets for
+        <span className="ml-1 italic">"{props.search}"</span>
+      </div>
     </ResultOption>
   )
 }

@@ -221,24 +221,25 @@ export const getNotificationDestinationsForUser = (
   const notificationSettings = privateUser.notificationPreferences
   const unsubscribeEndpoint = getFunctionUrl('unsubscribe')
   try {
-    const subscriptionType = getNotificationPreference(reason)
-    const destinations = notificationSettings[subscriptionType] ?? []
+    const notificationPreference = getNotificationPreference(reason)
+    const destinations = notificationSettings[notificationPreference] ?? []
     const optOutOfAllSettings = notificationSettings.opt_out_all
     // Your market closure notifications are high priority, opt-out doesn't affect their delivery
     const optedOutOfEmail =
       optOutOfAllSettings.includes('email') &&
-      subscriptionType !== 'your_contract_closed'
+      notificationPreference !== 'your_contract_closed'
     const optedOutOfBrowser =
       optOutOfAllSettings.includes('browser') &&
-      subscriptionType !== 'your_contract_closed'
+      notificationPreference !== 'your_contract_closed'
     const optedOutOfPush =
       !privateUser.pushToken || optOutOfAllSettings.includes('mobile')
     return {
       sendToEmail: destinations.includes('email') && !optedOutOfEmail,
       sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
       sendToMobile: destinations.includes('mobile') && !optedOutOfPush,
-      unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${subscriptionType}`,
-      urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${subscriptionType}`,
+      unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${notificationPreference}`,
+      urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${notificationPreference}`,
+      notificationPreference,
     }
   } catch (e) {
     // Fail safely

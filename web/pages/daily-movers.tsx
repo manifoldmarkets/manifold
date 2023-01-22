@@ -6,7 +6,7 @@ import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser, useUserContractMetricsByProfit } from 'web/hooks/use-user'
-import { DailyProfit } from '../components/daily-stats'
+import { DailyProfit } from 'web/components/daily-profit'
 
 export default function DailyMovers() {
   const user = useUser()

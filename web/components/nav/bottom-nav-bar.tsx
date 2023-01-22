@@ -6,7 +6,9 @@ import {
   SparklesIcon,
   SearchIcon,
   XIcon,
+  BookOpenIcon,
 } from '@heroicons/react/outline'
+import { UserCircleIcon } from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
 import Sidebar from './sidebar'
@@ -21,6 +23,8 @@ import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
+import { RectangleGroup } from '../icons/outline'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -32,7 +36,7 @@ const touchItemClass = 'bg-indigo-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Explore', href: '/swipe', icon: SparklesIcon },
+    { name: 'Discover', href: '/swipe', icon: SparklesIcon },
     {
       name: 'Profile',
       href: `/${user.username}?tab=portfolio`,
@@ -47,7 +51,11 @@ function getNavigation(user: User) {
 
 const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Explore', href: '/search', icon: SearchIcon },
+  { name: 'Explore', href: '/search', icon: RectangleGroup },
+  { name: 'Sign up', onClick: firebaseLogin, icon: UserCircleIcon },
+  { name: 'Search', href: '/find', icon: SearchIcon },
+  // [c] evil experiment: go to home instead of help, since home explains it anyways
+  { name: 'Help', href: '/#help', icon: BookOpenIcon },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
@@ -76,18 +84,24 @@ export function BottomNavBar() {
           user={user}
         />
       ))}
-      <div
-        className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
-        onClick={() => setSidebarOpen(true)}
-      >
-        <MenuAlt3Icon className=" my-1 mx-auto h-6 w-6" aria-hidden="true" />
-        More
-      </div>
-
-      <MobileSidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
+      {!!user && (
+        <>
+          <div
+            className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
+            onClick={() => setSidebarOpen(true)}
+          >
+            <MenuAlt3Icon
+              className=" my-1 mx-auto h-6 w-6"
+              aria-hidden="true"
+            />
+            More
+          </div>
+          <MobileSidebar
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
+        </>
+      )}
     </nav>
   )
 }
@@ -130,9 +144,27 @@ function NavBarItem(props: {
     )
   }
 
+  if (!item.href) {
+    return (
+      <button
+        className={clsx(itemClass, touched && touchItemClass)}
+        onClick={() => {
+          track()
+          item.onClick?.()
+        }}
+        onTouchStart={() => setTouched(true)}
+        onTouchEnd={() => setTouched(false)}
+      >
+        {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
+        {children}
+        {item.name}
+      </button>
+    )
+  }
+
   return (
     <Link
-      href={item.href ?? '#'}
+      href={item.href}
       className={clsx(
         itemClass,
         touched && touchItemClass,

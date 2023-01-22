@@ -83,7 +83,6 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
 
   const privateUser: PrivateUser = {
     id: auth.uid,
-    username,
     email,
     initialIpAddress: req.ip,
     initialDeviceToken: deviceToken,

@@ -31,6 +31,7 @@ const pages: PageData[] = [
     keywords: ['most popular'],
   },
   { label: 'Closing Soon', slug: '/search?s=close-date&f=open' },
+  { label: 'Recently Resolved', slug: '/search?s=resolve-date&f=resolved' },
 ]
 
 export function searchPages(query: string, limit: number) {

@@ -31,7 +31,10 @@ module.exports = {
     },
   ],
   rules: {
-    'linebreak-style': ['error', 'unix'],
+    'linebreak-style': [
+      'error',
+      process.platform === 'win32' ? 'windows' : 'unix',
+    ],
     'lodash/import-scope': [2, 'member'],
   },
 }

@@ -33,7 +33,6 @@ export default function Search() {
         <Title text="Market search" className="!mt-0" />
         <ContractSearch
           persistPrefix="search"
-          useQueryUrlParam={true}
           autoFocus={autoFocus}
           additionalFilter={{
             facetFilters: getUsersBlockFacetFilters(privateUser),

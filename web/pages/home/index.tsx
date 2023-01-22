@@ -2,7 +2,6 @@ import { PlusCircleIcon } from '@heroicons/react/outline'
 import { DotsVerticalIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { difference, isArray, keyBy } from 'lodash'
 import clsx from 'clsx'
-import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import {
   BACKGROUND_COLOR,
@@ -25,7 +24,6 @@ import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Sort } from 'web/components/contract-search'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { DailyStats } from 'web/components/daily-stats'
 import { PinnedItems } from 'web/components/groups/group-post-section'
 import { Col } from 'web/components/layout/col'
@@ -54,11 +52,7 @@ import { useAllPosts } from 'web/hooks/use-post'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
-import {
-  usePrivateUser,
-  useUser,
-  useUserContractMetricsByProfit,
-} from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import {
   getGlobalConfig,
@@ -151,7 +145,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     userBlockFacetFilters,
     !!userBlockFacetFilters
   )
-  const contractMetricsByProfit = useUserContractMetricsByProfit(user?.id)
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
@@ -237,8 +230,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               },
               isAdmin,
               globalConfig,
-              pinned,
-              contractMetricsByProfit
+              pinned
             )}
 
             <YourFeedSection user={user} />
@@ -263,7 +255,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 const HOME_SECTIONS = [
   { label: 'Trending', id: 'score', icon: '🔥' },
   { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
-  { label: 'Your daily movers', id: 'daily-movers' },
   { label: 'Featured', id: 'featured', icon: '📌' },
   { label: 'New', id: 'newest', icon: '🗞️' },
   { label: 'Live feed', id: 'live-feed', icon: '🔴' },
@@ -296,13 +287,7 @@ export function renderSections(
   },
   isAdmin: boolean,
   globalConfig: GlobalConfig,
-  pinned: JSX.Element[],
-  dailyMovers:
-    | {
-        contracts: CPMMBinaryContract[]
-        metrics: ContractMetrics[]
-      }
-    | undefined
+  pinned: JSX.Element[]
 ) {
   type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
@@ -325,10 +310,6 @@ export function renderSections(
           )
 
         if (id === 'live-feed') return <ActivitySection key={id} />
-
-        if (id === 'daily-movers') {
-          return <DailyMoversSection key={id} data={dailyMovers} />
-        }
 
         const contracts = sectionContracts[id]
 
@@ -513,37 +494,6 @@ export function FeaturedSection(props: {
     </Col>
   )
 }
-
-export const DailyMoversSection = memo(function DailyMoversSection(props: {
-  data:
-    | {
-        contracts: CPMMBinaryContract[]
-        metrics: ContractMetrics[]
-      }
-    | undefined
-}) {
-  const user = useUser()
-
-  const { data } = props
-
-  if (!user || !data) return null
-
-  const { contracts, metrics } = data
-
-  const hasProfit = metrics.some((m) => m.from && m.from.day.profit > 0)
-  const hasLoss = metrics.some((m) => m.from && m.from.day.profit < 0)
-
-  if (!hasProfit || !hasLoss) {
-    return null
-  }
-
-  return (
-    <Col className="gap-2">
-      <HomeSectionHeader label="Your daily movers" href="/daily-movers" />
-      <ProfitChangeTable contracts={contracts} metrics={metrics} maxRows={3} />
-    </Col>
-  )
-})
 
 export const ActivitySection = memo(function ActivitySection() {
   return (

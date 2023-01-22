@@ -10,6 +10,8 @@ import {
 } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
+import { markNotificationAsSeen } from 'web/lib/firebase/notifications'
+import { keyBy } from 'lodash'
 
 export default function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()
@@ -22,29 +24,45 @@ export default function NotificationsIcon(props: { className?: string }) {
   )
 }
 function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
-  const { isReady, pathname } = useRouter()
+  const { isReady, pathname, asPath } = useRouter()
   const { privateUser } = props
   const [seen, setSeen] = useState(false)
+  const unseenSourceIdsToNotificationIds = keyBy(
+    (useGroupedUnseenNotifications(privateUser) ?? []).flatMap(
+      (n) => n.notifications
+    ),
+    (n) => n.sourceId
+  )
+  const unseenNotifs = Object.keys(unseenSourceIdsToNotificationIds).length
 
   useEffect(() => {
     if (isReady) {
       setSeen(pathname.endsWith('notifications'))
     }
-  }, [isReady, pathname])
+    if (unseenNotifs === 0) return
+    // If a user navigates to an unseen notification's source id, mark it as seen
+    const possibleSourceId = asPath.split('#')[1]
+    if (unseenSourceIdsToNotificationIds[possibleSourceId]) {
+      markNotificationAsSeen(
+        privateUser.id,
+        unseenSourceIdsToNotificationIds[possibleSourceId].id
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asPath, isReady, pathname, privateUser.id, unseenNotifs])
 
   // Cache notifications.
   useFirstPageOfNotifications(privateUser)
 
-  const unseenCount = (useGroupedUnseenNotifications(privateUser) ?? []).length
-  if (!unseenCount || seen) {
+  if (unseenNotifs === 0 || seen) {
     return null
   }
 
   return (
     <div className="-mt-0.75 absolute ml-3.5 min-w-[15px] rounded-full bg-indigo-500 p-[2px] text-center text-[10px] leading-3 text-white lg:left-0 lg:-mt-1 lg:ml-2">
-      {unseenCount > NOTIFICATIONS_PER_PAGE
+      {unseenNotifs > NOTIFICATIONS_PER_PAGE
         ? `${NOTIFICATIONS_PER_PAGE}+`
-        : unseenCount}
+        : unseenNotifs}
     </div>
   )
 }

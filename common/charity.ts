@@ -833,12 +833,24 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
     tags: ['New'] as const,
   },
   {
+    name: 'Cavendish Labs',
+    website: 'https://cavendishlabs.org/',
+    photo: 'https://i.imgur.com/UM0It6p.png',
+    preview: `Cavendish Labs is a longtermist research institute focused on AI alignment and pandemic prevention.`,
+    description: `Cavendish Labs is a research institute based in Cavendish, Vermont focused on AI alignment and pandemic prevention. Our main research areas are the following:
+    
+1. Alignment. How do we make sure that AI does what we want? We’ve spent some time thinking about ELK and inverse scaling; however, we think that AGI will most likely be achieved through some sort of model-based RL framework, so that is our current focus. For instance, we know how to induce provable guarantees of behaviour in supervised learning; could we do something similar in RL?
+2. Pandemic prevention. A lot of people have heard of the Far-UVC light idea; however, understanding why it works, and whether it works safely, is useful for developing other broad-spectrum viral prevention tools, as well as preventing the engineering of UV-resistant viruses.
+3. Diagnostic development. We're interested in designing a low-cost and simple-to-use platform for LAMP reactions so that generalized diagnostic capabilities are more widespread. We envision a world where it is both cheap and easy to run a panel of tests so one can swiftly determine the exact virus behind an infection.`,
+    tags: ['New'] as const,
+  },
+  {
     name: 'Camfed',
     website: 'https://camfed.org/us/',
     photo: 'https://i.imgur.com/7b2aiRL.jpg',
     preview: `Campaigns for female education.`,
     description: `Camfed (also known as the Campaign for Female Education) was founded in 1993 and operates in Zimbabwe, Zambia, Ghana, Tanzania and Malawi with the goal of educating women. 
-    Education is a very important resourse that is unfortunately not always made available, especially to women. Allowing someone to get an education allows them to do great things`
+    Education is a very important resourse that is unfortunately not always made available, especially to women. Allowing someone to get an education allows them to do great things`,
     tags: ['New'] as const,
   },
 ].map((charity) => {

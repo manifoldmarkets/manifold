@@ -5,7 +5,7 @@ import {
   useEffect,
   useState,
 } from 'react'
-import { OmniSearch } from './search'
+import { OmniSearch } from './omni-search'
 import { Modal } from '../layout/modal'
 
 // context for opening modal

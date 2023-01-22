@@ -93,7 +93,7 @@ export default function Home() {
           <ExternalInfoCard
             link="https://help.manifold.markets/"
             icon={<div className="text-2xl">?</div>}
-            text="About & Help"
+            text="Help & About"
           />
           <InfoCard
             link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"

@@ -1,7 +1,5 @@
-import clsx from 'clsx'
 import React, { useState } from 'react'
 
-import { Col } from './layout/col'
 import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
@@ -11,6 +9,7 @@ import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { BucketInput } from './widgets/bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
+import { GradientContainer } from './widgets/gradient-container'
 
 export function NumericResolutionPanel(props: {
   isAdmin: boolean
@@ -74,9 +73,9 @@ export function NumericResolutionPanel(props: {
   }
 
   return (
-    <Col className={clsx('relative my-6 w-full rounded-md', className)}>
+    <GradientContainer className={className}>
       {isAdmin && !isCreator && (
-        <span className="bg-scarlet-50 text-scarlet-500 absolute right-0 top-0 rounded p-1 text-xs">
+        <span className="bg-scarlet-50 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
           ADMIN
         </span>
       )}
@@ -116,6 +115,6 @@ export function NumericResolutionPanel(props: {
         />
       </div>
       {!!error && <div className="text-scarlet-500">{error}</div>}
-    </Col>
+    </GradientContainer>
   )
 }

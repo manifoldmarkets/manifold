@@ -1,3 +1,8 @@
+export type UserEvent = {
+  name: string
+  timestamp: number
+}
+
 export type ContractCardView = {
   slug: string
   contractId: string

@@ -10,6 +10,7 @@ import { Spacer } from '../layout/spacer'
 import {
   formatLargeNumber,
   formatMoney,
+  formatOutcomeLabel,
   formatPercent,
 } from 'common/util/format'
 import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
@@ -38,7 +39,6 @@ import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
 import { PillButton } from '../buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
-import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { Modal } from '../layout/modal'
@@ -47,6 +47,7 @@ import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { SINGULAR_BET } from 'common/user'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -157,8 +158,6 @@ export function SimpleBetPanel(props: {
         />
 
         <BetSignUpPrompt />
-
-        {user === null && <PlayMoneyDisclaimer />}
       </Col>
 
       {unfilledBets.length > 0 && (
@@ -267,7 +266,8 @@ export function BuyPanel(props: {
     })
   }
 
-  const betDisabled = isSubmitting || !betAmount || !!error
+  const betDisabled =
+    isSubmitting || !betAmount || !!error || outcome === undefined
 
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
     outcome ?? 'YES',
@@ -319,7 +319,7 @@ export function BuyPanel(props: {
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <YesNoSelector
-        className="mb-4"
+        className="mb-2"
         btnClassName="flex-1"
         selected={outcome}
         onSelect={(choice) => {
@@ -361,7 +361,7 @@ export function BuyPanel(props: {
           hideInput={hideInput}
         />
 
-        <Row className="mt-8 w-full gap-3">
+        <Row className="mt-8 w-full">
           <Col className="w-1/2 text-sm">
             <Col className="flex-nowrap whitespace-nowrap text-sm text-gray-500">
               <div>
@@ -376,21 +376,23 @@ export function BuyPanel(props: {
               <span className="whitespace-nowrap text-lg">
                 {formatMoney(currentPayout)}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="pr-3 text-sm text-gray-500">
                 {' '}
                 +{currentReturnPercent}
               </span>
             </div>
           </Col>
           <Col className="w-1/2 text-sm">
-            <Row className={'relative'}>
-              <span className="text-sm text-gray-500">
+            <Row>
+              <span className="whitespace-nowrap text-sm text-gray-500">
                 {isPseudoNumeric ? 'Estimated value' : 'New probability'}
               </span>
-              <InfoTooltip
-                text={'The probability of YES after placing your bet'}
-                className={'absolute top-0 pb-1.5'}
-              />
+              {!isPseudoNumeric && (
+                <InfoTooltip
+                  text={`The probability of YES after your ${SINGULAR_BET}`}
+                  className="ml-1"
+                />
+              )}
             </Row>
             {probStayedSame ? (
               <div className="text-lg">{format(initialProb)}</div>
@@ -421,10 +423,17 @@ export function BuyPanel(props: {
             warning={warning}
             onSubmit={submitBet}
             isSubmitting={isSubmitting}
-            disabled={!!betDisabled || outcome === undefined}
+            disabled={betDisabled}
             size="xl"
             color={outcome === 'NO' ? 'red' : 'green'}
-            actionLabel="Wager"
+            actionLabel={
+              betDisabled
+                ? `Select ${formatOutcomeLabel(
+                    contract,
+                    'YES'
+                  )} or ${formatOutcomeLabel(contract, 'NO')}`
+                : 'Wager'
+            }
           />
         )}
         <button

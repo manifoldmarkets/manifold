@@ -76,12 +76,12 @@ export const BOT_USERNAMES = [
   '538',
   'FairlyRandom',
   'Anatolii',
-  'Catnee',
   'JeremyK',
   'Botmageddon',
   'SmartBot',
   'ShifraGazsi',
   'Bot',
+  'Catnee',
 ]
 
 export const CORE_USERNAMES = [
@@ -127,6 +127,8 @@ export const CHECK_USERNAMES = [
   'a',
   'NuñoSempere',
   'CarsonGale',
+  'Tetraspace',
+  'BoltonBailey',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
