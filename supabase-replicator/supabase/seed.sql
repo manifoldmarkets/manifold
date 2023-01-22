@@ -63,6 +63,10 @@ alter table user_contract_metrics enable row level security;
 drop policy if exists "public read" on user_contract_metrics;
 create policy "public read" on user_contract_metrics for select using (true);
 create index if not exists user_contract_metrics_gin on user_contract_metrics using GIN (data);
+create index user_contract_metrics_recent_bets on user_contract_metrics (
+     user_id,
+     ((data->'lastBetTime')::bigint) desc
+    );
 
 create table if not exists user_follows (
     user_id text not null,
@@ -167,6 +171,10 @@ create index if not exists contract_bets_user_id on contract_bets (
     (to_jsonb(data)->>'userId'),
     (to_jsonb(data)->>'createdTime') desc
 );
+create index contract_bets_user_outstanding_limit_orders on contract_bets (
+   (data->>'userId'),
+   ((data->'isFilled')::boolean),
+   ((data->'isCancelled')::boolean));
 
 create table if not exists contract_comments (
     contract_id text not null,
@@ -728,14 +736,11 @@ create or replace function get_contract_metrics_with_contracts(uid text, count i
     immutable parallel safe
     language sql
 as $$
-select contract_metrics.contract_id,  contract_metrics.data as metrics, contracts.data as contract
-from (
-         select * from user_contract_metrics
-         where user_id = uid
-         order by (data->>'lastBetTime') desc
-     ) as contract_metrics
-         left join contracts
-         on contracts.id = contract_id
+select ucm.contract_id, ucm.data as metrics, c.data as contract
+from user_contract_metrics as ucm
+join contracts as c on c.id = ucm.contract_id
+where ucm.user_id = uid
+order by ((ucm.data)->'lastBetTime')::bigint desc
 limit count
 $$;
 
@@ -744,16 +749,15 @@ create or replace function get_open_limit_bets_with_contracts(uid text, count in
     immutable parallel safe
     language sql
 as $$;
-select bets.contract_id, array_agg(bets.data) as bets, contracts.data as contract
+select contract_id, bets.data as bets, contracts.data as contracts
 from (
-         select * from contract_bets
+         select contract_id, array_agg(data order by (data->>'createdTime') desc) as data from contract_bets
          where (data->>'userId') = uid and
                  (data->>'isFilled')::boolean = false and
                  (data->>'isCancelled')::boolean = false
-                order by (data->>'createdTime') desc
+         group by contract_id
      ) as bets
-         left join contracts
-         on contracts.id = bets.contract_id
-group by contract_id, contracts.data
+ join contracts
+ on contracts.id = bets.contract_id
 limit count
 $$;

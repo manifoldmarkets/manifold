@@ -524,18 +524,17 @@ export interface Database {
         Args: { uid: string; count: number }
         Returns: { contract_id: string; bets: Json[]; contract: Json }[]
       }
-      get_recommended_contract_ids:
-        | {
-            Args: { uid: string; count: number }
-            Returns: { contract_id: string }[]
-          }
-        | {
-            Args: { uid: string }
-            Returns: { contract_id: string }[]
-          }
+      get_recommended_contract_scores: {
+        Args: { uid: string }
+        Returns: { contract_id: string; rec_score: number }[]
+      }
       get_recommended_contracts: {
         Args: { uid: string; count: number }
         Returns: Json[]
+      }
+      get_recommended_contracts_by_score: {
+        Args: { uid: string }
+        Returns: { data: Json; score: number }[]
       }
       get_related_contract_ids: {
         Args: { source_id: string }
@@ -576,6 +575,10 @@ export interface Database {
       is_valid_contract: {
         Args: { data: Json }
         Returns: boolean
+      }
+      recently_liked_contract_counts: {
+        Args: { since: number }
+        Returns: { contract_id: string; n: number }[]
       }
       replicate_writes_process_one: {
         Args: { r: unknown }

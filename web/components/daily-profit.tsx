@@ -65,9 +65,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
           </Row>
         </Tooltip>
       </button>
-      {user && (
-        <DailyProfitModal user={user} setOpen={setOpen} open={open} />
-      )}
+      {user && <DailyProfitModal user={user} setOpen={setOpen} open={open} />}
     </>
   )
 })
@@ -77,7 +75,7 @@ function DailyProfitModal(props: {
   setOpen: (open: boolean) => void
   user: User
 }) {
-  const { open, setOpen, user} = props
+  const { open, setOpen, user } = props
   const [data, setData] = useState<
     { metrics: ContractMetrics[]; contracts: CPMMBinaryContract[] } | undefined
   >()
@@ -99,8 +97,8 @@ function DailyProfitModal(props: {
           <Title className={'mb-1'}>Daily profit</Title>
           <span className="text-sm text-gray-500">
             Change in the value of your Yes/No positions over the last 24 hours.
-            Doesn't include {formatMoney(user.profitCached.daily - sum)} in profit from other market types.
-            (Updates every 30 min)
+            Doesn't include {formatMoney(user.profitCached.daily - sum)} in
+            profit from other market types. (Updates every 30 min)
           </span>
         </Col>
         {!data ? (
