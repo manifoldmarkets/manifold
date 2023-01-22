@@ -838,10 +838,20 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
     photo: 'https://i.imgur.com/UM0It6p.png',
     preview: `Cavendish Labs is a longtermist research institute focused on AI alignment and pandemic prevention.`,
     description: `Cavendish Labs is a research institute based in Cavendish, Vermont focused on AI alignment and pandemic prevention. Our main research areas are the following:
-    
+
 1. Alignment. How do we make sure that AI does what we want? We’ve spent some time thinking about ELK and inverse scaling; however, we think that AGI will most likely be achieved through some sort of model-based RL framework, so that is our current focus. For instance, we know how to induce provable guarantees of behaviour in supervised learning; could we do something similar in RL?
 2. Pandemic prevention. A lot of people have heard of the Far-UVC light idea; however, understanding why it works, and whether it works safely, is useful for developing other broad-spectrum viral prevention tools, as well as preventing the engineering of UV-resistant viruses.
 3. Diagnostic development. We're interested in designing a low-cost and simple-to-use platform for LAMP reactions so that generalized diagnostic capabilities are more widespread. We envision a world where it is both cheap and easy to run a panel of tests so one can swiftly determine the exact virus behind an infection.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Internet Archive',
+    website: 'https://archive.org/',
+    photo: 'https://i.imgur.com/fhsp9QV.jpeg',
+    preview: 'Providing Universal Access to All Knowledge',
+    description: `The Internet Archive, a 501(c)(3) non-profit, is building a digital library of Internet sites and other cultural artifacts in digital form. Like a paper library, we provide free access to researchers, historians, scholars, people with print disabilities, and the general public. Our mission is to provide Universal Access to All Knowledge.
+
+We began in 1996 by archiving the Internet itself, a medium that was just beginning to grow in use. Like newspapers, the content published on the web was ephemeral - but unlike newspapers, no one was saving it. Today we have 26+ years of web history accessible through the Wayback Machine and we work with 1,000+ library and other partners through our Archive-It program to identify important web pages.`,
     tags: ['New'] as const,
   },
   {
