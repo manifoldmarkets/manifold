@@ -135,9 +135,7 @@ async function importAppendOnlyCollectionGroup(
     log(`Use ${endTime} as the starting point for the next run.`)
     startTime = endTime
     log(
-      `Total documents processed: ${
-        totalProcessed + snap.size
-      }. Total % time processed: ${(
+      `Total documents processed: ${totalProcessed}. Total % time processed: ${(
         ((endTime - originalStartTime) / (t1.getTime() - originalStartTime)) *
         100
       ).toFixed(2)}%.`
