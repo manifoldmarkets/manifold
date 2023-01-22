@@ -768,7 +768,6 @@ Nonprofit entrepreneurship is also a highly neglected career opportunity that, f
     preview:
       "NAACP's Legal Defense Fund is the premier legal organization fighting for racial justice.",
     description: `The Legal Defense Fund (LDF) is America’s premier legal organization fighting for racial justice. Using the power of law, narrative, research, and people, we defend and advance the full dignity and citizenship of Black people in America.`,
-    tags: ['New'] as const,
   },
   {
     name: 'EWG',
@@ -777,7 +776,6 @@ Nonprofit entrepreneurship is also a highly neglected career opportunity that, f
     preview:
       'EWG empowers you with breakthrough research to make informed choices and live a healthy life in a healthy environment.',
     description: `Since 1993, the Environmental Working Group has shined a spotlight on outdated legislation, harmful agricultural practices and industry loopholes that pose a risk to our health and the health of our environment.`,
-    tags: ['New'] as const,
   },
   {
     name: 'AI Impacts',
@@ -801,7 +799,6 @@ Today, public discussion on these issues appears to be highly fragmented and of 
 
 The goal of the project is to clearly present and organize the considerations which inform contemporary views on these and related issues, to identify and explore disagreements, and to assemble whatever empirical evidence is relevant.    
 `,
-    tags: ['New'] as const,
   },
   {
     name: 'MSI Reproductive Choices',
@@ -817,7 +814,6 @@ Around the world, 32.6 million people are using a method of contraception provid
 The organization's core services include family planning; safe abortion and post-abortion care; maternal and child health care, including safe delivery and obstetrics; diagnosis and treatment of sexually transmitted infections; and HIV/AIDS prevention.
 
 The organization reports for the year 2021 to have prevented 14.1 million unintended pregnancies, averted 6.6 million unsafe abortions, and saved 39,000 women's lives.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Fish Welfare Initiative',
