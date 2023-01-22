@@ -3,20 +3,23 @@ initAdmin()
 
 import { DAY_MS } from 'common/util/time'
 import { createSupabaseClient } from 'functions/src/supabase/init'
-const db = createSupabaseClient()
+import { getRecentContractLikes } from '../supabase/likes'
 
 const main = async () => {
+  const db = createSupabaseClient()
   const now = Date.now()
-  const dayAgo = now - 1.5 * DAY_MS
-  const contractId = 'yzDIwPeY3ZaZZjmynbjP'
+  const weekAgo = now - 7 * DAY_MS
 
-  const response = await db
-    .from('user_reactions')
-    .select('*', { count: 'exact', head: true })
-    .eq('data->>contentId', contractId)
-    .gte('data->>createdTime', dayAgo)
+  console.log(await getRecentContractLikes(db, weekAgo))
 
-  console.log('response', response, response.count)
+  // const contractId = 'yzDIwPeY3ZaZZjmynbjP'
+  // const response = await db
+  //   .from('user_reactions')
+  //   .select('*', { count: 'exact', head: true })
+  //   .eq('data->>contentId', contractId)
+  //   .gte('data->>createdTime', dayAgo)
+
+  // const dayAgoLikes = await db.rpc('recently_liked_contract_counts' as any, { since: weekAgo })
 }
 
 if (require.main === module) main().then(() => process.exit())

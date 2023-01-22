@@ -590,6 +590,18 @@ select sqrt((row1.f0 - row2.f0)^2 +
             (row1.f4 - row2.f4)^2)
 $$;
 
+create or replace function recently_liked_contract_counts(since bigint)
+returns table (contract_id text, n int)
+immutable parallel safe
+language sql
+as $$
+  select data->>'contentId' as contract_id, count(*) as n
+  from user_reactions
+  where data->>'contentType' = 'contract'
+  and data->>'createdTime' > since::text
+  group by contract_id
+$$;
+
 -- Use cached tables of user and contract features to computed the top scoring
 -- markets for a user.
 create or replace function get_recommended_contract_scores(uid text)

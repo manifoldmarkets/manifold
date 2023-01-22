@@ -508,6 +508,10 @@ export interface Database {
         Args: { urf: unknown; crf: unknown }
         Returns: number
       }
+      get_contract_metrics_with_contracts: {
+        Args: { uid: string; count: number }
+        Returns: { contract_id: string; metrics: Json; contract: Json }[]
+      }
       get_document_table: {
         Args: { doc_kind: string }
         Returns: string
@@ -516,9 +520,21 @@ export interface Database {
         Args: { table_id: string }
         Returns: unknown
       }
+      get_open_limit_bets_with_contracts: {
+        Args: { uid: string; count: number }
+        Returns: { contract_id: string; bets: Json[]; contract: Json }[]
+      }
+      get_recommended_contract_scores: {
+        Args: { uid: string }
+        Returns: { contract_id: string; rec_score: number }[]
+      }
       get_recommended_contracts: {
         Args: { uid: string; count: number }
         Returns: Json[]
+      }
+      get_recommended_contracts_by_score: {
+        Args: { uid: string }
+        Returns: { data: Json; score: number }[]
       }
       get_related_contract_ids: {
         Args: { source_id: string }
@@ -559,6 +575,10 @@ export interface Database {
       is_valid_contract: {
         Args: { data: Json }
         Returns: boolean
+      }
+      recently_liked_contract_counts: {
+        Args: { since: number }
+        Returns: { contract_id: string; n: number }[]
       }
       replicate_writes_process_one: {
         Args: { r: unknown }

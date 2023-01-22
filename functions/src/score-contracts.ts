@@ -7,6 +7,7 @@ import { loadPaginated, log } from './utils'
 import { removeUndefinedProps } from '../../common/util/object'
 import { DAY_MS, HOUR_MS } from '../../common/util/time'
 import { createSupabaseClient } from './supabase/init'
+import { getRecentContractLikes } from './supabase/likes'
 
 export const scoreContracts = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540, secrets: ['SUPABASE_KEY'] })
@@ -40,22 +41,12 @@ async function scoreContractsInternal() {
   log(`Found ${contracts.length} contracts to score`)
 
   const db = createSupabaseClient()
+  const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
+  const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
 
   for (const contract of contracts) {
-    const [likesTodayResponse, likes7DaysResponse] = await Promise.all([
-      db
-        .from('user_reactions')
-        .select('*', { count: 'exact', head: true })
-        .eq('data->>contentId', contract.id)
-        .gte('data->>createdTime', dayAgo),
-      db
-        .from('user_reactions')
-        .select('*', { count: 'exact', head: true })
-        .eq('data->>contentId', contract.id)
-        .gte('data->>createdTime', weekAgo),
-    ])
-    const likesToday = likesTodayResponse.count ?? 0
-    const likes7Days = likes7DaysResponse.count ?? 0
+    const likesToday = todayLikesByContract[contract.id] ?? 0
+    const likes7Days = thisWeekLikesByContract[contract.id] ?? 0
 
     const popularityScore =
       likesToday +
