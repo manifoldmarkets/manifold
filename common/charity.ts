@@ -854,6 +854,15 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
 We began in 1996 by archiving the Internet itself, a medium that was just beginning to grow in use. Like newspapers, the content published on the web was ephemeral - but unlike newspapers, no one was saving it. Today we have 26+ years of web history accessible through the Wayback Machine and we work with 1,000+ library and other partners through our Archive-It program to identify important web pages.`,
     tags: ['New'] as const,
   },
+  {
+    name: 'Camfed',
+    website: 'https://camfed.org/us/',
+    photo: 'https://i.imgur.com/7b2aiRL.jpg',
+    preview: `Camfed supports girls to learn, thrive and lead change.`,
+    description: `Camfed (also known as the Campaign for Female Education) was founded in 1993 and operates in Zimbabwe, Zambia, Ghana, Tanzania and Malawi with the goal of educating women. 
+    Education is a very important resourse that is unfortunately not always made available, especially to women. Allowing someone to get an education allows them to do great things.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
