@@ -863,6 +863,15 @@ We began in 1996 by archiving the Internet itself, a medium that was just beginn
     Education is a very important resourse that is unfortunately not always made available, especially to women. Allowing someone to get an education allows them to do great things.`,
     tags: ['New'] as const,
   },
+  {
+    name: 'The Fred Hollows Foundation',
+    website: 'https://www.hollows.org/au/',
+    photo: 'https://i.imgur.com/GGzXksd.png',
+    preview: `Fred Hollows Foundation focuses on preventable and treatable diseases such as cataract, trachoma and diabetic retinopathy`,
+    description: `The Fred Hollows Foundation has a very clear goal: we’re putting an end to avoidable blindness. 
+    When this day comes, people in developing countries will get the same quality eye care the rest of the world takes for granted – and we won’t stop until this is done.`,
+    tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
