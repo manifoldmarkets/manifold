@@ -19,15 +19,16 @@ export type Tables = Schema['Tables']
 export type TableName = keyof Tables
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 
-export function getInstanceUrl(instanceId: string) {
-  return `https://${instanceId}.supabase.co`
+export function getInstanceHostname(instanceId: string) {
+  return `${instanceId}.supabase.co`
 }
 
 export function createClient(
-  url: string,
+  instanceId: string,
   key: string,
   opts?: SupabaseClientOptionsGeneric<'public'>
 ) {
+  const url = `https://${getInstanceHostname(instanceId)}`
   return createClientGeneric(url, key, opts) as SupabaseClient
 }
 

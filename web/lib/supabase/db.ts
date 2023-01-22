@@ -1,4 +1,4 @@
-import { createClient, getInstanceUrl } from 'common/supabase/utils'
+import { createClient } from 'common/supabase/utils'
 import { ENV_CONFIG } from 'common/envs/constants'
 
 if (!ENV_CONFIG.supabaseInstanceId || !ENV_CONFIG.supabaseAnonKey) {
@@ -6,6 +6,6 @@ if (!ENV_CONFIG.supabaseInstanceId || !ENV_CONFIG.supabaseAnonKey) {
 }
 
 export const db = createClient(
-  getInstanceUrl(ENV_CONFIG.supabaseInstanceId),
+  ENV_CONFIG.supabaseInstanceId,
   ENV_CONFIG.supabaseAnonKey
 )

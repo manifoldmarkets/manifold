@@ -7,7 +7,7 @@ import {
   replayFailedWrites,
 } from './replicate-writes'
 import { log } from './utils'
-import { createClient, getInstanceUrl } from '../../common/supabase/utils'
+import { createClient } from '../../common/supabase/utils'
 import { TLEntry } from '../../common/transaction-log'
 import { CONFIGS } from '../../common/envs/constants'
 
@@ -32,8 +32,7 @@ if (!SUPABASE_KEY) {
 const pubsub = new PubSub()
 const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
-const supabaseUrl = getInstanceUrl(SUPABASE_INSTANCE_ID)
-const supabase = createClient(supabaseUrl, SUPABASE_KEY)
+const supabase = createClient(SUPABASE_INSTANCE_ID, SUPABASE_KEY)
 
 const app = express()
 app.use(express.json())
