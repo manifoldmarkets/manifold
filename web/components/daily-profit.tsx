@@ -82,7 +82,7 @@ function DailyProfitModal(props: {
 
   const sum = useMemo(() => {
     if (!data) return 0
-    return data.metrics.reduce((sum, m) => sum + m.profit, 0)
+    return data.metrics.reduce((sum, m) => sum + (m.from?.day.profit ?? 0), 0)
   }, [data])
 
   useEffect(() => {
@@ -97,8 +97,9 @@ function DailyProfitModal(props: {
           <Title className={'mb-1'}>Daily profit</Title>
           <span className="text-sm text-gray-500">
             Change in the value of your Yes/No positions over the last 24 hours.
-            Doesn't include {formatMoney(user.profitCached.daily - sum)} in
-            profit from other market types. (Updates every 30 min)
+            Doesn't include{' '}
+            {data?.metrics ? formatMoney(user.profitCached.daily - sum) : '...'}{' '}
+            in profit from other market types. (Updates every 30 min)
           </span>
         </Col>
         {!data ? (
