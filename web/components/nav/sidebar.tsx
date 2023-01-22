@@ -47,7 +47,7 @@ export default function Sidebar(props: {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const navOptions = isMobile
-    ? getMobileNav(!!user)
+    ? getMobileNav()
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(!!isMobile, !!user)
@@ -160,31 +160,27 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
   )
 }
 
-const getMobileNav = (loggedIn: boolean) => {
+// No sidebar when signed out
+const getMobileNav = () => {
   if (IS_PRIVATE_MANIFOLD) {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
   return buildArray(
-    !loggedIn && {
-      name: 'Help & About',
-      href: 'https://help.manifold.markets/',
-      icon: BookOpenIcon,
-    },
-    loggedIn && { name: 'Search Markets', href: '/search', icon: SearchIcon },
+    { name: 'Search Markets', href: '/search', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
-    loggedIn && {
+    {
       name: 'Groups',
       href: '/groups',
       icon: RectangleGroup,
     },
-    loggedIn && {
+    {
       name: 'Referrals',
       href: '/referrals',
       icon: LightningBoltIcon,
     },
-    loggedIn && { name: 'Get mana', href: '/add-funds', icon: CashIcon },
+    { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
-    loggedIn && { name: 'Labs', href: '/labs', icon: BeakerIcon }
+    { name: 'Labs', href: '/labs', icon: BeakerIcon }
   )
 }
 

@@ -66,6 +66,12 @@ module.exports = {
         destination: '/terms.html',
         permanent: true,
       },
+      {
+        source: '/umami',
+        destination:
+          'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets',
+        permanent: false,
+      },
     ]
   },
 }

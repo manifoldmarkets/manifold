@@ -89,24 +89,20 @@ export function SignedInBinaryMobileBetting(props: {
   )
 
   return (
-    <>
-      <Col className="w-full gap-2 px-1">
-        <Col>
-          <BuyPanel
-            hidden={false}
-            contract={contract as CPMMBinaryContract}
-            user={user}
-            unfilledBets={unfilledBets}
-            balanceByUserId={balanceByUserId}
-            mobileView={true}
-          />
-        </Col>
-        <SellRow
-          contract={contract}
-          user={user}
-          className={'rounded-md border-2 border-gray-200 px-4 py-2'}
-        />
-      </Col>
-    </>
+    <Col className="my-3 w-full gap-2 px-1 xl:hidden">
+      <BuyPanel
+        hidden={false}
+        contract={contract as CPMMBinaryContract}
+        user={user}
+        unfilledBets={unfilledBets}
+        balanceByUserId={balanceByUserId}
+        mobileView={true}
+      />
+      <SellRow
+        contract={contract}
+        user={user}
+        className={'rounded-md border-2 border-gray-200 px-4 py-2'}
+      />
+    </Col>
   )
 }

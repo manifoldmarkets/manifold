@@ -90,6 +90,9 @@ create index if not exists user_reactions_data_gin on user_reactions using GIN (
 -- useful for getting just 'likes', we may want to index contentType as well
 create index if not exists user_reactions_type
     on user_reactions (user_id, (to_jsonb(data)->>'type') desc);
+-- useful for getting all reactions for a given contentId recently
+create index if not exists user_reactions_content_id
+  on user_reactions ((to_jsonb(data)->>'contentId'), (to_jsonb(data)->>'createdTime') desc);
 
 create table if not exists user_events (
     user_id text not null,
@@ -587,14 +590,26 @@ select sqrt((row1.f0 - row2.f0)^2 +
             (row1.f4 - row2.f4)^2)
 $$;
 
--- Use cached tables of user and contract features to computed the top scoring
--- markets for a user.
-create or replace function get_recommended_contract_ids(uid text)
-returns table (contract_id text)
+create or replace function recently_liked_contract_counts(since bigint)
+returns table (contract_id text, n int)
 immutable parallel safe
 language sql
 as $$
-  select crf.contract_id
+  select data->>'contentId' as contract_id, count(*) as n
+  from user_reactions
+  where data->>'contentType' = 'contract'
+  and data->>'createdTime' > since::text
+  group by contract_id
+$$;
+
+-- Use cached tables of user and contract features to computed the top scoring
+-- markets for a user.
+create or replace function get_recommended_contract_scores(uid text)
+returns table (contract_id text, rec_score real)
+immutable parallel safe
+language sql
+as $$
+  select crf.contract_id, dot(urf, crf) as rec_score
   from user_recommendation_features as urf
   cross join contract_recommendation_features as crf
   where user_id = uid
@@ -619,25 +634,37 @@ as $$
     and user_events.data->>'contractId' = crf.contract_id
     and (user_events.data->>'timestamp')::bigint > extract(epoch from (now() - interval '1 day')) * 1000
   )
-  order by dot(urf, crf) desc
+$$;
+
+create or replace function get_recommended_contracts_by_score(uid text)
+returns table (data jsonb, score real)
+immutable parallel safe
+language sql
+as $$
+  select data, (log(coalesce((data->>'popularityScore')::real, 0) + 3) * rec_score) as score
+  from get_recommended_contract_scores(uid)
+  left join contracts
+  on contracts.id = contract_id
+  where is_valid_contract(data)
+  order by score desc
 $$;
 
 create or replace function get_recommended_contracts(uid text, count int)
-returns JSONB[]
+returns jsonb[]
 immutable parallel safe
 language sql
 as $$
   select array_agg(data) from (
     select data
-    from (
-      select * from get_recommended_contract_ids(uid)
-      union
+    from
+    (
+      select *, 1 as priority
+      from get_recommended_contracts_by_score(uid)
+      union all
       -- Default recommendations from this particular user if none for you.
-      select * from get_recommended_contract_ids('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
+      select *, 2 as priority from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
     ) as rec_contract_ids
-    left join contracts
-    on contracts.id = contract_id
-    where is_valid_contract(data)
+    order by priority
     limit count
   ) as rec_contracts
 $$;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import clsx from 'clsx'
 import type { BinaryContract } from 'common/contract'
@@ -10,11 +10,7 @@ import { postMessageToNative } from 'web/components/native-message-listener'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { SwipeBetPanel } from 'web/components/swipe/swipe-bet-panel'
 import { PrimarySwipeCard, SwipeCard } from 'web/components/swipe/swipe-card'
-import {
-  BUFFER_CARD_COLOR,
-  BUFFER_CARD_OPACITY,
-  STARTING_BET_AMOUNT,
-} from 'web/components/swipe/swipe-helpers'
+import { STARTING_BET_AMOUNT } from 'web/components/swipe/swipe-helpers'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useFeed } from 'web/hooks/use-feed'
@@ -81,8 +77,6 @@ export default function Swipe() {
       postMessageToNative('onPageVisit', { page: undefined })
     }
   }, [])
-
-  const [wentToPreviousCard, setWentToPreviousCard] = useState(false)
   if (user === undefined || feed === undefined) {
     return (
       <Page>
@@ -121,21 +115,12 @@ export default function Swipe() {
                 user={user}
                 previousContract={index > 0 ? feed[index - 1] : undefined}
                 cardHeight={cardHeight}
-                wentToPreviousCard={wentToPreviousCard}
-                setWentToPreviousCard={setWentToPreviousCard}
               />
             </div>
           </>
         )}
         {cards.length > 1 && (
           <>
-            <Col
-              className={clsx(
-                'absolute inset-1 z-20 max-w-lg rounded-2xl',
-                BUFFER_CARD_COLOR,
-                BUFFER_CARD_OPACITY
-              )}
-            />
             <Col className="absolute inset-1 z-10 touch-none">
               <SwipeCard
                 amount={STARTING_BET_AMOUNT}

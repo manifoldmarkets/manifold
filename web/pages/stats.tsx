@@ -5,14 +5,15 @@ import { Spacer } from 'web/components/layout/spacer'
 import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { Linkify } from 'web/components/widgets/linkify'
 import { getStats } from 'web/lib/firebase/stats'
 import { Stats } from 'common/stats'
 import { PLURAL_BETS } from 'common/user'
 import { capitalize } from 'lodash'
 import { formatLargeNumber } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
+import { InfoBox } from 'web/components/widgets/info-box'
+import { Linkify } from 'web/components/widgets/linkify'
+import { SiteLink } from 'web/components/widgets/site-link'
 
 export default function Analytics() {
   const [stats, setStats] = useState<Stats | undefined>(undefined)
@@ -47,7 +48,6 @@ export function CustomAnalytics(props: Stats) {
     startDate,
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
-    avgDailyUserActions,
     dailySales,
     weeklyActiveUsers,
     monthlyActiveUsers,
@@ -137,30 +137,13 @@ export function CustomAnalytics(props: Stats) {
           },
         ]}
       />
-      <Spacer h={8} />
-
-      <Title text="Average activity" />
-      <p className="text-gray-500">
-        Median number of DAU-qualifying actions per multi-action user per day.
-      </p>
-
-      <Spacer h={4} />
-
-      <Tabs
-        className="mb-4"
-        defaultIndex={0}
-        tabs={[
-          {
-            title: 'Daily',
-            content: (
-              <DailyChart
-                dailyValues={avgDailyUserActions}
-                startDate={startDate}
-              />
-            ),
-          },
-        ]}
+      {/* We'd like to embed these in a separate tab, but unfortunately Umami doesn't seem to support iframe embeds atm */}
+      <InfoBox
+        title=""
+        className="mt-4 bg-gray-100"
+        text="For pageview and visitor stats, see: https://manifold.markets/umami"
       />
+
       <Spacer h={8} />
 
       <Title text="Revenue" />
@@ -451,6 +434,11 @@ export function WasabiCharts() {
           here.
         </SiteLink>
       </p>
+      <InfoBox
+        text="This page is out of date, as of 2023-01-01"
+        title=""
+        className="mt-2 bg-gray-100"
+      />
       <Spacer h={4} />
       <iframe
         className="w-full border-0"

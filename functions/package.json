@@ -48,6 +48,7 @@
     "marked": "4.1.1",
     "node-fetch": "2",
     "openai": "3.0.1",
+    "pg-promise": "11.0.2",
     "stripe": "8.194.0",
     "zod": "3.17.2"
   },

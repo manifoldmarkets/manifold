@@ -20,8 +20,6 @@ import { Avatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize, {
-  BUFFER_CARD_COLOR,
-  BUFFER_CARD_OPACITY,
   isStatusAFailure,
   STARTING_BET_AMOUNT,
 } from './swipe-helpers'
@@ -105,7 +103,7 @@ export function PreviousSwipeCard(props: {
       <animated.div
         key={contract.id}
         className={clsx(
-          'user-select-none pointer-events-auto absolute inset-1 z-20 touch-none'
+          'user-select-none pointer-events-auto absolute inset-1 z-20 touch-none transition-transform duration-75'
         )}
         style={{ x, y, height: cardHeight }}
         onClick={(e) => e.preventDefault()}
@@ -129,19 +127,10 @@ export function PrimarySwipeCard(props: {
   index: number
   setIndex: (next: SetStateAction<number>) => void
   cardHeight: number
-  wentToPreviousCard: boolean
-  setWentToPreviousCard: (wtpc: SetStateAction<boolean>) => void
   user?: User
   previousContract?: BinaryContract
 }) {
-  const {
-    index,
-    setIndex,
-    user,
-    cardHeight,
-    wentToPreviousCard,
-    setWentToPreviousCard,
-  } = props
+  const { index, setIndex, user, cardHeight } = props
   const contract = (useContract(props.contract.id) ??
     props.contract) as BinaryContract
 
@@ -156,11 +145,6 @@ export function PrimarySwipeCard(props: {
   const [buttonAction, setButtonAction] = useState<'YES' | 'NO' | undefined>(
     undefined
   )
-  const [isFreshCard, setIsFreshCard] = useState(!wentToPreviousCard)
-  if (isFreshCard) {
-    setTimeout(() => setIsFreshCard(false), 10)
-  }
-
   const [previousCardY, setPreviousCardY] = useState<number | null>(null)
 
   const [{ x, y }, api] = useSpring(() => ({
@@ -193,7 +177,7 @@ export function PrimarySwipeCard(props: {
 
       setTimeout(() => {
         setIndex(index + 1)
-      }, 550)
+      }, 600)
     }
     if (isStatusAFailure(betStatus)) {
       const x = 0
@@ -205,7 +189,6 @@ export function PrimarySwipeCard(props: {
   useEffect(() => {
     if (action === 'right' || action === 'left') {
       // Horizontal swipe is triggered, places bet
-      setWentToPreviousCard(false)
       const outcome = action === 'right' ? 'YES' : 'NO'
       onBet(
         outcome,
@@ -224,9 +207,8 @@ export function PrimarySwipeCard(props: {
         api.start({ y })
       }, 100)
       setTimeout(() => {
-        setWentToPreviousCard(false)
         setIndex(index + 1)
-      }, 200)
+      }, 300)
     }
     if (action === 'down') {
       // Executes vertical swipe animation
@@ -237,7 +219,6 @@ export function PrimarySwipeCard(props: {
 
         setTimeout(() => {
           setIndex(index - 1)
-          setWentToPreviousCard(true)
         }, 300)
       }
     }
@@ -291,23 +272,11 @@ export function PrimarySwipeCard(props: {
       <animated.div
         {...bind()}
         className={clsx(
-          'user-select-none pointer-events-auto absolute inset-1 max-w-lg touch-none'
+          'user-select-none pointer-events-auto absolute inset-1 max-w-lg touch-none transition-transform duration-75'
         )}
         style={{ x, y }}
         onClick={(e) => e.preventDefault()}
       >
-        {!wentToPreviousCard && (
-          <Col
-            className={clsx(
-              'absolute inset-0 z-10 max-w-lg rounded-2xl transition-opacity duration-300 ease-in-out',
-              BUFFER_CARD_COLOR,
-              isFreshCard || (swipeAction === 'down' && previousContract)
-                ? BUFFER_CARD_OPACITY
-                : 'opacity-0',
-              isModalOpen ? 'pointer-events-auto' : 'pointer-events-none'
-            )}
-          />
-        )}
         <SwipeCard
           key={contract.id}
           contract={contract}
@@ -386,7 +355,11 @@ export const SwipeCard = memo(
             <div className="h-24 rounded-t-2xl bg-black" />
             <div className="relative flex grow">
               <div className="absolute top-0 z-0 h-[40%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
-              <img src={image} alt="" className="flex grow object-cover" />
+              <img
+                src={image}
+                alt=""
+                className="flex grow bg-black object-cover"
+              />
               <div className="absolute bottom-0 z-0 h-[40%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
             </div>
             <div className="h-20 w-full rounded-b-2xl bg-black" />

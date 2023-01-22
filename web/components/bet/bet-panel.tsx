@@ -39,7 +39,6 @@ import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
 import { PillButton } from '../buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
-import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { Modal } from '../layout/modal'
@@ -159,8 +158,6 @@ export function SimpleBetPanel(props: {
         />
 
         <BetSignUpPrompt />
-
-        {user === null && <PlayMoneyDisclaimer />}
       </Col>
 
       {unfilledBets.length > 0 && (
@@ -322,7 +319,7 @@ export function BuyPanel(props: {
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <YesNoSelector
-        className="mb-4"
+        className="mb-2"
         btnClassName="flex-1"
         selected={outcome}
         onSelect={(choice) => {
