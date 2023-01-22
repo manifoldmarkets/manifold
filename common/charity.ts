@@ -848,9 +848,9 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
     name: 'Camfed',
     website: 'https://camfed.org/us/',
     photo: 'https://i.imgur.com/7b2aiRL.jpg',
-    preview: `Campaigns for female education.`,
+    preview: `Camfed supports girls to learn, thrive and lead change.`,
     description: `Camfed (also known as the Campaign for Female Education) was founded in 1993 and operates in Zimbabwe, Zambia, Ghana, Tanzania and Malawi with the goal of educating women. 
-    Education is a very important resourse that is unfortunately not always made available, especially to women. Allowing someone to get an education allows them to do great things`,
+    Education is a very important resourse that is unfortunately not always made available, especially to women. Allowing someone to get an education allows them to do great things.`,
     tags: ['New'] as const,
   },
 ].map((charity) => {
