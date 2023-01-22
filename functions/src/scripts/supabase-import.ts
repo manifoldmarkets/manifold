@@ -5,16 +5,17 @@ import {
   QueryDocumentSnapshot,
 } from 'firebase-admin/firestore'
 import { chunk } from 'lodash'
-
 import { withRetries } from '../../../common/util/promise'
-import { run, SupabaseClient } from '../../../common/supabase/utils'
 import { log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
 import { Database } from '../../../common/supabase/schema'
 import { DAY_MS } from 'common/util/time'
-import { createSupabaseClient } from 'functions/src/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from '../supabase/init'
+import { bulkInsert } from '../supabase/utils'
 import { program } from 'commander'
-
 type TableName = keyof Database['public']['Tables']
 
 // strategy for live importing collection C without dropping data (times are firestore server times)
@@ -46,7 +47,7 @@ function getWriteRow(
 }
 
 async function importCollection(
-  client: SupabaseClient,
+  pg: SupabaseDirectClient,
   source: CollectionReference,
   tableName: TableName,
   batchSize: number
@@ -60,14 +61,14 @@ async function importCollection(
   log(`Loaded ${snaps.size} documents.`)
   for (const batch of chunk(snaps.docs, batchSize)) {
     const rows = batch.map((d) => getWriteRow(d, tableName, t1))
-    await withRetries(run(client.from('incoming_writes').insert(rows)))
+    await withRetries(bulkInsert(pg, 'incoming_writes', rows))
     log(`Processed ${rows.length} documents.`)
   }
   log(`Imported ${snaps.size} documents.`)
 }
 
 async function importCollectionGroup(
-  client: SupabaseClient,
+  pg: SupabaseDirectClient,
   source: CollectionGroup,
   tableName: TableName,
   predicate: (d: QueryDocumentSnapshot) => boolean,
@@ -84,13 +85,13 @@ async function importCollectionGroup(
     const rows = docs
       .filter(predicate)
       .map((d) => getWriteRow(d, tableName, t1))
-    await withRetries(run(client.from('incoming_writes').insert(rows)))
+    await withRetries(bulkInsert(pg, 'incoming_writes', rows))
   })
 }
 // This function is for importing immutable data in an append-only fashion starting from a given timestamp.
 // In case the import fails, it can be restarted from the last successfully processed timestamp.
 async function importAppendOnlyCollectionGroup(
-  client: SupabaseClient,
+  pg: SupabaseDirectClient,
   source: CollectionGroup,
   tableName: TableName,
   predicate: (d: QueryDocumentSnapshot) => boolean,
@@ -127,7 +128,7 @@ async function importAppendOnlyCollectionGroup(
 
     for (const batch of chunk(snap.docs, batchSize)) {
       const rows = batch.map((d) => getWriteRow(d, tableName, t1))
-      await withRetries(run(client.from('incoming_writes').insert(rows)))
+      await withRetries(bulkInsert(pg, 'incoming_writes', rows))
     }
     totalProcessed += snap.size
     log(`Processed ${snap.size} documents from ${startTime} to ${endTime}.`)
@@ -165,7 +166,7 @@ async function importDatabase(
   timeChunk = 0.25
 ) {
   const firestore = admin.firestore()
-  const client = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
   const shouldImport = (t: TableName) => tables == null || tables.includes(t)
 
   if (tables == null) {
@@ -173,10 +174,10 @@ async function importDatabase(
   }
 
   if (shouldImport('users'))
-    await importCollection(client, firestore.collection('users'), 'users', 500)
+    await importCollection(pg, firestore.collection('users'), 'users', 500)
   if (shouldImport('user_portfolio_history'))
     await importAppendOnlyCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('portfolioHistory'),
       'user_portfolio_history',
       (_) => true,
@@ -186,7 +187,7 @@ async function importDatabase(
     )
   if (shouldImport('user_contract_metrics'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('contract-metrics'),
       'user_contract_metrics',
       (_) => true,
@@ -194,7 +195,7 @@ async function importDatabase(
     )
   if (shouldImport('user_follows'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('follows'),
       'user_follows',
       (c) => c.ref.parent.parent?.parent.path === 'users',
@@ -202,7 +203,7 @@ async function importDatabase(
     )
   if (shouldImport('user_reactions'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('reactions'),
       'user_reactions',
       (_) => true,
@@ -210,7 +211,7 @@ async function importDatabase(
     )
   if (shouldImport('user_events'))
     await importAppendOnlyCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('events'),
       'user_events',
       (c) => c.ref.parent.parent?.parent.path === 'users',
@@ -220,7 +221,7 @@ async function importDatabase(
     )
   if (shouldImport('user_seen_markets'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('seenMarkets'),
       'user_seen_markets',
       (_) => true,
@@ -228,14 +229,14 @@ async function importDatabase(
     )
   if (shouldImport('contracts'))
     await importCollection(
-      client,
+      pg,
       firestore.collection('contracts'),
       'contracts',
       500
     )
   if (shouldImport('contract_answers'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('answers'),
       'contract_answers',
       (_) => true,
@@ -243,7 +244,7 @@ async function importDatabase(
     )
   if (shouldImport('contract_bets'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('bets'),
       'contract_bets',
       (_) => true,
@@ -251,7 +252,7 @@ async function importDatabase(
     )
   if (shouldImport('contract_comments'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('comments'),
       'contract_comments',
       (c) => c.get('commentType') === 'contract',
@@ -259,7 +260,7 @@ async function importDatabase(
     )
   if (shouldImport('contract_follows'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('follows'),
       'contract_follows',
       (c) => c.ref.parent.parent?.parent.path == 'contracts',
@@ -267,22 +268,17 @@ async function importDatabase(
     )
   if (shouldImport('contract_liquidity'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('liquidity'),
       'contract_liquidity',
       (_) => true,
       2500
     )
   if (shouldImport('groups'))
-    await importCollection(
-      client,
-      firestore.collection('groups'),
-      'groups',
-      500
-    )
+    await importCollection(pg, firestore.collection('groups'), 'groups', 500)
   if (shouldImport('group_contracts'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('groupContracts'),
       'group_contracts',
       (_) => true,
@@ -290,7 +286,7 @@ async function importDatabase(
     )
   if (shouldImport('group_members'))
     await importCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('groupMembers'),
       'group_members',
       (_) => true,
@@ -298,7 +294,7 @@ async function importDatabase(
     )
   if (shouldImport('txns'))
     await importAppendOnlyCollectionGroup(
-      client,
+      pg,
       firestore.collectionGroup('txns'),
       'txns',
       (_) => true,
@@ -309,13 +305,13 @@ async function importDatabase(
     )
   if (shouldImport('manalinks'))
     await importCollection(
-      client,
+      pg,
       firestore.collection('manalinks'),
       'manalinks',
       2500
     )
   if (shouldImport('posts'))
-    await importCollection(client, firestore.collection('posts'), 'posts', 100)
+    await importCollection(pg, firestore.collection('posts'), 'posts', 100)
 }
 
 if (require.main === module) {
