@@ -53,7 +53,7 @@ export default function Sidebar(props: {
   const bottomNavOptions = bottomNav(!!isMobile, !!user)
 
   const createMarketButton = user && !user.isBannedFromPosting && (
-    <CreateQuestionButton />
+    <CreateQuestionButton key="create-market-button" />
   )
 
   return (
@@ -77,18 +77,22 @@ export default function Sidebar(props: {
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
-          <SidebarItem key={item.href} item={item} currentPage={currentPage} />
+          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
+
         <MobileAppsQRCodeDialog
+          key="mobile-apps-qr-code"
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
-        {user === null && <SignInButton className="mt-3" />}
-        {/* {user === null && (
-          <AppBadgesOrGetAppButton size="md" className={'mb-4'} />
-        )} */}
+
+        {user === null && (
+          <SignInButton key="sign-in-button" className="mt-3" />
+        )}
+
         {user && !isMobile && (
           <MenuButton
+            key="menu-button"
             menuItems={getMoreDesktopNavigation(!!user)}
             buttonContent={<MoreButton />}
           />
