@@ -238,7 +238,7 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
       )}
       <div
         className={clsx(
-          'font-major-mono text-xs lowercase text-white sm:whitespace-nowrap sm:text-sm sm:text-gray-900'
+          'font-major-mono text-xs lowercase text-white sm:whitespace-nowrap sm:text-sm'
         )}
       >
         Manifold Markets

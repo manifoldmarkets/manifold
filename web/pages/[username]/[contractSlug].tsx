@@ -280,7 +280,9 @@ export function ContractPageContent(
           ogCardProps={ogCardProps}
         />
       )}
-      <BackRow />
+
+      {user && <BackRow />}
+
       <Col className="w-full justify-between rounded bg-white pb-6 pt-4 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         <ContractOverview
           contract={contract}

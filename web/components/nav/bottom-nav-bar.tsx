@@ -4,11 +4,10 @@ import {
   HomeIcon,
   MenuAlt3Icon,
   SparklesIcon,
-  SearchIcon,
   XIcon,
   BookOpenIcon,
 } from '@heroicons/react/outline'
-import { UserCircleIcon } from '@heroicons/react/solid'
+import { DeviceMobileIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
 import Sidebar from './sidebar'
@@ -23,8 +22,9 @@ import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
-import { RectangleGroup } from '../icons/outline'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { isIOS } from 'web/lib/util/device'
+import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -51,11 +51,18 @@ function getNavigation(user: User) {
 
 const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Explore', href: '/search', icon: RectangleGroup },
-  { name: 'Sign up', onClick: firebaseLogin, icon: UserCircleIcon },
-  { name: 'Search', href: '/find', icon: SearchIcon },
+  {
+    name: 'Get app',
+    href:
+      typeof window !== 'undefined' && isIOS()
+        ? APPLE_APP_URL
+        : GOOGLE_PLAY_APP_URL,
+    icon: DeviceMobileIcon,
+  },
+  { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
   // [c] evil experiment: go to home instead of help, since home explains it anyways
-  { name: 'Help', href: '/#help', icon: BookOpenIcon },
+  // [s] changing help to about
+  { name: 'About', href: '/#about', icon: BookOpenIcon },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
