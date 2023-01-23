@@ -1,3 +1,22 @@
+export const horizontalSwipeDist = 40
+export const verticalSwipeDist = 50
+
+export type SwipeAction = 'left' | 'right' | 'up' | 'down' | 'none'
+
+export function getSwipeAction(
+  mx: number,
+  my: number,
+  xCappedDist: number
+): SwipeAction {
+  if (xCappedDist >= horizontalSwipeDist) {
+    return mx < 0 ? 'left' : 'right'
+  }
+  if (Math.abs(my) >= verticalSwipeDist) {
+    return my < 0 ? 'up' : 'down'
+  }
+  return 'none'
+}
+
 export default function getQuestionSize(question: string) {
   const height2width = window.innerHeight / window.innerWidth
   const questionLength = question.length

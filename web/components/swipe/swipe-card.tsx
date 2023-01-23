@@ -20,30 +20,14 @@ import { Avatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize, {
+  getSwipeAction,
+  horizontalSwipeDist,
   isStatusAFailure,
   STARTING_BET_AMOUNT,
+  SwipeAction,
+  verticalSwipeDist,
 } from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
-
-const horizontalSwipeDist = 50
-const verticalSwipeDist = 80
-
-export type SwipeAction = 'left' | 'right' | 'up' | 'down' | 'none'
-
-function getSwipeAction(
-  mx: number,
-  my: number,
-  xCappedDist: number,
-  yCappedDist: number
-): SwipeAction {
-  if (xCappedDist >= horizontalSwipeDist) {
-    return mx < 0 ? 'left' : 'right'
-  }
-  if (yCappedDist >= verticalSwipeDist) {
-    return my < 0 ? 'up' : 'down'
-  }
-  return 'none'
-}
 
 const onBet = (
   outcome: 'YES' | 'NO',
@@ -91,6 +75,7 @@ export function PreviousSwipeCard(props: {
     props.contract) as BinaryContract
 
   useEffect(() => {
+    console.log(yPosition)
     const y =
       yPosition != null
         ? -(cardHeight + PREVIOUS_CARD_BUFFER) + yPosition
@@ -232,12 +217,7 @@ export function PrimarySwipeCard(props: {
         0,
         horizontalSwipeDist
       )
-      const yCappedDist = rubberbandIfOutOfBounds(
-        Math.abs(my),
-        0,
-        Math.abs(verticalSwipeDist)
-      )
-      setSwipeAction(getSwipeAction(mx, my, xCappedDist, yCappedDist))
+      setSwipeAction(getSwipeAction(mx, my, xCappedDist))
       if (!down) {
         // See if thresholds show if an action was made once thumb is lifted
         setAction(swipeAction)
@@ -246,13 +226,11 @@ export function PrimarySwipeCard(props: {
         }
       }
       const x = down ? Math.sign(mx) * xCappedDist : 0
-      const y = down && my <= 0 ? Math.sign(my) * yCappedDist : 0
-      if (my >= 0) {
-        setPreviousCardY(yCappedDist)
+      const y = my <= 0 && (down || Math.abs(my) >= verticalSwipeDist) ? my : 0
+      if (my > 0) {
+        setPreviousCardY(my)
       }
-      if (swipeAction === 'none') {
-        api.start({ x, y, immediate: down })
-      }
+      api.start({ x, y, immediate: down })
     },
     { axis: 'lock' }
   )
