@@ -70,7 +70,7 @@ export function BottomNavBar() {
 
   const user = useUser()
   const appStoreUrl = useAppStoreUrl()
-  
+
   const isIframe = useIsIframe()
   if (isIframe) {
     return null
