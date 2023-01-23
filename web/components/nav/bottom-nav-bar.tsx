@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/outline'
 import { DeviceMobileIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
-import { useState, Fragment, useEffect } from 'react'
+import { useState, Fragment } from 'react'
 import Sidebar from './sidebar'
 import { Item } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
@@ -23,8 +23,7 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { isIOS } from 'web/lib/util/device'
-import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
+import { useAppStoreUrl } from 'web/hooks/use-app-store-url'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -70,12 +69,8 @@ export function BottomNavBar() {
   const currentPage = router.pathname
 
   const user = useUser()
-
-  const [appStoreUrl, setAppStoreUrl] = useState(APPLE_APP_URL)
-  useEffect(() => {
-    setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
-  }, [])
-
+  const appStoreUrl = useAppStoreUrl()
+  
   const isIframe = useIsIframe()
   if (isIframe) {
     return null
