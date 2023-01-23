@@ -142,12 +142,15 @@ export function BetsList(props: { user: User }) {
   }
   if (Object.keys(metricsByContract).length === 0) return <NoBets user={user} />
 
-  const contracts =
+  const contracts = (
     query !== ''
       ? initialContracts.filter((c) =>
           searchInAny(query, ...[c.question, c.creatorName, c.creatorUsername])
         )
       : initialContracts
+  )
+    // metricsByContract often undefined, leading to crashes
+    .filter((c) => !!metricsByContract[c.id])
 
   const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
     resolved: (c) => !!c.resolutionTime,
@@ -158,12 +161,13 @@ export function BetsList(props: { user: User }) {
     sold: () => true,
     limit_bet: (c) => FILTERS.open(c),
   }
+
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => metricsByContract[c.id].profit,
     loss: (c) => -metricsByContract[c.id].profit,
     value: (c) => metricsByContract[c.id].payout,
     newest: (c) =>
-      metricsByContract[c.id]?.lastBetTime ??
+      metricsByContract[c.id].lastBetTime ??
       max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
       0,
     closeTime: (c) =>
@@ -184,6 +188,7 @@ export function BetsList(props: { user: User }) {
         return openLimitBetsByContract[c.id]?.length > 0
       return hasShares
     })
+
   const displayedContracts = filteredContracts.slice(start, end)
 
   const unsettled = contracts.filter(
