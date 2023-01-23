@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/outline'
 import { DeviceMobileIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
-import { useState, Fragment } from 'react'
+import { useState, Fragment, useEffect } from 'react'
 import Sidebar from './sidebar'
 import { Item } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
@@ -49,14 +49,11 @@ function getNavigation(user: User) {
   ]
 }
 
-const signedOutNavigation = [
+const signedOutNavigation = (appStoreUrl: string) => [
   { name: 'Home', href: '/', icon: HomeIcon },
   {
     name: 'Get app',
-    href:
-      typeof window !== 'undefined' && isIOS()
-        ? APPLE_APP_URL
-        : GOOGLE_PLAY_APP_URL,
+    href: appStoreUrl,
     icon: DeviceMobileIcon,
   },
   { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
@@ -74,12 +71,19 @@ export function BottomNavBar() {
 
   const user = useUser()
 
+  const [appStoreUrl, setAppStoreUrl] = useState(APPLE_APP_URL)
+  useEffect(() => {
+    setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
+  }, [])
+
   const isIframe = useIsIframe()
   if (isIframe) {
     return null
   }
 
-  const navigationOptions = user ? getNavigation(user) : signedOutNavigation
+  const navigationOptions = user
+    ? getNavigation(user)
+    : signedOutNavigation(appStoreUrl)
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
