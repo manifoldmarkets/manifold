@@ -4,11 +4,11 @@ import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { SwipeAction } from './swipe-card'
 import {
   BET_TAP_ADD,
   isStatusAFailure,
   STARTING_BET_AMOUNT,
+  SwipeAction,
 } from './swipe-helpers'
 import { TouchButton } from './touch-button'
 
