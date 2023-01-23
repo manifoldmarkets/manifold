@@ -7,11 +7,15 @@ import { generateEmbeddings } from '../helpers/openai-utils'
 import { createSupabaseClient } from '../supabase/init'
 import { run } from 'common/supabase/utils'
 import { Contract } from 'common/contract'
+import { closestEmbeddingById, saveVector } from '../helpers/pinecone-utils'
 
 const firestore = admin.firestore()
 const db = createSupabaseClient()
 
 async function main() {
+  const blah = await closestEmbeddingById('zoMnPLYgOjpR6enGyI8E')
+  console.log('blah', blah)
+
   const result = await run(db.from('contract_embeddings').select('contract_id'))
 
   const contractIds = new Set(result.data.map((row: any) => row.contract_id))
@@ -37,6 +41,8 @@ async function main() {
     }
 
     console.log('Generated', embeddings?.length, 'embeddings for', question)
+    await saveVector(id, embeddings)
+
     await run(
       db
         .from('contract_embeddings')
