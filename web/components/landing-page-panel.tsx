@@ -146,7 +146,7 @@ export function LandingPagePanel() {
                 {STARTING_BALANCE}
               </span>
               {'   '}
-              to start predicting!
+              in play money to start trading!
             </div>
           </div>
         </div>
@@ -238,7 +238,8 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
       )}
       <div
         className={clsx(
-          'font-major-mono text-xs lowercase text-white sm:whitespace-nowrap sm:text-sm'
+          'font-major-mono text-xs lowercase sm:whitespace-nowrap sm:text-sm',
+          isMobile ? 'text-white' : 'text-gray-900'
         )}
       >
         Manifold Markets

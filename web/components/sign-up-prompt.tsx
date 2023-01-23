@@ -19,7 +19,7 @@ export function BetSignUpPrompt(props: {
       size={size}
       color="gradient"
     >
-      {label ?? 'Sign up to predict!'}
+      {label ?? 'Sign up for updates'}
     </Button>
   ) : null
 }
