@@ -422,18 +422,19 @@ function EditableCloseDate(props: {
         onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
       >
         <DateTimeTooltip
-          text={
-            isClient && closeTime <= Date.now()
-              ? 'Trading ended:'
-              : 'Trading ends:'
-          }
+          text={closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'}
           time={closeTime}
           placement="bottom-start"
           noTap
         >
-          <span>{dayjs().isBefore(closeTime) ? 'closes' : 'closed'} </span>
-          {isSameDay && isClient ? (
-            <span className={'capitalize'}> {fromNow(closeTime)}</span>
+          <span suppressHydrationWarning>
+            {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
+          </span>
+          {isSameDay ? (
+            <span className={'capitalize'} suppressHydrationWarning>
+              {' '}
+              {fromNow(closeTime)}
+            </span>
           ) : isSameYear ? (
             dayJsCloseTime.format('MMM D')
           ) : (

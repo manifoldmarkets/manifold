@@ -17,5 +17,5 @@ export function DateTimeTooltip(props: {
   const formattedTime = formatTime(time)
   const toolTip = text ? `${text} ${formattedTime}` : formattedTime
 
-  return <Tooltip text={toolTip} {...rest} />
+  return <Tooltip text={toolTip} {...rest} suppressHydrationWarning />
 }
