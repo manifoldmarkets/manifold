@@ -458,17 +458,18 @@ function MarketResolvedNotification(props: {
       </>
     )
 
-  const confettiBg = highlighted ? (
-    <div
-      ref={ref}
-      className={clsx(
-        ' bg-confetti-animated pointer-events-none absolute inset-0'
-      )}
-      style={{
-        opacity,
-      }}
-    />
-  ) : undefined
+  const confettiBg =
+    highlighted && profitable ? (
+      <div
+        ref={ref}
+        className={clsx(
+          'bg-confetti-animated pointer-events-none absolute inset-0'
+        )}
+        style={{
+          opacity,
+        }}
+      />
+    ) : undefined
 
   return (
     <NotificationFrame

@@ -22,6 +22,7 @@ import {
   MultipleChoiceContract,
 } from './contract'
 import { floatingEqual } from './util/math'
+import { ContractMetric } from 'common/contract-metric'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract
@@ -275,8 +276,7 @@ export function getContractBetNullMetrics() {
     hasYesShares: false,
     hasNoShares: false,
     maxSharesOutcome: null,
-    lastBetTime: null,
-  }
+  } as ContractMetric
 }
 
 export function getTopAnswer(

@@ -343,7 +343,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   <>
                     <Spacer h={4} />
                     <PortfolioValueSection userId={user.id} />
-                    <Spacer h={4} />
+                    <Spacer h={8} />
                     <BetsList user={user} />
                   </>
                 ),

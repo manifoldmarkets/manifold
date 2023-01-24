@@ -35,6 +35,7 @@ import { track } from '../service/analytics'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
 import { Contract } from 'common/contract'
+import { nativeSignOut } from 'web/lib/native/native-messages'
 
 dayjs.extend(utc)
 
@@ -214,10 +215,8 @@ export async function firebaseLogin() {
 }
 
 export async function firebaseLogout() {
-  if (getIsNative()) {
-    // Post the message back to expo
-    postMessageToNative('signOut', {})
-  }
+  if (getIsNative()) nativeSignOut()
+
   await auth.signOut()
 }
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
-import { ENV } from 'common/envs/constants'
+import { ENV, EXTERNAL_REDIRECTS } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -33,7 +33,7 @@ import {
   webToNativeMessage,
 } from 'common/native-message'
 import { useFonts, ReadexPro_400Regular } from '@expo-google-fonts/readex-pro'
-import { app, auth } from './init'
+import { app, auth, log } from './init'
 import {
   handleWebviewCrash,
   ExternalWebView,
@@ -41,37 +41,16 @@ import {
   handleWebviewError,
   handleRenderError,
 } from 'components/external-web-view'
-console.log('using', ENV, 'env')
-console.log(
-  'env not switching? run `npx expo start --clear` and then try again'
-)
-
-// Initialization
-if (Device.isDevice) {
-  Sentry.init({
-    dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
-    enableInExpoDevelopment: true,
-    debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
-  })
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  })
-}
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const baseUri =
-  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets'
-const query = `?nativePlatform=${Platform.OS}`
-const defaultUri = baseUri + query
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+const nativeQuery = `?nativePlatform=${Platform.OS}`
 const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
-  const hasLoadedWebView = useRef(false)
+  const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const webview = useRef<WebView>()
   const notificationResponseListener = useRef<Subscription | undefined>()
@@ -81,27 +60,43 @@ const App = () => {
   const [waitingForAuth, setWaitingForAuth] = useState(true)
   const [user, setUser] = useState(auth.currentUser)
   useEffect(() => {
+    log(`Webview has loaded ${hasLoadedWebView}. user: ${user?.uid}`)
     // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
-    if (hasLoadedWebView.current) {
+    if (hasLoadedWebView && !user) {
+      log('Has loaded webview with no user, waiting for auth')
       const timeout = setTimeout(() => {
+        log('Still no cached users, redirecting to sign in')
         setWaitingForAuth(false)
       }, 2000)
-      return () => clearTimeout(timeout)
+      return () => {
+        log('clearing auth timeout')
+        clearTimeout(timeout)
+      }
     }
-  }, [hasLoadedWebView.current])
+  }, [hasLoadedWebView, user])
 
-  // auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
+  // Auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
   useEffect(() => {
+    log('Auth user changed', user?.uid)
     auth.onAuthStateChanged(setUser)
   }, [auth])
 
   // Url management
-  const [urlToLoad, setUrlToLoad] = useState<string>(defaultUri)
+  const [urlToLoad, setUrlToLoad] = useState<string>(
+    baseUri + '/home' + nativeQuery
+  )
   const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     isIOS ? LinkingManager.default : null
   )
+
+  const setUrlWithNativeQuery = (endpoint?: string) => {
+    const newUrl = baseUri + (endpoint ?? '/home') + nativeQuery
+    log('Setting new url', newUrl)
+    // React native doesn't come with Url, so we may want to use a library
+    setUrlToLoad(newUrl)
+  }
 
   const [allowSystemBack, setAllowSystemBack] = useState(
     sharedWebViewProps.allowsBackForwardNavigationGestures
@@ -112,8 +107,9 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
+    log('Push notification received, has loaded webview:', hasLoadedWebView)
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
-    if (hasLoadedWebView.current) {
+    if (hasLoadedWebView) {
       communicateWithWebview(
         'notification',
         response.notification.request.content.data
@@ -122,42 +118,38 @@ const App = () => {
       const notification = response.notification.request.content
         .data as Notification
       const sourceUrl = getSourceUrl(notification)
-      setUrlToLoad(baseUri + sourceUrl)
+      setUrlWithNativeQuery(sourceUrl)
     }
   }
 
-  // Initialize listeners
   useEffect(() => {
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        setUrlToLoad(url)
-      }
-    })
-    try {
-      BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
-
-      // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
-      notificationResponseListener.current =
-        Notifications.addNotificationResponseReceivedListener(
-          handlePushNotification
-        )
-    } catch (err) {
-      Sentry.Native.captureException(err, {
-        extra: { message: 'notification & back listener' },
-      })
-      console.log('[notification & back listener] Error : ', err)
-    }
+    log('Setting up notification listener')
+    // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
+    notificationResponseListener.current =
+      Notifications.addNotificationResponseReceivedListener(
+        handlePushNotification
+      )
 
     return () => {
       notificationResponseListener.current &&
         Notifications.removeNotificationSubscription(
           notificationResponseListener.current
         )
+    }
+  }, [hasLoadedWebView])
+
+  useEffect(() => {
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        setUrlToLoad(url)
+      }
+    })
+    BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
+    return () =>
       BackHandler.removeEventListener(
         'hardwareBackPress',
         handleBackButtonPress
       )
-    }
   }, [])
 
   // Handle deep links
@@ -166,7 +158,7 @@ const App = () => {
 
     const { hostname, path, queryParams } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
-      console.log(
+      log(
         `Linked to app with hostname: ${hostname}, path: ${path} and data: ${JSON.stringify(
           queryParams
         )}`
@@ -189,7 +181,7 @@ const App = () => {
       Sentry.Native.captureException(err, {
         extra: { message: 'back button press' },
       })
-      console.log('[handleBackButtonPress] Error : ', err)
+      log('[handleBackButtonPress] Error : ', err)
       return false
     }
   }
@@ -216,7 +208,7 @@ const App = () => {
         projectId,
       })
     ).data
-    console.log(token)
+    log(token)
     return token
   }
 
@@ -242,7 +234,7 @@ const App = () => {
       Sentry.Native.captureException(e, {
         extra: { message: 'error registering for push notifications' },
       })
-      console.error('error registering for push notifications', e)
+      log('Error registering for push notifications', e)
       return null
     }
   }
@@ -250,23 +242,23 @@ const App = () => {
   const handleMessageFromWebview = ({ nativeEvent }: any) => {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
-    console.log('Received message from webview: ', type)
+    log('Received message from webview: ', type)
     setHasSetNativeFlag(true)
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
     } else if (type === 'loginClicked') {
-      if (user) {
+      if (user || auth.currentUser) {
+        setUser(null)
         try {
           // Let's start from a clean slate if the webview and native auths are out of sync
           auth.signOut()
         } catch (err) {
-          console.log('[sign out before sign in] Error : ', err)
+          log('Error signing out before sign in :', err)
           Sentry.Native.captureException(err, {
             extra: { message: 'sign out before sign in' },
           })
         }
       }
-      setUser(null)
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -300,7 +292,7 @@ const App = () => {
       try {
         auth.signOut()
       } catch (err) {
-        console.log('[signOut] Error : ', err)
+        log('Error on sign out:', err)
         Sentry.Native.captureException(err, {
           extra: { message: 'sign out' },
         })
@@ -312,7 +304,7 @@ const App = () => {
         const fbUserAndPrivateUser = JSON.parse(payload)
         // Passing us a signed-in user object
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
-          console.log('Signing in fb user from webview cache')
+          log('Signing in fb user from webview cache')
           setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app)
         }
       } catch (e) {
@@ -325,7 +317,7 @@ const App = () => {
       const { page } = payload
       setAllowSystemBack(page !== 'swipe')
     } else {
-      console.log('Unhandled nativeEvent.data: ', data)
+      log('Unhandled nativeEvent.data: ', data)
     }
   }
 
@@ -346,7 +338,7 @@ const App = () => {
     )
   }
 
-  const webViewAndUserLoaded = hasLoadedWebView.current && user
+  const webViewAndUserLoaded = hasLoadedWebView && user
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
@@ -373,13 +365,13 @@ const App = () => {
           source={require('./assets/splash.png')}
         />
       ) : (
-        hasLoadedWebView.current &&
+        hasLoadedWebView &&
         !user &&
         !waitingForAuth && (
           <AuthPage webview={webview} height={height} width={width} />
         )
       )}
-      {Platform.OS === 'ios' && Device.isDevice && (
+      {Platform.OS === 'ios' && Device.isDevice && webViewAndUserLoaded && (
         <IosIapListener
           checkoutAmount={checkoutAmount}
           setCheckoutAmount={setCheckoutAmount}
@@ -403,22 +395,24 @@ const App = () => {
             style={styles.webView}
             // Load start and end is for whole website loading, not navigations within manifold
             onLoadEnd={() => {
-              // TODO: test if you can find this tag in adb logcat
-              console.log('[Manifold Markets] - WebView onLoadEnd')
-              hasLoadedWebView.current = true
+              log('WebView onLoadEnd')
+              setHasLoadedWebView(true)
             }}
             source={{ uri: urlToLoad }}
             //@ts-ignore
             ref={webview}
             onError={(e) =>
-              handleWebviewError(e, () => setUrlToLoad(defaultUri))
+              handleWebviewError(e, () => setUrlWithNativeQuery())
             }
             renderError={(e) => handleRenderError(e, width, height)}
             onTouchStart={tellWebviewToSetNativeFlag}
             // On navigation state change changes on every url change
             onNavigationStateChange={(navState) => {
               const { url } = navState
-              if (!url.startsWith(baseUri)) {
+              if (
+                !url.startsWith(baseUri) ||
+                EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
+              ) {
                 setExternalUrl(url)
                 webview.current?.stopLoading()
               } else {

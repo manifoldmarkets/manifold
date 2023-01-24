@@ -2,11 +2,24 @@ import { RadioGroup } from '@headlessui/react'
 import clsx from 'clsx'
 import React from 'react'
 
+const colorClasses = {
+  'indigo-dark':
+    'text-gray-900 hover:bg-indigo-50 aria-checked:bg-indigo-500 aria-checked:text-white',
+  indigo:
+    'hover:bg-gray-100 aria-checked:bg-indigo-100 aria-checked:text-indigo-500',
+  green:
+    'hover:bg-gray-100 aria-checked:bg-teal-500/30 aria-checked:text-teal-600',
+  red: 'hover:bg-gray-100 aria-checked:bg-scarlet-100 aria-checked:text-scarlet-600',
+}
+
+export type ColorType = keyof typeof colorClasses
+
 export function ChoicesToggleGroup(props: {
   currentChoice: number | string
   choicesMap: { [key: string]: string | number }
-  isSubmitting?: boolean
+  disabled?: boolean
   setChoice: (p: number | string) => void
+  color?: ColorType
   className?: string
   toggleClassName?: string
   children?: React.ReactNode
@@ -14,8 +27,9 @@ export function ChoicesToggleGroup(props: {
   const {
     currentChoice,
     setChoice,
-    isSubmitting,
+    disabled,
     choicesMap,
+    color = 'indigo-dark',
     className,
     children,
     toggleClassName,
@@ -24,27 +38,26 @@ export function ChoicesToggleGroup(props: {
     <RadioGroup
       className={clsx(
         className,
-        'flex flex-row flex-wrap items-center gap-2 sm:gap-3'
+        'flex flex-row gap-2 rounded-md border border-gray-300 bg-white p-1 text-sm text-gray-400 shadow-sm',
+        disabled && '!cursor-not-allowed bg-gray-50'
       )}
-      value={currentChoice.toString()}
+      value={currentChoice}
       onChange={setChoice}
+      disabled={disabled}
     >
-      {Object.keys(choicesMap).map((choiceKey) => (
+      {Object.entries(choicesMap).map(([choiceKey, choice]) => (
         <RadioGroup.Option
           key={choiceKey}
-          value={choicesMap[choiceKey]}
-          className={({ active }) =>
+          value={choice}
+          className={({ disabled }) =>
             clsx(
-              active ? 'ring-2 ring-indigo-500 ring-offset-2' : '',
-              currentChoice === choicesMap[choiceKey]
-                ? 'border-transparent bg-indigo-500 text-white hover:bg-indigo-600'
-                : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50',
-              'flex cursor-pointer items-center justify-center rounded-md border py-3 px-3 text-sm font-medium normal-case',
-              "hover:ring-offset-2' hover:ring-2 hover:ring-indigo-500",
+              disabled
+                ? 'cursor-not-allowed text-gray-400 aria-checked:bg-gray-300'
+                : 'cursor-pointer ' + colorClasses[color],
+              'flex items-center rounded-md p-2 outline-none ring-indigo-500 transition-all focus-visible:ring-2 sm:px-3',
               toggleClassName
             )
           }
-          disabled={isSubmitting}
         >
           <RadioGroup.Label as="span">{choiceKey}</RadioGroup.Label>
         </RadioGroup.Option>

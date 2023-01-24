@@ -141,18 +141,17 @@ const BinaryOverview = (props: {
         )}
       </SizedContainer>
 
-      {!user ? (
-        <Col className="w-full">
+      {user && tradingAllowed(contract) && (
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
+      )}
+
+      {user === null && (
+        <Col className="mt-1 w-full">
           <BetSignUpPrompt className="xl:self-center" size="xl" />
           <PlayMoneyDisclaimer />
         </Col>
-      ) : (
-        tradingAllowed(contract) && (
-          <Row className={'items-center justify-between gap-4 xl:hidden'}>
-            <SignedInBinaryMobileBetting contract={contract} user={user} />
-          </Row>
-        )
       )}
+      {user === undefined && <div className="h-[72px] w-full" />}
     </Col>
   )
 }

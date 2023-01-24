@@ -68,7 +68,7 @@ export function AuthProvider(props: {
   useEffect(() => {
     if (serverUser === undefined) {
       const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-      const parsed = cachedUser ? JSON.parse(cachedUser) : null
+      const parsed = cachedUser ? JSON.parse(cachedUser) : undefined
       setAuthUser(parsed)
     }
   }, [setAuthUser, serverUser])

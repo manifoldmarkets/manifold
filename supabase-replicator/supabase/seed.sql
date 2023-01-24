@@ -63,6 +63,10 @@ alter table user_contract_metrics enable row level security;
 drop policy if exists "public read" on user_contract_metrics;
 create policy "public read" on user_contract_metrics for select using (true);
 create index if not exists user_contract_metrics_gin on user_contract_metrics using GIN (data);
+create index user_contract_metrics_recent_bets on user_contract_metrics (
+     user_id,
+     ((data->'lastBetTime')::bigint) desc
+    );
 
 create table if not exists user_follows (
     user_id text not null,
@@ -90,6 +94,9 @@ create index if not exists user_reactions_data_gin on user_reactions using GIN (
 -- useful for getting just 'likes', we may want to index contentType as well
 create index if not exists user_reactions_type
     on user_reactions (user_id, (to_jsonb(data)->>'type') desc);
+-- useful for getting all reactions for a given contentId recently
+create index if not exists user_reactions_content_id
+  on user_reactions ((to_jsonb(data)->>'contentId'), (to_jsonb(data)->>'createdTime') desc);
 
 create table if not exists user_events (
     user_id text not null,
@@ -167,6 +174,10 @@ create index if not exists contract_bets_user_id on contract_bets (
     (to_jsonb(data)->>'userId'),
     (to_jsonb(data)->>'createdTime') desc
 );
+create index contract_bets_user_outstanding_limit_orders on contract_bets (
+   (data->>'userId'),
+   ((data->'isFilled')::boolean),
+   ((data->'isCancelled')::boolean));
 
 create table if not exists contract_comments (
     contract_id text not null,
@@ -587,14 +598,26 @@ select sqrt((row1.f0 - row2.f0)^2 +
             (row1.f4 - row2.f4)^2)
 $$;
 
--- Use cached tables of user and contract features to computed the top scoring
--- markets for a user.
-create or replace function get_recommended_contract_ids(uid text)
-returns table (contract_id text)
+create or replace function recently_liked_contract_counts(since bigint)
+returns table (contract_id text, n int)
 immutable parallel safe
 language sql
 as $$
-  select crf.contract_id
+  select data->>'contentId' as contract_id, count(*) as n
+  from user_reactions
+  where data->>'contentType' = 'contract'
+  and data->>'createdTime' > since::text
+  group by contract_id
+$$;
+
+-- Use cached tables of user and contract features to computed the top scoring
+-- markets for a user.
+create or replace function get_recommended_contract_scores(uid text)
+returns table (contract_id text, rec_score real)
+immutable parallel safe
+language sql
+as $$
+  select crf.contract_id, dot(urf, crf) as rec_score
   from user_recommendation_features as urf
   cross join contract_recommendation_features as crf
   where user_id = uid
@@ -619,25 +642,37 @@ as $$
     and user_events.data->>'contractId' = crf.contract_id
     and (user_events.data->>'timestamp')::bigint > extract(epoch from (now() - interval '1 day')) * 1000
   )
-  order by dot(urf, crf) desc
+$$;
+
+create or replace function get_recommended_contracts_by_score(uid text)
+returns table (data jsonb, score real)
+immutable parallel safe
+language sql
+as $$
+  select data, (log(coalesce((data->>'popularityScore')::real, 0) + 3) * rec_score) as score
+  from get_recommended_contract_scores(uid)
+  left join contracts
+  on contracts.id = contract_id
+  where is_valid_contract(data)
+  order by score desc
 $$;
 
 create or replace function get_recommended_contracts(uid text, count int)
-returns JSONB[]
+returns jsonb[]
 immutable parallel safe
 language sql
 as $$
   select array_agg(data) from (
     select data
-    from (
-      select * from get_recommended_contract_ids(uid)
-      union
+    from
+    (
+      select *, 1 as priority
+      from get_recommended_contracts_by_score(uid)
+      union all
       -- Default recommendations from this particular user if none for you.
-      select * from get_recommended_contract_ids('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
+      select *, 2 as priority from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
     ) as rec_contract_ids
-    left join contracts
-    on contracts.id = contract_id
-    where is_valid_contract(data)
+    order by priority
     limit count
   ) as rec_contracts
 $$;
@@ -720,4 +755,36 @@ select array_agg(data) from (
     order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
 ) as search_contracts
+$$;
+
+
+create or replace function get_contract_metrics_with_contracts(uid text, count int)
+    returns table(contract_id text, metrics jsonb, contract jsonb)
+    immutable parallel safe
+    language sql
+as $$
+select ucm.contract_id, ucm.data as metrics, c.data as contract
+from user_contract_metrics as ucm
+join contracts as c on c.id = ucm.contract_id
+where ucm.user_id = uid
+order by ((ucm.data)->'lastBetTime')::bigint desc
+limit count
+$$;
+
+create or replace function get_open_limit_bets_with_contracts(uid text, count int)
+    returns table(contract_id text, bets jsonb[], contract jsonb)
+    immutable parallel safe
+    language sql
+as $$;
+select contract_id, bets.data as bets, contracts.data as contracts
+from (
+         select contract_id, array_agg(data order by (data->>'createdTime') desc) as data from contract_bets
+         where (data->>'userId') = uid and
+                 (data->>'isFilled')::boolean = false and
+                 (data->>'isCancelled')::boolean = false
+         group by contract_id
+     ) as bets
+ join contracts
+ on contracts.id = bets.contract_id
+limit count
 $$;

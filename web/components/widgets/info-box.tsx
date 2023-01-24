@@ -2,10 +2,12 @@ import clsx from 'clsx'
 import { InformationCircleIcon } from '@heroicons/react/solid'
 
 import { Linkify } from './linkify'
+import { ReactNode } from 'react'
 
 export function InfoBox(props: {
   title: string
-  text: string
+  text?: string
+  children?: ReactNode
   className?: string
 }) {
   const { title, text, className } = props
@@ -19,9 +21,12 @@ export function InfoBox(props: {
           />
         </div>
         <div className="ml-3">
-          <h3 className="text-sm font-medium text-black">{title}</h3>
-          <div className="mt-2 text-sm text-gray-600">
-            <Linkify text={text} />
+          {title && (
+            <h3 className="mb-2 text-sm font-medium text-black">{title}</h3>
+          )}
+          <div className="text-sm text-gray-600">
+            {text && <Linkify text={text} />}
+            {props.children}
           </div>
         </div>
       </div>
