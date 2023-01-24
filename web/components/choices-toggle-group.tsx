@@ -38,8 +38,8 @@ export function ChoicesToggleGroup(props: {
           className={({ disabled }) =>
             clsx(
               disabled
-                ? 'aria-checked:bg-gray-300 cursor-not-allowed text-gray-500'
-                : 'aria-checked:bg-indigo-500 aria-checked:text-white cursor-pointer hover:bg-indigo-50',
+                ? 'cursor-not-allowed text-gray-500 aria-checked:bg-gray-300'
+                : 'cursor-pointer hover:bg-indigo-50 aria-checked:bg-indigo-500 aria-checked:text-white',
               'flex items-center rounded-md p-2 outline-none ring-indigo-500 transition-all focus-visible:ring-2 sm:px-3',
               toggleClassName
             )
