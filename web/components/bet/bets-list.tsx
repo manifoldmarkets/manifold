@@ -154,6 +154,7 @@ export function BetsList(props: { user: User }) {
       ...metricsByContract,
       ...missingMetrics,
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(initialContracts), metricsByContract])
 
   if (
