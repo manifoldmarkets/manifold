@@ -210,7 +210,7 @@ export function PrimarySwipeCard(props: {
       {...bind()}
       className={clsx(
         className,
-        'user-select-none pointer-events-auto absolute h-full w-full max-w-lg touch-none transition-transform duration-75'
+        'pointer-events-auto absolute h-full w-full max-w-lg touch-none select-none transition-transform duration-75'
       )}
       style={{ x, y }}
       onClick={(e) => e.preventDefault()}
@@ -300,7 +300,10 @@ export const SwipeCard = memo(
     }, [amount])
     return (
       <Col
-        className={clsx(className, 'relative h-full w-full drop-shadow-2xl')}
+        className={clsx(
+          className,
+          'relative h-full w-full select-none drop-shadow-2xl'
+        )}
         style={style}
         onClick={(e) => e.preventDefault()}
       >
