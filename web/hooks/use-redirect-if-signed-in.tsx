@@ -1,14 +1,11 @@
 import Router from 'next/router'
 import { useEffect } from 'react'
 import { useUser } from './use-user'
-import { getIsNative } from 'web/lib/native/is-native'
 
-export const useRedirectIfSignedOut = () => {
+export const useRedirectIfSignedIn = () => {
   const user = useUser()
   useEffect(() => {
-    if (user) return
     // Go to landing page if not logged in.
-    if (getIsNative()) Router.push('/sign-in-waiting')
-    else Router.push('/')
+    if (user) Router.push('/home')
   }, [user])
 }
