@@ -69,7 +69,7 @@ export function DescriptionAndModal(props: {
   return (
     <Col className={clsx(descriptionClass, 'items-end')}>
       <span className="line-clamp-2">{descriptionString}</span>
-      {descriptionString.length > 92 &&
+      {descriptionString.length >= 70 &&
         isModalOpen != undefined &&
         setIsModalOpen && (
           <>
