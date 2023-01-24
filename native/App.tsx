@@ -41,31 +41,12 @@ import {
   handleWebviewError,
   handleRenderError,
 } from 'components/external-web-view'
-log('using', ENV, 'env')
-log('env not switching? run `npx expo start --clear` and then try again')
-
-// Initialization
-if (Device.isDevice) {
-  Sentry.init({
-    dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
-    enableInExpoDevelopment: true,
-    debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
-  })
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  })
-}
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const baseUri =
-  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets'
-const query = `?nativePlatform=${Platform.OS}`
-const defaultUri = baseUri + query
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+const nativeQuery = `?nativePlatform=${Platform.OS}`
 const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
@@ -101,12 +82,19 @@ const App = () => {
   }, [auth])
 
   // Url management
-  const [urlToLoad, setUrlToLoad] = useState<string>(defaultUri)
+  const [urlToLoad, setUrlToLoad] = useState<string>(baseUri + nativeQuery)
   const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     isIOS ? LinkingManager.default : null
   )
+
+  const setUrlWithNativeQuery = (endpoint?: string) => {
+    const newUrl = baseUri + (endpoint ?? '') + nativeQuery
+    log('setting new url', newUrl)
+    // React native doesn't come with Url, so we may want to use a library
+    setUrlToLoad(newUrl)
+  }
 
   const [allowSystemBack, setAllowSystemBack] = useState(
     sharedWebViewProps.allowsBackForwardNavigationGestures
@@ -128,7 +116,7 @@ const App = () => {
       const notification = response.notification.request.content
         .data as Notification
       const sourceUrl = getSourceUrl(notification)
-      setUrlToLoad(baseUri + sourceUrl)
+      setUrlWithNativeQuery(sourceUrl)
     }
   }
 
@@ -257,7 +245,7 @@ const App = () => {
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
     } else if (type === 'loginClicked') {
-      if (user) {
+      if (user || auth.currentUser) {
         setUser(null)
         try {
           // Let's start from a clean slate if the webview and native auths are out of sync
@@ -412,7 +400,7 @@ const App = () => {
             //@ts-ignore
             ref={webview}
             onError={(e) =>
-              handleWebviewError(e, () => setUrlToLoad(defaultUri))
+              handleWebviewError(e, () => setUrlWithNativeQuery())
             }
             renderError={(e) => handleRenderError(e, width, height)}
             onTouchStart={tellWebviewToSetNativeFlag}
