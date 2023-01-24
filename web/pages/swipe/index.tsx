@@ -105,19 +105,16 @@ export default function Swipe() {
         style={{ height: cardHeight }}
       >
         {cards.length > 0 && (
-          <>
-            <div className="z-30">
-              <PrimarySwipeCard
-                key={cards[0].id}
-                contract={cards[0]}
-                index={index}
-                setIndex={setIndex}
-                user={user}
-                previousContract={index > 0 ? feed[index - 1] : undefined}
-                cardHeight={cardHeight}
-              />
-            </div>
-          </>
+          <PrimarySwipeCard
+            key={cards[0].id}
+            contract={cards[0]}
+            index={index}
+            setIndex={setIndex}
+            user={user}
+            previousContract={index > 0 ? feed[index - 1] : undefined}
+            nextContract={feed[index + 1]}
+            cardHeight={cardHeight}
+          />
         )}
         {cards.length > 1 && (
           <>

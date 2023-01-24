@@ -7,7 +7,14 @@ import { getOutcomeProbabilityAfterBet } from 'common/calculate'
 import { BinaryContract, Contract } from 'common/contract'
 import { getBinaryProb } from 'common/contract-details'
 import { User } from 'common/user'
-import { memo, ReactNode, SetStateAction, useEffect, useState } from 'react'
+import {
+  CSSProperties,
+  memo,
+  ReactNode,
+  SetStateAction,
+  useEffect,
+  useState,
+} from 'react'
 import { LikeButton } from 'web/components/contract/like-button'
 import { useContract } from 'web/hooks/use-contracts'
 import { placeBet } from 'web/lib/firebase/api'
@@ -23,7 +30,6 @@ import getQuestionSize, {
   getSwipeAction,
   horizontalSwipeDist,
   isStatusAFailure,
-  STARTING_BET_AMOUNT,
   SwipeAction,
   verticalSwipeDist,
 } from './swipe-helpers'
@@ -57,56 +63,6 @@ const onBet = (
   })
 }
 
-const PREVIOUS_CARD_BUFFER = 16
-
-export function PreviousSwipeCard(props: {
-  contract: BinaryContract
-  yPosition: number | null
-  cardHeight: number
-}) {
-  const { yPosition, cardHeight } = props
-  const [{ x, y }, api] = useSpring(() => ({
-    x: 0,
-    y: -(cardHeight + PREVIOUS_CARD_BUFFER),
-    config: { tension: 1000, friction: 70 },
-  }))
-
-  const contract = (useContract(props.contract.id) ??
-    props.contract) as BinaryContract
-
-  useEffect(() => {
-    console.log(yPosition)
-    const y =
-      yPosition != null
-        ? -(cardHeight + PREVIOUS_CARD_BUFFER) + yPosition
-        : -(cardHeight + PREVIOUS_CARD_BUFFER)
-    api.start({ y })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yPosition])
-  return (
-    <>
-      <animated.div
-        key={contract.id}
-        className={clsx(
-          'user-select-none pointer-events-auto absolute inset-1 z-20 touch-none transition-transform duration-75'
-        )}
-        style={{ x, y, height: cardHeight }}
-        onClick={(e) => e.preventDefault()}
-      >
-        <SwipeCard
-          key={contract.id}
-          contract={contract}
-          amount={STARTING_BET_AMOUNT}
-          swipeBetPanel={
-            <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
-          }
-          className="h-full"
-        />
-      </animated.div>
-    </>
-  )
-}
-
 export function PrimarySwipeCard(props: {
   contract: BinaryContract
   index: number
@@ -114,12 +70,12 @@ export function PrimarySwipeCard(props: {
   cardHeight: number
   user?: User
   previousContract?: BinaryContract
+  nextContract?: BinaryContract
 }) {
-  const { index, setIndex, user, cardHeight } = props
+  const { index, setIndex, user, cardHeight, previousContract, nextContract } =
+    props
   const contract = (useContract(props.contract.id) ??
     props.contract) as BinaryContract
-
-  const previousContract = props.previousContract
 
   const [amount, setAmount] = useState(10)
   const [action, setAction] = useState<SwipeAction>('none')
@@ -130,7 +86,6 @@ export function PrimarySwipeCard(props: {
   const [buttonAction, setButtonAction] = useState<'YES' | 'NO' | undefined>(
     undefined
   )
-  const [previousCardY, setPreviousCardY] = useState<number | null>(null)
 
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
@@ -151,12 +106,12 @@ export function PrimarySwipeCard(props: {
     setButtonAction(outcome)
   }
 
-  //animate movement when bet is made
+  // Animate movement when bet is made.
   useEffect(() => {
     if (betStatus === 'success') {
       const direction = buttonAction === 'YES' || action === 'right' ? 1 : -1
       setTimeout(() => {
-        const x = direction * (cardHeight + PREVIOUS_CARD_BUFFER)
+        const x = direction * (cardHeight + 16)
         api.start({ x })
       }, 450)
 
@@ -186,25 +141,21 @@ export function PrimarySwipeCard(props: {
       )
     }
     if (action === 'up') {
-      // Executes vertical swipe animation
-      setTimeout(() => {
-        const y = -1 * (cardHeight + PREVIOUS_CARD_BUFFER)
-        api.start({ y })
-      }, 100)
+      console.log('swipe up')
+      api.start({ y: -1 * cardHeight })
+
       setTimeout(() => {
         setIndex(index + 1)
-      }, 300)
+      }, 500)
     }
     if (action === 'down') {
-      // Executes vertical swipe animation
       if (previousContract) {
-        setTimeout(() => {
-          setPreviousCardY(cardHeight + PREVIOUS_CARD_BUFFER)
-        }, 100)
+        console.log('swipe down')
+        api.start({ y: cardHeight })
 
         setTimeout(() => {
           setIndex(index - 1)
-        }, 300)
+        }, 500)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -221,64 +172,74 @@ export function PrimarySwipeCard(props: {
       if (!down) {
         // See if thresholds show if an action was made once thumb is lifted
         setAction(swipeAction)
-        if (swipeAction != 'down') {
-          setPreviousCardY(null)
-        }
       }
       const x = down ? Math.sign(mx) * xCappedDist : 0
-      const y = my <= 0 && (down || Math.abs(my) >= verticalSwipeDist) ? my : 0
-      if (my > 0) {
-        setPreviousCardY(my)
-      }
+      const y = down || Math.abs(my) >= verticalSwipeDist ? my : 0
       api.start({ x, y, immediate: down })
     },
     { axis: 'lock' }
   )
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const swipeBetPanel = (
+    <SwipeBetPanel
+      setAmount={setAmount as any}
+      amount={amount}
+      disabled={false}
+      swipeAction={swipeAction}
+      onButtonBet={onButtonBet}
+      buttonAction={buttonAction}
+      betStatus={betStatus}
+    />
+  )
+
   return (
-    <>
+    <animated.div
+      {...bind()}
+      className={clsx(
+        'user-select-none pointer-events-auto absolute z-30 h-full w-full max-w-lg touch-none transition-transform duration-75'
+      )}
+      style={{ x, y }}
+      onClick={(e) => e.preventDefault()}
+    >
       {previousContract && (
-        <PreviousSwipeCard
+        <SwipeCard
           key={previousContract.id}
+          style={{ position: 'absolute', top: -cardHeight }}
           contract={previousContract}
-          yPosition={previousCardY}
-          cardHeight={cardHeight}
+          amount={amount}
+          swipeBetPanel={swipeBetPanel}
+          user={user}
+          isModalOpen={false}
+          setIsModalOpen={setIsModalOpen}
         />
       )}
 
-      <animated.div
-        {...bind()}
-        className={clsx(
-          'user-select-none pointer-events-auto absolute inset-1 max-w-lg touch-none transition-transform duration-75'
-        )}
-        style={{ x, y }}
-        onClick={(e) => e.preventDefault()}
-      >
+      <SwipeCard
+        key={contract.id}
+        contract={contract}
+        amount={amount}
+        swipeBetPanel={swipeBetPanel}
+        action={swipeAction}
+        buttonAction={buttonAction}
+        user={user}
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+      />
+
+      {nextContract && (
         <SwipeCard
-          key={contract.id}
-          contract={contract}
+          key={nextContract.id}
+          contract={nextContract}
           amount={amount}
-          swipeBetPanel={
-            <SwipeBetPanel
-              setAmount={setAmount as any}
-              amount={amount}
-              disabled={false}
-              swipeAction={swipeAction}
-              onButtonBet={onButtonBet}
-              buttonAction={buttonAction}
-              betStatus={betStatus}
-            />
-          }
-          className="h-full"
-          action={swipeAction}
-          buttonAction={buttonAction}
+          swipeBetPanel={swipeBetPanel}
           user={user}
-          isModalOpen={isModalOpen}
+          isModalOpen={false}
           setIsModalOpen={setIsModalOpen}
         />
-      </animated.div>
-    </>
+      )}
+    </animated.div>
   )
 }
 
@@ -293,6 +254,7 @@ export const SwipeCard = memo(
     user?: User
     isModalOpen?: boolean
     setIsModalOpen?: (open: boolean) => void
+    style?: CSSProperties
   }) => {
     const {
       amount,
@@ -303,6 +265,7 @@ export const SwipeCard = memo(
       user,
       isModalOpen,
       setIsModalOpen,
+      style,
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
@@ -324,75 +287,74 @@ export const SwipeCard = memo(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amount])
     return (
-      <>
-        <Col
-          className={clsx(className, 'relative h-full w-full drop-shadow-2xl')}
-          onClick={(e) => e.preventDefault()}
-        >
-          <Col className="h-full">
-            <div className="h-24 rounded-t-2xl bg-black" />
-            <div className="relative flex grow">
-              <div className="absolute top-0 z-0 h-[40%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
-              <img
-                src={image}
-                alt=""
-                className="flex grow bg-black object-cover"
-              />
-              <div className="absolute bottom-0 z-0 h-[40%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
+      <Col
+        className={clsx(className, 'relative h-full w-full drop-shadow-2xl')}
+        style={style}
+        onClick={(e) => e.preventDefault()}
+      >
+        <Col className="h-full">
+          <div className="h-24 bg-black" />
+          <div className="relative flex grow">
+            <div className="absolute top-0 z-0 h-[40%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
+            <img
+              src={image}
+              alt=""
+              className="flex grow bg-black object-cover"
+            />
+            <div className="absolute bottom-0 z-0 h-[40%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
+          </div>
+          <div className="h-20 w-full bg-black" />
+        </Col>
+        <Col className="absolute inset-0 z-10">
+          <Col className="relative h-full gap-2 p-4">
+            <CornerDetails contract={contract} />
+            <div className="max-h-24 overflow-ellipsis">
+              <SiteLink href={contractPath(contract)} followsLinkClass>
+                <div
+                  className={clsx(
+                    'text-white drop-shadow',
+                    getQuestionSize(question)
+                  )}
+                >
+                  {question}
+                </div>
+              </SiteLink>
             </div>
-            <div className="h-20 w-full rounded-b-2xl bg-black" />
-          </Col>
-          <Col className="absolute inset-0 z-10">
-            <Col className="relative h-full gap-2 p-4">
-              <CornerDetails contract={contract} />
-              <div className="max-h-24 overflow-ellipsis">
-                <SiteLink href={contractPath(contract)} followsLinkClass>
-                  <div
-                    className={clsx(
-                      'text-white drop-shadow',
-                      getQuestionSize(question)
-                    )}
-                  >
-                    {question}
-                  </div>
-                </SiteLink>
-              </div>
-              <Row className="mx-auto w-full grow items-center" />
-              <Row className="absolute top-[40%] w-full">
-                <Percent
-                  currPercent={currPercent}
-                  yesPercent={yesPercent}
-                  noPercent={noPercent}
-                  outcome={
-                    buttonAction === 'YES'
-                      ? 'YES'
-                      : buttonAction === 'NO'
-                      ? 'NO'
-                      : action === 'left'
-                      ? 'NO'
-                      : action === 'right'
-                      ? 'YES'
-                      : undefined
-                  }
+            <Row className="mx-auto w-full grow items-center" />
+            <Row className="absolute top-[40%] w-full">
+              <Percent
+                currPercent={currPercent}
+                yesPercent={yesPercent}
+                noPercent={noPercent}
+                outcome={
+                  buttonAction === 'YES'
+                    ? 'YES'
+                    : buttonAction === 'NO'
+                    ? 'NO'
+                    : action === 'left'
+                    ? 'NO'
+                    : action === 'right'
+                    ? 'YES'
+                    : undefined
+                }
+              />
+            </Row>
+            <Row className="justify-end">
+              <Actions user={user} contract={contract} />
+            </Row>
+            <Col className="gap-6">
+              <Col className="h-20 w-full justify-end">
+                <DescriptionAndModal
+                  description={description}
+                  isModalOpen={isModalOpen}
+                  setIsModalOpen={setIsModalOpen}
                 />
-              </Row>
-              <Row className="justify-end">
-                <Actions user={user} contract={contract} />
-              </Row>
-              <Col className="gap-6">
-                <Col className="h-20 w-full justify-end">
-                  <DescriptionAndModal
-                    description={description}
-                    isModalOpen={isModalOpen}
-                    setIsModalOpen={setIsModalOpen}
-                  />
-                </Col>
-                {swipeBetPanel}
               </Col>
+              {swipeBetPanel}
             </Col>
           </Col>
         </Col>
-      </>
+      </Col>
     )
   }
 )
