@@ -9,7 +9,7 @@ import { Row } from 'web/components/layout/row'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { SwipeBetPanel } from 'web/components/swipe/swipe-bet-panel'
-import { PrimarySwipeCard, SwipeCard } from 'web/components/swipe/swipe-card'
+import { CurrentSwipeCards, SwipeCard } from 'web/components/swipe/swipe-card'
 import { STARTING_BET_AMOUNT } from 'web/components/swipe/swipe-helpers'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
@@ -105,15 +105,15 @@ export default function Swipe() {
         style={{ height: cardHeight }}
       >
         {cards.length > 0 && (
-          <PrimarySwipeCard
+          <CurrentSwipeCards
             className="z-20"
             key={cards[0].id}
             contract={cards[0]}
+            previousContract={index > 0 ? feed[index - 1] : undefined}
+            nextContract={feed[index + 1]}
             index={index}
             setIndex={setIndex}
             user={user}
-            previousContract={index > 0 ? feed[index - 1] : undefined}
-            nextContract={feed[index + 1]}
             cardHeight={cardHeight}
           />
         )}

@@ -35,226 +35,6 @@ import getQuestionSize, {
 } from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
 
-const onBet = (
-  outcome: 'YES' | 'NO',
-  contract: BinaryContract,
-  amount: number,
-  setBetStatus: (status: 'loading' | 'success' | string | undefined) => void,
-  setAction: (action: SwipeAction) => void,
-  setButtonAction: (buttonAction: 'YES' | 'NO' | undefined) => void,
-  user?: User
-) => {
-  const contractId = contract.id
-  setBetStatus('loading')
-  const promise = placeBet({ amount, outcome, contractId })
-  promise
-    .then(() => setBetStatus('success'))
-    .catch((e) => {
-      setBetStatus(e.message)
-      setAction('none')
-      setButtonAction(undefined)
-    })
-  if (user) logView({ amount, outcome, contractId, userId: user.id })
-  track('swipe bet', {
-    slug: contract.slug,
-    contractId,
-    amount,
-    outcome,
-  })
-}
-
-export function PrimarySwipeCard(props: {
-  contract: BinaryContract
-  index: number
-  setIndex: (next: SetStateAction<number>) => void
-  cardHeight: number
-  user?: User
-  previousContract?: BinaryContract
-  nextContract?: BinaryContract
-  className?: string
-}) {
-  const {
-    index,
-    setIndex,
-    user,
-    cardHeight,
-    previousContract,
-    nextContract,
-    className,
-  } = props
-  const contract = (useContract(props.contract.id) ??
-    props.contract) as BinaryContract
-
-  const [amount, setAmount] = useState(10)
-  const [action, setAction] = useState<SwipeAction>('none')
-  const [swipeAction, setSwipeAction] = useState<SwipeAction>('none')
-  const [betStatus, setBetStatus] = useState<
-    'loading' | 'success' | string | undefined
-  >(undefined)
-  const [buttonAction, setButtonAction] = useState<'YES' | 'NO' | undefined>(
-    undefined
-  )
-
-  const [{ x, y }, api] = useSpring(() => ({
-    x: 0,
-    y: 0,
-    config: { tension: 500, friction: 20, clamp: true },
-  }))
-
-  const onButtonBet = (outcome: 'YES' | 'NO') => {
-    onBet(
-      outcome,
-      contract,
-      amount,
-      setBetStatus,
-      setAction,
-      setButtonAction,
-      user
-    )
-    setButtonAction(outcome)
-  }
-
-  // Animate movement when bet is made.
-  useEffect(() => {
-    if (betStatus === 'success') {
-      const direction = buttonAction === 'YES' || action === 'right' ? 1 : -1
-      setTimeout(() => {
-        const x = direction * (cardHeight + 16)
-        api.start({ x })
-      }, 450)
-
-      setTimeout(() => {
-        setIndex(index + 1)
-      }, 600)
-    }
-    if (isStatusAFailure(betStatus)) {
-      const x = 0
-      api.start({ x })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [betStatus])
-
-  useEffect(() => {
-    if (action === 'right' || action === 'left') {
-      // Horizontal swipe is triggered, places bet
-      const outcome = action === 'right' ? 'YES' : 'NO'
-      onBet(
-        outcome,
-        contract,
-        amount,
-        setBetStatus,
-        setAction,
-        setButtonAction,
-        user
-      )
-    }
-    if (action === 'up') {
-      console.log('swipe up')
-      api.start({ y: -1 * cardHeight })
-
-      const timeoutId = setTimeout(() => {
-        setIndex(index + 1)
-      }, 200)
-      return () => clearTimeout(timeoutId)
-    }
-    if (action === 'down') {
-      if (previousContract) {
-        console.log('swipe down')
-        api.start({ y: cardHeight })
-
-        const timeoutId = setTimeout(() => {
-          setIndex(index - 1)
-        }, 200)
-        return () => clearTimeout(timeoutId)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [action])
-
-  const bind = useDrag(
-    ({ down, movement: [mx, my] }) => {
-      const xCappedDist = rubberbandIfOutOfBounds(
-        Math.abs(mx),
-        0,
-        horizontalSwipeDist
-      )
-      const swipeAction = getSwipeAction(mx, my, xCappedDist)
-      setSwipeAction(swipeAction)
-      if (!down) {
-        // See if thresholds show if an action was made once thumb is lifted
-        setAction(swipeAction)
-      }
-      const x = down ? Math.sign(mx) * xCappedDist : 0
-      const y = down || Math.abs(my) >= verticalSwipeDist ? my : 0
-      api.start({ x, y, immediate: down })
-    },
-    { axis: 'lock' }
-  )
-
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const swipeBetPanel = (
-    <SwipeBetPanel
-      setAmount={setAmount as any}
-      amount={amount}
-      disabled={false}
-      swipeAction={swipeAction}
-      onButtonBet={onButtonBet}
-      buttonAction={buttonAction}
-      betStatus={betStatus}
-    />
-  )
-
-  return (
-    <animated.div
-      {...bind()}
-      className={clsx(
-        className,
-        'pointer-events-auto absolute h-full w-full max-w-lg touch-none select-none transition-transform duration-75'
-      )}
-      style={{ x, y }}
-      onClick={(e) => e.preventDefault()}
-    >
-      {previousContract && (
-        <SwipeCard
-          key={previousContract.id}
-          style={{ position: 'absolute', top: -cardHeight }}
-          contract={previousContract}
-          amount={amount}
-          swipeBetPanel={swipeBetPanel}
-          user={user}
-          isModalOpen={false}
-          setIsModalOpen={setIsModalOpen}
-        />
-      )}
-
-      <SwipeCard
-        key={contract.id}
-        contract={contract}
-        amount={amount}
-        swipeBetPanel={swipeBetPanel}
-        action={swipeAction}
-        buttonAction={buttonAction}
-        user={user}
-        isModalOpen={isModalOpen}
-        setIsModalOpen={setIsModalOpen}
-      />
-
-      {nextContract && (
-        <SwipeCard
-          key={nextContract.id}
-          contract={nextContract}
-          amount={amount}
-          swipeBetPanel={swipeBetPanel}
-          user={user}
-          isModalOpen={false}
-          setIsModalOpen={setIsModalOpen}
-        />
-      )}
-    </animated.div>
-  )
-}
-
 export const SwipeCard = memo(
   (props: {
     contract: BinaryContract
@@ -355,7 +135,7 @@ export const SwipeCard = memo(
               />
             </Row>
             <Row className="justify-end">
-              <Actions user={user} contract={contract} />
+              <CardActions user={user} contract={contract} />
             </Row>
             <Col className="gap-6">
               <Col className="h-20 w-full justify-end">
@@ -373,6 +153,230 @@ export const SwipeCard = memo(
     )
   }
 )
+
+const onBet = (
+  outcome: 'YES' | 'NO',
+  contract: BinaryContract,
+  amount: number,
+  setBetStatus: (status: 'loading' | 'success' | string | undefined) => void,
+  setAction: (action: SwipeAction) => void,
+  setButtonAction: (buttonAction: 'YES' | 'NO' | undefined) => void,
+  user?: User
+) => {
+  const contractId = contract.id
+  setBetStatus('loading')
+  const promise = placeBet({ amount, outcome, contractId })
+  promise
+    .then(() => setBetStatus('success'))
+    .catch((e) => {
+      setBetStatus(e.message)
+      setAction('none')
+      setButtonAction(undefined)
+    })
+  if (user) logView({ amount, outcome, contractId, userId: user.id })
+  track('swipe bet', {
+    slug: contract.slug,
+    contractId,
+    amount,
+    outcome,
+  })
+}
+
+export function CurrentSwipeCards(props: {
+  contract: BinaryContract
+  index: number
+  setIndex: (next: SetStateAction<number>) => void
+  cardHeight: number
+  user?: User
+  previousContract?: BinaryContract
+  nextContract?: BinaryContract
+  className?: string
+}) {
+  const {
+    index,
+    setIndex,
+    user,
+    cardHeight,
+    previousContract,
+    nextContract,
+    className,
+  } = props
+  const contract = (useContract(props.contract.id) ??
+    props.contract) as BinaryContract
+
+  const [amount, setAmount] = useState(10)
+  const [action, setAction] = useState<SwipeAction>('none')
+  const [swipeAction, setSwipeAction] = useState<SwipeAction>('none')
+  const [betStatus, setBetStatus] = useState<
+    'loading' | 'success' | string | undefined
+  >(undefined)
+  const [buttonAction, setButtonAction] = useState<'YES' | 'NO' | undefined>(
+    undefined
+  )
+
+  const [{ x, y }, api] = useSpring(() => ({
+    x: 0,
+    y: 0,
+    config: { tension: 1000, friction: 50, clamp: true },
+  }))
+
+  const onButtonBet = (outcome: 'YES' | 'NO') => {
+    onBet(
+      outcome,
+      contract,
+      amount,
+      setBetStatus,
+      setAction,
+      setButtonAction,
+      user
+    )
+    setButtonAction(outcome)
+  }
+
+  // Animate movement when bet is made.
+  useEffect(() => {
+    if (betStatus === 'success') {
+      const direction = buttonAction === 'YES' || action === 'right' ? 1 : -1
+      setTimeout(() => {
+        const x = direction * (cardHeight + 16)
+        api.start({ x })
+      }, 450)
+
+      setTimeout(() => {
+        setIndex(index + 1)
+      }, 600)
+    }
+    if (isStatusAFailure(betStatus)) {
+      const x = 0
+      api.start({ x })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [betStatus])
+
+  useEffect(() => {
+    if (action === 'right' || action === 'left') {
+      // Horizontal swipe is triggered, places bet
+      const outcome = action === 'right' ? 'YES' : 'NO'
+      onBet(
+        outcome,
+        contract,
+        amount,
+        setBetStatus,
+        setAction,
+        setButtonAction,
+        user
+      )
+    }
+    if (action === 'up') {
+      api.start({ y: -1 * cardHeight })
+
+      const timeoutId = setTimeout(() => {
+        setIndex(index + 1)
+      }, 200)
+      return () => {
+        setIndex(index + 1)
+        clearTimeout(timeoutId)
+      }
+    }
+    if (action === 'down') {
+      if (previousContract) {
+        api.start({ y: cardHeight })
+
+        const timeoutId = setTimeout(() => {
+          setIndex(index - 1)
+        }, 200)
+        return () => {
+          setIndex(index - 1)
+          clearTimeout(timeoutId)
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [action])
+
+  const bind = useDrag(
+    ({ down, movement: [mx, my] }) => {
+      const xCappedDist = rubberbandIfOutOfBounds(
+        Math.abs(mx),
+        0,
+        horizontalSwipeDist
+      )
+      const swipeAction = getSwipeAction(mx, my, xCappedDist)
+      setSwipeAction(swipeAction)
+      if (!down) {
+        // See if thresholds show if an action was made once thumb is lifted
+        setAction(swipeAction)
+      }
+      const x = down ? Math.sign(mx) * xCappedDist : 0
+      const y = down || Math.abs(my) >= verticalSwipeDist ? my : 0
+      api.start({ x, y, immediate: down })
+    },
+    { axis: 'lock' }
+  )
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const swipeBetPanel = (
+    <SwipeBetPanel
+      setAmount={setAmount as any}
+      amount={amount}
+      disabled={false}
+      swipeAction={swipeAction}
+      onButtonBet={onButtonBet}
+      buttonAction={buttonAction}
+      betStatus={betStatus}
+    />
+  )
+
+  return (
+    <animated.div
+      {...bind()}
+      className={clsx(
+        className,
+        'pointer-events-auto absolute h-full w-full max-w-lg touch-none select-none transition-transform duration-75'
+      )}
+      style={{ x, y }}
+      onClick={(e) => e.preventDefault()}
+    >
+      {previousContract && (
+        <SwipeCard
+          key={previousContract.id}
+          style={{ position: 'absolute', top: -cardHeight }}
+          contract={previousContract}
+          amount={amount}
+          swipeBetPanel={swipeBetPanel}
+          user={user}
+          isModalOpen={false}
+          setIsModalOpen={setIsModalOpen}
+        />
+      )}
+
+      <SwipeCard
+        key={contract.id}
+        contract={contract}
+        amount={amount}
+        swipeBetPanel={swipeBetPanel}
+        action={swipeAction}
+        buttonAction={buttonAction}
+        user={user}
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+      />
+
+      {nextContract && (
+        <SwipeCard
+          key={nextContract.id}
+          contract={nextContract}
+          amount={amount}
+          swipeBetPanel={swipeBetPanel}
+          user={user}
+          isModalOpen={false}
+          setIsModalOpen={setIsModalOpen}
+        />
+      )}
+    </animated.div>
+  )
+}
 
 const CornerDetails = (props: { contract: Contract; className?: string }) => {
   const { contract, className } = props
@@ -393,7 +397,7 @@ const CornerDetails = (props: { contract: Contract; className?: string }) => {
   )
 }
 
-function Actions(props: { user?: User; contract: BinaryContract }) {
+function CardActions(props: { user?: User; contract: BinaryContract }) {
   const { user, contract } = props
 
   return (
