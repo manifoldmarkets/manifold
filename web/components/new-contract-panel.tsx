@@ -206,7 +206,9 @@ export function NewContractPanel(props: {
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
       setErrorText(
-        (e as any).details || (e as any).message || 'Error creating contract'
+        JSON.stringify(
+          (e as any).details || (e as any).message || 'Error creating contract'
+        )
       )
       setIsSubmitting(false)
     }
