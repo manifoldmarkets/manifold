@@ -6,7 +6,7 @@ import { getIsNative } from 'web/lib/native/is-native'
 export const useRedirectIfSignedOut = () => {
   const user = useUser()
   useEffect(() => {
-    if (user) return
+    if (user !== null) return
     // Go to landing page if not logged in.
     if (getIsNative()) Router.push('/sign-in-waiting')
     else Router.push('/')
