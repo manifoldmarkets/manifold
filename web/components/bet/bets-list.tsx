@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { sortBy, partition, sumBy, max, uniqBy, Dictionary } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet } from 'web/lib/firebase/bets'
@@ -25,6 +25,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { SiteLink } from '../widgets/site-link'
 import {
   calculatePayout,
+  getContractBetNullMetrics,
   getOutcomeProbability,
   resolvedPayout,
 } from 'common/calculate'
@@ -137,20 +138,40 @@ export function BetsList(props: { user: User }) {
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
 
-  if (!metricsByContract || !openLimitBetsByContract || !initialContracts) {
+  const nullableMetricsByContract = useMemo(() => {
+    if (!metricsByContract || !initialContracts) {
+      return undefined
+    }
+    // check if we have any contracts that don't have contractMEtrics, if so, add them in as getContractBetNullMetrics
+    const missingContracts = initialContracts.filter(
+      (c) => !metricsByContract[c.id]
+    )
+    const missingMetrics = Object.fromEntries(
+      missingContracts.map((c) => [c.id, getContractBetNullMetrics()])
+    )
+
+    return {
+      ...metricsByContract,
+      ...missingMetrics,
+    }
+  }, [JSON.stringify(initialContracts), metricsByContract])
+
+  if (
+    !nullableMetricsByContract ||
+    !openLimitBetsByContract ||
+    !initialContracts
+  ) {
     return <LoadingIndicator />
   }
-  if (Object.keys(metricsByContract).length === 0) return <NoBets user={user} />
+  if (Object.keys(nullableMetricsByContract).length === 0)
+    return <NoBets user={user} />
 
-  const contracts = (
+  const contracts =
     query !== ''
       ? initialContracts.filter((c) =>
           searchInAny(query, ...[c.question, c.creatorName, c.creatorUsername])
         )
       : initialContracts
-  )
-    // metricsByContract often undefined, leading to crashes
-    .filter((c) => !!metricsByContract[c.id])
 
   const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
     resolved: (c) => !!c.resolutionTime,
@@ -163,11 +184,11 @@ export function BetsList(props: { user: User }) {
   }
 
   const SORTS: Record<BetSort, (c: Contract) => number> = {
-    profit: (c) => metricsByContract[c.id].profit,
-    loss: (c) => -metricsByContract[c.id].profit,
-    value: (c) => metricsByContract[c.id].payout,
+    profit: (c) => nullableMetricsByContract[c.id].profit,
+    loss: (c) => -nullableMetricsByContract[c.id].profit,
+    value: (c) => nullableMetricsByContract[c.id].payout,
     newest: (c) =>
-      metricsByContract[c.id].lastBetTime ??
+      nullableMetricsByContract[c.id].lastBetTime ??
       max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
       0,
     closeTime: (c) =>
@@ -181,7 +202,7 @@ export function BetsList(props: { user: User }) {
     .filter((c) => {
       if (filter === 'all') return true
 
-      const { hasShares } = metricsByContract[c.id]
+      const { hasShares } = nullableMetricsByContract[c.id]
 
       if (filter === 'sold') return !hasShares
       if (filter === 'limit_bet')
@@ -192,18 +213,21 @@ export function BetsList(props: { user: User }) {
   const displayedContracts = filteredContracts.slice(start, end)
 
   const unsettled = contracts.filter(
-    (c) => !c.isResolved && metricsByContract[c.id].invested !== 0
+    (c) => !c.isResolved && nullableMetricsByContract[c.id].invested !== 0
   )
 
   const currentInvested = sumBy(
     unsettled,
-    (c) => metricsByContract[c.id].invested
+    (c) => nullableMetricsByContract[c.id].invested
   )
   const currentBetsValue = sumBy(
     unsettled,
-    (c) => metricsByContract[c.id].payout
+    (c) => nullableMetricsByContract[c.id].payout
   )
-  const currentLoan = sumBy(unsettled, (c) => metricsByContract[c.id].loan)
+  const currentLoan = sumBy(
+    unsettled,
+    (c) => nullableMetricsByContract[c.id].loan
+  )
 
   const investedProfitPercent =
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
@@ -268,7 +292,7 @@ export function BetsList(props: { user: User }) {
               <ContractBets
                 key={contract.id}
                 contract={contract}
-                metrics={metricsByContract[contract.id]}
+                metrics={nullableMetricsByContract[contract.id]}
                 displayMetric={sort === 'profit' ? 'profit' : 'value'}
                 isYourBets={isYourBets}
                 userId={user.id}
