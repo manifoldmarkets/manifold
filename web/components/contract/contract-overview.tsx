@@ -148,6 +148,7 @@ const BinaryOverview = (props: {
           <PlayMoneyDisclaimer />
         </Col>
       )}
+      {user === undefined && <div className="h-[72px] w-full" />}
     </Col>
   )
 }
