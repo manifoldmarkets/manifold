@@ -82,7 +82,9 @@ const App = () => {
   }, [auth])
 
   // Url management
-  const [urlToLoad, setUrlToLoad] = useState<string>(baseUri + nativeQuery)
+  const [urlToLoad, setUrlToLoad] = useState<string>(
+    baseUri + '/home' + nativeQuery
+  )
   const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
@@ -90,7 +92,7 @@ const App = () => {
   )
 
   const setUrlWithNativeQuery = (endpoint?: string) => {
-    const newUrl = baseUri + (endpoint ?? '') + nativeQuery
+    const newUrl = baseUri + (endpoint ?? '/home') + nativeQuery
     log('Setting new url', newUrl)
     // React native doesn't come with Url, so we may want to use a library
     setUrlToLoad(newUrl)
