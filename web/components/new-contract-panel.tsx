@@ -264,14 +264,14 @@ export function NewContractPanel(props: {
                 setOutcomeType(choice as outcomeType)
               }}
               choicesMap={{
-                'Yes / No': 'BINARY',
-                'Multiple choice': 'MULTIPLE_CHOICE',
+                'Yes\xa0/ No': 'BINARY', // non-breaking space
+                'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
                 // Only show cert option in dev, for now
                 ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
               }}
-              isSubmitting={isSubmitting}
+              disabled={isSubmitting}
               className={'col-span-4'}
             />
           </Row>
@@ -404,7 +404,7 @@ export function NewContractPanel(props: {
                   '30 days': 30,
                   'This year': daysLeftInTheYear,
                 }}
-                isSubmitting={isSubmitting}
+                disabled={isSubmitting}
                 className={'col-span-4 sm:col-span-2'}
               />
             </Row>
