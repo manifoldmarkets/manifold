@@ -121,8 +121,6 @@ export function GroupMembersModal(props: {
       .catch((e) => console.log(e))
       .finally(() => setTimeout(() => setLoadMore(false), 100))
   }
-
-  console.log(followers ? followers.length : 'bloop')
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS, 'px-0')}>
