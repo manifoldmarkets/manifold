@@ -154,7 +154,7 @@ export function PrimarySwipeCard(props: {
 
       const timeoutId = setTimeout(() => {
         setIndex(index + 1)
-      }, 250)
+      }, 200)
       return () => clearTimeout(timeoutId)
     }
     if (action === 'down') {
@@ -164,7 +164,7 @@ export function PrimarySwipeCard(props: {
 
         const timeoutId = setTimeout(() => {
           setIndex(index - 1)
-        }, 250)
+        }, 200)
         return () => clearTimeout(timeoutId)
       }
     }
@@ -178,7 +178,8 @@ export function PrimarySwipeCard(props: {
         0,
         horizontalSwipeDist
       )
-      setSwipeAction(getSwipeAction(mx, my, xCappedDist))
+      const swipeAction = getSwipeAction(mx, my, xCappedDist)
+      setSwipeAction(swipeAction)
       if (!down) {
         // See if thresholds show if an action was made once thumb is lifted
         setAction(swipeAction)

@@ -1,5 +1,5 @@
 export const horizontalSwipeDist = 40
-export const verticalSwipeDist = 50
+export const verticalSwipeDist = 40
 
 export type SwipeAction = 'left' | 'right' | 'up' | 'down' | 'none'
 
