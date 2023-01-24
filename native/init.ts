@@ -4,3 +4,6 @@ import { getAuth } from 'firebase/auth'
 
 export const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
 export const auth = getAuth(app)
+export const log = (...args: unknown[]) => {
+  console.log(`[Manifold Markets]`, ...args)
+}
