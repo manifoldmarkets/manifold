@@ -10,10 +10,11 @@ import {
   default as OpenDoorIcon,
 } from 'web/lib/icons/open-door-icon'
 import {
+  getGroupAdmins,
   getGroupContributors,
+  getGroupFollowers,
   getNumGroupMembers,
 } from 'web/lib/supabase/group'
-import { getGroupAdmins, getGroupFollowers } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -75,38 +76,29 @@ export function GroupMembersModal(props: {
   const [numMembers, setNumMembers] = useState<number | undefined>(undefined)
   const [loadMore, setLoadMore] = useState<boolean>(false)
 
-  getNumGroupMembers(group.id)
-    .then((result) => setNumMembers(result))
-    .catch((e) => console.log(e))
+  useEffect(() => {
+    getNumGroupMembers(group.id)
+      .then((result) => setNumMembers(result))
+      .catch((e) => console.log(e))
 
-  getGroupAdmins(group.id)
-    .then((result) => setAdmins(result.data))
-    .catch((e) => console.log(e))
+    getGroupAdmins(group.id)
+      .then((result) => setAdmins(result.data))
+      .catch((e) => console.log(e))
 
-  getGroupContributors(group.id)
-    .then((result) => setContributors(result.data))
-    .catch((e) => console.log(e))
+    getGroupContributors(group.id)
+      .then((result) => setContributors(result.data))
+      .catch((e) => console.log(e))
 
-  getGroupFollowers(group.id, followersOffset)
-    .then((result) => {
-      setFollowers(result.data)
-    })
-    .catch((e) => console.log(e))
+    getGroupFollowers(group.id, followersOffset)
+      .then((result) => {
+        setFollowers(result.data)
+      })
+      .catch((e) => console.log(e))
+  }, [])
 
   const modalRootRef = useRef<HTMLDivElement | null>(null)
   const loadingRef = useRef<HTMLDivElement | null>(null)
   const hitBottom = useIntersection(loadingRef, '0px', modalRootRef)
-  console.log(
-    'hitBottom:',
-    hitBottom,
-    'loadMore:',
-    loadMore,
-    'dothing:',
-    hitBottom && !loadMore,
-    followers?.length,
-    'offset',
-    followersOffset
-  )
 
   useEffect(() => {
     if (hitBottom && !loadMore) {
@@ -130,6 +122,7 @@ export function GroupMembersModal(props: {
       .finally(() => setTimeout(() => setLoadMore(false), 100))
   }
 
+  console.log(followers ? followers.length : 'bloop')
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS, 'px-0')}>
@@ -141,45 +134,22 @@ export function GroupMembersModal(props: {
           <MemberRoleSection members={admins} role={'admin'} />
           <MemberRoleSection members={contributors} role={'contributor'} />
           <MemberRoleSection members={followers} role={'follower'} />
-          {/* <Col className="w-full gap-3"> */}
-          {/*   <Row className="sticky -top-1 w-full gap-2 bg-white py-4 text-sm text-gray-400">
-              <div className="my-auto flex h-[1px] grow bg-gray-400" />
-              FOLLOWERS
-              <div className="my-auto flex h-[1px] grow bg-gray-400" />
-            </Row>
-            {followers === undefined ? (
-              <LoadingIndicator />
-            ) : (
-              followers.map((follower) => {
-                return (
-                  <Row
-                    key={follower.member_id}
-                    className="w-full items-center justify-between gap-2"
-                  >
-                    <Row className="items-center gap-2">
-                      <Avatar
-                        username={follower.username}
-                        avatarUrl={follower.avatar_url}
-                        size={'sm'}
-                      />
-                      {follower.name}
-                    </Row>
-                  </Row>
-                )
-              })
-            )} */}
-          {numMembers &&
-            admins &&
-            contributors &&
-            followers &&
-            numMembers >
-              admins.length + contributors.length + followers.length &&
-            !loadMore && (
-              <div ref={loadingRef}>
-                <LoadingMember />
-              </div>
-            )}
-          {/* </Col> */}
+          <div
+            ref={loadingRef}
+            className={
+              numMembers &&
+              admins &&
+              contributors &&
+              followers &&
+              numMembers >
+                admins.length + contributors.length + followers.length &&
+              !loadMore
+                ? ''
+                : 'hidden'
+            }
+          >
+            <LoadingMember />
+          </div>
         </div>
       </Col>
     </Modal>

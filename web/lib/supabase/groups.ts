@@ -47,36 +47,6 @@ export async function getMemberGroups(userId: string) {
   return groups as SearchGroupInfo[]
 }
 
-export async function getGroupAdmins(groupId: string) {
-  const admins = await run(
-    db
-      .from('group_role')
-      .select('*')
-      .eq('group_id', groupId)
-      .eq('role', 'admin')
-      .order('name')
-  )
-  return admins
-}
-
-export const MEMBER_LOAD_NUM = 3
-
-export async function getGroupFollowers(groupId: string, offset: number) {
-  const followers = await run(
-    db
-      .from('group_role')
-      .select('*')
-      .eq('group_id', groupId)
-      .is('role', null)
-      .order('name')
-      .range(
-        offset * MEMBER_LOAD_NUM,
-        offset * MEMBER_LOAD_NUM + MEMBER_LOAD_NUM
-      )
-  )
-  return followers
-}
-
 export async function getMemberGroupsCount(userId: string) {
   const { data } = await run(
     db.from('group_members').select('count').eq('member_id', userId)
