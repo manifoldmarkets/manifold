@@ -18,8 +18,13 @@ export function getSwipeAction(
 }
 
 export default function getQuestionSize(question: string) {
-  const height2width = window.innerHeight / window.innerWidth
   const questionLength = question.length
+  if (window.innerHeight <= 700)
+    return questionLength >= 120 ? 'text-xl' : 'text-2xl'
+  return questionLength >= 120 ? 'text-2xl' : 'text-3xl'
+
+  /* Inga's version.
+  const height2width = window.innerHeight / window.innerWidth
   if (height2width < 2.1) {
     if (questionLength >= 160) return 'text-sm'
     if (questionLength >= 100 && questionLength < 160) return 'text-md'
@@ -37,6 +42,7 @@ export default function getQuestionSize(question: string) {
     if (questionLength >= 40 && questionLength < 100) return 'text-4xl'
     return 'text-5xl'
   }
+  */
 }
 
 export function isStatusAFailure(
