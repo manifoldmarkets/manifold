@@ -59,9 +59,9 @@ export async function getGroupAdmins(groupId: string) {
   return admins
 }
 
-export const MEMBER_LOAD_NUM = 50
+export const MEMBER_LOAD_NUM = 3
 
-export async function getGroupFollowers(groupId: string, offset?: number) {
+export async function getGroupFollowers(groupId: string, offset: number) {
   const followers = await run(
     db
       .from('group_role')
@@ -69,7 +69,10 @@ export async function getGroupFollowers(groupId: string, offset?: number) {
       .eq('group_id', groupId)
       .is('role', null)
       .order('name')
-      .limit(40)
+      .range(
+        offset * MEMBER_LOAD_NUM,
+        offset * MEMBER_LOAD_NUM + MEMBER_LOAD_NUM
+      )
   )
   return followers
 }

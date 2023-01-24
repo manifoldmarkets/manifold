@@ -160,7 +160,7 @@ export default function GroupPage(props: {
 
   const [writingNewAbout, setWritingNewAbout] = useState(false)
   const bannerRef = useRef<HTMLDivElement | null>(null)
-  const bannerVisible = useIntersection(bannerRef, '-120px')
+  const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
   const isMobile = useIsMobile()
   if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
     return <Custom404 />
@@ -171,7 +171,6 @@ export default function GroupPage(props: {
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
   const chatEmbed = <ChatEmbed group={group} />
-
   return (
     <Page rightSidebar={chatEmbed} touchesTop={true}>
       <SEO

@@ -1,4 +1,4 @@
-import { Fragment, ReactNode } from 'react'
+import { Fragment, MutableRefObject, ReactNode } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import clsx from 'clsx'
 
