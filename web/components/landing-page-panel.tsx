@@ -16,7 +16,6 @@ import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import CountUp from 'react-countup'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { STARTING_BALANCE } from 'common/economy'
-import { useAppStoreUrl } from 'web/hooks/use-app-store-url'
 
 const MAX_PAGE = 2
 
@@ -58,11 +57,6 @@ export function LandingPagePanel() {
     )
     return () => clearTimeout(newTimeoutId)
   }, [pageNumber])
-
-  const appStoreUrl = useAppStoreUrl()
-  const callback = isMobile
-    ? () => window.open(appStoreUrl)
-    : withTracking(firebaseLogin, 'landing page button click')
 
   return (
     <>
@@ -124,11 +118,10 @@ export function LandingPagePanel() {
           )}
         >
           {!isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}
-
           <div className="group absolute bottom-16 right-8 z-30 md:right-12">
             <Button
               className="absolute bottom-1.5 -left-1.5 z-10 transition-all ease-in-out focus:bottom-0.5 focus:-left-0.5 group-hover:bottom-2 group-hover:-left-2 focus:group-hover:bottom-0.5 focus:group-hover:-left-0.5"
-              onClick={callback}
+              onClick={withTracking(firebaseLogin, 'landing page button click')}
               color="gradient-pink"
               size={isMobile ? 'xl' : '2xl'}
             >

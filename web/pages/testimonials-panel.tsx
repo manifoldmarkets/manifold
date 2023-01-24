@@ -18,7 +18,6 @@ import SquiggleHorizontalFlippedIcon from 'web/lib/icons/squiggle_horizontal_fli
 import StartQuoteIcon from 'web/lib/icons/start_quote'
 import EndQuoteIcon from 'web/lib/icons/start_quote copy'
 import testimonials from '../public/testimonials/testimonials.json'
-import { useAppStoreUrl } from 'web/hooks/use-app-store-url'
 
 export default function TestimonialsPanel() {
   const isMobile = useIsMobile()
@@ -35,11 +34,6 @@ export default function TestimonialsPanel() {
     return () => clearTimeout(newTimeoutId)
   }, [pageNumber, maxPage])
 
-  const appStoreUrl = useAppStoreUrl()
-  const callback = isMobile
-    ? () => window.open(appStoreUrl)
-    : withTracking(firebaseLogin, 'landing page button click')
-
   return (
     <>
       <div
@@ -55,7 +49,7 @@ export default function TestimonialsPanel() {
           <div className="group absolute top-8 left-8 z-30 sm:top-32">
             <Button
               className="absolute bottom-1.5 -left-1.5 z-10 transition-all ease-in-out focus:bottom-0.5 focus:-left-0.5 group-hover:bottom-2 group-hover:-left-2 focus:group-hover:bottom-0.5 focus:group-hover:-left-0.5"
-              onClick={callback}
+              onClick={withTracking(firebaseLogin, 'landing page button click')}
               color="gradient-pink"
               size={isMobile ? 'xl' : '2xl'}
             >
