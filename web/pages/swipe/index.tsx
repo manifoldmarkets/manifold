@@ -99,7 +99,7 @@ export default function Swipe() {
     <Page>
       <Row
         className={clsx(
-          'user-select-none relative w-full max-w-lg overflow-hidden'
+          'select-none relative w-full max-w-lg overflow-hidden'
         )}
         style={{ height: cardHeight }}
       >

@@ -88,22 +88,23 @@ export const SwipeCard = memo(
         onClick={(e) => e.preventDefault()}
       >
         <Col className="h-full">
-          <div className="h-24 bg-black" />
+          {/* <div className="h-24 bg-black" /> */}
           <div className="relative flex grow">
-            <div className="absolute top-0 z-0 h-[40%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
             <img
               src={image}
               alt=""
-              className="flex grow bg-black object-cover"
+              className="flex grow bg-black object-cover brightness-75"
             />
-            <div className="absolute bottom-0 z-0 h-[40%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
+            <div className="absolute top-0 z-0 h-[10%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
+            <div className="absolute bottom-0 z-0 h-[30%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
           </div>
-          <div className="h-20 w-full bg-black" />
+          {/* <div className="h-20 w-full bg-black" /> */}
         </Col>
         <Col className="absolute inset-0 z-10">
-          <Col className="relative h-full gap-2 p-4">
+          <Col className="reltive h-full gap-2 p-4">
             <CornerDetails contract={contract} />
-            <div className="max-h-24 overflow-ellipsis">
+
+            <div className="mt-4 mb-8 max-h-24 overflow-ellipsis">
               <SiteLink href={contractPath(contract)} followsLinkClass>
                 <div
                   className={clsx(
@@ -114,26 +115,29 @@ export const SwipeCard = memo(
                   {question}
                 </div>
               </SiteLink>
+
+              <Row className="mt-4 w-full">
+                <Percent
+                  currPercent={currPercent}
+                  yesPercent={yesPercent}
+                  noPercent={noPercent}
+                  outcome={
+                    buttonAction === 'YES'
+                      ? 'YES'
+                      : buttonAction === 'NO'
+                      ? 'NO'
+                      : action === 'left'
+                      ? 'NO'
+                      : action === 'right'
+                      ? 'YES'
+                      : undefined
+                  }
+                />
+              </Row>
             </div>
+
             <Row className="mx-auto w-full grow items-center" />
-            <Row className="absolute top-[40%] w-full">
-              <Percent
-                currPercent={currPercent}
-                yesPercent={yesPercent}
-                noPercent={noPercent}
-                outcome={
-                  buttonAction === 'YES'
-                    ? 'YES'
-                    : buttonAction === 'NO'
-                    ? 'NO'
-                    : action === 'left'
-                    ? 'NO'
-                    : action === 'right'
-                    ? 'YES'
-                    : undefined
-                }
-              />
-            </Row>
+
             <Row className="justify-end">
               <CardActions user={user} contract={contract} />
             </Row>
@@ -410,7 +414,7 @@ function CardActions(props: { user?: User; contract: BinaryContract }) {
         totalLikes={contract.likedByUserCount ?? 0}
         contract={contract}
         contentText={contract.question}
-        size={'lg'}
+        size={'xl'}
         showTotalLikesUnder={true}
         color={'white'}
         className={'drop-shadow-sm'}
