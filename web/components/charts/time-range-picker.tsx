@@ -1,6 +1,5 @@
 import { Period } from 'web/lib/firebase/users'
 import { ChoicesToggleGroup, ColorType } from '../choices-toggle-group'
-import { GraphMode } from '../portfolio/portfolio-value-graph'
 
 const labels: { [label: string]: Period } = {
   '1D': 'daily',
