@@ -2,11 +2,24 @@ import { RadioGroup } from '@headlessui/react'
 import clsx from 'clsx'
 import React from 'react'
 
+const colorClasses = {
+  'indigo-dark':
+    'text-gray-900 hover:bg-indigo-50 aria-checked:bg-indigo-500 aria-checked:text-white',
+  indigo:
+    'hover:bg-gray-100 aria-checked:bg-indigo-100 aria-checked:text-indigo-500',
+  green:
+    'hover:bg-gray-100 aria-checked:bg-teal-500/30 aria-checked:text-teal-600',
+  red: 'hover:bg-gray-100 aria-checked:bg-scarlet-100 aria-checked:text-scarlet-600',
+}
+
+export type ColorType = keyof typeof colorClasses
+
 export function ChoicesToggleGroup(props: {
   currentChoice: number | string
   choicesMap: { [key: string]: string | number }
   disabled?: boolean
   setChoice: (p: number | string) => void
+  color?: ColorType
   className?: string
   toggleClassName?: string
   children?: React.ReactNode
@@ -16,6 +29,7 @@ export function ChoicesToggleGroup(props: {
     setChoice,
     disabled,
     choicesMap,
+    color = 'indigo-dark',
     className,
     children,
     toggleClassName,
@@ -24,7 +38,7 @@ export function ChoicesToggleGroup(props: {
     <RadioGroup
       className={clsx(
         className,
-        'flex flex-row gap-2 rounded-md border border-gray-300 bg-white p-1 text-sm text-gray-900 shadow-sm',
+        'flex flex-row gap-2 rounded-md border border-gray-300 bg-white p-1 text-sm text-gray-400 shadow-sm',
         disabled && '!cursor-not-allowed bg-gray-50'
       )}
       value={currentChoice}
@@ -38,8 +52,8 @@ export function ChoicesToggleGroup(props: {
           className={({ disabled }) =>
             clsx(
               disabled
-                ? 'cursor-not-allowed text-gray-500 aria-checked:bg-gray-300'
-                : 'cursor-pointer hover:bg-indigo-50 aria-checked:bg-indigo-500 aria-checked:text-white',
+                ? 'cursor-not-allowed text-gray-400 aria-checked:bg-gray-300'
+                : 'cursor-pointer ' + colorClasses[color],
               'flex items-center rounded-md p-2 outline-none ring-indigo-500 transition-all focus-visible:ring-2 sm:px-3',
               toggleClassName
             )

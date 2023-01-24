@@ -15,6 +15,8 @@ import { AddFundsModal } from '../add-funds-modal'
 import { Button } from '../buttons/button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
+import { TimeRangePicker } from '../charts/time-range-picker'
+import { ColorType } from '../choices-toggle-group'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -107,6 +109,9 @@ export const PortfolioValueSection = memo(
         onClickNumber={onClickNumber}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
+        switcherColor={
+          graphMode === 'value' ? 'indigo' : totalProfit > 0 ? 'green' : 'red'
+        }
         profitElement={
           <div
             className={clsx(
@@ -164,6 +169,7 @@ export function PortfolioValueSkeleton(props: {
   profitElement: ReactNode
   valueElement: ReactNode
   graphElement: (width: number, height: number) => ReactNode
+  switcherColor?: ColorType
   userId?: string
   disabled?: boolean
 }) {
@@ -175,6 +181,7 @@ export function PortfolioValueSkeleton(props: {
     profitElement,
     valueElement,
     graphElement,
+    switcherColor,
     userId,
     disabled,
   } = props
@@ -216,77 +223,13 @@ export function PortfolioValueSkeleton(props: {
       <SizedContainer fullHeight={200} mobileHeight={100}>
         {graphElement}
       </SizedContainer>
-      <PortfolioTimeSelection
+      <TimeRangePicker
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setCurrentTimePeriod}
+        color={switcherColor}
         disabled={disabled}
       />
     </>
-  )
-}
-
-export function PortfolioTimeSelection(props: {
-  currentTimePeriod: Period
-  setCurrentTimePeriod: (timePeriod: Period) => void
-  disabled?: boolean
-}) {
-  const { currentTimePeriod, setCurrentTimePeriod, disabled } = props
-  return (
-    <>
-      <Row
-        className={clsx(
-          'z-10 mt-1 gap-3 text-gray-400',
-          disabled ? 'pointer-events-none' : ''
-        )}
-      >
-        <TimeSelectionButton
-          timePeriod={'daily'}
-          currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={setCurrentTimePeriod}
-          symbol={'1D'}
-        />
-        <TimeSelectionButton
-          timePeriod={'weekly'}
-          currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={setCurrentTimePeriod}
-          symbol={'1W'}
-        />
-        <TimeSelectionButton
-          timePeriod={'monthly'}
-          currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={setCurrentTimePeriod}
-          symbol={'1M'}
-        />
-        <TimeSelectionButton
-          timePeriod={'allTime'}
-          currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={setCurrentTimePeriod}
-          symbol={'ALL'}
-        />
-      </Row>
-      <hr className="z-0 mt-[2.5px]" />
-    </>
-  )
-}
-
-export function TimeSelectionButton(props: {
-  timePeriod: Period
-  currentTimePeriod: Period
-  setCurrentTimePeriod: (timePeriod: Period) => void
-  symbol: string
-}) {
-  const { timePeriod, currentTimePeriod, setCurrentTimePeriod, symbol } = props
-  return (
-    <button
-      className={clsx(
-        currentTimePeriod === timePeriod
-          ? 'text-indigo-500 underline decoration-2 underline-offset-8'
-          : ''
-      )}
-      onClick={() => setCurrentTimePeriod(timePeriod)}
-    >
-      {symbol}
-    </button>
   )
 }
 
