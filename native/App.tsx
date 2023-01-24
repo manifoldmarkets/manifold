@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
-import { ENV } from 'common/envs/constants'
+import { ENV, EXTERNAL_REDIRECTS } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -91,7 +91,7 @@ const App = () => {
 
   const setUrlWithNativeQuery = (endpoint?: string) => {
     const newUrl = baseUri + (endpoint ?? '') + nativeQuery
-    log('setting new url', newUrl)
+    log('Setting new url', newUrl)
     // React native doesn't come with Url, so we may want to use a library
     setUrlToLoad(newUrl)
   }
@@ -407,7 +407,10 @@ const App = () => {
             // On navigation state change changes on every url change
             onNavigationStateChange={(navState) => {
               const { url } = navState
-              if (!url.startsWith(baseUri)) {
+              if (
+                !url.startsWith(baseUri) ||
+                EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
+              ) {
                 setExternalUrl(url)
                 webview.current?.stopLoading()
               } else {

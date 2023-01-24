@@ -14,6 +14,7 @@ import { formatWithCommas } from 'common/util/format'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { Linkify } from 'web/components/widgets/linkify'
 import { SiteLink } from 'web/components/widgets/site-link'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export default function Analytics() {
   const [stats, setStats] = useState<Stats | undefined>(undefined)
@@ -81,6 +82,7 @@ export function CustomAnalytics(props: Stats) {
   const avgDAUs =
     dailyActiveUsersWeeklyAvg[dailyActiveUsersWeeklyAvg.length - 1]
   const last30dSales = dailySales.slice(-30).reduce((a, b) => a + b, 0)
+  const isNative = getIsNative()
 
   return (
     <Col className="px-2 sm:px-0">
@@ -138,11 +140,23 @@ export function CustomAnalytics(props: Stats) {
         ]}
       />
       {/* We'd like to embed these in a separate tab, but unfortunately Umami doesn't seem to support iframe embeds atm */}
-      <InfoBox
-        title=""
-        className="mt-4 bg-gray-100"
-        text="For pageview and visitor stats, see: https://manifold.markets/umami"
-      />
+      <InfoBox title="" className="mt-4 bg-gray-100">
+        <span>
+          For pageview and visitor stats, see{' '}
+          {isNative ? (
+            <a
+              href={
+                'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets'
+              }
+              className={'text-indigo-700'}
+            >
+              our umami page
+            </a>
+          ) : (
+            <Linkify text={'https://manifold.markets/umami'} />
+          )}
+        </span>
+      </InfoBox>
 
       <Spacer h={8} />
 

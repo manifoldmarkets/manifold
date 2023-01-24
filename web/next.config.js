@@ -72,6 +72,7 @@ module.exports = {
           'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets',
         permanent: false,
       },
+      // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },
 }
