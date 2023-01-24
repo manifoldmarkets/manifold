@@ -309,7 +309,7 @@ export function CurrentSwipeCards(props: {
       }
       const x = down ? Math.sign(mx) * xCappedDist : 0
       const y = down || Math.abs(my) >= verticalSwipeDist ? my : 0
-      api.start({ x, y, immediate: down })
+      api.start({ x, y })
     },
     { axis: 'lock' }
   )

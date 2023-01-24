@@ -118,16 +118,14 @@ export default function Swipe() {
           />
         )}
         {cards.length > 1 && (
-          <Col className="absolute inset-1 z-10 touch-none">
-            <SwipeCard
-              amount={STARTING_BET_AMOUNT}
-              contract={cards[1]}
-              key={cards[1].id}
-              swipeBetPanel={
-                <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
-              }
-            />
-          </Col>
+          <SwipeCard
+            amount={STARTING_BET_AMOUNT}
+            contract={cards[1]}
+            key={cards[1].id}
+            swipeBetPanel={
+              <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
+            }
+          />
         )}
         {!cards.length && (
           <div className="flex h-full w-full flex-col items-center justify-center">
