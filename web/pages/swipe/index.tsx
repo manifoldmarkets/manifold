@@ -106,6 +106,7 @@ export default function Swipe() {
       >
         {cards.length > 0 && (
           <PrimarySwipeCard
+            className="z-20"
             key={cards[0].id}
             contract={cards[0]}
             index={index}
@@ -117,18 +118,16 @@ export default function Swipe() {
           />
         )}
         {cards.length > 1 && (
-          <>
-            <Col className="absolute inset-1 z-10 touch-none">
-              <SwipeCard
-                amount={STARTING_BET_AMOUNT}
-                contract={cards[1]}
-                key={cards[1].id}
-                swipeBetPanel={
-                  <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
-                }
-              />
-            </Col>
-          </>
+          <Col className="absolute inset-1 z-10 touch-none">
+            <SwipeCard
+              amount={STARTING_BET_AMOUNT}
+              contract={cards[1]}
+              key={cards[1].id}
+              swipeBetPanel={
+                <SwipeBetPanel amount={STARTING_BET_AMOUNT} disabled={true} />
+              }
+            />
+          </Col>
         )}
         {!cards.length && (
           <div className="flex h-full w-full flex-col items-center justify-center">

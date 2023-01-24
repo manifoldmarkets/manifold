@@ -71,9 +71,17 @@ export function PrimarySwipeCard(props: {
   user?: User
   previousContract?: BinaryContract
   nextContract?: BinaryContract
+  className?: string
 }) {
-  const { index, setIndex, user, cardHeight, previousContract, nextContract } =
-    props
+  const {
+    index,
+    setIndex,
+    user,
+    cardHeight,
+    previousContract,
+    nextContract,
+    className,
+  } = props
   const contract = (useContract(props.contract.id) ??
     props.contract) as BinaryContract
 
@@ -90,7 +98,7 @@ export function PrimarySwipeCard(props: {
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
     y: 0,
-    config: { tension: 1000, friction: 70 },
+    config: { tension: 500, friction: 20, clamp: true },
   }))
 
   const onButtonBet = (outcome: 'YES' | 'NO') => {
@@ -144,18 +152,20 @@ export function PrimarySwipeCard(props: {
       console.log('swipe up')
       api.start({ y: -1 * cardHeight })
 
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setIndex(index + 1)
-      }, 500)
+      }, 250)
+      return () => clearTimeout(timeoutId)
     }
     if (action === 'down') {
       if (previousContract) {
         console.log('swipe down')
         api.start({ y: cardHeight })
 
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           setIndex(index - 1)
-        }, 500)
+        }, 250)
+        return () => clearTimeout(timeoutId)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -198,7 +208,8 @@ export function PrimarySwipeCard(props: {
     <animated.div
       {...bind()}
       className={clsx(
-        'user-select-none pointer-events-auto absolute z-30 h-full w-full max-w-lg touch-none transition-transform duration-75'
+        className,
+        'user-select-none pointer-events-auto absolute h-full w-full max-w-lg touch-none transition-transform duration-75'
       )}
       style={{ x, y }}
       onClick={(e) => e.preventDefault()}
