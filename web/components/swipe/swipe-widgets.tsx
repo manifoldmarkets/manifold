@@ -59,32 +59,25 @@ export function DescriptionAndModal(props: {
   setIsModalOpen?: (open: boolean) => void
 }) {
   const { description, isModalOpen, setIsModalOpen } = props
-  const descriptionMaxLength = 110
-  const descriptionSeeMoreBuffer = 14
   const descriptionClass = 'text-sm font-thin text-gray-100 break-words'
 
   const descriptionString =
     typeof description === 'string'
       ? description
       : richTextToString(description)
-  if (
-    descriptionString.length <=
-    descriptionMaxLength + descriptionSeeMoreBuffer
-  ) {
-    return <span className={descriptionClass}>{descriptionString}</span>
-  }
+
   return (
-    <>
-      <span className={descriptionClass}>
-        <span>{descriptionString.substring(0, descriptionMaxLength)}</span>
-        <span>... </span>
-        {isModalOpen != undefined && setIsModalOpen && (
+    <Col className={clsx(descriptionClass, 'items-end')}>
+      <span className="line-clamp-2">{descriptionString}</span>
+      {descriptionString.length > 92 &&
+        isModalOpen != undefined &&
+        setIsModalOpen && (
           <>
             <span
-              className="font-semibold text-indigo-400 drop-shadow-sm"
+              className="mr-2 font-semibold text-indigo-400 drop-shadow-sm"
               onClick={() => setIsModalOpen(true)}
             >
-              See More
+              See more
             </span>
             <Modal
               open={isModalOpen}
@@ -100,7 +93,6 @@ export function DescriptionAndModal(props: {
             </Modal>
           </>
         )}
-      </span>
-    </>
+    </Col>
   )
 }
