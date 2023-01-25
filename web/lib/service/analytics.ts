@@ -9,8 +9,6 @@ import {
   Identify,
 } from '@amplitude/analytics-browser'
 
-import * as Sprig from 'web/lib/service/sprig'
-
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { saveUserEvent } from '../firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
@@ -59,7 +57,6 @@ export const withTracking =
 export async function identifyUser(userId: string | null) {
   if (userId) {
     setUserId(userId)
-    Sprig.setUserId(userId)
   } else {
     setUserId(null as any)
   }
@@ -69,5 +66,4 @@ export async function setUserProperty(property: string, value: string) {
   const identifyObj = new Identify()
   identifyObj.set(property, value)
   await identify(identifyObj)
-  Sprig.setAttributes({ [property]: value })
 }
