@@ -80,6 +80,7 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     description: `Our lives have been transformed by global networks of trade, travel, and communication. Driven by new technologies, these networks enrich our lives, but also lead to new threats, including surveillance, polarization, and pandemics. 
 
 At Topos, we pioneer emerging mathematical sciences of connection and integration to steer humanity towards a better future.`,
+    tags: ['New'] as const,
   },
   {
     name: 'Haskell Foundation',
@@ -87,6 +88,7 @@ At Topos, we pioneer emerging mathematical sciences of connection and integratio
     preview: 'Amplify Haskell’s impact on humanity.',
     photo: 'https://i.imgur.com/6akJg2p.png',
     description: `An independent, non-profit organization dedicated to broadening the adoption of Haskell, by supporting its ecosystem of tools, libraries, education, and research.`,
+    tags: ['New'] as const,
   },
   {
     name: 'Long-Term Future Fund',
