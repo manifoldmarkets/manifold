@@ -60,6 +60,7 @@ import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -306,16 +307,16 @@ export function ContractPageContent(
               isCreator={!isAdmin}
               contract={contract}
             />
-          ) : (
-            outcomeType === 'BINARY' && (
-              <ResolutionPanel
-                isAdmin={!!isAdmin}
-                creator={user}
-                isCreator={!isAdmin}
-                contract={contract}
-              />
-            )
-          ))}
+          ) : outcomeType === 'BINARY' ? (
+            <ResolutionPanel
+              isAdmin={!!isAdmin}
+              creator={user}
+              isCreator={!isAdmin}
+              contract={contract}
+            />
+          ) : outcomeType === 'QUADRATIC_FUNDING' ? (
+            <QfResolutionPanel contract={contract} />
+          ) : null)}
 
         {(outcomeType === 'FREE_RESPONSE' ||
           outcomeType === 'MULTIPLE_CHOICE') && (

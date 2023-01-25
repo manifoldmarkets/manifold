@@ -6,7 +6,12 @@ import { formatMoney } from 'common/util/format'
 import { Button } from '../buttons/button'
 import { useState } from 'react'
 import { Spacer } from '../layout/spacer'
-import { addQfPool, createQfAnswer, payQfAnswer } from 'web/lib/firebase/api'
+import {
+  addQfPool,
+  createQfAnswer,
+  payQfAnswer,
+  resolveQf,
+} from 'web/lib/firebase/api'
 import { ContractDetails } from './contract-details'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Answer } from 'common/answer'
@@ -38,6 +43,8 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
   const qfTxns = useQfTxns(contract.id)
   const raised = formatMoney(totalPaid(qfTxns))
 
+  const [poolPanel, setPoolPanel] = useState(false)
+
   return (
     <Col className="gap-6">
       <ContractDetails contract={contract} />
@@ -55,9 +62,17 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
           <Col className="items-end">
             <div className="text-3xl">{raised} raised</div>
             <div className="text-xl text-green-800">+{match} match</div>
+            <Button
+              color="indigo-text-only"
+              size="2xs"
+              onClick={() => setPoolPanel(!poolPanel)}
+            >
+              (contribute)
+            </Button>
           </Col>
         </div>
       </div>
+      {poolPanel && <QfPoolPanel contract={contract} />}
 
       <AlertBox
         title="Quadratic funding is experimental."
@@ -67,8 +82,6 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
       <QfAnswersPanel contract={contract} />
 
       <CreateAnswerWidget contract={contract} />
-
-      <QfPoolPanel contract={contract} />
     </Col>
   )
 }
@@ -320,6 +333,35 @@ function QfPoolPanel(props: { contract: QuadraticFundingContract }) {
         }}
       >
         Contribute {formatMoney(amount ?? 0)}
+      </Button>
+    </Col>
+  )
+}
+
+export function QfResolutionPanel(props: {
+  contract: QuadraticFundingContract
+}) {
+  const { contract } = props
+  const [submitting, setSubmitting] = useState(false)
+
+  return (
+    <Col className="gap-4 rounded-lg bg-blue-50 p-8">
+      <div>Current matching pool: {formatMoney(contract.pool.M$)}</div>
+      {/* TODO: Preview the distribution of payouts */}
+      <Button
+        size="xl"
+        color="indigo"
+        disabled={submitting}
+        loading={submitting}
+        onClick={async () => {
+          setSubmitting(true)
+          await resolveQf({
+            qfId: contract.id,
+          })
+          setSubmitting(false)
+        }}
+      >
+        Pay out matching pool
       </Button>
     </Col>
   )

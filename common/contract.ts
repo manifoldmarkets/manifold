@@ -147,6 +147,10 @@ export type QuadraticFunding = {
   // Mapping of how much each user has contributed to the matching pool
   // Note: Our codebase assumes every contract has a pool, which is why this isn't just a constant
   pool: { M$: number }
+
+  // Used when the funding round pays out
+  resolution?: 'MKT' | 'CANCEL'
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
 export type Binary = {
