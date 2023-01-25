@@ -1016,7 +1016,6 @@ export const createContractResolvedNotifications = async (
     userId: string,
     reason: notification_reason_types
   ) => {
-    if (!stillFollowingContract(userId) || creator.id == userId) return
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
     const { sendToBrowser, sendToEmail, sendToMobile } =
@@ -1061,12 +1060,17 @@ export const createContractResolvedNotifications = async (
     )
   ).map((follow) => follow.id)
 
-  const stillFollowingContract = (userId: string) => {
-    return contractFollowersIds.includes(userId)
-  }
+  // We ignore whether users are still watching a market if they have a payout, mainly
+  // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
+  const usersToNotify = uniq(
+    [
+      ...contractFollowersIds,
+      ...Object.keys(resolutionData.userPayouts),
+    ].filter((id) => id !== creator.id)
+  )
 
   await Promise.all(
-    contractFollowersIds.map((id) =>
+    usersToNotify.map((id) =>
       sendNotificationsIfSettingsPermit(
         id,
         resolutionData.userInvestments[id]
