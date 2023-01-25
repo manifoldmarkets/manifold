@@ -1,9 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useStateCheckEquality } from './use-state-check-equality'
 import { NextRouter, useRouter } from 'next/router'
 import { useHasLoaded } from './use-has-loaded'
 
 export type PersistenceOptions<T> = { key: string; store: PersistentStore<T> }
+export type RevalidationOptions<T> = {
+  every: number
+  // callback is async with results of the revalidation
+  callback: () => Promise<T>
+}
 
 export interface PersistentStore<T> {
   get: (k: string) => T | undefined
@@ -140,4 +145,82 @@ export const usePersistentState = <T>(
   }
 
   return [state, setState] as const
+}
+
+export const usePersistentRevalidatedState = <T>(
+  initial: T,
+  persist: PersistenceOptions<T>,
+  revalidation: RevalidationOptions<T>
+) => {
+  const store = persist.store
+  // Is there any reason why a persistent store couldn't write a string?
+  const stringStore = store as PersistentStore<any>
+  const key = persist.key
+  const lastUpdateTimeKey = `${key}-last-update-time`
+  const [lastUpdateTime, setLastUpdateTime] = useState<number | undefined>(
+    undefined
+  )
+  const hasLoaded = useHasLoaded()
+  const { every, callback } = revalidation
+
+  // Note that it's important in some cases to get the state correct during the
+  // first render, or scroll restoration won't take into account the saved state.
+  // However, if this is the first server render, we don't want to read from the store,
+  // because it could cause a hydration error.
+  const savedValue =
+    hasLoaded && key != null && store != null ? store.get(key) : undefined
+
+  const [state, setState] = useStateCheckEquality(savedValue ?? initial)
+
+  useEffect(() => {
+    if (!hasLoaded || key === null || store === null) return
+
+    if (lastUpdateTime === undefined) {
+      const lastUpdateTimeTemp = parseInt(
+        stringStore.get(lastUpdateTimeKey) ?? 0
+      )
+      setLastUpdateTime(lastUpdateTimeTemp)
+      return
+    }
+    const now = Date.now()
+    if (lastUpdateTime + every < now) {
+      setLastUpdateTime(now)
+      stringStore.set(lastUpdateTimeKey, now.toString())
+      callback().then(setState)
+    }
+  }, [
+    hasLoaded,
+    store,
+    key,
+    lastUpdateTime,
+    every,
+    callback,
+    stringStore,
+    lastUpdateTimeKey,
+    setState,
+  ])
+
+  useEffect(() => {
+    if (hasLoaded && key != null && store != null && state !== undefined) {
+      store.set(key, state)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, state, hasLoaded])
+
+  if (store?.readsUrl) {
+    // On page load, router isn't ready immediately, so set state once it is.
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const router = useRouter()
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      if (router.isReady) {
+        const savedValue = key != null ? store.get(key) : undefined
+        setState(savedValue ?? initial)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router.isReady])
+  }
+
+  return [state ?? savedValue] as const
 }
