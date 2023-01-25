@@ -54,6 +54,7 @@ import { usePost, usePosts } from 'web/hooks/use-post'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
+import { useMemberRole } from 'web/hooks/use-group-supabase'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -141,13 +142,9 @@ export default function GroupPage(props: {
   }
 
   const user = useUser()
-  const groupMembers = useMemberGroupsSubscription(user)
   const privateUser = usePrivateUser()
-  const isAdmin = useAdmin()
-  const isMember =
-    groupMembers?.some((g) => g.id === group?.id) ??
-    memberIds?.includes(user?.id ?? '_') ??
-    false
+  const isManifoldAdmin = useAdmin()
+  const memberRole = useMemberRole(group, user)
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
     setActiveIndex(tabIndex)
@@ -165,12 +162,13 @@ export default function GroupPage(props: {
   if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
     return <Custom404 />
   }
-  const isCreator = user && group && user.id === group.creatorId
-  const isEditable = !!isCreator || isAdmin
+  const isEditable = memberRole === 'admin' || isManifoldAdmin
+  console.log('rolee', memberRole, isManifoldAdmin)
   const maxLeaderboardSize = 50
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
   const chatEmbed = <ChatEmbed group={group} />
+
   return (
     <Page rightSidebar={chatEmbed} touchesTop={true}>
       <SEO
@@ -178,7 +176,7 @@ export default function GroupPage(props: {
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-      {user && (
+      {user && (memberRole === 'admin' || memberRole === 'contributor') && (
         <AddContractButton
           group={group}
           user={user}
@@ -188,7 +186,7 @@ export default function GroupPage(props: {
       {isMobile && (
         <TopGroupNavBar
           group={group}
-          isMember={isMember}
+          isMember={!!memberRole}
           groupUrl={groupUrl}
           privateUser={privateUser}
           isEditable={isEditable}
@@ -210,7 +208,7 @@ export default function GroupPage(props: {
                 {isMobile && (
                   <JoinOrLeaveGroupButton
                     group={group}
-                    isMember={isMember}
+                    isMember={!!memberRole}
                     user={user}
                   />
                 )}
@@ -218,7 +216,7 @@ export default function GroupPage(props: {
                   <>
                     <JoinOrLeaveGroupButton
                       group={group}
-                      isMember={isMember}
+                      isMember={!!memberRole}
                       user={user}
                     />
                     <GroupOptions

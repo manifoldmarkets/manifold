@@ -6,23 +6,25 @@ export const useIntersection = (
   rootRef: MutableRefObject<Element | null>
 ) => {
   const [isVisible, setIsVisible] = useState(false)
-  useEffect(() => {
-    if (rootRef.current) {
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          setIsVisible(entry.isIntersecting)
-        },
-        { rootMargin, root: rootRef.current }
-      )
-      element.current && observer.observe(element.current)
 
-      return () => {
-        if (element.current) {
-          observer.unobserve(element.current)
-        }
+  useEffect(() => {
+    const currElement = element?.current
+    const currRoot = rootRef?.current
+    if (!currElement || !currRoot) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting)
+      },
+      { rootMargin, root: currRoot }
+    )
+    currElement && observer.observe(currElement)
+
+    return () => {
+      if (currElement) {
+        observer.unobserve(currElement)
       }
     }
-  }, [element.current, rootMargin, rootRef.current])
+  }, [element, rootMargin, rootRef])
 
   return isVisible
 }
