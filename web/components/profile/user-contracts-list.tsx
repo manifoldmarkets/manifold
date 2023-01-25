@@ -68,10 +68,6 @@ export function UserContractsList(props: { creator: User }) {
             )
           }
         />
-        <MarketStats
-          title={'Unresolved Markets'}
-          total={formatWithCommas(marketsCreated ?? 0)}
-        />
       </Row>
       <ContractSearch
         defaultSort="newest"
