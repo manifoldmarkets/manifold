@@ -24,7 +24,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { LoadingIndicator } from './widgets/loading-indicator'
-const DAILY_PROFIT_EVENT = 'click daily profit button'
+const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
   user: User | null | undefined
@@ -62,7 +62,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
     today.setHours(0, 0, 0, 0)
     const todayMs = today.getTime()
     const todayMsEnd = todayMs + DAY_MS
-    getUserEvents(user.id, DAILY_PROFIT_EVENT, todayMs, todayMsEnd).then(
+    getUserEvents(user.id, DAILY_PROFIT_CLICK_EVENT, todayMs, todayMsEnd).then(
       (events) => setSeen(events.length > 0)
     )
   }, [user])
@@ -81,7 +81,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
         onClick={withTracking(() => {
           setOpen(true)
           setSeen(true)
-        }, DAILY_PROFIT_EVENT)}
+        }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Tooltip text={'Daily profit'}>
           <Row
