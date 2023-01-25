@@ -7,6 +7,7 @@ import { Row } from 'web/components/layout/row'
 import { ContractSearch } from 'web/components/contract-search'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { formatWithCommas } from 'common/util/format'
+import { getUnresolvedContracts } from 'web/lib/supabase/contracts'
 
 export function UserContractsList(props: { creator: User }) {
   const { creator } = props
@@ -14,10 +15,16 @@ export function UserContractsList(props: { creator: User }) {
   const { weekly, allTime } = creatorTraders
   const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
   const [creatorRank, setCreatorRank] = useState<number | undefined>()
+  const [unresolvedMarkets, setUnresolvedMarkets] = useState<
+    number | undefined
+  >()
 
   useEffect(() => {
     getTotalContractCreated(creator.id).then(setMarketsCreated)
     getCreatorRank(allTime, 'allTime').then(setCreatorRank)
+    getUnresolvedContracts(creator.id).then((count) =>
+      setUnresolvedMarkets(count)
+    )
   }, [creator.id, allTime])
 
   const MarketStats = (props: {
@@ -46,6 +53,15 @@ export function UserContractsList(props: { creator: User }) {
         <MarketStats
           title={'Total markets'}
           total={formatWithCommas(marketsCreated ?? 0)}
+          subTitle={
+            unresolvedMarkets === 0 ? null : (
+              <Tooltip text={'Unresolved & closed markets'}>
+                <div className="bg-scarlet-400 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 text-white ">
+                  {`${unresolvedMarkets}`}
+                </div>
+              </Tooltip>
+            )
+          }
         />
         <MarketStats
           title={'Unique traders'}
