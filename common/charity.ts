@@ -72,6 +72,23 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     We believe that humanity’s success in the next few hundred years will lie intensely on its ability to coordinate and make good decisions. If important governmental and philanthropic bodies become significantly more effective, this will make society far more resilient to many kinds of challenges ahead.`,
   },
   {
+    name: 'Topos Institute',
+    website: 'https://topos.institute/',
+    preview:
+      'We shape technology for public benefit by advancing sciences of connection and integration. Our goal is a world where the systems that surround us benefit us all.',
+    photo: 'https://i.imgur.com/lzZxvHt.jpg',
+    description: `Our lives have been transformed by global networks of trade, travel, and communication. Driven by new technologies, these networks enrich our lives, but also lead to new threats, including surveillance, polarization, and pandemics. 
+
+At Topos, we pioneer emerging mathematical sciences of connection and integration to steer humanity towards a better future.`,
+  },
+  {
+    name: 'Haskell Foundation',
+    website: 'https://haskell.foundation/',
+    preview: 'Amplify Haskell’s impact on humanity.',
+    photo: 'https://i.imgur.com/6akJg2p.png',
+    description: `An independent, non-profit organization dedicated to broadening the adoption of Haskell, by supporting its ecosystem of tools, libraries, education, and research.`,
+  },
+  {
     name: 'Long-Term Future Fund',
     website: 'https://funds.effectivealtruism.org/funds/far-future',
     photo: 'https://i.imgur.com/C2qka9g.png',
