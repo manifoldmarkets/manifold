@@ -15,9 +15,7 @@ export function UserContractsList(props: { creator: User }) {
   const { weekly, allTime } = creatorTraders
   const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
   const [creatorRank, setCreatorRank] = useState<number | undefined>()
-  const [unresolvedMarkets, setUnresolvedMarkets] = useState<
-    number | undefined
-  >()
+  const [unresolvedMarkets, setUnresolvedMarkets] = useState<number>(0)
 
   useEffect(() => {
     getTotalContractCreated(creator.id).then(setMarketsCreated)
@@ -55,8 +53,8 @@ export function UserContractsList(props: { creator: User }) {
           total={formatWithCommas(marketsCreated ?? 0)}
           subTitle={
             unresolvedMarkets === 0 ? null : (
-              <Tooltip text={'Unresolved & closed markets'}>
-                <div className="bg-scarlet-400 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 text-white ">
+              <Tooltip text={'Closed & unresolved markets'}>
+                <div className="bg-scarlet-300 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 text-white ">
                   {`${unresolvedMarkets}`}
                 </div>
               </Tooltip>
