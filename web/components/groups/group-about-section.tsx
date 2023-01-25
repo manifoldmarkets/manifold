@@ -22,6 +22,7 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { Content } from '../widgets/editor'
 import { ExpandableContent } from '../widgets/expandable-content'
+import { groupRoleType } from './group-member-modal'
 
 function GroupAboutModalContent(props: {
   content: JSONContent | string
@@ -38,17 +39,17 @@ function GroupAboutModalContent(props: {
 
 export function GroupAboutSection(props: {
   group: Group
-  isEditable: boolean
+  canEdit: boolean
   post: Post | null
   writingNewAbout: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
-  const { group, isEditable, post, writingNewAbout, setWritingNewAbout } = props
+  const { group, canEdit, post, writingNewAbout, setWritingNewAbout } = props
   if ((post && post.content) || writingNewAbout) {
     return (
       <Col className="group my-2 gap-2 px-4 py-2 lg:px-0">
         <div className=" text-gray-500">ABOUT</div>
-        {isEditable && (
+        {canEdit && (
           <EditableGroupAbout
             group={group}
             post={post}
@@ -56,7 +57,7 @@ export function GroupAboutSection(props: {
             setWritingNewAbout={setWritingNewAbout}
           />
         )}
-        {!isEditable && post && post.content && (
+        {canEdit && post && post.content && (
           <ExpandableContent
             content={post.content}
             modalContent={

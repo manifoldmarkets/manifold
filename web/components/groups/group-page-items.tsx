@@ -7,7 +7,7 @@ import {
 } from 'web/lib/icons/open-door-icon'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { GroupMemberModalContent } from './group-member-modal'
+import { GroupMemberModalContent, groupRoleType } from './group-member-modal'
 
 export default function GroupOpenClosedWidget(props: { group: Group }) {
   const { group } = props
@@ -29,8 +29,8 @@ export default function GroupOpenClosedWidget(props: { group: Group }) {
   )
 }
 
-export function GroupMembersWidget(props: { group: Group }) {
-  const { group } = props
+export function GroupMembersWidget(props: { group: Group; canEdit: boolean }) {
+  const { group, canEdit } = props
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -42,7 +42,7 @@ export function GroupMembersWidget(props: { group: Group }) {
         </Row>
       </button>
       <Modal open={open} setOpen={setOpen}>
-        <GroupMemberModalContent group={group} />
+        <GroupMemberModalContent group={group} canEdit={canEdit} />
       </Modal>
     </>
   )

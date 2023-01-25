@@ -6,18 +6,18 @@ import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { SimpleLinkButton } from '../buttons/simple-link-button'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
+import { groupRoleType } from './group-member-modal'
 import { getBlockGroupDropdownItem } from './hide-group-item'
 
 export function GroupOptions(props: {
   group: Group
   groupUrl: string
   privateUser: PrivateUser | undefined | null
-  isEditable: boolean
+  canEdit: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
-  const { group, groupUrl, privateUser, isEditable, setWritingNewAbout } = props
+  const { group, groupUrl, privateUser, canEdit, setWritingNewAbout } = props
   let groupOptionItems = [] as DropdownItem[]
-
   if (privateUser) {
     groupOptionItems = groupOptionItems.concat(
       getBlockGroupDropdownItem({
@@ -25,7 +25,7 @@ export function GroupOptions(props: {
         user: privateUser,
       })
     )
-    if (isEditable && !group.aboutPostId) {
+    if (canEdit && !group.aboutPostId) {
       groupOptionItems = groupOptionItems.concat({
         name: 'Create about section',
         icon: <PlusCircleIcon className="h-5 w-5" />,

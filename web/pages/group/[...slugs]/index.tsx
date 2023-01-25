@@ -55,6 +55,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
 import { useMemberRole } from 'web/hooks/use-group-supabase'
+import { groupRoleType } from 'web/components/groups/group-member-modal'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -143,8 +144,7 @@ export default function GroupPage(props: {
 
   const user = useUser()
   const privateUser = usePrivateUser()
-  const isManifoldAdmin = useAdmin()
-  const memberRole = useMemberRole(group, user)
+  const userRole = useMemberRole(group, user)
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
     setActiveIndex(tabIndex)
@@ -162,8 +162,6 @@ export default function GroupPage(props: {
   if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
     return <Custom404 />
   }
-  const isEditable = memberRole === 'admin' || isManifoldAdmin
-  console.log('rolee', memberRole, isManifoldAdmin)
   const maxLeaderboardSize = 50
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
@@ -176,7 +174,7 @@ export default function GroupPage(props: {
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-      {user && (memberRole === 'admin' || memberRole === 'contributor') && (
+      {user && (userRole === 'admin' || userRole === 'moderator') && (
         <AddContractButton
           group={group}
           user={user}
@@ -186,17 +184,21 @@ export default function GroupPage(props: {
       {isMobile && (
         <TopGroupNavBar
           group={group}
-          isMember={!!memberRole}
+          isMember={!!userRole}
           groupUrl={groupUrl}
           privateUser={privateUser}
-          isEditable={isEditable}
+          canEdit={userRole === 'admin'}
           setWritingNewAbout={setWritingNewAbout}
           bannerVisible={bannerVisible}
         />
       )}
       <div className="relative">
         <div ref={bannerRef}>
-          <BannerImage group={group} user={user} isEditable={isEditable} />
+          <BannerImage
+            group={group}
+            user={user}
+            canEdit={userRole === 'admin'}
+          />
         </div>
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
           <Row className="mt-4 mb-2 w-full justify-between gap-1">
@@ -208,7 +210,7 @@ export default function GroupPage(props: {
                 {isMobile && (
                   <JoinOrLeaveGroupButton
                     group={group}
-                    isMember={!!memberRole}
+                    isMember={!!userRole}
                     user={user}
                   />
                 )}
@@ -216,14 +218,14 @@ export default function GroupPage(props: {
                   <>
                     <JoinOrLeaveGroupButton
                       group={group}
-                      isMember={!!memberRole}
+                      isMember={!!userRole}
                       user={user}
                     />
                     <GroupOptions
                       group={group}
                       groupUrl={groupUrl}
                       privateUser={privateUser}
-                      isEditable={isEditable}
+                      canEdit={userRole === 'admin'}
                       setWritingNewAbout={setWritingNewAbout}
                     />
                   </>
@@ -232,7 +234,7 @@ export default function GroupPage(props: {
             </Col>
           </Row>
           <Row className="mb-2 gap-4">
-            <GroupMembersWidget group={group} />
+            <GroupMembersWidget group={group} canEdit={userRole === 'admin'} />
             <GroupOpenClosedWidget group={group} />
           </Row>
         </Col>
@@ -240,7 +242,7 @@ export default function GroupPage(props: {
 
       <GroupAboutSection
         group={group}
-        isEditable={isEditable}
+        canEdit={userRole === 'admin'}
         post={aboutPost}
         writingNewAbout={writingNewAbout}
         setWritingNewAbout={setWritingNewAbout}
@@ -277,7 +279,7 @@ export default function GroupPage(props: {
                 <GroupPostSection
                   group={group}
                   posts={groupPosts}
-                  isEditable={isEditable}
+                  canEdit={userRole === 'admin'}
                 />
               ),
             },
@@ -318,7 +320,7 @@ export function TopGroupNavBar(props: {
   isMember: boolean | undefined
   groupUrl: string
   privateUser: PrivateUser | undefined | null
-  isEditable: boolean
+  canEdit: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
   bannerVisible: boolean
 }) {
@@ -327,7 +329,7 @@ export function TopGroupNavBar(props: {
     isMember,
     groupUrl,
     privateUser,
-    isEditable,
+    canEdit,
     setWritingNewAbout,
     bannerVisible,
   } = props
@@ -337,7 +339,6 @@ export function TopGroupNavBar(props: {
     bannerVisible ? 'opacity-0' : 'opacity-100'
   )
   const router = useRouter()
-
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200">
       <Row className="items-center justify-between gap-2 bg-white px-2">
@@ -372,7 +373,7 @@ export function TopGroupNavBar(props: {
               group={group}
               groupUrl={groupUrl}
               privateUser={privateUser}
-              isEditable={isEditable}
+              canEdit={canEdit}
               setWritingNewAbout={setWritingNewAbout}
             />
           </Row>

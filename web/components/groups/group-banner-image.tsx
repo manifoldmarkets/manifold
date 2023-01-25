@@ -11,6 +11,7 @@ import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
+import { groupRoleType } from './group-member-modal'
 
 export const DEFAULT_BANNERS = [
   '/group/default_group_banner_indigo.png',
@@ -24,9 +25,9 @@ function isDefaultBanner(url: string) {
 export default function BannerImage(props: {
   group: Group
   user: User | undefined | null
-  isEditable: boolean
+  canEdit: boolean | null
 }) {
-  const { group, user, isEditable } = props
+  const { group, user, canEdit } = props
   const [groupBannerUrl, setGroupBannerUrl] = useState(
     group.bannerUrl ?? DEFAULT_BANNERS[0]
   )
@@ -35,7 +36,7 @@ export default function BannerImage(props: {
     <>
       <figure className="group relative h-60 w-full sm:h-72">
         <div className="absolute top-2 right-4 z-20 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-          {user && isEditable && (
+          {user && canEdit && (
             <BannerDropdown
               group={group}
               open={changeBannerModalOpen}
