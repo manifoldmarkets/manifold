@@ -67,8 +67,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
     )
   }, [user])
 
-  const profit = seen ? dailyProfit : '?'
-  // emoji options: ⌛ 💰 🕛
+  // Other emoji options: ⌛ 💰 🕛
   return (
     <>
       <button
@@ -87,10 +86,10 @@ export const DailyProfit = memo(function DailyProfit(props: {
           <Row
             className={clsx(
               dailyStatsClass,
-              profit > 0 && seen && 'text-teal-500'
+              dailyProfit > 0 && seen && 'text-teal-500'
             )}
           >
-            <span>💰{profit === '?' ? profit : formatMoney(profit)}</span>
+            <span>💰{formatMoney(dailyProfit)}</span>
           </Row>
         </Tooltip>
       </button>
