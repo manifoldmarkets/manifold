@@ -237,7 +237,7 @@ const Details = (props: { contract: Contract }) => {
 
   return (
     <div className="relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-400">
-      <span className="flex gap-1">
+      <span className="flex gap-1 text-gray-600">
         <Avatar
           size="xxs"
           avatarUrl={creatorAvatarUrl}
@@ -246,7 +246,7 @@ const Details = (props: { contract: Contract }) => {
         />
         {creatorName}
       </span>
-      <CloseOrResolveTime contract={props.contract} isCreator disabled />
+      <CloseOrResolveTime contract={props.contract} />
       <span>{uniqueBettorCount} traders</span>
     </div>
   )

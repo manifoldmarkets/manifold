@@ -29,11 +29,12 @@ import {
   PseudoNumericContract,
   BinaryContract,
 } from 'common/contract'
-import { ContractDetails } from './contract-details'
+import { CloseOrResolveTime, ContractDetails } from './contract-details'
 import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
+import { TimeRangePicker } from '../charts/time-range-picker'
 
 export const ContractOverview = memo(
   (props: {
@@ -111,6 +112,7 @@ const BinaryOverview = (props: {
 }) => {
   const { contract, betPoints } = props
   const user = useUser()
+  const isCreator = user?.id === contract.creatorId
 
   return (
     <Col className="gap-1 md:gap-2">
@@ -137,6 +139,18 @@ const BinaryOverview = (props: {
           />
         )}
       </SizedContainer>
+
+      <Row className="justify-between px-2">
+        <TimeRangePicker
+          currentTimePeriod="allTime"
+          setCurrentTimePeriod={() => {}}
+          color="green"
+        />
+        <div className="mr-8 mt-1 text-right text-xs text-gray-500">
+          <CloseOrResolveTime contract={contract} editable={isCreator} />
+          <div className="mt-0.5">{contract.uniqueBettorCount} traders</div>
+        </div>
+      </Row>
 
       {user && tradingAllowed(contract) && (
         <SignedInBinaryMobileBetting contract={contract} user={user} />
