@@ -107,7 +107,7 @@ export const CHECK_USERNAMES = [
   'Yev',
   'ZviMowshowitz',
   'NathanpmYoung',
-  'kolotom99',
+  'itsTomekK',
   'SneakySly',
   'IsaacKing',
   'MattP',
