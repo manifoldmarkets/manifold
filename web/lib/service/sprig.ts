@@ -5,7 +5,11 @@
 import { ENV_CONFIG } from 'common/envs/constants'
 import { PROD_CONFIG } from 'common/envs/prod'
 
-if (ENV_CONFIG.domain === PROD_CONFIG.domain && typeof window !== 'undefined') {
+if (
+  ENV_CONFIG.domain === PROD_CONFIG.domain &&
+  typeof window !== 'undefined' &&
+  ENV_CONFIG.sprigEnvironmentId
+) {
   try {
     ;(function (l, e, a, p) {
       if (window.Sprig) return
