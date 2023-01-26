@@ -2,14 +2,15 @@ import { DotsVerticalIcon, HashtagIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { Group } from 'common/group'
+import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { useEffect, useRef, useState } from 'react'
 import { useIntersection } from 'web/hooks/use-intersection'
-import { updateRole } from 'web/lib/firebase/groups'
+import { useUser } from 'web/hooks/use-user'
+import { removeRole, updateRole } from 'web/lib/firebase/groups'
 import {
-  getGroupAdmins,
   getGroupMembers,
-  getGroupModerators,
+  getGroupOfRole,
   getNumGroupMembers,
 } from 'web/lib/supabase/group'
 import DropdownMenu from '../comments/dropdown-menu'
@@ -39,15 +40,15 @@ export function GroupMemberModalContent(props: {
       .then((result) => setNumMembers(result))
       .catch((e) => console.log(e))
 
-    getGroupAdmins(group.id)
+    getGroupOfRole(group.id, 'admin')
       .then((result) => setAdmins(result.data))
       .catch((e) => console.log(e))
 
-    getGroupModerators(group.id)
+    getGroupOfRole(group.id, 'moderator')
       .then((result) => setModerators(result.data))
       .catch((e) => console.log(e))
 
-    getGroupMembers(group.id, membersOffset)
+    getGroupMembers(group.id, membersOffset, 0)
       .then((result) => {
         setMembers(result.data)
       })
@@ -126,8 +127,8 @@ export function GroupMemberModalContent(props: {
 
 export type groupRoleType = 'admin' | 'moderator' | 'member'
 export const roleDescription = {
-  admin: `Can appoint roles, add and delete anyone's content from group`,
-  moderator: `Can add and delete anyone's content from group`,
+  admin: `Can appoint roles, edit the group, and add or delete anyone's content from group`,
+  moderator: `Can add or delete anyone's content from group`,
   member: 'Can only add their own content to group',
 }
 
@@ -164,7 +165,10 @@ export function MemberRoleSection(props: {
   const { group, members, role, canEdit } = props
   return (
     <Col className="w-full gap-3">
-      <MemberRoleHeader headerText={`${role.toLocaleUpperCase()}S`} />
+      <MemberRoleHeader
+        headerText={`${role.toLocaleUpperCase()}S`}
+        description={roleDescription[role]}
+      />
       {members === undefined ? (
         <LoadingIndicator />
       ) : members.length === 0 ? (
@@ -191,11 +195,16 @@ export function MemberRoleHeader(props: {
 }) {
   const { headerText, description } = props
   return (
-    <Row className="sticky -top-1 w-full gap-2 bg-white pt-4 text-sm text-gray-400">
-      <div className="my-auto flex h-[1px] grow bg-gray-400" />
-      {headerText}
-      <div className="my-auto flex h-[1px] grow bg-gray-400" />
-    </Row>
+    <Col className="gap-0.5 bg-white pt-4 text-sm text-gray-400">
+      <Row className="w-full gap-2 font-semibold">
+        <div className="my-auto flex h-[1px] grow bg-gray-400" />
+        {headerText}
+        <div className="my-auto flex h-[1px] grow bg-gray-400" />
+      </Row>
+      {description && (
+        <div className="text-xs text-gray-500">{description}</div>
+      )}
+    </Col>
   )
 }
 
@@ -211,13 +220,13 @@ export function Member(props: {
       className={clsx(
         'font-regular rounded px-2 py-1 text-xs text-white',
         isCreator
-          ? 'bg-indigo-300'
+          ? 'bg-indigo-400'
           : member.role === 'admin'
-          ? 'bg-indigo-200'
-          : 'bg-gray-200'
+          ? 'bg-indigo-300'
+          : 'bg-gray-300'
       )}
     >
-      {isCreator ? 'CREATOR' : `${member.role.toLocaleUpperCase()}S`}
+      {isCreator ? 'CREATOR' : `${member.role.toLocaleUpperCase()}`}
     </div>
   ) : undefined
 
@@ -231,27 +240,32 @@ export function Member(props: {
         />
         <UserLink name={member.name} username={member.username} />
       </Row>
-      <Row className="gap-1">
+      <Row className="items-center gap-1">
         {tag}
-        {canEdit && <MemberRoleDropdown group={group} member={member} />}
+        {canEdit && member.role != 'admin' && (
+          <AdminRoleDropdown group={group} member={member} />
+        )}
       </Row>
     </Row>
   )
 }
 
-export function MemberRoleDropdown(props: {
+// the dropdown for each member that is available to group admins
+export function AdminRoleDropdown(props: {
   group: Group
   member: JSONContent
   className?: string
 }) {
   const { group, member, className } = props
   const groupMemberOptions = buildArray(
+    // if the member is below admin, can upgrade to admin
     (!member.role || member.role === 'moderator') && {
       name: 'Make admin',
       onClick: () => {
         updateRole(group.id, member.member_id, 'admin')
       },
     },
+    // if the member is below moderator, can upgrade to moderator
     !member.role && {
       name: 'Make moderator',
       onClick: () => {

@@ -198,9 +198,17 @@ export async function updateRole(
   // updates member role
   return await updateDoc(doc(groupMembers(groupId), userId), {
     role: newRole,
-  })
-    .then(() => console.log('hi'))
-    .catch((e) => console.log(e))
+  }).catch((e) => console.log(e))
+}
+
+export async function removeRole(
+  groupId: string,
+  userId: string
+): Promise<void> {
+  // updates member role
+  return await updateDoc(doc(groupMembers(groupId), userId), {
+    role: deleteField(),
+  }).catch((e) => console.log(e))
 }
 
 // TODO: This doesn't check if the user has permission to do this

@@ -3,6 +3,7 @@ import { run } from 'common/supabase/utils'
 import { User } from '../firebase/users'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useState } from 'react'
+import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 
 export async function getNumGroupMembers(groupId: string) {
   const { data } = await run(
@@ -11,33 +12,25 @@ export async function getNumGroupMembers(groupId: string) {
   return data[0].count as number
 }
 
-export async function getGroupAdmins(groupId: string) {
-  const admins = await run(
+export async function getGroupOfRole(groupId: string, role: GroupRoleType) {
+  const roleMembers = await run(
     db
       .from('group_role')
       .select('*')
       .eq('group_id', groupId)
-      .eq('role', 'admin')
+      .eq('role', role)
       .order('name')
   )
-  return admins
-}
-
-export async function getGroupModerators(groupId: string) {
-  const moderators = await run(
-    db
-      .from('group_role')
-      .select('*')
-      .eq('group_id', groupId)
-      .eq('role', 'moderator')
-      .order('name')
-  )
-  return moderators
+  return roleMembers
 }
 
 export const MEMBER_LOAD_NUM = 50
 
-export async function getGroupMembers(groupId: string, offset: number) {
+export async function getGroupMembers(
+  groupId: string,
+  offset: number,
+  start?: number
+) {
   const followers = await run(
     db
       .from('group_role')
@@ -46,7 +39,7 @@ export async function getGroupMembers(groupId: string, offset: number) {
       .is('role', null)
       .order('name')
       .range(
-        offset * MEMBER_LOAD_NUM,
+        start ? start : offset * MEMBER_LOAD_NUM,
         offset * MEMBER_LOAD_NUM + MEMBER_LOAD_NUM - 1
       )
   )

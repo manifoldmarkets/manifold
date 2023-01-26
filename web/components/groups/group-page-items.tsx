@@ -1,5 +1,6 @@
 import { UserGroupIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
+import { User } from 'common/user'
 import { useState } from 'react'
 import {
   default as ClosedDoorIcon,

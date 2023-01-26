@@ -47,7 +47,7 @@ export function GroupOptions(props: {
             Icon={
               <DotsVerticalIcon className={clsx('h-5 w-5', groupButtonClass)} />
             }
-            MenuWidth={'w-60'}
+            menuWidth={'w-60'}
             className="z-40"
           />
         )}

@@ -248,7 +248,7 @@ function BannerDropdown(props: {
         ]}
         Icon={<PencilIcon className="h-5 w-5 text-gray-900" />}
         buttonClass="rounded-md bg-white bg-opacity-50 p-1"
-        MenuWidth="w-60"
+        menuWidth="w-60"
       />
       <ChangeBannerModal
         group={group}
