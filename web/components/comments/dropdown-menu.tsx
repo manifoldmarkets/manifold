@@ -13,11 +13,11 @@ export type DropdownItem = {
 export default function DropdownMenu(props: {
   Items: DropdownItem[]
   Icon?: ReactNode
-  MenuWidth?: string
+  menuWidth?: string
   buttonClass?: string
   className?: string
 }) {
-  const { Items, Icon, MenuWidth, buttonClass, className } = props
+  const { Items, Icon, menuWidth, buttonClass, className } = props
   const icon = Icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
   )
@@ -48,7 +48,7 @@ export default function DropdownMenu(props: {
         <Menu.Items
           className={clsx(
             'absolute right-0 z-30 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none',
-            MenuWidth ?? 'w-32'
+            menuWidth ?? 'w-32'
           )}
         >
           <div className="py-1">

@@ -119,7 +119,6 @@ export function GroupMemberModalContent(props: {
         >
           <LoadingMember />
         </div>
-        <div className="h-24 w-full bg-white" />
       </div>
     </Col>
   )
@@ -264,7 +263,7 @@ export function MemberRoleDropdown(props: {
     <DropdownMenu
       Items={groupMemberOptions}
       Icon={<DotsVerticalIcon className={clsx('h-5 w-5 text-gray-400')} />}
-      MenuWidth={'w-60'}
+      menuWidth={'w-40'}
       className={clsx(className)}
     />
   )
