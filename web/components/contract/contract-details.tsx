@@ -88,35 +88,6 @@ export function MiscDetails(props: {
   )
 }
 
-export function AvatarDetails(props: {
-  contract: Contract
-  className?: string
-  short?: boolean
-  noLink?: boolean
-}) {
-  const { contract, short, className, noLink } = props
-  const { creatorName, creatorUsername, creatorAvatarUrl } = contract
-
-  return (
-    <Row
-      className={clsx('items-center gap-2 text-sm text-gray-400', className)}
-    >
-      <Avatar
-        username={creatorUsername}
-        avatarUrl={creatorAvatarUrl}
-        size={4}
-        noLink={noLink}
-      />
-      <UserLink
-        name={creatorName}
-        username={creatorUsername}
-        short={short}
-        noLink={noLink}
-      />
-    </Row>
-  )
-}
-
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
 

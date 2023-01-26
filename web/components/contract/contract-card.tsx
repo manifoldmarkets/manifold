@@ -29,7 +29,7 @@ import {
   getProbability,
   getTopAnswer,
 } from 'common/calculate'
-import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
+import { MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { getTextColor, QuickBet, QuickOutcomeView } from '../bet/quick-bet'
 import { useUser } from 'web/hooks/use-user'
@@ -48,6 +48,8 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import Image from 'next/image'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { ContractCardView } from 'common/events'
+import { Avatar } from '../widgets/avatar'
+import { UserLink } from '../widgets/user-link'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -125,12 +127,21 @@ export const ContractCard = memo(function ContractCard(props: {
     >
       <Col className="relative flex-1 gap-1 pt-2">
         {!hideDetails && (
-          <Row className="justify-between px-4 ">
-            <AvatarDetails
-              contract={contract}
-              noLink={noLinkAvatar}
-              className="z-10"
-            />
+          <Row className="justify-between px-4">
+            <Row className="z-10 items-center gap-2">
+              <Avatar
+                username={contract.creatorUsername}
+                avatarUrl={contract.creatorAvatarUrl}
+                size={4}
+                noLink={noLinkAvatar}
+              />
+              <UserLink
+                name={contract.creatorName}
+                username={contract.creatorUsername}
+                noLink={noLinkAvatar}
+                className="text-sm text-gray-400"
+              />
+            </Row>
             <Row className="gap-1">
               {pinned && <FeaturedPill label={featuredLabel} />}
               {/* {isNew && <NewContractBadge />} */}
