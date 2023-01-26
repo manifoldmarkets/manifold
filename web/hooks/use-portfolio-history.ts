@@ -10,14 +10,7 @@ import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-
-export const getCutoff = (period: Period) => {
-  if (period === 'allTime') {
-    return new Date(0).valueOf()
-  }
-  const nowRounded = Math.round(Date.now() / HOUR_MS) * HOUR_MS
-  return nowRounded - periodDurations[period]
-}
+import { getCutoff } from 'web/lib/util/time'
 
 export const usePrefetchPortfolioHistory = (userId: string, period: Period) => {
   const queryClient = useQueryClient()
@@ -52,12 +45,4 @@ export const usePortfolioHistory = (userId: string, period: Period) => {
     })
   }, [userId, cutoff, setPortfolioHistories, portfolioHistories])
   return portfolioHistories[cutoff]
-}
-
-export const periodDurations: {
-  [period in Exclude<Period, 'allTime'>]: number
-} = {
-  daily: 1 * DAY_MS,
-  weekly: 7 * DAY_MS,
-  monthly: 30 * DAY_MS,
 }

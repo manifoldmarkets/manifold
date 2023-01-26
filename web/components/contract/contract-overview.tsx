@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useState } from 'react'
 
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
@@ -40,7 +40,7 @@ import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Period } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
-import { getCutoff } from 'web/hooks/use-portfolio-history'
+import { getCutoff } from 'web/lib/util/time'
 
 export const ContractOverview = memo(
   (props: {

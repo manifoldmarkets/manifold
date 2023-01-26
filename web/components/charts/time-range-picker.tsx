@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { periodDurations } from 'web/hooks/use-portfolio-history'
+import { periodDurations } from 'web/lib/util/time'
 import { Period } from 'web/lib/firebase/users'
 import { ChoicesToggleGroup, ColorType } from '../choices-toggle-group'
 
