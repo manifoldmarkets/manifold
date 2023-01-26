@@ -1,8 +1,6 @@
 import { db } from './db'
 import { run } from 'common/supabase/utils'
 import { User } from '../firebase/users'
-import { useAdmin } from 'web/hooks/use-admin'
-import { useState } from 'react'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 
 export async function getNumGroupMembers(groupId: string) {
