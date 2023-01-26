@@ -6,7 +6,7 @@ import { Row } from 'web/components/layout/row'
 
 export type DropdownItem = {
   name: string
-  icon: ReactNode
+  icon?: ReactNode
   onClick: () => void | Promise<void>
 }
 
@@ -63,7 +63,7 @@ export default function DropdownMenu(props: {
                     )}
                   >
                     <Row className={'gap-2'}>
-                      <div className="w-5">{item.icon}</div>
+                      {item.icon && <div className="w-5">{item.icon}</div>}
                       <div className="text-left">{item.name}</div>
                     </Row>
                   </button>

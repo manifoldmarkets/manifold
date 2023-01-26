@@ -25,6 +25,7 @@ import { Contract } from 'common/contract'
 import { getContractFromId, updateContract } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/firebase/init'
 import { filterDefined } from 'common/util/array'
+import { groupRoleType } from 'web/components/groups/group-member-modal'
 
 export const groups = coll<Group>('groups')
 export const groupMembers = (groupId: string) =>
@@ -187,6 +188,19 @@ export async function leaveGroup(
   // delete the member document in groupMembers collection
   const memberDoc = doc(groupMembers(groupId), userId)
   return await deleteDoc(memberDoc)
+}
+
+export async function updateRole(
+  groupId: string,
+  userId: string,
+  newRole: groupRoleType
+): Promise<void> {
+  // updates member role
+  return await updateDoc(doc(groupMembers(groupId), userId), {
+    role: newRole,
+  })
+    .then(() => console.log('hi'))
+    .catch((e) => console.log(e))
 }
 
 // TODO: This doesn't check if the user has permission to do this
