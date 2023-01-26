@@ -46,7 +46,7 @@ Gets a user by their unique ID. Many other API endpoints return this as the `use
 
 Requires no authorization.
 
-### GET /v0/me
+### `GET /v0/me`
 
 Returns the authenticated user.
 
