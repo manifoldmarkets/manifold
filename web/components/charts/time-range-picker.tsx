@@ -39,6 +39,7 @@ export const TimeRangePicker = (props: {
       currentChoice={currentTimePeriod}
       choicesMap={labels}
       setChoice={setCurrentTimePeriod as any}
+      disabled={disabled}
       disabledOptions={disabledOptions}
       color={color}
       className={clsx('!shadow-none', className)}
