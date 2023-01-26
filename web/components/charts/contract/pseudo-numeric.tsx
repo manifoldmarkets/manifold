@@ -15,7 +15,11 @@ import {
   getRightmostVisibleDate,
   formatDateInRange,
 } from '../helpers'
-import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
+import {
+  HistoryPoint,
+  ControllableSingleValueHistoryChart,
+  viewScale,
+} from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 
@@ -68,12 +72,23 @@ export const PseudoNumericContractChart = (props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
   width: number
   height: number
+  viewScaleProps: viewScale
+  controlledStart?: number
   color?: string
   onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
 }) => {
-  const { contract, width, height, color, onMouseOver } = props
+  const {
+    contract,
+    width,
+    height,
+    viewScaleProps,
+    controlledStart,
+    color,
+    onMouseOver,
+  } = props
   const { min, max, isLogScale } = contract
-  const [start, end] = getDateRange(contract)
+  const [calcStart, end] = getDateRange(contract)
+  const start = controlledStart ?? calcStart
   const scaleP = useMemo(
     () => getScaleP(min, max, isLogScale),
     [min, max, isLogScale]
@@ -104,12 +119,13 @@ export const PseudoNumericContractChart = (props: {
     ? scaleLog([Math.max(min, 1), max], [height - MARGIN_Y, 0]).clamp(true)
     : scaleLinear([min, max], [height - MARGIN_Y, 0])
   return (
-    <SingleValueHistoryChart
+    <ControllableSingleValueHistoryChart
       w={width}
       h={height}
       margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
+      viewScaleProps={viewScaleProps}
       data={data}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}

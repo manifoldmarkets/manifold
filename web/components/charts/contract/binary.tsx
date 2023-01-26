@@ -14,7 +14,11 @@ import {
   formatDateInRange,
   formatPct,
 } from '../helpers'
-import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
+import {
+  ControllableSingleValueHistoryChart,
+  HistoryPoint,
+  viewScale,
+} from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 
@@ -45,11 +49,22 @@ export const BinaryContractChart = (props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
   width: number
   height: number
+  viewScaleProps: viewScale
+  controlledStart?: number
   color?: string
   onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
 }) => {
-  const { contract, width, height, onMouseOver, color } = props
-  const [start, end] = getDateRange(contract)
+  const {
+    contract,
+    width,
+    height,
+    viewScaleProps,
+    controlledStart,
+    onMouseOver,
+    color,
+  } = props
+  const [calcStart, end] = getDateRange(contract)
+  const start = controlledStart ?? calcStart
   const startP = getInitialProbability(contract)
   const endP = getProbability(contract)
   const betPoints = useMemo(
@@ -73,12 +88,13 @@ export const BinaryContractChart = (props: {
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
   return (
-    <SingleValueHistoryChart
+    <ControllableSingleValueHistoryChart
       w={width}
       h={height}
       margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
+      viewScaleProps={viewScaleProps}
       yKind="percent"
       data={data}
       color={color ?? '#11b981'}

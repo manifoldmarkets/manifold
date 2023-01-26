@@ -11,9 +11,12 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 
-const getCutoff = (period: Period) => {
+export const getCutoff = (period: Period) => {
+  if (period === 'allTime') {
+    return new Date(0).valueOf()
+  }
   const nowRounded = Math.round(Date.now() / HOUR_MS) * HOUR_MS
-  return periodToCutoff(nowRounded, period).valueOf()
+  return nowRounded - periodDurations[period]
 }
 
 export const usePrefetchPortfolioHistory = (userId: string, period: Period) => {
@@ -51,16 +54,10 @@ export const usePortfolioHistory = (userId: string, period: Period) => {
   return portfolioHistories[cutoff]
 }
 
-const periodToCutoff = (now: number, period: Period) => {
-  switch (period) {
-    case 'daily':
-      return now - 1 * DAY_MS
-    case 'weekly':
-      return now - 7 * DAY_MS
-    case 'monthly':
-      return now - 30 * DAY_MS
-    case 'allTime':
-    default:
-      return new Date(0)
-  }
+export const periodDurations: {
+  [period in Exclude<Period, 'allTime'>]: number
+} = {
+  daily: 1 * DAY_MS,
+  weekly: 7 * DAY_MS,
+  monthly: 30 * DAY_MS,
 }

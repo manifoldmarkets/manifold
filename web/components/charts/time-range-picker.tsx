@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+import { periodDurations } from 'web/hooks/use-portfolio-history'
 import { Period } from 'web/lib/firebase/users'
 import { ChoicesToggleGroup, ColorType } from '../choices-toggle-group'
 
@@ -11,19 +13,35 @@ const labels: { [label: string]: Period } = {
 export const TimeRangePicker = (props: {
   currentTimePeriod: Period
   setCurrentTimePeriod: (period: Period) => void
+  /** milliseconds */
+  maxRange?: number
   color?: ColorType
   disabled?: boolean
+  className?: string
 }) => {
-  const { currentTimePeriod, setCurrentTimePeriod, color, disabled } = props
+  const {
+    currentTimePeriod,
+    setCurrentTimePeriod,
+    maxRange,
+    color,
+    disabled,
+    className,
+  } = props
+
+  const disabledOptions = !maxRange
+    ? undefined
+    : Object.values(labels).filter(
+        (period) => period !== 'allTime' && periodDurations[period] > maxRange
+      )
 
   return (
     <ChoicesToggleGroup
       currentChoice={currentTimePeriod}
       choicesMap={labels}
       setChoice={setCurrentTimePeriod as any}
-      disabled={disabled}
+      disabledOptions={disabledOptions}
       color={color}
-      className="mt-1 !gap-1 self-start !shadow-none"
+      className={clsx('!shadow-none', className)}
       toggleClassName="py-1 !px-1"
     />
   )
