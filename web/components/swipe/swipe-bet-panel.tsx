@@ -46,7 +46,7 @@ export function SwipeBetPanel(props: {
   useEffect(() => {
     if (pressState) {
       processPress()
-      const interval = setInterval(processPress, 200)
+      const interval = setInterval(processPress, 100)
       return () => clearInterval(interval)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,7 +66,7 @@ export function SwipeBetPanel(props: {
       <Row className="relative items-center gap-0.5 text-white">
         <button
           className={clsx(
-            'absolute -left-[88px] z-20 flex h-16 flex-col justify-center rounded-[4rem] border-2 font-semibold transition-all',
+            'absolute -left-[100px] z-20 flex h-16 flex-col justify-center rounded-[4rem] border-2 font-semibold transition-all',
             !disabled
               ? 'active:bg-scarlet-300 active:border-scarlet-300 active:text-white'
               : 'w-16 border-gray-200 pl-4 text-gray-200',
@@ -87,7 +87,7 @@ export function SwipeBetPanel(props: {
           NO
         </button>
         {swipingLeft && (
-          <div className="absolute -left-9 z-30">
+          <div className="absolute -left-20 z-30">
             {betStatus === 'loading' && (
               <LoadingIndicator size="md" spinnerClassName="border-white" />
             )}
@@ -104,7 +104,7 @@ export function SwipeBetPanel(props: {
             <MinusIcon
               className={clsx(
                 swipingRight || swipingLeft ? 'opacity-0' : '',
-                'z-10 h-6 w-6 rounded-full border p-1 transition-colors active:bg-white active:text-black'
+                'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
               )}
             />
           }
@@ -123,7 +123,7 @@ export function SwipeBetPanel(props: {
             <PlusIcon
               className={clsx(
                 swipingRight || swipingLeft ? 'opacity-0' : '',
-                'z-10 h-6 w-6 rounded-full border p-1 transition-colors active:bg-white active:text-black'
+                'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
               )}
             />
           }
@@ -131,7 +131,7 @@ export function SwipeBetPanel(props: {
         />
         <button
           className={clsx(
-            'absolute -right-[88px] z-20 flex h-16 flex-col justify-center rounded-full border-2 font-semibold transition-all active:border-teal-600 active:bg-teal-600 active:text-white',
+            'absolute -right-[100px] z-20 flex h-16 flex-col justify-center rounded-full border-2 font-semibold transition-all active:border-teal-600 active:bg-teal-600 active:text-white',
             swipingRight
               ? 'w-[188px] border-teal-500 bg-teal-500 pl-[74px] text-white'
               : 'w-16 border-teal-300 bg-inherit pl-[13px] text-teal-300',
@@ -149,7 +149,7 @@ export function SwipeBetPanel(props: {
           YES
         </button>
         {swipingRight && (
-          <div className="absolute -right-10 z-30">
+          <div className="absolute -right-20 z-30">
             {betStatus === 'loading' && (
               <LoadingIndicator size="md" spinnerClassName="border-white" />
             )}
