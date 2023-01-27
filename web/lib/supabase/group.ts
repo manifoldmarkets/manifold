@@ -10,6 +10,23 @@ export async function getNumGroupMembers(groupId: string) {
   return data[0].count as number
 }
 
+export function getRealtimeGroupMembers(groupId: string) {
+  const channel = db.channel('group-members-realtime')
+  channel.on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'group_members',
+      filter: `group_id=eq.${groupId}`,
+    },
+    (payload) => console.log('HII', payload)
+  )
+  channel.subscribe(async (status) => {
+    console.log('STATUS', status)
+  })
+}
+
 export async function getGroupOfRole(groupId: string, role: GroupRoleType) {
   const roleMembers = await run(
     db

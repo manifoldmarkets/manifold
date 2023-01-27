@@ -5,6 +5,7 @@ import { Group } from 'common/group'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { useEffect, useRef, useState } from 'react'
+import { useRealtimeGroupMembers } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useUser } from 'web/hooks/use-user'
 import { removeRole, updateRole } from 'web/lib/firebase/groups'
@@ -24,62 +25,18 @@ import { UserLink } from '../widgets/user-link'
 export function GroupMemberModalContent(props: {
   group: Group
   canEdit: boolean
+  numMembers: number
 }) {
-  const { group, canEdit } = props
-  const [admins, setAdmins] = useState<JSONContent[] | undefined>(undefined)
-  const [moderators, setModerators] = useState<JSONContent[] | undefined>(
-    undefined
-  )
-  const [members, setMembers] = useState<JSONContent[] | undefined>(undefined)
-  const [membersOffset, setMembersOffset] = useState<number>(0)
-  const [numMembers, setNumMembers] = useState<number | undefined>(undefined)
-  const [loadMore, setLoadMore] = useState<boolean>(false)
-
-  useEffect(() => {
-    getNumGroupMembers(group.id)
-      .then((result) => setNumMembers(result))
-      .catch((e) => console.log(e))
-
-    getGroupOfRole(group.id, 'admin')
-      .then((result) => setAdmins(result.data))
-      .catch((e) => console.log(e))
-
-    getGroupOfRole(group.id, 'moderator')
-      .then((result) => setModerators(result.data))
-      .catch((e) => console.log(e))
-
-    getGroupMembers(group.id, membersOffset, 0)
-      .then((result) => {
-        setMembers(result.data)
-      })
-      .catch((e) => console.log(e))
-  }, [])
-
+  const { group, canEdit, numMembers } = props
   const modalRootRef = useRef<HTMLDivElement | null>(null)
   const loadingRef = useRef<HTMLDivElement | null>(null)
   const hitBottom = useIntersection(loadingRef, '0px', modalRootRef)
 
-  useEffect(() => {
-    if (hitBottom && !loadMore) {
-      loadMoreMembers()
-    }
-  }, [hitBottom])
+  const { admins, moderators, members, loadMore } = useRealtimeGroupMembers(
+    group.id,
+    hitBottom
+  )
 
-  function loadMoreMembers() {
-    setLoadMore(true)
-    getGroupMembers(group.id, membersOffset + 1)
-      .then((result) => {
-        if (members) {
-          const prevMembers = members
-          setMembers([...prevMembers, ...result.data])
-        } else {
-          setMembers(result.data)
-        }
-        setMembersOffset((membersOffset) => membersOffset + 1)
-      })
-      .catch((e) => console.log(e))
-      .finally(() => setLoadMore(false))
-  }
   return (
     <Col className={clsx(MODAL_CLASS, 'px-0')}>
       <div
@@ -112,9 +69,9 @@ export function GroupMemberModalContent(props: {
             admins &&
             moderators &&
             members &&
-            numMembers > admins.length + moderators.length + members.length
-              ? // && !loadMore
-                ''
+            numMembers > admins.length + moderators.length + members.length &&
+            !loadMore
+              ? ''
               : 'hidden'
           }
         >
@@ -163,6 +120,9 @@ export function MemberRoleSection(props: {
   canEdit: boolean
 }) {
   const { group, members, role, canEdit } = props
+  if (role === 'moderator') {
+    console.log('section', role, members)
+  }
   return (
     <Col className="w-full gap-3">
       <MemberRoleHeader
@@ -270,6 +230,13 @@ export function AdminRoleDropdown(props: {
       name: 'Make moderator',
       onClick: () => {
         updateRole(group.id, member.member_id, 'moderator')
+      },
+    },
+    // if the member is a moderator, can demote
+    member.role === 'moderator' && {
+      name: 'Remove as moderator',
+      onClick: () => {
+        removeRole(group.id, member.member_id)
       },
     }
   )

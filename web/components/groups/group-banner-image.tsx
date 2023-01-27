@@ -25,7 +25,7 @@ function isDefaultBanner(url: string) {
 export default function BannerImage(props: {
   group: Group
   user: User | undefined | null
-  canEdit: boolean | null
+  canEdit: boolean
 }) {
   const { group, user, canEdit } = props
   const [groupBannerUrl, setGroupBannerUrl] = useState(

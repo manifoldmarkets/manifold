@@ -2,6 +2,7 @@ import { UserGroupIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useState } from 'react'
+import { useRealtimeNumGroupMembers } from 'web/hooks/use-group-supabase'
 import {
   default as ClosedDoorIcon,
   default as OpenDoorIcon,
@@ -33,17 +34,22 @@ export default function GroupOpenClosedWidget(props: { group: Group }) {
 export function GroupMembersWidget(props: { group: Group; canEdit: boolean }) {
   const { group, canEdit } = props
   const [open, setOpen] = useState(false)
+  const numMembers = useRealtimeNumGroupMembers(group.id)
   return (
     <>
       <button onClick={() => setOpen(true)}>
         <Row className="cursor-pointer items-center gap-1 text-sm text-gray-700">
           <Row className="items-center gap-1 text-sm text-gray-700"></Row>
           <UserGroupIcon className="h-4 w-4" />
-          <span>{group.totalMembers} members</span>
+          <span>{numMembers} members</span>
         </Row>
       </button>
       <Modal open={open} setOpen={setOpen}>
-        <GroupMemberModalContent group={group} canEdit={canEdit} />
+        <GroupMemberModalContent
+          group={group}
+          canEdit={canEdit}
+          numMembers={numMembers}
+        />
       </Modal>
     </>
   )
