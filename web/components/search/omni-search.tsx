@@ -67,15 +67,16 @@ const DefaultResults = () => {
       <PageResults pages={defaultPages} />
       <MarketResults markets={markets} />
       <div className="mx-2 my-2 text-xs">
-        <span className="uppercase text-teal-500">💹 Protip:</span> Start
-        searches with <Key>%</Key> <Key>@</Key> <Key>#</Key> to narrow results
+        <span className="uppercase text-teal-500">💹 Protip:</span> Start search
+        with <Key>%</Key> for markets, <Key>@</Key> for users, or <Key>#</Key>{' '}
+        for groups
       </div>
     </>
   )
 }
 
 const Key = (props: { children: ReactNode }) => (
-  <code className="rounded bg-gray-300 p-0.5">{props.children}</code>
+  <code className="mx-0.5 rounded bg-gray-300 p-0.5">{props.children}</code>
 )
 
 const Results = (props: { query: string }) => {
