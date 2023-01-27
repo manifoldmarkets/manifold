@@ -34,6 +34,7 @@ import getQuestionSize, {
   verticalSwipeDist,
 } from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
+import { DailyStats } from '../daily-stats'
 
 export const SwipeCard = memo(
   (props: {
@@ -102,7 +103,7 @@ export const SwipeCard = memo(
         </Col>
         <Col className="absolute inset-0 z-10">
           <Col className="reltive h-full gap-2 p-4">
-            <CornerDetails contract={contract} />
+            <CornerDetails contract={contract} user={user} />
 
             <div className="mt-4 mb-8 max-h-24 overflow-ellipsis">
               <SiteLink href={contractPath(contract)} followsLinkClass>
@@ -384,20 +385,30 @@ export function CurrentSwipeCards(props: {
   )
 }
 
-const CornerDetails = (props: { contract: Contract; className?: string }) => {
-  const { contract, className } = props
+const CornerDetails = (props: {
+  contract: Contract
+  user?: User
+  className?: string
+}) => {
+  const { contract, className, user } = props
   const { creatorName, creatorAvatarUrl, closeTime } = contract
 
   return (
-    <div className={clsx('flex gap-2 self-start', className)}>
-      <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
-      <div className="text-xs">
-        <div className="text-white">{creatorName} </div>
-        {closeTime != undefined && (
-          <div className="text-gray-400 ">
-            trading closes {fromNow(closeTime)}
-          </div>
-        )}
+    <div className={clsx('flex justify-between', className)}>
+      <Row className="gap-2">
+        <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
+        <div className="text-xs">
+          <div className="text-white">{creatorName} </div>
+          {closeTime != undefined && (
+            <div className="text-gray-400 ">
+              trading closes {fromNow(closeTime)}
+            </div>
+          )}
+        </div>
+      </Row>
+
+      <div className="flex rounded-full text-gray-400">
+        <DailyStats user={user} showLoans={false} />
       </div>
     </div>
   )
