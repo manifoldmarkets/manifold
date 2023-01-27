@@ -303,7 +303,7 @@ function ContractSearchControls(props: {
   ]
   const facetFilters = [
     ...additionalFilters,
-    ...(additionalFilter?.nonQueryFacetFilters ?? []),
+    ...(!query ? additionalFilter?.nonQueryFacetFilters ?? [] : []),
     additionalFilter?.creatorId || additionalFilter?.groupSlug
       ? ''
       : 'visibility:public',
