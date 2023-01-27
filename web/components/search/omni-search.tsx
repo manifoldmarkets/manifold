@@ -105,16 +105,16 @@ const Results = (props: { query: string }) => {
     const thisNonce = nonce.current
 
     Promise.all([
-      searchUsers(query, userHitLimit),
-      searchGroups(query, groupHitLimit),
-      searchContracts(query, marketHitLimit),
+      searchUsers(search, userHitLimit),
+      searchGroups(search, groupHitLimit),
+      searchContracts(search, marketHitLimit),
     ]).then(([userHits, groupHits, marketHits]) => {
       if (thisNonce === nonce.current) {
-        const pageHits = prefix ? [] : searchPages(query, 2)
+        const pageHits = prefix ? [] : searchPages(search, 2)
         setSearchResults({ pageHits, userHits, groupHits, marketHits })
       }
     })
-  }, [query, groupHitLimit, marketHitLimit, userHitLimit, prefix])
+  }, [search, groupHitLimit, marketHitLimit, userHitLimit, prefix])
 
   return (
     <>
