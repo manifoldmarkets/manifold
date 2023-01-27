@@ -42,7 +42,11 @@ export function useRealtimeRole(groupId: string | undefined) {
   return userRole
 }
 
-export function useRealtimeGroupMembers(groupId: string, hitBottom: boolean) {
+export function useRealtimeGroupMembers(
+  groupId: string,
+  hitBottom: boolean,
+  numMembers: number | undefined
+) {
   const [admins, setAdmins] = useState<JSONContent[] | undefined>(undefined)
   const [moderators, setModerators] = useState<JSONContent[] | undefined>(
     undefined

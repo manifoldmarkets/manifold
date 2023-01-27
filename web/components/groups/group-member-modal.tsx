@@ -34,9 +34,9 @@ export function GroupMemberModalContent(props: {
 
   const { admins, moderators, members, loadMore } = useRealtimeGroupMembers(
     group.id,
-    hitBottom
+    hitBottom,
+    numMembers
   )
-
   return (
     <Col className={clsx(MODAL_CLASS, 'px-0')}>
       <div
