@@ -298,8 +298,12 @@ export function CurrentSwipeCards(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [action])
 
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
   const bind = useDrag(
     ({ down, movement: [mx, my] }) => {
+      if (isModalOpen) return
+
       const xCappedDist = rubberbandIfOutOfBounds(
         Math.abs(mx),
         0,
@@ -317,8 +321,6 @@ export function CurrentSwipeCards(props: {
     },
     { axis: 'lock' }
   )
-
-  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const swipeBetPanel = (
     <SwipeBetPanel
