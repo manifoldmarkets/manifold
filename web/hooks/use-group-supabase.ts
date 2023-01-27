@@ -32,12 +32,13 @@ export function useRealtimeRole(groupId: string | undefined) {
         filter: `group_id=eq.${groupId}`,
       },
       (payload) => {
-        setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
-        console.log(payload)
+        if (payload.new.member_id === user?.id) {
+          setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
+        }
       }
     )
     channel.subscribe(async (status) => {})
-  }, [db])
+  }, [db, user])
   return userRole
 }
 
@@ -110,7 +111,7 @@ export function useRealtimeGroupMembers(groupId: string, hitBottom: boolean) {
       },
       (payload) => {
         fetchGroupMembers()
-        console.log(payload)
+        // console.log(payload)
       }
     )
     channel.subscribe(async (status) => {})

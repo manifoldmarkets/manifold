@@ -145,7 +145,6 @@ export default function GroupPage(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
   const userRole = useRealtimeRole(group?.id)
-  console.log(userRole)
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
     setActiveIndex(tabIndex)
