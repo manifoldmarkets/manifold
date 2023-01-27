@@ -12,6 +12,34 @@ import {
   getNumGroupMembers,
 } from 'web/lib/supabase/group'
 import { useAdmin } from './use-admin'
+import { useUser } from './use-user'
+
+export function useRealtimeRole(groupId: string | undefined) {
+  const [userRole, setUserRole] = useState<groupRoleType | null>(null)
+  const user = useUser()
+  const isManifoldAdmin = useAdmin()
+  useEffect(() => {
+    setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
+  }, [user])
+  useEffect(() => {
+    const channel = db.channel('user-group-role-realtime')
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'group_members',
+        filter: `group_id=eq.${groupId}`,
+      },
+      (payload) => {
+        setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
+        console.log(payload)
+      }
+    )
+    channel.subscribe(async (status) => {})
+  }, [db])
+  return userRole
+}
 
 export function useRealtimeGroupMembers(groupId: string, hitBottom: boolean) {
   const [admins, setAdmins] = useState<JSONContent[] | undefined>(undefined)
@@ -100,7 +128,7 @@ export function useRealtimeNumGroupMembers(groupId: string) {
   }, [])
 
   useEffect(() => {
-    const channel = db.channel('group-members-realtime')
+    const channel = db.channel('group-num-members-realtime')
     channel.on(
       'postgres_changes',
       {
@@ -139,24 +167,30 @@ export function useRealtimeNumGroupMembers(groupId: string) {
   return numMembers
 }
 
-export function useMemberRole(group: Group | null, user?: User | null) {
-  const [role, setRole] = useState<groupRoleType | null>(null)
-  const isManifoldAdmin = useAdmin()
-  if (user && group) {
-    if (isManifoldAdmin) {
-      setRole('admin')
-    } else {
-      getMemberRole(user, group.id).then((result) => {
-        const data = result.data
-        if (data.length > 0) {
-          if (!data[0].role) {
+export async function setTranslatedMemberRole(
+  groupId: string | undefined,
+  isManifoldAdmin: boolean,
+  setRole: (role: groupRoleType | null) => void,
+  user?: User | null
+) {
+  if (isManifoldAdmin) {
+    return 'admin' as groupRoleType
+  }
+  if (user && groupId) {
+    getMemberRole(user, groupId)
+      .then((result) => {
+        if (result.data.length > 0) {
+          if (!result.data[0].role) {
             setRole('member')
           } else {
-            setRole(data[0].role)
+            setRole(result.data[0].role as groupRoleType)
           }
+        } else {
+          setRole(null)
         }
       })
-    }
+      .catch((e) => console.log(e))
+  } else {
+    setRole(null)
   }
-  return role
 }

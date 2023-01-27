@@ -9,7 +9,7 @@ import {
 } from 'web/lib/icons/open-door-icon'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { GroupMemberModalContent, groupRoleType } from './group-member-modal'
+import { GroupMemberModalContent } from './group-member-modal'
 
 export default function GroupOpenClosedWidget(props: { group: Group }) {
   const { group } = props

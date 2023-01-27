@@ -54,7 +54,7 @@ import { usePost, usePosts } from 'web/hooks/use-post'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
-import { useMemberRole } from 'web/hooks/use-group-supabase'
+import { useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
@@ -144,7 +144,8 @@ export default function GroupPage(props: {
 
   const user = useUser()
   const privateUser = usePrivateUser()
-  const userRole = useMemberRole(group, user)
+  const userRole = useRealtimeRole(group?.id)
+  console.log(userRole)
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
     setActiveIndex(tabIndex)

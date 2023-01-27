@@ -25,7 +25,7 @@ import { UserLink } from '../widgets/user-link'
 export function GroupMemberModalContent(props: {
   group: Group
   canEdit: boolean
-  numMembers: number
+  numMembers: number | undefined
 }) {
   const { group, canEdit, numMembers } = props
   const modalRootRef = useRef<HTMLDivElement | null>(null)
@@ -120,9 +120,6 @@ export function MemberRoleSection(props: {
   canEdit: boolean
 }) {
   const { group, members, role, canEdit } = props
-  if (role === 'moderator') {
-    console.log('section', role, members)
-  }
   return (
     <Col className="w-full gap-3">
       <MemberRoleHeader
@@ -202,9 +199,7 @@ export function Member(props: {
       </Row>
       <Row className="items-center gap-1">
         {tag}
-        {canEdit && member.role != 'admin' && (
-          <AdminRoleDropdown group={group} member={member} />
-        )}
+        <AdminRoleDropdown group={group} member={member} canEdit={canEdit} />
       </Row>
     </Row>
   )
@@ -214,38 +209,65 @@ export function Member(props: {
 export function AdminRoleDropdown(props: {
   group: Group
   member: JSONContent
+  canEdit: boolean
   className?: string
 }) {
-  const { group, member, className } = props
+  const { group, member, canEdit, className } = props
+  const user = useUser()
   const groupMemberOptions = buildArray(
-    // if the member is below admin, can upgrade to admin
-    (!member.role || member.role === 'moderator') && {
-      name: 'Make admin',
-      onClick: () => {
-        updateRole(group.id, member.member_id, 'admin')
+    // ADMIN ONLY: if the member is below admin, can upgrade to admin
+    canEdit &&
+      (!member.role || member.role === 'moderator') && {
+        name: 'Make admin',
+        onClick: () => {
+          updateRole(group.id, member.member_id, 'admin')
+        },
       },
-    },
-    // if the member is below moderator, can upgrade to moderator
-    !member.role && {
-      name: 'Make moderator',
-      onClick: () => {
-        updateRole(group.id, member.member_id, 'moderator')
+    // ADMIN ONLY: if the member is below moderator, can upgrade to moderator
+    canEdit &&
+      !member.role && {
+        name: 'Make moderator',
+        onClick: () => {
+          updateRole(group.id, member.member_id, 'moderator')
+        },
       },
-    },
-    // if the member is a moderator, can demote
-    member.role === 'moderator' && {
-      name: 'Remove as moderator',
-      onClick: () => {
-        removeRole(group.id, member.member_id)
+    // ADMIN ONLY: if the member is a moderator, can demote
+    canEdit &&
+      member.role === 'moderator' && {
+        name: 'Remove as moderator',
+        onClick: () => {
+          removeRole(group.id, member.member_id)
+        },
       },
-    }
+    // member can remove self as admin if member is not group creator
+    user?.id === member.member_id &&
+      user?.id != member.creator_id &&
+      member.role === 'admin' && {
+        name: 'Remove self as admin',
+        onClick: () => {
+          removeRole(group.id, member.member_id)
+        },
+      },
+    // member can remove self as moderator
+    user?.id === member.member_id &&
+      member.role === 'moderator' && {
+        name: 'Remove self as moderator',
+        onClick: () => {
+          removeRole(group.id, member.member_id)
+        },
+      }
   )
-  return (
-    <DropdownMenu
-      Items={groupMemberOptions}
-      Icon={<DotsVerticalIcon className={clsx('h-5 w-5 text-gray-400')} />}
-      menuWidth={'w-40'}
-      className={clsx(className)}
-    />
-  )
+
+  if (groupMemberOptions.length > 0) {
+    return (
+      <DropdownMenu
+        Items={groupMemberOptions}
+        Icon={<DotsVerticalIcon className={clsx('h-5 w-5 text-gray-400')} />}
+        menuWidth={'w-40'}
+        className={clsx(className)}
+      />
+    )
+  } else {
+    return <div className="'h-5 w-5 bg-inherit" />
+  }
 }
