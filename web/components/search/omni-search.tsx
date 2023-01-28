@@ -121,11 +121,11 @@ const Results = (props: { query: string }) => {
 
   return (
     <>
+      {marketHits.length > 0 && <MoreMarketResults search={search} />}
       <PageResults pages={pageHits} />
       <UserResults users={userHits} />
       <GroupResults groups={groupHits} />
       <MarketResults markets={marketHits} />
-      {marketHits.length > 0 && <MoreMarketResults search={search} />}
     </>
   )
 }
