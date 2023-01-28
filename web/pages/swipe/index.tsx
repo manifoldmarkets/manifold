@@ -29,6 +29,7 @@ import { logView } from 'web/lib/firebase/views'
 import { track } from 'web/lib/service/analytics'
 import { placeBet } from 'web/lib/firebase/api'
 import { formatMoney } from 'common/util/format'
+import { useEvent } from 'web/hooks/use-event'
 
 export default function Swipe() {
   useTracking('view swipe page')
@@ -108,7 +109,7 @@ export default function Swipe() {
   const indexRef = useRef(index)
   indexRef.current = index
 
-  const onBet = (outcome: 'YES' | 'NO') => {
+  const onBet = useEvent((outcome: 'YES' | 'NO') => {
     if (!contract) return
 
     setBetStatus('loading')
@@ -158,7 +159,7 @@ export default function Swipe() {
       amount,
       outcome,
     })
-  }
+  })
 
   const bind = useDrag(
     ({ down, movement: [mx, my] }) => {
@@ -183,15 +184,20 @@ export default function Swipe() {
       )
       const x = down ? Math.sign(mx) * xCappedDist : 0
 
-      let newIndex = index
+      let y = -index * cardHeight + my
       if (!down) {
+        let newIndex = index
         // Scroll to next or previous card.
         if (my <= -verticalSwipeDist)
           newIndex = Math.min(cards.length - 1, index + 1)
         else if (my >= verticalSwipeDist) newIndex = Math.max(0, index - 1)
-        setIndex(newIndex)
+        y = -newIndex * cardHeight
+        setTimeout(() => {
+          // Hack to delay the re-rendering work until after animation is done.
+          // Makes animation smooth for older devices, iOS.
+          setIndex(newIndex)
+        }, 200)
       }
-      const y = -newIndex * cardHeight + (down ? my : 0)
 
       api.start({ x, y })
     },
@@ -225,8 +231,7 @@ export default function Swipe() {
       >
         {index + 1 < cards.length && (
           <SwipeCard
-            className="-z-10 select-none overflow-hidden"
-            style={{ position: 'absolute' }}
+            className="!absolute -z-10 select-none overflow-hidden"
             amount={amount}
             setAmount={setAmount}
             contract={cards[index + 1]}
@@ -261,7 +266,7 @@ export default function Swipe() {
           ))}
 
           {!cards.length && (
-            <div className="flex h-full w-full flex-col items-center justify-center">
+            <div className="flex w-full flex-col items-center justify-center">
               No more cards!
               <SiteLink href="/home" className="text-indigo-700">
                 Return home

@@ -4,14 +4,7 @@ import { getOutcomeProbabilityAfterBet } from 'common/calculate'
 import { BinaryContract, Contract } from 'common/contract'
 import { getBinaryProb } from 'common/contract-details'
 import { User } from 'common/user'
-import {
-  CSSProperties,
-  Dispatch,
-  memo,
-  SetStateAction,
-  useEffect,
-  useState,
-} from 'react'
+import { Dispatch, memo, SetStateAction, useEffect, useState } from 'react'
 import { LikeButton } from 'web/components/contract/like-button'
 import { useContract } from 'web/hooks/use-contracts'
 import { contractPath } from 'web/lib/firebase/contracts'
@@ -37,7 +30,6 @@ export const SwipeCard = memo(
     isModalOpen: boolean
     setIsModalOpen: Dispatch<SetStateAction<boolean>>
     className?: string
-    style?: CSSProperties
   }) => {
     const {
       className,
@@ -49,7 +41,6 @@ export const SwipeCard = memo(
       user,
       isModalOpen,
       setIsModalOpen,
-      style,
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
@@ -74,7 +65,6 @@ export const SwipeCard = memo(
     return (
       <Col
         className={clsx(className, 'relative h-full w-full select-none')}
-        style={style}
         onClick={(e) => e.preventDefault()}
       >
         <Col className="h-full">
@@ -95,12 +85,7 @@ export const SwipeCard = memo(
 
           <div className="mt-4 mb-8 max-h-24 overflow-ellipsis">
             <SiteLink href={contractPath(contract)} followsLinkClass>
-              <div
-                className={clsx(
-                  'text-white',
-                  getQuestionSize(question)
-                )}
-              >
+              <div className={clsx('text-white', getQuestionSize(question))}>
                 {question}
               </div>
             </SiteLink>
