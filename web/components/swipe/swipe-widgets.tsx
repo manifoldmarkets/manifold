@@ -74,7 +74,7 @@ export function DescriptionAndModal(props: {
         setIsModalOpen && (
           <>
             <span
-              className="mr-2 font-semibold text-indigo-400 drop-shadow-sm"
+              className="mr-2 font-semibold text-indigo-400"
               onClick={() => setIsModalOpen(true)}
             >
               See more

@@ -225,7 +225,7 @@ export default function Swipe() {
       >
         {index + 1 < cards.length && (
           <SwipeCard
-            className="select-none overflow-hidden"
+            className="-z-10 select-none overflow-hidden"
             style={{ position: 'absolute' }}
             amount={amount}
             setAmount={setAmount}

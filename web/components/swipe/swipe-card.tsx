@@ -73,10 +73,7 @@ export const SwipeCard = memo(
     }, [amount])
     return (
       <Col
-        className={clsx(
-          className,
-          'relative h-full w-full select-none drop-shadow-2xl'
-        )}
+        className={clsx(className, 'relative h-full w-full select-none')}
         style={style}
         onClick={(e) => e.preventDefault()}
       >
@@ -93,60 +90,58 @@ export const SwipeCard = memo(
           </div>
           {/* <div className="h-20 w-full bg-black" /> */}
         </Col>
-        <Col className="absolute inset-0 z-10">
-          <Col className="reltive h-full gap-2 p-4">
-            <CornerDetails contract={contract} user={user} />
+        <Col className="absolute inset-0 z-10 h-full gap-2 p-4">
+          <CornerDetails contract={contract} user={user} />
 
-            <div className="mt-4 mb-8 max-h-24 overflow-ellipsis">
-              <SiteLink href={contractPath(contract)} followsLinkClass>
-                <div
-                  className={clsx(
-                    'text-white drop-shadow',
-                    getQuestionSize(question)
-                  )}
-                >
-                  {question}
-                </div>
-              </SiteLink>
+          <div className="mt-4 mb-8 max-h-24 overflow-ellipsis">
+            <SiteLink href={contractPath(contract)} followsLinkClass>
+              <div
+                className={clsx(
+                  'text-white',
+                  getQuestionSize(question)
+                )}
+              >
+                {question}
+              </div>
+            </SiteLink>
 
-              <Row className="mt-4 w-full">
-                <Percent
-                  currPercent={currPercent}
-                  yesPercent={yesPercent}
-                  noPercent={noPercent}
-                  outcome={
-                    betDirection === 'YES'
-                      ? 'YES'
-                      : betDirection === 'NO'
-                      ? 'NO'
-                      : undefined
-                  }
-                />
-              </Row>
-            </div>
-
-            <Row className="mx-auto w-full grow items-center" />
-
-            <Row className="justify-end">
-              <CardActions user={user} contract={contract} />
+            <Row className="mt-4 w-full">
+              <Percent
+                currPercent={currPercent}
+                yesPercent={yesPercent}
+                noPercent={noPercent}
+                outcome={
+                  betDirection === 'YES'
+                    ? 'YES'
+                    : betDirection === 'NO'
+                    ? 'NO'
+                    : undefined
+                }
+              />
             </Row>
-            <Col className="gap-6">
-              <Col className="h-20 w-full justify-end">
-                <DescriptionAndModal
-                  description={description}
-                  isModalOpen={isModalOpen}
-                  setIsModalOpen={setIsModalOpen}
-                />
-              </Col>
-              <SwipeBetPanel
-                amount={amount}
-                setAmount={setAmount}
-                betDirection={betDirection}
-                betStatus={betStatus}
-                onBet={onBet}
-                disabled={false}
+          </div>
+
+          <Row className="mx-auto w-full grow items-center" />
+
+          <Row className="justify-end">
+            <CardActions user={user} contract={contract} />
+          </Row>
+          <Col className="gap-6">
+            <Col className="h-20 w-full justify-end">
+              <DescriptionAndModal
+                description={description}
+                isModalOpen={isModalOpen}
+                setIsModalOpen={setIsModalOpen}
               />
             </Col>
+            <SwipeBetPanel
+              amount={amount}
+              setAmount={setAmount}
+              betDirection={betDirection}
+              betStatus={betStatus}
+              onBet={onBet}
+              disabled={false}
+            />
           </Col>
         </Col>
       </Col>
@@ -199,7 +194,6 @@ function CardActions(props: { user?: User; contract: BinaryContract }) {
         size={'xl'}
         showTotalLikesUnder={true}
         color={'white'}
-        className={'drop-shadow-sm'}
       />
       {/* TODO Share button */}
     </Col>
