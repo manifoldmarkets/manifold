@@ -42,6 +42,9 @@ export const OmniSearch = (props: {
       <Combobox.Input
         autoFocus
         value={query}
+        onKeyDown={(e: any) => {
+          if (e.key === 'Escape') setOpen?.(false)
+        }}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search markets, users, & groups"
         className={clsx(
