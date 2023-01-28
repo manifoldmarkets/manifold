@@ -239,7 +239,7 @@ const MoreMarketResults = (props: { search: string }) => {
     <ResultOption
       value={{
         id: 'more',
-        slug: `/search?q=${encodeURIComponent(props.search)}`,
+        slug: `/search?s=relevance&f=all&q=${encodeURIComponent(props.search)}`,
       }}
     >
       <div className="flex items-center text-sm">
