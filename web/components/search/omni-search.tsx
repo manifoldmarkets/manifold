@@ -42,6 +42,9 @@ export const OmniSearch = (props: {
       <Combobox.Input
         autoFocus
         value={query}
+        onKeyDown={(e: any) => {
+          if (e.key === 'Escape') setOpen?.(false)
+        }}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search markets, users, & groups"
         className={clsx(
@@ -67,15 +70,16 @@ const DefaultResults = () => {
       <PageResults pages={defaultPages} />
       <MarketResults markets={markets} />
       <div className="mx-2 my-2 text-xs">
-        <span className="uppercase text-teal-500">💹 Protip:</span> Start
-        searches with <Key>%</Key> <Key>@</Key> <Key>#</Key> to narrow results
+        <span className="uppercase text-teal-500">💹 Protip:</span> Start search
+        with <Key>%</Key> for markets, <Key>@</Key> for users, or <Key>#</Key>{' '}
+        for groups
       </div>
     </>
   )
 }
 
 const Key = (props: { children: ReactNode }) => (
-  <code className="rounded bg-gray-300 p-0.5">{props.children}</code>
+  <code className="mx-0.5 rounded bg-gray-300 p-0.5">{props.children}</code>
 )
 
 const Results = (props: { query: string }) => {
@@ -104,24 +108,24 @@ const Results = (props: { query: string }) => {
     const thisNonce = nonce.current
 
     Promise.all([
-      searchUsers(query, userHitLimit),
-      searchGroups(query, groupHitLimit),
-      searchContracts(query, marketHitLimit),
+      searchUsers(search, userHitLimit),
+      searchGroups(search, groupHitLimit),
+      searchContracts(search, marketHitLimit),
     ]).then(([userHits, groupHits, marketHits]) => {
       if (thisNonce === nonce.current) {
-        const pageHits = prefix ? [] : searchPages(query, 2)
+        const pageHits = prefix ? [] : searchPages(search, 2)
         setSearchResults({ pageHits, userHits, groupHits, marketHits })
       }
     })
-  }, [query, groupHitLimit, marketHitLimit, userHitLimit, prefix])
+  }, [search, groupHitLimit, marketHitLimit, userHitLimit, prefix])
 
   return (
     <>
+      {marketHits.length > 0 && <MoreMarketResults search={search} />}
       <PageResults pages={pageHits} />
       <UserResults users={userHits} />
       <GroupResults groups={groupHits} />
       <MarketResults markets={marketHits} />
-      {marketHits.length > 0 && <MoreMarketResults search={search} />}
     </>
   )
 }
@@ -238,7 +242,7 @@ const MoreMarketResults = (props: { search: string }) => {
     <ResultOption
       value={{
         id: 'more',
-        slug: `/search?q=${encodeURIComponent(props.search)}`,
+        slug: `/search?s=relevance&f=all&q=${encodeURIComponent(props.search)}`,
       }}
     >
       <div className="flex items-center text-sm">
