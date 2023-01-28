@@ -11,6 +11,7 @@ import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { defaultPages, PageData, searchPages } from './query-pages'
 import { useSearchContext } from './search-context'
 
@@ -99,6 +100,7 @@ const Results = (props: { query: string }) => {
       groupHits: [] as SearchGroupInfo[],
       marketHits: [] as Contract[],
     })
+  const [loading, setLoading] = useState(false)
 
   // Use nonce to make sure only latest result gets used.
   const nonce = useRef(0)
@@ -106,6 +108,7 @@ const Results = (props: { query: string }) => {
   useEffect(() => {
     nonce.current++
     const thisNonce = nonce.current
+    setLoading(true)
 
     Promise.all([
       searchUsers(search, userHitLimit),
@@ -115,9 +118,28 @@ const Results = (props: { query: string }) => {
       if (thisNonce === nonce.current) {
         const pageHits = prefix ? [] : searchPages(search, 2)
         setSearchResults({ pageHits, userHits, groupHits, marketHits })
+        setLoading(false)
       }
     })
   }, [search, groupHitLimit, marketHitLimit, userHitLimit, prefix])
+
+  if (loading) {
+    return (
+      <LoadingIndicator
+        className="absolute right-6 bottom-1/2 translate-y-1/2"
+        spinnerClassName="!border-gray-300 !border-r-transparent"
+      />
+    )
+  }
+
+  if (
+    !pageHits.length &&
+    !userHits.length &&
+    !groupHits.length &&
+    !marketHits.length
+  ) {
+    return <div className="my-6 text-center">no results x.x</div>
+  }
 
   return (
     <>
