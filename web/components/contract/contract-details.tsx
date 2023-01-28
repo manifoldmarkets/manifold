@@ -145,7 +145,7 @@ export function MarketSubheader(props: { contract: Contract }) {
         />
         <MiniUserFollowButton
           userId={creatorId}
-          className="absolute bottom-0 right-0 h-4 w-4"
+          className="absolute -bottom-1 -right-1"
         />
       </div>
 
