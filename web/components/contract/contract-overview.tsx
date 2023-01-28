@@ -40,7 +40,7 @@ import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Period } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
-import { getCutoff, periodDurations } from 'web/lib/util/time'
+import { periodDurations } from 'web/lib/util/time'
 import { getDateRange } from '../charts/helpers'
 
 export const ContractOverview = memo(
