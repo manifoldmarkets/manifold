@@ -1,5 +1,5 @@
 import { useQueryClient } from 'react-query'
-import { DAY_MS, HOUR_MS, MINUTE_MS, sleep } from 'common/util/time'
+import { MINUTE_MS, sleep } from 'common/util/time'
 import { Period } from 'web/lib/firebase/users'
 import {
   getPortfolioHistory,
