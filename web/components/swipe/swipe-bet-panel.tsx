@@ -1,5 +1,7 @@
+import type { Dispatch, SetStateAction } from 'react'
 import { CheckCircleIcon, MinusIcon, PlusIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Row } from '../layout/row'
@@ -8,28 +10,18 @@ import {
   BET_TAP_ADD,
   isStatusAFailure,
   STARTING_BET_AMOUNT,
-  SwipeAction,
 } from './swipe-helpers'
 import { TouchButton } from './touch-button'
 
 export function SwipeBetPanel(props: {
   amount: number
   disabled: boolean
-  setAmount?: (setAmount: (amount: number) => void) => void
-  swipeAction?: SwipeAction
-  onButtonBet?: (outcome: 'YES' | 'NO') => void
-  buttonAction?: 'YES' | 'NO' | undefined
-  betStatus?: 'loading' | 'success' | string | undefined
+  setAmount: Dispatch<SetStateAction<number>>
+  onBet: (outcome: 'YES' | 'NO') => void
+  betDirection: 'YES' | 'NO' | undefined
+  betStatus: 'loading' | 'success' | string | undefined
 }) {
-  const {
-    amount,
-    setAmount,
-    disabled,
-    swipeAction,
-    onButtonBet,
-    buttonAction,
-    betStatus,
-  } = props
+  const { amount, setAmount, disabled, onBet, betDirection, betStatus } = props
   const [pressState, setPressState] = useState<string | undefined>(undefined)
 
   const processPress = () => {
@@ -53,14 +45,10 @@ export function SwipeBetPanel(props: {
   }, [pressState])
 
   const swipingLeft =
-    !disabled &&
-    (buttonAction === 'NO' || swipeAction === 'left') &&
-    !isStatusAFailure(betStatus)
+    !disabled && betDirection === 'NO' && !isStatusAFailure(betStatus)
 
   const swipingRight =
-    !disabled &&
-    (buttonAction === 'YES' || swipeAction === 'right') &&
-    !isStatusAFailure(betStatus)
+    !disabled && betDirection === 'YES' && !isStatusAFailure(betStatus)
   return (
     <Row className="relative mb-4 w-full justify-center gap-5">
       <Row className="relative items-center gap-0.5 text-white">
@@ -79,9 +67,7 @@ export function SwipeBetPanel(props: {
           )}
           disabled={disabled}
           onClick={() => {
-            if (onButtonBet) {
-              onButtonBet('NO')
-            }
+            onBet('NO')
           }}
         >
           NO
@@ -141,9 +127,7 @@ export function SwipeBetPanel(props: {
           )}
           disabled={disabled}
           onClick={() => {
-            if (onButtonBet) {
-              onButtonBet('YES')
-            }
+            onBet('YES')
           }}
         >
           YES
