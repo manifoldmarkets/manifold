@@ -40,7 +40,8 @@ import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Period } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
-import { getCutoff } from 'web/lib/util/time'
+import { getCutoff, periodDurations } from 'web/lib/util/time'
+import { getDateRange } from '../charts/helpers'
 
 export const ContractOverview = memo(
   (props: {
@@ -119,8 +120,8 @@ const BinaryOverview = (props: {
   const { contract, betPoints } = props
   const user = useUser()
 
-  const { viewScale, currentTimePeriod, setTimePeriod, start } = useTimePicker()
-  const maxRange = Date.now() - contract.createdTime
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
+    useTimePicker(contract)
 
   return (
     <Col className="gap-1 md:gap-2">
@@ -210,8 +211,8 @@ const PseudoNumericOverview = (props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
   const { contract, betPoints } = props
-  const maxRange = Date.now() - contract.createdTime
-  const { viewScale, currentTimePeriod, setTimePeriod, start } = useTimePicker()
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
+    useTimePicker(contract)
 
   return (
     <Col className="gap-1 md:gap-2">
@@ -246,7 +247,7 @@ const PseudoNumericOverview = (props: {
   )
 }
 
-const useTimePicker = () => {
+const useTimePicker = (contract: Contract) => {
   const viewScale = useSingleValueHistoryChartViewScale()
   const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
 
@@ -257,8 +258,13 @@ const useTimePicker = () => {
     viewScale.setViewYScale(undefined)
   })
 
+  const [, endRange] = getDateRange(contract)
+  const end = endRange ?? Date.now()
   const start =
-    currentTimePeriod === 'allTime' ? undefined : getCutoff(currentTimePeriod)
+    currentTimePeriod === 'allTime'
+      ? undefined
+      : end - periodDurations[currentTimePeriod]
+  const maxRange = end - contract.createdTime
 
-  return { viewScale, currentTimePeriod, setTimePeriod, start }
+  return { viewScale, currentTimePeriod, setTimePeriod, start, maxRange }
 }
