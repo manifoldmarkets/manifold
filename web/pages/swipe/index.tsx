@@ -130,8 +130,8 @@ export default function Swipe() {
           api.start({ y })
         }, 500)
       })
-      .catch((e) => {
-        setBetStatus(e.message)
+      .catch(() => {
+        setBetStatus(undefined)
         setBetDirection(undefined)
 
         // Scroll back to neutral position.
