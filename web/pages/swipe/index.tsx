@@ -96,7 +96,7 @@ export default function Swipe() {
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
     y: -index * cardHeight,
-    config: { tension: 1000, friction: 70 }, // clamp: true?
+    config: { tension: 500, friction: 30, clamp: true },
   }))
 
   useEffect(() => {
