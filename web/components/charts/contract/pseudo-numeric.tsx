@@ -87,8 +87,8 @@ export const PseudoNumericContractChart = (props: {
     onMouseOver,
   } = props
   const { min, max, isLogScale } = contract
-  const [calcStart, end] = getDateRange(contract)
-  const start = controlledStart ?? calcStart
+  const [start, end] = getDateRange(contract)
+  const rangeStart = controlledStart ?? start
   const scaleP = useMemo(
     () => getScaleP(min, max, isLogScale),
     [min, max, isLogScale]
@@ -112,7 +112,7 @@ export const PseudoNumericContractChart = (props: {
     last(betPoints)?.x,
     Date.now()
   )
-  const visibleRange = [start, rightmostDate]
+  const visibleRange = [rangeStart, rightmostDate]
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale

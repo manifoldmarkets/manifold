@@ -63,8 +63,8 @@ export const BinaryContractChart = (props: {
     onMouseOver,
     color,
   } = props
-  const [calcStart, end] = getDateRange(contract)
-  const start = controlledStart ?? calcStart
+  const [start, end] = getDateRange(contract)
+  const rangeStart = controlledStart ?? start
   const startP = getInitialProbability(contract)
   const endP = getProbability(contract)
   const betPoints = useMemo(
@@ -84,7 +84,7 @@ export const BinaryContractChart = (props: {
     last(betPoints)?.x,
     Date.now()
   )
-  const visibleRange = [start, rightmostDate]
+  const visibleRange = [rangeStart, rightmostDate]
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
   return (
