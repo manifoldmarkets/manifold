@@ -580,7 +580,6 @@ export const createReferralNotification = async (
       : referredByContract?.question,
   }
   await notificationRef.set(removeUndefinedProps(notification))
-
   // TODO send email notification
 }
 
@@ -1089,3 +1088,38 @@ export const createMarketClosedNotification = async (
     contract
   )
 }
+
+// TODO: inga when admin changes your role in a group you get notified
+// export const createGroupStatusChangeNotification = async (
+//   initiator: User,
+//   affectedUserId: string,
+//   groupId: string,
+//   newStatus: 'member' | 'moderator' | 'admin'
+// ) => {
+//   const privateUser = await getPrivateUser(affectedUserId)
+//   if (!privateUser) return
+//   const { sendToBrowser } = getNotificationDestinationsForUser(
+//     privateUser,
+//     'group_role_changed'
+//   )
+//   if (!sendToBrowser) return
+
+//   const notificationRef = firestore
+//     .collection(`/users/${affectedUserId}/notifications`)
+//     .doc()
+//   const notification: Notification = {
+//     id: notificationRef.id,
+//     userId: affectedUserId,
+//     reason: 'group_role_changed',
+//     createdTime: Date.now(),
+//     isSeen: false,
+//     sourceId: groupId,
+//     sourceType: 'group',
+//     sourceUpdateType: 'updated',
+//     sourceUserName: initiator.name,
+//     sourceUserUsername: initiator.username,
+//     sourceUserAvatarUrl: initiator.avatarUrl,
+//     sourceText: newStatus,
+//   }
+//   return await notificationRef.set(removeUndefinedProps(notification))
+// }

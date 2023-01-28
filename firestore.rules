@@ -216,7 +216,7 @@ service cloud.firestore {
       allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                         && request.resource.data.diff(resource.data)
                         .affectedKeys()
-                        .hasOnly(['name', 'about', 'anyoneCanJoin', 'aboutPostId', 'pinnedItems','bannerUrl' ]);
+                        .hasOnly(['name', 'about', 'aboutPostId', 'pinnedItems','bannerUrl' ]);
       allow delete: if request.auth.uid == resource.data.creatorId;
 
       match /groupContracts/{contractId} {
@@ -224,7 +224,7 @@ service cloud.firestore {
       }
 
       match /groupMembers/{memberId}{
-        allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId && get(/databases/$(database)/documents/groups/$(groupId)).data.anyoneCanJoin);
+        allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId);
         allow update: if isAdmin() || request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role == 'admin' || request.auth.uid == resource.data.userId;
         allow delete: if request.auth.uid == resource.data.userId;
       }

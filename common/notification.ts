@@ -99,6 +99,7 @@ export type notification_reason_types =
   | 'reply_to_users_comment'
   | 'your_contract_closed'
   | 'subsidized_your_market'
+  | 'group_role_changed'
 
 type notification_descriptions = {
   [key in notification_preference]: {

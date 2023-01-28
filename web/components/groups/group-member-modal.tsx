@@ -1,19 +1,13 @@
-import { DotsVerticalIcon, HashtagIcon } from '@heroicons/react/solid'
+import { DotsVerticalIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { Group } from 'common/group'
-import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useRealtimeGroupMembers } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useUser } from 'web/hooks/use-user'
 import { removeRole, updateRole } from 'web/lib/firebase/groups'
-import {
-  getGroupMembers,
-  getGroupOfRole,
-  getNumGroupMembers,
-} from 'web/lib/supabase/group'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -69,7 +63,7 @@ export function GroupMemberModalContent(props: {
             admins &&
             moderators &&
             members &&
-            numMembers > admins.length + moderators.length + members.length &&
+            numMembers >= admins.length + moderators.length + members.length &&
             !loadMore
               ? ''
               : 'hidden'
@@ -214,13 +208,31 @@ export function AdminRoleDropdown(props: {
 }) {
   const { group, member, canEdit, className } = props
   const user = useUser()
+
+  // TODO: inga send notification upon role change
+  //   const updateRoleAndSendNotif = async (
+  //     groupId: string,
+  //     memberId: string,
+  //     updatedRole: groupRoleType
+  //   ) => {
+  //     updateRole(groupId, memberId, updatedRole)
+  //     if (user) {
+  //       try {
+  //         createGroupStatusChangeNotification(user, memberId, groupId, 'admin')
+  //       } catch (e) {
+  //         console.error(e)
+  //       }
+  //     }
+  //   }
+
   const groupMemberOptions = buildArray(
     // ADMIN ONLY: if the member is below admin, can upgrade to admin
     canEdit &&
       (!member.role || member.role === 'moderator') && {
         name: 'Make admin',
         onClick: () => {
-          updateRole(group.id, member.member_id, 'admin')
+          //   updateRole(group.id, member.member_id, 'admin')
+          updateRole(group.id, member.id, 'admin')
         },
       },
     // ADMIN ONLY: if the member is below moderator, can upgrade to moderator
