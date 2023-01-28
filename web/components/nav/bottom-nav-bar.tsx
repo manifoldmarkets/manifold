@@ -3,7 +3,7 @@ import Link from 'next/link'
 import {
   HomeIcon,
   MenuAlt3Icon,
-  SparklesIcon,
+  SearchIcon,
   XIcon,
   BookOpenIcon,
 } from '@heroicons/react/outline'
@@ -36,7 +36,7 @@ const touchItemClass = 'bg-indigo-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Discover', href: '/swipe', icon: SparklesIcon },
+    { name: 'Search', href: '/find', icon: SearchIcon },
     {
       name: 'Profile',
       href: `/${user.username}?tab=portfolio`,

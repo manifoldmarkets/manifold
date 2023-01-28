@@ -2,6 +2,7 @@ import { PlusCircleIcon } from '@heroicons/react/outline'
 import { DotsVerticalIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { difference, isArray, keyBy } from 'lodash'
 import clsx from 'clsx'
+
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import {
   BACKGROUND_COLOR,
@@ -11,7 +12,7 @@ import {
 import { GlobalConfig } from 'common/globalConfig'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
-import { User } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { buildArray, filterDefined } from 'common/util/array'
 import { chooseRandomSubset } from 'common/util/random'
 import { MINUTE_MS } from 'common/util/time'
@@ -72,6 +73,8 @@ import {
   SearchButton,
 } from 'web/components/nav/search-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useIsClient } from 'web/hooks/use-is-client'
+import Swipe from '../swipe'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -83,6 +86,23 @@ export async function getStaticProps() {
 }
 
 export default function Home(props: { globalConfig: GlobalConfig }) {
+  const isClient = useIsClient()
+  const isMobile = useIsMobile()
+
+  if (!isClient)
+    return (
+      <Page>
+        <LoadingIndicator className="mt-6" />
+      </Page>
+    )
+
+  if (isMobile) {
+    return <Swipe />
+  }
+  return <HomeDesktop globalConfig={props.globalConfig} />
+}
+
+function HomeDesktop(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
   const followedGroupIds = useMemberGroupsIdsAndSlugs(user?.id)
@@ -146,53 +166,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     !!userBlockFacetFilters
   )
 
-  const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
-    store: inMemoryStore(),
-    key: 'home-pinned',
-  })
+  const pinned = useGlobalPinned(globalConfig, privateUser)
 
-  useEffect(() => {
-    const pinnedItems = globalConfig?.pinnedItems
-    const userIsBlocked = (userId: string) =>
-      privateUser?.blockedUserIds.includes(userId) ||
-      privateUser?.blockedByUserIds.includes(userId)
-    if (pinnedItems) {
-      const itemComponents = pinnedItems.map((element) => {
-        if (element?.type === 'post') {
-          const post = element.item as Post
-          if (!userIsBlocked(post.creatorId))
-            return <PostCard post={post} pinned={true} />
-        } else if (element?.type == 'group') {
-          const group = element.item as Group
-          if (!userIsBlocked(group.creatorId))
-            return <GroupCard group={group} pinned={true} />
-        } else if (element?.type === 'contract') {
-          const contract = element.item as Contract
-          if (
-            !userIsBlocked(contract.creatorId) &&
-            !privateUser?.blockedContractIds.includes(contract.id) &&
-            !privateUser?.blockedGroupSlugs.some((slug) =>
-              contract.groupSlugs?.includes(slug)
-            )
-          )
-            return <ContractCard contract={contract} pinned={true} />
-        }
-      })
-      setPinned(
-        itemComponents.filter(
-          (element) => element != undefined
-        ) as JSX.Element[]
-      )
-    }
-  }, [
-    globalConfig,
-    privateUser?.blockedByUserIds,
-    privateUser?.blockedContractIds,
-    privateUser?.blockedGroupSlugs,
-    privateUser?.blockedUserIds,
-    setPinned,
-  ])
-  const isMobile = useIsMobile()
   const isLoading =
     !user ||
     !privateUser ||
@@ -210,7 +185,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />
           <MobileSearchButton className="flex-1 md:hidden" />
           <Row className="items-center gap-4">
-            <DailyStats user={user} showLoans={!isMobile} />
+            <DailyStats user={user} showLoans />
             <CustomizeButton router={Router} />
           </Row>
         </Row>
@@ -594,4 +569,57 @@ function CustomizeButton(props: {
       MenuWidth="w-44"
     />
   )
+}
+
+const useGlobalPinned = (
+  globalConfig: GlobalConfig,
+  privateUser: PrivateUser | null | undefined
+) => {
+  const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
+    store: inMemoryStore(),
+    key: 'home-pinned',
+  })
+
+  useEffect(() => {
+    const pinnedItems = globalConfig?.pinnedItems
+    const userIsBlocked = (userId: string) =>
+      privateUser?.blockedUserIds.includes(userId) ||
+      privateUser?.blockedByUserIds.includes(userId)
+    if (pinnedItems) {
+      const itemComponents = pinnedItems.map((element) => {
+        if (element?.type === 'post') {
+          const post = element.item as Post
+          if (!userIsBlocked(post.creatorId))
+            return <PostCard post={post} pinned={true} />
+        } else if (element?.type == 'group') {
+          const group = element.item as Group
+          if (!userIsBlocked(group.creatorId))
+            return <GroupCard group={group} pinned={true} />
+        } else if (element?.type === 'contract') {
+          const contract = element.item as Contract
+          if (
+            !userIsBlocked(contract.creatorId) &&
+            !privateUser?.blockedContractIds.includes(contract.id) &&
+            !privateUser?.blockedGroupSlugs.some((slug) =>
+              contract.groupSlugs?.includes(slug)
+            )
+          )
+            return <ContractCard contract={contract} pinned={true} />
+        }
+      })
+      setPinned(
+        itemComponents.filter(
+          (element) => element != undefined
+        ) as JSX.Element[]
+      )
+    }
+  }, [
+    globalConfig,
+    privateUser?.blockedByUserIds,
+    privateUser?.blockedContractIds,
+    privateUser?.blockedGroupSlugs,
+    privateUser?.blockedUserIds,
+    setPinned,
+  ])
+  return pinned
 }
