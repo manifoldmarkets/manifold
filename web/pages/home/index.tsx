@@ -88,6 +88,7 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const isClient = useIsClient()
   const isMobile = useIsMobile()
+  useTracking('view home', { kind: isMobile ? 'swipe' : 'desktop' })
 
   if (!isClient)
     return (
@@ -130,7 +131,6 @@ function HomeDesktop(props: { globalConfig: GlobalConfig }) {
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
   useRedirectIfSignedOut()
-  useTracking('view home')
 
   useSaveReferral()
 
