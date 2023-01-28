@@ -140,14 +140,18 @@ const CornerDetails = (props: {
   className?: string
 }) => {
   const { contract, className, user } = props
-  const { creatorName, creatorAvatarUrl, closeTime } = contract
+  const { creatorName, creatorUsername, creatorAvatarUrl, closeTime } = contract
 
   return (
     <div className={clsx('flex justify-between', className)}>
       <Row className="gap-2">
-        <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
+        <SiteLink href={`/${creatorUsername}`}>
+          <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
+        </SiteLink>
         <div className="text-xs">
-          <div className="text-white">{creatorName} </div>
+          <SiteLink href={`/${creatorUsername}`} followsLinkClass>
+            <div className="text-white">{creatorName}</div>
+          </SiteLink>
           {closeTime != undefined && (
             <div className="text-gray-400 ">
               trading closes {fromNow(closeTime)}
