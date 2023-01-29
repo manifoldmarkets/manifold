@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { flatten, groupBy, sumBy, mapValues } from 'lodash'
+import { groupBy, sumBy, mapValues } from 'lodash'
 
 import { initAdmin } from './script-init'
 initAdmin()
@@ -7,7 +7,7 @@ initAdmin()
 import { Bet } from '../../../common/bet'
 import { Contract } from '../../../common/contract'
 import { getLoanPayouts, getPayouts } from '../../../common/payouts'
-import { filterDefined } from '../../../common/util/array'
+import { payUser } from '../utils'
 
 type DocRef = admin.firestore.DocumentReference
 
@@ -20,9 +20,8 @@ async function checkIfPayOutAgain(contractRef: DocRef, contract: Contract) {
     .then((snap) => snap.docs.map((bet) => bet.data() as Bet))
 
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
-  const loanedBets = openBets.filter((bet) => bet.loanAmount)
 
-  if (loanedBets.length && contract.resolution) {
+  if (contract.resolution) {
     const { resolution, resolutions, resolutionProbability } = contract as any
 
     const { payouts } = getPayouts(
@@ -43,21 +42,8 @@ async function checkIfPayOutAgain(contractRef: DocRef, contract: Contract) {
       sumBy(group, (g) => g.payout)
     )
 
-    const entries = Object.entries(userPayouts)
-    const firstNegative = entries.findIndex(([_, payout]) => payout < 0)
-    const toBePaidOut = firstNegative === -1 ? [] : entries.slice(firstNegative)
-
-    if (toBePaidOut.length) {
-      console.log(
-        'to be paid out',
-        toBePaidOut.length,
-        'already paid out',
-        entries.length - toBePaidOut.length
-      )
-      const positivePayouts = toBePaidOut.filter(([_, payout]) => payout > 0)
-      if (positivePayouts.length)
-        return { contract, toBePaidOut: positivePayouts }
-    }
+    console.log('to be paid out', Object.keys(userPayouts).length)
+    return { contract, toBePaidOut: userPayouts }
   }
   return undefined
 }
@@ -65,39 +51,26 @@ async function checkIfPayOutAgain(contractRef: DocRef, contract: Contract) {
 async function payOutContractAgain() {
   console.log('Recalculating contract info')
 
-  const snapshot = await firestore.collection('contracts').get()
+  const snapshot = await firestore
+    .collection('contracts')
+    .doc('kE59BOOyRb38ezsfoYIW')
+    .get()
+  const contract = snapshot.data() as Contract
 
-  const [startTime, endTime] = [
-    new Date('2022-03-02'),
-    new Date('2022-03-07'),
-  ].map((date) => date.getTime())
+  console.log('Loaded', contract)
 
-  const contracts = snapshot.docs
-    .map((doc) => doc.data() as Contract)
-    .filter((contract) => {
-      const { resolutionTime } = contract
-      return (
-        resolutionTime && resolutionTime > startTime && resolutionTime < endTime
-      )
-    })
+  const contractRef = firestore.doc(`contracts/${contract.id}`)
+  const result = await checkIfPayOutAgain(contractRef, contract)
+  if (result) {
+    const { contract, toBePaidOut } = result
+    console.log('Contract', contract.id, 'needs to be paid out again')
 
-  console.log('Loaded', contracts.length, 'contracts')
-
-  const toPayOutAgain = filterDefined(
-    await Promise.all(
-      contracts.map(async (contract) => {
-        const contractRef = firestore.doc(`contracts/${contract.id}`)
-
-        return await checkIfPayOutAgain(contractRef, contract)
-      })
-    )
-  )
-
-  const flattened = flatten(toPayOutAgain.map((d) => d.toBePaidOut))
-
-  for (const [userId, payout] of flattened) {
-    console.log('Paying out', userId, payout)
-    // await payUser(userId, payout)
+    for (const [userId, payout] of Object.entries(toBePaidOut)) {
+      if (payout > 1e-8) {
+        console.log('Subtracting out payout', userId, -payout)
+        await payUser(userId, -payout)
+      }
+    }
   }
 }
 

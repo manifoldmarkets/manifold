@@ -54,7 +54,9 @@ export const getServiceAccountCredentials = (env?: string) => {
       "Couldn't find active Firebase project; did you do `firebase use <alias>?`"
     )
   }
-  const envVar = `GOOGLE_APPLICATION_CREDENTIALS_${env.toUpperCase()}`
+  const envVar = `GOOGLE_APPLICATION_CREDENTIALS_${env
+    .toUpperCase()
+    .replace(/-/g, '_')}`
   const keyPath = process.env[envVar]
   if (keyPath == null) {
     throw new Error(

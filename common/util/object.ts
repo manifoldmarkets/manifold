@@ -3,7 +3,7 @@ import { union } from 'lodash'
 export const removeUndefinedProps = <T>(obj: T): T => {
   const newObj: any = {}
 
-  for (const key of Object.keys(obj)) {
+  for (const key of Object.keys(obj as any)) {
     if ((obj as any)[key] !== undefined) newObj[key] = (obj as any)[key]
   }
 
