@@ -10,6 +10,7 @@ import {
   BeakerIcon,
   HeartIcon,
   LightningBoltIcon,
+  CurrencyDollarIcon,
   DeviceMobileIcon,
   TableIcon,
 } from '@heroicons/react/outline'
@@ -171,8 +172,9 @@ const getMobileNav = () => {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
   return buildArray(
-    { name: 'Search Markets', href: '/search', icon: SearchIcon },
+    { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Dashboard', href: '/dashboard', icon: TableIcon },
+    { name: 'Live', href: '/live', icon: LightningBoltIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     {
       name: 'Groups',
@@ -182,7 +184,7 @@ const getMobileNav = () => {
     {
       name: 'Referrals',
       href: '/referrals',
-      icon: LightningBoltIcon,
+      icon: CurrencyDollarIcon,
     },
     { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
