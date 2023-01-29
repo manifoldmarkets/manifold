@@ -106,6 +106,8 @@ export function ContractDetails(props: { contract: Contract }) {
 export function MarketSubheader(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
+  const isEditable = creatorId === contract.creatorId
+
   return (
     <Row className="grow items-center gap-3">
       <div className="relative">
@@ -127,7 +129,7 @@ export function MarketSubheader(props: { contract: Contract }) {
           username={creatorUsername}
         />
         <span className="text-xs font-light text-gray-400">
-          <CloseOrResolveTime contract={contract} />
+          <CloseOrResolveTime contract={contract} editable={isEditable} />
         </span>
       </Col>
     </Row>
@@ -327,7 +329,6 @@ function EditableCloseDate(props: {
         className={clsx('items-center gap-1', editable ? 'cursor-pointer' : '')}
         onClick={() => editable && setIsEditingCloseTime(true)}
       >
-        {editable && <PencilIcon className="h-4 w-4" />}
         <DateTimeTooltip
           text={closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'}
           time={closeTime}
@@ -348,6 +349,7 @@ function EditableCloseDate(props: {
             dayJsCloseTime.format('MMM D, YYYY')
           )}
         </DateTimeTooltip>
+        {editable && <PencilIcon className="h-4 w-4" />}
       </Row>
     </>
   )
