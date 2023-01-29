@@ -106,7 +106,8 @@ export function ContractDetails(props: { contract: Contract }) {
 export function MarketSubheader(props: { contract: Contract }) {
   const { contract } = props
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
-  const isEditable = creatorId === contract.creatorId
+  const user = useUser()
+  const isEditable = user?.id === creatorId
 
   return (
     <Row className="grow items-center gap-3">
