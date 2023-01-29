@@ -73,7 +73,7 @@ export const SwipeCard = memo(
             <img
               src={image}
               alt=""
-              className="flex grow bg-black object-cover brightness-[65%]"
+              className="flex grow bg-black object-cover brightness-50"
             />
             <div className="absolute top-0 z-0 h-[10%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
             <div className="absolute bottom-0 z-0 h-[30%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
@@ -83,7 +83,7 @@ export const SwipeCard = memo(
         <Col className="absolute inset-0 z-10 h-full gap-2 p-4">
           <CornerDetails contract={contract} user={user} />
 
-          <div className="mt-4 mb-8 max-h-24 overflow-ellipsis">
+          <div className="mt-8 mb-8 max-h-24 overflow-ellipsis">
             <SiteLink href={contractPath(contract)} followsLinkClass>
               <div className={clsx('text-white', getQuestionSize(question))}>
                 {question}

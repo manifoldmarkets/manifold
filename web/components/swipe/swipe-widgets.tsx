@@ -25,7 +25,7 @@ export default function Percent(props: {
     >
       <span
         className={clsx(
-          'text-8xl transition-all',
+          'text-7xl transition-all',
           !outcome && '[text-shadow:#4337c9_0_8px]',
           outcome === 'YES' &&
             '[text-shadow:#14b8a6_-6px_4px,#0f766e_-12px_8px]',
@@ -68,8 +68,8 @@ export function DescriptionAndModal(props: {
 
   return (
     <Col className={clsx(descriptionClass, 'items-end')}>
-      <div className="line-clamp-2 w-full">{descriptionString}</div>
-      {descriptionString.length >= 70 &&
+      <div className="line-clamp-3 w-full">{descriptionString}</div>
+      {descriptionString.length >= 100 &&
         isModalOpen != undefined &&
         setIsModalOpen && (
           <>
