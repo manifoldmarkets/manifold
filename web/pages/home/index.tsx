@@ -100,10 +100,10 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   if (isMobile) {
     return <Swipe />
   }
-  return <HomeDesktop globalConfig={props.globalConfig} />
+  return <HomeDashboard globalConfig={props.globalConfig} />
 }
 
-function HomeDesktop(props: { globalConfig: GlobalConfig }) {
+export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
   const followedGroupIds = useMemberGroupsIdsAndSlugs(user?.id)

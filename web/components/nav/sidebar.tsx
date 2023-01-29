@@ -11,6 +11,7 @@ import {
   HeartIcon,
   LightningBoltIcon,
   DeviceMobileIcon,
+  TableIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -171,6 +172,7 @@ const getMobileNav = () => {
   }
   return buildArray(
     { name: 'Search Markets', href: '/search', icon: SearchIcon },
+    { name: 'Dashboard', href: '/dashboard', icon: TableIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     {
       name: 'Groups',
