@@ -18,7 +18,8 @@
       "channel": "preview",
       "distribution": "internal",
       "env": {
-        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD",
+        "NATIVE_BUILD_TYPE": "PREVIEW"
       },
       "android": {
         "credentialsSource": "local"

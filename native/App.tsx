@@ -2,7 +2,7 @@ import { app, auth } from './init'
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
-import { ENV, EXTERNAL_REDIRECTS } from 'common/envs/constants'
+import { ENV, EXTERNAL_REDIRECTS, NATIVE_BUILD } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -437,7 +437,7 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
-      {auth.currentUser?.uid === 'AJwLWoo3xue32XIiAVrL5SyR1WB2' && (
+      {NATIVE_BUILD === 'PREVIEW' && (
         <View
           style={{
             flex: 1,
