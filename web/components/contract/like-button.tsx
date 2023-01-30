@@ -35,6 +35,7 @@ export const LikeButton = memo(function LikeButton(props: {
   size?: LikeButtonSizeType
   showTotalLikesUnder?: boolean
   color?: 'gray' | 'white'
+  isSwipe?: boolean
 }) {
   const {
     user,
@@ -47,6 +48,7 @@ export const LikeButton = memo(function LikeButton(props: {
     size = 'md',
     showTotalLikesUnder,
     color = 'gray',
+    isSwipe,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
@@ -71,7 +73,8 @@ export const LikeButton = memo(function LikeButton(props: {
       contract,
       contract.question,
       contentText,
-      ButtonReactionType
+      ButtonReactionType,
+      { isSwipe: !!isSwipe }
     )
   }
 
@@ -118,7 +121,14 @@ export const LikeButton = memo(function LikeButton(props: {
   const hasSafePolygon =
     (likedUserInfo != undefined && likedUserInfo.length > 0) || userLiked
   return (
-    <Col className="relative">
+    <Row
+      className={clsx(
+        'relative items-center',
+        size === 'md' && 'mx-2',
+        size === 'xl' && 'mx-4',
+        className
+      )}
+    >
       <Tooltip
         text={
           <UserLikedList
@@ -131,18 +141,16 @@ export const LikeButton = memo(function LikeButton(props: {
         placement={'bottom'}
         noTap
         hasSafePolygon={hasSafePolygon}
+        className={'flex items-center'}
       >
         <button
           disabled={disabled}
           className={clsx(
             'transition-transform disabled:cursor-not-allowed',
-            size === 'md' && 'p-2',
-            size === 'xl' && 'p-4',
             color === 'white'
               ? 'text-white disabled:opacity-50'
               : 'text-gray-500',
-            !disabled && color === 'gray' ? 'hover:text-gray-600' : '',
-            className
+            !disabled && color === 'gray' ? 'hover:text-gray-600' : ''
           )}
           {...likeLongPress}
         >
@@ -186,13 +194,13 @@ export const LikeButton = memo(function LikeButton(props: {
         <div
           className={clsx(
             size === 'xl' ? '-mt-3 text-lg' : '-mt-1.5 text-xs',
-            'mx-auto h-6 text-white drop-shadow-sm disabled:opacity-50'
+            'mx-auto h-6 text-white disabled:opacity-50'
           )}
         >
           {totalLikes > 0 ? totalLikes : ''}
         </div>
       )}
-    </Col>
+    </Row>
   )
 })
 

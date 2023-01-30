@@ -450,58 +450,30 @@ export const ControllableSingleValueHistoryChart = <
   )
 }
 
-export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
-  data: P[]
-  w: number
-  h: number
-  color: string | ((p: P) => string)
-  margin: Margin
-  xScale: ScaleTime<number, number>
-  yScale: ScaleContinuousNumeric<number, number>
-  yKind?: ValueKind
-  curve?: CurveFactory
-  onMouseOver?: (p: P | undefined) => void
-  Tooltip?: TooltipComponent<Date, P>
-  pct?: boolean
-}) => {
-  const {
-    data,
-    w,
-    h,
-    color,
-    margin,
-    xScale,
-    yScale,
-    yKind,
-    curve,
-    onMouseOver,
-    Tooltip,
-    pct,
-  } = props
+export const SingleValueHistoryChart = <P extends HistoryPoint>(
+  props: Omit<
+    Parameters<typeof ControllableSingleValueHistoryChart<P>>[0],
+    'viewScaleProps'
+  >
+) => {
+  const viewScaleProps = useSingleValueHistoryChartViewScale()
+
+  return (
+    <ControllableSingleValueHistoryChart
+      {...props}
+      viewScaleProps={viewScaleProps}
+    />
+  )
+}
+
+export const useSingleValueHistoryChartViewScale = () => {
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const [viewYScale, setViewYScale] =
     useState<ScaleContinuousNumeric<number, number>>()
-  const viewScaleProps = {
+  return {
     viewXScale,
     setViewXScale,
     viewYScale,
     setViewYScale,
   }
-  return (
-    <ControllableSingleValueHistoryChart
-      w={w}
-      h={h}
-      margin={margin}
-      xScale={xScale}
-      yScale={yScale}
-      viewScaleProps={viewScaleProps}
-      yKind={yKind}
-      data={data}
-      curve={curve}
-      Tooltip={Tooltip}
-      onMouseOver={onMouseOver}
-      color={color}
-      pct={pct}
-    />
-  )
 }

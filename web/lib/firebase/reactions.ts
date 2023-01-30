@@ -45,7 +45,8 @@ export const react = async (
   contract: Contract,
   title: string,
   text: string,
-  type: ReactionTypes
+  type: ReactionTypes,
+  eventProperties?: any
 ) => {
   // i.e. commentId-like
   const id = `${contentId}-${type}`
@@ -71,8 +72,11 @@ export const react = async (
     title,
     text,
   } as Reaction)
+
   track('like', {
     itemId: contentId,
+    ...eventProperties,
   })
+
   await setDoc(ref, reaction)
 }

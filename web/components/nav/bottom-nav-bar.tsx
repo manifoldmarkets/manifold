@@ -3,9 +3,9 @@ import Link from 'next/link'
 import {
   HomeIcon,
   MenuAlt3Icon,
-  SparklesIcon,
   XIcon,
   BookOpenIcon,
+  ScaleIcon,
 } from '@heroicons/react/outline'
 import { DeviceMobileIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
@@ -36,7 +36,7 @@ const touchItemClass = 'bg-indigo-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Discover', href: '/swipe', icon: SparklesIcon },
+    { name: 'Markets', href: '/markets', icon: ScaleIcon },
     {
       name: 'Profile',
       href: `/${user.username}?tab=portfolio`,

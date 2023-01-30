@@ -30,6 +30,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   creatorName: string
   creatorUsername: string
   creatorAvatarUrl?: string
+  creatorCreatedTime?: number
 
   question: string
   description: string | JSONContent // More info about what the contract is about

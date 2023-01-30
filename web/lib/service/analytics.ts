@@ -14,6 +14,7 @@ import * as Sprig from 'web/lib/service/sprig'
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { saveUserEvent } from '../firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
+import { getIsNative } from '../native/is-native'
 
 init(ENV_CONFIG.amplitudeApiKey ?? '', undefined, { includeReferrer: true })
 
@@ -22,10 +23,13 @@ export function track(eventName: string, eventProperties?: any) {
 
   const deviceId = getDeviceId()
   const sessionId = getSessionId()
+  const isNative = getIsNative()
+
   const props = removeUndefinedProps({
-    ...eventProperties,
+    isNative,
     deviceId,
     sessionId,
+    ...eventProperties,
   })
 
   const userId = getUserId()

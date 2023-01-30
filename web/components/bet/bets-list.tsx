@@ -57,6 +57,7 @@ import { formatTimeShort } from 'web/lib/util/time'
 import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { Input } from 'web/components/widgets/input'
 import { searchInAny } from 'common/util/parse'
+import { useContract } from 'web/hooks/use-contracts'
 
 type BetSort = 'newest' | 'profit' | 'loss' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -342,7 +343,8 @@ function ContractBets(props: {
   isYourBets: boolean
   userId: string
 }) {
-  const { contract, metrics, displayMetric, isYourBets, userId } = props
+  const { metrics, displayMetric, isYourBets, userId } = props
+  const contract = useContract(props.contract.id) ?? props.contract
   const { resolution, closeTime, outcomeType, isResolved } = contract
 
   const user = useUser()

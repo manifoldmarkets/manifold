@@ -55,7 +55,11 @@ import { Avatar } from 'web/components/widgets/avatar'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
 import { linkClass, SiteLink } from 'web/components/widgets/site-link'
-import { PostBanBadge, UserBadge } from 'web/components/widgets/user-link'
+import {
+  isFresh,
+  PostBanBadge,
+  UserBadge,
+} from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 
 export const getStaticProps = async (props: {
@@ -191,7 +195,12 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   <span className="break-anywhere text-lg font-bold sm:text-2xl">
                     {user.name}
                   </span>
-                  {<UserBadge username={user.username} />}
+                  {
+                    <UserBadge
+                      username={user.username}
+                      fresh={isFresh(user.createdTime)}
+                    />
+                  }
                   {user.isBannedFromPosting && <PostBanBadge />}
                 </div>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
