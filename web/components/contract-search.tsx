@@ -74,7 +74,7 @@ type AdditionalFilter = {
 }
 const AsListContext = createContext({
   asList: false,
-  setAsList: (asList: boolean) => {},
+  setAsList: (_asList: boolean) => {},
 })
 
 export function ContractSearch(props: {
