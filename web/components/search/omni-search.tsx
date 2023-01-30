@@ -38,7 +38,7 @@ export const OmniSearch = (props: {
         setOpen?.(false)
         router.push(slug)
       }}
-      className={clsx('flex flex-col bg-white', className)}
+      className={clsx('relative flex flex-col bg-white', className)}
     >
       <Combobox.Input
         autoFocus
