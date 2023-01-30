@@ -7,7 +7,6 @@ import { fromNow } from 'web/lib/util/time'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { Avatar } from '../widgets/avatar'
 
 export function ContractMention(props: {
   contract: Contract
@@ -28,38 +27,30 @@ export function ContractMention(props: {
       )}
       title={isClient ? tooltipLabel(contract) : undefined}
     >
-      <Avatar
-        username={contract.creatorName}
-        avatarUrl={contract.creatorAvatarUrl}
-        size="xs"
-        className="mr-2 inline-block"
-      />
-      <div className="inline-block min-w-[60px]">
-        {outcomeType === 'BINARY' && (
-          <span
-            className={clsx(
-              probTextColor,
-              'rounded-full px-2 font-semibold ring-inset ring-indigo-100 group-hover:ring-indigo-200'
-            )}
-          >
-            {resolution ? (
-              <BinaryContractOutcomeLabel
-                contract={contract}
-                resolution={resolution}
-              />
-            ) : (
-              getBinaryProbPercent(contract)
-            )}
-          </span>
-        )}
-        {!resolution && probChange && (
-          <span className="ml-0.5 text-xs text-gray-500">{probChange}</span>
-        )}
-      </div>
-      &zwnj;{/* cursor positioning hack */}
       <span className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
         {contract.question}
       </span>
+      {outcomeType === 'BINARY' && (
+        <span
+          className={clsx(
+            probTextColor,
+            'rounded-full px-2 font-semibold ring-1 ring-inset ring-indigo-100 group-hover:ring-indigo-200'
+          )}
+        >
+          {resolution ? (
+            <BinaryContractOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+            />
+          ) : (
+            getBinaryProbPercent(contract)
+          )}
+        </span>
+      )}
+      {!resolution && probChange && (
+        <span className="ml-0.5 text-xs text-gray-500">{probChange}</span>
+      )}
+      &zwnj;{/* cursor positioning hack */}
     </Link>
   )
 }
