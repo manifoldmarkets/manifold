@@ -451,9 +451,9 @@ function SearchFilters(props: {
         className="relative inline-flex h-full items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
       >
         {asList ? (
-          <ViewListIcon className="h-5 w-5" aria-hidden="true" />
-        ) : (
           <ViewGridIcon className="h-5 w-5" aria-hidden="true" />
+        ) : (
+          <ViewListIcon className="h-5 w-5" aria-hidden="true" />
         )}
       </button>
     </div>
