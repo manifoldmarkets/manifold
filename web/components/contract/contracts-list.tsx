@@ -1,11 +1,11 @@
 import { Contract } from 'common/contract'
-import { ContractCard } from './contract/contract-card'
-import { ContractMention } from './contract/contract-mention'
-import { Col } from './layout/col'
+import { ContractCard } from './contract-card'
+import { ContractMention } from './contract-mention'
+import { Col } from '../layout/col'
 import Tippy from '@tippyjs/react'
-import { VisibilityObserver } from './widgets/visibility-observer'
+import { VisibilityObserver } from '../widgets/visibility-observer'
 import { useCallback } from 'react'
-import { LoadingIndicator } from './widgets/loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function ContractsList(props: {
   contracts: Contract[] | undefined

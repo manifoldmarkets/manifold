@@ -35,7 +35,7 @@ import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
-import { ContractsList } from './contracts-list'
+import { ContractsList } from './contract/contracts-list'
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },
