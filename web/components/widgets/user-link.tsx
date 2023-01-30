@@ -5,9 +5,9 @@ import {
   CHECK_USERNAMES,
   CORE_USERNAMES,
 } from 'common/envs/constants'
-import { ShieldCheckIcon } from '@heroicons/react/solid'
+import { ShieldCheckIcon, SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
-import { BadgeCheckIcon, SparklesIcon } from '@heroicons/react/outline'
+import { BadgeCheckIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { Avatar } from './avatar'
 import { DAY_MS } from 'common/util/time'
