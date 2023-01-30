@@ -17,6 +17,7 @@ import {
 } from 'react-native-webview/lib/WebViewTypes'
 import * as Sentry from 'sentry-expo'
 import { SplashLoading } from 'components/splash-loading'
+import { log } from 'components/logger'
 const isIOS = Platform.OS === 'ios'
 
 export const sharedWebViewProps: WebViewProps = {
@@ -38,8 +39,8 @@ export const handleWebviewCrash = (
   syntheticEvent: WebViewTerminatedEvent | WebViewRenderProcessGoneEvent
 ) => {
   const { nativeEvent } = syntheticEvent
-  console.warn(
-    `Content process terminated, reloading ${Platform.OS} `,
+  log(
+    `Content process terminated, reloading ${Platform.OS}. Error:`,
     nativeEvent
   )
   webview.current?.reload()
@@ -50,7 +51,8 @@ export const handleWebviewError = (
   callback: () => void
 ) => {
   const { nativeEvent } = e
-  console.log('error in webview', e)
+  log('Webview error', e)
+  log('Webview error native event', nativeEvent)
   Sentry.Native.captureException(nativeEvent.description, {
     extra: {
       message: 'webview error',
@@ -65,7 +67,7 @@ export const handleRenderError = (
   width: number,
   height: number
 ) => {
-  console.log('error on render webview', e)
+  log('error on render webview', e)
   Sentry.Native.captureException(e, {
     extra: {
       message: 'webview render error',

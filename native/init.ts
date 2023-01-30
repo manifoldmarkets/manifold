@@ -4,12 +4,10 @@ import { getAuth } from 'firebase/auth'
 import * as Device from 'expo-device'
 import * as Sentry from 'sentry-expo'
 import * as Notifications from 'expo-notifications'
+import { log } from 'components/logger'
 
 export const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
 export const auth = getAuth(app)
-export const log = (...args: unknown[]) => {
-  console.log(`[Manifold Markets]`, ...args)
-}
 
 if (Device.isDevice) {
   Sentry.init({

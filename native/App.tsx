@@ -1,3 +1,4 @@
+import { app, auth } from './init'
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
@@ -13,6 +14,8 @@ import {
   StatusBar as RNStatusBar,
   Dimensions,
   View,
+  TouchableOpacity,
+  Text,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -32,8 +35,6 @@ import {
   nativeToWebMessageType,
   webToNativeMessage,
 } from 'common/native-message'
-import { useFonts, ReadexPro_400Regular } from '@expo-google-fonts/readex-pro'
-import { app, auth, log } from './init'
 import {
   handleWebviewCrash,
   ExternalWebView,
@@ -41,6 +42,8 @@ import {
   handleWebviewError,
   handleRenderError,
 } from 'components/external-web-view'
+import { log, shareLogs } from 'components/logger'
+import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
@@ -108,6 +111,7 @@ const App = () => {
     response: Notifications.NotificationResponse
   ) => {
     log('Push notification received, has loaded webview:', hasLoadedWebView)
+    log('webview', webview.current)
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
     if (hasLoadedWebView) {
       communicateWithWebview(
@@ -140,6 +144,9 @@ const App = () => {
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
+      log('Initial url', url)
+      log('Has loaded webview', hasLoadedWebView)
+      log('webview', webview.current)
       if (url) {
         setUrlToLoad(url)
       }
@@ -155,6 +162,9 @@ const App = () => {
   // Handle deep links
   useEffect(() => {
     if (!linkedUrl) return
+    log('Linked url', linkedUrl)
+    log('Has loaded webview', hasLoadedWebView)
+    log('webview', webview.current)
 
     const { hostname, path, queryParams } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
@@ -315,6 +325,7 @@ const App = () => {
     } else if (type == 'onPageVisit') {
       if (!isIOS) return // Android doesn't use the swipe to go back
       const { page } = payload
+      log('page:', page)
       setAllowSystemBack(page !== 'swipe')
     } else {
       log('Unhandled nativeEvent.data: ', data)
@@ -426,6 +437,29 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
+      {auth.currentUser?.uid === 'AJwLWoo3xue32XIiAVrL5SyR1WB2' && (
+        <View
+          style={{
+            flex: 1,
+            maxHeight: 30,
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <TouchableOpacity onPress={shareLogs}>
+            <Text
+              style={{
+                color: 'blue',
+                marginRight: 20,
+                marginBottom: 0,
+                zIndex: 100,
+              }}
+            >
+              Share
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </>
   )
 }
