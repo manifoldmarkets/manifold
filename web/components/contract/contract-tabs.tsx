@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { flatMap, groupBy, sortBy, sum } from 'lodash'
+import { groupBy, sortBy, sum } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
@@ -47,6 +47,7 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
+import { getTotalContractMetrics } from 'web/lib/supabase/contract-metrics'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -59,6 +60,7 @@ export function ContractTabs(props: {
   activeIndex: number
   setActiveIndex: (i: number) => void
   totalBets: number
+  totalPositions: number
 }) {
   const {
     contract,
@@ -69,6 +71,7 @@ export function ContractTabs(props: {
     activeIndex,
     setActiveIndex,
     totalBets,
+    userPositionsByOutcome,
   } = props
 
   const contractComments = useComments(contract.id) ?? props.comments
@@ -79,6 +82,8 @@ export function ContractTabs(props: {
       ),
     [contractComments, blockedUserIds]
   )
+
+  const [totalPositions, setTotalPositions] = useState(props.totalPositions)
 
   const commentTitle =
     comments.length === 0
@@ -106,15 +111,8 @@ export function ContractTabs(props: {
     (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
     (isMobile ? 'You' : 'Your Trades')
 
-  const outcomes = ['YES', 'NO']
-  const positions =
-    useContractMetrics(contract.id, 100, outcomes) ??
-    props.userPositionsByOutcome
-  const totalPositions = flatMap(Object.values(positions)).length
   const positionsTitle =
-    totalPositions === 0
-      ? 'Users'
-      : `${shortFormatNumber(totalPositions)} Users`
+    shortFormatNumber(totalPositions) + (isMobile ? ' Users' : ' Shareholders')
 
   return (
     <ControlledTabs
@@ -141,7 +139,13 @@ export function ContractTabs(props: {
         totalPositions > 0 &&
           contract.outcomeType === 'BINARY' && {
             title: positionsTitle,
-            content: <BinaryUserPositionsTabContent positions={positions} />,
+            content: (
+              <BinaryUserPositionsTabContent
+                positions={userPositionsByOutcome}
+                contractId={contract.id}
+                setTotalPositions={setTotalPositions}
+              />
+            ),
           },
 
         totalBets > 0 && {
@@ -171,16 +175,23 @@ export function ContractTabs(props: {
 
 const BinaryUserPositionsTabContent = memo(
   function BinaryUserPositionsTabContent(props: {
+    contractId: string
     positions: ContractMetricsByOutcome
+    setTotalPositions: (count: number) => void
   }) {
-    const { positions } = props
-
+    const { contractId, setTotalPositions } = props
+    const outcomes = ['YES', 'NO']
+    const positions =
+      useContractMetrics(contractId, 100, outcomes) ?? props.positions
     const [page, setPage] = useState(0)
     const pageSize = 20
     const currentUser = useUser()
     const followedUsers = useFollows(currentUser?.id)
     const yesPositionsSorted = positions.YES ?? []
     const noPositionsSorted = positions.NO ?? []
+    useEffect(() => {
+      getTotalContractMetrics(contractId).then(setTotalPositions)
+    }, [positions, setTotalPositions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
       page * pageSize,
