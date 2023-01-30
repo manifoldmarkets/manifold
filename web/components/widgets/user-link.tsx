@@ -10,7 +10,7 @@ import { Tooltip } from './tooltip'
 import { BadgeCheckIcon, SparklesIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { Avatar } from './avatar'
-import { DAY_MS } from 'common/lib/util/time'
+import { DAY_MS } from 'common/util/time'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
