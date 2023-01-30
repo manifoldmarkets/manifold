@@ -183,6 +183,7 @@ function CardActions(props: { user?: User; contract: BinaryContract }) {
         size={'xl'}
         showTotalLikesUnder={true}
         color={'white'}
+        className={'flex-col gap-2 drop-shadow-sm'}
       />
       {/* TODO Share button */}
     </Col>
