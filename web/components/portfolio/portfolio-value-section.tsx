@@ -17,6 +17,7 @@ import { useUser } from 'web/hooks/use-user'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../choices-toggle-group'
 import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
+import { PlusIcon } from '@heroicons/react/solid'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -178,7 +179,7 @@ export function PortfolioValueSkeleton(props: {
   } = props
   return (
     <>
-      <Row className="mb-2 gap-2">
+      <Row className="mb-1 items-start gap-2 sm:mb-2">
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
@@ -210,17 +211,18 @@ export function PortfolioValueSkeleton(props: {
         </Col>
 
         <AddFundsButton userId={userId} />
+
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={setCurrentTimePeriod}
+          color={switcherColor}
+          disabled={disabled}
+          className="ml-auto"
+        />
       </Row>
       <SizedContainer fullHeight={200} mobileHeight={100}>
         {graphElement}
       </SizedContainer>
-      <TimeRangePicker
-        currentTimePeriod={currentTimePeriod}
-        setCurrentTimePeriod={setCurrentTimePeriod}
-        color={switcherColor}
-        disabled={disabled}
-        className="mt-1 self-start"
-      />
     </>
   )
 }
@@ -233,11 +235,12 @@ function AddFundsButton({ userId }: { userId?: string }) {
   return (
     <>
       <Button
-        className="ml-auto self-start"
+        className="self-center"
         color="indigo"
         onClick={() => setOpen(true)}
+        size="2xs"
       >
-        Get more {ENV_CONFIG.moneyMoniker}
+        <PlusIcon className="h-3 w-3" /> {ENV_CONFIG.moneyMoniker}
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />
     </>
