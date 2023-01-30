@@ -188,9 +188,14 @@ export default function Swipe() {
       if (!down) {
         let newIndex = index
         // Scroll to next or previous card.
-        if (my <= -verticalSwipeDist)
+        if (my <= -verticalSwipeDist) {
           newIndex = Math.min(cards.length - 1, index + 1)
-        else if (my >= verticalSwipeDist) newIndex = Math.max(0, index - 1)
+          track('swipe', { direction: 'next' })
+        } else if (my >= verticalSwipeDist) {
+          newIndex = Math.max(0, index - 1)
+          track('swipe', { direction: 'prev' })
+        }
+
         y = -newIndex * cardHeight
         setTimeout(() => {
           // Hack to delay the re-rendering work until after animation is done.
