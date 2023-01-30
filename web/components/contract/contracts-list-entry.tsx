@@ -6,7 +6,7 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { Avatar } from '../widgets/avatar'
 
-// Mostly copied from ./contract-mention.tsx, with an adidtional avatar.
+// Mostly copied from ./contract-mention.tsx, with an additional avatar.
 // TODO: Replace with a proper table/datagrid implementation?
 export function ContractsListEntry(props: {
   contract: Contract
