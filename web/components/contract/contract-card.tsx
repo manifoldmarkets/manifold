@@ -90,7 +90,8 @@ export const ContractCard = memo(function ContractCard(props: {
     trackCardViews,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
-  const { isResolved, createdTime, featuredLabel } = contract
+  const { isResolved, createdTime, featuredLabel, creatorCreatedTime } =
+    contract
   const { question, outcomeType } = contract
   const { resolution } = contract
 
@@ -141,6 +142,7 @@ export const ContractCard = memo(function ContractCard(props: {
                 username={contract.creatorUsername}
                 noLink={noLinkAvatar}
                 className="text-sm text-gray-400"
+                createdTime={creatorCreatedTime}
               />
             </Row>
             <Row className="gap-1">

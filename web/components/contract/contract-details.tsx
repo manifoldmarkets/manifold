@@ -105,7 +105,13 @@ export function ContractDetails(props: { contract: Contract }) {
 
 export function MarketSubheader(props: { contract: Contract }) {
   const { contract } = props
-  const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
+  const {
+    creatorName,
+    creatorUsername,
+    creatorId,
+    creatorAvatarUrl,
+    creatorCreatedTime,
+  } = contract
   const user = useUser()
   const isEditable = user?.id === creatorId
 
@@ -128,6 +134,7 @@ export function MarketSubheader(props: { contract: Contract }) {
           className="text-gray-600"
           name={creatorName}
           username={creatorUsername}
+          createdTime={creatorCreatedTime}
         />
         <span className="text-xs font-light text-gray-400">
           <CloseOrResolveTime contract={contract} editable={isEditable} />
