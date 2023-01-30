@@ -6,8 +6,7 @@ import {
   createFailedWrites,
   replayFailedWrites,
 } from './replicate-writes'
-import { log } from './utils'
-import { createClient } from '../../common/supabase/utils'
+import { log, createSupabaseDirectClient } from './utils'
 import { TLEntry } from '../../common/transaction-log'
 import { CONFIGS } from '../../common/envs/constants'
 
@@ -24,15 +23,17 @@ if (!SUPABASE_INSTANCE_ID) {
   throw new Error(`Can't connect to Supabase; no instance ID set for ${ENV}.`)
 }
 
-const SUPABASE_KEY = process.env.SUPABASE_KEY
-if (!SUPABASE_KEY) {
-  throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
+const SUPABASE_PASSWORD = process.env.SUPABASE_PASSWORD
+if (!SUPABASE_PASSWORD) {
+  throw new Error(
+    "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
+  )
 }
 
 const pubsub = new PubSub()
 const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
-const supabase = createClient(SUPABASE_INSTANCE_ID, SUPABASE_KEY)
+const pg = createSupabaseDirectClient(SUPABASE_INSTANCE_ID, SUPABASE_PASSWORD)
 
 const app = express()
 app.use(express.json())
@@ -40,7 +41,7 @@ app.use(express.json())
 app.post('/replay-failed', async (_req, res) => {
   log('INFO', 'Checking for failed writes...')
   try {
-    const n = await replayFailedWrites(firestore, supabase)
+    const n = await replayFailedWrites(firestore, pg)
     return res.status(200).json({ success: true, n })
   } catch (e) {
     log('ERROR', 'Error replaying failed writes.', e)
@@ -58,7 +59,7 @@ async function tryReplicateBatch(batchId: number, ...entries: TLEntry[]) {
   try {
     const t0 = process.hrtime.bigint()
     log('DEBUG', `Beginning replication of batch=${batchId}.`)
-    await replicateWrites(supabase, ...entries)
+    await replicateWrites(pg, ...entries)
     const t1 = process.hrtime.bigint()
     const ms = (t1 - t0) / 1000000n
     log(

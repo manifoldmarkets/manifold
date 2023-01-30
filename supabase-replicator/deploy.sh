@@ -29,7 +29,7 @@ yarn build && \
          --region us-east4 \
          --set-env-vars ENVIRONMENT=${ENVIRONMENT} \
          --set-env-vars GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
-         --set-secrets SUPABASE_KEY=SUPABASE_KEY:latest \
+         --set-secrets SUPABASE_PASSWORD=SUPABASE_PASSWORD:latest \
          --execution-environment gen2 \
          --cpu ${GCLOUD_CPU} \
          --memory 2Gi \
