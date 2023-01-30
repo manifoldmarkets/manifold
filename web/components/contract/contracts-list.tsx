@@ -1,11 +1,11 @@
 import { Contract } from 'common/contract'
 import { ContractCard } from './contract-card'
-import { ContractMention } from './contract-mention'
 import { Col } from '../layout/col'
 import Tippy from '@tippyjs/react'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import { useCallback } from 'react'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { ContractsListEntry } from './contracts-list-entry'
 
 export function ContractsList(props: {
   contracts: Contract[] | undefined
@@ -35,7 +35,7 @@ export function ContractsList(props: {
           content={<ContractCard contract={contract} key={contract.id} />}
         >
           <span tabIndex={0}>
-            <ContractMention contract={contract} />
+            <ContractsListEntry contract={contract} />
           </span>
         </Tippy>
       ))}
