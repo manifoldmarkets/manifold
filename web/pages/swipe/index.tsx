@@ -251,7 +251,7 @@ export default function Swipe() {
 
         <animated.div
           {...bind()}
-          className="w-full max-w-lg touch-none select-none"
+          className="h-full w-full max-w-lg touch-none select-none"
           style={{ x, y }}
         >
           {cards.map((c, i) => (
