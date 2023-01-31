@@ -10,10 +10,10 @@ import {
   BeakerIcon,
   HeartIcon,
   LightningBoltIcon,
-  CurrencyDollarIcon,
   DeviceMobileIcon,
   TableIcon,
   ScaleIcon,
+  UserGroupIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -33,7 +33,6 @@ import { MoreButton } from './more-button'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
-import { RectangleGroup } from 'web/components/icons/outline'
 import { SearchButton } from './search-button'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 
@@ -181,12 +180,7 @@ const getMobileNav = () => {
     {
       name: 'Groups',
       href: '/groups',
-      icon: RectangleGroup,
-    },
-    {
-      name: 'Referrals',
-      href: '/referrals',
-      icon: CurrencyDollarIcon,
+      icon: UserGroupIcon,
     },
     { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
