@@ -40,7 +40,8 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
         <div className="ml-2 text-gray-500">None yet</div>
       ) : (
         <div className="overflow-x-auto">
-          <Table>
+          {/* zebra stripes */}
+          <Table className="[&>tbody_tr:nth-child(odd)]:bg-white">
             <thead>
               <tr>
                 <th>#</th>
