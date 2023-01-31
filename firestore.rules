@@ -224,6 +224,7 @@ service cloud.firestore {
       }
 
       match /groupMembers/{memberId}{
+        allow read;
         allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId);
         allow update: if isAdmin() || request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role == 'admin' || request.auth.uid == resource.data.userId;
         allow delete: if request.auth.uid == resource.data.userId;

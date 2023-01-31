@@ -31,6 +31,19 @@ export function GroupMemberModalContent(props: {
     hitBottom,
     numMembers
   )
+
+  console.log(
+    numMembers,
+    admins,
+    moderators,
+    members,
+    numMembers &&
+      admins &&
+      moderators &&
+      members &&
+      admins.length + moderators.length + members.length,
+    !loadMore
+  )
   return (
     <Col className={clsx(MODAL_CLASS, 'px-0')}>
       <div
@@ -63,7 +76,7 @@ export function GroupMemberModalContent(props: {
             admins &&
             moderators &&
             members &&
-            numMembers >= admins.length + moderators.length + members.length &&
+            numMembers > admins.length + moderators.length + members.length &&
             !loadMore
               ? ''
               : 'hidden'

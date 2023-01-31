@@ -56,6 +56,16 @@ import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
 import { useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
+import { NewContractPanel } from 'web/components/new-contract-panel'
+import {
+  Modal,
+  MODAL_CLASS,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
+import {
+  AddMarketToGroupModal,
+  NewContractFromGroup,
+} from 'web/components/groups/add-market-modal'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -174,10 +184,11 @@ export default function GroupPage(props: {
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-      {user && (userRole === 'admin' || userRole === 'moderator') && (
+      {user && userRole && (
         <AddContractButton
           group={group}
           user={user}
+          userRole={userRole}
           className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
         />
       )}
@@ -235,7 +246,7 @@ export default function GroupPage(props: {
           </Row>
           <Row className="mb-2 gap-4">
             <GroupMembersWidget group={group} canEdit={userRole === 'admin'} />
-            <GroupOpenClosedWidget group={group} />
+            {/* <GroupOpenClosedWidget group={group} /> */}
           </Row>
         </Col>
       </div>
@@ -443,6 +454,7 @@ function GroupLeaderboard(props: {
 function AddContractButton(props: {
   group: Group
   user: User
+  userRole: groupRoleType
   className?: string
 }) {
   const { group, user, className } = props
@@ -466,28 +478,24 @@ function AddContractButton(props: {
           <PlusCircleIcon className="absolute -left-2 -top-2 h-16 w-16 text-indigo-700 drop-shadow" />
         </div>
       </IconButton>
-
+      <AddMarketToGroupModal
+        group={group}
+        user={user}
+        open={open}
+        setOpen={setOpen}
+        onAddMarkets={onSubmit}
+      />
+      {/* 
       <SelectMarketsModal
         open={open}
         setOpen={setOpen}
         title="Add markets"
-        description={
-          <div className={'text-md my-4 text-gray-600'}>
-            Add pre-existing markets to this group, or{' '}
-            <Link href={`/create?groupId=${group.id}`}>
-              <span className="cursor-pointer font-semibold underline">
-                create a new one
-              </span>
-            </Link>
-            .
-          </div>
-        }
         submitLabel={(len) => `Add ${len} question${len !== 1 ? 's' : ''}`}
         onSubmit={onSubmit}
         contractSearchOptions={{
           additionalFilter: { excludeContractIds: groupContractIds },
         }}
-      />
+      /> */}
     </div>
   )
 }

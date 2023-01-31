@@ -54,8 +54,10 @@ export type NewQuestionParams = {
 export function NewContractPanel(props: {
   creator: User
   params?: NewQuestionParams
+  fromGroup?: boolean
+  className?: string
 }) {
-  const { creator, params } = props
+  const { creator, params, fromGroup, className } = props
   const { groupId, initValue } = params ?? {}
   const [outcomeType, setOutcomeType] = useState<outcomeType>(
     (params?.outcomeType as outcomeType) ?? 'BINARY'
@@ -215,7 +217,7 @@ export function NewContractPanel(props: {
   const [hideOptions, setHideOptions] = useState(true)
 
   return (
-    <div>
+    <div className={className}>
       <div className="flex w-full flex-col">
         <label className="px-1 pt-2 pb-3">
           Question<span className={'text-scarlet-500'}>*</span>
@@ -364,24 +366,25 @@ export function NewContractPanel(props: {
               </div>
             </>
           )}
-
-          <Spacer h={4} />
-
-          <Row className={'items-end gap-x-2'}>
-            <GroupSelector
-              selectedGroup={selectedGroup}
-              setSelectedGroup={setSelectedGroup}
-              creator={creator}
-              options={{ showSelector: true, showLabel: true }}
-            />
-            {selectedGroup && (
-              <a target="_blank" href={groupPath(selectedGroup.slug)}>
-                <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
-              </a>
-            )}
-          </Row>
-
-          <Spacer h={6} />
+          {!fromGroup && (
+            <>
+              <Spacer h={4} />
+              <Row className={'items-end gap-x-2'}>
+                <GroupSelector
+                  selectedGroup={selectedGroup}
+                  setSelectedGroup={setSelectedGroup}
+                  creator={creator}
+                  options={{ showSelector: true, showLabel: true }}
+                />
+                {selectedGroup && (
+                  <a target="_blank" href={groupPath(selectedGroup.slug)}>
+                    <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
+                  </a>
+                )}
+              </Row>
+              <Spacer h={6} />
+            </>
+          )}
 
           <div className="mb-1 flex flex-col items-start">
             <label className="mb-1 gap-2 px-1 py-2">
