@@ -85,7 +85,13 @@ export const SwipeCard = memo(
 
           <div className="mt-8 mb-8 max-h-24 overflow-ellipsis">
             <SiteLink href={contractPath(contract)} followsLinkClass>
-              <div className={clsx('text-white', getQuestionSize(question))}>
+              <div
+                className={clsx(
+                  'font-semibold text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
+                  getQuestionSize(question)
+                )}
+                // style={{ WebkitTextStroke: '1px white' }}
+              >
                 {question}
               </div>
             </SiteLink>

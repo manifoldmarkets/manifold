@@ -17,7 +17,6 @@ import { useUser } from 'web/hooks/use-user'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../choices-toggle-group'
 import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
-import { PlusIcon } from '@heroicons/react/solid'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
