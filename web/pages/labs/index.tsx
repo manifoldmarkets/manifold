@@ -26,15 +26,21 @@ export default function LabsPage() {
           columnClassName="pl-4 bg-clip-padding"
         >
           <LabCard
+            title="🎮 Twitch bot"
+            description="Embed markets in your stream"
+            href="/twitch"
+          />
+
+          <LabCard
             title="🔥 Swipe"
-            description="High frequency trading tool"
+            description="Fun mobile betting interface"
             href="/swipe"
           />
 
           {(!isNative || (isNative && platform !== 'ios')) && (
             <LabCard
               title="🫀 Charity"
-              description={`Turn ${ENV_CONFIG.moneyMoniker} into real donations to causes you care about`}
+              description={`Turn ${ENV_CONFIG.moneyMoniker} into real charitable donations`}
               href="/charity"
             />
           )}
