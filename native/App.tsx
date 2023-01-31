@@ -55,8 +55,11 @@ const App = () => {
   // Init
   const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
-  const webview = useRef<WebView>()
-  const notificationResponseListener = useRef<Subscription | undefined>()
+  const [lastNotificationInMemory, setLastNotificationInMemory] = useState<
+    Notification | undefined
+  >()
+  const webview = useRef<WebView>(null)
+  const notificationResponseListener = useRef<Subscription>()
   useFonts({ ReadexPro_400Regular })
 
   // Auth
@@ -110,21 +113,44 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
-    log('Push notification received, has loaded webview:', hasLoadedWebView)
-    log('webview', webview.current)
+    log('Push notification tapped, has loaded webview:', hasLoadedWebView)
+    log('webview.current:', webview.current)
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
+    const notification = response.notification.request.content
+      .data as Notification
     if (hasLoadedWebView) {
       communicateWithWebview(
         'notification',
         response.notification.request.content.data
       )
-    } else {
-      const notification = response.notification.request.content
-        .data as Notification
-      const sourceUrl = getSourceUrl(notification)
-      setUrlWithNativeQuery(sourceUrl)
-    }
+      setLastNotificationInMemory(notification)
+    } else setUrlWithNativeQuery(getSourceUrl(notification))
   }
+
+  useEffect(() => {
+    log('Running lastNotificationInMemory effect')
+    log('has loaded webview', hasLoadedWebView)
+    log('last notification in memory', lastNotificationInMemory)
+    // If there's a notification in memory and the webview has not loaded, set it as the url to load
+    if (lastNotificationInMemory && !hasLoadedWebView) {
+      log(
+        'Setting url to load from last notification in memory',
+        lastNotificationInMemory
+      )
+      setUrlWithNativeQuery(getSourceUrl(lastNotificationInMemory))
+    }
+    if (lastNotificationInMemory) {
+      // Delete the last notification in memory after 3 seconds
+      const timeout = setTimeout(() => {
+        setLastNotificationInMemory(undefined)
+        log('Cleared last notification in memory')
+      }, 3000)
+      return () => {
+        clearTimeout(timeout)
+        log('Cleared last notification in memory timeout')
+      }
+    }
+  }, [lastNotificationInMemory, hasLoadedWebView])
 
   useEffect(() => {
     log('Setting up notification listener')
@@ -410,7 +436,6 @@ const App = () => {
               setHasLoadedWebView(true)
             }}
             source={{ uri: urlToLoad }}
-            //@ts-ignore
             ref={webview}
             onError={(e) =>
               handleWebviewError(e, () => setUrlWithNativeQuery())
@@ -431,8 +456,12 @@ const App = () => {
                 tellWebviewToSetNativeFlag()
               }
             }}
-            onRenderProcessGone={(e) => handleWebviewCrash(webview, e)}
-            onContentProcessDidTerminate={(e) => handleWebviewCrash(webview, e)}
+            onRenderProcessGone={(e) =>
+              handleWebviewCrash(webview, e, () => setHasLoadedWebView(false))
+            }
+            onContentProcessDidTerminate={(e) =>
+              handleWebviewCrash(webview, e, () => setHasLoadedWebView(false))
+            }
             onMessage={handleMessageFromWebview}
           />
         </View>

@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native'
 import { AntDesign, Feather } from '@expo/vector-icons'
-import React, { MutableRefObject, useRef, useState } from 'react'
+import React, { MutableRefObject, RefObject, useRef, useState } from 'react'
 import {
   WebViewErrorEvent,
   WebViewRenderProcessGoneEvent,
@@ -35,14 +35,16 @@ export const sharedWebViewProps: WebViewProps = {
 }
 
 export const handleWebviewCrash = (
-  webview: MutableRefObject<WebView | undefined>,
-  syntheticEvent: WebViewTerminatedEvent | WebViewRenderProcessGoneEvent
+  webview: RefObject<WebView>,
+  syntheticEvent: WebViewTerminatedEvent | WebViewRenderProcessGoneEvent,
+  callback: () => void
 ) => {
   const { nativeEvent } = syntheticEvent
   log(
     `Content process terminated, reloading ${Platform.OS}. Error:`,
     nativeEvent
   )
+  callback()
   webview.current?.reload()
 }
 
@@ -93,7 +95,7 @@ export const ExternalWebView = (props: {
   width: number
 }) => {
   const { url, height, setUrl, width } = props
-  const webview = useRef<WebView>()
+  const webview = useRef<WebView>(null)
   const [loading, setLoading] = useState(false)
 
   if (!url) return <View />
@@ -189,8 +191,12 @@ export const ExternalWebView = (props: {
         // @ts-ignore
         ref={webview}
         renderError={(e) => handleRenderError(e, width, height)}
-        onRenderProcessGone={(e) => handleWebviewCrash(webview, e)}
-        onContentProcessDidTerminate={(e) => handleWebviewCrash(webview, e)}
+        onRenderProcessGone={(e) =>
+          handleWebviewCrash(webview, e, () => setUrl(undefined))
+        }
+        onContentProcessDidTerminate={(e) =>
+          handleWebviewCrash(webview, e, () => setUrl(undefined))
+        }
       />
     </View>
   )
