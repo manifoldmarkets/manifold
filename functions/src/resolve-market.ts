@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { mapValues, groupBy, sumBy, uniqBy, sum } from 'lodash'
+import { mapValues, groupBy, sumBy, sum } from 'lodash'
 
 import {
   Contract,
@@ -15,8 +15,7 @@ import {
   getValues,
   isProd,
   log,
-  payUsers,
-  payUsersMultipleTransactions,
+  payUsersTransactions,
   revalidateStaticProps,
 } from './utils'
 import {
@@ -31,7 +30,6 @@ import { APIError, newEndpoint, validate } from './api'
 import { getContractBetMetrics } from '../../common/calculate'
 import { createContractResolvedNotifications } from './create-notification'
 import { CancelUniqueBettorBonusTxn, Txn } from '../../common/txn'
-import { runTxn, TxnData } from './transact'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -39,6 +37,7 @@ import {
 import { User } from 'common/user'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
 import { computeContractMetricUpdates } from './update-contract-metrics'
+import { runTxn, TxnData } from './run-txn'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -202,18 +201,10 @@ export const resolveMarket = async (
       loanPayouts
     )
 
-  const userCount = uniqBy(payouts, 'userId').length
+  // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
-
-  if (userCount <= 499) {
-    await firestore.runTransaction(async (transaction) => {
-      payUsers(transaction, payouts)
-      transaction.update(contractDoc, contract)
-    })
-  } else {
-    await payUsersMultipleTransactions(payouts)
-    await contractDoc.update(contract)
-  }
+  await payUsersTransactions(payouts, contractId)
+  await contractDoc.update(contract)
 
   console.log('contract ', contractId, 'resolved to:', outcome)
 

@@ -1,5 +1,6 @@
 // A txn (pronounced "texan") respresents a payment between two ids on Manifold
 // Shortened from "transaction" to distinguish from Firebase transactions (and save chars)
+
 type AnyTxnType =
   | Donation
   | Tip
@@ -15,6 +16,7 @@ type AnyTxnType =
   | CertPayMana
   | CertDividend
   | CertBurn
+  | ContractResolutionPayout
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -45,6 +47,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'CERT_PAY_MANA' // Transfer mana for a cert
     | 'CERT_DIVIDEND' // Cert holder pays out dividends
     | 'CERT_BURN' // Destroy a cert
+    | 'CONTRACT_RESOLUTION_PAYOUT' // Contract resolution pays out to a user
 
   // Any extra data
   data?: { [key: string]: any }
@@ -169,6 +172,16 @@ type SignupBonus = {
   category: 'SIGNUP_BONUS'
 }
 
+type ContractResolutionPayout = {
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  category: 'CONTRACT_RESOLUTION_PAYOUT'
+  token: 'M$'
+  data: {
+    contractId: string
+  }
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -184,3 +197,4 @@ export type CertTransferTxn = CertTxn & CertTransfer
 export type CertPayManaTxn = CertTxn & CertPayMana
 export type CertDividendTxn = CertTxn & CertDividend
 export type CertBurnTxn = CertTxn & CertBurn
+export type ContractResolutionPayoutTxn = Txn & ContractResolutionPayout

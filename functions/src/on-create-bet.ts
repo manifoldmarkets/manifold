@@ -11,7 +11,6 @@ import {
 } from './create-notification'
 import { filterDefined } from '../../common/util/array'
 import { Contract } from '../../common/contract'
-import { runTxn, TxnData } from './transact'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
@@ -32,6 +31,7 @@ import { BOT_USERNAMES } from '../../common/envs/constants'
 import { addUserToContractFollowers } from './follow-market'
 import { handleReferral } from './helpers/handle-referral'
 import { calculateUserMetrics } from '../../common/calculate-metrics'
+import { runTxn, TxnData } from './run-txn'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()

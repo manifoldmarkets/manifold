@@ -18,6 +18,12 @@ import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
 import { Post } from '../../common/post'
 import { getFunctionUrl } from '../../common/api'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from '../../common/antes'
+import { ContractResolutionPayoutTxn } from '../../common/txn'
+import { runTxn, TxnData } from './run-txn'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -314,12 +320,13 @@ export const payUsers = (
   }
 }
 
-export const payUsersMultipleTransactions = async (
+export const payUsersTransactions = async (
   payouts: {
     userId: string
     payout: number
     deposit?: number
-  }[]
+  }[],
+  contractId: string
 ) => {
   const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
@@ -327,9 +334,27 @@ export const payUsersMultipleTransactions = async (
 
   for (const payoutChunk of payoutChunks) {
     await firestore.runTransaction(async (transaction) => {
-      for (const { userId, payout, deposit } of payoutChunk) {
-        updateUserBalance(transaction, userId, payout, deposit)
-      }
+      await Promise.all(
+        payoutChunk.map(async ({ userId, payout }) => {
+          const payoutTxn: TxnData = {
+            fromType: 'CONTRACT',
+            amount: payout,
+            category: 'CONTRACT_RESOLUTION_PAYOUT',
+            toId: userId,
+            token: 'M$',
+            toType: 'USER',
+            fromId: isProd()
+              ? HOUSE_LIQUIDITY_PROVIDER_ID
+              : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+            description:
+              'Contract payout for contract resolution id ' + contractId,
+            data: {
+              contractId,
+            },
+          } as ContractResolutionPayoutTxn
+          await runTxn(transaction, payoutTxn)
+        })
+      )
     })
   }
 }
