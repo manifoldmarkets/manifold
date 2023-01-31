@@ -17,6 +17,9 @@ import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
 import { DailyStats } from '../daily-stats'
+import { SizedContainer } from '../sized-container'
+import { BinaryContractChart } from '../charts/contract'
+import { useTimePicker } from '../contract/contract-overview'
 
 export const SwipeCard = memo(
   (props: {
@@ -57,6 +60,8 @@ export const SwipeCard = memo(
       getOutcomeProbabilityAfterBet(contract, 'YES', amount)
     )
 
+    const { viewScale, start } = useTimePicker(contract)
+
     useEffect(() => {
       setNoPercent(1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount))
       setYesPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))
@@ -83,14 +88,13 @@ export const SwipeCard = memo(
         <Col className="absolute inset-0 z-10 h-full gap-2 p-4">
           <CornerDetails contract={contract} user={user} />
 
-          <div className="mt-8 mb-8 max-h-24 overflow-ellipsis">
+          <div className="mt-6 mb-8 max-h-24 overflow-ellipsis">
             <SiteLink href={contractPath(contract)} followsLinkClass>
               <div
                 className={clsx(
                   'font-semibold text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
                   getQuestionSize(question)
                 )}
-                // style={{ WebkitTextStroke: '1px white' }}
               >
                 {question}
               </div>
@@ -112,6 +116,19 @@ export const SwipeCard = memo(
             </Row>
           </div>
 
+          <SizedContainer fullHeight={250} mobileHeight={150}>
+            {(w, h) => (
+              <BinaryContractChart
+                width={w}
+                height={h}
+                betPoints={[]}
+                viewScaleProps={viewScale}
+                controlledStart={start}
+                contract={contract}
+                color={'white'}
+              />
+            )}
+          </SizedContainer>
           <Row className="mx-auto w-full grow items-center" />
 
           <Row className="justify-end">

@@ -243,7 +243,7 @@ const PseudoNumericOverview = (props: {
   )
 }
 
-const useTimePicker = (contract: Contract) => {
+export const useTimePicker = (contract: Contract) => {
   const viewScale = useSingleValueHistoryChartViewScale()
   const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
 
