@@ -67,6 +67,7 @@ create index user_contract_metrics_recent_bets on user_contract_metrics (
      user_id,
      ((data->'lastBetTime')::bigint) desc
     );
+create index if not exists user_contract_metrics_contract_id on user_contract_metrics (contract_id);
 
 create table if not exists user_follows (
     user_id text not null,
