@@ -27,10 +27,9 @@ import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from '../layout/row'
 import {
-  storageStore,
+  inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
 import { track } from 'web/lib/service/analytics'
@@ -318,7 +317,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
     key: `comments-sort-${contract.id}`,
-    store: storageStore(safeLocalStorage()),
+    store: inMemoryStore(),
   })
   const user = useUser()
 
