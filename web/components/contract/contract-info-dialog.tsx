@@ -85,16 +85,18 @@ export function ContractInfoDialog(props: {
           <Col className="gap-4 rounded bg-white p-6">
             <Row className={'justify-between'}>
               <Title className="!mt-0 !mb-0" text="This Market" />
-              {user && (
-                <ReportButton
-                  report={{
-                    contentId: contract.id,
-                    contentType: 'contract',
-                    contentOwnerId: contract.creatorId,
-                  }}
-                />
-              )}
-              <BlockMarketButton contract={contract} />
+              <Row className="gap-4">
+                {user && (
+                  <ReportButton
+                    report={{
+                      contentId: contract.id,
+                      contentType: 'contract',
+                      contentOwnerId: contract.creatorId,
+                    }}
+                  />
+                )}
+                <BlockMarketButton contract={contract} />
+              </Row>
             </Row>
 
             <Table>
