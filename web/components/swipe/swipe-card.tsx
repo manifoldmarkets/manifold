@@ -90,13 +90,12 @@ export const SwipeCard = memo(
                   'font-semibold text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
                   getQuestionSize(question)
                 )}
-                // style={{ WebkitTextStroke: '1px white' }}
               >
                 {question}
               </div>
             </SiteLink>
 
-            <Row className="mt-4 w-full">
+            <Row className="mt-4 w-full justify-center">
               <Percent
                 currPercent={currPercent}
                 yesPercent={yesPercent}
