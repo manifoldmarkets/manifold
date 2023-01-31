@@ -1,7 +1,6 @@
 import { Row } from 'web/components/layout/row'
 import { ArrowLeftIcon } from '@heroicons/react/solid'
 import React, { useEffect } from 'react'
-import { Button } from 'web/components/buttons/button'
 import { useRouter } from 'next/router'
 
 export function BackRow() {
