@@ -424,7 +424,10 @@ function SearchFilters(props: {
       <Select
         value={filter}
         onChange={(e) => selectFilter(e.target.value as filter)}
-        className="!h-full grow py-1"
+        className={clsx(
+          '!h-full grow py-1',
+          filter === 'all' ? 'text-gray-400' : 'text-indigo-800'
+        )}
       >
         <option value="open">Open</option>
         <option value="closed">Closed</option>
