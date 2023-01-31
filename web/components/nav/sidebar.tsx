@@ -13,6 +13,7 @@ import {
   CurrencyDollarIcon,
   DeviceMobileIcon,
   TableIcon,
+  ScaleIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -123,6 +124,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
+      { name: 'Markets', href: '/markets', icon: ScaleIcon },
       {
         name: 'Notifications',
         href: `/notifications`,
