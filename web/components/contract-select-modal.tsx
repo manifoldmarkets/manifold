@@ -9,6 +9,7 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { Spacer } from './layout/spacer'
+import clsx from 'clsx'
 
 export function SelectMarketsModal(props: {
   title: string
@@ -48,6 +49,7 @@ export function SelectMarketsModal(props: {
           onSubmit={onSubmit}
           contractSearchOptions={contractSearchOptions}
           setOpen={setOpen}
+          className="grow overflow-y-auto"
         />
       </Col>
     </Modal>
@@ -59,8 +61,10 @@ export function SelectMarkets(props: {
   onSubmit: (contracts: Contract[]) => void | Promise<void>
   contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
   setOpen: (open: boolean) => void
+  className?: string
 }) {
-  const { submitLabel, onSubmit, contractSearchOptions, setOpen } = props
+  const { submitLabel, onSubmit, contractSearchOptions, setOpen, className } =
+    props
 
   const privateUser = usePrivateUser()
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -81,7 +85,7 @@ export function SelectMarkets(props: {
   }
 
   return (
-    <div className="grow overflow-y-auto px-1">
+    <div className={clsx('px-1', className)}>
       {loading && (
         <div className="w-full justify-center">
           <LoadingIndicator />

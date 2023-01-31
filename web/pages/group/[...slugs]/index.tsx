@@ -457,13 +457,17 @@ function AddContractButton(props: {
   userRole: groupRoleType
   className?: string
 }) {
-  const { group, user, className } = props
+  const { group, user, className, userRole } = props
   const [open, setOpen] = useState(false)
   const groupContractIds = useGroupContractIds(group.id)
 
   async function onSubmit(contracts: Contract[]) {
     await Promise.all(
-      contracts.map((contract) => addContractToGroup(group, contract, user.id))
+      contracts.map((contract) =>
+        addContractToGroup(group, contract, user.id).catch((e) =>
+          console.log(e)
+        )
+      )
     )
   }
 
@@ -484,18 +488,8 @@ function AddContractButton(props: {
         open={open}
         setOpen={setOpen}
         onAddMarkets={onSubmit}
+        userRole={userRole}
       />
-      {/* 
-      <SelectMarketsModal
-        open={open}
-        setOpen={setOpen}
-        title="Add markets"
-        submitLabel={(len) => `Add ${len} question${len !== 1 ? 's' : ''}`}
-        onSubmit={onSubmit}
-        contractSearchOptions={{
-          additionalFilter: { excludeContractIds: groupContractIds },
-        }}
-      /> */}
     </div>
   )
 }
