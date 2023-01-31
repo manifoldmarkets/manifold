@@ -377,8 +377,10 @@ function MarketResolvedNotification(props: {
         Your {formatMoney(userInvestment)} investment won{' '}
         <span className="text-teal-600">+{formatMoney(profit)}</span> in profit!
       </>
-    ) : (
+    ) : userInvestment > 0 ? (
       <>You lost {formatMoney(Math.abs(profit))}</>
+    ) : (
+      <div />
     )
 
   const resolutionDescription = () => {
