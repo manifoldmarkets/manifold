@@ -240,7 +240,7 @@ function AddFundsButton({ userId }: { userId?: string }) {
         onClick={() => setOpen(true)}
         size="2xs"
       >
-        <PlusIcon className="h-3 w-3" /> {ENV_CONFIG.moneyMoniker}
+        Get {ENV_CONFIG.moneyMoniker}
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />
     </>
