@@ -8,9 +8,10 @@ import { JSONContent } from '@tiptap/core'
 import { addUserToContractFollowers } from './follow-market'
 
 import { dreamWithDefaultParams } from './dream-utils'
+import { getImagePrompt } from './helpers/openai-utils'
 
 export const onCreateContract = functions
-  .runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY'] })
+  .runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY', 'OPENAI_API_KEY'] })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
     const contract = snapshot.data() as Contract
@@ -30,8 +31,10 @@ export const onCreateContract = functions
       richTextToString(desc),
       mentioned
     )
-
-    const coverImageUrl = await dreamWithDefaultParams(contract.question)
+    const imagePrompt = await getImagePrompt(contract.question)
+    const coverImageUrl = await dreamWithDefaultParams(
+      imagePrompt ?? contract.question
+    )
     await snapshot.ref.update({
       coverImageUrl,
     })
