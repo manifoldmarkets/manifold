@@ -58,6 +58,10 @@ export async function runContractPayoutTxn(
     totalDeposits: FieldValue.increment(deposit),
   })
 
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...data }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
   return { status: 'success', txn }
 }
 const firestore = admin.firestore()
