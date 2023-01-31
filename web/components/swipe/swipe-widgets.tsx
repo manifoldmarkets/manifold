@@ -17,7 +17,7 @@ export default function Percent(props: {
   return (
     <div
       className={clsx(
-        'transition-color flex w-full items-center justify-center font-bold',
+        'transition-color flex w-full items-center font-bold',
         !outcome && 'text-white',
         outcome === 'YES' && 'text-teal-100',
         outcome === 'NO' && 'text-scarlet-100'
@@ -25,7 +25,7 @@ export default function Percent(props: {
     >
       <span
         className={clsx(
-          'text-7xl transition-all',
+          'text-5xl transition-all',
           !outcome && '[text-shadow:#4337c9_0_8px]',
           outcome === 'YES' &&
             '[text-shadow:#14b8a6_-6px_4px,#0f766e_-12px_8px]',
@@ -68,7 +68,9 @@ export function DescriptionAndModal(props: {
 
   return (
     <Col className={clsx(descriptionClass, 'items-end')}>
-      <div className="line-clamp-3 w-full">{descriptionString}</div>
+      <div className="line-clamp-3 w-full [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]">
+        {descriptionString}
+      </div>
       {descriptionString.length >= 100 &&
         isModalOpen != undefined &&
         setIsModalOpen && (

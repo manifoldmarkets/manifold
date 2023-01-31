@@ -11,6 +11,7 @@ import { postMessageToNative } from 'web/components/native-message-listener'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { SwipeCard } from 'web/components/swipe/swipe-card'
 import {
+  horizontalSwipeDist,
   STARTING_BET_AMOUNT,
   verticalSwipeDist,
 } from 'web/components/swipe/swipe-helpers'
@@ -92,7 +93,6 @@ export default function Swipe() {
   }, [])
 
   const cardHeight = height - BOTTOM_NAV_BAR_HEIGHT
-  const horizontalSwipeDist = 40
 
   const [{ x, y }, api] = useSpring(() => ({
     x: 0,
