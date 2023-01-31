@@ -22,10 +22,9 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import BetButton, { SignedInBinaryMobileBetting } from '../bet/bet-button'
+import { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import {
   Contract,
-  CPMMContract,
   FreeResponseContract,
   MultipleChoiceContract,
   NumericContract,
@@ -71,20 +70,6 @@ export const ContractOverview = memo(
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
 )
-
-const BetWidget = (props: { contract: CPMMContract }) => {
-  const user = useUser()
-  return (
-    <Col>
-      <BetButton contract={props.contract} />
-      {!user && (
-        <div className="mt-1 text-center text-sm text-gray-500">
-          (with play money!)
-        </div>
-      )}
-    </Col>
-  )
-}
 
 const NumericOverview = (props: { contract: NumericContract }) => {
   const { contract } = props
@@ -213,6 +198,7 @@ const PseudoNumericOverview = (props: {
   const { contract, betPoints } = props
   const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
     useTimePicker(contract)
+  const user = useUser()
 
   return (
     <Col className="gap-1 md:gap-2">
@@ -242,7 +228,17 @@ const PseudoNumericOverview = (props: {
         )}
       </SizedContainer>
 
-      {tradingAllowed(contract) && <BetWidget contract={contract} />}
+      {user && tradingAllowed(contract) && (
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
+      )}
+
+      {user === null && (
+        <Col className="mt-1 w-full">
+          <BetSignUpPrompt className="xl:self-center" size="xl" />
+          <PlayMoneyDisclaimer />
+        </Col>
+      )}
+      {user === undefined && <div className="h-[72px] w-full" />}
     </Col>
   )
 }
