@@ -179,7 +179,7 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
 
   return (
     <Page>
-      <Col className="pm:mx-10 gap-4 p-2 pb-8">
+      <Col className="gap-4 p-2 pb-8">
         <Row className={'mb-2 w-full items-center justify-between gap-4'}>
           <Title text="Home" className="!my-0 hidden sm:block" />
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />
