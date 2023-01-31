@@ -223,17 +223,21 @@ export function ContractInfoDialog(props: {
 
                 {/* Show a path to Firebase if user is an admin, or we're on localhost */}
                 {(isAdmin || isDev) && (
-                  <tr>
-                    <td>[ADMIN] Firestore</td>
+                  <tr className="bg-scarlet-50">
+                    <td>Firestore link</td>
                     <td>
-                      <SiteLink href={firestoreConsolePath(id)}>
-                        Console link
-                      </SiteLink>
+                      <a
+                        href={firestoreConsolePath(id)}
+                        target="_blank"
+                        className="text-indigo-400"
+                      >
+                        {id}
+                      </a>
                     </td>
                   </tr>
                 )}
 
-                <tr>
+                <tr className={clsx(isAdmin && 'bg-scarlet-50')}>
                   <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
                   <td>
                     <ShortToggle

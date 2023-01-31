@@ -25,10 +25,9 @@ export default function ShortToggle(props: {
         !disabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
       )}
     >
-      <span className="sr-only">Use setting</span>
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute h-full w-full rounded-md bg-white"
+        className="pointer-events-none absolute h-full w-full rounded-md bg-inherit"
       />
       <span
         aria-hidden="true"
