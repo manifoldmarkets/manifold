@@ -177,9 +177,6 @@ type ContractResolutionPayout = {
   toType: 'USER'
   category: 'CONTRACT_RESOLUTION_PAYOUT'
   token: 'M$'
-  data: {
-    contractId: string
-  }
 }
 
 export type DonationTxn = Txn & Donation

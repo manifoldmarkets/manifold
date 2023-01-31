@@ -18,12 +18,9 @@ import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
 import { Post } from '../../common/post'
 import { getFunctionUrl } from '../../common/api'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from '../../common/antes'
+
 import { ContractResolutionPayoutTxn } from '../../common/txn'
-import { runTxn, TxnData } from './run-txn'
+import { runContractPayoutTxn } from './run-txn'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -335,24 +332,21 @@ export const payUsersTransactions = async (
   for (const payoutChunk of payoutChunks) {
     await firestore.runTransaction(async (transaction) => {
       await Promise.all(
-        payoutChunk.map(async ({ userId, payout }) => {
-          const payoutTxn: TxnData = {
-            fromType: 'CONTRACT',
-            amount: payout,
+        payoutChunk.map(async ({ userId, payout, deposit }) => {
+          const payoutTxn: Omit<
+            ContractResolutionPayoutTxn,
+            'id' | 'createdTime'
+          > = {
             category: 'CONTRACT_RESOLUTION_PAYOUT',
-            toId: userId,
-            token: 'M$',
+            fromType: 'CONTRACT',
+            fromId: contractId,
             toType: 'USER',
-            fromId: isProd()
-              ? HOUSE_LIQUIDITY_PROVIDER_ID
-              : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-            description:
-              'Contract payout for contract resolution id ' + contractId,
-            data: {
-              contractId,
-            },
+            toId: userId,
+            amount: payout,
+            token: 'M$',
+            description: 'Contract payout for resolution: ' + contractId,
           } as ContractResolutionPayoutTxn
-          await runTxn(transaction, payoutTxn)
+          await runContractPayoutTxn(transaction, payoutTxn, deposit ?? 0)
         })
       )
     })

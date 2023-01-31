@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { User } from '../../common/user'
 import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from '../../common/util/object'
-import { Txn } from '../../common/txn'
+import { ContractResolutionPayoutTxn, Txn } from '../../common/txn'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -41,6 +41,21 @@ export async function runTxn(
   fbTransaction.update(fromDoc, {
     balance: FieldValue.increment(-amount),
     totalDeposits: FieldValue.increment(-amount),
+  })
+
+  return { status: 'success', txn }
+}
+
+export async function runContractPayoutTxn(
+  fbTransaction: admin.firestore.Transaction,
+  data: Omit<ContractResolutionPayoutTxn, 'id' | 'createdTime'>,
+  deposit: number
+) {
+  const { amount, toId } = data
+  const toDoc = firestore.doc(`users/${toId}`)
+  fbTransaction.update(toDoc, {
+    balance: FieldValue.increment(amount),
+    totalDeposits: FieldValue.increment(deposit),
   })
 
   return { status: 'success', txn }
