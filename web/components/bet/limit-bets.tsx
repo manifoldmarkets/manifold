@@ -105,7 +105,7 @@ export function LimitOrderTable(props: {
               <th>Outcome</th>
               <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
               <th>Amount</th>
-              {isYou && (
+              {isYou && limitBets.length > 1 && (
                 <th>
                   <Button
                     loading={isCancelling}
