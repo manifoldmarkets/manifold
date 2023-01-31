@@ -5,6 +5,7 @@ import { richTextToString } from 'common/util/parse'
 import CountUp from 'react-countup'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
+import { Row } from '../layout/row'
 import { Content } from '../widgets/editor'
 
 export default function Percent(props: {
@@ -15,9 +16,9 @@ export default function Percent(props: {
 }) {
   const { currPercent, yesPercent, noPercent, outcome } = props
   return (
-    <div
+    <Row
       className={clsx(
-        'transition-color flex w-full items-center font-bold',
+        'transition-color items-center font-bold',
         !outcome && 'text-white',
         outcome === 'YES' && 'text-teal-100',
         outcome === 'NO' && 'text-scarlet-100'
@@ -25,7 +26,7 @@ export default function Percent(props: {
     >
       <span
         className={clsx(
-          'text-5xl transition-all',
+          'text-6xl transition-all',
           !outcome && '[text-shadow:#4337c9_0_8px]',
           outcome === 'YES' &&
             '[text-shadow:#14b8a6_-6px_4px,#0f766e_-12px_8px]',
@@ -49,7 +50,7 @@ export default function Percent(props: {
         {!outcome && formatPercentNumber(currPercent)}
       </span>
       <span className="pt-2 text-2xl">%</span>
-    </div>
+    </Row>
   )
 }
 

@@ -100,7 +100,7 @@ export const SwipeCard = memo(
               </div>
             </SiteLink>
 
-            <Row className="mt-4 w-full">
+            <Row className="mt-4 w-full justify-center">
               <Percent
                 currPercent={currPercent}
                 yesPercent={yesPercent}
