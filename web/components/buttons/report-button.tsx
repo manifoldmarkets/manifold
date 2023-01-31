@@ -1,5 +1,5 @@
 import { useUser } from 'web/hooks/use-user'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import { toast } from 'react-hot-toast'
 import { Modal } from 'web/components/layout/modal'
