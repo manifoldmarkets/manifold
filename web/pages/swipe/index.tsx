@@ -267,6 +267,7 @@ export default function Swipe() {
               isModalOpen={isModalOpen && i === index}
               setIsModalOpen={setIsModalOpen}
               user={user}
+              small={height < 750}
             />
           ))}
 

@@ -17,6 +17,10 @@ import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
 import { DailyStats } from '../daily-stats'
+import { SizedContainer } from '../sized-container'
+import { BinaryContractChart } from '../charts/contract'
+import { useTimePicker } from '../contract/contract-overview'
+import { useRecentBets } from 'web/hooks/use-bets'
 
 export const SwipeCard = memo(
   (props: {
@@ -29,6 +33,7 @@ export const SwipeCard = memo(
     user: User | undefined
     isModalOpen: boolean
     setIsModalOpen: Dispatch<SetStateAction<boolean>>
+    small?: boolean
     className?: string
   }) => {
     const {
@@ -41,10 +46,19 @@ export const SwipeCard = memo(
       user,
       isModalOpen,
       setIsModalOpen,
+      small,
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
     const { question, description, coverImageUrl } = contract
+
+    const bets = useRecentBets(contract.id, 1000)
+    const betPoints = (bets ?? []).map((bet) => ({
+      x: bet.createdTime,
+      y: bet.probAfter,
+      obj: bet,
+    }))
+
     const image =
       coverImageUrl ??
       `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
@@ -57,6 +71,8 @@ export const SwipeCard = memo(
       getOutcomeProbabilityAfterBet(contract, 'YES', amount)
     )
 
+    const { viewScale } = useTimePicker(contract)
+
     useEffect(() => {
       setNoPercent(1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount))
       setYesPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))
@@ -67,23 +83,19 @@ export const SwipeCard = memo(
         className={clsx(className, 'relative h-full w-full select-none')}
         onClick={(e) => e.preventDefault()}
       >
-        <Col className="h-full">
-          {/* <div className="h-24 bg-black" /> */}
-          <div className="relative flex grow">
-            <img
-              src={image}
-              alt=""
-              className="flex grow bg-black object-cover brightness-50"
-            />
-            <div className="absolute top-0 z-0 h-[10%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
-            <div className="absolute bottom-0 z-0 h-[30%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
-          </div>
-          {/* <div className="h-20 w-full bg-black" /> */}
+        <Col className="relative h-full grow">
+          <img
+            src={image}
+            alt=""
+            className="flex grow bg-black object-cover brightness-[40%]"
+          />
+          <div className="absolute top-0 z-0 h-[10%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
+          <div className="absolute bottom-0 z-0 h-[30%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
         </Col>
         <Col className="absolute inset-0 z-10 h-full gap-2 p-4">
           <CornerDetails contract={contract} user={user} />
 
-          <div className="mt-8 mb-8 max-h-24 overflow-ellipsis">
+          <div className="line-clamp-6 mt-6 overflow-ellipsis">
             <SiteLink href={contractPath(contract)} followsLinkClass>
               <div
                 className={clsx(
@@ -94,29 +106,53 @@ export const SwipeCard = memo(
                 {question}
               </div>
             </SiteLink>
-
-            <Row className="mt-4 w-full justify-center">
-              <Percent
-                currPercent={currPercent}
-                yesPercent={yesPercent}
-                noPercent={noPercent}
-                outcome={
-                  betDirection === 'YES'
-                    ? 'YES'
-                    : betDirection === 'NO'
-                    ? 'NO'
-                    : undefined
-                }
-              />
-            </Row>
           </div>
+
+          <Percent
+            className="mt-2 self-center"
+            currPercent={currPercent}
+            yesPercent={yesPercent}
+            noPercent={noPercent}
+            outcome={
+              betDirection === 'YES'
+                ? 'YES'
+                : betDirection === 'NO'
+                ? 'NO'
+                : undefined
+            }
+          />
+
+          {!small && (
+            <SizedContainer
+              className="mt-2"
+              fullHeight={100}
+              mobileHeight={100}
+            >
+              {(w, h) => (
+                <BinaryContractChart
+                  width={w}
+                  height={h}
+                  betPoints={betPoints}
+                  viewScaleProps={viewScale}
+                  controlledStart={
+                    betPoints.length > 0
+                      ? Math.min(...betPoints.map((b) => b.x))
+                      : contract.createdTime
+                  }
+                  contract={contract}
+                  color="white"
+                  noAxes
+                />
+              )}
+            </SizedContainer>
+          )}
 
           <Row className="mx-auto w-full grow items-center" />
 
           <Row className="justify-end">
             <CardActions user={user} contract={contract} />
           </Row>
-          <Col className="gap-6">
+          <Col className="mt-2 gap-6">
             <Col className="h-20 w-full justify-end">
               <DescriptionAndModal
                 description={description}

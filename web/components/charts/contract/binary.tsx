@@ -23,8 +23,6 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const BinaryChartTooltip = (
   props: TooltipProps<Date, HistoryPoint<Partial<Bet>>>
@@ -53,6 +51,7 @@ export const BinaryContractChart = (props: {
   controlledStart?: number
   color?: string
   onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
+  noAxes?: boolean
 }) => {
   const {
     contract,
@@ -62,6 +61,7 @@ export const BinaryContractChart = (props: {
     controlledStart,
     onMouseOver,
     color,
+    noAxes,
   } = props
   const [start, end] = getDateRange(contract)
   const rangeStart = controlledStart ?? start
@@ -84,14 +84,18 @@ export const BinaryContractChart = (props: {
     last(betPoints)?.x,
     Date.now()
   )
+  const margin = noAxes ? { top: 0, right: 0, bottom: 0, left: 0 } : MARGIN
+  const marginX = margin.left + margin.right
+  const marginY = margin.top + margin.bottom
+
   const visibleRange = [rangeStart, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
-  const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
+  const xScale = scaleTime(visibleRange, [0, width - marginX])
+  const yScale = scaleLinear([0, 1], [height - marginY, 0])
   return (
     <ControllableSingleValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
+      margin={margin}
       xScale={xScale}
       yScale={yScale}
       viewScaleProps={viewScaleProps}
@@ -101,6 +105,7 @@ export const BinaryContractChart = (props: {
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}
+      noAxes={noAxes}
     />
   )
 }
