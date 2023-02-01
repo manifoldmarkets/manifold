@@ -56,7 +56,7 @@ function useUnseenNotifications(privateUser: PrivateUser) {
       if (unseenNotifications.length > 0) {
         setNotifications((notifications) => {
           return uniqBy(
-            [...(notifications ?? []), ...unseenNotifications],
+            [...unseenNotifications, ...(notifications ?? [])],
             (n) => n.id
           )
         })
