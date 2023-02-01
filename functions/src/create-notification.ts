@@ -34,6 +34,7 @@ import { ContractFollow } from '../../common/follow'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
 import { group } from 'console'
+import { GroupMember } from 'common/group-member'
 
 const firestore = admin.firestore()
 
@@ -1093,11 +1094,11 @@ export const createMarketClosedNotification = async (
 // TODO: inga when admin changes your role in a group you get notified
 export const createGroupStatusChangeNotification = async (
   initiator: User,
-  affectedUserId: string,
+  affectedMember: GroupMember,
   group: Group,
   newStatus: string
 ) => {
-  const privateUser = await getPrivateUser(affectedUserId)
+  const privateUser = await getPrivateUser(affectedMember.userId)
   if (!privateUser) return
   // TODO: inga add this back in when figure out permissions
   // const { sendToBrowser } = getNotificationDestinationsForUser(
@@ -1106,12 +1107,30 @@ export const createGroupStatusChangeNotification = async (
   // )
   // if (!sendToBrowser) return
 
+  let sourceText = `changed your role to ${newStatus}`
+  if (
+    ((!affectedMember.role || affectedMember.role == 'member') &&
+      (newStatus == 'admin' || newStatus == 'moderator')) ||
+    (affectedMember.role == 'moderator' && newStatus == 'admin')
+  ) {
+    sourceText = `promoted you from ${
+      affectedMember.role ?? 'member'
+    } to ${newStatus}`
+  } else if (
+    ((affectedMember.role == 'admin' || affectedMember.role == 'moderator') &&
+      newStatus == 'member') ||
+    (affectedMember.role == 'admin' && newStatus == 'moderator')
+  ) {
+    sourceText = `demoted you from ${
+      affectedMember.role ?? 'member'
+    } to ${newStatus}`
+  }
   const notificationRef = firestore
-    .collection(`/users/${affectedUserId}/notifications`)
+    .collection(`/users/${affectedMember.userId}/notifications`)
     .doc()
   const notification: Notification = {
     id: notificationRef.id,
-    userId: affectedUserId,
+    userId: affectedMember.userId,
     reason: 'group_role_changed',
     createdTime: Date.now(),
     isSeen: false,
@@ -1121,9 +1140,10 @@ export const createGroupStatusChangeNotification = async (
     sourceUserName: initiator.name,
     sourceUserUsername: initiator.username,
     sourceUserAvatarUrl: initiator.avatarUrl,
-    sourceText: newStatus,
+    sourceText: sourceText,
     sourceSlug: group.slug,
     sourceTitle: group.name,
+    sourceContractId: undefined,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }

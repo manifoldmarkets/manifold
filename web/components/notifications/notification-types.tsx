@@ -1072,7 +1072,7 @@ function GroupRoleChangedNotification(props: {
           username={sourceUserUsername || ''}
           className={'relative flex-shrink-0 hover:text-indigo-500'}
         />{' '}
-        changed your role to {sourceText}{' '}
+        {sourceText}{' '}
         {!isChildOfGroup && (
           <span>
             in{' '}

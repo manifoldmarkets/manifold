@@ -72,7 +72,7 @@ export const updatememberrole = newEndpoint({}, async (req, auth) => {
     if (requesterUser && auth.uid != memberId) {
       await createGroupStatusChangeNotification(
         requesterUser,
-        memberId,
+        affectedMember,
         group,
         role
       )
