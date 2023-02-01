@@ -136,6 +136,7 @@ service cloud.firestore {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks', 'flaggedByUsernames']);
+      // can only update group if is group member and if it's your own market or if you are admin or moderator of that group                                                        
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['description', 'closeTime', 'question', 'visibility', 'unlistedById'])
                        && resource.data.creatorId == request.auth.uid;
