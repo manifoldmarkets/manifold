@@ -9,6 +9,12 @@ import { makeMentionRender } from '../user-mention/mention-suggestion'
 
 type Suggestion = Omit<SuggestionOptions, 'editor'>
 
+export interface EmojiData {
+  shortcodes: string[] // ['grin']
+  character: string // '\ud83d\ude04'
+  codePoint: string // '1F604'
+}
+
 // first 100 most popular emoji from https://home.unicode.org/emoji/emoji-frequency/
 const ranking =
   '😂❤️🤣👍😭🙏😘🥰😍😊🎉😁💕🥺😅🔥☺️🤦♥️🤷🙄😆🤗😉🎂🤔👏🙂😳🥳😎👌💜😔💪✨💖👀😋😏😢👉💗😩💯🌹💞🎈💙😃😡💐😜🙈🤞😄🤤🙌🤪❣️😀💋💀👇💔😌💓🤩🙃😬😱😴🤭😐🌞😒😇🌸😈🎶✌️🎊🥵😞💚☀️🖤💰😚👑🎁💥🙋☹️😑🥴👈💩✅'
