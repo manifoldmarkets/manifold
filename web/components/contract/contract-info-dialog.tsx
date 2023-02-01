@@ -103,12 +103,9 @@ export function ContractInfoDialog(props: {
               <tbody>
                 <tr>
                   <td>Type</td>
-                  <td>{typeDisplay}</td>
-                </tr>
-
-                <tr>
-                  <td>Payout</td>
                   <td className="flex gap-1">
+                    {typeDisplay}
+                    <div className="mx-1 select-none">&middot;</div>
                     {mechanism === 'cpmm-1' ? (
                       <>
                         Fixed{' '}
@@ -154,7 +151,7 @@ export function ContractInfoDialog(props: {
                 <tr>
                   <td>
                     <span className="mr-1">24 hour volume</span>
-                    <InfoTooltip text="The amount bought or sold in the last 24 hours" />
+                    <InfoTooltip text="Amount bought or sold in the last 24 hours" />
                   </td>
                   <td>{formatMoney(contract.volume24Hours)}</td>
                 </tr>
@@ -172,29 +169,31 @@ export function ContractInfoDialog(props: {
                   <td>{uniqueBettorCount ?? '0'}</td>
                 </tr>
 
-                <tr>
-                  <td>
-                    <Row>
-                      <span className="mr-1">Elasticity</span>
-                      <InfoTooltip
-                        text={
-                          mechanism === 'cpmm-1'
-                            ? `Log-odds change between a ${formatMoney(
-                                ELASTICITY_BET_AMOUNT
-                              )} bet on YES and NO`
-                            : mechanism === 'cpmm-2'
-                            ? `Log-odds change between a ${formatMoney(
-                                ELASTICITY_BET_AMOUNT
-                              )}bet for and against each outcome`
-                            : `Log-odds change from a ${formatMoney(
-                                ELASTICITY_BET_AMOUNT
-                              )} bet`
-                        }
-                      />
-                    </Row>
-                  </td>
-                  <td>{elasticity.toFixed(2)}</td>
-                </tr>
+                {!contract.resolution && (
+                  <tr>
+                    <td>
+                      <Row>
+                        <span className="mr-1">Elasticity</span>
+                        <InfoTooltip
+                          text={
+                            mechanism === 'cpmm-1'
+                              ? `Log-odds change between a ${formatMoney(
+                                  ELASTICITY_BET_AMOUNT
+                                )} bet on YES and NO`
+                              : mechanism === 'cpmm-2'
+                              ? `Log-odds change between a ${formatMoney(
+                                  ELASTICITY_BET_AMOUNT
+                                )}bet for and against each outcome`
+                              : `Log-odds change from a ${formatMoney(
+                                  ELASTICITY_BET_AMOUNT
+                                )} bet`
+                          }
+                        />
+                      </Row>
+                    </td>
+                    <td>{elasticity.toFixed(2)}</td>
+                  </tr>
+                )}
 
                 <tr>
                   <td>Liquidity subsidies</td>
