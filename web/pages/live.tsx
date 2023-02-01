@@ -1,5 +1,4 @@
 import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useTracking } from 'web/hooks/use-tracking'
