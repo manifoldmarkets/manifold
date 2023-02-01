@@ -63,9 +63,7 @@ export default function GroupSelectorDialog(props: {
           )}
         </div>
         <Row className={'justify-end'}>
-          <Button size={'lg'} onClick={() => setOpen(false)}>
-            Done
-          </Button>
+          <Button onClick={() => setOpen(false)}>Done</Button>
         </Row>
       </Col>
     </Modal>

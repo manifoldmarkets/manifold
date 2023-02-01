@@ -57,9 +57,7 @@ const signedOutNavigation = (appStoreUrl: string) => [
     icon: DeviceMobileIcon,
   },
   { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
-  // [c] evil experiment: go to home instead of help, since home explains it anyways
-  // [s] changing help to about
-  { name: 'About', href: '/#about', icon: BookOpenIcon },
+  { name: 'About', href: '?showHelpModal=true', icon: BookOpenIcon },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL

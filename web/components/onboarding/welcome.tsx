@@ -19,42 +19,62 @@ import GroupSelectorDialog from './group-selector-dialog'
 
 export default function Welcome() {
   const user = useUser()
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
+  const [showSignedOutUser, setShowSignedOutUser] = useState(false)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
   const isTwitch = useIsTwitch(user)
   const { isNative, platform } = getNativePlatform()
+  const router = useRouter()
   const availablePages = buildArray([
-    <Page0 />,
-    <Page1 />,
-    <Page2 />,
-    isNative && platform === 'ios' ? null : <Page3 />,
-    <Page4 />,
+    <WhatIsManifoldPage />,
+    <PredictionMarketPage />,
+    <WhatIsManaPage />,
+    isNative && platform === 'ios' ? null : <CharityPage />,
+    user && <ThankYouPage />,
   ])
   const TOTAL_PAGES = availablePages.length
 
-  function increasePage() {
-    if (page < TOTAL_PAGES - 1) {
-      setPage(page + 1)
+  useEffect(() => {
+    if (user) return
+    const { showHelpModal } = router.query
+    if (showHelpModal) {
+      setPage(0)
+      setShowSignedOutUser(true)
+      setOpen(true)
+      router.replace(router.pathname, router.pathname, { shallow: true })
     }
-  }
+  }, [router.query])
 
   useEffect(() => {
-    if (!open && user?.shouldShowWelcome) {
-      if (user?.shouldShowWelcome)
-        updateUser(user.id, { shouldShowWelcome: false })
+    if (user?.shouldShowWelcome) setOpen(true)
+  }, [user])
+
+  const close = () => {
+    setOpen(false)
+    setPage(0)
+    if (user?.shouldShowWelcome) {
+      updateUser(user.id, { shouldShowWelcome: false })
       setGroupSelectorOpen(true)
     }
-  }, [open, user?.id, user?.shouldShowWelcome])
+    if (showSignedOutUser) setShowSignedOutUser(false)
+  }
+  function increasePage() {
+    if (page < TOTAL_PAGES - 1) setPage(page + 1)
+    else close()
+  }
 
   function decreasePage() {
     if (page > 0) {
       setPage(page - 1)
     }
   }
+  const shouldShowWelcomeModals =
+    (!isTwitch && user && user.shouldShowWelcome) ||
+    (user && !user.shouldShowWelcome && groupSelectorOpen) ||
+    showSignedOutUser
 
-  if (isTwitch || !user || (!user.shouldShowWelcome && !groupSelectorOpen))
-    return <></>
+  if (!shouldShowWelcomeModals) return <></>
 
   if (groupSelectorOpen)
     return (
@@ -65,8 +85,8 @@ export default function Welcome() {
     )
 
   return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
+    <Modal open={open} setOpen={close}>
+      <Col className="place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:text-lg">
         {availablePages[page]}
         <Col>
           <Row className="place-content-between">
@@ -80,18 +100,11 @@ export default function Welcome() {
             >
               Previous
             </Button>
-            <Button
-              color={'blue'}
-              onClick={
-                page === TOTAL_PAGES - 1 ? () => setOpen(false) : increasePage
-              }
-            >
-              Next
-            </Button>
+            <Button onClick={increasePage}>Next</Button>
           </Row>
           <u
-            className="self-center text-xs text-gray-500"
-            onClick={() => setOpen(false)}
+            className="cursor-pointer self-center text-xs text-gray-500 no-underline hover:underline"
+            onClick={close}
           >
             I got the gist, exit welcome
           </u>
@@ -114,7 +127,7 @@ const useIsTwitch = (user: User | null | undefined) => {
   return isTwitch
 }
 
-function Page0() {
+function WhatIsManifoldPage() {
   return (
     <>
       <img
@@ -134,7 +147,7 @@ function Page0() {
   )
 }
 
-function Page1() {
+function PredictionMarketPage() {
   return (
     <>
       <p>
@@ -157,7 +170,7 @@ function Page1() {
   )
 }
 
-export function Page2() {
+export function WhatIsManaPage() {
   return (
     <>
       <Title className="">What is mana ({ENV_CONFIG.moneyMoniker})?</Title>
@@ -181,7 +194,7 @@ export function Page2() {
   )
 }
 
-export function Page3() {
+export function CharityPage() {
   return (
     <>
       <Title text="Donate" />
@@ -199,10 +212,13 @@ export function Page3() {
   )
 }
 
-function Page4() {
+function ThankYouPage() {
   return (
     <>
-      <img className="mx-auto object-contain" src="/welcome/treasure.png" />
+      <img
+        className="mx-auto mb-8 w-[60%] object-contain"
+        src={'/welcome/treasure.png'}
+      />
       <Title className="mx-auto" text="Let's start predicting!" />
       <p className="mb-8">
         As a thank you for signing up, we’ve sent you{' '}
