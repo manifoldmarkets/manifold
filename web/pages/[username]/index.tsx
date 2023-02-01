@@ -111,7 +111,7 @@ const DeletedUser = () => {
   return (
     <Page>
       <div className="flex h-full flex-col items-center justify-center">
-        <Title text="Deleted account page" />
+        <Title children="Deleted account page" />
         <p>This user has been deleted.</p>
         <p>If you didn't expect this, let us know on Discord!</p>
         <br />

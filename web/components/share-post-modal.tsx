@@ -14,7 +14,7 @@ export function SharePostModal(props: {
   return (
     <Modal open={isOpen} setOpen={setOpen} size="md">
       <Col className="gap-4 rounded bg-white p-4">
-        <Title className="!mt-0 !mb-2" text="Share this post" />
+        <Title className="!mb-2">Share this post</Title>
         <CopyLinkButton url={shareUrl} tracking="copy share post link" />
         <div className="self-center">
           <TweetButton tweetText={shareUrl} />

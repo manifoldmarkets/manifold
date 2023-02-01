@@ -235,7 +235,7 @@ export function OrderBookButton(props: {
 
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="rounded bg-white p-4 py-6">
-          <Title className="!mt-0 inline-flex">
+          <Title className="flex">
             Order book{' '}
             <InfoTooltip
               text="List of active limit orders by traders wishing to buy YES or NO at a given probability"

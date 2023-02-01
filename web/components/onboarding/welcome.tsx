@@ -134,7 +134,7 @@ function WhatIsManifoldPage() {
         className="h-2/3 w-2/3 place-self-center object-contain"
         src="/welcome/manipurple.png"
       />
-      <Title className="text-center" text="Welcome to Manifold Markets!" />
+      <Title className="text-center" children="Welcome to Manifold Markets!" />
       <p>
         Manifold Markets is a place where anyone can ask a question about the
         future.
@@ -197,7 +197,7 @@ export function WhatIsManaPage() {
 export function CharityPage() {
   return (
     <>
-      <Title text="Donate" />
+      <Title children="Donate" />
       <p className="mt-2">
         You can turn your mana earnings into a real donation to charity, at a
         100:1 ratio. When you donate{' '}
@@ -219,7 +219,7 @@ function ThankYouPage() {
         className="mx-auto mb-8 w-[60%] object-contain"
         src={'/welcome/treasure.png'}
       />
-      <Title className="mx-auto" text="Let's start predicting!" />
+      <Title className="mx-auto" children="Let's start predicting!" />
       <p className="mb-8">
         As a thank you for signing up, we’ve sent you{' '}
         <span className="font-normal text-indigo-700">

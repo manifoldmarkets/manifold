@@ -44,7 +44,7 @@ export default function AddFundsPage() {
       />
 
       <Col className="mx-auto w-[700px] rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
-        <Title className="!mt-0" text="Get Mana" />
+        <Title>Get Mana</Title>
 
         <div className="mb-6">
           Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite

@@ -448,7 +448,7 @@ export function BuyPanel(props: {
           setOpen={setSeeLimit}
           className="rounded-lg bg-white px-4 pb-4"
         >
-          <Title text="Limit Order" />
+          <Title children="Limit Order" />
           <LimitOrderPanel
             hidden={!seeLimit}
             contract={contract}

@@ -35,7 +35,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
 
   return (
     <div className={clsx('w-full px-1', className)}>
-      <Title text={title} className="!mt-0" />
+      <Title>{title}</Title>
       {entries.length === 0 ? (
         <div className="ml-2 text-gray-500">None yet</div>
       ) : (

@@ -49,7 +49,7 @@ export default function DatePage(props: {
       <NoSEO />
       <div className="mx-auto w-full max-w-xl">
         <Row className="items-center justify-between p-4 sm:p-0">
-          <Title className="!my-0 px-2 text-blue-500" text="Date docs" />
+          <Title className="!my-0 px-2 text-blue-500" children="Date docs" />
           {!hasDoc && (
             <Link
               href="/date-docs/create"

@@ -71,7 +71,7 @@ function CharityPage(props: { charity: Charity }) {
 
       <Col className="mx-1 w-full items-center sm:px-0">
         <Col className="max-w-2xl rounded bg-white px-8 py-6">
-          <Title className="!mt-0" text={name} />
+          <Title children={name} />
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
             {photo && (
@@ -164,7 +164,7 @@ function DonationBox(props: {
 
   return (
     <div className="rounded-lg bg-white py-6 px-8 shadow-lg">
-      <Title text="Donate" className="!mt-0" />
+      <Title>Donate</Title>
       <form onSubmit={onSubmit}>
         <label
           className="mb-2 block text-sm text-gray-500"

@@ -183,7 +183,7 @@ export default function Leaderboards(props: {
         url="/leaderboards"
       />
       <Col className="mb-4 p-2">
-        <Title className={'!mt-0 hidden md:block'}>
+        <Title className={'hidden md:block'}>
           Leaderboards <InfoTooltip text="Updated every 15 minutes" />
         </Title>
 

@@ -64,7 +64,7 @@ export function AcceptChallengeButton(props: {
         <Col className="gap-4 rounded-md bg-white px-8 py-6">
           <Col className={'gap-4'}>
             <div className={'flex flex-row justify-start '}>
-              <Title text={"So you're in?"} className={'!my-2'} />
+              <Title children={"So you're in?"} className={'!my-2'} />
             </div>
             <Col className="w-full items-center justify-start gap-2">
               <Row className={'w-full justify-start gap-20'}>
