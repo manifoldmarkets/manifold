@@ -92,7 +92,6 @@ export function useTextEditor(props: {
     }
   )
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const save = useCallback(debounce(saveContent, 500), [])
 
   const editorClass = clsx(

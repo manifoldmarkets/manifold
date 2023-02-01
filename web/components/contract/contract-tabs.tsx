@@ -419,8 +419,6 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       (b) => b.createdTime > (bets[0]?.createdTime ?? 0)
     )
     if (newBets.length > 0) setBets([...newBets, ...bets])
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.bets])
 
   const lps = useLiquidity(contract.id) ?? []

@@ -73,7 +73,6 @@ export function Pagination(props: {
     if (scrollToTop) {
       window.scrollTo(0, 0)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageQuery])
 
   const onClick = (page: number) => {

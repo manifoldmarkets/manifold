@@ -76,7 +76,6 @@ export const SwipeCard = memo(
     useEffect(() => {
       setNoPercent(1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount))
       setYesPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [amount])
     return (
       <Col

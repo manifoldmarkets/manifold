@@ -41,7 +41,6 @@ export function SwipeBetPanel(props: {
       const interval = setInterval(processPress, 100)
       return () => clearInterval(interval)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pressState])
 
   const swipingLeft =

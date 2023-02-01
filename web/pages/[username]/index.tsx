@@ -152,7 +152,6 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         { shallow: true }
       )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const referralUrl = `https://${DOMAIN}?referrer=${user?.username}`

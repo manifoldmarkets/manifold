@@ -191,7 +191,6 @@ export function CommentInputTextArea(props: {
         .focus(undefined, { scrollIntoView: false })
         .run()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])
 
   return (

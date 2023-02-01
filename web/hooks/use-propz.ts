@@ -30,7 +30,6 @@ export function usePropz(
     if (router.isReady) {
       getStaticPropz({ params }).then((result) => setPropz(result.props))
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params])
   return propz
 }

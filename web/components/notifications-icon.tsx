@@ -45,7 +45,6 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
         unseenSourceIdsToNotificationIds[possibleSourceId].id
       )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asPath, isReady, pathname, privateUser.id, unseenNotifs])
 
   if (unseenNotifs === 0 || seen) {

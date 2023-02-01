@@ -103,7 +103,6 @@ export default function Swipe() {
   useEffect(() => {
     // In case of height resize, reset the y position.
     api.start({ y: -index * cardHeight })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, cardHeight])
 
   const indexRef = useRef(index)

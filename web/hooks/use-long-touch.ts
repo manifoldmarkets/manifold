@@ -41,7 +41,6 @@ export default function useLongTouch(
       )
     }
     return clearTimeout(timerId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mouseState])
 
   return {

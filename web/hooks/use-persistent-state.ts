@@ -126,7 +126,6 @@ export const usePersistentState = <T>(
     if (hasLoaded && key != null && store != null) {
       store.set(key, state)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, state, hasLoaded])
 
   if (store?.readsUrl) {
@@ -140,7 +139,6 @@ export const usePersistentState = <T>(
         const savedValue = key != null ? store.get(key) : undefined
         setState(savedValue ?? initial)
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router.isReady])
   }
 
@@ -204,7 +202,6 @@ export const usePersistentRevalidatedState = <T>(
     if (hasLoaded && key != null && store != null && state !== undefined) {
       store.set(key, state)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, state, hasLoaded])
 
   if (store?.readsUrl) {
@@ -218,7 +215,6 @@ export const usePersistentRevalidatedState = <T>(
         const savedValue = key != null ? store.get(key) : undefined
         setState(savedValue ?? initial)
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router.isReady])
   }
 

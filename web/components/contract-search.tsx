@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { SearchOptions } from '@algolia/client-search'
 import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
