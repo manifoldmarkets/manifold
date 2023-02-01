@@ -19,12 +19,12 @@ export type NotificationGroup = {
   isSeen: boolean
   timePeriod: string
 }
-
+const NOTIFICATIONS_KEY = 'notifications'
 function useNotifications(privateUser: PrivateUser) {
   const [notifications, setNotifications] = usePersistentState<
     Notification[] | undefined
   >(undefined, {
-    key: 'notifications',
+    key: NOTIFICATIONS_KEY,
     store: storageStore(safeLocalStorage()),
   })
   useEffect(() => {
@@ -41,22 +41,36 @@ function useUnseenNotifications(privateUser: PrivateUser) {
     key: 'unseen-notifications',
     store: inMemoryStore(),
   })
+  // We also tack on the unseen notifications to the notifications state so that
+  // when you navigate to the notifications page, you see the new ones immediately
+  const [_, setNotifications] = usePersistentState<Notification[] | undefined>(
+    undefined,
+    {
+      key: NOTIFICATIONS_KEY,
+      store: storageStore(safeLocalStorage()),
+    }
+  )
   useEffect(() => {
-    listenForUnseenNotifications(privateUser.id, setUnseenNotifications)
+    listenForUnseenNotifications(privateUser.id, (unseenNotifications) => {
+      setUnseenNotifications(unseenNotifications)
+      if (unseenNotifications.length > 0) {
+        setNotifications((notifications) => {
+          return uniqBy(
+            [...(notifications ?? []), ...unseenNotifications],
+            (n) => n.id
+          )
+        })
+      }
+    })
   }, [privateUser.id, setUnseenNotifications])
   return unseenNotifications
 }
 
 export function useGroupedNotifications(privateUser: PrivateUser) {
-  const newNotifications = useUnseenNotifications(privateUser) ?? []
   const notifications = useNotifications(privateUser) ?? []
   return useMemo(() => {
-    const uniqueNotifications = uniqBy(
-      notifications.concat(newNotifications),
-      'id'
-    )
-    return notifications ? groupNotifications(uniqueNotifications) : undefined
-  }, [JSON.stringify(notifications), JSON.stringify(newNotifications)])
+    return groupNotifications(notifications)
+  }, [notifications])
 }
 
 export function useGroupedUnseenNotifications(privateUser: PrivateUser) {
