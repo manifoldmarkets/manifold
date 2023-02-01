@@ -1,21 +1,5 @@
-export const horizontalSwipeDist = 60
+export const horizontalSwipeDist = 80
 export const verticalSwipeDist = 40
-
-export type SwipeAction = 'left' | 'right' | 'up' | 'down' | 'none'
-
-export function getSwipeAction(
-  mx: number,
-  my: number,
-  xCappedDist: number
-): SwipeAction {
-  if (xCappedDist >= horizontalSwipeDist) {
-    return mx < 0 ? 'left' : 'right'
-  }
-  if (Math.abs(my) >= verticalSwipeDist) {
-    return my < 0 ? 'up' : 'down'
-  }
-  return 'none'
-}
 
 export default function getQuestionSize(question: string) {
   const questionLength = question.length
@@ -50,9 +34,6 @@ export function isStatusAFailure(
 ) {
   return betStatus && betStatus != 'loading' && betStatus != 'success'
 }
-
-export const BUFFER_CARD_COLOR = 'bg-gray-700'
-export const BUFFER_CARD_OPACITY = 'opacity-70'
 
 export const STARTING_BET_AMOUNT = 10
 export const BET_TAP_ADD = 10
