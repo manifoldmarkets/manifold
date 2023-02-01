@@ -22,7 +22,7 @@ export const BetSlider = (props: {
 
   return (
     <Col className={'mb-1 w-full'}>
-      <Row className={'w-full'}>
+      <Row className={'min-h-[3rem] w-full'}>
         <Slider
           min={0}
           marks={{

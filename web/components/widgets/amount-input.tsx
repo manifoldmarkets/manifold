@@ -109,20 +109,23 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   disabled?: boolean
-  showSlider?: boolean
   hideInput?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
   binaryOutcome?: binaryOutcomes
+  sliderOptions?: {
+    show: boolean
+    wrap: boolean
+  }
 }) {
   const {
     amount,
     onChange,
     error,
     setError,
-    showSlider,
+    sliderOptions,
     disabled,
     className,
     inputClassName,
@@ -131,6 +134,7 @@ export function BuyAmountInput(props: {
     binaryOutcome,
     hideInput,
   } = props
+  const { show, wrap } = sliderOptions ?? {}
 
   const user = useUser()
 
@@ -158,8 +162,9 @@ export function BuyAmountInput(props: {
       <Col>
         <Row
           className={clsx(
-            'items-center gap-x-4 gap-y-1 xl:flex-wrap',
-            hideInput ? 'mb-4' : ''
+            'items-center justify-between gap-x-4 gap-y-1 sm:justify-start',
+            hideInput ? 'mb-4' : '',
+            wrap ? 'flex-wrap' : ''
           )}
         >
           {!hideInput && (
@@ -181,7 +186,7 @@ export function BuyAmountInput(props: {
               }
             />
           )}
-          {showSlider && (
+          {show && (
             <BetSlider
               amount={amount}
               onAmountChange={onAmountChange}

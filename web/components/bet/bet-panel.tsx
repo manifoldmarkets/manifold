@@ -357,7 +357,7 @@ export function BuyPanel(props: {
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}
-          showSlider={true}
+          sliderOptions={{ show: true, wrap: !mobileView }}
           binaryOutcome={outcome}
           hideInput={hideInput}
         />
@@ -455,6 +455,7 @@ export function BuyPanel(props: {
             user={user}
             unfilledBets={unfilledBets}
             balanceByUserId={balanceByUserId}
+            mobileView={mobileView}
           />
           <LimitBets
             contract={contract}
@@ -474,6 +475,7 @@ function LimitOrderPanel(props: {
   balanceByUserId: { [userId: string]: number }
   hidden: boolean
   onBuySuccess?: () => void
+  mobileView?: boolean
 }) {
   const {
     contract,
@@ -482,6 +484,7 @@ function LimitOrderPanel(props: {
     balanceByUserId,
     hidden,
     onBuySuccess,
+    mobileView,
   } = props
 
   const initialProb = getProbability(contract)
@@ -707,7 +710,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        showSlider={true}
+        sliderOptions={{ show: true, wrap: !mobileView }}
       />
 
       <Col className="mt-8 w-full gap-3">
