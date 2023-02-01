@@ -116,7 +116,7 @@ export function BetsList(props: { user: User }) {
     key: 'bets-list-sort',
     store: inMemoryStore(),
   })
-  const [filter, setFilter] = usePersistentState<BetFilter>('all', {
+  const [filter, setFilter] = usePersistentState<BetFilter>('open', {
     key: 'bets-list-filter',
     store: inMemoryStore(),
   })
