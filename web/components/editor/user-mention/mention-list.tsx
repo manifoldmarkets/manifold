@@ -2,7 +2,7 @@ import { SuggestionProps } from '@tiptap/suggestion'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { Avatar } from '../widgets/avatar'
+import { Avatar } from '../../widgets/avatar'
 
 type LiteUser = Pick<
   User,
