@@ -151,7 +151,9 @@ export function AnswersPanel(props: {
             chosenAnswers={chosenAnswers}
           />
 
-          {!!resolveOption && answerItemComponents}
+          {!!resolveOption && (
+            <Col className="mt-4 gap-3">{answerItemComponents}</Col>
+          )}
         </GradientContainer>
       )}
 
