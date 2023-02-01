@@ -107,44 +107,45 @@ export const SwipeCard = memo(
             </SiteLink>
           </div>
 
-          <Percent
-            className="mt-2 self-center"
-            currPercent={currPercent}
-            yesPercent={yesPercent}
-            noPercent={noPercent}
-            outcome={
-              betDirection === 'YES'
-                ? 'YES'
-                : betDirection === 'NO'
-                ? 'NO'
-                : undefined
-            }
-          />
-
-          {!small && (
-            <SizedContainer
-              className="mt-2"
-              fullHeight={100}
-              mobileHeight={100}
-            >
-              {(w, h) => (
-                <BinaryContractChart
-                  width={w}
-                  height={h}
-                  betPoints={betPoints}
-                  viewScaleProps={viewScale}
-                  controlledStart={
-                    betPoints.length > 0
-                      ? Math.min(...betPoints.map((b) => b.x))
-                      : contract.createdTime
-                  }
-                  contract={contract}
-                  color="white"
-                  noAxes
-                />
-              )}
-            </SizedContainer>
-          )}
+          <div className="mt-2 self-center">
+            {!small && (
+              <SizedContainer
+                className="mt-2"
+                fullHeight={50}
+                mobileHeight={50}
+              >
+                {(w, h) => (
+                  <BinaryContractChart
+                    width={w}
+                    height={h}
+                    betPoints={betPoints}
+                    viewScaleProps={viewScale}
+                    controlledStart={
+                      betPoints.length > 0
+                        ? Math.min(...betPoints.map((b) => b.x))
+                        : contract.createdTime
+                    }
+                    contract={contract}
+                    color="white"
+                    noAxes
+                  />
+                )}
+              </SizedContainer>
+            )}
+            <Percent
+              className="mt-4"
+              currPercent={currPercent}
+              yesPercent={yesPercent}
+              noPercent={noPercent}
+              outcome={
+                betDirection === 'YES'
+                  ? 'YES'
+                  : betDirection === 'NO'
+                  ? 'NO'
+                  : undefined
+              }
+            />
+          </div>
 
           <Row className="mx-auto w-full grow items-center" />
 
