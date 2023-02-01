@@ -167,4 +167,4 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
-export const NATIVE_BUILD = process.env.NATIVE_BUILD_TYPE ?? 'PROD'
+export const NATIVE_BUILD = process.env.NATIVE_BUILD_TYPE ?? 'PREVIEW'

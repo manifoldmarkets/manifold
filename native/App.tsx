@@ -484,7 +484,7 @@ const App = () => {
                 zIndex: 100,
               }}
             >
-              Share
+              Logs
             </Text>
           </TouchableOpacity>
         </View>

@@ -5,24 +5,28 @@ import * as Sharing from 'expo-sharing'
 import { NATIVE_BUILD } from 'common/envs/constants'
 
 const now = new Date()
-export const fileName = `logs_${now.toISOString().replaceAll(':', '-')}.txt`
-export const filePath = FileSystem.documentDirectory
-const config = {
-  severity: 'debug',
-  transport: fileAsyncTransport,
-  transportOptions: {
-    FS: FileSystem,
-    filePath,
-    fileName,
-  },
+const fileName = `logs_${now.toISOString().replaceAll(':', '-')}.txt`
+const filePath = FileSystem.documentDirectory
+const initLogger = () => {
+  console.log('[Manifold Markets] logger filePath', filePath + fileName)
+  console.log('[Manifold Markets] build type', NATIVE_BUILD)
+  if (NATIVE_BUILD === 'PROD') return { info: () => {} }
+  const config = {
+    severity: 'debug',
+    transport: fileAsyncTransport,
+    transportOptions: {
+      FS: FileSystem,
+      filePath,
+      fileName,
+    },
+  }
+  return logger.createLogger(config)
 }
-const appLogger = logger.createLogger(config)
-console.log('[Manifold Markets] logger filePath', filePath + fileName)
-console.log('[Manifold Markets] build type', NATIVE_BUILD)
-
+const appLogger = initLogger()
 export const log = (...args: unknown[]) => {
+  if (NATIVE_BUILD === 'PROD') return
   console.log('[Manifold Markets]', ...args)
-  if (NATIVE_BUILD === 'PREVIEW') appLogger.info(`[Manifold Markets]`, ...args)
+  appLogger.info(`[Manifold Markets]`, ...args)
 }
 export const shareLogs = async () => {
   const UTI = 'public.item'
