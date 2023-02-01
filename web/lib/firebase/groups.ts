@@ -26,6 +26,7 @@ import { getContractFromId, updateContract } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/firebase/init'
 import { filterDefined } from 'common/util/array'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
+import { User } from './users'
 
 export const groups = coll<Group>('groups')
 export const groupMembers = (groupId: string) =>
@@ -190,28 +191,38 @@ export async function leaveGroup(
   return await deleteDoc(memberDoc)
 }
 
-export async function updateRole(
-  groupId: string,
-  userId: string,
-  newRole: groupRoleType
-): Promise<void> {
-  // updates member role
-  return await updateDoc(doc(groupMembers(groupId), userId), {
-    role: newRole,
-  }).catch((e) => console.log(e))
-}
+// export async function updateRole(
+//   initiator: User,
+//   groupId: string,
+//   userId: string,
+//   newRole: groupRoleType
+// ): Promise<void> {
+//   // updates member role
+//   await updateDoc(doc(groupMembers(groupId), userId), {
+//     role: newRole,
+//   })
+//     .then(() => {
+//       createGroupStatusChangeNotification(initiator, userId, groupId, newRole)
+//     })
+//     .catch((e) => console.log(e))
+// }
 
-export async function removeRole(
-  groupId: string,
-  userId: string
-): Promise<void> {
-  // updates member role
-  return await updateDoc(doc(groupMembers(groupId), userId), {
-    role: deleteField(),
-  }).catch((e) => console.log(e))
-}
+// export async function removeRole(
+//   initiator: User,
+//   groupId: string,
+//   userId: string
+// ): Promise<void> {
+//   // updates member role
+//   return await updateDoc(doc(groupMembers(groupId), userId), {
+//     role: deleteField(),
+//   })
+//     .then(() => {
+//       createGroupStatusChangeNotification(initiator, userId, groupId, 'member')
+//     })
+//     .catch((e) => console.log(e))
+// }
 
-// TODO: This doesn't check if the user has permission to do this
+// TODO: need to add this to firestore rules
 export async function addContractToGroup(
   group: Group,
   contract: Contract,
@@ -227,11 +238,20 @@ export async function addContractToGroup(
       name: group.name,
     } as GroupLink,
   ]
+
+  // if (
+  //   userRole === 'admin' ||
+  //   userRole === 'moderator' ||
+  //   (contract.creatorId == userId && userRole === 'member')
+  // ) {
   // It's good to update the contract first, so the on-update-group trigger doesn't re-add them
   await updateContract(contract.id, {
     groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
     groupLinks: newGroupLinks,
   })
+  // } else {
+  //   console.log('You do not have permission to add a market to this group!')
+  // }
 }
 
 // TODO: This doesn't check if the user has permission to do this

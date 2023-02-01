@@ -18,6 +18,7 @@ export async function call(url: string, method: string, params: any) {
     body: JSON.stringify(params),
   })
   return await fetch(req).then(async (resp) => {
+    console.log(req, resp)
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
       throw new APIError(resp.status, json?.message, json?.details)
@@ -113,4 +114,12 @@ export function validateIapReceipt(params: any) {
 
 export function markAllNotifications(params: any) {
   return call(getFunctionUrl('markallnotifications'), 'POST', params)
+}
+
+export function updateMemberRole(params: {
+  groupId: string
+  memberId: string
+  role: string
+}) {
+  return call(getFunctionUrl('updatememberrole'), 'POST', params)
 }

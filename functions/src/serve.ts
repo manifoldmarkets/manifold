@@ -34,6 +34,7 @@ import { testscheduledfunction } from './test-scheduled-function'
 import { validateiap } from 'functions/src/validate-iap'
 import { markallnotifications } from 'functions/src/mark-all-notifications'
 import { claimdestinysub } from 'functions/src/claim-destiny-sub'
+import { updatememberrole } from 'functions/src/update-group-member-role'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -81,6 +82,7 @@ addEndpointRoute('/testscheduledfunction', testscheduledfunction)
 addJsonEndpointRoute('/validateIap', validateiap)
 addJsonEndpointRoute('/markallnotifications', markallnotifications)
 addJsonEndpointRoute('/claimdestinysub', claimdestinysub)
+addJsonEndpointRoute('/updatememberrole', updatememberrole)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)

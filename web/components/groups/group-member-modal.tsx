@@ -7,7 +7,7 @@ import { useRef } from 'react'
 import { useRealtimeGroupMembers } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useUser } from 'web/hooks/use-user'
-import { removeRole, updateRole } from 'web/lib/firebase/groups'
+import { updateMemberRole } from 'web/lib/firebase/api'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -32,18 +32,6 @@ export function GroupMemberModalContent(props: {
     numMembers
   )
 
-  console.log(
-    numMembers,
-    admins,
-    moderators,
-    members,
-    numMembers &&
-      admins &&
-      moderators &&
-      members &&
-      admins.length + moderators.length + members.length,
-    !loadMore
-  )
   return (
     <Col className={clsx(MODAL_CLASS, 'px-0')}>
       <div
@@ -221,6 +209,9 @@ export function AdminRoleDropdown(props: {
 }) {
   const { group, member, canEdit, className } = props
   const user = useUser()
+  if (!user) {
+    return <></>
+  }
 
   // TODO: inga send notification upon role change
   //   const updateRoleAndSendNotif = async (
@@ -243,25 +234,37 @@ export function AdminRoleDropdown(props: {
     canEdit &&
       (!member.role || member.role === 'moderator') && {
         name: 'Make admin',
-        onClick: () => {
+        onClick: async () => {
           //   updateRole(group.id, member.member_id, 'admin')
-          updateRole(group.id, member.id, 'admin')
+          await updateMemberRole({
+            groupId: group.id,
+            memberId: member.id,
+            role: 'admin',
+          })
         },
       },
     // ADMIN ONLY: if the member is below moderator, can upgrade to moderator
     canEdit &&
       !member.role && {
         name: 'Make moderator',
-        onClick: () => {
-          updateRole(group.id, member.member_id, 'moderator')
+        onClick: async () => {
+          await updateMemberRole({
+            groupId: group.id,
+            memberId: member.id,
+            role: 'moderator',
+          })
         },
       },
     // ADMIN ONLY: if the member is a moderator, can demote
     canEdit &&
       member.role === 'moderator' && {
         name: 'Remove as moderator',
-        onClick: () => {
-          removeRole(group.id, member.member_id)
+        onClick: async () => {
+          await updateMemberRole({
+            groupId: group.id,
+            memberId: member.id,
+            role: 'member',
+          })
         },
       },
     // member can remove self as admin if member is not group creator
@@ -269,16 +272,24 @@ export function AdminRoleDropdown(props: {
       user?.id != member.creator_id &&
       member.role === 'admin' && {
         name: 'Remove self as admin',
-        onClick: () => {
-          removeRole(group.id, member.member_id)
+        onClick: async () => {
+          await updateMemberRole({
+            groupId: group.id,
+            memberId: member.id,
+            role: 'member',
+          })
         },
       },
     // member can remove self as moderator
     user?.id === member.member_id &&
       member.role === 'moderator' && {
         name: 'Remove self as moderator',
-        onClick: () => {
-          removeRole(group.id, member.member_id)
+        onClick: async () => {
+          await updateMemberRole({
+            groupId: group.id,
+            memberId: member.id,
+            role: 'member',
+          })
         },
       }
   )
