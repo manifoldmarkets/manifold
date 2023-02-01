@@ -6,7 +6,6 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { Avatar } from '../widgets/avatar'
 
-// Mostly copied from ./contract-mention.tsx, with an additional avatar.
 // TODO: Replace with a proper table/datagrid implementation?
 export function ContractsListEntry(props: {
   contract: Contract
@@ -21,22 +20,22 @@ export function ContractsListEntry(props: {
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'group inline whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50',
+        'group flex flex-row gap-2 whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50',
         className
       )}
     >
       <Avatar
+        className="mt-0.5"
         username={contract.creatorName}
         avatarUrl={contract.creatorAvatarUrl}
         size="xs"
-        className="mr-2 inline-block"
       />
-      <div className="inline-block min-w-[60px]">
+      <div className="min-w-[40px]">
         {outcomeType === 'BINARY' && (
           <span
             className={clsx(
               probTextColor,
-              'rounded-full px-2 font-semibold ring-inset ring-indigo-100 group-hover:ring-indigo-200'
+              'rounded-full font-semibold ring-inset ring-indigo-100 group-hover:ring-indigo-200'
             )}
           >
             {resolution ? (
@@ -53,10 +52,9 @@ export function ContractsListEntry(props: {
           <span className="ml-0.5 text-xs text-gray-500">{probChange}</span>
         )}
       </div>
-      &zwnj;{/* cursor positioning hack */}
-      <span className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
+      <div className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
         {contract.question}
-      </span>
+      </div>
     </Link>
   )
 }
