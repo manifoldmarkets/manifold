@@ -246,10 +246,10 @@ function OpenAnswer(props: {
           background: `linear-gradient(to right, ${color}90 ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
         }}
       >
-        <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
-          <Row>
+        <Row className="z-20 justify-between gap-2 py-1.5 px-3">
+          <Row className="items-center">
             <Avatar
-              className="mt-0.5 mr-2 inline h-5 w-5 border border-transparent transition-transform hover:border-none"
+              className="mr-2 h-5 w-5 border border-transparent transition-transform hover:border-none"
               username={username}
               avatarUrl={avatarUrl}
             />
