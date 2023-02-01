@@ -47,7 +47,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
     },
     {
       every: HOUR_MS,
-      callback: () => refreshContractMetrics(),
+      callback: refreshContractMetrics,
     }
   )
 

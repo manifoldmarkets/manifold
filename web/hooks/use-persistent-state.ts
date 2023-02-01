@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useStateCheckEquality } from './use-state-check-equality'
 import { NextRouter, useRouter } from 'next/router'
 import { useHasLoaded } from './use-has-loaded'
@@ -150,14 +150,10 @@ export const usePersistentRevalidatedState = <T>(
   persist: PersistenceOptions<T>,
   revalidation: RevalidationOptions<T>
 ) => {
-  const store = persist.store
+  const { key, store } = persist
   // Is there any reason why a persistent store couldn't write a string?
   const stringStore = store as PersistentStore<any>
-  const key = persist.key
   const lastUpdateTimeKey = `${key}-last-update-time`
-  const [lastUpdateTime, setLastUpdateTime] = useState<number | undefined>(
-    undefined
-  )
   const hasLoaded = useHasLoaded()
   const { every, callback } = revalidation
 
@@ -172,31 +168,13 @@ export const usePersistentRevalidatedState = <T>(
 
   useEffect(() => {
     if (!hasLoaded || key === null || store === null) return
-
-    if (lastUpdateTime === undefined) {
-      const lastUpdateTimeTemp = parseInt(
-        stringStore.get(lastUpdateTimeKey) ?? 0
-      )
-      setLastUpdateTime(lastUpdateTimeTemp)
-      return
-    }
+    const lastUpdateTime = parseInt(stringStore.get(lastUpdateTimeKey) ?? 0)
     const now = Date.now()
     if (lastUpdateTime + every < now) {
-      setLastUpdateTime(now)
       stringStore.set(lastUpdateTimeKey, now.toString())
       callback().then(setState)
     }
-  }, [
-    hasLoaded,
-    store,
-    key,
-    lastUpdateTime,
-    every,
-    callback,
-    stringStore,
-    lastUpdateTimeKey,
-    setState,
-  ])
+  }, [])
 
   useEffect(() => {
     if (hasLoaded && key != null && store != null && state !== undefined) {
