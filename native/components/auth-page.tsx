@@ -26,12 +26,13 @@ import {
   updateProfile,
 } from 'firebase/auth'
 import { signInWithCredential } from '@firebase/auth'
-import { auth, log } from '../init'
+import { auth } from '../init'
 import WebView from 'react-native-webview'
 import * as Google from 'expo-auth-session/providers/google'
 import { ENV_CONFIG } from 'common/envs/constants'
 import * as Sentry from 'sentry-expo'
 import { Text } from 'components/text'
+import { log } from 'components/logger'
 
 export const AuthPage = (props: {
   webview: React.RefObject<WebView | undefined>

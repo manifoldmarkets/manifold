@@ -1,3 +1,4 @@
+import { app, auth } from './init'
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
@@ -32,8 +33,6 @@ import {
   nativeToWebMessageType,
   webToNativeMessage,
 } from 'common/native-message'
-import { useFonts, ReadexPro_400Regular } from '@expo-google-fonts/readex-pro'
-import { app, auth, log } from './init'
 import {
   handleWebviewCrash,
   ExternalWebView,
@@ -41,6 +40,8 @@ import {
   handleWebviewError,
   handleRenderError,
 } from 'components/external-web-view'
+import { ExportLogsButton, log } from 'components/logger'
+import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
@@ -52,8 +53,11 @@ const App = () => {
   // Init
   const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
-  const webview = useRef<WebView>()
-  const notificationResponseListener = useRef<Subscription | undefined>()
+  const [lastNotificationInMemory, setLastNotificationInMemory] = useState<
+    Notification | undefined
+  >()
+  const webview = useRef<WebView>(null)
+  const notificationResponseListener = useRef<Subscription>()
   useFonts({ ReadexPro_400Regular })
 
   // Auth
@@ -107,20 +111,44 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
-    log('Push notification received, has loaded webview:', hasLoadedWebView)
+    log('Push notification tapped, has loaded webview:', hasLoadedWebView)
+    log('webview.current:', webview.current)
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
+    const notification = response.notification.request.content
+      .data as Notification
     if (hasLoadedWebView) {
       communicateWithWebview(
         'notification',
         response.notification.request.content.data
       )
-    } else {
-      const notification = response.notification.request.content
-        .data as Notification
-      const sourceUrl = getSourceUrl(notification)
-      setUrlWithNativeQuery(sourceUrl)
-    }
+      setLastNotificationInMemory(notification)
+    } else setUrlWithNativeQuery(getSourceUrl(notification))
   }
+
+  useEffect(() => {
+    log('Running lastNotificationInMemory effect')
+    log('has loaded webview', hasLoadedWebView)
+    log('last notification in memory', lastNotificationInMemory)
+    // If there's a notification in memory and the webview has not loaded, set it as the url to load
+    if (lastNotificationInMemory && !hasLoadedWebView) {
+      log(
+        'Setting url to load from last notification in memory',
+        lastNotificationInMemory
+      )
+      setUrlWithNativeQuery(getSourceUrl(lastNotificationInMemory))
+    }
+    if (lastNotificationInMemory) {
+      // Delete the last notification in memory after 3 seconds
+      const timeout = setTimeout(() => {
+        setLastNotificationInMemory(undefined)
+        log('Cleared last notification in memory')
+      }, 3000)
+      return () => {
+        clearTimeout(timeout)
+        log('Cleared last notification in memory timeout')
+      }
+    }
+  }, [lastNotificationInMemory, hasLoadedWebView])
 
   useEffect(() => {
     log('Setting up notification listener')
@@ -140,6 +168,9 @@ const App = () => {
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
+      log('Initial url', url)
+      log('Has loaded webview', hasLoadedWebView)
+      log('webview', webview.current)
       if (url) {
         setUrlToLoad(url)
       }
@@ -155,6 +186,9 @@ const App = () => {
   // Handle deep links
   useEffect(() => {
     if (!linkedUrl) return
+    log('Linked url', linkedUrl)
+    log('Has loaded webview', hasLoadedWebView)
+    log('webview', webview.current)
 
     const { hostname, path, queryParams } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
@@ -315,6 +349,7 @@ const App = () => {
     } else if (type == 'onPageVisit') {
       if (!isIOS) return // Android doesn't use the swipe to go back
       const { page } = payload
+      log('page:', page)
       setAllowSystemBack(page !== 'swipe')
     } else {
       log('Unhandled nativeEvent.data: ', data)
@@ -399,7 +434,6 @@ const App = () => {
               setHasLoadedWebView(true)
             }}
             source={{ uri: urlToLoad }}
-            //@ts-ignore
             ref={webview}
             onError={(e) =>
               handleWebviewError(e, () => setUrlWithNativeQuery())
@@ -420,12 +454,17 @@ const App = () => {
                 tellWebviewToSetNativeFlag()
               }
             }}
-            onRenderProcessGone={(e) => handleWebviewCrash(webview, e)}
-            onContentProcessDidTerminate={(e) => handleWebviewCrash(webview, e)}
+            onRenderProcessGone={(e) =>
+              handleWebviewCrash(webview, e, () => setHasLoadedWebView(false))
+            }
+            onContentProcessDidTerminate={(e) =>
+              handleWebviewCrash(webview, e, () => setHasLoadedWebView(false))
+            }
             onMessage={handleMessageFromWebview}
           />
         </View>
       </SafeAreaView>
+      <ExportLogsButton />
     </>
   )
 }

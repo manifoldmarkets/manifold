@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native'
 import { AntDesign, Feather } from '@expo/vector-icons'
-import React, { MutableRefObject, useRef, useState } from 'react'
+import React, { MutableRefObject, RefObject, useRef, useState } from 'react'
 import {
   WebViewErrorEvent,
   WebViewRenderProcessGoneEvent,
@@ -17,6 +17,7 @@ import {
 } from 'react-native-webview/lib/WebViewTypes'
 import * as Sentry from 'sentry-expo'
 import { SplashLoading } from 'components/splash-loading'
+import { log } from 'components/logger'
 const isIOS = Platform.OS === 'ios'
 
 export const sharedWebViewProps: WebViewProps = {
@@ -34,14 +35,16 @@ export const sharedWebViewProps: WebViewProps = {
 }
 
 export const handleWebviewCrash = (
-  webview: MutableRefObject<WebView | undefined>,
-  syntheticEvent: WebViewTerminatedEvent | WebViewRenderProcessGoneEvent
+  webview: RefObject<WebView>,
+  syntheticEvent: WebViewTerminatedEvent | WebViewRenderProcessGoneEvent,
+  callback: () => void
 ) => {
   const { nativeEvent } = syntheticEvent
-  console.warn(
-    `Content process terminated, reloading ${Platform.OS} `,
+  log(
+    `Content process terminated, reloading ${Platform.OS}. Error:`,
     nativeEvent
   )
+  callback()
   webview.current?.reload()
 }
 
@@ -50,7 +53,8 @@ export const handleWebviewError = (
   callback: () => void
 ) => {
   const { nativeEvent } = e
-  console.log('error in webview', e)
+  log('Webview error', e)
+  log('Webview error native event', nativeEvent)
   Sentry.Native.captureException(nativeEvent.description, {
     extra: {
       message: 'webview error',
@@ -65,7 +69,7 @@ export const handleRenderError = (
   width: number,
   height: number
 ) => {
-  console.log('error on render webview', e)
+  log('error on render webview', e)
   Sentry.Native.captureException(e, {
     extra: {
       message: 'webview render error',
@@ -91,7 +95,7 @@ export const ExternalWebView = (props: {
   width: number
 }) => {
   const { url, height, setUrl, width } = props
-  const webview = useRef<WebView>()
+  const webview = useRef<WebView>(null)
   const [loading, setLoading] = useState(false)
 
   if (!url) return <View />
@@ -187,8 +191,12 @@ export const ExternalWebView = (props: {
         // @ts-ignore
         ref={webview}
         renderError={(e) => handleRenderError(e, width, height)}
-        onRenderProcessGone={(e) => handleWebviewCrash(webview, e)}
-        onContentProcessDidTerminate={(e) => handleWebviewCrash(webview, e)}
+        onRenderProcessGone={(e) =>
+          handleWebviewCrash(webview, e, () => setUrl(undefined))
+        }
+        onContentProcessDidTerminate={(e) =>
+          handleWebviewCrash(webview, e, () => setUrl(undefined))
+        }
       />
     </View>
   )
