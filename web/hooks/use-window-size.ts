@@ -14,6 +14,7 @@ export const useWindowSize = () => {
 
     onResize()
     setTimeout(onResize, 100) // hack to fix initial render on ios
+    setTimeout(onResize, 1000)
 
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
