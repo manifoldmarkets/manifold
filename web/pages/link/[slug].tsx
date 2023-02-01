@@ -14,6 +14,7 @@ import { User } from 'common/user'
 import { Manalink } from 'common/manalink'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Page } from 'web/components/layout/page'
+import { formatMoney } from 'common/util/format'
 
 export default function ClaimPage() {
   const user = useUser()
@@ -39,9 +40,7 @@ export default function ClaimPage() {
       />
       <div className="mx-auto max-w-xl px-2">
         <Row className="items-center justify-between">
-          <Title
-            text={`Claim ${ENV_CONFIG.moneyMoniker}${manalink.amount} mana`}
-          />
+          <Title>Claim {formatMoney(manalink.amount)} mana </Title>
           <div className="my-auto"></div>
         </Row>
 

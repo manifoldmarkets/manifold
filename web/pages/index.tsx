@@ -180,7 +180,7 @@ export function InfoCard(props: {
     <>
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="rounded-md bg-white px-8 pb-6 pt-0 text-sm font-light md:text-lg">
-          <Title text={text} />
+          <Title children={text} />
           {modal}
           <Link
             href={link}

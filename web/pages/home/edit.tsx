@@ -31,7 +31,7 @@ export default function Home() {
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-6 pt-2">
         <Row className={'w-full items-center justify-between'}>
-          <Title text="Customize your home page" />
+          <Title children="Customize your home page" />
           <DoneButton />
         </Row>
 

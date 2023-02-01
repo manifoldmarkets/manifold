@@ -1,12 +1,12 @@
 import clsx from 'clsx'
+import { ReactNode } from 'react'
 
 export function Title(props: {
-  text?: string
   className?: string
-  children?: any
+  children?: ReactNode
   textColor?: string
 }) {
-  const { text, children, className, textColor } = props
+  const { children, className, textColor } = props
   return (
     <h1
       className={clsx(
@@ -15,7 +15,6 @@ export function Title(props: {
         textColor || 'text-indigo-700'
       )}
     >
-      {text}
       {children}
     </h1>
   )
