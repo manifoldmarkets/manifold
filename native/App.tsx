@@ -2,7 +2,7 @@ import { app, auth } from './init'
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
-import { ENV, EXTERNAL_REDIRECTS, NATIVE_BUILD } from 'common/envs/constants'
+import { ENV, EXTERNAL_REDIRECTS } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -14,8 +14,6 @@ import {
   StatusBar as RNStatusBar,
   Dimensions,
   View,
-  TouchableOpacity,
-  Text,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -42,7 +40,7 @@ import {
   handleWebviewError,
   handleRenderError,
 } from 'components/external-web-view'
-import { ExportLogsButton, log, shareLogs } from 'components/logger'
+import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 
 // no other uri works for API requests due to CORS
