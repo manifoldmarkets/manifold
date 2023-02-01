@@ -1,6 +1,7 @@
 import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
 import {
   DotsCircleHorizontalIcon,
+  FireIcon,
   PencilIcon,
   PlusIcon,
 } from '@heroicons/react/solid'
@@ -49,9 +50,17 @@ export function MiscDetails(props: {
   const isClient = useIsClient()
   // const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   const groupToDisplay = getGroupLinkToDisplay(contract)
+  const isOpen =
+    !contract.isResolved && (contract.closeTime ?? Infinity) > Date.now()
 
   return (
     <Row className="w-full items-center gap-3 text-sm text-gray-400">
+      {isOpen && contract.elasticity < 0.5 ? (
+        <Tooltip text={'Highly liquid market'} className={'z-10'}>
+          <FireIcon className="h-5 w-5 text-blue-700" />
+        </Tooltip>
+      ) : null}
+
       {isClient && showTime === 'close-date' ? (
         <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
