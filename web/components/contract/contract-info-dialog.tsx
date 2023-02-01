@@ -278,13 +278,19 @@ export function ContractInfoDialog(props: {
                   title: 'Cover image',
                   content: (
                     <div className="flex justify-center">
-                      <div className="relative">
-                        <Image
-                          src={contract.coverImageUrl ?? ''}
-                          width={400}
-                          height={400}
-                          alt=""
-                        />
+                      <div className="relative shrink">
+                        {contract.coverImageUrl ? (
+                          <Image
+                            src={contract.coverImageUrl}
+                            width={400}
+                            height={400}
+                            alt=""
+                          />
+                        ) : (
+                          <div className="flex aspect-square w-[300px] shrink items-center justify-center bg-gray-100 sm:w-[400px]">
+                            No image
+                          </div>
+                        )}
                         {isCreator && (
                           <div className="absolute bottom-0 right-0">
                             <ChangeCoverImageButton contract={contract} />
