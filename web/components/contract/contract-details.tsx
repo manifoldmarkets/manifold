@@ -65,10 +65,13 @@ export function MiscDetails(props: {
           {fromNow(resolutionTime)}
         </Row>
       ) : (uniqueBettorCount ?? 0) > 1 ? (
-        <Tooltip text={'Unique traders'} className={'z-10'}>
+        <Tooltip
+          text={`${uniqueBettorCount} unique traders`}
+          className={'z-10'}
+        >
           <Row className={'shrink-0 items-center gap-1'}>
-            <div className="font-semibold">{uniqueBettorCount || '0'} </div>
             <UserGroupIcon className="h-4 w-4" />
+            <div className="font-semibold">{uniqueBettorCount || '0'}</div>
           </Row>
         </Tooltip>
       ) : (
