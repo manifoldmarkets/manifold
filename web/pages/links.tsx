@@ -65,7 +65,7 @@ export default function LinkPage(props: { auth: { user: User } }) {
       />
       <Col className="mt-6 w-full px-8">
         <Row className="items-start justify-between">
-          <Title children="Manalinks" className="!mt-0" />
+          <Title>Manalinks</Title>
           {user && (
             <CreateLinksButton
               user={user}

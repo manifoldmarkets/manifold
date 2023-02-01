@@ -59,7 +59,7 @@ export default function Notifications() {
   return (
     <Page>
       <Col className="mx-auto w-full p-2 pb-0">
-        <Title className="!mt-0 hidden lg:block" children="Notifications" />
+        <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
         {isNative ? (
           <div />

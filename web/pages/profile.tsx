@@ -176,7 +176,7 @@ export default function ProfilePage(props: {
 
       <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
         <Row className="items-start justify-between">
-          <Title className="!mt-0" children="Edit Profile" />
+          <Title>Edit Profile</Title>
           <Link
             href={`/${user.username}`}
             className={buttonClass('md', 'green')}
