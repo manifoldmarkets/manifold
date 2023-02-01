@@ -42,7 +42,7 @@ import {
   handleWebviewError,
   handleRenderError,
 } from 'components/external-web-view'
-import { log, shareLogs } from 'components/logger'
+import { ExportLogsButton, log, shareLogs } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 
 // no other uri works for API requests due to CORS
@@ -466,29 +466,7 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
-      {NATIVE_BUILD === 'PREVIEW' && (
-        <View
-          style={{
-            flex: 1,
-            maxHeight: 30,
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <TouchableOpacity onPress={shareLogs}>
-            <Text
-              style={{
-                color: 'blue',
-                marginRight: 20,
-                marginBottom: 0,
-                zIndex: 100,
-              }}
-            >
-              Logs
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <ExportLogsButton />
     </>
   )
 }
