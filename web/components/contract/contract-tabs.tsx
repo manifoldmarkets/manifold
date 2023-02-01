@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { groupBy, sortBy, sum } from 'lodash'
+import { groupBy, last, sortBy, sum } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
@@ -410,7 +410,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const [bets, setBets] = useState(() => props.bets.filter((b) => !b.isAnte))
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
-  const oldestBet = bets[bets.length - 1]
+  const oldestBet = last(bets)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
 
@@ -455,16 +455,17 @@ const BetsTabContent = memo(function BetsTabContent(props: {
 
   const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
   const shouldLoadMore = limit > 0 && bets.length < totalItems
+  const oldestBetTime = oldestBet?.createdTime ?? contract.createdTime
   useEffect(() => {
     if (!shouldLoadMore) return
-    getOlderBets(contract.id, oldestBet.createdTime, limit)
+    getOlderBets(contract.id, oldestBetTime, limit)
       .then((olderBets) => {
         setBets((bets) => [...bets, ...olderBets])
       })
       .catch((err) => {
         console.error(err)
       })
-  }, [contract.id, limit, oldestBet.createdTime, shouldLoadMore])
+  }, [contract.id, limit, oldestBetTime, shouldLoadMore])
 
   const pageItems = sortBy(items, (item) =>
     item.type === 'bet'
