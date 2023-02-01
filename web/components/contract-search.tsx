@@ -130,7 +130,7 @@ export function ContractSearch(props: {
   const searchParams = useRef<SearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SearchParameters>()
   const requestId = useRef(0)
-  const [asList, setAsList] = useState(false)
+  const [asList, setAsList] = useState(true)
 
   useSafeLayoutEffect(() => {
     if (persistPrefix) {
