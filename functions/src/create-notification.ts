@@ -33,6 +33,7 @@ import {
 import { ContractFollow } from '../../common/follow'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
+import { group } from 'console'
 
 const firestore = admin.firestore()
 
@@ -1093,16 +1094,17 @@ export const createMarketClosedNotification = async (
 export const createGroupStatusChangeNotification = async (
   initiator: User,
   affectedUserId: string,
-  groupId: string,
-  newStatus: 'member' | 'moderator' | 'admin'
+  group: Group,
+  newStatus: string
 ) => {
   const privateUser = await getPrivateUser(affectedUserId)
   if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'group_role_changed'
-  )
-  if (!sendToBrowser) return
+  // TODO: inga add this back in when figure out permissions
+  // const { sendToBrowser } = getNotificationDestinationsForUser(
+  //   privateUser,
+  //   'group_role_changed'
+  // )
+  // if (!sendToBrowser) return
 
   const notificationRef = firestore
     .collection(`/users/${affectedUserId}/notifications`)
@@ -1113,13 +1115,15 @@ export const createGroupStatusChangeNotification = async (
     reason: 'group_role_changed',
     createdTime: Date.now(),
     isSeen: false,
-    sourceId: groupId,
+    sourceId: group.id,
     sourceType: 'group',
     sourceUpdateType: 'updated',
     sourceUserName: initiator.name,
     sourceUserUsername: initiator.username,
     sourceUserAvatarUrl: initiator.avatarUrl,
     sourceText: newStatus,
+    sourceSlug: group.slug,
+    sourceTitle: group.name,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }

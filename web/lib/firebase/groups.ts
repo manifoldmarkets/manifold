@@ -191,37 +191,6 @@ export async function leaveGroup(
   return await deleteDoc(memberDoc)
 }
 
-// export async function updateRole(
-//   initiator: User,
-//   groupId: string,
-//   userId: string,
-//   newRole: groupRoleType
-// ): Promise<void> {
-//   // updates member role
-//   await updateDoc(doc(groupMembers(groupId), userId), {
-//     role: newRole,
-//   })
-//     .then(() => {
-//       createGroupStatusChangeNotification(initiator, userId, groupId, newRole)
-//     })
-//     .catch((e) => console.log(e))
-// }
-
-// export async function removeRole(
-//   initiator: User,
-//   groupId: string,
-//   userId: string
-// ): Promise<void> {
-//   // updates member role
-//   return await updateDoc(doc(groupMembers(groupId), userId), {
-//     role: deleteField(),
-//   })
-//     .then(() => {
-//       createGroupStatusChangeNotification(initiator, userId, groupId, 'member')
-//     })
-//     .catch((e) => console.log(e))
-// }
-
 // TODO: need to add this to firestore rules
 export async function addContractToGroup(
   group: Group,

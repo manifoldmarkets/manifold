@@ -110,6 +110,7 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
         error: i.message,
       }
     })
+    console.log('ISSUES', issues)
     throw new APIError(400, 'Error validating request.', issues)
   } else {
     return result.data as z.infer<T>

@@ -213,44 +213,27 @@ export function AdminRoleDropdown(props: {
     return <></>
   }
 
-  // TODO: inga send notification upon role change
-  //   const updateRoleAndSendNotif = async (
-  //     groupId: string,
-  //     memberId: string,
-  //     updatedRole: groupRoleType
-  //   ) => {
-  //     updateRole(groupId, memberId, updatedRole)
-  //     if (user) {
-  //       try {
-  //         createGroupStatusChangeNotification(user, memberId, groupId, 'admin')
-  //       } catch (e) {
-  //         console.error(e)
-  //       }
-  //     }
-  //   }
-
   const groupMemberOptions = buildArray(
     // ADMIN ONLY: if the member is below admin, can upgrade to admin
     canEdit &&
       (!member.role || member.role === 'moderator') && {
         name: 'Make admin',
         onClick: async () => {
-          //   updateRole(group.id, member.member_id, 'admin')
           await updateMemberRole({
             groupId: group.id,
-            memberId: member.id,
+            memberId: member.member_id,
             role: 'admin',
           })
         },
       },
-    // ADMIN ONLY: if the member is below moderator, can upgrade to moderator
+    //ADMIN ONLY: if the member is below moderator, can upgrade to moderator
     canEdit &&
       !member.role && {
         name: 'Make moderator',
         onClick: async () => {
           await updateMemberRole({
+            memberId: member.member_id,
             groupId: group.id,
-            memberId: member.id,
             role: 'moderator',
           })
         },
@@ -262,7 +245,7 @@ export function AdminRoleDropdown(props: {
         onClick: async () => {
           await updateMemberRole({
             groupId: group.id,
-            memberId: member.id,
+            memberId: member.member_id,
             role: 'member',
           })
         },
@@ -275,7 +258,7 @@ export function AdminRoleDropdown(props: {
         onClick: async () => {
           await updateMemberRole({
             groupId: group.id,
-            memberId: member.id,
+            memberId: member.member_id,
             role: 'member',
           })
         },
@@ -287,7 +270,7 @@ export function AdminRoleDropdown(props: {
         onClick: async () => {
           await updateMemberRole({
             groupId: group.id,
-            memberId: member.id,
+            memberId: member.member_id,
             role: 'member',
           })
         },

@@ -5,6 +5,9 @@ import { isAdmin, isManifoldId } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { GroupMember } from '../../common/group-member'
 import { APIError, newEndpoint, validate } from './api'
+import { User } from 'common/user'
+import { createGroupStatusChangeNotification } from './create-notification'
+import { getUser } from './utils'
 
 const bodySchema = z.object({
   groupId: z.string(),
@@ -14,7 +17,6 @@ const bodySchema = z.object({
 
 export const updatememberrole = newEndpoint({}, async (req, auth) => {
   const { groupId, memberId, role } = validate(bodySchema, req.body)
-  console.log('HIII')
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
@@ -25,15 +27,24 @@ export const updatememberrole = newEndpoint({}, async (req, auth) => {
       `groups/${groupId}/groupMembers/${memberId}`
     )
     const groupDoc = firestore.doc(`groups/${groupId}`)
-    const [requesterSnap, affectedMemberSnap, groupSnap] =
-      await transaction.getAll(requesterDoc, affectedMemberDoc, groupDoc)
+    const requesterUserDoc = firestore.doc(`users/${auth.uid}`)
+    const [requesterSnap, affectedMemberSnap, groupSnap, requesterUserSnap] =
+      await transaction.getAll(
+        requesterDoc,
+        affectedMemberDoc,
+        groupDoc,
+        requesterUserDoc
+      )
     if (!groupSnap.exists) throw new APIError(400, 'Group cannot be found')
     if (!requesterSnap.exists)
       throw new APIError(400, 'You cannot be found in group')
     if (!affectedMemberSnap.exists)
       throw new APIError(400, 'Member cannot be found in group')
+    if (!requesterUserSnap.exists)
+      throw new APIError(400, 'You cannot be found')
 
     const requester = requesterSnap.data() as GroupMember
+    const requesterUser = requesterUserSnap.data() as User
     const affectedMember = affectedMemberSnap.data() as GroupMember
     const group = groupSnap.data() as Group
     const firebaseUser = await admin.auth().getUser(auth.uid)
@@ -56,6 +67,15 @@ export const updatememberrole = newEndpoint({}, async (req, auth) => {
       })
     } else {
       transaction.update(affectedMemberDoc, { role: role })
+    }
+
+    if (requesterUser && auth.uid != memberId) {
+      await createGroupStatusChangeNotification(
+        requesterUser,
+        memberId,
+        group,
+        role
+      )
     }
     return affectedMember
   })

@@ -253,6 +253,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'A user liked your content',
     detailed: 'A user liked your comment, market, or other content',
   },
+  group_role_changed: {
+    simple: 'Changes in group roles',
+    detailed: 'Changes to your role in groups you are a member of',
+  },
 }
 
 export type BettingStreakData = {
