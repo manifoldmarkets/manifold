@@ -13,20 +13,22 @@ export default function Percent(props: {
   yesPercent: number
   noPercent: number
   outcome?: 'NO' | 'YES'
+  className?: string
 }) {
-  const { currPercent, yesPercent, noPercent, outcome } = props
+  const { currPercent, yesPercent, noPercent, outcome, className } = props
   return (
     <Row
       className={clsx(
         'transition-color items-center font-bold',
         !outcome && 'text-white',
         outcome === 'YES' && 'text-teal-100',
-        outcome === 'NO' && 'text-scarlet-100'
+        outcome === 'NO' && 'text-scarlet-100',
+        className
       )}
     >
-      <span
+      <div
         className={clsx(
-          'text-6xl transition-all',
+          'text-5xl transition-all',
           !outcome && '[text-shadow:#4337c9_0_8px]',
           outcome === 'YES' &&
             '[text-shadow:#14b8a6_-6px_4px,#0f766e_-12px_8px]',
@@ -48,8 +50,9 @@ export default function Percent(props: {
           />
         )}
         {!outcome && formatPercentNumber(currPercent)}
-      </span>
-      <span className="pt-2 text-2xl">%</span>
+      </div>
+      <div className="pt-2 text-2xl">%</div>
+      <div className="ml-2 self-end text-2xl">chance</div>
     </Row>
   )
 }
