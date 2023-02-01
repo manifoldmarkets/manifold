@@ -31,9 +31,11 @@ import { track } from 'web/lib/service/analytics'
 import { placeBet } from 'web/lib/firebase/api'
 import { formatMoney } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export default function Swipe() {
   useTracking('view swipe page')
+  useRedirectIfSignedOut()
 
   const user = useUser()
   const { contracts, loadMore } = useFeed(user, 'swipe')
