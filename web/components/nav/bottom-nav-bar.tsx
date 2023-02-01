@@ -57,7 +57,7 @@ const signedOutNavigation = (appStoreUrl: string) => [
     icon: DeviceMobileIcon,
   },
   { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
-  { name: 'About', href: '?showHelpModal=true', icon: BookOpenIcon },
+  { name: 'About', href: '/?showHelpModal=true', icon: BookOpenIcon },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
