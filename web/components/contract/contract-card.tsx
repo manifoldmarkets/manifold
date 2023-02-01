@@ -51,6 +51,7 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { ContractCardView } from 'common/events'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
+import { getLinkTarget } from 'web/components/widgets/site-link'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -118,6 +119,7 @@ export const ContractCard = memo(function ContractCard(props: {
 
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   const hasImage = contract.coverImageUrl && showImage
+  const href = contractPath(contract)
   return (
     <Card
       className={clsx(
@@ -219,7 +221,7 @@ export const ContractCard = memo(function ContractCard(props: {
       {onClick ? (
         <a
           className="absolute top-0 left-0 right-0 bottom-0"
-          href={contractPath(contract)}
+          href={href}
           onClick={(e) => {
             // Let the browser handle the link click (opens in new tab).
             if (e.ctrlKey || e.metaKey) {
@@ -235,7 +237,7 @@ export const ContractCard = memo(function ContractCard(props: {
         />
       ) : (
         <Link
-          href={contractPath(contract)}
+          href={href}
           onClick={trackCallback(
             'click market card' + (trackingPostfix ?? ''),
             {
@@ -244,7 +246,7 @@ export const ContractCard = memo(function ContractCard(props: {
             }
           )}
           className="absolute top-0 left-0 right-0 bottom-0"
-          target={newTab ? '_blank' : '_self'}
+          target={newTab ? getLinkTarget(href, newTab) : '_self'}
         />
       )}
     </Card>

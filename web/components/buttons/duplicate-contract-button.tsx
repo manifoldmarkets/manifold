@@ -4,23 +4,25 @@ import { Contract } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
+import Link from 'next/link'
+import { getLinkTarget } from 'web/components/widgets/site-link'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props
-
+  const href = duplicateContractHref(contract)
   return (
-    <a
+    <Link
       className={clsx(
         buttonClass('2xs', 'override'),
         'gap-1 border-2 border-violet-400 text-violet-400 hover:bg-violet-400 hover:text-white'
       )}
-      href={duplicateContractHref(contract)}
+      href={href}
       onClick={trackCallback('duplicate market')}
-      target="_blank"
+      target={getLinkTarget(href, true)}
     >
       <DuplicateIcon className="h-4 w-4" aria-hidden="true" />
       <div>Duplicate</div>
-    </a>
+    </Link>
   )
 }
 
