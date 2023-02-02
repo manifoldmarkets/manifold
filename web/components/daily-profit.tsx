@@ -74,7 +74,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
         className={clsx(
           'rounded-md py-1 text-center transition-colors disabled:cursor-not-allowed',
           !seen
-            ? 'from-indigo-500 to-blue-500 px-1.5 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r'
+            ? 'from-amber-400 via-yellow-200 to-amber-400 px-1.5 text-yellow-600 transition-all hover:from-yellow-400 hover:via-yellow-100 hover:to-yellow-400 enabled:bg-gradient-to-tr'
             : ''
         )}
         onClick={withTracking(() => {
