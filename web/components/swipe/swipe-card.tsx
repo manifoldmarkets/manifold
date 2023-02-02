@@ -17,10 +17,6 @@ import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
 import { DailyStats } from '../daily-stats'
-import { SizedContainer } from '../sized-container'
-import { BinaryContractChart } from '../charts/contract'
-import { useTimePicker } from '../contract/contract-overview'
-import { useRecentBets } from 'web/hooks/use-bets'
 
 export const SwipeCard = memo(
   (props: {
@@ -46,18 +42,10 @@ export const SwipeCard = memo(
       user,
       isModalOpen,
       setIsModalOpen,
-      small,
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
     const { question, description, coverImageUrl } = contract
-
-    const bets = useRecentBets(contract.id, 1000)
-    const betPoints = (bets ?? []).map((bet) => ({
-      x: bet.createdTime,
-      y: bet.probAfter,
-      obj: bet,
-    }))
 
     const image =
       coverImageUrl ??
@@ -70,8 +58,6 @@ export const SwipeCard = memo(
     const [yesPercent, setYesPercent] = useState(
       getOutcomeProbabilityAfterBet(contract, 'YES', amount)
     )
-
-    const { viewScale } = useTimePicker(contract)
 
     useEffect(() => {
       setNoPercent(1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount))
@@ -108,30 +94,6 @@ export const SwipeCard = memo(
           </div>
 
           <div className="mt-2 self-center">
-            {!small && (
-              <SizedContainer
-                className="mt-2"
-                fullHeight={50}
-                mobileHeight={50}
-              >
-                {(w, h) => (
-                  <BinaryContractChart
-                    width={w}
-                    height={h}
-                    betPoints={betPoints}
-                    viewScaleProps={viewScale}
-                    controlledStart={
-                      betPoints.length > 0
-                        ? Math.min(...betPoints.map((b) => b.x))
-                        : contract.createdTime
-                    }
-                    contract={contract}
-                    color="white"
-                    noAxes
-                  />
-                )}
-              </SizedContainer>
-            )}
             <Percent
               className="mt-4"
               currPercent={currPercent}
