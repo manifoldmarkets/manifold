@@ -5,6 +5,7 @@ import { Page } from 'web/components/layout/page'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
+import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 
 export default function StylePage() {
@@ -104,9 +105,7 @@ export default function StylePage() {
   )
 }
 
-const Sub: FC<any> = ({ children }) => (
-  <h2 className="mt-6 mb-4 text-2xl text-indigo-700">{children}</h2>
-)
+const Sub: FC<any> = ({ children }) => <Subtitle text={children} />
 
 function EditorExample() {
   const editor = useTextEditor({

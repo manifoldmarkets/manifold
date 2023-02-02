@@ -32,7 +32,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { GroupLink, groupPath } from 'common/group'
-import { Subtitle } from '../widgets/subtitle'
+import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { editorExtensions } from '../widgets/editor'
@@ -306,9 +306,9 @@ function EditableCloseDate(props: {
         setOpen={setIsEditingCloseTime}
         position="top"
       >
-        <Col className="rounded bg-white px-8 pb-8">
-          <Subtitle text="Change when this market closes" />
-          <Row className="mt-4 flex-wrap items-center justify-center gap-2">
+        <Col className="items-center rounded bg-white p-8">
+          <Title className="!text-2xl">Change when this market closes</Title>
+          <Row className="flex-wrap items-center justify-center gap-2">
             <Input
               type="date"
               className="w-full shrink-0 sm:w-fit"
@@ -331,16 +331,14 @@ function EditableCloseDate(props: {
           </Row>
 
           {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
-            <Row className={'justify-center'}>
-              <Button
-                className="mt-8"
-                size={'sm'}
-                color="gray-white"
-                onClick={() => onSave(Date.now())}
-              >
-                (Or, close this market now)
-              </Button>
-            </Row>
+            <Button
+              className="mt-8"
+              size={'sm'}
+              color="gray-white"
+              onClick={() => onSave(Date.now())}
+            >
+              (Or, close this market now)
+            </Button>
           )}
         </Col>
       </Modal>
