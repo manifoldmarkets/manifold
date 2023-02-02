@@ -1,6 +1,6 @@
 import React from 'react'
 import {
-  DocumentIcon,
+  ChatAlt2Icon,
   FolderIcon,
   PencilIcon,
   ScaleIcon,
@@ -362,7 +362,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
               },
               {
                 title: 'Comments',
-                stackedTabIcon: <DocumentIcon className="h-5" />,
+                stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
                   <>
                     {userPosts.length > 0 && (
