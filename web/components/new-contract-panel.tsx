@@ -436,7 +436,16 @@ export function NewContractPanel(props: {
           <Spacer h={6} />
 
           <Row className="items-center gap-2">
-            <span>Display this market on homepage</span>
+            <span>
+              Publicly visible{' '}
+              <InfoTooltip
+                text={
+                  visibility === 'public'
+                    ? 'Visible on home page and search results'
+                    : "Only visible via link. Won't notify followers"
+                }
+              />
+            </span>
             <ShortToggle
               on={visibility === 'public'}
               setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}

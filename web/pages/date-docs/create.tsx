@@ -122,7 +122,7 @@ export default function CreateDateDocPage() {
                   on={createMarket}
                   setOn={(on) => setCreateMarket(on)}
                 />
-                Create an (unlisted) prediction market attached to the date doc
+                Create a (private) prediction market attached to the date doc
               </Row>
 
               <Col className="gap-2">

@@ -44,7 +44,7 @@ const Stats = (props: {
   const isDev = useDev()
   const isAdmin = useAdmin()
   const isCreator = user?.id === contract.creatorId
-  const isUnlisted = contract.visibility === 'unlisted'
+  const isPublic = contract.visibility === 'public'
   const wasUnlistedByCreator = contract.unlistedById
     ? contract.unlistedById === contract.creatorId
     : false
@@ -206,19 +206,28 @@ const Stats = (props: {
         )}
 
         <tr className={clsx(isAdmin && 'bg-scarlet-50')}>
-          <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
+          <td>
+            Publicly visible{' '}
+            <InfoTooltip
+              text={
+                isPublic
+                  ? 'Visible on home page and search results'
+                  : 'Only visible via link'
+              }
+            />
+          </td>
           <td>
             <ShortToggle
               disabled={
-                isUnlisted
-                  ? !(isAdmin || (isCreator && wasUnlistedByCreator))
-                  : !(isCreator || isAdmin)
+                isPublic
+                  ? !(isCreator || isAdmin)
+                  : !(isAdmin || (isCreator && wasUnlistedByCreator))
               }
-              on={contract.visibility === 'unlisted'}
-              setOn={(unlist) =>
+              on={isPublic}
+              setOn={(pub) =>
                 updateContract(id, {
-                  visibility: unlist ? 'unlisted' : 'public',
-                  unlistedById: unlist ? user?.id : '',
+                  visibility: pub ? 'public' : 'unlisted',
+                  unlistedById: pub ? '' : user?.id,
                 })
               }
             />
