@@ -34,6 +34,7 @@ import { FileUploadButton } from '../buttons/file-upload-button'
 import { useMutation } from 'react-query'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { dreamDefault } from '../editor/image-modal'
 
 const Stats = (props: {
   contract: Contract
@@ -246,8 +247,16 @@ export function ContractInfoDialog(props: {
   const isCreator = user?.id === contract.creatorId
 
   const [open, setOpen] = useState(false)
+  const [dreaming, setDreaming] = useState(false)
 
   const shareUrl = getShareUrl(contract, user?.username)
+
+  async function redream() {
+    setDreaming(true)
+    const url = await dreamDefault(contract.question)
+    await updateContract(contract.id, { coverImageUrl: url })
+    setDreaming(false)
+  }
 
   return (
     <>
@@ -302,7 +311,21 @@ export function ContractInfoDialog(props: {
                         )}
                         {isCreator && (
                           <div className="absolute bottom-0 right-0">
-                            <ChangeCoverImageButton contract={contract} />
+                            <Row className="gap-1">
+                              <ChangeCoverImageButton contract={contract} />
+                              <button
+                                className="flex gap-1 bg-black/20 p-2 text-white transition-all [text-shadow:_0_1px_0_rgb(0_0_0)] hover:bg-black/40"
+                                onClick={redream}
+                              >
+                                {dreaming ? (
+                                  <Row className="gap-2">
+                                    Dreaming <LoadingIndicator size="md" />
+                                  </Row>
+                                ) : (
+                                  'Redream'
+                                )}
+                              </button>
+                            </Row>
                           </div>
                         )}
                       </div>

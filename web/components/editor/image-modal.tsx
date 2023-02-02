@@ -73,6 +73,24 @@ export type DreamResults = {
 // and injected on Vercel.
 const API_KEY = process.env.NEXT_PUBLIC_DREAM_KEY
 
+export async function dreamDefault(input: string) {
+  const data = {
+    prompt: input + ', ' + MODIFIERS,
+    apiKey: API_KEY,
+  }
+  const response = await fetch(`/api/v0/dream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  const json = await response.json()
+  // For faster local development, just use this hardcoded image:
+  // const json = {
+  //   url: 'https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/dream%2FtWI0cid8Wr.png?alt=media&token=26745bc7-a9eb-472a-860a-e9de20de5ead',
+  // }
+  return json.url
+}
+
 export function DreamCard(props: {
   onDream: (dreamResults: DreamResults) => void
 }) {
@@ -91,21 +109,8 @@ export function DreamCard(props: {
 
   async function requestDream() {
     setIsDreaming(true)
-    const data = {
-      prompt: input + ', ' + MODIFIERS,
-      apiKey: API_KEY,
-    }
-    const response = await fetch(`/api/v0/dream`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    const json = await response.json()
-    // For faster local development, just use this hardcoded image:
-    // const json = {
-    //   url: 'https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/dream%2FtWI0cid8Wr.png?alt=media&token=26745bc7-a9eb-472a-860a-e9de20de5ead',
-    // }
-    onDream({ prompt: input, url: json.url })
+    const url = await dreamDefault(input)
+    onDream({ prompt: input, url })
     setIsDreaming(false)
   }
 
