@@ -10,7 +10,6 @@ import { Input } from './input'
 import 'rc-slider/assets/index.css'
 import { binaryOutcomes } from '../bet/bet-panel'
 import { BetSlider } from 'web/components/bet/bet-slider'
-import { Button, ColorType } from 'web/components/buttons/button'
 
 export function AmountInput(props: {
   amount: number | undefined
