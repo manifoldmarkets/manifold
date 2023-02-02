@@ -1,4 +1,4 @@
-import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
+import { PlusIcon, UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { User } from 'common/user'
@@ -146,7 +146,7 @@ export function JoinOrLeaveGroupButton(props: {
       <Button color="dark-gray" className={className} onClick={unfollow}>
         <Row className="gap-1">
           <UserRemoveIcon className="h-5 w-5" />
-          Unfollow
+          Leave
         </Row>
       </Button>
     )
@@ -163,7 +163,20 @@ export function JoinOrLeaveGroupButton(props: {
     <Button color="indigo" className={className} onClick={follow}>
       <Row className="gap-1">
         <UserAddIcon className="h-5 w-5" />
-        Follow
+        Join
+      </Row>
+    </Button>
+  )
+}
+
+export function AddMembersButton(props: { group: Group; className?: string }) {
+  const { group, className } = props
+  const [open, setOpen] = useState(false)
+  return (
+    <Button color="indigo" className={className} onClick={() => setOpen(true)}>
+      <Row className="gap-1">
+        <PlusIcon className="h-5 w-5" />
+        Add members
       </Row>
     </Button>
   )

@@ -16,11 +16,7 @@ import {
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Contract } from 'web/lib/firebase/contracts'
-import {
-  addContractToGroup,
-  getGroupBySlug,
-  listMemberIds,
-} from 'web/lib/firebase/groups'
+import { getGroupBySlug, listMemberIds } from 'web/lib/firebase/groups'
 import {
   getUser,
   getUsersBlockFacetFilters,
@@ -44,7 +40,10 @@ import GroupOpenClosedWidget, {
   GroupMembersWidget,
 } from 'web/components/groups/group-page-items'
 import { GroupPostSection } from 'web/components/groups/group-post-section'
-import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import {
+  AddMembersButton,
+  JoinOrLeaveGroupButton,
+} from 'web/components/groups/groups-button'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -66,6 +65,7 @@ import {
   AddMarketToGroupModal,
   NewContractFromGroup,
 } from 'web/components/groups/add-market-modal'
+import { addContractToGroup } from 'web/lib/firebase/api'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -218,7 +218,12 @@ export default function GroupPage(props: {
             </div>
             <Col className="justify-end">
               <Row className="items-center gap-2">
-                {isMobile && (
+                {user?.id === group.creatorId && (
+                  // TODO: inga flush this out
+                  // <AddMembersButton group={group} />
+                  <></>
+                )}
+                {user?.id != group.creatorId && (
                   <JoinOrLeaveGroupButton
                     group={group}
                     isMember={!!userRole}
@@ -226,20 +231,13 @@ export default function GroupPage(props: {
                   />
                 )}
                 {!isMobile && (
-                  <>
-                    <JoinOrLeaveGroupButton
-                      group={group}
-                      isMember={!!userRole}
-                      user={user}
-                    />
-                    <GroupOptions
-                      group={group}
-                      groupUrl={groupUrl}
-                      privateUser={privateUser}
-                      canEdit={userRole === 'admin'}
-                      setWritingNewAbout={setWritingNewAbout}
-                    />
-                  </>
+                  <GroupOptions
+                    group={group}
+                    groupUrl={groupUrl}
+                    privateUser={privateUser}
+                    canEdit={userRole === 'admin'}
+                    setWritingNewAbout={setWritingNewAbout}
+                  />
                 )}
               </Row>
             </Col>
@@ -281,6 +279,10 @@ export default function GroupPage(props: {
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
+                  fromGroupProps={{
+                    group: group,
+                    userRole: userRole,
+                  }}
                 />
               ),
             },
@@ -464,9 +466,10 @@ function AddContractButton(props: {
   async function onSubmit(contracts: Contract[]) {
     await Promise.all(
       contracts.map((contract) =>
-        addContractToGroup(group, contract, user.id).catch((e) =>
-          console.log(e)
-        )
+        addContractToGroup({
+          groupId: group.id,
+          contractId: contract.id,
+        }).catch((e) => console.log(e))
       )
     )
   }

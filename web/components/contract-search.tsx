@@ -26,6 +26,8 @@ import {
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
+import { groupRoleType } from './groups/group-member-modal'
+import { Group } from 'common/group'
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },
@@ -85,6 +87,10 @@ export function ContractSearch(props: {
   ) => ReactNode
   autoFocus?: boolean
   profile?: boolean | undefined
+  fromGroupProps?: {
+    group: Group
+    userRole: groupRoleType | null
+  }
 }) {
   const {
     defaultSort,
@@ -101,6 +107,7 @@ export function ContractSearch(props: {
     renderContracts,
     autoFocus,
     profile,
+    fromGroupProps,
   } = props
 
   const [state, setState] = usePersistentState(
@@ -223,6 +230,7 @@ export function ContractSearch(props: {
           highlightCards={highlightCards}
           cardUIOptions={cardUIOptions}
           loadMore={performQuery}
+          fromGroupProps={fromGroupProps}
         />
       )}
     </Col>
@@ -348,7 +356,7 @@ function ContractSearchControls(props: {
   return (
     <div
       className={clsx(
-        'sticky top-0 z-20 mb-1 flex flex-col items-stretch gap-3 bg-gray-50 pb-2 pt-px sm:flex-row sm:gap-2',
+        'sticky top-0 z-30 mb-1 flex flex-col items-stretch gap-3 bg-gray-50 pb-2 pt-px sm:flex-row sm:gap-2',
         className
       )}
     >

@@ -3,11 +3,10 @@ import { z } from 'zod'
 
 import { isAdmin, isManifoldId } from 'common/envs/constants'
 import { Group } from 'common/group'
+import { User } from 'common/user'
 import { GroupMember } from '../../common/group-member'
 import { APIError, newEndpoint, validate } from './api'
-import { User } from 'common/user'
 import { createGroupStatusChangeNotification } from './create-notification'
-import { getUser } from './utils'
 
 const bodySchema = z.object({
   groupId: z.string(),

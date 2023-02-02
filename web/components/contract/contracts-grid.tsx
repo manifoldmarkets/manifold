@@ -8,6 +8,8 @@ import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import Masonry from 'react-masonry-css'
+import { Group } from 'common/group'
+import { groupRoleType } from '../groups/group-member-modal'
 
 export function ContractsGrid(props: {
   contracts: Contract[] | undefined
@@ -24,6 +26,10 @@ export function ContractsGrid(props: {
   breakpointColumns?: { [key: string]: number }
   showImageOnTopContract?: boolean
   trackCardViews?: boolean
+  fromGroupProps?: {
+    group: Group
+    userRole: groupRoleType | null
+  }
 }) {
   const {
     contracts,
@@ -35,6 +41,7 @@ export function ContractsGrid(props: {
     trackingPostfix,
     showImageOnTopContract,
     trackCardViews,
+    fromGroupProps,
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
   const onVisibilityUpdated = useCallback(
@@ -97,6 +104,7 @@ export function ContractsGrid(props: {
                 'bg-gradient-to-b from-indigo-50 via-white to-white outline outline-2 outline-indigo-400'
             )}
             trackCardViews={trackCardViews}
+            fromGroupProps={fromGroupProps}
           >
             {contract.mechanism === 'cpmm-1' ? (
               <ContractMetricsFooter contract={contract} />

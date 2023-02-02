@@ -48,6 +48,9 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import Image from 'next/image'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { ContractCardView } from 'common/events'
+import { Group } from 'common/group'
+import { groupRoleType } from '../groups/group-member-modal'
+import { GroupContractOptions } from '../groups/group-contract-options'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -67,6 +70,10 @@ export const ContractCard = memo(function ContractCard(props: {
   hideDetails?: boolean
   numAnswersFR?: number
   trackCardViews?: boolean
+  fromGroupProps?: {
+    group: Group
+    userRole: groupRoleType | null
+  }
 }) {
   const {
     showTime,
@@ -85,6 +92,7 @@ export const ContractCard = memo(function ContractCard(props: {
     hideDetails,
     numAnswersFR,
     trackCardViews,
+    fromGroupProps,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
   const { isResolved, createdTime, featuredLabel } = contract
@@ -132,6 +140,14 @@ export const ContractCard = memo(function ContractCard(props: {
             <Row className="gap-1">
               {pinned && <FeaturedPill label={featuredLabel} />}
               {/* {isNew && <NewContractBadge />} */}
+              {fromGroupProps &&
+                fromGroupProps.userRole &&
+                (fromGroupProps.userRole == 'admin' ||
+                  fromGroupProps.userRole == 'moderator') && (
+                  <div className="z-20">
+                    <GroupContractOptions group={fromGroupProps.group} />
+                  </div>
+                )}
             </Row>
           </Row>
         )}

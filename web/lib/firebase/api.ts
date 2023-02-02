@@ -123,3 +123,10 @@ export function updateMemberRole(params: {
 }) {
   return call(getFunctionUrl('updatememberrole'), 'POST', params)
 }
+
+export function addContractToGroup(params: {
+  groupId: string
+  contractId: string
+}) {
+  return call(getFunctionUrl('addcontracttogroup'), 'POST', params)
+}

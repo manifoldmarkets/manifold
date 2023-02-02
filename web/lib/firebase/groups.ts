@@ -192,36 +192,37 @@ export async function leaveGroup(
 }
 
 // TODO: need to add this to firestore rules
-export async function addContractToGroup(
-  group: Group,
-  contract: Contract,
-  userId: string
-) {
-  const newGroupLinks = [
-    ...(contract.groupLinks ?? []),
-    {
-      groupId: group.id,
-      createdTime: Date.now(),
-      slug: group.slug,
-      userId,
-      name: group.name,
-    } as GroupLink,
-  ]
+// export async function addContractToGroup(
+//   group: Group,
+//   contract: Contract,
+//   userId: string,
+//   userRole: groupRoleType
+// ) {
+//   const newGroupLinks = [
+//     ...(contract.groupLinks ?? []),
+//     {
+//       groupId: group.id,
+//       createdTime: Date.now(),
+//       slug: group.slug,
+//       userId,
+//       name: group.name,
+//     } as GroupLink,
+//   ]
 
-  // if (
-  //   userRole === 'admin' ||
-  //   userRole === 'moderator' ||
-  //   (contract.creatorId == userId && userRole === 'member')
-  // ) {
-  // It's good to update the contract first, so the on-update-group trigger doesn't re-add them
-  await updateContract(contract.id, {
-    groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
-    groupLinks: newGroupLinks,
-  })
-  // } else {
-  //   console.log('You do not have permission to add a market to this group!')
-  // }
-}
+//   if (
+//     userRole === 'admin' ||
+//     userRole === 'moderator' ||
+//     (contract.creatorId == userId && userRole === 'member')
+//   ) {
+//     // It's good to update the contract first, so the on-update-group trigger doesn't re-add them
+//     await updateContract(contract.id, {
+//       groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
+//       groupLinks: newGroupLinks,
+//     })
+//   } else {
+//     console.log('You do not have permission to add a market to this group!')
+//   }
+// }
 
 // TODO: This doesn't check if the user has permission to do this
 export async function removeContractFromGroup(
