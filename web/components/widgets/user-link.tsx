@@ -58,7 +58,7 @@ export function UserLink(props: {
     <SiteLink
       href={`/${username}`}
       className={clsx(
-        'max-w-[120px] truncate [@media(min-width:450px)]:max-w-[200px]',
+        'max-w-[120px] truncate min-[480px]:max-w-[200px]',
         className,
         noLink && 'pointer-events-none'
       )}
