@@ -120,7 +120,7 @@ export default function DestinyLandingPage(props: { subCount: number }) {
         </div>
 
         <Spacer h={2} />
-        <Subtitle text="New to Manifold Markets?" />
+        <Subtitle>New to Manifold Markets?</Subtitle>
         <Col className=" max-w-3xl gap-4 px-4">
           <LandingPagePanel />
           <Row className="w-full gap-2 sm:gap-4">
@@ -144,7 +144,7 @@ export default function DestinyLandingPage(props: { subCount: number }) {
         </Col>
 
         <Spacer h={4} />
-        <Subtitle text="Trending markets" />
+        <Subtitle>Trending markets</Subtitle>
         {trendingContracts ? (
           <ContractsGrid
             contracts={trendingContracts}

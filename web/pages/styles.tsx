@@ -16,7 +16,7 @@ export default function StylePage() {
         A reference for all the common widgets we use on our site. For instance,
         the component above is <code>Title</code>.
       </div>
-      <Sub>Buttons</Sub>
+      <Subtitle>Buttons</Subtitle>
       <div className="mb-4 flex flex-wrap gap-2">
         <Button>indigo</Button>
         <Button color="gradient">gradient</Button>
@@ -85,7 +85,7 @@ export default function StylePage() {
           2xl
         </Button>
       </div>
-      <Sub>Inputs</Sub>
+      <Subtitle>Inputs</Subtitle>
       TODO: number input
       <div className="mb-4 flex flex-wrap gap-2">
         <Input placeholder="Input" />
@@ -97,15 +97,11 @@ export default function StylePage() {
         placeholder="ExpandingInput (try typing a lot)"
       />
       <EditorExample />
-      <Sub>Copy Link</Sub>
+      <Subtitle>Copy Link</Subtitle>
       <CopyLinkButton url="www.example.com" />
-      <Sub>Other stuff</Sub>
-      TODO
     </Page>
   )
 }
-
-const Sub: FC<any> = ({ children }) => <Subtitle text={children} />
 
 function EditorExample() {
   const editor = useTextEditor({

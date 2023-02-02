@@ -100,7 +100,7 @@ export default function PostPage(props: {
           onSave={(subtitle) => updatePost(post, { subtitle })}
           disabled={!canEdit}
         >
-          {(value) => <Subtitle className="!my-0 p-2" text={value} />}
+          {(value) => <Subtitle className="!my-0 p-2" children={value} />}
         </EditInPlaceInput>
         <Row className="mt-4 items-center">
           <Col className="flex-1 px-2">
