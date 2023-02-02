@@ -110,8 +110,7 @@ export function ContractTabs(props: {
     (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
     (isMobile ? 'You' : 'Your Trades')
 
-  const positionsTitle =
-    shortFormatNumber(totalPositions) + (isMobile ? ' Users' : ' Shareholders')
+  const positionsTitle = shortFormatNumber(totalPositions) + ' Hodlers'
 
   return (
     <ControlledTabs
