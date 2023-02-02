@@ -1,9 +1,14 @@
+import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
+import { Select } from 'web/components/widgets/select'
+import ShortToggle from 'web/components/widgets/short-toggle'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 
@@ -84,6 +89,8 @@ export default function StylePage() {
           2xl
         </Button>
       </div>
+      <Subtitle>Toggles</Subtitle>
+      <ToggleSection />
       <Subtitle>Inputs</Subtitle>
       TODO: number input
       <div className="mb-4 flex flex-wrap gap-2">
@@ -102,9 +109,57 @@ export default function StylePage() {
   )
 }
 
+function ToggleSection() {
+  const [on, setOn] = useState(false)
+  const [choice, setChoice] = useState('TRINARY')
+  const [color, setColor] = useState('indigo-dark')
+  const [disabled, setDisabled] = useState(false)
+
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      <label className="flex items-center gap-2">
+        ShortToggle
+        <ShortToggle on={on} setOn={setOn} disabled={disabled} />
+      </label>
+      <div className="flex items-center gap-2">
+        ChoicesToggleGroup
+        <ChoicesToggleGroup
+          currentChoice={choice}
+          disabled={disabled}
+          color={color as any}
+          setChoice={setChoice as any}
+          choicesMap={{
+            'YES / NO / IDK ': 'TRINARY',
+            'Single choice': 'FPTP',
+            'Deluxe response': 'CERT',
+            Perpetual: 'SUDO_NUMERIC',
+          }}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        Select (native)
+        <Select
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+          disabled={disabled}
+        >
+          <option>indigo-dark</option>
+          <option>indigo</option>
+          <option>red</option>
+          <option>green</option>
+        </Select>
+      </div>
+      <label className="flex items-center gap-2 text-gray-600">
+        Disable
+        <ShortToggle on={disabled} setOn={setDisabled} />
+      </label>
+    </div>
+  )
+}
+
 function EditorExample() {
   const editor = useTextEditor({
-    defaultValue: 'Rich text editor from editor.tsx',
+    defaultValue: '<p>Rich text editor from <code>editor.tsx</code></p>',
   })
   return <TextEditor editor={editor} />
 }
