@@ -145,7 +145,10 @@ export const ContractCard = memo(function ContractCard(props: {
                 (fromGroupProps.userRole == 'admin' ||
                   fromGroupProps.userRole == 'moderator') && (
                   <div className="z-20">
-                    <GroupContractOptions group={fromGroupProps.group} />
+                    <GroupContractOptions
+                      group={fromGroupProps.group}
+                      contract={contract}
+                    />
                   </div>
                 )}
             </Row>

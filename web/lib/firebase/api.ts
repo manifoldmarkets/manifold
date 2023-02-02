@@ -130,3 +130,10 @@ export function addContractToGroup(params: {
 }) {
   return call(getFunctionUrl('addcontracttogroup'), 'POST', params)
 }
+
+export function removeContractFromGroup(params: {
+  groupId: string
+  contractId: string
+}) {
+  return call(getFunctionUrl('removecontractfromgroup'), 'POST', params)
+}

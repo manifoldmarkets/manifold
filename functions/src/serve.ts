@@ -36,6 +36,7 @@ import { markallnotifications } from 'functions/src/mark-all-notifications'
 import { claimdestinysub } from 'functions/src/claim-destiny-sub'
 import { updatememberrole } from 'functions/src/update-group-member-role'
 import { addcontracttogroup } from './add-contract-to-group'
+import { removecontractfromgroup } from './remove-contract-from-group'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -85,6 +86,7 @@ addJsonEndpointRoute('/markallnotifications', markallnotifications)
 addJsonEndpointRoute('/claimdestinysub', claimdestinysub)
 addJsonEndpointRoute('/updatememberrole', updatememberrole)
 addJsonEndpointRoute('/addcontracttogroup', addcontracttogroup)
+addJsonEndpointRoute('/removecontractfromgroup', removecontractfromgroup)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)

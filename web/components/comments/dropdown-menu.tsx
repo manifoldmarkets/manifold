@@ -31,7 +31,7 @@ export default function DropdownMenu(props: {
           'flex items-center rounded-full text-gray-400 hover:text-gray-600',
           buttonClass
         )}
-        onClick={(e) => {
+        onClick={(e: any) => {
           e.stopPropagation()
         }}
       >
