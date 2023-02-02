@@ -1,4 +1,3 @@
-import { FC } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
