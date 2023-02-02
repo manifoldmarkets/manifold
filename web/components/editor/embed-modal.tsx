@@ -125,7 +125,7 @@ export function EmbedModal(props: {
           onChange={(e) => setInput(e.target.value)}
         />
 
-        {/* TODO: preview embed */}
+        {embed && <div dangerouslySetInnerHTML={{ __html: embed }}></div>}
         <Spacer h={2} />
 
         <Row className="gap-2">
