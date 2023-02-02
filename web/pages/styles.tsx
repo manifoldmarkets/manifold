@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
