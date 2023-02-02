@@ -52,6 +52,8 @@ import { ContractCardView } from 'common/events'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { getLinkTarget } from 'web/components/widgets/site-link'
+import { JSONContent } from '@tiptap/core'
+import { richTextToString } from 'common/util/parse'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -65,6 +67,7 @@ export const ContractCard = memo(function ContractCard(props: {
   noLinkAvatar?: boolean
   newTab?: boolean
   showImage?: boolean
+  showDescription?: boolean
   children?: ReactNode
   pinned?: boolean
   hideQuestion?: boolean
@@ -83,6 +86,7 @@ export const ContractCard = memo(function ContractCard(props: {
     noLinkAvatar,
     newTab,
     showImage,
+    showDescription,
     children,
     pinned,
     hideQuestion,
@@ -196,6 +200,11 @@ export const ContractCard = memo(function ContractCard(props: {
             <QuickOutcomeView contract={contract} numAnswersFR={numAnswersFR} />
           )}
         </Col>
+
+        {showDescription && (
+          <DescriptionRow description={contract.description} />
+        )}
+
         <Row className={clsx('gap-1 px-4', children ? '' : 'mb-2')}>
           <MiscDetails
             contract={contract}
@@ -252,6 +261,23 @@ export const ContractCard = memo(function ContractCard(props: {
     </Card>
   )
 })
+
+function DescriptionRow(props: { description: string | JSONContent }) {
+  const { description } = props
+
+  const descriptionString =
+    typeof description === 'string'
+      ? description
+      : richTextToString(description)
+
+  return (
+    <Row className="px-4 pb-1">
+      <div className="break-anywhere line-clamp-6 text-sm font-thin">
+        {descriptionString}
+      </div>
+    </Row>
+  )
+}
 
 // TODO: move the "resolution or chance" components out of this file
 

@@ -32,7 +32,15 @@ export function ContractsList(props: {
           interactive
           duration={0}
           placement="bottom-end"
-          content={<ContractCard contract={contract} key={contract.id} />}
+          content={
+            <ContractCard
+              contract={contract}
+              key={contract.id}
+              showImage
+              showDescription
+              className="w-[400px]"
+            />
+          }
         >
           <span tabIndex={0}>
             <ContractsListEntry contract={contract} />
