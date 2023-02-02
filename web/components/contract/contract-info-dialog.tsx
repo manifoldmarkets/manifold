@@ -208,7 +208,7 @@ const Stats = (props: {
 
         <tr className={clsx(isAdmin && 'bg-scarlet-50')}>
           <td>
-            Publicly visible{' '}
+            Publicly listed{' '}
             <InfoTooltip
               text={
                 isPublic
