@@ -15,7 +15,7 @@ import { Button } from '../buttons/button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { TimeRangePicker } from '../charts/time-range-picker'
-import { ColorType } from '../choices-toggle-group'
+import { ColorType } from '../widgets/choices-toggle-group'
 import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
 
 export const PortfolioValueSection = memo(
