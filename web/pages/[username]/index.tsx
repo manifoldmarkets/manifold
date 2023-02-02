@@ -202,21 +202,21 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   }
                   {user.isBannedFromPosting && <PostBanBadge />}
                 </div>
-                <Row className="sm:text-md items-center gap-x-3 text-sm ">
+                <Row className="sm:text-md items-center gap-4 text-sm ">
                   <span className={' text-gray-400'}>@{user.username}</span>
                   {isAdmin && (
-                    <span className={'text-xs sm:text-sm'}>
+                    <span>
                       <a
-                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        className="mr-2 text-sm text-indigo-400 hover:underline"
                         href={firestoreUserConsolePath(user.id)}
                       >
-                        user link
+                        firestore user
                       </a>
                       <a
-                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        className="text-sm text-indigo-400 hover:underline"
                         href={firestorePrivateConsolePath(user.id)}
                       >
-                        private link
+                        private user
                       </a>
                     </span>
                   )}
