@@ -30,7 +30,7 @@ export function ContractsListEntry(props: {
         avatarUrl={contract.creatorAvatarUrl}
         size="xs"
       />
-      <div className="min-w-[40px]">
+      <div className="min-w-[34px]">
         {outcomeType === 'BINARY' && (
           <span
             className={clsx(
@@ -44,7 +44,7 @@ export function ContractsListEntry(props: {
                 resolution={resolution}
               />
             ) : (
-              getBinaryProbPercent(contract)
+              getBinaryProbPercent(contract, true)
             )}
           </span>
         )}

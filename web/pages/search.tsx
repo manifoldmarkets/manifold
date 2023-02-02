@@ -33,7 +33,7 @@ export default function Search() {
   return (
     <Page>
       <Col className="mx-auto w-full p-2">
-        <Title>Markets</Title>
+        <Title className="hidden lg:flex">Markets</Title>
         <ContractSearch
           persistPrefix="search"
           autoFocus={autoFocus}

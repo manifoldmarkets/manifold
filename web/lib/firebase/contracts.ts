@@ -56,8 +56,11 @@ export function contractPool(contract: Contract) {
     : 'Empty pool'
 }
 
-export function getBinaryProbPercent(contract: BinaryContract) {
-  return formatPercent(getBinaryProb(contract))
+export function getBinaryProbPercent(
+  contract: BinaryContract,
+  shortFormat = false
+) {
+  return formatPercent(getBinaryProb(contract), shortFormat)
 }
 
 export function tradingAllowed(contract: Contract) {
