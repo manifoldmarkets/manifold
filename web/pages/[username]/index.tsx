@@ -167,25 +167,29 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
 
-      <Col className="relative">
-        <Row className="relative px-4 pt-4">
-          <ImageWithBlurredShadow
-            image={
-              <Avatar
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-                size={24}
-                className="bg-white"
-              />
-            }
-          />
-          {isCurrentUser && (
-            <div className="absolute ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
-              <Link href="/profile">
+      <Col>
+        <Row className="px-4 pt-4">
+          <div className="relative">
+            <ImageWithBlurredShadow
+              image={
+                <Avatar
+                  username={user.username}
+                  avatarUrl={user.avatarUrl}
+                  size={24}
+                  className="bg-white"
+                  noLink
+                />
+              }
+            />
+            {isCurrentUser && (
+              <Link
+                className="absolute right-0 bottom-0 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300 hover:bg-indigo-700"
+                href="/profile"
+              >
                 <PencilIcon className="h-5" />
               </Link>
-            </div>
-          )}
+            )}
+          </div>
 
           <Col className="w-full gap-4 pl-5">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
