@@ -165,6 +165,7 @@ export default function Swipe() {
   const bind = useDrag(
     ({ down, movement: [mx, my] }) => {
       if (isModalOpen) return
+      if (my > 0 && index === 0) return
 
       const xCappedDist = rubberbandIfOutOfBounds(
         Math.abs(mx),
