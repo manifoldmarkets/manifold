@@ -437,7 +437,7 @@ export function NewContractPanel(props: {
 
           <Row className="items-center gap-2">
             <span>
-              Publicly visible{' '}
+              Publicly listed{' '}
               <InfoTooltip
                 text={
                   visibility === 'public'
