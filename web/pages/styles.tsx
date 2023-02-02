@@ -21,74 +21,7 @@ export default function StylePage() {
         the component above is <code>Title</code>.
       </div>
       <Subtitle>Buttons</Subtitle>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Button>indigo</Button>
-        <Button color="gradient">gradient</Button>
-        <Button color="blue">blue</Button>
-        <Button color="gray">gray</Button>
-        <Button color="gray-outline">gray-outline</Button>
-        <Button color="gray-white">gray-white</Button>
-        <Button color="green">green</Button>
-        <Button color="yellow">yellow</Button>
-        <Button color="red">red</Button>
-      </div>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Button disabled>indigo</Button>
-        <Button disabled color="gradient">
-          gradient
-        </Button>
-        <Button disabled color="blue">
-          blue
-        </Button>
-        <Button disabled color="gray">
-          gray
-        </Button>
-        <Button disabled color="gray-outline">
-          gray-outline
-        </Button>
-        <Button disabled color="gray-white">
-          gray-white
-        </Button>
-        <Button disabled color="green">
-          green
-        </Button>
-        <Button disabled color="yellow">
-          yellow
-        </Button>
-        <Button disabled color="red">
-          red
-        </Button>
-      </div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Button size="2xs">2xs</Button>
-        <Button size="xs">xs</Button>
-        <Button size="sm">sm</Button>
-        <Button>md</Button>
-        <Button size="lg">lg</Button>
-        <Button size="xl">xl</Button>
-        <Button size="2xl">2xl</Button>
-      </div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Button loading size="2xs">
-          2xs
-        </Button>
-        <Button loading size="xs">
-          xs
-        </Button>
-        <Button loading size="sm">
-          sm
-        </Button>
-        <Button loading> md</Button>
-        <Button loading size="lg">
-          lg
-        </Button>
-        <Button loading size="xl">
-          xl
-        </Button>
-        <Button loading size="2xl">
-          2xl
-        </Button>
-      </div>
+      <ButtonSection />
       <Subtitle>Toggles</Subtitle>
       <ToggleSection />
       <Subtitle>Inputs</Subtitle>
@@ -106,6 +39,82 @@ export default function StylePage() {
       <Subtitle>Copy Link</Subtitle>
       <CopyLinkButton url="www.example.com" />
     </Page>
+  )
+}
+
+function ButtonSection() {
+  const [disabled, setDisabled] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Button disabled={disabled} loading={loading}>
+          indigo
+        </Button>
+        <Button disabled={disabled} loading={loading} color="gradient">
+          gradient
+        </Button>
+        <Button disabled={disabled} loading={loading} color="gradient-pink">
+          gradient-pink
+        </Button>
+        <Button disabled={disabled} loading={loading} color="blue">
+          blue
+        </Button>
+        <Button disabled={disabled} loading={loading} color="gray">
+          gray
+        </Button>
+        <Button disabled={disabled} loading={loading} color="gray-outline">
+          gray-outline
+        </Button>
+        <Button disabled={disabled} loading={loading} color="gray-white">
+          gray-white
+        </Button>
+        <Button disabled={disabled} loading={loading} color="green">
+          green
+        </Button>
+        <Button disabled={disabled} loading={loading} color="yellow">
+          yellow
+        </Button>
+        <Button disabled={disabled} loading={loading} color="red">
+          red
+        </Button>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Button disabled={disabled} loading={loading} size="2xs">
+          2xs
+        </Button>
+        <Button disabled={disabled} loading={loading} size="xs">
+          xs
+        </Button>
+        <Button disabled={disabled} loading={loading} size="sm">
+          sm
+        </Button>
+        <Button disabled={disabled} loading={loading}>
+          md
+        </Button>
+        <Button disabled={disabled} loading={loading} size="lg">
+          lg
+        </Button>
+        <Button disabled={disabled} loading={loading} size="xl">
+          xl
+        </Button>
+        <Button disabled={disabled} loading={loading} size="2xl">
+          2xl
+        </Button>
+      </div>
+      <div className="flex gap-4 text-gray-600">
+        <label className="flex items-center gap-2">
+          Disable
+          <ShortToggle on={disabled} setOn={setDisabled} />
+        </label>
+        <label className="flex items-center gap-2">
+          Loading
+          <ShortToggle on={loading} setOn={setLoading} />
+        </label>
+      </div>
+    </>
   )
 }
 
