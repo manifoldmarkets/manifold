@@ -14,7 +14,7 @@ import {
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
 import React, { ReactNode, useCallback, useMemo } from 'react'
-import { DisplayContractMention } from '../editor/contract-mention/contract-mention'
+import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
 import { Linkify } from './linkify'
