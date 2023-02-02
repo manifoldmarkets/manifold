@@ -43,7 +43,7 @@ export default function AddFundsPage() {
         url="/add-funds"
       />
 
-      <Col className="mx-auto w-[700px] rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
+      <Col className="mx-auto max-w-[700px] rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
         <Title>Get Mana</Title>
 
         <div className="mb-6">
