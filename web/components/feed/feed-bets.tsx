@@ -17,7 +17,7 @@ import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
   bet: Bet
-  avatarSize?: number | 'xxs' | 'xs' | 'sm'
+  avatarSize?: number | '2xs' | 'xs' | 'sm'
   className?: string
 }) {
   const { contract, bet, avatarSize, className } = props

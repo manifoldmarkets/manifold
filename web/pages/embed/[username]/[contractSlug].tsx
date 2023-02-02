@@ -254,7 +254,7 @@ const Details = (props: { contract: Contract }) => {
     <div className="relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-400">
       <span className="flex gap-1 text-gray-600">
         <Avatar
-          size="xxs"
+          size="2xs"
           avatarUrl={creatorAvatarUrl}
           username={creatorUsername}
           noLink

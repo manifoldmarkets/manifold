@@ -254,7 +254,7 @@ function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
       <Avatar
         username={userInfo.username}
         avatarUrl={userInfo.avatarUrl}
-        size="xxs"
+        size="2xs"
       />
       <UserLink
         name={userInfo.name}
