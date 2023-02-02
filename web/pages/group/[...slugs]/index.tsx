@@ -24,7 +24,12 @@ import {
 } from 'web/lib/firebase/users'
 import Custom404 from '../../404'
 
-import { ArrowLeftIcon, PlusCircleIcon } from '@heroicons/react/solid'
+import {
+  ArrowLeftIcon,
+  CheckCircleIcon,
+  PlusCircleIcon,
+  XCircleIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { GroupComment } from 'common/comment'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
@@ -66,6 +71,8 @@ import {
   NewContractFromGroup,
 } from 'web/components/groups/add-market-modal'
 import { addContractToGroup } from 'web/lib/firebase/api'
+import toast from 'react-hot-toast'
+import { options } from 'preact'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -472,6 +479,16 @@ function AddContractButton(props: {
         }).catch((e) => console.log(e))
       )
     )
+      .then(() =>
+        toast('Succesfully added markets!', {
+          icon: <CheckCircleIcon className={'h-5 w-5 text-green-500'} />,
+        })
+      )
+      .catch(() =>
+        toast('Error adding markets. Try again?', {
+          icon: <XCircleIcon className={'h-5 w-5 text-red-500'} />,
+        })
+      )
   }
 
   return (

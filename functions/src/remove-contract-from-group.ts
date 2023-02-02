@@ -1,9 +1,8 @@
 import { Contract } from 'common/contract'
 import { isAdmin, isManifoldId } from 'common/envs/constants'
-import { Group, GroupLink } from 'common/group'
+import { Group } from 'common/group'
 import { GroupMember } from 'common/group-member'
 import * as admin from 'firebase-admin'
-import { uniq } from 'lodash'
 import { z } from 'zod'
 import { APIError, newEndpoint, validate } from './api'
 
@@ -12,7 +11,7 @@ const bodySchema = z.object({
   contractId: z.string(),
 })
 
-export const addcontracttogroup = newEndpoint({}, async (req, auth) => {
+export const removecontractfromgroup = newEndpoint({}, async (req, auth) => {
   const { groupId, contractId } = validate(bodySchema, req.body)
 
   // run as transaction to prevent race conditions
@@ -48,7 +47,7 @@ export const addcontracttogroup = newEndpoint({}, async (req, auth) => {
       if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email))
         throw new APIError(
           400,
-          'User is not a member of the group, therefore can not add any markets'
+          'User is not a member of the group, therefore can not remove any markets'
         )
     } else {
       // must either be admin, moderator or owner of contract to add to group
@@ -60,28 +59,25 @@ export const addcontracttogroup = newEndpoint({}, async (req, auth) => {
       )
         throw new APIError(
           400,
-          'User does not have permission to add this market to group'
+          'User does not have permission to remove this market from group'
         )
-      if (
-        contract.groupLinks &&
-        contract.groupLinks
-          .map((gl) => gl.groupId)
-          .some((gid) => gid === group.id)
-      )
-        throw new APIError(400, 'This market already exists in this group')
     }
-    const newGroupLinks = [
-      ...(contract.groupLinks ?? []),
-      {
-        groupId: group.id,
-        createdTime: Date.now(),
-        slug: group.slug,
-        userId: auth.uid,
-        name: group.name,
-      } as GroupLink,
-    ]
+    if (!contract.groupLinks || !contract.groupSlugs) {
+      throw new APIError(400, 'This group does not have any markets to remove')
+    }
+
+    if (!contract.groupLinks?.some((l) => l.groupId === group.id)) {
+      throw new APIError(400, 'This contract does not exist in the group')
+    }
+
+    const newGroupLinks = contract.groupLinks.filter(
+      (groupLink) => groupLink.groupId != group.id
+    )
+    const newGroupSlugs = contract.groupSlugs.filter(
+      (groupSlug) => groupSlug != group.slug
+    )
     transaction.update(contractDoc, {
-      groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
+      groupSlugs: newGroupSlugs,
       groupLinks: newGroupLinks,
     })
     return contract

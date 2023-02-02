@@ -1,3 +1,4 @@
+// TODO: just putting this here for notetaking
 // async ({ query }) =>
 //   sortBy(await searchUsers(query, 6), (u) =>
 //     [u.name, u.username].some((s) => beginsWith(s, query)) ? -1 : 0

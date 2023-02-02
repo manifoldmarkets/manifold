@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import { Group } from 'common/group'
 import { buildArray } from 'common/util/array'
 import { useRef } from 'react'
+import toast from 'react-hot-toast'
 import { useRealtimeGroupMembers } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useUser } from 'web/hooks/use-user'
@@ -213,17 +214,25 @@ export function AdminRoleDropdown(props: {
     return <></>
   }
 
+  const errorMessage = 'Could not change role, try again?'
   const groupMemberOptions = buildArray(
     // ADMIN ONLY: if the member is below admin, can upgrade to admin
     canEdit &&
       (!member.role || member.role === 'moderator') && {
         name: 'Make admin',
         onClick: async () => {
-          await updateMemberRole({
-            groupId: group.id,
-            memberId: member.member_id,
-            role: 'admin',
-          })
+          toast.promise(
+            updateMemberRole({
+              groupId: group.id,
+              memberId: member.member_id,
+              role: 'admin',
+            }),
+            {
+              loading: `Promoting ${member.name} to admin...`,
+              success: `${member.name} is now a admin!`,
+              error: errorMessage,
+            }
+          )
         },
       },
     //ADMIN ONLY: if the member is below moderator, can upgrade to moderator
@@ -231,11 +240,18 @@ export function AdminRoleDropdown(props: {
       !member.role && {
         name: 'Make moderator',
         onClick: async () => {
-          await updateMemberRole({
-            memberId: member.member_id,
-            groupId: group.id,
-            role: 'moderator',
-          })
+          toast.promise(
+            updateMemberRole({
+              memberId: member.member_id,
+              groupId: group.id,
+              role: 'moderator',
+            }),
+            {
+              loading: `Promoting ${member.name} to moderator...`,
+              success: `${member.name} is now a moderator!`,
+              error: errorMessage,
+            }
+          )
         },
       },
     // ADMIN ONLY: if the member is a moderator, can demote
@@ -243,11 +259,18 @@ export function AdminRoleDropdown(props: {
       member.role === 'moderator' && {
         name: 'Remove as moderator',
         onClick: async () => {
-          await updateMemberRole({
-            groupId: group.id,
-            memberId: member.member_id,
-            role: 'member',
-          })
+          toast.promise(
+            updateMemberRole({
+              groupId: group.id,
+              memberId: member.member_id,
+              role: 'member',
+            }),
+            {
+              loading: `Removing ${member.name} as moderator...`,
+              success: `${member.name} has been removed as moderator`,
+              error: errorMessage,
+            }
+          )
         },
       },
     // member can remove self as admin if member is not group creator
@@ -256,11 +279,18 @@ export function AdminRoleDropdown(props: {
       member.role === 'admin' && {
         name: 'Remove self as admin',
         onClick: async () => {
-          await updateMemberRole({
-            groupId: group.id,
-            memberId: member.member_id,
-            role: 'member',
-          })
+          toast.promise(
+            updateMemberRole({
+              groupId: group.id,
+              memberId: member.member_id,
+              role: 'member',
+            }),
+            {
+              loading: `Removing self as admin...`,
+              success: `Successfully removed self as admin`,
+              error: errorMessage,
+            }
+          )
         },
       },
     // member can remove self as moderator
@@ -268,11 +298,18 @@ export function AdminRoleDropdown(props: {
       member.role === 'moderator' && {
         name: 'Remove self as moderator',
         onClick: async () => {
-          await updateMemberRole({
-            groupId: group.id,
-            memberId: member.member_id,
-            role: 'member',
-          })
+          toast.promise(
+            updateMemberRole({
+              groupId: group.id,
+              memberId: member.member_id,
+              role: 'member',
+            }),
+            {
+              loading: `Removing self as moderator...`,
+              success: `Successfully removed self as moderator`,
+              error: errorMessage,
+            }
+          )
         },
       }
   )

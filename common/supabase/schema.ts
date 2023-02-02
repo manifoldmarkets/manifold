@@ -573,7 +573,10 @@ export interface Database {
           avatar_url: Json | null
           createdtime: Json | null
           creator_id: Json | null
+          group_data: Json | null
           group_id: string | null
+          group_name: Json | null
+          group_slug: Json | null
           member_id: string | null
           name: Json | null
           role: string | null
@@ -590,6 +593,10 @@ export interface Database {
         Args: { urf: unknown; crf: unknown }
         Returns: number
       }
+      get_contract_metrics_with_contracts: {
+        Args: { uid: string; count: number }
+        Returns: { contract_id: string; metrics: Json; contract: Json }[]
+      }
       get_document_table: {
         Args: { doc_kind: string }
         Returns: string
@@ -597,6 +604,10 @@ export interface Database {
       get_document_table_spec: {
         Args: { table_id: string }
         Returns: unknown
+      }
+      get_open_limit_bets_with_contracts: {
+        Args: { uid: string; count: number }
+        Returns: { contract_id: string; bets: Json[]; contract: Json }[]
       }
       get_recommended_contract_ids:
         | {
@@ -607,9 +618,21 @@ export interface Database {
             Args: { uid: string }
             Returns: { contract_id: string }[]
           }
+      get_recommended_contract_scores: {
+        Args: { uid: string }
+        Returns: { contract_id: string; rec_score: number }[]
+      }
       get_recommended_contracts: {
         Args: { uid: string; count: number }
         Returns: Json[]
+      }
+      get_recommended_contracts_by_score: {
+        Args: { uid: string }
+        Returns: { data: Json; score: number }[]
+      }
+      get_recommended_contracts2: {
+        Args: { uid: string; count: number }
+        Returns: { data: Json }[]
       }
       get_related_contract_ids: {
         Args: { source_id: string }

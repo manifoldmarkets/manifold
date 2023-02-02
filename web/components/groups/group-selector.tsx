@@ -24,8 +24,10 @@ export function GroupSelector(props: {
     showLabel: boolean
     ignoreGroupIds?: string[]
   }
+  permittedGroups?: Group[]
 }) {
-  const { selectedGroup, setSelectedGroup, creator, options } = props
+  const { selectedGroup, setSelectedGroup, creator, options, permittedGroups } =
+    props
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
   const { showSelector, showLabel, ignoreGroupIds } = options
   const [query, setQuery] = useState('')
@@ -33,6 +35,7 @@ export function GroupSelector(props: {
   const memberGroups = useMemberGroups(creator?.id)
   const memberGroupIds = memberGroups?.map((g) => g.id) ?? []
 
+  console.log('in selector', permittedGroups)
   const sortGroups = (groups: Group[]) =>
     groups.sort(
       (a, b) =>
@@ -41,16 +44,20 @@ export function GroupSelector(props: {
         (memberGroupIds.includes(a.id) ? 5 : 1) * a.totalContracts
     )
 
-  const availableGroups = sortGroups(
-    openGroups
-      .concat(
-        (memberGroups ?? []).filter(
-          (g) => !openGroups.some((og) => og.id === g.id)
+  let availableGroups
+  if (permittedGroups) {
+    availableGroups = permittedGroups
+  } else {
+    availableGroups = sortGroups(
+      openGroups
+        .concat(
+          (memberGroups ?? []).filter(
+            (g) => !openGroups.some((og) => og.id === g.id)
+          )
         )
-      )
-      .filter((group) => !ignoreGroupIds?.includes(group.id))
-  )
-
+        .filter((group) => !ignoreGroupIds?.includes(group.id))
+    )
+  }
   const filteredGroups = sortGroups(
     availableGroups.filter((group) => searchInAny(query, group.name))
   )

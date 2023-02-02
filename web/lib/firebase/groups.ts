@@ -1,3 +1,6 @@
+import { Contract } from 'common/contract'
+import { Group } from 'common/group'
+import { filterDefined } from 'common/util/array'
 import {
   collection,
   collectionGroup,
@@ -12,8 +15,9 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { partition, uniq, uniqBy } from 'lodash'
-import { Group, GroupLink } from 'common/group'
+import { partition, uniqBy } from 'lodash'
+import { getContractFromId, updateContract } from 'web/lib/firebase/contracts'
+import { db } from 'web/lib/firebase/init'
 import {
   coll,
   getValue,
@@ -21,12 +25,6 @@ import {
   listenForValue,
   listenForValues,
 } from './utils'
-import { Contract } from 'common/contract'
-import { getContractFromId, updateContract } from 'web/lib/firebase/contracts'
-import { db } from 'web/lib/firebase/init'
-import { filterDefined } from 'common/util/array'
-import { groupRoleType } from 'web/components/groups/group-member-modal'
-import { User } from './users'
 
 export const groups = coll<Group>('groups')
 export const groupMembers = (groupId: string) =>
@@ -225,21 +223,21 @@ export async function leaveGroup(
 // }
 
 // TODO: This doesn't check if the user has permission to do this
-export async function removeContractFromGroup(
-  group: Group,
-  contract: Contract
-) {
-  if (contract.groupLinks?.some((l) => l.groupId === group.id)) {
-    const newGroupLinks = contract.groupLinks?.filter(
-      (link) => link.slug !== group.slug
-    )
-    await updateContract(contract.id, {
-      groupSlugs:
-        contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
-      groupLinks: newGroupLinks ?? [],
-    })
-  }
-}
+// export async function removeContractFromGroup(
+//   group: Group,
+//   contract: Contract
+// ) {
+//   if (contract.groupLinks?.some((l) => l.groupId === group.id)) {
+//     const newGroupLinks = contract.groupLinks?.filter(
+//       (link) => link.slug !== group.slug
+//     )
+//     await updateContract(contract.id, {
+//       groupSlugs:
+//         contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
+//       groupLinks: newGroupLinks ?? [],
+//     })
+//   }
+// }
 
 export function getGroupLinkToDisplay(contract: Contract) {
   const { groupLinks } = contract
