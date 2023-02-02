@@ -5,7 +5,6 @@ import {
   SearchIcon,
   BookOpenIcon,
   ChatIcon,
-  ChartBarIcon,
   LogoutIcon,
   BeakerIcon,
   HeartIcon,
@@ -35,6 +34,7 @@ import { Spacer } from '../layout/spacer'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { SearchButton } from './search-button'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
+import TrophyIcon from 'web/lib/icons/trophy-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -132,7 +132,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
       !IS_PRIVATE_MANIFOLD && {
         name: 'Leaderboards',
         href: '/leaderboards',
-        icon: ChartBarIcon,
+        icon: TrophyIcon,
       }
     )
 
@@ -149,7 +149,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 
 function getMoreDesktopNavigation(loggedIn: boolean) {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
+    return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
   }
 
   return buildArray(
@@ -170,13 +170,13 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
 // No sidebar when signed out
 const getMobileNav = () => {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
+    return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
   }
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Dashboard', href: '/dashboard', icon: TableIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
-    { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
+    { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     {
       name: 'Groups',
       href: '/groups',
