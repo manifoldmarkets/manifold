@@ -315,23 +315,23 @@ export function BetsList(props: { user: User }) {
 const NoBets = ({ user }: { user: User }) => {
   const me = useUser()
   return (
-    <div className="mx-4 py-4 text-gray-500">
+    <div className="py-4 text-center text-gray-500">
       {user.id === me?.id ? (
         <>
           You have not made any bets yet.{' '}
-          <SiteLink href="/home" className="underline">
+          <SiteLink href="/home" className="text-indigo-500 hover:underline">
             Find a prediction market!
           </SiteLink>
         </>
       ) : (
-        <>{user.name} has not made any public bets yet.</>
+        <>{user.name} has not made any bets yet</>
       )}
     </div>
   )
 }
 const NoMatchingBets = () => (
-  <div className="mx-4 py-4 text-gray-500">
-    No bets matching the current filter.
+  <div className="py-4 text-center text-gray-500">
+    No bets matching the current filter
   </div>
 )
 
