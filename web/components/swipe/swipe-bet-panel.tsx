@@ -12,6 +12,7 @@ import {
   STARTING_BET_AMOUNT,
 } from './swipe-helpers'
 import { TouchButton } from './touch-button'
+import { Col } from '../layout/col'
 
 export function SwipeBetPanel(props: {
   amount: number
@@ -58,7 +59,7 @@ export function SwipeBetPanel(props: {
               ? 'active:bg-scarlet-300 active:border-scarlet-300 active:text-white'
               : 'w-16 border-gray-200 pl-4 text-gray-200',
             swipingLeft
-              ? 'bg-scarlet-300 border-scarlet-300 w-[188px] pl-[84px] text-white'
+              ? 'bg-scarlet-300 border-scarlet-300 w-[188px] pl-[74px] text-white'
               : 'border-scarlet-200 text-scarlet-200 w-16 pl-4',
             swipingLeft && betStatus === 'success'
               ? 'bg-scarlet-500 border-scarlet-500'
@@ -69,7 +70,10 @@ export function SwipeBetPanel(props: {
             onBet('NO')
           }}
         >
-          NO
+          <Col>
+            <div className="text-xs font-light">Bet</div>
+            <div>NO</div>
+          </Col>
         </button>
         {swipingLeft && (
           <div className="absolute -left-20 z-30">
@@ -129,7 +133,10 @@ export function SwipeBetPanel(props: {
             onBet('YES')
           }}
         >
-          YES
+          <Col>
+            <div className="text-xs font-light">Bet</div>
+            <div>YES</div>
+          </Col>
         </button>
         {swipingRight && (
           <div className="absolute -right-20 z-30">
