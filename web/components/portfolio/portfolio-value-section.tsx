@@ -10,13 +10,10 @@ import { SizedContainer } from 'web/components/sized-container'
 import { Period } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph'
-import { AddFundsModal } from '../add-funds-modal'
-import { Button } from '../buttons/button'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
+import { AddFundsButton } from '../profile/add-funds-button'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -209,7 +206,7 @@ export function PortfolioValueSkeleton(props: {
           {valueElement}
         </Col>
 
-        <AddFundsButton userId={userId} />
+        <AddFundsButton userId={userId} className="self-center max-sm:hidden" />
 
         <TimeRangePicker
           currentTimePeriod={currentTimePeriod}
@@ -222,26 +219,6 @@ export function PortfolioValueSkeleton(props: {
       <SizedContainer fullHeight={200} mobileHeight={100}>
         {graphElement}
       </SizedContainer>
-    </>
-  )
-}
-
-function AddFundsButton({ userId }: { userId?: string }) {
-  const [open, setOpen] = useState(false)
-  const user = useUser()
-  if (!userId || user?.id !== userId) return null
-
-  return (
-    <>
-      <Button
-        className="self-center"
-        color="indigo"
-        onClick={() => setOpen(true)}
-        size="2xs"
-      >
-        Get {ENV_CONFIG.moneyMoniker}
-      </Button>
-      <AddFundsModal open={open} setOpen={setOpen} />
     </>
   )
 }

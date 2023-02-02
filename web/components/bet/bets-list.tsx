@@ -58,6 +58,7 @@ import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { Input } from 'web/components/widgets/input'
 import { searchInAny } from 'common/util/parse'
 import { useContract } from 'web/hooks/use-contracts'
+import { AddFundsButton } from '../profile/add-funds-button'
 
 type BetSort = 'newest' | 'profit' | 'loss' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -235,8 +236,8 @@ export function BetsList(props: { user: User }) {
 
   return (
     <Col>
-      <Col className="justify-between gap-4 sm:flex-row">
-        <Row className="gap-4">
+      <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
+        <Row className="mr-2 gap-4">
           <Col className={'shrink-0'}>
             <div className="text-xs text-gray-600 sm:text-sm">
               Investment value
@@ -250,39 +251,47 @@ export function BetsList(props: { user: User }) {
             <div className="text-xs text-gray-600 sm:text-sm">Total loans</div>
             <div className="text-lg">{formatMoney(currentLoan)}</div>
           </Col>
-          <Input
-            placeholder="Search"
-            className={'w-24 sm:w-full'}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+
+          <AddFundsButton
+            userId={user.id}
+            className="ml-2 self-center sm:hidden"
           />
         </Row>
 
-        <Row className="gap-2">
-          <Select
-            value={filter}
-            onChange={(e) => onSetFilter(e.target.value as BetFilter)}
-          >
-            <option value="open">Active</option>
-            <option value="limit_bet">Limit orders</option>
-            <option value="sold">Sold</option>
-            <option value="closed">Closed</option>
-            <option value="resolved">Resolved</option>
-            <option value="all">All</option>
-          </Select>
-
-          <Select
-            value={sort}
-            onChange={(e) => onSetSort(e.target.value as BetSort)}
-          >
-            <option value="newest">Recent</option>
-            <option value="value">Value</option>
-            <option value="profit">Profit</option>
-            <option value="loss">Loss</option>
-            <option value="closeTime">Close date</option>
-          </Select>
-        </Row>
-      </Col>
+        <div className="flex grow gap-2 max-[480px]:flex-col">
+          <Input
+            placeholder="Search"
+            className={'w-full min-w-[30px]'}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <Row className="gap-2">
+            <Select
+              value={filter}
+              onChange={(e) => onSetFilter(e.target.value as BetFilter)}
+              className="!h-full grow py-1"
+            >
+              <option value="open">Active</option>
+              <option value="limit_bet">Limit orders</option>
+              <option value="sold">Sold</option>
+              <option value="closed">Closed</option>
+              <option value="resolved">Resolved</option>
+              <option value="all">All</option>
+            </Select>
+            <Select
+              value={sort}
+              onChange={(e) => onSetSort(e.target.value as BetSort)}
+              className="!h-full grow py-1"
+            >
+              <option value="newest">Recent</option>
+              <option value="value">Value</option>
+              <option value="profit">Profit</option>
+              <option value="loss">Loss</option>
+              <option value="closeTime">Close date</option>
+            </Select>
+          </Row>
+        </div>
+      </div>
 
       <Col className="mt-6 divide-y">
         {displayedContracts.length === 0 ? (
