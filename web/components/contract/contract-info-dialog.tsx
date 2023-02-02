@@ -35,6 +35,8 @@ import { useMutation } from 'react-query'
 import toast from 'react-hot-toast'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { dreamDefault } from '../editor/image-modal'
+import { REFERRAL_AMOUNT } from 'common/economy'
+import { CopyLinkButton } from '../buttons/copy-link-button'
 
 const Stats = (props: {
   contract: Contract
@@ -335,9 +337,25 @@ export function ContractInfoDialog(props: {
                 {
                   title: 'Share',
                   content: (
-                    <div className="flex aspect-square max-h-[400px] items-center justify-center">
-                      <QRCode url={shareUrl} width={300} height={300} />
-                    </div>
+                    <Col className="max-h-[400px]">
+                      <QRCode
+                        url={shareUrl}
+                        width={250}
+                        height={250}
+                        className="self-center"
+                      />
+
+                      <div className="mt-4 mb-2 text-base text-gray-500">
+                        Invite traders to participate in this market and earn a{' '}
+                        {formatMoney(REFERRAL_AMOUNT)} referral bonus for each
+                        new trader that signs up.
+                      </div>
+
+                      <CopyLinkButton
+                        url={getShareUrl(contract, user?.username)}
+                        tracking="copy market share link"
+                      />
+                    </Col>
                   ),
                 },
               ]}
