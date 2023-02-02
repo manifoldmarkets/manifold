@@ -76,6 +76,12 @@ const embedPatterns: EmbedPattern[] = [
       `<iframe src="https://strawpoll.com/embed/polls/${id}"></iframe>`,
   },
   {
+    // Tiktok: https://www.tiktok.com/@tiktok/video/6959980000000000001
+    regex: /^https?:\/\/www\.tiktok\.com\/@[^\/]+\/video\/(\d+)/,
+    rewrite: (id) =>
+      `<iframe src="https://www.tiktok.com/embed/v2/${id}"></iframe>`,
+  },
+  {
     regex: /^(https?:\/\/.*)/,
     rewrite: (url) => `<iframe src="${url}"></iframe>`,
   },
