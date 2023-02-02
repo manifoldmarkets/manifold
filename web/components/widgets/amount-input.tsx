@@ -22,7 +22,7 @@ export function AmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  showQuickAddColor?: ColorType
+  quickAddClassName?: string
 }) {
   const {
     amount,
@@ -33,7 +33,7 @@ export function AmountInput(props: {
     className,
     inputClassName,
     inputRef,
-    showQuickAddColor,
+    quickAddClassName,
   } = props
 
   const parse = (str: string) => parseInt(str.replace(/\D/g, ''))
@@ -51,13 +51,9 @@ export function AmountInput(props: {
           <span className="absolute top-1/2 my-auto ml-2 -translate-y-1/2 text-gray-400">
             {label}
           </span>
-          <Row>
+          <div className="flex">
             <Input
-              className={clsx(
-                'pl-9 !text-lg',
-                showQuickAddColor && 'pr-12',
-                inputClassName
-              )}
+              className={clsx('pl-9 !text-lg', inputClassName)}
               ref={inputRef}
               type="text"
               pattern="[0-9]*"
@@ -76,20 +72,18 @@ export function AmountInput(props: {
                 }
               }}
             />
-            {showQuickAddColor && (
-              <Button
-                size={'xs'}
-                color={showQuickAddColor}
+            {quickAddClassName && (
+              <button
                 className={clsx(
-                  '-ml-11 rounded-l-none',
-                  showQuickAddColor === 'gray-white' && 'text-gray-400'
+                  'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors',
+                  quickAddClassName
                 )}
                 onClick={() => onChange((amount ?? 0) + 10)}
               >
                 +10
-              </Button>
+              </button>
             )}
-          </Row>
+          </div>
         </label>
 
         {error && (
@@ -175,14 +169,14 @@ export function BuyAmountInput(props: {
               error={error}
               disabled={disabled}
               className={className}
-              inputClassName={inputClassName}
+              inputClassName={clsx('pr-12', inputClassName)}
               inputRef={inputRef}
-              showQuickAddColor={
+              quickAddClassName={
                 binaryOutcome === 'YES'
-                  ? 'green-white'
+                  ? 'text-teal-500 hover:bg-teal-100'
                   : binaryOutcome === 'NO'
-                  ? 'red-white'
-                  : 'gray-white'
+                  ? 'text-scarlet-300 hover:bg-scarlet-50'
+                  : 'text-gray-500 hover:bg-gray-200'
               }
             />
           )}
