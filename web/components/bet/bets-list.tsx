@@ -60,7 +60,14 @@ import { searchInAny } from 'common/util/parse'
 import { useContract } from 'web/hooks/use-contracts'
 import { AddFundsButton } from '../profile/add-funds-button'
 
-type BetSort = 'newest' | 'profit' | 'loss' | 'closeTime' | 'value'
+type BetSort =
+  | 'newest'
+  | 'profit'
+  | 'loss'
+  | 'closeTime'
+  | 'value'
+  | 'liquidity'
+
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
 const CONTRACTS_PER_PAGE = 50
@@ -193,6 +200,7 @@ export function BetsList(props: { user: User }) {
       nullableMetricsByContract[c.id].lastBetTime ??
       max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
       0,
+    liquidity: (c) => -c.elasticity ?? 1,
     closeTime: (c) =>
       // This is in fact the intuitive sort direction.
       (filter === 'open' ? -1 : 1) *
@@ -236,7 +244,7 @@ export function BetsList(props: { user: User }) {
 
   return (
     <Col>
-      <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
+      <div className="max-sm:flex-col flex flex-wrap justify-between gap-4">
         <Row className="mr-2 gap-4">
           <Col className={'shrink-0'}>
             <div className="text-xs text-gray-600 sm:text-sm">
@@ -258,7 +266,7 @@ export function BetsList(props: { user: User }) {
           />
         </Row>
 
-        <div className="flex grow gap-2 max-[480px]:flex-col">
+        <div className="max-[480px]:flex-col flex grow gap-2">
           <Input
             placeholder="Search"
             className={'w-full min-w-[30px]'}
@@ -287,6 +295,7 @@ export function BetsList(props: { user: User }) {
               <option value="value">Value</option>
               <option value="profit">Profit</option>
               <option value="loss">Loss</option>
+              <option value="liquidity">Liquidity</option>
               <option value="closeTime">Close date</option>
             </Select>
           </Row>
