@@ -57,7 +57,6 @@ export function ContractsListEntry(props: {
       )}
     >
       <Avatar
-        className="mt-0.5"
         username={contract.creatorName}
         avatarUrl={contract.creatorAvatarUrl}
         size="xs"
