@@ -244,7 +244,7 @@ export function BetsList(props: { user: User }) {
 
   return (
     <Col>
-      <div className="max-sm:flex-col flex flex-wrap justify-between gap-4">
+      <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
         <Row className="mr-2 gap-4">
           <Col className={'shrink-0'}>
             <div className="text-xs text-gray-600 sm:text-sm">
@@ -266,7 +266,7 @@ export function BetsList(props: { user: User }) {
           />
         </Row>
 
-        <div className="max-[480px]:flex-col flex grow gap-2">
+        <div className="flex grow gap-2 max-[480px]:flex-col">
           <Input
             placeholder="Search"
             className={'w-full min-w-[30px]'}
