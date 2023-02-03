@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { Group } from 'common/group'
+import { Group, GroupContractDoc } from 'common/group'
 import { filterDefined } from 'common/util/array'
 import {
   collection,
@@ -15,16 +15,9 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { partition,uniq, uniqBy } from 'lodash'
+import { partition, uniqBy } from 'lodash'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/firebase/init'
-import { partition, uniq, uniqBy } from 'lodash'
-import {
-  Group,
-  GroupMemberDoc,
-  GroupContractDoc,
-  GroupLink,
-} from 'common/group'
 import {
   coll,
   getValue,

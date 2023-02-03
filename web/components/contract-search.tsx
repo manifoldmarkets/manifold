@@ -217,33 +217,38 @@ export function ContractSearch(props: {
   }
 
   return (
- <AsListContext.Provider value={{ asList, setAsList }}>
-    <Col>
-      <ContractSearchControls
-        className={headerClassName}
-        defaultSort={defaultSort}
-        defaultFilter={defaultFilter}
-        additionalFilter={additionalFilter}
-        persistPrefix={persistPrefix}
-        hideOrderSelector={hideOrderSelector}
-        useQueryUrlParam={isWholePage}
-        includeProbSorts={includeProbSorts}
-        onSearchParametersChanged={onSearchParametersChanged}
-        autoFocus={autoFocus}
-      />
-      {renderContracts ? (
-        renderContracts(renderedContracts, performQuery)
-      ) : renderedContracts && renderedContracts.length === 0 && profile ? (
-        <p className="mx-2 text-gray-500">No markets found</p>
-      ) : (
-        <ContractsGrid
-          contracts={renderedContracts}
-          showTime={state.showTime ?? undefined}
-          onContractClick={onContractClick}
-          highlightCards={highlightCards}
-          cardUIOptions={cardUIOptions}
-          loadMore={performQuery}
-          fromGroupProps={fromGroupProps}
+    <AsListContext.Provider value={{ asList, setAsList }}>
+      <Col>
+        <ContractSearchControls
+          className={headerClassName}
+          defaultSort={defaultSort}
+          defaultFilter={defaultFilter}
+          additionalFilter={additionalFilter}
+          persistPrefix={persistPrefix}
+          hideOrderSelector={hideOrderSelector}
+          useQueryUrlParam={isWholePage}
+          includeProbSorts={includeProbSorts}
+          onSearchParametersChanged={onSearchParametersChanged}
+          autoFocus={autoFocus}
+        />
+        {renderContracts ? (
+          renderContracts(renderedContracts, performQuery)
+        ) : renderedContracts && renderedContracts.length === 0 && profile ? (
+          <p className="mx-2 text-gray-500">No markets found</p>
+        ) : asList ? (
+          <ContractsList
+            contracts={renderedContracts}
+            loadMore={performQuery}
+          />
+        ) : (
+          <ContractsGrid
+            contracts={renderedContracts}
+            showTime={state.showTime ?? undefined}
+            onContractClick={onContractClick}
+            highlightCards={highlightCards}
+            cardUIOptions={cardUIOptions}
+            loadMore={performQuery}
+            fromGroupProps={fromGroupProps}
           />
         )}
       </Col>

@@ -1,7 +1,5 @@
 import { JSONContent } from '@tiptap/core'
-import { Group } from 'common/group'
 import { User } from 'common/user'
-import { cloneDeep } from 'lodash'
 import { useEffect, useState } from 'react'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { db } from 'web/lib/supabase/db'
@@ -10,6 +8,7 @@ import {
   getGroupOfRole,
   getMemberRole,
   getNumGroupMembers,
+  MEMBER_LOAD_NUM,
 } from 'web/lib/supabase/group'
 import { useAdmin } from './use-admin'
 import { useUser } from './use-user'
@@ -98,7 +97,7 @@ export function useRealtimeGroupMembers(
   }, [])
 
   useEffect(() => {
-    if (hitBottom && !loadMore) {
+    if (hitBottom && !loadMore && numMembers && numMembers > MEMBER_LOAD_NUM) {
       loadMoreMembers()
     }
   }, [hitBottom])

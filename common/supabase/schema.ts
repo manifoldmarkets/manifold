@@ -483,26 +483,6 @@ export interface Database {
           user_id?: string
         }
       }
-      user_portfolio_history: {
-        Row: {
-          data: Json
-          fs_updated_time: string
-          portfolio_id: string
-          user_id: string
-        }
-        Insert: {
-          data: Json
-          fs_updated_time: string
-          portfolio_id: string
-          user_id: string
-        }
-        Update: {
-          data?: Json
-          fs_updated_time?: string
-          portfolio_id?: string
-          user_id?: string
-        }
-      }
       user_reactions: {
         Row: {
           data: Json
@@ -667,52 +647,28 @@ export interface Database {
         Returns: number
       }
       gtrgm_compress: {
-        Args: { "": unknown }
+        Args: { '': unknown }
         Returns: unknown
       }
       gtrgm_decompress: {
-        Args: { "": unknown }
+        Args: { '': unknown }
         Returns: unknown
       }
       gtrgm_in: {
-        Args: { "": unknown }
+        Args: { '': unknown }
         Returns: unknown
       }
       gtrgm_options: {
-        Args: { "": unknown }
+        Args: { '': unknown }
         Returns: undefined
       }
       gtrgm_out: {
-        Args: { "": unknown }
+        Args: { '': unknown }
         Returns: unknown
       }
       install_available_extensions_and_test: {
         Args: Record<PropertyKey, never>
         Returns: number
-      }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      is_valid_contract: {
-        Args: { data: Json }
-        Returns: boolean
       }
       is_valid_contract: {
         Args: { data: Json }
@@ -744,7 +700,7 @@ export interface Database {
         Returns: Json[]
       }
       set_limit: {
-        Args: { "": number }
+        Args: { '': number }
         Returns: number
       }
       show_limit: {
@@ -752,11 +708,11 @@ export interface Database {
         Returns: number
       }
       show_trgm: {
-        Args: { "": string }
+        Args: { '': string }
         Returns: string[]
       }
       to_jsonb: {
-        Args: { "": Json }
+        Args: { '': Json }
         Returns: Json
       }
     }
