@@ -1,19 +1,51 @@
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import Link from 'next/link'
+import { getProbability } from 'common/calculate'
+import { getValueFromBucket } from 'common/calculate-dpm'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { Avatar } from '../widgets/avatar'
 
+function ContractStatusLabel(props: { contract: Contract }) {
+  const { contract } = props
+  switch (contract.outcomeType) {
+    case 'BINARY': {
+      return contract.resolution ? (
+        <BinaryContractOutcomeLabel
+          contract={contract}
+          resolution={contract.resolution}
+        />
+      ) : (
+        <span>{getBinaryProbPercent(contract, true)}</span>
+      )
+    }
+    case 'PSEUDO_NUMERIC': {
+      const val = contract.resolutionProbability ?? getProbability(contract)
+      return <span>{getFormattedMappedValue(contract, val)}</span>
+    }
+    case 'NUMERIC': {
+      const val = contract.resolutionValue ?? getValueFromBucket('', contract)
+      return <span>{getFormattedMappedValue(contract, val)}</span>
+    }
+    case 'FREE_RESPONSE':
+    case 'MULTIPLE_CHOICE': {
+      return <span>FR</span>
+    }
+    case 'CERT': {
+      return <span>CERT</span>
+    }
+  }
+}
+
 // TODO: Replace with a proper table/datagrid implementation?
 export function ContractsListEntry(props: {
   contract: Contract
-  probChange?: string
   className?: string
 }) {
-  const { contract, probChange, className } = props
-  const { outcomeType, resolution } = contract
+  const { contract, className } = props
   const probTextColor = getTextColor(contract)
 
   return (
@@ -31,26 +63,14 @@ export function ContractsListEntry(props: {
         size="xs"
       />
       <div className="min-w-[34px]">
-        {outcomeType === 'BINARY' && (
-          <span
-            className={clsx(
-              probTextColor,
-              'rounded-full font-semibold ring-inset ring-indigo-100 group-hover:ring-indigo-200'
-            )}
-          >
-            {resolution ? (
-              <BinaryContractOutcomeLabel
-                contract={contract}
-                resolution={resolution}
-              />
-            ) : (
-              getBinaryProbPercent(contract, true)
-            )}
-          </span>
-        )}
-        {!resolution && probChange && (
-          <span className="ml-0.5 text-xs text-gray-500">{probChange}</span>
-        )}
+        <span
+          className={clsx(
+            probTextColor,
+            'rounded-full font-semibold ring-inset ring-indigo-100 group-hover:ring-indigo-200'
+          )}
+        >
+          <ContractStatusLabel contract={contract} />
+        </span>
       </div>
       <div className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
         {contract.question}
