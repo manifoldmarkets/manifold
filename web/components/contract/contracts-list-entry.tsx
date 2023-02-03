@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import Link from 'next/link'
 import { getProbability } from 'common/calculate'
@@ -11,6 +10,8 @@ import { Avatar } from '../widgets/avatar'
 
 function ContractStatusLabel(props: { contract: Contract }) {
   const { contract } = props
+  const probTextColor = getTextColor(contract)
+
   switch (contract.outcomeType) {
     case 'BINARY': {
       return contract.resolution ? (
@@ -19,7 +20,9 @@ function ContractStatusLabel(props: { contract: Contract }) {
           resolution={contract.resolution}
         />
       ) : (
-        <span>{getBinaryProbPercent(contract, true)}</span>
+        <span className={probTextColor}>
+          {getBinaryProbPercent(contract, true)}
+        </span>
       )
     }
     case 'PSEUDO_NUMERIC': {
@@ -41,35 +44,20 @@ function ContractStatusLabel(props: { contract: Contract }) {
 }
 
 // TODO: Replace with a proper table/datagrid implementation?
-export function ContractsListEntry(props: {
-  contract: Contract
-  className?: string
-}) {
-  const { contract, className } = props
-  const probTextColor = getTextColor(contract)
-
+export function ContractsListEntry(props: { contract: Contract }) {
+  const { contract } = props
   return (
     <Link
       href={contractPath(contract)}
-      className={clsx(
-        'group flex flex-row gap-2 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 md:gap-4',
-        className
-      )}
+      className="group flex flex-row gap-2 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 md:gap-4"
     >
       <Avatar
         username={contract.creatorUsername}
         avatarUrl={contract.creatorAvatarUrl}
         size="xs"
       />
-      <div className="min-w-[34px]">
-        <span
-          className={clsx(
-            probTextColor,
-            'rounded-full font-semibold ring-inset ring-indigo-100 group-hover:ring-indigo-200'
-          )}
-        >
-          <ContractStatusLabel contract={contract} />
-        </span>
+      <div className="min-w-[34px] rounded-full font-semibold">
+        <ContractStatusLabel contract={contract} />
       </div>
       <div className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
         {contract.question}
