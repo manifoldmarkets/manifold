@@ -162,16 +162,15 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     const groupMemberDocs = groupMembersSnap.docs.map(
       (doc) => doc.data() as { userId: string; createdTime: number }
     )
-    // if (
-    //   !groupMemberDocs.some((m) => m.userId === userId) &&
-    //   !group.anyoneCanJoin &&
-    //   group.creatorId !== userId
-    // ) {
-    //   throw new APIError(
-    //     400,
-    //     'User must be a member/creator of the group or group must be open to add markets to it.'
-    //   )
-    // }
+    if (
+      !groupMemberDocs.some((m) => m.userId === userId) &&
+      group.creatorId !== userId
+    ) {
+      throw new APIError(
+        400,
+        'User must be a member/creator of the group or group must be open to add markets to it.'
+      )
+    }
   }
 
   const slug = await getSlug(question)

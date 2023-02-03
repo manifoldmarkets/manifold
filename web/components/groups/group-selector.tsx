@@ -160,7 +160,7 @@ export function GroupSelector(props: {
                   user={creator}
                   onOpenStateChange={setIsCreatingNewGroup}
                   className={
-                    'group flex w-full flex-row items-center justify-start rounded-none border-0 bg-white font-normal text-gray-900 transition-colors hover:bg-indigo-500 hover:text-white'
+                    'group flex w-full flex-row items-center rounded-none border-0 bg-white font-normal text-gray-900 transition-colors hover:bg-indigo-500 hover:text-white'
                   }
                   label={'Create a new Group'}
                   addGroupIdParamOnSubmit

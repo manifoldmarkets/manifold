@@ -158,13 +158,16 @@ export function ContractGroupsList(props: {
   )
 }
 
-export function GroupsInfoBlob(props: { isCreator: boolean }) {
-  const { isCreator } = props
+export function GroupsInfoBlob(props: {
+  isCreator: boolean
+  className?: string
+}) {
+  const { isCreator, className } = props
   const infoString = isCreator
     ? 'You can only add your market to groups you are a member of. '
     : 'You can only add this market to groups you are an admin or moderator of. '
   return (
-    <span className="text-sm font-light text-gray-600">
+    <span className={clsx('text-sm font-light text-gray-600', className)}>
       {infoString}Explore more groups{' '}
       <a
         href="/groups"

@@ -34,6 +34,8 @@ import { createMarket } from 'web/lib/firebase/api'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
+import { getGroupsWhereUserIsMember } from 'web/lib/supabase/groups'
+import { GroupsInfoBlob } from './groups/contract-groups-list'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -216,6 +218,13 @@ export function NewContractPanel(props: {
 
   const [hideOptions, setHideOptions] = useState(true)
 
+  const [permittedGroups, setPermittedGroups] = useState<Group[]>([])
+  useEffect(() => {
+    getGroupsWhereUserIsMember(creator.id).then((g) =>
+      setPermittedGroups(g.map((gp: { group_data: any }) => gp.group_data))
+    )
+  }, [])
+
   return (
     <div className={className}>
       <div className="flex w-full flex-col">
@@ -375,6 +384,7 @@ export function NewContractPanel(props: {
                   setSelectedGroup={setSelectedGroup}
                   creator={creator}
                   options={{ showSelector: true, showLabel: true }}
+                  permittedGroups={permittedGroups}
                 />
                 {selectedGroup && (
                   <a target="_blank" href={groupPath(selectedGroup.slug)}>
@@ -382,6 +392,8 @@ export function NewContractPanel(props: {
                   </a>
                 )}
               </Row>
+              <Spacer h={2} />
+              <GroupsInfoBlob isCreator={true} />
               <Spacer h={6} />
             </>
           )}
@@ -492,19 +504,22 @@ export function NewContractPanel(props: {
       </Row>
 
       <Spacer h={6} />
-      <Button
-        type="submit"
-        color="indigo"
-        size="xl"
-        loading={isSubmitting}
-        disabled={!isValid || editor?.storage.upload.mutation.isLoading}
-        onClick={(e) => {
-          e.preventDefault()
-          submit()
-        }}
-      >
-        {isSubmitting ? 'Creating...' : 'Create market'}
-      </Button>
+      <Row className="w-full justify-center">
+        <Button
+          className="w-full"
+          type="submit"
+          color="indigo"
+          size="xl"
+          loading={isSubmitting}
+          disabled={!isValid || editor?.storage.upload.mutation.isLoading}
+          onClick={(e) => {
+            e.preventDefault()
+            submit()
+          }}
+        >
+          {isSubmitting ? 'Creating...' : 'Create market'}
+        </Button>
+      </Row>
 
       <Spacer h={6} />
     </div>
