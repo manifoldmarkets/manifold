@@ -7,7 +7,6 @@ import {
   useEffect,
   useRef,
   useMemo,
-  ReactNode,
   useState,
   createContext,
   useContext,
@@ -92,10 +91,6 @@ export function ContractSearch(props: {
   persistPrefix?: string
   isWholePage?: boolean
   includeProbSorts?: boolean
-  renderContracts?: (
-    contracts: Contract[] | undefined,
-    loadMore: () => void
-  ) => ReactNode
   autoFocus?: boolean
   profile?: boolean | undefined
 }) {
@@ -111,7 +106,6 @@ export function ContractSearch(props: {
     persistPrefix,
     includeProbSorts,
     isWholePage,
-    renderContracts,
     autoFocus,
     profile,
   } = props
@@ -225,9 +219,7 @@ export function ContractSearch(props: {
           autoFocus={autoFocus}
         />
 
-        {renderContracts ? (
-          renderContracts(renderedContracts, performQuery)
-        ) : renderedContracts && renderedContracts.length === 0 && profile ? (
+        {renderedContracts && renderedContracts.length === 0 && profile ? (
           <p className="mx-2 text-gray-500">No markets found</p>
         ) : asList ? (
           <ContractsList
