@@ -53,6 +53,7 @@ function DesktopPopover(props: { contract: Contract }) {
     <Tippy
       interactive
       duration={0}
+      offset={[0, 0]}
       placement="bottom-end"
       content={
         <ContractCard
