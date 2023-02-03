@@ -289,10 +289,9 @@ export function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const format = getFormattedMappedValue(contract)
-
-  const getValue = getMappedValue(contract)
-  const rawDifference = Math.abs(getValue(resultProb) - getValue(initialProb))
+  const rawDifference = Math.abs(
+    getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
+  )
   const displayedDifference = isPseudoNumeric
     ? formatLargeNumber(rawDifference)
     : formatPercent(rawDifference)
@@ -396,10 +395,12 @@ export function BuyPanel(props: {
               )}
             </Row>
             {probStayedSame ? (
-              <div className="text-lg">{format(initialProb)}</div>
+              <div className="text-lg">
+                {getFormattedMappedValue(contract, initialProb)}
+              </div>
             ) : (
               <div className="text-lg">
-                {format(resultProb)}
+                {getFormattedMappedValue(contract, resultProb)}
                 <span className={clsx('text-sm text-gray-500')}>
                   {isPseudoNumeric ? (
                     <></>
@@ -407,7 +408,10 @@ export function BuyPanel(props: {
                     <>
                       {' '}
                       {outcome != 'NO' && '+'}
-                      {format(resultProb - initialProb)}
+                      {getFormattedMappedValue(
+                        contract,
+                        resultProb - initialProb
+                      )}
                     </>
                   )}
                 </span>

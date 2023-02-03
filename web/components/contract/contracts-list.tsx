@@ -27,7 +27,7 @@ export function ContractsList(props: {
   }
 
   return (
-    <Col className="gap-2">
+    <Col>
       {contracts.map((contract) => (
         <DesktopPopover contract={contract} key={contract.id}></DesktopPopover>
       ))}

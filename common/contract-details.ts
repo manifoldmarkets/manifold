@@ -90,7 +90,8 @@ export const getOpenGraphProps = (
 
   const numericValue =
     outcomeType === 'PSEUDO_NUMERIC'
-      ? getFormattedMappedValue(contract)(
+      ? getFormattedMappedValue(
+          contract,
           contract.resolutionProbability
             ? contract.resolutionProbability
             : getProbability(contract)

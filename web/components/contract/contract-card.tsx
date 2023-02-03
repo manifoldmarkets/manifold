@@ -421,8 +421,8 @@ export function PseudoNumericResolutionOrExpectation(props: {
   const value = resolution
     ? resolutionValue
       ? resolutionValue
-      : getMappedValue(contract)(resolutionProbability ?? 0)
-    : getMappedValue(contract)(getProbability(contract))
+      : getMappedValue(contract, resolutionProbability ?? 0)
+    : getMappedValue(contract, getProbability(contract))
 
   return (
     <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
