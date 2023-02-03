@@ -82,11 +82,7 @@ export default function TestimonialsPanel() {
           {hasTestimonials && (
             <Testimonial
               key={testimonialList[pageNumber].testimonial}
-              testimonial={testimonialList[pageNumber].testimonial}
-              name={testimonialList[pageNumber].name}
-              credit={testimonialList[pageNumber].credit}
-              icon={testimonialList[pageNumber].icon}
-              src={testimonialList[pageNumber].src}
+              {...testimonialList[pageNumber]}
             />
           )}
           {!isMobile && (
