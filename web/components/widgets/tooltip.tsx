@@ -24,8 +24,17 @@ export function Tooltip(props: {
   noTap?: boolean
   noFade?: boolean
   hasSafePolygon?: boolean
+  suppressHydrationWarning?: boolean
 }) {
-  const { text, children, className, noTap, noFade, hasSafePolygon } = props
+  const {
+    text,
+    children,
+    className,
+    noTap,
+    noFade,
+    hasSafePolygon,
+    suppressHydrationWarning,
+  } = props
 
   const arrowRef = useRef(null)
 
@@ -72,7 +81,12 @@ export function Tooltip(props: {
 
   return text ? (
     <>
-      <span className={className} ref={reference} {...getReferenceProps()}>
+      <span
+        suppressHydrationWarning={suppressHydrationWarning}
+        className={className}
+        ref={reference}
+        {...getReferenceProps()}
+      >
         {children}
       </span>
       {/* conditionally render tooltip and fade in/out */}
@@ -89,6 +103,7 @@ export function Tooltip(props: {
         ref={floating}
         style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
         className="z-20 w-max max-w-xs whitespace-normal rounded bg-slate-700 px-2 py-1 text-center text-sm font-medium text-white"
+        suppressHydrationWarning={suppressHydrationWarning}
         {...getFloatingProps()}
       >
         {text}

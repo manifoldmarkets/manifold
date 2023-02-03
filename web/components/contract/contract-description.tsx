@@ -22,7 +22,7 @@ import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 
-export function ContractDescriptionAndResolution(props: {
+export function ContractDescription(props: {
   contract: Contract
   toggleResolver?: () => void
   className?: string
@@ -46,7 +46,7 @@ export function ContractDescriptionAndResolution(props: {
       ) : (
         <CollapsibleContent
           content={contract.description}
-          contractId={contract.id}
+          stateKey={`isCollapsed-contract-${contract.id}`}
         />
       )}
     </div>
@@ -79,7 +79,6 @@ function ContractActions(props: {
 
   useEffect(() => {
     if (!editing) editor?.commands?.setContent(contract.description)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, contract.description])
 
   return editing ? (
@@ -104,9 +103,8 @@ function ContractActions(props: {
     <>
       <CollapsibleContent
         content={contract.description}
-        contractId={contract.id}
+        stateKey={`isCollapsed-contract-${contract.id}`}
       />
-      <Spacer h={4} />
       <Row className="my-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
         <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>

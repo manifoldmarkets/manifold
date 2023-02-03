@@ -478,6 +478,26 @@ export interface Database {
         }
         Update: {
           data?: Json
+          follow_id?: string
+          fs_updated_time?: string
+          user_id?: string
+        }
+      }
+      user_portfolio_history: {
+        Row: {
+          data: Json
+          fs_updated_time: string
+          portfolio_id: string
+          user_id: string
+        }
+        Insert: {
+          data: Json
+          fs_updated_time: string
+          portfolio_id: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
           fs_updated_time?: string
           portfolio_id?: string
           user_id?: string
@@ -666,9 +686,41 @@ export interface Database {
         Args: { "": unknown }
         Returns: unknown
       }
+      install_available_extensions_and_test: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       is_valid_contract: {
         Args: { data: Json }
         Returns: boolean
+      }
+      is_valid_contract: {
+        Args: { data: Json }
+        Returns: boolean
+      }
+      recently_liked_contract_counts: {
+        Args: { since: number }
+        Returns: { contract_id: string; n: number }[]
       }
       replicate_writes_process_one: {
         Args: { r: unknown }

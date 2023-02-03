@@ -16,10 +16,7 @@ export default function DailyMovers() {
     <Page>
       <Col className="pm:mx-10 gap-4 sm:px-4 sm:pb-4">
         <Row className="mt-4 items-start justify-between sm:mt-0">
-          <Title
-            className="mx-4 !mb-0 !mt-0 sm:mx-0"
-            text="Your daily movers"
-          />
+          <Title className="mx-4 !mb-0 sm:mx-0">Your daily movers</Title>
           <DailyProfit user={user} />
         </Row>
         {user && <ProbChangesWrapper userId={user.id} />}

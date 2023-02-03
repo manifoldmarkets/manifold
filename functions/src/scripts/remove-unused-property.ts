@@ -10,12 +10,12 @@ initAdmin()
 const firestore = admin.firestore()
 
 async function main() {
-  const collection = 'users'
+  const collection = 'private-users'
   const users = await getValues<User>(firestore.collection(collection))
   await Promise.all(
     users.map(async (user) => {
       await firestore.collection(collection).doc(user.id).update({
-        followedCategories: FieldValue.delete(),
+        username: FieldValue.delete(),
       })
     })
   )

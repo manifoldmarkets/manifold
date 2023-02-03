@@ -1,11 +1,15 @@
 import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
-import { DotsCircleHorizontalIcon, PencilIcon } from '@heroicons/react/solid'
+import {
+  DotsCircleHorizontalIcon,
+  FireIcon,
+  PencilIcon,
+  PlusIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import { formatMoney } from 'common/util/format'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
@@ -28,7 +32,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { GroupLink, groupPath } from 'common/group'
-import { Subtitle } from '../widgets/subtitle'
+import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { editorExtensions } from '../widgets/editor'
@@ -46,9 +50,17 @@ export function MiscDetails(props: {
   const isClient = useIsClient()
   // const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   const groupToDisplay = getGroupLinkToDisplay(contract)
+  const isOpen =
+    !contract.isResolved && (contract.closeTime ?? Infinity) > Date.now()
 
   return (
     <Row className="w-full items-center gap-3 text-sm text-gray-400">
+      {isOpen && contract.elasticity < 0.5 ? (
+        <Tooltip text={'High-stakes market'} className={'z-10'}>
+          <FireIcon className="h-5 w-5 text-blue-700" />
+        </Tooltip>
+      ) : null}
+
       {isClient && showTime === 'close-date' ? (
         <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
@@ -62,10 +74,13 @@ export function MiscDetails(props: {
           {fromNow(resolutionTime)}
         </Row>
       ) : (uniqueBettorCount ?? 0) > 1 ? (
-        <Tooltip text={'Unique traders'} className={'z-10'}>
+        <Tooltip
+          text={`${uniqueBettorCount} unique traders`}
+          className={'z-10'}
+        >
           <Row className={'shrink-0 items-center gap-1'}>
-            <div className="font-semibold">{uniqueBettorCount || '0'} </div>
             <UserGroupIcon className="h-4 w-4" />
+            <div className="font-semibold">{uniqueBettorCount || '0'}</div>
           </Row>
         </Tooltip>
       ) : (
@@ -88,40 +103,11 @@ export function MiscDetails(props: {
   )
 }
 
-export function AvatarDetails(props: {
-  contract: Contract
-  className?: string
-  short?: boolean
-  noLink?: boolean
-}) {
-  const { contract, short, className, noLink } = props
-  const { creatorName, creatorUsername, creatorAvatarUrl } = contract
-
-  return (
-    <Row
-      className={clsx('items-center gap-2 text-sm text-gray-400', className)}
-    >
-      <Avatar
-        username={creatorUsername}
-        avatarUrl={creatorAvatarUrl}
-        size={4}
-        noLink={noLink}
-      />
-      <UserLink
-        name={creatorName}
-        username={creatorUsername}
-        short={short}
-        noLink={noLink}
-      />
-    </Row>
-  )
-}
-
 export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
 
   return (
-    <Row className="flex-wrap gap-2 sm:flex-nowrap">
+    <Row className="flex-wrap gap-4 sm:flex-nowrap">
       <MarketSubheader contract={contract} />
       <MarketGroups contract={contract} />
       <ExtraContractActionsRow contract={contract} />
@@ -131,33 +117,40 @@ export function ContractDetails(props: { contract: Contract }) {
 
 export function MarketSubheader(props: { contract: Contract }) {
   const { contract } = props
-  const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
+  const {
+    creatorName,
+    creatorUsername,
+    creatorId,
+    creatorAvatarUrl,
+    creatorCreatedTime,
+  } = contract
   const user = useUser()
-  const isCreator = user?.id === creatorId
-  return (
-    <Row className="relative grow">
-      <Avatar
-        username={creatorUsername}
-        avatarUrl={creatorAvatarUrl}
-        size={9}
-        className="mr-1.5"
-      />
+  const isEditable = user?.id === creatorId
 
-      <div className="absolute bottom-0 ml-5 flex h-5 w-5 items-center justify-center sm:-bottom-1">
-        <MiniUserFollowButton userId={creatorId} />
+  return (
+    <Row className="grow items-center gap-3">
+      <div className="relative">
+        <Avatar
+          username={creatorUsername}
+          avatarUrl={creatorAvatarUrl}
+          size={9}
+        />
+        <MiniUserFollowButton
+          userId={creatorId}
+          className="absolute -bottom-1 -right-1"
+        />
       </div>
 
-      <Col className="ml-2 flex-1 text-sm text-gray-600">
-        <Row className="gap-1">
-          <UserLink
-            className="my-auto whitespace-nowrap"
-            name={creatorName}
-            username={creatorUsername}
-          />
-        </Row>
-        <div className="text-2xs text-gray-400 sm:text-xs">
-          <CloseOrResolveTime contract={contract} isCreator={isCreator} />
-        </div>
+      <Col className="whitespace-nowrap text-sm">
+        <UserLink
+          className="text-gray-600"
+          name={creatorName}
+          username={creatorUsername}
+          createdTime={creatorCreatedTime}
+        />
+        <span className="text-xs font-light text-gray-400">
+          <CloseOrResolveTime contract={contract} editable={isEditable} />
+        </span>
       </Col>
     </Row>
   )
@@ -165,34 +158,31 @@ export function MarketSubheader(props: { contract: Contract }) {
 
 export function CloseOrResolveTime(props: {
   contract: Contract
-  isCreator: boolean
-  disabled?: boolean
+  editable?: boolean
 }) {
-  const { contract, isCreator, disabled } = props
+  const { contract, editable } = props
   const { resolvedDate } = contractMetrics(contract)
   const { resolutionTime, closeTime } = contract
   if (!!closeTime || !!resolvedDate) {
     return (
-      <Row className="select-none flex-nowrap items-center gap-1">
-        {resolvedDate && resolutionTime ? (
+      <Row className="select-none items-center">
+        {resolvedDate && resolutionTime && (
           <DateTimeTooltip
             className="whitespace-nowrap"
             text="Market resolved:"
             time={resolutionTime}
+            placement="bottom-start"
           >
             resolved {resolvedDate}
           </DateTimeTooltip>
-        ) : null}
+        )}
 
         {!resolvedDate && closeTime && (
-          <div className="flex gap-1 whitespace-nowrap">
-            <EditableCloseDate
-              closeTime={closeTime}
-              contract={contract}
-              isCreator={isCreator ?? false}
-              disabled={disabled}
-            />
-          </div>
+          <EditableCloseDate
+            closeTime={closeTime}
+            contract={contract}
+            editable={!!editable}
+          />
         )}
       </Row>
     )
@@ -214,11 +204,14 @@ function MarketGroups(props: { contract: Contract }) {
         ))}
 
         {user && (
-          <button
-            className="text-gray-400 hover:text-gray-300"
-            onClick={() => setOpen(true)}
-          >
-            <DotsCircleHorizontalIcon className="h-[20px]" />
+          <button onClick={() => setOpen(true)}>
+            {groupsToDisplay.length ? (
+              <DotsCircleHorizontalIcon className="h-[20px] text-gray-400 hover:text-gray-400/75" />
+            ) : (
+              <span className="flex items-center rounded-full bg-gray-400 py-0.5 px-2 text-xs font-light text-white hover:bg-gray-400/75">
+                <PlusIcon className="mr-1 h-3 w-3" /> Group
+              </span>
+            )}
           </button>
         )}
       </Row>
@@ -235,75 +228,14 @@ function MarketGroups(props: { contract: Contract }) {
   )
 }
 
-export function ExtraMobileContractDetails(props: {
-  contract: Contract
-  forceShowVolume?: boolean
-}) {
-  const { contract, forceShowVolume } = props
-  const { volume, resolutionTime, closeTime, creatorId, uniqueBettorCount } =
-    contract
-  const user = useUser()
-  const uniqueBettors = uniqueBettorCount ?? 0
-  const { resolvedDate } = contractMetrics(contract)
-  const volumeTranslation =
-    volume > 800 || uniqueBettors >= 20
-      ? 'High'
-      : volume > 300 || uniqueBettors >= 10
-      ? 'Medium'
-      : 'Low'
-
-  return (
-    <Row
-      className={clsx(
-        'items-center justify-around md:hidden',
-        user ? 'w-full' : ''
-      )}
-    >
-      {resolvedDate && resolutionTime ? (
-        <Col className={'items-center text-sm'}>
-          <Row className={'text-gray-500'}>
-            <DateTimeTooltip text="Market resolved:" time={resolutionTime}>
-              {resolvedDate}
-            </DateTimeTooltip>
-          </Row>
-          <Row className={'text-gray-400'}>Ended</Row>
-        </Col>
-      ) : (
-        !resolvedDate &&
-        closeTime && (
-          <Col className={'items-center text-sm text-gray-500'}>
-            <EditableCloseDate
-              closeTime={closeTime}
-              contract={contract}
-              isCreator={creatorId === user?.id}
-            />
-          </Col>
-        )
-      )}
-      {(user || forceShowVolume) && (
-        <Col className={'items-center text-sm text-gray-500'}>
-          <Tooltip
-            text={`${formatMoney(
-              volume
-            )} bet - ${uniqueBettors} unique traders`}
-          >
-            {volumeTranslation}
-          </Tooltip>
-          <Row className={'text-gray-400'}>Activity</Row>
-        </Col>
-      )}
-    </Row>
-  )
-}
-
-export function GroupDisplay(props: { groupToDisplay: GroupLink }) {
+function GroupDisplay(props: { groupToDisplay: GroupLink }) {
   const { groupToDisplay } = props
 
   return (
     <Link prefetch={false} href={groupPath(groupToDisplay.slug)} legacyBehavior>
       <a
         className={clsx(
-          'max-w-[200px] truncate whitespace-nowrap rounded-full bg-gray-400 py-0.5 px-2 text-xs text-white sm:max-w-[250px]'
+          'max-w-[200px] truncate whitespace-nowrap rounded-full bg-gray-400 py-0.5 px-2 text-xs font-light text-white sm:max-w-[250px]'
         )}
       >
         {groupToDisplay.name}
@@ -315,10 +247,9 @@ export function GroupDisplay(props: { groupToDisplay: GroupLink }) {
 function EditableCloseDate(props: {
   closeTime: number
   contract: Contract
-  isCreator: boolean
-  disabled?: boolean
+  editable: boolean
 }) {
-  const { closeTime, contract, isCreator, disabled } = props
+  const { closeTime, contract, editable } = props
 
   const isClient = useIsClient()
   const dayJsCloseTime = dayjs(closeTime)
@@ -355,7 +286,7 @@ function EditableCloseDate(props: {
       editor.commands.focus('end')
       insertContent(
         editor,
-        `<br><p>Close date updated to ${formattedCloseDate}</p>`
+        `<p></p><p>Close date updated to ${formattedCloseDate}</p>`
       )
 
       updateContract(contract.id, {
@@ -375,9 +306,9 @@ function EditableCloseDate(props: {
         setOpen={setIsEditingCloseTime}
         position="top"
       >
-        <Col className="rounded bg-white px-8 pb-8">
-          <Subtitle text="Change when this market closes" />
-          <Row className="mt-4 flex-wrap items-center justify-center gap-2">
+        <Col className="items-center rounded bg-white p-8">
+          <Title className="!text-2xl">Change when this market closes</Title>
+          <Row className="flex-wrap items-center justify-center gap-2">
             <Input
               type="date"
               className="w-full shrink-0 sm:w-fit"
@@ -400,47 +331,43 @@ function EditableCloseDate(props: {
           </Row>
 
           {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
-            <Row className={'justify-center'}>
-              <Button
-                className="mt-8"
-                size={'sm'}
-                color="gray-white"
-                onClick={() => onSave(Date.now())}
-              >
-                (Or, close this market now)
-              </Button>
-            </Row>
+            <Button
+              className="mt-8"
+              size={'sm'}
+              color="gray-white"
+              onClick={() => onSave(Date.now())}
+            >
+              (Or, close this market now)
+            </Button>
           )}
         </Col>
       </Modal>
 
       <Row
-        className={clsx(
-          'items-center gap-1 text-gray-500',
-          !disabled && isCreator ? 'cursor-pointer' : ''
-        )}
-        onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
+        className={clsx('items-center gap-1', editable ? 'cursor-pointer' : '')}
+        onClick={() => editable && setIsEditingCloseTime(true)}
       >
         <DateTimeTooltip
-          text={
-            isClient && closeTime <= Date.now()
-              ? 'Trading ended:'
-              : 'Trading ends:'
-          }
+          text={closeTime <= Date.now() ? 'Trading ended:' : 'Trading ends:'}
           time={closeTime}
           placement="bottom-start"
           noTap
         >
-          <span>{dayjs().isBefore(closeTime) ? 'closes' : 'closed'} </span>
-          {isSameDay && isClient ? (
-            <span className={'capitalize'}> {fromNow(closeTime)}</span>
+          <span suppressHydrationWarning>
+            {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
+          </span>
+          {isSameDay ? (
+            <span className={'capitalize'} suppressHydrationWarning>
+              {' '}
+              {fromNow(closeTime)}
+            </span>
           ) : isSameYear ? (
             dayJsCloseTime.format('MMM D')
           ) : (
             dayJsCloseTime.format('MMM D, YYYY')
           )}
         </DateTimeTooltip>
-        {isCreator && !disabled && <PencilIcon className="h-4 w-4" />}
+        {editable && <PencilIcon className="h-4 w-4" />}
       </Row>
     </>
   )

@@ -3,27 +3,38 @@ import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getSourceUrl, Notification } from 'common/notification'
 import {
   handlePushNotificationPermissionStatus,
+  markNotificationAsSeen,
   setPushToken,
 } from 'web/lib/firebase/notifications'
 import { useRouter } from 'next/router'
-import { getIsNative, setIsNative } from 'web/lib/native/is-native'
+import {
+  getIsNative,
+  setInstalledAppPlatform,
+  setIsNative,
+} from 'web/lib/native/is-native'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { webToNativeMessageType } from 'common/native-message'
 import { useEffect } from 'react'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { useEvent } from 'web/hooks/use-event'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
+  const privateUser = usePrivateUser()
 
   useEffect(() => {
     const { nativePlatform } = router.query
     if (nativePlatform !== undefined) {
-      setIsNative(true, nativePlatform as string)
+      const platform = nativePlatform as string
+      setIsNative(true, platform)
+      if (privateUser) setInstalledAppPlatform(privateUser, platform)
     }
-  }, [router.query])
+  }, [privateUser, router.query])
 
-  const handleNativeMessage = async (type: string, data: any) => {
+  const handleNativeMessage = useEvent(async (type: string, data: any) => {
     if (type === 'setIsNative') {
       setIsNative(true, data.platform)
+      if (privateUser) setInstalledAppPlatform(privateUser, data.platform)
     } else if (type === 'nativeFbUser') {
       await setFirebaseUserViaJson(data, app, true)
     } else if (type === 'pushNotificationPermissionStatus') {
@@ -34,6 +45,7 @@ export const NativeMessageListener = () => {
       await setPushToken(userId, token)
     } else if (type === 'notification') {
       const notification = data as Notification
+      if (privateUser) markNotificationAsSeen(privateUser.id, notification.id)
       const sourceUrl = getSourceUrl(notification)
       console.log('sourceUrl', sourceUrl)
       try {
@@ -51,7 +63,8 @@ export const NativeMessageListener = () => {
         console.log(`Error navigating to link route ${newRoute}`, e)
       }
     }
-  }
+  })
+
   useNativeMessages(
     [
       'setIsNative',

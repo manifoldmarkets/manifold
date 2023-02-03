@@ -14,9 +14,9 @@ export const useSaveReferral = (
   const router = useRouter()
 
   useEffect(() => {
-    const { referrer } = router.query as {
-      referrer?: string
-    }
+    const referrer = router.query.r
+      ? atob(router.query.r as string)
+      : (router.query.referrer as string)
 
     const referrerOrDefault = referrer || options?.defaultReferrerUsername
 

@@ -1,5 +1,5 @@
 import { db } from './db'
-import { run } from 'common/supabase/utils'
+import { run, selectFrom } from 'common/supabase/utils'
 import { Group } from 'common/group'
 export type SearchGroupInfo = Pick<
   Group,
@@ -14,18 +14,23 @@ export type SearchGroupInfo = Pick<
 
 // functions called for multiple groups
 export async function searchGroups(prompt: string, limit: number) {
-  const query = db
-    .from('groups')
-    .select(
-      'id, data->name, data->about, data->slug, data->totalMembers, data->totalContracts, data->anyoneCanJoin'
-    )
+  const query = selectFrom(
+    db,
+    'groups',
+    'id',
+    'name',
+    'about',
+    'slug',
+    'totalMembers',
+    'totalContracts',
+    'anyoneCanJoin'
+  )
     .order('data->totalMembers', { ascending: false } as any)
     .limit(limit)
   if (prompt)
     query.or(`data->>name.ilike.%${prompt}%,data->>about.ilike.%${prompt}%`)
 
-  const { data } = await run(query)
-  return data as SearchGroupInfo[]
+  return (await run(query)).data
 }
 
 export async function getMemberGroups(userId: string) {
@@ -33,26 +38,32 @@ export async function getMemberGroups(userId: string) {
     db.from('group_members').select('group_id').eq('member_id', userId)
   )
 
-  const { data: groups } = await run(
-    db
-      .from('groups')
-      .select(
-        'id, data->name, data->about, data->slug, data->totalMembers, data->totalContracts, data->anyoneCanJoin'
-      )
-      .in(
-        'id',
-        groupIds.map((d: { group_id: string }) => d.group_id)
-      )
+  const query = selectFrom(
+    db,
+    'groups',
+    'id',
+    'name',
+    'about',
+    'slug',
+    'totalMembers',
+    'totalContracts',
+    'anyoneCanJoin'
+  ).in(
+    'id',
+    groupIds.map((d: { group_id: string }) => d.group_id)
   )
 
-  return groups as SearchGroupInfo[]
+  return (await run(query)).data
 }
 
 export async function getMemberGroupsCount(userId: string) {
-  const { data } = await run(
-    db.from('group_members').select('count').eq('member_id', userId)
+  const { count } = await run(
+    db
+      .from('group_members')
+      .select('*', { head: true, count: 'exact' })
+      .eq('member_id', userId)
   )
-  return data[0].count as number
+  return count
 }
 
 // gets all groups where the user is an admin or moderator

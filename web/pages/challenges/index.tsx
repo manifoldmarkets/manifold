@@ -69,7 +69,7 @@ export default function ChallengesListPage() {
 
       <Col className="w-full px-8">
         <Row className="items-center justify-between">
-          <Title text="Challenges" />
+          <Title children="Challenges" />
         </Row>
         <p className="italic">
           We no longer support challenges but you can still view old challenges

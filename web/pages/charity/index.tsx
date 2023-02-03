@@ -135,7 +135,7 @@ export default function Charity(props: {
       />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
-          <Title className="!mt-0" text="Manifold for Charity" />
+          <Title>Manifold for Charity</Title>
           <span className="text-gray-600">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations.{' '}

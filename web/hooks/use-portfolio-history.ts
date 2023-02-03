@@ -1,14 +1,16 @@
 import { useQueryClient } from 'react-query'
-import { DAY_MS, HOUR_MS, MINUTE_MS, sleep } from 'common/util/time'
+import { MINUTE_MS, sleep } from 'common/util/time'
 import { Period } from 'web/lib/firebase/users'
-import { getPortfolioHistory } from 'web/lib/supabase/portfolio-history'
-import { useEffect, useState } from 'react'
-import { PortfolioMetrics } from 'common/user'
-
-const getCutoff = (period: Period) => {
-  const nowRounded = Math.round(Date.now() / HOUR_MS) * HOUR_MS
-  return periodToCutoff(nowRounded, period).valueOf()
-}
+import {
+  getPortfolioHistory,
+  PortfolioSnapshot,
+} from 'web/lib/supabase/portfolio-history'
+import { useEffect } from 'react'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { getCutoff } from 'web/lib/util/time'
 
 export const usePrefetchPortfolioHistory = (userId: string, period: Period) => {
   const queryClient = useQueryClient()
@@ -22,26 +24,25 @@ export const usePrefetchPortfolioHistory = (userId: string, period: Period) => {
 
 export const usePortfolioHistory = (userId: string, period: Period) => {
   const cutoff = getCutoff(period)
-  const [portfolioHistory, setPortfolioHistory] = useState<
-    PortfolioMetrics[] | undefined
-  >()
-  useEffect(() => {
-    setPortfolioHistory(undefined)
-    getPortfolioHistory(userId, cutoff).then(setPortfolioHistory)
-  }, [userId, cutoff])
-  return portfolioHistory
-}
+  const [portfolioHistories, setPortfolioHistories] = usePersistentState<
+    Record<string, PortfolioSnapshot[] | undefined>
+  >(
+    {},
+    {
+      store: inMemoryStore(),
+      key: `user-portfolio-history-${userId}`,
+    }
+  )
 
-const periodToCutoff = (now: number, period: Period) => {
-  switch (period) {
-    case 'daily':
-      return now - 1 * DAY_MS
-    case 'weekly':
-      return now - 7 * DAY_MS
-    case 'monthly':
-      return now - 30 * DAY_MS
-    case 'allTime':
-    default:
-      return new Date(0)
-  }
+  useEffect(() => {
+    // We could remove this next line or set a lastUpdatedTime in order to re-fetch new data.
+    if (portfolioHistories[cutoff]) return
+    getPortfolioHistory(userId, cutoff).then((portfolioHistory) => {
+      setPortfolioHistories((prev) => ({
+        ...prev,
+        [cutoff]: portfolioHistory,
+      }))
+    })
+  }, [userId, cutoff, setPortfolioHistories, portfolioHistories])
+  return portfolioHistories[cutoff]
 }

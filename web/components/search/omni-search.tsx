@@ -1,19 +1,18 @@
 import { Combobox } from '@headlessui/react'
-import { UsersIcon } from '@heroicons/react/solid'
+import { SearchIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { User } from 'common/user'
 import { useRouter } from 'next/router'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
-import { SearchGroupInfo } from 'web/lib/supabase/groups'
+import { searchContracts } from 'web/lib/service/algolia'
+import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
-import { useMarketSearchResults } from './query-contracts'
-import { useGroupSearchResults } from './query-groups'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { defaultPages, PageData, searchPages } from './query-pages'
-import { useUserSearchResults } from './query-users'
 import { useSearchContext } from './search-context'
 
 export interface Option {
@@ -39,11 +38,14 @@ export const OmniSearch = (props: {
         setOpen?.(false)
         router.push(slug)
       }}
-      className={clsx('flex flex-col bg-white', className)}
+      className={clsx('relative flex flex-col bg-white', className)}
     >
       <Combobox.Input
         autoFocus
         value={query}
+        onKeyDown={(e: any) => {
+          if (e.key === 'Escape') setOpen?.(false)
+        }}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search markets, users, & groups"
         className={clsx(
@@ -69,15 +71,16 @@ const DefaultResults = () => {
       <PageResults pages={defaultPages} />
       <MarketResults markets={markets} />
       <div className="mx-2 my-2 text-xs">
-        <span className="uppercase text-teal-500">💹 Protip:</span> Start
-        searches with <Key>%</Key> <Key>@</Key> <Key>#</Key> to narrow results
+        <span className="uppercase text-teal-500">💹 Protip:</span> Start search
+        with <Key>%</Key> for markets, <Key>@</Key> for users, or <Key>#</Key>{' '}
+        for groups
       </div>
     </>
   )
 }
 
 const Key = (props: { children: ReactNode }) => (
-  <code className="rounded bg-gray-300 p-0.5">{props.children}</code>
+  <code className="mx-0.5 rounded bg-gray-300 p-0.5">{props.children}</code>
 )
 
 const Results = (props: { query: string }) => {
@@ -89,21 +92,62 @@ const Results = (props: { query: string }) => {
   const userHitLimit = !prefix ? 2 : prefix === '@' ? 25 : 0
   const groupHitLimit = !prefix ? 2 : prefix === '#' ? 25 : 0
   const marketHitLimit = !prefix ? 20 : prefix === '%' ? 25 : 0
-  const userHits = useUserSearchResults(search, userHitLimit)
-  const groupHits = useGroupSearchResults(search, groupHitLimit)
-  const marketHits = useMarketSearchResults(search, marketHitLimit)
 
-  const pageHits = prefix ? [] : searchPages(query, 2)
+  const [{ pageHits, userHits, groupHits, marketHits }, setSearchResults] =
+    useState({
+      pageHits: [] as PageData[],
+      userHits: [] as UserSearchResult[],
+      groupHits: [] as SearchGroupInfo[],
+      marketHits: [] as Contract[],
+    })
+  const [loading, setLoading] = useState(false)
+
+  // Use nonce to make sure only latest result gets used.
+  const nonce = useRef(0)
+
+  useEffect(() => {
+    nonce.current++
+    const thisNonce = nonce.current
+    setLoading(true)
+
+    Promise.all([
+      searchUsers(search, userHitLimit),
+      searchGroups(search, groupHitLimit),
+      searchContracts(search, marketHitLimit),
+    ]).then(([userHits, groupHits, marketHits]) => {
+      if (thisNonce === nonce.current) {
+        const pageHits = prefix ? [] : searchPages(search, 2)
+        setSearchResults({ pageHits, userHits, groupHits, marketHits })
+        setLoading(false)
+      }
+    })
+  }, [search, groupHitLimit, marketHitLimit, userHitLimit, prefix])
+
+  if (loading) {
+    return (
+      <LoadingIndicator
+        className="absolute right-6 bottom-1/2 translate-y-1/2"
+        spinnerClassName="!border-gray-300 !border-r-transparent"
+      />
+    )
+  }
+
+  if (
+    !pageHits.length &&
+    !userHits.length &&
+    !groupHits.length &&
+    !marketHits.length
+  ) {
+    return <div className="my-6 text-center">no results x.x</div>
+  }
 
   return (
     <>
+      {marketHits.length > 0 && <MoreMarketResults search={search} />}
       <PageResults pages={pageHits} />
       <UserResults users={userHits} />
       <GroupResults groups={groupHits} />
       <MarketResults markets={marketHits} />
-      {marketHits.length > 0 && marketHits.length === marketHitLimit && (
-        <MoreMarketResults search={search} />
-      )}
     </>
   )
 }
@@ -160,7 +204,7 @@ const MarketResults = (props: { markets: Contract[] }) => {
   )
 }
 
-const UserResults = (props: { users: User[] }) => {
+const UserResults = (props: { users: UserSearchResult[] }) => {
   if (!props.users.length) return null
   return (
     <>
@@ -220,10 +264,14 @@ const MoreMarketResults = (props: { search: string }) => {
     <ResultOption
       value={{
         id: 'more',
-        slug: `/search?q=${encodeURIComponent(props.search)}`,
+        slug: `/search?s=relevance&f=all&q=${encodeURIComponent(props.search)}`,
       }}
     >
-      <span className="italic">See more markets for "{props.search}"</span>
+      <div className="flex items-center text-sm">
+        <SearchIcon className="mr-3 h-5 w-5" />
+        Browse all markets for
+        <span className="ml-1 italic">"{props.search}"</span>
+      </div>
     </ResultOption>
   )
 }

@@ -27,12 +27,11 @@ import { Contract } from 'common/contract'
 import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import Link from 'next/link'
-import { ChartBarIcon, ExclamationCircleIcon } from '@heroicons/react/solid'
+import { ChartBarIcon } from '@heroicons/react/solid'
 import TestimonialsPanel from './testimonials-panel'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
-import { formatMoney } from 'common/util/format'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   return {
@@ -90,22 +89,24 @@ export default function Home() {
       <Col className="mx-auto mb-8 max-w-3xl gap-4 px-4">
         <LandingPagePanel />
         <Row className="w-full gap-2 sm:gap-4">
-          <ExternalInfoCard
-            link="https://help.manifold.markets/"
-            icon={<div className="text-2xl">?</div>}
-            text="About & Help"
-          />
-          <InfoCard
-            link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
-            icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
-            text="What is Mana?"
-            modal={<ManaExplainer />}
-          />
           <InfoCard
             link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
             icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
-            text="What is a Prediction Market?"
+            text="What is a prediction market?"
             modal={<PredictionMarketExplainer />}
+          />
+
+          <InfoCard
+            link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
+            icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
+            text="What is mana?"
+            modal={<ManaExplainer />}
+          />
+
+          <ExternalInfoCard
+            link="https://help.manifold.markets/"
+            icon={<div className="text-2xl">?</div>}
+            text="Learn more"
           />
         </Row>
         {isLoading ? (
@@ -179,7 +180,7 @@ export function InfoCard(props: {
     <>
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="rounded-md bg-white px-8 pb-6 pt-0 text-sm font-light md:text-lg">
-          <Title text={text} />
+          <Title children={text} />
           {modal}
           <Link
             href={link}
@@ -220,25 +221,15 @@ export function ManaExplainer() {
         className="mx-auto mb-8 w-[60%] object-contain"
         src={'/welcome/treasure.png'}
       />
-      <p>
-        <span className="font-normal text-indigo-700">
+      <div>
+        <span className="mt-4 font-normal text-indigo-700">
           Mana ({ENV_CONFIG.moneyMoniker})
         </span>{' '}
-        is the play money you bet with. You can also turn it into a real
-        donation to charity, at a 100:1 ratio.
-      </p>
-      <Row className="mt-4 gap-2 rounded border border-gray-200 bg-gray-50 py-2 pl-2 pr-4 text-sm text-indigo-700">
-        <ExclamationCircleIcon className="h-5 w-5" />
-        Mana can not be traded in for real money.
-      </Row>
-      <div className="mt-4 font-semibold text-gray-400">EXAMPLE</div>
-      <div className="mb-4 border-l-2 border-indigo-700 bg-indigo-50 py-2 px-2">
-        <p>
-          When you donate{' '}
-          <span className="font-semibold">{formatMoney(1000)}</span> to
-          Givewell, Manifold sends them{' '}
-          <span className="font-semibold">$10 USD</span>.
-        </p>
+        is Manifold's play money. Use it to create and bet in markets. The more
+        mana you have, the more you can bet and move the market.
+      </div>
+      <div className="mt-4">
+        Mana <strong>can't be converted to real money</strong>.
       </div>
     </>
   )

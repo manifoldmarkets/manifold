@@ -16,7 +16,7 @@ export default function Explore() {
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-12 xl:w-[115%]">
         <Row className={'w-full items-center justify-between'}>
-          <Title className="!mb-0" text="Trending groups" />
+          <Title className="!mb-0" children="Trending groups" />
         </Row>
 
         <Masonry

@@ -127,7 +127,7 @@ export default function Leaderboards(props: {
 
     return (
       <>
-        <Col className="mx-4 items-center gap-10 lg:flex-row lg:items-start">
+        <Col className="items-center gap-10 lg:flex-row lg:items-start">
           <Leaderboard
             title={`🏅 Top ${BETTORS}`}
             entries={topTraderEntries}
@@ -182,33 +182,35 @@ export default function Leaderboards(props: {
         description={`Manifold's leaderboards show the top ${BETTORS} and market creators.`}
         url="/leaderboards"
       />
-      <Title className={'hidden md:block'}>
-        Leaderboards <InfoTooltip text="Updated every 15 minutes" />
-      </Title>
+      <Col className="mb-4 p-2">
+        <Title className={'hidden md:block'}>
+          Leaderboards <InfoTooltip text="Updated every 15 minutes" />
+        </Title>
 
-      <Tabs
-        className="mb-4"
-        currentPageForAnalytics={'leaderboards'}
-        defaultIndex={1}
-        tabs={[
-          {
-            title: 'Daily',
-            content: LeaderboardWithPeriod('daily', myRanks?.['daily']),
-          },
-          {
-            title: 'Weekly',
-            content: LeaderboardWithPeriod('weekly', myRanks?.['weekly']),
-          },
-          {
-            title: 'Monthly',
-            content: LeaderboardWithPeriod('monthly', myRanks?.['monthly']),
-          },
-          {
-            title: 'All Time',
-            content: LeaderboardWithPeriod('allTime', myRanks?.['allTime']),
-          },
-        ]}
-      />
+        <Tabs
+          className="mb-4"
+          currentPageForAnalytics={'leaderboards'}
+          defaultIndex={1}
+          tabs={[
+            {
+              title: 'Daily',
+              content: LeaderboardWithPeriod('daily', myRanks?.['daily']),
+            },
+            {
+              title: 'Weekly',
+              content: LeaderboardWithPeriod('weekly', myRanks?.['weekly']),
+            },
+            {
+              title: 'Monthly',
+              content: LeaderboardWithPeriod('monthly', myRanks?.['monthly']),
+            },
+            {
+              title: 'All Time',
+              content: LeaderboardWithPeriod('allTime', myRanks?.['allTime']),
+            },
+          ]}
+        />
+      </Col>
     </Page>
   )
 }

@@ -69,7 +69,10 @@ export function ConfirmationButton(props: {
                       onSubmitWithSuccess().then((success) =>
                         updateOpen(!success)
                       )
-                  : onSubmit
+                  : async () => {
+                      await onSubmit?.()
+                      updateOpen(false)
+                    }
               }
               loading={submitBtn?.isSubmitting}
             >

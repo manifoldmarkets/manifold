@@ -72,6 +72,25 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     We believe that humanity’s success in the next few hundred years will lie intensely on its ability to coordinate and make good decisions. If important governmental and philanthropic bodies become significantly more effective, this will make society far more resilient to many kinds of challenges ahead.`,
   },
   {
+    name: 'Topos Institute',
+    website: 'https://topos.institute/',
+    preview:
+      'We shape technology for public benefit by advancing sciences of connection and integration. Our goal is a world where the systems that surround us benefit us all.',
+    photo: 'https://i.imgur.com/lzZxvHt.jpg',
+    description: `Our lives have been transformed by global networks of trade, travel, and communication. Driven by new technologies, these networks enrich our lives, but also lead to new threats, including surveillance, polarization, and pandemics. 
+
+At Topos, we pioneer emerging mathematical sciences of connection and integration to steer humanity towards a better future.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Haskell Foundation',
+    website: 'https://haskell.foundation/',
+    preview: 'Amplify Haskell’s impact on humanity.',
+    photo: 'https://i.imgur.com/6akJg2p.png',
+    description: `An independent, non-profit organization dedicated to broadening the adoption of Haskell, by supporting its ecosystem of tools, libraries, education, and research.`,
+    tags: ['New'] as const,
+  },
+  {
     name: 'Long-Term Future Fund',
     website: 'https://funds.effectivealtruism.org/funds/far-future',
     photo: 'https://i.imgur.com/C2qka9g.png',
@@ -768,7 +787,6 @@ Nonprofit entrepreneurship is also a highly neglected career opportunity that, f
     preview:
       "NAACP's Legal Defense Fund is the premier legal organization fighting for racial justice.",
     description: `The Legal Defense Fund (LDF) is America’s premier legal organization fighting for racial justice. Using the power of law, narrative, research, and people, we defend and advance the full dignity and citizenship of Black people in America.`,
-    tags: ['New'] as const,
   },
   {
     name: 'EWG',
@@ -777,7 +795,6 @@ Nonprofit entrepreneurship is also a highly neglected career opportunity that, f
     preview:
       'EWG empowers you with breakthrough research to make informed choices and live a healthy life in a healthy environment.',
     description: `Since 1993, the Environmental Working Group has shined a spotlight on outdated legislation, harmful agricultural practices and industry loopholes that pose a risk to our health and the health of our environment.`,
-    tags: ['New'] as const,
   },
   {
     name: 'AI Impacts',
@@ -801,7 +818,6 @@ Today, public discussion on these issues appears to be highly fragmented and of 
 
 The goal of the project is to clearly present and organize the considerations which inform contemporary views on these and related issues, to identify and explore disagreements, and to assemble whatever empirical evidence is relevant.    
 `,
-    tags: ['New'] as const,
   },
   {
     name: 'MSI Reproductive Choices',
@@ -817,7 +833,6 @@ Around the world, 32.6 million people are using a method of contraception provid
 The organization's core services include family planning; safe abortion and post-abortion care; maternal and child health care, including safe delivery and obstetrics; diagnosis and treatment of sexually transmitted infections; and HIV/AIDS prevention.
 
 The organization reports for the year 2021 to have prevented 14.1 million unintended pregnancies, averted 6.6 million unsafe abortions, and saved 39,000 women's lives.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Fish Welfare Initiative',
@@ -830,6 +845,46 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
     Following their initial research, their team now partners with NGOs to help farmers introduce higher welfare farming methods in the second-highest fish producing country in the world, India.
     
     As of December 30 2022, they have potentially helped 1.14 and 1.4 million fish and shrimp respectively, with every $1 potentially helping 1.3 fish and every $100 13 fish.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Cavendish Labs',
+    website: 'https://cavendishlabs.org/',
+    photo: 'https://i.imgur.com/UM0It6p.png',
+    preview: `Cavendish Labs is a longtermist research institute focused on AI alignment and pandemic prevention.`,
+    description: `Cavendish Labs is a research institute based in Cavendish, Vermont focused on AI alignment and pandemic prevention. Our main research areas are the following:
+
+1. Alignment. How do we make sure that AI does what we want? We’ve spent some time thinking about ELK and inverse scaling; however, we think that AGI will most likely be achieved through some sort of model-based RL framework, so that is our current focus. For instance, we know how to induce provable guarantees of behaviour in supervised learning; could we do something similar in RL?
+2. Pandemic prevention. A lot of people have heard of the Far-UVC light idea; however, understanding why it works, and whether it works safely, is useful for developing other broad-spectrum viral prevention tools, as well as preventing the engineering of UV-resistant viruses.
+3. Diagnostic development. We're interested in designing a low-cost and simple-to-use platform for LAMP reactions so that generalized diagnostic capabilities are more widespread. We envision a world where it is both cheap and easy to run a panel of tests so one can swiftly determine the exact virus behind an infection.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Internet Archive',
+    website: 'https://archive.org/',
+    photo: 'https://i.imgur.com/fhsp9QV.jpeg',
+    preview: 'Providing Universal Access to All Knowledge',
+    description: `The Internet Archive, a 501(c)(3) non-profit, is building a digital library of Internet sites and other cultural artifacts in digital form. Like a paper library, we provide free access to researchers, historians, scholars, people with print disabilities, and the general public. Our mission is to provide Universal Access to All Knowledge.
+
+We began in 1996 by archiving the Internet itself, a medium that was just beginning to grow in use. Like newspapers, the content published on the web was ephemeral - but unlike newspapers, no one was saving it. Today we have 26+ years of web history accessible through the Wayback Machine and we work with 1,000+ library and other partners through our Archive-It program to identify important web pages.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'Camfed',
+    website: 'https://camfed.org/us/',
+    photo: 'https://i.imgur.com/7b2aiRL.jpg',
+    preview: `Camfed supports girls to learn, thrive and lead change.`,
+    description: `Camfed (also known as the Campaign for Female Education) was founded in 1993 and operates in Zimbabwe, Zambia, Ghana, Tanzania and Malawi with the goal of educating women. 
+    Education is a very important resourse that is unfortunately not always made available, especially to women. Allowing someone to get an education allows them to do great things.`,
+    tags: ['New'] as const,
+  },
+  {
+    name: 'The Fred Hollows Foundation',
+    website: 'https://www.hollows.org/au/',
+    photo: 'https://i.imgur.com/GGzXksd.png',
+    preview: `Fred Hollows Foundation focuses on preventable and treatable diseases such as cataract, trachoma and diabetic retinopathy`,
+    description: `The Fred Hollows Foundation has a very clear goal: we’re putting an end to avoidable blindness. 
+    When this day comes, people in developing countries will get the same quality eye care the rest of the world takes for granted – and we won’t stop until this is done.`,
     tags: ['New'] as const,
   },
 ].map((charity) => {

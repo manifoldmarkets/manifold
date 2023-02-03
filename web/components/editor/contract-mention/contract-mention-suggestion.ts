@@ -2,7 +2,7 @@ import type { MentionOptions } from '@tiptap/extension-mention'
 import { PluginKey } from 'prosemirror-state'
 import { searchClient, searchIndexName } from 'web/lib/service/algolia'
 import { MentionList } from './contract-mention-list'
-import { makeMentionRender } from './mention-suggestion'
+import { makeMentionRender } from '../user-mention/mention-suggestion'
 
 type Suggestion = MentionOptions['suggestion']
 

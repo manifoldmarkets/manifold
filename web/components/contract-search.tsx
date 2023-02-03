@@ -1,10 +1,17 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { SearchOptions } from '@algolia/client-search'
 import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
-import { useEffect, useRef, useMemo, ReactNode } from 'react'
+import {
+  useEffect,
+  useRef,
+  useMemo,
+  ReactNode,
+  useState,
+  createContext,
+  useContext,
+} from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   historyStore,
@@ -28,6 +35,8 @@ import { Select } from './widgets/select'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 import { groupRoleType } from './groups/group-member-modal'
 import { Group } from 'common/group'
+import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
+import { ContractsList } from './contract/contracts-list'
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },
@@ -38,7 +47,7 @@ export const SORTS = [
   { label: 'Total traders', value: 'most-popular' },
   { label: 'Liquidity', value: 'liquidity' },
   { label: 'Last activity', value: 'last-updated' },
-  { label: 'Closing soon', value: 'close-date' },
+  { label: 'Close date', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
   { label: 'Highest %', value: 'prob-descending' },
   { label: 'Lowest %', value: 'prob-ascending' },
@@ -64,6 +73,10 @@ export type AdditionalFilter = {
   facetFilters?: string[]
   nonQueryFacetFilters?: string[]
 }
+const AsListContext = createContext({
+  asList: false,
+  setAsList: (_asList: boolean) => {},
+})
 
 export function ContractSearch(props: {
   defaultSort?: Sort
@@ -124,6 +137,7 @@ export function ContractSearch(props: {
   const searchParams = useRef<SearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SearchParameters>()
   const requestId = useRef(0)
+  const [asList, setAsList] = useState(true)
 
   useSafeLayoutEffect(() => {
     if (persistPrefix) {
@@ -151,12 +165,10 @@ export function ContractSearch(props: {
         sort === 'relevance'
           ? searchIndex
           : searchClient.initIndex(getIndexName(sort))
-      const numericFilters = query
-        ? []
-        : [
-            openClosedFilter === 'open' ? `closeTime > ${Date.now()}` : '',
-            openClosedFilter === 'closed' ? `closeTime <= ${Date.now()}` : '',
-          ].filter((f) => f)
+      const numericFilters = [
+        openClosedFilter === 'open' ? `closeTime > ${Date.now()}` : '',
+        openClosedFilter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+      ].filter((f) => f)
       const results = await index.search(query, {
         facetFilters,
         numericFilters,
@@ -205,6 +217,7 @@ export function ContractSearch(props: {
   }
 
   return (
+ <AsListContext.Provider value={{ asList, setAsList }}>
     <Col>
       <ContractSearchControls
         className={headerClassName}
@@ -231,9 +244,10 @@ export function ContractSearch(props: {
           cardUIOptions={cardUIOptions}
           loadMore={performQuery}
           fromGroupProps={fromGroupProps}
-        />
-      )}
-    </Col>
+          />
+        )}
+      </Col>
+    </AsListContext.Provider>
   )
 }
 
@@ -252,7 +266,7 @@ function ContractSearchControls(props: {
   const {
     className,
     defaultSort = 'relevance',
-    defaultFilter = 'all',
+    defaultFilter = 'open',
     additionalFilter,
     persistPrefix,
     hideOrderSelector,
@@ -311,19 +325,17 @@ function ContractSearchControls(props: {
       : '',
     ...(additionalFilter?.facetFilters ?? []),
   ]
-  const facetFilters = query
-    ? additionalFilters
-    : [
-        ...additionalFilters,
-        ...(additionalFilter?.nonQueryFacetFilters ?? []),
-        additionalFilter?.creatorId || additionalFilter?.groupSlug
-          ? ''
-          : 'visibility:public',
+  const facetFilters = [
+    ...additionalFilters,
+    ...(!query ? additionalFilter?.nonQueryFacetFilters ?? [] : []),
+    additionalFilter?.creatorId || additionalFilter?.groupSlug
+      ? ''
+      : 'visibility:public',
 
-        filter === 'open' ? 'isResolved:false' : '',
-        filter === 'closed' ? 'isResolved:false' : '',
-        filter === 'resolved' ? 'isResolved:true' : '',
-      ].filter((f) => f)
+    filter === 'open' ? 'isResolved:false' : '',
+    filter === 'closed' ? 'isResolved:false' : '',
+    filter === 'resolved' ? 'isResolved:true' : '',
+  ].filter((f) => f)
 
   const openClosedFilter =
     filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
@@ -392,6 +404,8 @@ function SearchFilters(props: {
   className?: string
   includeProbSorts?: boolean
 }) {
+  const { asList, setAsList } = useContext(AsListContext)
+
   const {
     filter,
     selectFilter,
@@ -411,7 +425,7 @@ function SearchFilters(props: {
       <Select
         value={filter}
         onChange={(e) => selectFilter(e.target.value as filter)}
-        className="!h-full grow py-1"
+        className={clsx('!h-full grow py-1')}
       >
         <option value="open">Open</option>
         <option value="closed">Closed</option>
@@ -431,6 +445,18 @@ function SearchFilters(props: {
           ))}
         </Select>
       )}
+
+      <button
+        type="button"
+        onClick={() => setAsList(!asList)}
+        className="relative inline-flex h-full items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
+      >
+        {asList ? (
+          <ViewGridIcon className="h-5 w-5" aria-hidden="true" />
+        ) : (
+          <ViewListIcon className="h-5 w-5" aria-hidden="true" />
+        )}
+      </button>
     </div>
   )
 }

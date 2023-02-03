@@ -449,7 +449,7 @@ function cardText(contract: Contract, previewProb?: number) {
       return (
         <>
           <span className="my-auto text-sm font-normal">resolved as</span>
-          {getFormattedMappedValue(contract)(resolutionProbability)}
+          {getFormattedMappedValue(contract, resolutionProbability)}
         </>
       )
     }
@@ -465,7 +465,7 @@ function cardText(contract: Contract, previewProb?: number) {
   }
 
   if (previewProb) {
-    return getFormattedMappedValue(contract)(previewProb)
+    return getFormattedMappedValue(contract, previewProb)
   }
 
   switch (outcomeType) {

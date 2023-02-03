@@ -15,9 +15,16 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { partition, uniqBy } from 'lodash'
+import { partition,uniq, uniqBy } from 'lodash'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/firebase/init'
+import { partition, uniq, uniqBy } from 'lodash'
+import {
+  Group,
+  GroupMemberDoc,
+  GroupContractDoc,
+  GroupLink,
+} from 'common/group'
 import {
   coll,
   getValue,
@@ -34,9 +41,6 @@ export const groupContracts = (groupId: string) =>
 const openGroupsQuery = query(groups, where('anyoneCanJoin', '==', true))
 export const memberGroupsQuery = (userId: string) =>
   query(collectionGroup(db, 'groupMembers'), where('userId', '==', userId))
-
-export type GroupContractDoc = { contractId: string; createdTime: number }
-export type GroupMemberDoc = { userId: string; createdTime: number }
 
 export function updateGroup(group: Group, updates: Partial<Group>) {
   return updateDoc(doc(groups, group.id), updates)

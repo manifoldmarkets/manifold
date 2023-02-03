@@ -76,12 +76,12 @@ export const BOT_USERNAMES = [
   '538',
   'FairlyRandom',
   'Anatolii',
-  'Catnee',
   'JeremyK',
   'Botmageddon',
   'SmartBot',
   'ShifraGazsi',
   'Bot',
+  'Catnee',
 ]
 
 export const CORE_USERNAMES = [
@@ -107,7 +107,7 @@ export const CHECK_USERNAMES = [
   'Yev',
   'ZviMowshowitz',
   'NathanpmYoung',
-  'kolotom99',
+  'itsTomekK',
   'SneakySly',
   'IsaacKing',
   'MattP',
@@ -127,6 +127,9 @@ export const CHECK_USERNAMES = [
   'a',
   'NuñoSempere',
   'CarsonGale',
+  'Tetraspace',
+  'BoltonBailey',
+  'MatthewBarnett',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -162,3 +165,6 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
   'private-markets',
   'proofniks',
 ]
+
+export const EXTERNAL_REDIRECTS = ['/umami']
+export const NATIVE_BUILD = process.env.NATIVE_BUILD_TYPE ?? 'PREVIEW'

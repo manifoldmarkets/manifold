@@ -5,12 +5,15 @@ import {
   CHECK_USERNAMES,
   CORE_USERNAMES,
 } from 'common/envs/constants'
-import { ShieldCheckIcon } from '@heroicons/react/solid'
+import { ShieldCheckIcon, SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
 import { BadgeCheckIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { Avatar } from './avatar'
+import { DAY_MS } from 'common/util/time'
 
+export const isFresh = (createdTime: number) =>
+  createdTime > Date.now() - DAY_MS * 14
 export function shortenName(name: string) {
   const firstName = name.split(' ')[0]
   const maxLength = 11
@@ -46,14 +49,16 @@ export function UserLink(props: {
   className?: string
   short?: boolean
   noLink?: boolean
+  createdTime?: number
 }) {
-  const { name, username, className, short, noLink } = props
+  const { name, username, className, short, noLink, createdTime } = props
+  const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name) : name
   return (
     <SiteLink
       href={`/${username}`}
       className={clsx(
-        'max-w-[120px] truncate [@media(min-width:450px)]:max-w-[200px]',
+        'max-w-[120px] truncate min-[480px]:max-w-[200px]',
         className,
         noLink && 'pointer-events-none'
       )}
@@ -61,7 +66,7 @@ export function UserLink(props: {
     >
       <div className="inline-flex flex-row items-center gap-1">
         {shortName}
-        <UserBadge username={username} />
+        <UserBadge username={username} fresh={fresh} />
       </div>
     </SiteLink>
   )
@@ -85,8 +90,8 @@ export function PostBanBadge() {
   )
 }
 
-export function UserBadge(props: { username: string }) {
-  const { username } = props
+export function UserBadge(props: { username: string; fresh?: boolean }) {
+  const { username, fresh } = props
   if (BOT_USERNAMES.includes(username)) {
     return <BotBadge />
   }
@@ -95,6 +100,9 @@ export function UserBadge(props: { username: string }) {
   }
   if (CHECK_USERNAMES.includes(username)) {
     return <CheckBadge />
+  }
+  if (fresh) {
+    return <FreshBadge />
   }
   return null
 }
@@ -113,6 +121,15 @@ function CheckBadge() {
   return (
     <Tooltip text="Trustworthy. ish." placement="right">
       <BadgeCheckIcon className="h-4 w-4 text-indigo-700" aria-hidden="true" />
+    </Tooltip>
+  )
+}
+
+// Show a fresh badge next to new users
+function FreshBadge() {
+  return (
+    <Tooltip text="I'm new here!" placement="right">
+      <SparklesIcon className="h-4 w-4 text-green-500" aria-hidden="true" />
     </Tooltip>
   )
 }

@@ -1,6 +1,5 @@
 import { sortBy, sumBy, uniqBy } from 'lodash'
-import clsx from 'clsx'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 import Image from 'next/legacy/image'
 
 import { Col } from 'web/components/layout/col'
@@ -23,6 +22,7 @@ import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
@@ -71,7 +71,7 @@ function CharityPage(props: { charity: Charity }) {
 
       <Col className="mx-1 w-full items-center sm:px-0">
         <Col className="max-w-2xl rounded bg-white px-8 py-6">
-          <Title className="!mt-0" text={name} />
+          <Title children={name} />
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
             {photo && (
@@ -87,47 +87,16 @@ function CharityPage(props: { charity: Charity }) {
             />
           </Row>
           <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
-          <Blurb text={description} />
+          <CollapsibleContent
+            content={description}
+            stateKey={`isCollapsed-charity-${charity.id}`}
+          />
           {newToOld.map((txn) => (
             <Donation key={txn.id} txn={txn} />
           ))}
         </Col>
       </Col>
     </Page>
-  )
-}
-
-function Blurb({ text }: { text: string }) {
-  const [open, setOpen] = useState(false)
-
-  // Calculate whether the full blurb is already shown
-  const ref = useRef<HTMLDivElement>(null)
-  const [hideExpander, setHideExpander] = useState(false)
-  useEffect(() => {
-    if (ref.current) {
-      setHideExpander(ref.current.scrollHeight <= ref.current.clientHeight)
-    }
-  }, [])
-
-  return (
-    <>
-      <div
-        className={clsx(
-          'whitespace-pre-line text-gray-500',
-          !open && 'line-clamp-5'
-        )}
-        ref={ref}
-      >
-        {text}
-      </div>
-      <Button
-        color="indigo"
-        onClick={() => setOpen(!open)}
-        className={clsx('my-3', hideExpander && 'invisible')}
-      >
-        {open ? 'Hide' : 'Read more'}
-      </Button>
-    </>
   )
 }
 
@@ -195,7 +164,7 @@ function DonationBox(props: {
 
   return (
     <div className="rounded-lg bg-white py-6 px-8 shadow-lg">
-      <Title text="Donate" className="!mt-0" />
+      <Title>Donate</Title>
       <form onSubmit={onSubmit}>
         <label
           className="mb-2 block text-sm text-gray-500"

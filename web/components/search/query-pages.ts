@@ -21,6 +21,7 @@ const pages: PageData[] = [
   { label: 'Referrals', slug: '/referrals' },
   { label: 'Live Feed', slug: '/live' },
 
+  { label: 'Markets', slug: '/markets' },
   { label: 'Newest', slug: '/search?s=newest&f=open' },
   { label: 'Trending', slug: '/search?s=score&f=open' },
   { label: 'Daily Changed', slug: '/search?s=daily-score&f=open' },
@@ -31,6 +32,7 @@ const pages: PageData[] = [
     keywords: ['most popular'],
   },
   { label: 'Closing Soon', slug: '/search?s=close-date&f=open' },
+  { label: 'Recently Resolved', slug: '/search?s=resolve-date&f=resolved' },
 ]
 
 export function searchPages(query: string, limit: number) {

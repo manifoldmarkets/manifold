@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
-import { getPrivateUser, getUserByUsername } from './utils'
+import { getPrivateUser, getUserByUsername, isProd } from './utils'
 import { createMarketClosedNotification } from './create-notification'
 import { DAY_MS } from '../../common/util/time'
 
@@ -11,7 +11,9 @@ export const marketCloseNotifications = functions
   .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 1 hours')
   .onRun(async () => {
-    await sendMarketCloseEmails()
+    isProd()
+      ? await sendMarketCloseEmails()
+      : console.log('Not prod, not sending emails')
   })
 
 const firestore = admin.firestore()

@@ -365,7 +365,7 @@ function MarketResolvedNotification(props: {
   } = notification
   const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
   const profit = userPayout - userInvestment
-  const profitable = profit >= 0 && userInvestment > 0
+  const profitable = profit > 0 && userInvestment > 0
   const [opacity, setOpacity] = useState(highlighted && profitable ? 1 : 0)
   const [isVisible, setIsVisible] = useState(false)
   const { ref } = useIsVisible(() => setIsVisible(true), true)
@@ -378,22 +378,19 @@ function MarketResolvedNotification(props: {
   }, [isVisible, opacity])
 
   const subtitle =
-    userInvestment > 0 ? (
-      sourceText === 'CANCEL' ? (
-        <>
-          Your {formatMoney(userInvestment)} invested has been returned to you
-        </>
-      ) : profitable ? (
-        <>
-          Your {formatMoney(userInvestment)} investment won{' '}
-          <span className="text-teal-600">+{formatMoney(profit)}</span> in
-          profit!
-        </>
-      ) : (
-        <>You lost {formatMoney(Math.abs(profit))}</>
-      )
+    sourceText === 'CANCEL' && userInvestment > 0 ? (
+      <>Your {formatMoney(userInvestment)} invested has been returned to you</>
+    ) : sourceText === 'CANCEL' && Math.abs(userPayout) > 0 ? (
+      <>Your {formatMoney(-userPayout)} in profit has been removed</>
+    ) : profitable ? (
+      <>
+        Your {formatMoney(userInvestment)} investment won{' '}
+        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit!
+      </>
+    ) : userInvestment > 0 ? (
+      <>You lost {formatMoney(Math.abs(profit))}</>
     ) : (
-      <></>
+      <div />
     )
 
   const resolutionDescription = () => {
@@ -468,17 +465,18 @@ function MarketResolvedNotification(props: {
       </>
     )
 
-  const confettiBg = highlighted ? (
-    <div
-      ref={ref}
-      className={clsx(
-        ' bg-confetti-animated pointer-events-none absolute inset-0'
-      )}
-      style={{
-        opacity,
-      }}
-    />
-  ) : undefined
+  const confettiBg =
+    highlighted && profitable ? (
+      <div
+        ref={ref}
+        className={clsx(
+          'bg-confetti-animated pointer-events-none absolute inset-0'
+        )}
+        style={{
+          opacity,
+        }}
+      />
+    ) : undefined
 
   return (
     <NotificationFrame

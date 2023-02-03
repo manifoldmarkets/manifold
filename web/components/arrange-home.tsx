@@ -60,7 +60,7 @@ function DraggableList(props: {
           ref={provided.innerRef}
           className={clsx('flex-1 items-stretch gap-1 rounded bg-gray-100 p-4')}
         >
-          <Subtitle text={title} className="mx-2 !mt-0 !mb-4" />
+          <Subtitle children={title} className="mx-2 !mt-0 !mb-4" />
           {items.map((item, index) => (
             <Draggable key={item.id} draggableId={item.id} index={index}>
               {(provided, snapshot) => (

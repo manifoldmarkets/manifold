@@ -123,21 +123,21 @@ export function CancelLabel() {
 }
 
 export function ProbLabel() {
-  return <span className="text-blue-600">PROB</span>
+  return <span className="text-sky-600">PROB</span>
 }
 
 export function MultiLabel() {
-  return <span className="text-blue-600">MANY</span>
+  return <span className="text-sky-600">MANY</span>
 }
 
 export function ProbPercentLabel(props: { prob: number }) {
   const { prob } = props
-  return <span className="text-blue-600">{formatPercent(prob)}</span>
+  return <span className="text-sky-600">{formatPercent(prob)}</span>
 }
 
 export function NumericValueLabel(props: { value: number }) {
   const { value } = props
-  return <span className="text-blue-600">{formatLargeNumber(value)}</span>
+  return <span className="text-sky-600">{formatLargeNumber(value)}</span>
 }
 
 export function AnswerNumberLabel(props: { number: string }) {
@@ -169,9 +169,7 @@ export function AnswerLabel(props: {
 
   return (
     <Tooltip text={truncated === text ? false : text}>
-      <span className={clsx('break-anywhere whitespace-pre-line', className)}>
-        {truncated}
-      </span>
+      <span className={clsx('break-anywhere', className)}>{truncated}</span>
     </Tooltip>
   )
 }

@@ -6,7 +6,7 @@ export const dreamWithDefaultParams = async (input: string) => {
     const API_KEY = process.env.DREAM_KEY
 
     const MODIFIERS =
-      '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
+      '8k, beautiful, illustration, trending on art station, picture of the day, epic composition, without any text in the picture'
     const data = {
       prompt: input + ', ' + MODIFIERS,
       apiKey: API_KEY,

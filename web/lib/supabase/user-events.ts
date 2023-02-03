@@ -1,6 +1,5 @@
-import { run } from 'common/supabase/utils'
+import { run, selectJson } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { UserEvent } from 'common/events'
 
 export async function getUserEvents(
   userId: string,
@@ -8,9 +7,7 @@ export async function getUserEvents(
   afterTime?: number,
   beforeTime?: number
 ) {
-  let q = db
-    .from('user_events')
-    .select('data')
+  let q = selectJson(db, 'user_events')
     .eq('user_id', userId)
     .eq('data->>name', eventName)
 
@@ -20,6 +17,5 @@ export async function getUserEvents(
   if (afterTime) {
     q = q.gt('data->>timestamp', afterTime)
   }
-  const { data } = await run(q)
-  return data as UserEvent[]
+  return (await run(q)).data.map((r) => r.data)
 }

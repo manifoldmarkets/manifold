@@ -41,7 +41,9 @@ export type GroupLink = {
   createdTime: number
   userId?: string
 }
+
 export type GroupContractDoc = { contractId: string; createdTime: number }
+export type GroupMemberDoc = { userId: string; createdTime: number }
 
 const excludedGroups = [
   'features',

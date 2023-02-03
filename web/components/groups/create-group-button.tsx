@@ -134,7 +134,7 @@ export function CreateGroupButton(props: {
       disabled={editor?.storage.upload.mutation.isLoading}
     >
       <Col className="gap-4">
-        <Title className="!my-0" text="Create a group" />
+        <Title className="!my-0" children="Create a group" />
 
         <Col className="text-gray-500">
           <div>You can add markets to your group after creation.</div>

@@ -187,7 +187,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
       <SEO title="Tournaments" description={description} />
       <Col className="m-4 gap-10 sm:mx-10 sm:gap-24 xl:w-[125%]">
         <Col>
-          <Title text="🏆 Manifold tournaments" />
+          <Title children="🏆 Manifold tournaments" />
           <div>{description}</div>
         </Col>
 

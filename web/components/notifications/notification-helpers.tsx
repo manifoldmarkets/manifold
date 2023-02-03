@@ -191,7 +191,7 @@ export function NotificationFrame(props: {
               <div className="-mt-0.5 w-fit md:-mt-1">
                 <RelativeTimestampNoTooltip
                   time={notification.createdTime}
-                  className="-ml-1 text-xs font-light text-gray-900"
+                  className="text-xs font-light text-gray-900"
                 />
               </div>
             )}

@@ -143,7 +143,7 @@ export function AnswerBetPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        showSlider={true}
+        sliderOptions={{ show: true, wrap: false }}
       />
 
       <Col className="mt-8 w-full gap-3">

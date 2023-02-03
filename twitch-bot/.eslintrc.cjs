@@ -13,7 +13,6 @@ module.exports = {
         caughtErrorsIgnorePattern: '^_',
       },
     ],
-    'linebreak-style': ['error', 'unix'],
   },
   env: {
     browser: true,

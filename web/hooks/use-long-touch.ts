@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { usePrevious } from 'web/hooks/use-previous'
 
 /**
  * Function to for dual functionality of button, on touch and on long touch (ms)
@@ -11,30 +12,31 @@ export default function useLongTouch(
   onClick = () => {},
   ms = 500
 ) {
-  const [startLongTouch, setStartLongTouch] = useState(false)
+  // Clicks are for desktop, touch is for mobile
   const [mouseState, setMouseState] = useState<
-    null | 'startPress' | 'endPress' | 'startTouch' | 'endTouch' | 'leaveTouch'
+    null | 'startClick' | 'endClick' | 'startTouch' | 'endTouch' | 'leaveTouch'
   >(null)
+  const previousState = usePrevious(mouseState)
   const [timerId, setTimerId] = useState<
     ReturnType<typeof setTimeout> | undefined
   >(undefined)
 
   useEffect(() => {
-    if (mouseState === 'endPress') {
+    if (previousState === 'leaveTouch') {
+      clearTimeout(timerId)
+      return
+    }
+
+    if (mouseState === 'endClick') {
       onClick()
     } else if (mouseState === 'endTouch') {
       clearTimeout(timerId)
-      if (!startLongTouch) {
-        onClick()
-      }
-      setStartLongTouch(false)
-    } else if (mouseState === 'leaveTouch') {
-      clearTimeout(timerId)
+      if (previousState === 'startTouch') onClick()
     } else if (mouseState === 'startTouch') {
       setTimerId(
         setTimeout(() => {
           onLongTouch()
-          setStartLongTouch(true)
+          setMouseState(null)
         }, ms)
       )
     }
@@ -44,18 +46,14 @@ export default function useLongTouch(
   return {
     onMouseDown: () => {
       if (mouseState != 'startTouch' && mouseState != 'endTouch') {
-        setMouseState('startPress')
+        setMouseState('startClick')
       }
     },
     onMouseUp: () => {
-      if (mouseState === 'startPress') {
-        setMouseState('endPress')
-      }
+      if (mouseState === 'startClick') setMouseState('endClick')
     },
-    onMouseLeave: () => {
-      if (mouseState === 'startTouch') {
-        setMouseState('leaveTouch')
-      }
+    onTouchMove: () => {
+      setMouseState('leaveTouch')
     },
     onTouchStart: () => {
       setMouseState('startTouch')

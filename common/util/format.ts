@@ -1,4 +1,5 @@
 import { ENV_CONFIG } from '../envs/constants'
+import { BinaryContract, PseudoNumericContract } from 'common/contract'
 
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -40,10 +41,21 @@ export function manaToUSD(mana: number) {
   })
 }
 
-export function formatPercent(zeroToOne: number) {
+function getPercentDecimalPlaces(zeroToOne: number) {
+  return zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
+}
+
+export function formatPercent(zeroToOne: number, shortFormat = false) {
   // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
-  const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
-  return (zeroToOne * 100).toFixed(decimalPlaces) + '%'
+  const decimalPlaces = shortFormat ? 0 : getPercentDecimalPlaces(zeroToOne)
+  const percent = shortFormat ? Math.min(zeroToOne * 100, 99) : zeroToOne * 100
+  return percent.toFixed(decimalPlaces) + '%'
+}
+
+export function formatPercentNumber(zeroToOne: number) {
+  // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
+  const decimalPlaces = getPercentDecimalPlaces(zeroToOne)
+  return Number((zeroToOne * 100).toFixed(decimalPlaces))
 }
 
 const showPrecision = (x: number, sigfigs: number) =>
@@ -89,4 +101,14 @@ export function toCamelCase(words: string) {
   // Remove non-alpha-numeric-underscore chars.
   const regex = /(?:^|\s)(?:[a-z0-9_]+)/gi
   return (camelCase.match(regex) || [])[0] ?? ''
+}
+
+export const formatOutcomeLabel = (
+  contract: BinaryContract | PseudoNumericContract,
+  outcomeLabel: 'YES' | 'NO'
+) => {
+  if (contract.outcomeType === 'BINARY') {
+    return outcomeLabel
+  }
+  return outcomeLabel === 'YES' ? 'HIGHER' : 'LOWER'
 }

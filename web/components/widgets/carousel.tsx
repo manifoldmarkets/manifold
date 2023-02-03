@@ -32,7 +32,6 @@ export function Carousel(props: {
     }
   }, 500)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(onScroll, [children])
 
   return (

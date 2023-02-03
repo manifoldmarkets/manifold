@@ -57,7 +57,7 @@ export function CreatePostForm(props: { group?: Group }) {
   return (
     <div className="mx-auto w-full max-w-3xl">
       <div className="rounded-lg px-6 py-4 sm:py-0">
-        <Title className="!mt-0" text="Create a post" />
+        <Title>Create a post</Title>
         {canCreate ? (
           <>
             <form>

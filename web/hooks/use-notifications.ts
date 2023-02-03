@@ -1,13 +1,17 @@
 import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
-import { groupBy, map } from 'lodash'
-import { useMemo } from 'react'
-import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
+import { groupBy, map, uniqBy } from 'lodash'
+import { useEffect, useMemo } from 'react'
 import {
   listenForNotifications,
   listenForUnseenNotifications,
 } from 'web/lib/firebase/notifications'
-import { useStore } from './use-store'
+import {
+  inMemoryStore,
+  storageStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -15,35 +19,57 @@ export type NotificationGroup = {
   isSeen: boolean
   timePeriod: string
 }
-
+const NOTIFICATIONS_KEY = 'notifications'
 function useNotifications(privateUser: PrivateUser) {
-  return useStore(privateUser.id, listenForNotifications, {
-    prefix: 'notifications',
+  const [notifications, setNotifications] = usePersistentState<
+    Notification[] | undefined
+  >(undefined, {
+    key: NOTIFICATIONS_KEY,
+    store: storageStore(safeLocalStorage()),
   })
-}
+  useEffect(() => {
+    listenForNotifications(privateUser.id, setNotifications)
+  }, [privateUser.id, setNotifications])
 
-export function useFirstPageOfNotifications(privateUser: PrivateUser) {
-  return useStore(
-    privateUser.id,
-    (userId, setNotifications: (notifications: Notification[]) => void) =>
-      listenForNotifications(userId, setNotifications, NOTIFICATIONS_PER_PAGE),
-    {
-      prefix: 'notifications-first-page',
-    }
-  )
+  return notifications
 }
 
 function useUnseenNotifications(privateUser: PrivateUser) {
-  return useStore(privateUser.id, listenForUnseenNotifications, {
-    prefix: 'unseen-notifications',
+  const [unseenNotifications, setUnseenNotifications] = usePersistentState<
+    Notification[] | undefined
+  >(undefined, {
+    key: 'unseen-notifications',
+    store: inMemoryStore(),
   })
+  // We also tack on the unseen notifications to the notifications state so that
+  // when you navigate to the notifications page, you see the new ones immediately
+  const [_, setNotifications] = usePersistentState<Notification[] | undefined>(
+    undefined,
+    {
+      key: NOTIFICATIONS_KEY,
+      store: storageStore(safeLocalStorage()),
+    }
+  )
+  useEffect(() => {
+    listenForUnseenNotifications(privateUser.id, (unseenNotifications) => {
+      setUnseenNotifications(unseenNotifications)
+      if (unseenNotifications.length > 0) {
+        setNotifications((notifications) => {
+          return uniqBy(
+            [...unseenNotifications, ...(notifications ?? [])],
+            (n) => n.id
+          )
+        })
+      }
+    })
+  }, [privateUser.id, setUnseenNotifications])
+  return unseenNotifications
 }
 
 export function useGroupedNotifications(privateUser: PrivateUser) {
-  const firstNotifications = useFirstPageOfNotifications(privateUser)
-  const notifications = useNotifications(privateUser) ?? firstNotifications
+  const notifications = useNotifications(privateUser) ?? []
   return useMemo(() => {
-    return notifications ? groupNotifications(notifications) : undefined
+    return groupNotifications(notifications)
   }, [notifications])
 }
 

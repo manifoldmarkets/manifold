@@ -8,16 +8,19 @@ import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { useMemberGroupsSubscription } from 'web/hooks/use-group'
 import { Title } from 'web/components/widgets/title'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export default function Search() {
   const user = useUser()
   const privateUser = usePrivateUser()
+  const isMobile = useIsMobile()
 
   useTracking('view search')
 
   const { query } = useRouter()
-  const { q, s, p } = query
-  const autoFocus = !q && !s && !p
+  const { q, s } = query
+  // Allow users to browse without keyboard popping up on mobile.
+  const autoFocus = !isMobile && !q && !s
 
   const followedGroups = useMemberGroupsSubscription(user)
   const shouldFilterDestiny = !followedGroups?.find((g) =>
@@ -30,7 +33,7 @@ export default function Search() {
   return (
     <Page>
       <Col className="mx-auto w-full p-2">
-        <Title text="Market search" className="!mt-0" />
+        <Title className="hidden lg:flex">Markets</Title>
         <ContractSearch
           persistPrefix="search"
           autoFocus={autoFocus}

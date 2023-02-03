@@ -23,7 +23,7 @@ export default function LatestPostsPage() {
       <Col className="pm:mx-10 gap-4 sm:px-4 sm:pb-4">
         <Row className="mt-4 items-start justify-between sm:mt-0">
           <Col>
-            <Title className="mx-4 !mb-0 !mt-0 sm:mx-0" text="Latest Posts" />
+            <Title className="mx-4 !mb-0 sm:mx-0">Latest Posts</Title>
           </Col>
           <Col>
             {user && (

@@ -1,40 +1,41 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useSpring, animated } from '@react-spring/web'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { animated, useSpring } from '@react-spring/web'
 import { rubberbandIfOutOfBounds, useDrag } from '@use-gesture/react'
 import toast from 'react-hot-toast'
 
 import type { BinaryContract } from 'common/contract'
-import { useUser } from 'web/hooks/use-user'
-import { logView } from 'web/lib/firebase/views'
-import { track } from 'web/lib/service/analytics'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { Page } from 'web/components/layout/page'
-import { useFeed } from 'web/hooks/use-feed'
+import { Row } from 'web/components/layout/row'
+import { postMessageToNative } from 'web/components/native-message-listener'
+import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
+import { SwipeCard } from 'web/components/swipe/swipe-card'
+import {
+  horizontalSwipeDist,
+  STARTING_BET_AMOUNT,
+  verticalSwipeDist,
+} from 'web/components/swipe/swipe-helpers'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { useFeed } from 'web/hooks/use-feed'
 import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { useWindowSize } from 'web/hooks/use-window-size'
-import { SwipeCard } from 'web/components/contract/swipe-card'
-import { formatMoney } from 'common/util/format'
-import { placeBet } from 'web/lib/firebase/api'
-import { Row } from 'web/components/layout/row'
-import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
-import { postMessageToNative } from 'web/components/native-message-listener'
 import { useTracking } from 'web/hooks/use-tracking'
-
-const SWIPE_THRESHOLD = 100 // in px
+import { useUser } from 'web/hooks/use-user'
+import { useWindowSize } from 'web/hooks/use-window-size'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { logView } from 'web/lib/firebase/views'
+import { track } from 'web/lib/service/analytics'
+import { placeBet } from 'web/lib/firebase/api'
+import { formatMoney } from 'common/util/format'
+import { useEvent } from 'web/hooks/use-event'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export default function Swipe() {
   useTracking('view swipe page')
-
-  const [amount, setAmount] = usePersistentState(10, {
-    key: 'swipe-amount',
-    store: inMemoryStore(),
-  })
+  useRedirectIfSignedOut()
 
   const user = useUser()
   const { contracts, loadMore } = useFeed(user, 'swipe')
@@ -46,6 +47,12 @@ export default function Swipe() {
     key: 'swipe-index',
     store: inMemoryStore(),
   })
+  const [amount, setAmount] = useState(STARTING_BET_AMOUNT)
+  const [betDirection, setBetDirection] = useState<'YES' | 'NO' | undefined>()
+  const [betStatus, setBetStatus] = useState<
+    'loading' | 'success' | string | undefined
+  >(undefined)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     if (feed && index + 2 >= feed.length) {
@@ -60,14 +67,80 @@ export default function Swipe() {
     return feed.slice(0, index + 2)
   }, [feed, index])
 
-  const onBet = (outcome: 'YES' | 'NO') => {
-    if (!feed) return
-    const contract = feed[index]
+  // Measure height manually to accommodate mobile web.
+  const { height: computedHeight } = useWindowSize()
+  const [height, setHeight] = usePersistentState(computedHeight ?? 800, {
+    key: 'screen-height',
+    store: inMemoryStore(),
+  })
+
+  useEffect(() => {
+    if (computedHeight !== undefined) {
+      setHeight(computedHeight)
+    }
+  }, [computedHeight, setHeight])
+
+  useEffect(() => {
+    if (user && contract) {
+      logView({ contractId: contract.id, userId: user.id })
+      setAmount(STARTING_BET_AMOUNT)
+    }
+  }, [user, contract])
+
+  useEffect(() => {
+    postMessageToNative('onPageVisit', { page: 'swipe' })
+    return () => {
+      postMessageToNative('onPageVisit', { page: undefined })
+    }
+  }, [])
+
+  const cardHeight = height - BOTTOM_NAV_BAR_HEIGHT
+
+  const [{ x, y }, api] = useSpring(() => ({
+    x: 0,
+    y: -index * cardHeight,
+    config: { tension: 500, friction: 30, clamp: true },
+  }))
+
+  useEffect(() => {
+    // In case of height resize, reset the y position.
+    api.start({ y: -index * cardHeight })
+  }, [api, cardHeight])
+
+  const indexRef = useRef(index)
+  indexRef.current = index
+
+  const onBet = useEvent((outcome: 'YES' | 'NO') => {
+    if (!contract) return
+
+    setBetStatus('loading')
+
     const contractId = contract.id
-
     const promise = placeBet({ amount, outcome, contractId })
+    promise
+      .then(() => {
+        setBetStatus('success')
 
-    const shortQ = contract.question.slice(0, 20)
+        setTimeout(() => {
+          // Check if user has swiped to a different card.
+          if (indexRef.current !== index) return
+
+          // Scroll to next card.
+          const newIndex = Math.min(cards.length - 1, index + 1)
+          setIndex(newIndex)
+          const y = -newIndex * cardHeight
+          api.start({ y })
+        }, 500)
+      })
+      .catch(() => {
+        setBetStatus(undefined)
+        setBetDirection(undefined)
+
+        // Scroll back to neutral position.
+        api.start({ x: 0 })
+      })
+
+    const shortQ = contract.question.slice(0, 18)
     const message = `Bet ${formatMoney(amount)} ${outcome} on "${shortQ}"...`
 
     toast.promise(
@@ -87,101 +160,56 @@ export default function Swipe() {
       amount,
       outcome,
     })
-  }
-
-  // Measure height manually to accommodate mobile web.
-  const { height: computedHeight } = useWindowSize()
-  const [height, setHeight] = usePersistentState(computedHeight ?? 800, {
-    key: 'screen-height',
-    store: inMemoryStore(),
   })
-  useEffect(() => {
-    if (computedHeight !== undefined) {
-      setHeight(computedHeight)
-    }
-  }, [computedHeight, setHeight])
-
-  const cardHeight = height - BOTTOM_NAV_BAR_HEIGHT
-  const horizontalSwipeDist = 80
-
-  const [{ x, y }, api] = useSpring(() => ({
-    x: 0,
-    y: -index * cardHeight,
-    config: { tension: 1000, friction: 70 },
-  }))
-
-  useEffect(() => {
-    if (user && contract) {
-      logView({ contractId: contract.id, userId: user.id })
-    }
-  }, [user, contract])
-
-  useEffect(() => {
-    // In case of height resize, reset the y position.
-    api.start({ y: -index * cardHeight })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, cardHeight])
-
-  const [swipeDirection, setSwipeDirection] = useState<
-    'YES' | 'NO' | undefined
-  >(undefined)
 
   const bind = useDrag(
     ({ down, movement: [mx, my] }) => {
-      const cappedDist = rubberbandIfOutOfBounds(
+      if (isModalOpen) return
+      if (my > 0 && index === 0) return
+
+      const xCappedDist = rubberbandIfOutOfBounds(
         Math.abs(mx),
         0,
         horizontalSwipeDist
       )
-      let didBet = false
-      if (!down && cappedDist >= horizontalSwipeDist) {
+      if (!down && xCappedDist >= horizontalSwipeDist) {
         // Horizontal swipe is triggered!
         const outcome = Math.sign(mx) > 0 ? 'YES' : 'NO'
         onBet(outcome)
-        didBet = true
       }
-      setSwipeDirection(
-        !down || cappedDist < horizontalSwipeDist
+      setBetDirection(
+        !down || xCappedDist < horizontalSwipeDist
           ? undefined
           : mx > 0
           ? 'YES'
           : 'NO'
       )
-      const x = down ? Math.sign(mx) * cappedDist : 0
+      const x = down ? Math.sign(mx) * xCappedDist : 0
 
-      let newIndex = index
-      if (didBet) {
-        // Scroll to next card.
-        setTimeout(() => {
-          newIndex = Math.min(cards.length - 1, index + 1)
-          setIndex(newIndex)
-          setAmount(10) // reset amount
-          const y = -newIndex * cardHeight
-          api.start({ y })
-        }, 500)
-      }
+      let y = -index * cardHeight + my
       if (!down) {
+        let newIndex = index
         // Scroll to next or previous card.
-        if (my <= -SWIPE_THRESHOLD)
+        if (my <= -verticalSwipeDist) {
           newIndex = Math.min(cards.length - 1, index + 1)
-        else if (my >= SWIPE_THRESHOLD) newIndex = Math.max(0, index - 1)
+          track('swipe', { direction: 'next' })
+        } else if (my >= verticalSwipeDist) {
+          newIndex = Math.max(0, index - 1)
+          track('swipe', { direction: 'prev' })
+        }
 
-        setIndex(newIndex)
-        if (newIndex !== index) setAmount(10)
+        y = -newIndex * cardHeight
+        setTimeout(() => {
+          // Hack to delay the re-rendering work until after animation is done.
+          // Makes animation smooth for older devices, iOS.
+          setIndex(newIndex)
+        }, 200)
       }
-      const y = -newIndex * cardHeight + (down ? my : 0)
 
       api.start({ x, y })
     },
     { axis: 'lock' }
   )
-
-  useEffect(() => {
-    postMessageToNative('onPageVisit', { page: 'swipe' })
-    return () => {
-      postMessageToNative('onPageVisit', { page: undefined })
-    }
-  }, [])
 
   if (user === undefined || feed === undefined) {
     return (
@@ -202,42 +230,51 @@ export default function Swipe() {
       </Page>
     )
   }
-
   return (
     <Page>
       <Row
         className="absolute justify-center overflow-hidden overscroll-none"
         style={{ height: cardHeight }}
       >
-        <div className="absolute inset-0 columns-2 gap-0 text-center text-2xl text-white">
-          <div className="flex h-full items-center bg-teal-700">
-            <div style={{ width: horizontalSwipeDist }}>YES</div>
-          </div>
-          <div className="bg-scarlet-700 flex h-full items-center justify-end">
-            <div style={{ width: horizontalSwipeDist }}>NO</div>
-          </div>
-        </div>
+        {index + 1 < cards.length && (
+          <SwipeCard
+            className="!absolute -z-10 select-none overflow-hidden"
+            amount={amount}
+            setAmount={setAmount}
+            contract={cards[index + 1]}
+            betDirection={betDirection}
+            betStatus={betStatus}
+            onBet={onBet}
+            user={user}
+            isModalOpen={false}
+            setIsModalOpen={setIsModalOpen}
+          />
+        )}
 
         <animated.div
           {...bind()}
-          className="w-full max-w-lg touch-none"
+          className="h-full w-full max-w-lg touch-none select-none"
           style={{ x, y }}
         >
           {cards.map((c, i) => (
             <SwipeCard
               key={c.id}
               className={i < index - 1 ? 'invisible' : undefined}
-              contract={c}
               amount={amount}
-              setAmount={setAmount as any}
-              swipeDirection={swipeDirection}
+              setAmount={setAmount}
+              contract={c}
+              betDirection={betDirection}
+              betStatus={betStatus}
+              onBet={onBet}
+              isModalOpen={isModalOpen && i === index}
+              setIsModalOpen={setIsModalOpen}
               user={user}
+              small={height < 750}
             />
           ))}
 
-          {/* TODO: users should never run out of cards */}
           {!cards.length && (
-            <div className="flex h-full w-full flex-col items-center justify-center">
+            <div className="flex w-full flex-col items-center justify-center">
               No more cards!
               <SiteLink href="/home" className="text-indigo-700">
                 Return home

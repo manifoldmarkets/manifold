@@ -20,7 +20,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { listBets } from 'web/lib/firebase/bets'
 import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
@@ -29,7 +28,11 @@ import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { OrderByDirection } from 'firebase/firestore'
 import { useUser } from 'web/hooks/use-user'
-import { HistoryPoint } from 'web/components/charts/generic-charts'
+import {
+  HistoryPoint,
+  useSingleValueHistoryChartViewScale,
+} from 'web/components/charts/generic-charts'
+import { listBets } from 'web/lib/firebase/bets'
 
 type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
@@ -74,7 +77,6 @@ export async function getStaticPropz(props: {
   const historyData = await getHistoryData(contract)
   return {
     props: { contract, historyData },
-    revalidate: 60, // regenerate after a minute
   }
 }
 
@@ -136,11 +138,14 @@ const ContractChart = (props: {
   color?: string
 }) => {
   const { contract, data, ...rest } = props
+  const viewScale = useSingleValueHistoryChartViewScale()
+
   switch (contract.outcomeType) {
     case 'BINARY':
       return (
         <BinaryContractChart
           {...rest}
+          viewScaleProps={viewScale}
           contract={contract}
           betPoints={data?.points ?? []}
         />
@@ -149,6 +154,7 @@ const ContractChart = (props: {
       return (
         <PseudoNumericContractChart
           {...rest}
+          viewScaleProps={viewScale}
           contract={contract}
           betPoints={data?.points ?? []}
         />
@@ -201,10 +207,18 @@ function ContractSmolView(props: {
             {question}
           </a>
         </div>
-        {isBinary && <BinaryResolutionOrChance contract={contract} />}
+        {isBinary && (
+          <BinaryResolutionOrChance
+            contract={contract}
+            className="!flex-col !gap-0"
+          />
+        )}
 
         {isPseudoNumeric && (
-          <PseudoNumericResolutionOrExpectation contract={contract} />
+          <PseudoNumericResolutionOrExpectation
+            contract={contract}
+            className="!flex-col !gap-0"
+          />
         )}
 
         {outcomeType === 'FREE_RESPONSE' && (
@@ -238,16 +252,16 @@ const Details = (props: { contract: Contract }) => {
 
   return (
     <div className="relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-400">
-      <span className="flex gap-1">
+      <span className="flex gap-1 text-gray-600">
         <Avatar
-          size="xxs"
+          size="2xs"
           avatarUrl={creatorAvatarUrl}
           username={creatorUsername}
           noLink
         />
         {creatorName}
       </span>
-      <CloseOrResolveTime contract={props.contract} isCreator disabled />
+      <CloseOrResolveTime contract={props.contract} />
       <span>{uniqueBettorCount} traders</span>
     </div>
   )

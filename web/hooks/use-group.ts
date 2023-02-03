@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Group } from 'common/group'
+import { Group, GroupMemberDoc } from 'common/group'
 import { User } from 'common/user'
 import {
   getGroup,
   getMemberGroups,
-  GroupMemberDoc,
   groupMembers,
   listenForGroup,
   listenForGroupContractDocs,

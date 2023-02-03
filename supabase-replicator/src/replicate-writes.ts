@@ -1,7 +1,6 @@
 import { Firestore } from 'firebase-admin/firestore'
 import { TLEntry } from '../../common/transaction-log'
-import { run, SupabaseClient } from '../../common/supabase/utils'
-import { log } from './utils'
+import { SupabaseDirectClient, bulkInsert, log } from './utils'
 
 export async function createFailedWrites(
   firestore: Firestore,
@@ -20,7 +19,7 @@ export async function createFailedWrites(
 
 export async function replayFailedWrites(
   firestore: Firestore,
-  supabase: SupabaseClient,
+  supabase: SupabaseDirectClient,
   limit = 1000
 ) {
   const failedWrites = await firestore
@@ -46,20 +45,20 @@ export async function replayFailedWrites(
 }
 
 export async function replicateWrites(
-  supabase: SupabaseClient,
+  pg: SupabaseDirectClient,
   ...entries: TLEntry[]
 ) {
-  return await run(
-    supabase.from('incoming_writes').insert(
-      entries.map((e) => ({
-        event_id: e.eventId,
-        doc_kind: e.docKind,
-        write_kind: e.writeKind,
-        parent_id: e.parentId,
-        doc_id: e.docId,
-        data: e.data,
-        ts: new Date(e.ts).toISOString(),
-      }))
-    )
+  return await bulkInsert(
+    pg,
+    'incoming_writes',
+    entries.map((e) => ({
+      event_id: e.eventId,
+      table_id: e.tableId,
+      write_kind: e.writeKind,
+      parent_id: e.parentId,
+      doc_id: e.docId,
+      data: e.data,
+      ts: new Date(e.ts).toISOString(),
+    }))
   )
 }

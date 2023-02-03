@@ -41,7 +41,7 @@ export const updateloans = newEndpointNoAuth(
   }
 )
 
-async function updateLoansCore() {
+export async function updateLoansCore() {
   log('Updating loans...')
 
   const [users, contracts] = await Promise.all([
@@ -53,16 +53,19 @@ async function updateLoansCore() {
     ),
   ])
 
+  log(`Loaded ${users.length} users, ${contracts.length} contracts.`)
+
   const contractBets = await mapAsync(contracts, (contract) =>
-    getValues<Bet>(
-      firestore.collection('contracts').doc(contract.id).collection('bets')
+    loadPaginated(
+      firestore
+        .collection('contracts')
+        .doc(contract.id)
+        .collection('bets') as CollectionReference<Bet>
     )
   )
   const bets = sortBy(contractBets.flat(), (b) => b.createdTime)
 
-  log(
-    `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
-  )
+  log(`Loaded ${bets.length} bets.`)
   const userPortfolios = filterDefined(
     await Promise.all(
       users.map(async (user) => {

@@ -9,6 +9,7 @@ import { Analytics } from '@vercel/analytics/react'
 import '../styles/globals.css'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import { SearchProvider } from 'web/components/search/search-context'
+import Script from 'next/script'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -71,8 +72,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="apple-itunes-app" content="app-id=6444136749" />
-
-        <link rel="manifest" href="manifest.json" />
       </Head>
       <AuthProvider serverUser={pageProps.auth}>
         <NativeMessageListener />
@@ -84,6 +83,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         </QueryClientProvider>
       </AuthProvider>
       <Analytics />
+      <Script
+        src="https://analytics.umami.is/script.js"
+        data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
+      />
     </>
   )
 }

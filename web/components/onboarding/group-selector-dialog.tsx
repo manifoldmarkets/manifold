@@ -33,7 +33,7 @@ export default function GroupSelectorDialog(props: {
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className="h-[32rem] rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
-        <Title text="What interests you?" />
+        <Title children="What interests you?" />
         <p className="mb-4">
           Choose among the categories below to personalize your Manifold
           experience. We've already selected {memberGroupIds.length} for you.
@@ -63,9 +63,7 @@ export default function GroupSelectorDialog(props: {
           )}
         </div>
         <Row className={'justify-end'}>
-          <Button size={'lg'} onClick={() => setOpen(false)}>
-            Done
-          </Button>
+          <Button onClick={() => setOpen(false)}>Done</Button>
         </Row>
       </Col>
     </Modal>

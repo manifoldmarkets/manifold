@@ -6,8 +6,7 @@ import {
   createFailedWrites,
   replayFailedWrites,
 } from './replicate-writes'
-import { log } from './utils'
-import { createClient } from '../../common/supabase/utils'
+import { log, createSupabaseDirectClient } from './utils'
 import { TLEntry } from '../../common/transaction-log'
 import { CONFIGS } from '../../common/envs/constants'
 
@@ -19,20 +18,22 @@ if (CONFIG == null) {
   throw new Error(`process.env.ENVIRONMENT = ${ENV} - should be DEV or PROD.`)
 }
 
-const SUPABASE_URL = CONFIG.supabaseUrl
-if (!SUPABASE_URL) {
-  throw new Error(`Can't connect to Supabase; no supabaseUrl set for ${ENV}.`)
+const SUPABASE_INSTANCE_ID = CONFIG.supabaseInstanceId
+if (!SUPABASE_INSTANCE_ID) {
+  throw new Error(`Can't connect to Supabase; no instance ID set for ${ENV}.`)
 }
 
-const SUPABASE_KEY = process.env.SUPABASE_KEY
-if (!SUPABASE_KEY) {
-  throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
+const SUPABASE_PASSWORD = process.env.SUPABASE_PASSWORD
+if (!SUPABASE_PASSWORD) {
+  throw new Error(
+    "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
+  )
 }
 
 const pubsub = new PubSub()
 const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+const pg = createSupabaseDirectClient(SUPABASE_INSTANCE_ID, SUPABASE_PASSWORD)
 
 const app = express()
 app.use(express.json())
@@ -40,7 +41,7 @@ app.use(express.json())
 app.post('/replay-failed', async (_req, res) => {
   log('INFO', 'Checking for failed writes...')
   try {
-    const n = await replayFailedWrites(firestore, supabase)
+    const n = await replayFailedWrites(firestore, pg)
     return res.status(200).json({ success: true, n })
   } catch (e) {
     log('ERROR', 'Error replaying failed writes.', e)
@@ -48,51 +49,68 @@ app.post('/replay-failed', async (_req, res) => {
   }
 })
 
-async function tryReplicateBatch(...messages: Message[]) {
-  const entries = messages.map((m) => JSON.parse(m.data.toString()) as TLEntry)
+type ParsedMessage<T> = { msg: Message; data: T }
+
+function parseMessage<T>(msg: Message): ParsedMessage<T> {
+  return { msg, data: JSON.parse(msg.data.toString()) }
+}
+
+async function tryReplicateBatch(batchId: number, ...entries: TLEntry[]) {
   try {
     const t0 = process.hrtime.bigint()
-    log('DEBUG', `Beginning replication of batch=${messages[0].id}.`)
-    await replicateWrites(supabase, ...entries)
+    log('DEBUG', `Beginning replication of batch=${batchId}.`)
+    await replicateWrites(pg, ...entries)
     const t1 = process.hrtime.bigint()
     const ms = (t1 - t0) / 1000000n
     log(
       'INFO',
-      `Replicated batch=${messages[0].id} count=${entries.length}, time=${ms}ms.`
+      `Replicated batch=${batchId} count=${entries.length}, time=${ms}ms.`
     )
   } catch (e) {
     log(
       'ERROR',
-      `Failed to replicate batch=${messages[0].id} count=${entries.length}. Logging failed writes.`,
+      `Failed to replicate batch=${batchId} count=${entries.length}. Logging failed writes.`,
       e
     )
     await createFailedWrites(firestore, ...entries)
-  }
-  for (const msg of messages) {
-    msg.ack()
   }
 }
 
 function processSubscriptionBatched(
   subscription: Subscription,
-  process: (msgs: Message[]) => Promise<void>,
   batchSize: number,
   batchTimeoutMs: number
 ) {
-  const batch: Message[] = []
+  let i = 0
+  const batch: ParsedMessage<TLEntry>[] = []
 
-  subscription.on('message', async (message) => {
-    log('DEBUG', `Received message ${message.id}.`)
-    batch.push(message)
-    if (batch.length >= batchSize) {
+  const processBatch = async (kind: string) => {
+    if (batch.length > 0) {
+      const batchId = i++
       const toWrite = [...batch]
       batch.length = 0
-      try {
-        log('DEBUG', `Starting clear batch ${toWrite[0].id}.`)
-        await process(toWrite)
-      } catch (e) {
-        log('ERROR', 'Big error processing messages:', e)
+      log('DEBUG', `Starting ${kind} batch=${batchId}.`)
+      await tryReplicateBatch(batchId, ...toWrite.map((x) => x.data))
+      for (const x of toWrite) {
+        x.msg.ack()
       }
+    }
+  }
+
+  subscription.on('message', async (message) => {
+    try {
+      const parsed = parseMessage<TLEntry>(message)
+      const entry = parsed.data
+      log(
+        'DEBUG',
+        `Received message id=${message.id} batch=${i} eventId=${entry.eventId} kind=${entry.writeKind} tableId=${entry.tableId} parentId=${entry.parentId} docId=${entry.docId}.`
+      )
+      batch.push(parsed)
+      if (batch.length >= batchSize) {
+        await processBatch('clear')
+      }
+    } catch (e) {
+      log('ERROR', 'Big error processing message:', e)
     }
   })
 
@@ -106,24 +124,13 @@ function processSubscriptionBatched(
 
   return setInterval(async () => {
     if (batch.length > 0) {
-      const toWrite = [...batch]
-      batch.length = 0
-      try {
-        log('DEBUG', `Starting interval batch ${toWrite[0].id}.`)
-        await process(toWrite)
-      } catch (e) {
-        log('ERROR', 'Big error processing messages:', e)
-      }
+      await processBatch('interval')
     }
   }, batchTimeoutMs)
 }
 
-processSubscriptionBatched(
-  writeSub,
-  (msgs) => tryReplicateBatch(...msgs),
-  1000,
-  100
-).unref() // unref() means it won't keep the process running if GCP stops the webserver
+// unref() means it won't keep the process running if GCP stops the webserver
+processSubscriptionBatched(writeSub, 1000, 100).unref()
 
 app.listen(PORT, () =>
   log('INFO', `Running in ${ENV} environment listening on port ${PORT}.`)

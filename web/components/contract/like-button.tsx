@@ -21,6 +21,8 @@ import { UserLink } from '../widgets/user-link'
 const LIKES_SHOWN = 3
 
 const ButtonReactionType = 'like' as ReactionTypes
+export type LikeButtonSizeType = 'md' | 'lg' | 'xl'
+
 export const LikeButton = memo(function LikeButton(props: {
   contentId: string
   contentCreatorId: string
@@ -30,7 +32,10 @@ export const LikeButton = memo(function LikeButton(props: {
   contract: Contract
   contentText: string
   className?: string
-  size?: 'md' | 'xl'
+  size?: LikeButtonSizeType
+  showTotalLikesUnder?: boolean
+  color?: 'gray' | 'white'
+  isSwipe?: boolean
 }) {
   const {
     user,
@@ -41,6 +46,9 @@ export const LikeButton = memo(function LikeButton(props: {
     contentText,
     className,
     size = 'md',
+    showTotalLikesUnder,
+    color = 'gray',
+    isSwipe,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
@@ -65,11 +73,11 @@ export const LikeButton = memo(function LikeButton(props: {
       contract,
       contract.question,
       contentText,
-      ButtonReactionType
+      ButtonReactionType,
+      { isSwipe: !!isSwipe }
     )
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedOnLike = useMemo(() => debounce(onLike, 1000), [user])
 
   // Handle changes from our useLike hook
@@ -112,7 +120,14 @@ export const LikeButton = memo(function LikeButton(props: {
   const hasSafePolygon =
     (likedUserInfo != undefined && likedUserInfo.length > 0) || userLiked
   return (
-    <>
+    <Row
+      className={clsx(
+        'relative items-center',
+        size === 'md' && 'mx-2',
+        size === 'xl' && 'mx-4',
+        className
+      )}
+    >
       <Tooltip
         text={
           <UserLikedList
@@ -125,33 +140,37 @@ export const LikeButton = memo(function LikeButton(props: {
         placement={'bottom'}
         noTap
         hasSafePolygon={hasSafePolygon}
+        className={'flex items-center'}
       >
         <button
           disabled={disabled}
           className={clsx(
-            size === 'md' && 'p-2',
-            size === 'xl' && 'p-4',
-            'text-gray-500 transition-transform disabled:cursor-not-allowed',
-            !disabled ? 'hover:text-gray-600' : '',
-            className
+            'transition-transform disabled:cursor-not-allowed',
+            color === 'white'
+              ? 'text-white disabled:opacity-50'
+              : 'text-gray-500',
+            !disabled && color === 'gray' ? 'hover:text-gray-600' : ''
           )}
           {...likeLongPress}
         >
           <div className="relative">
-            <div
-              className={clsx(
-                totalLikes > 0 ? 'bg-gray-500' : '',
-                'absolute rounded-full text-center text-white',
-                size === 'md' &&
-                  '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
-                size === 'xl' && 'bottom-0 right-0 min-w-[24px] p-0.5 text-sm'
-              )}
-            >
-              {totalLikes > 0 ? totalLikes : ''}
-            </div>
+            {!showTotalLikesUnder && (
+              <div
+                className={clsx(
+                  totalLikes > 0 ? 'bg-gray-500' : '',
+                  'absolute rounded-full text-center text-white',
+                  size === 'md' &&
+                    '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
+                  size === 'xl' && 'bottom-0 right-0 min-w-[24px] p-0.5 text-sm'
+                )}
+              >
+                {totalLikes > 0 ? totalLikes : ''}
+              </div>
+            )}
             <HeartIcon
               className={clsx(
                 size === 'md' && 'h-5 w-5',
+                size === 'lg' && 'h-8 w-8',
                 size === 'xl' && 'h-12 w-12',
                 liked ? 'fill-pink-400 stroke-pink-400' : ''
               )}
@@ -170,7 +189,17 @@ export const LikeButton = memo(function LikeButton(props: {
           short={true}
         />
       )}
-    </>
+      {showTotalLikesUnder && (
+        <div
+          className={clsx(
+            size === 'xl' ? '-mt-3 text-lg' : '-mt-1.5 text-xs',
+            'mx-auto h-6 text-white disabled:opacity-50'
+          )}
+        >
+          {totalLikes > 0 ? totalLikes : ''}
+        </div>
+      )}
+    </Row>
   )
 })
 
@@ -225,7 +254,7 @@ function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
       <Avatar
         username={userInfo.username}
         avatarUrl={userInfo.avatarUrl}
-        size="xxs"
+        size="2xs"
       />
       <UserLink
         name={userInfo.name}
