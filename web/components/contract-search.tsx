@@ -12,6 +12,7 @@ import {
   useContext,
 } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { useEvent } from 'web/hooks/use-event'
 import {
   historyStore,
   inMemoryStore,
@@ -140,7 +141,7 @@ export function ContractSearch(props: {
     [searchIndexName]
   )
 
-  const performQuery = async (freshQuery?: boolean) => {
+  const performQuery = useEvent(async (freshQuery?: boolean) => {
     if (searchParams.current == null) {
       return
     }
@@ -173,7 +174,7 @@ export function ContractSearch(props: {
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
-  }
+  })
 
   // Always do first query when loading search page, unless going back in history.
   const [firstQuery, setFirstQuery] = usePersistentState(true, {
