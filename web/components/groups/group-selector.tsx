@@ -1,21 +1,19 @@
-import { Group } from 'common/group'
 import { Combobox } from '@headlessui/react'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import {
   CheckIcon,
   PlusCircleIcon,
   SelectorIcon,
-  UserIcon,
 } from '@heroicons/react/outline'
+import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { CreateGroupButton } from 'web/components/groups/create-group-button'
-import { useState } from 'react'
-import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
+import { Group } from 'common/group'
 import { User } from 'common/user'
 import { searchInAny } from 'common/util/parse'
+import { useState } from 'react'
+import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Row } from 'web/components/layout/row'
-import { ChartBarIcon, UsersIcon } from '@heroicons/react/solid'
-import DocumentChartBarIcon from 'web/lib/icons/document-chart-bar-icon'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
 
 export function GroupSelector(props: {
   selectedGroup: Group | undefined

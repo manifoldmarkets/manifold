@@ -3,6 +3,7 @@ import { run } from 'common/supabase/utils'
 import { User } from '../firebase/users'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 
+// functions called for one group
 export async function getNumGroupMembers(groupId: string) {
   const { data } = await run(
     db.from('group_role').select('count').eq('group_id', groupId)
