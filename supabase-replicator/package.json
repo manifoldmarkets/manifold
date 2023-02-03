@@ -19,6 +19,7 @@
     "node-fetch": "2.6.7",
     "@google-cloud/pubsub": "3.2.1",
     "@supabase/supabase-js": "2.2.0",
+    "pg-promise": "11.0.2",
     "typescript": "4.9.3"
   },
   "devDependencies": {

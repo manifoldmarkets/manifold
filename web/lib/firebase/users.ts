@@ -413,13 +413,18 @@ export const isContractBlocked = (
 ) => {
   if (!privateUser) return false
 
-  const { blockedContractIds, blockedByUserIds, blockedGroupSlugs } =
-    privateUser
+  const {
+    blockedContractIds,
+    blockedByUserIds,
+    blockedUserIds,
+    blockedGroupSlugs,
+  } = privateUser
 
   return (
     blockedContractIds?.includes(contract.id) ||
     contract.groupSlugs?.some((slug) => blockedGroupSlugs?.includes(slug)) ||
-    blockedByUserIds?.includes(contract.creatorId)
+    blockedByUserIds?.includes(contract.creatorId) ||
+    blockedUserIds?.includes(contract.creatorId)
   )
 }
 

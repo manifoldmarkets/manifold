@@ -52,7 +52,7 @@ export function LimitBets(props: {
           className={'mt-4 gap-2 overflow-hidden rounded bg-white py-3 sm:px-4'}
         >
           <Row className="mt-2 mb-4 items-center justify-between">
-            <Subtitle className="!mt-0 !mb-0" text="Your orders" />
+            <Subtitle className="!my-0">Your orders</Subtitle>
 
             <OrderBookButton
               className="self-end"
@@ -105,7 +105,7 @@ export function LimitOrderTable(props: {
               <th>Outcome</th>
               <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
               <th>Amount</th>
-              {isYou && (
+              {isYou && limitBets.length > 1 && (
                 <th>
                   <Button
                     loading={isCancelling}
@@ -185,7 +185,7 @@ function LimitBet(props: {
       )}
       <td>
         {isPseudoNumeric
-          ? getFormattedMappedValue(contract)(limitProb)
+          ? getFormattedMappedValue(contract, limitProb)
           : formatPercent(limitProb)}
       </td>
       <td>{formatMoney(orderAmount - amount)}</td>
@@ -235,7 +235,7 @@ export function OrderBookButton(props: {
 
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="rounded bg-white p-4 py-6">
-          <Title className="!mt-0 inline-flex">
+          <Title className="flex">
             Order book{' '}
             <InfoTooltip
               text="List of active limit orders by traders wishing to buy YES or NO at a given probability"

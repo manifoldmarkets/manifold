@@ -1,7 +1,7 @@
 import { uniqBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
 import { db } from 'web/lib/supabase/db'
 import { buildArray } from 'common/util/array'
@@ -41,5 +41,8 @@ export const useFeed = (user: User | null | undefined, key: string) => {
     loadMore()
   }, [loadMore])
 
-  return { contracts: savedContracts, loadMore }
+  return useMemo(
+    () => ({ contracts: savedContracts, loadMore }),
+    [savedContracts, loadMore]
+  )
 }

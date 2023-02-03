@@ -79,7 +79,6 @@ function ContractActions(props: {
 
   useEffect(() => {
     if (!editing) editor?.commands?.setContent(contract.description)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, contract.description])
 
   return editing ? (

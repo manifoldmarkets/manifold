@@ -18,6 +18,7 @@ export function ChoicesToggleGroup(props: {
   currentChoice: number | string
   choicesMap: { [key: string]: string | number }
   disabled?: boolean
+  disabledOptions?: Array<string | number> //values
   setChoice: (p: number | string) => void
   color?: ColorType
   className?: string
@@ -28,6 +29,7 @@ export function ChoicesToggleGroup(props: {
     currentChoice,
     setChoice,
     disabled,
+    disabledOptions,
     choicesMap,
     color = 'indigo-dark',
     className,
@@ -49,10 +51,11 @@ export function ChoicesToggleGroup(props: {
         <RadioGroup.Option
           key={choiceKey}
           value={choice}
+          disabled={disabledOptions?.includes(choice)}
           className={({ disabled }) =>
             clsx(
               disabled
-                ? 'cursor-not-allowed text-gray-400 aria-checked:bg-gray-300'
+                ? 'cursor-not-allowed text-gray-300 aria-checked:bg-gray-300 aria-checked:text-white'
                 : 'cursor-pointer ' + colorClasses[color],
               'flex items-center rounded-md p-2 outline-none ring-indigo-500 transition-all focus-visible:ring-2 sm:px-3',
               toggleClassName

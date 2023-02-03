@@ -4,13 +4,14 @@ import {
   HomeIcon,
   SearchIcon,
   BookOpenIcon,
-  ChatIcon,
-  ChartBarIcon,
   LogoutIcon,
   BeakerIcon,
   HeartIcon,
   LightningBoltIcon,
   DeviceMobileIcon,
+  TableIcon,
+  ScaleIcon,
+  UserGroupIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -30,9 +31,10 @@ import { MoreButton } from './more-button'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
-import { RectangleGroup } from 'web/components/icons/outline'
 import { SearchButton } from './search-button'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
+import TrophyIcon from 'web/lib/icons/trophy-icon'
+import DiscordOutlineIcon from 'web/lib/icons/discord-outline-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -121,6 +123,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
+      { name: 'Markets', href: '/markets', icon: ScaleIcon },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -129,7 +132,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
       !IS_PRIVATE_MANIFOLD && {
         name: 'Leaderboards',
         href: '/leaderboards',
-        icon: ChartBarIcon,
+        icon: TrophyIcon,
       }
     )
 
@@ -137,7 +140,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
     { name: 'Home', href: '/home', icon: HomeIcon },
     {
       name: 'About',
-      href: 'https://help.manifold.markets/',
+      href: '/?showHelpModal=true',
       icon: BookOpenIcon,
     },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
@@ -146,7 +149,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 
 function getMoreDesktopNavigation(loggedIn: boolean) {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
+    return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
   }
 
   return buildArray(
@@ -167,20 +170,17 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
 // No sidebar when signed out
 const getMobileNav = () => {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
+    return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
   }
   return buildArray(
-    { name: 'Search Markets', href: '/search', icon: SearchIcon },
-    { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
+    { name: 'Search', href: '/find', icon: SearchIcon },
+    { name: 'Dashboard', href: '/dashboard', icon: TableIcon },
+    { name: 'Live', href: '/live', icon: LightningBoltIcon },
+    { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     {
       name: 'Groups',
       href: '/groups',
-      icon: RectangleGroup,
-    },
-    {
-      name: 'Referrals',
-      href: '/referrals',
-      icon: LightningBoltIcon,
+      icon: UserGroupIcon,
     },
     { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
@@ -195,7 +195,7 @@ const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
       isMobile && {
         name: 'Discord',
         href: 'https://discord.gg/eHQBNBqXuh',
-        icon: ChatIcon,
+        icon: DiscordOutlineIcon,
       },
     isMobile &&
       loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }

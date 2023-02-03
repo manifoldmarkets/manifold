@@ -10,13 +10,10 @@ import { SizedContainer } from 'web/components/sized-container'
 import { Period } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph'
-import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
-import { AddFundsModal } from '../add-funds-modal'
-import { Button } from '../buttons/button'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
 import { TimeRangePicker } from '../charts/time-range-picker'
-import { ColorType } from '../choices-toggle-group'
+import { ColorType } from '../widgets/choices-toggle-group'
+import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
+import { AddFundsButton } from '../profile/add-funds-button'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -47,24 +44,15 @@ export const PortfolioValueSection = memo(
     const onClickNumber = useEvent((mode: GraphMode) => {
       setGraphMode(mode)
       setGraphDisplayNumber(null)
-      setGraphViewYScale(undefined)
+      graphView.setViewYScale(undefined)
     })
-    const [graphViewXScale, setGraphViewXScale] =
-      useState<ScaleTime<number, number>>()
-    const [graphViewYScale, setGraphViewYScale] =
-      useState<ScaleContinuousNumeric<number, number>>()
-    const viewScaleProps = {
-      viewXScale: graphViewXScale,
-      setViewXScale: setGraphViewXScale,
-      viewYScale: graphViewYScale,
-      setViewYScale: setGraphViewYScale,
-    }
+    const graphView = useSingleValueHistoryChartViewScale()
 
     //zooms out of graph if zoomed in upon time selection change
     const setTimePeriod = useEvent((timePeriod: Period) => {
       setCurrentTimePeriod(timePeriod)
-      setGraphViewXScale(undefined)
-      setGraphViewYScale(undefined)
+      graphView.setViewXScale(undefined)
+      graphView.setViewYScale(undefined)
     })
     // placeholder when loading
     if (graphPoints === undefined || !lastPortfolioMetrics) {
@@ -152,7 +140,7 @@ export const PortfolioValueSection = memo(
             points={graphPoints}
             width={width}
             height={height}
-            viewScaleProps={viewScaleProps}
+            viewScaleProps={graphView}
             onMouseOver={handleGraphDisplayChange}
           />
         )}
@@ -187,7 +175,7 @@ export function PortfolioValueSkeleton(props: {
   } = props
   return (
     <>
-      <Row className="mb-2 gap-2">
+      <Row className="mb-1 items-start gap-2 sm:mb-2">
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
@@ -218,36 +206,19 @@ export function PortfolioValueSkeleton(props: {
           {valueElement}
         </Col>
 
-        <AddFundsButton userId={userId} />
+        <AddFundsButton userId={userId} className="self-center max-sm:hidden" />
+
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={setCurrentTimePeriod}
+          color={switcherColor}
+          disabled={disabled}
+          className="ml-auto"
+        />
       </Row>
       <SizedContainer fullHeight={200} mobileHeight={100}>
         {graphElement}
       </SizedContainer>
-      <TimeRangePicker
-        currentTimePeriod={currentTimePeriod}
-        setCurrentTimePeriod={setCurrentTimePeriod}
-        color={switcherColor}
-        disabled={disabled}
-      />
-    </>
-  )
-}
-
-function AddFundsButton({ userId }: { userId?: string }) {
-  const [open, setOpen] = useState(false)
-  const user = useUser()
-  if (!userId || user?.id !== userId) return null
-
-  return (
-    <>
-      <Button
-        className="ml-auto self-start"
-        color="indigo"
-        onClick={() => setOpen(true)}
-      >
-        Get more {ENV_CONFIG.moneyMoniker}
-      </Button>
-      <AddFundsModal open={open} setOpen={setOpen} />
     </>
   )
 }

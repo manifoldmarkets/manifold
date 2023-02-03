@@ -1,5 +1,5 @@
 import { useUser } from 'web/hooks/use-user'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import { toast } from 'react-hot-toast'
 import { Modal } from 'web/components/layout/modal'
@@ -12,60 +12,27 @@ import { collection, doc, setDoc } from 'firebase/firestore'
 import { Report } from 'common/report'
 import { db } from 'web/lib/firebase/init'
 import { removeUndefinedProps } from 'common/util/object'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { FlagIcon } from '@heroicons/react/outline'
 
 export function ReportButton(props: {
-  iconButton?: boolean
-  noModal?: boolean
   report: Omit<Report, 'id' | 'createdTime' | 'userId'>
 }) {
-  const { noModal, iconButton, report } = props
+  const { report } = props
   const { contentOwnerId, contentType } = report
   const currentUser = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isReported, setIsReported] = useState(false)
   const label = contentType === 'contract' ? 'market' : contentType
   if (!currentUser || currentUser.id === contentOwnerId) return <div />
 
-  const onReport = async () => {
-    if (!currentUser) return
-    await toast.promise(reportContent(currentUser.id, report), {
-      loading: 'Reporting...',
-      success: `${capitalize(
-        label
-      )} reported! Admins will take a look within 24 hours.`,
-      error: `Error reporting ${label}`,
-    })
-    setIsReported(true)
-  }
   return (
     <>
-      {iconButton ? (
-        <Tooltip text={`Report ${label}`}>
-          <IconButton
-            size={'2xs'}
-            onClick={() => {
-              noModal ? onReport() : setIsModalOpen(true)
-            }}
-          >
-            <FlagIcon
-              className={
-                'h-5 w-5 text-gray-500 hover:text-gray-600 disabled:text-gray-200'
-              }
-            />
-          </IconButton>
-        </Tooltip>
-      ) : (
-        <Button
-          color={'gray-white'}
-          onClick={() => {
-            noModal ? onReport() : setIsModalOpen(true)
-          }}
-        >
-          {isReported ? 'Reported' : 'Report'}
-        </Button>
-      )}
+      <Button
+        color={'gray-white'}
+        onClick={() => {
+          setIsModalOpen(true)
+        }}
+      >
+        Report
+      </Button>
       <ReportModal
         isModalOpen={isModalOpen}
         label={label}

@@ -21,20 +21,17 @@ export function ContractMention(props: {
   return (
     <Link
       href={contractPath(contract)}
-      className={clsx(
-        'group inline whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50',
-        className
-      )}
+      className={clsx('group inline whitespace-nowrap rounded-sm', className)}
       title={isClient ? tooltipLabel(contract) : undefined}
     >
-      <span className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
+      <span className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900 transition-colors group-hover:text-indigo-500 group-focus:text-indigo-500">
         {contract.question}
       </span>
       {outcomeType === 'BINARY' && (
         <span
           className={clsx(
             probTextColor,
-            'rounded-full px-2 font-semibold ring-1 ring-inset ring-indigo-100 group-hover:ring-indigo-200'
+            'rounded-full px-2 font-semibold ring-1 ring-inset ring-indigo-100 transition-colors group-hover:ring-indigo-200'
           )}
         >
           {resolution ? (

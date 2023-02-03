@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { flatMap, groupBy, sortBy, sum } from 'lodash'
+import { groupBy, last, sortBy, sum } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
@@ -27,10 +27,9 @@ import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from '../layout/row'
 import {
-  storageStore,
+  inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
 import { track } from 'web/lib/service/analytics'
@@ -47,6 +46,7 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
+import { getTotalContractMetrics } from 'web/lib/supabase/contract-metrics'
 import { QfTrades } from './qf-overview'
 
 export function ContractTabs(props: {
@@ -60,6 +60,7 @@ export function ContractTabs(props: {
   activeIndex: number
   setActiveIndex: (i: number) => void
   totalBets: number
+  totalPositions: number
 }) {
   const {
     contract,
@@ -70,6 +71,7 @@ export function ContractTabs(props: {
     activeIndex,
     setActiveIndex,
     totalBets,
+    userPositionsByOutcome,
   } = props
 
   const contractComments = useComments(contract.id) ?? props.comments
@@ -80,6 +82,8 @@ export function ContractTabs(props: {
       ),
     [contractComments, blockedUserIds]
   )
+
+  const [totalPositions, setTotalPositions] = useState(props.totalPositions)
 
   const commentTitle =
     comments.length === 0
@@ -107,15 +111,7 @@ export function ContractTabs(props: {
     (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
     (isMobile ? 'You' : 'Your Trades')
 
-  const outcomes = ['YES', 'NO']
-  const positions =
-    useContractMetrics(contract.id, 100, outcomes) ??
-    props.userPositionsByOutcome
-  const totalPositions = flatMap(Object.values(positions)).length
-  const positionsTitle =
-    totalPositions === 0
-      ? 'Users'
-      : `${shortFormatNumber(totalPositions)} Users`
+  const positionsTitle = shortFormatNumber(totalPositions) + ' Holders'
 
   return (
     <ControlledTabs
@@ -142,7 +138,13 @@ export function ContractTabs(props: {
         totalPositions > 0 &&
           contract.outcomeType === 'BINARY' && {
             title: positionsTitle,
-            content: <BinaryUserPositionsTabContent positions={positions} />,
+            content: (
+              <BinaryUserPositionsTabContent
+                positions={userPositionsByOutcome}
+                contractId={contract.id}
+                setTotalPositions={setTotalPositions}
+              />
+            ),
           },
 
         totalBets > 0 && {
@@ -176,16 +178,23 @@ export function ContractTabs(props: {
 
 const BinaryUserPositionsTabContent = memo(
   function BinaryUserPositionsTabContent(props: {
+    contractId: string
     positions: ContractMetricsByOutcome
+    setTotalPositions: (count: number) => void
   }) {
-    const { positions } = props
-
+    const { contractId, setTotalPositions } = props
+    const outcomes = ['YES', 'NO']
+    const positions =
+      useContractMetrics(contractId, 100, outcomes) ?? props.positions
     const [page, setPage] = useState(0)
     const pageSize = 20
     const currentUser = useUser()
     const followedUsers = useFollows(currentUser?.id)
     const yesPositionsSorted = positions.YES ?? []
     const noPositionsSorted = positions.NO ?? []
+    useEffect(() => {
+      getTotalContractMetrics(contractId).then(setTotalPositions)
+    }, [positions, setTotalPositions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
       page * pageSize,
@@ -312,7 +321,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
     key: `comments-sort-${contract.id}`,
-    store: storageStore(safeLocalStorage()),
+    store: inMemoryStore(),
   })
   const user = useUser()
 
@@ -405,7 +414,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const [bets, setBets] = useState(() => props.bets.filter((b) => !b.isAnte))
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
-  const oldestBet = bets[bets.length - 1]
+  const oldestBet = last(bets)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
 
@@ -414,8 +423,6 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       (b) => b.createdTime > (bets[0]?.createdTime ?? 0)
     )
     if (newBets.length > 0) setBets([...newBets, ...bets])
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.bets])
 
   const lps = useLiquidity(contract.id) ?? []
@@ -450,16 +457,17 @@ const BetsTabContent = memo(function BetsTabContent(props: {
 
   const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
   const shouldLoadMore = limit > 0 && bets.length < totalItems
+  const oldestBetTime = oldestBet?.createdTime ?? contract.createdTime
   useEffect(() => {
     if (!shouldLoadMore) return
-    getOlderBets(contract.id, oldestBet.createdTime, limit)
+    getOlderBets(contract.id, oldestBetTime, limit)
       .then((olderBets) => {
         setBets((bets) => [...bets, ...olderBets])
       })
       .catch((err) => {
         console.error(err)
       })
-  }, [contract.id, limit, oldestBet.createdTime, shouldLoadMore])
+  }, [contract.id, limit, oldestBetTime, shouldLoadMore])
 
   const pageItems = sortBy(items, (item) =>
     item.type === 'bet'

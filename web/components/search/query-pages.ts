@@ -21,6 +21,7 @@ const pages: PageData[] = [
   { label: 'Referrals', slug: '/referrals' },
   { label: 'Live Feed', slug: '/live' },
 
+  { label: 'Markets', slug: '/markets' },
   { label: 'Newest', slug: '/search?s=newest&f=open' },
   { label: 'Trending', slug: '/search?s=score&f=open' },
   { label: 'Daily Changed', slug: '/search?s=daily-score&f=open' },

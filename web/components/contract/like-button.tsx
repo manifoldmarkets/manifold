@@ -35,6 +35,7 @@ export const LikeButton = memo(function LikeButton(props: {
   size?: LikeButtonSizeType
   showTotalLikesUnder?: boolean
   color?: 'gray' | 'white'
+  isSwipe?: boolean
 }) {
   const {
     user,
@@ -47,6 +48,7 @@ export const LikeButton = memo(function LikeButton(props: {
     size = 'md',
     showTotalLikesUnder,
     color = 'gray',
+    isSwipe,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
   const disabled = !user || contentCreatorId === user?.id
@@ -71,11 +73,11 @@ export const LikeButton = memo(function LikeButton(props: {
       contract,
       contract.question,
       contentText,
-      ButtonReactionType
+      ButtonReactionType,
+      { isSwipe: !!isSwipe }
     )
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedOnLike = useMemo(() => debounce(onLike, 1000), [user])
 
   // Handle changes from our useLike hook
@@ -118,7 +120,14 @@ export const LikeButton = memo(function LikeButton(props: {
   const hasSafePolygon =
     (likedUserInfo != undefined && likedUserInfo.length > 0) || userLiked
   return (
-    <Col className="relative">
+    <Row
+      className={clsx(
+        'relative items-center',
+        size === 'md' && 'mx-2',
+        size === 'xl' && 'mx-4',
+        className
+      )}
+    >
       <Tooltip
         text={
           <UserLikedList
@@ -131,18 +140,16 @@ export const LikeButton = memo(function LikeButton(props: {
         placement={'bottom'}
         noTap
         hasSafePolygon={hasSafePolygon}
+        className={'flex items-center'}
       >
         <button
           disabled={disabled}
           className={clsx(
             'transition-transform disabled:cursor-not-allowed',
-            size === 'md' && 'p-2',
-            size === 'xl' && 'p-4',
             color === 'white'
               ? 'text-white disabled:opacity-50'
               : 'text-gray-500',
-            !disabled && color === 'gray' ? 'hover:text-gray-600' : '',
-            className
+            !disabled && color === 'gray' ? 'hover:text-gray-600' : ''
           )}
           {...likeLongPress}
         >
@@ -183,11 +190,16 @@ export const LikeButton = memo(function LikeButton(props: {
         />
       )}
       {showTotalLikesUnder && (
-        <div className="mx-auto -mt-1.5 h-6 text-sm text-white drop-shadow-sm disabled:opacity-50">
+        <div
+          className={clsx(
+            size === 'xl' ? '-mt-3 text-lg' : '-mt-1.5 text-xs',
+            'mx-auto h-6 text-white disabled:opacity-50'
+          )}
+        >
           {totalLikes > 0 ? totalLikes : ''}
         </div>
       )}
-    </Col>
+    </Row>
   )
 })
 
@@ -242,7 +254,7 @@ function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
       <Avatar
         username={userInfo.username}
         avatarUrl={userInfo.avatarUrl}
-        size="xxs"
+        size="2xs"
       />
       <UserLink
         name={userInfo.name}

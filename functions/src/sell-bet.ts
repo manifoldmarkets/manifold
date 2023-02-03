@@ -55,8 +55,11 @@ export const sellbet = newEndpoint({}, async (req, auth) => {
 
     transaction.update(userDoc, { balance: newBalance })
     transaction.update(betDoc, { isSold: true })
-    // Note: id should have been newBetDoc.id! But leaving it for now so it's consistent.
-    transaction.create(newBetDoc, { id: betDoc.id, userId: user.id, ...newBet })
+    transaction.create(newBetDoc, {
+      id: newBetDoc.id,
+      userId: user.id,
+      ...newBet,
+    })
     transaction.update(
       contractDoc,
       removeUndefinedProps({

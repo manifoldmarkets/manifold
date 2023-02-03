@@ -20,7 +20,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
-import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
@@ -441,7 +441,16 @@ export function NewContractPanel(props: {
           <Spacer h={6} />
 
           <Row className="items-center gap-2">
-            <span>Display this market on homepage</span>
+            <span>
+              Publicly listed{' '}
+              <InfoTooltip
+                text={
+                  visibility === 'public'
+                    ? 'Visible on home page and search results'
+                    : "Only visible via link. Won't notify followers"
+                }
+              />
+            </span>
             <ShortToggle
               on={visibility === 'public'}
               setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}

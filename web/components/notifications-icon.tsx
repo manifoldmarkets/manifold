@@ -4,10 +4,7 @@ import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
-import {
-  useFirstPageOfNotifications,
-  useGroupedUnseenNotifications,
-} from 'web/hooks/use-notifications'
+import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
 import { markNotificationAsSeen } from 'web/lib/firebase/notifications'
@@ -48,11 +45,7 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
         unseenSourceIdsToNotificationIds[possibleSourceId].id
       )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asPath, isReady, pathname, privateUser.id, unseenNotifs])
-
-  // Cache notifications.
-  useFirstPageOfNotifications(privateUser)
 
   if (unseenNotifs === 0 || seen) {
     return null

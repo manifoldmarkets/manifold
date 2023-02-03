@@ -14,14 +14,14 @@ import {
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
 import React, { ReactNode, useCallback, useMemo } from 'react'
-import { DisplayContractMention } from '../editor/contract-mention'
-import { DisplayMention } from '../editor/mention'
+import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
+import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
 import { Linkify } from './linkify'
 import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
-import { debounce } from 'lodash'
+import { debounce, noop } from 'lodash'
 import {
   storageStore,
   usePersistentState,
@@ -92,7 +92,6 @@ export function useTextEditor(props: {
     }
   )
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const save = useCallback(debounce(saveContent, 500), [])
 
   const editorClass = clsx(
@@ -106,7 +105,7 @@ export function useTextEditor(props: {
     editorProps: {
       attributes: { class: editorClass, spellcheck: simple ? 'true' : 'false' },
     },
-    onUpdate: key ? ({ editor }) => save(editor.getJSON()) : undefined,
+    onUpdate: !key ? noop : ({ editor }) => save(editor.getJSON()),
     extensions: [
       ...editorExtensions(simple),
       Placeholder.configure({

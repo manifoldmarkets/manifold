@@ -27,7 +27,7 @@ export default function Create() {
       <Page>
         <div className="mx-auto w-full max-w-2xl">
           <div className="rounded-lg px-6 py-4 sm:py-0">
-            <Title className="!mt-0" text="Create a market" />
+            <Title>Create a market</Title>
             <p>Sorry, you are currently banned from creating a market.</p>
           </div>
         </div>
@@ -43,7 +43,7 @@ export default function Create() {
       />
       <div className="mx-auto w-full max-w-2xl">
         <div className="rounded-lg px-6 py-4 sm:py-0">
-          <Title className="!mt-0" text="Create a market" />
+          <Title>Create a market</Title>
 
           <div className="mb-4 text-gray-700">
             Set up your own play-money prediction market on any question.{' '}

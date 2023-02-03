@@ -60,13 +60,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'gradient-pink' &&
       'disabled:bg-gray-300 enabled:bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white',
     color === 'gray-white' &&
-      'text-gray-600 hover:bg-gray-200 shadow-none disabled:opacity-50',
-    color === 'green-white' &&
-      'text-teal-500 hover:bg-teal-500 hover:text-white shadow-none disabled:opacity-50',
-    color === 'red-white' &&
-      'text-scarlet-300 hover:bg-scarlet-300 hover:text-white shadow-none disabled:opacity-50',
-    color === 'indigo-text-only' &&
-      'text-indigo-500 hover:text-indigo-700 shadow-none disabled:text-gray-400 bg-inherit'
+      'text-gray-600 hover:bg-gray-200 shadow-none disabled:opacity-50'
   )
 }
 

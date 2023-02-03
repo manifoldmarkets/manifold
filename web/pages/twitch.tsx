@@ -140,7 +140,7 @@ function TwitchPlaysManifoldMarkets(props: {
           className="mb-[0.4rem] mr-4 inline h-10 w-10"
         ></img>
         <Title
-          text={'Twitch plays Manifold Markets'}
+          children={'Twitch plays Manifold Markets'}
           className={'!-my-0 md:block'}
         />
       </Row>
@@ -204,7 +204,7 @@ function Command(props: { command: string; desc: string }) {
 function TwitchChatCommands() {
   return (
     <div>
-      <Title text="Twitch Chat Commands" className="md:block" />
+      <Title children="Twitch Chat Commands" className="md:block" />
       <Col className="gap-4">
         <Subtitle text="For Chat" />
         <Command
@@ -398,7 +398,7 @@ function SetUpBot(props: {
   return (
     <>
       <Title
-        text={'Set up the bot for your own stream'}
+        children={'Set up the bot for your own stream'}
         className={'!mb-0 md:block'}
       />
       <Col className="gap-4">

@@ -1,10 +1,17 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { SearchOptions } from '@algolia/client-search'
 import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
-import { useEffect, useRef, useMemo, ReactNode } from 'react'
+import {
+  useEffect,
+  useRef,
+  useMemo,
+  ReactNode,
+  useState,
+  createContext,
+  useContext,
+} from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import {
   historyStore,
@@ -26,6 +33,8 @@ import {
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
+import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
+import { ContractsList } from './contract/contracts-list'
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },
@@ -62,6 +71,10 @@ type AdditionalFilter = {
   facetFilters?: string[]
   nonQueryFacetFilters?: string[]
 }
+const AsListContext = createContext({
+  asList: false,
+  setAsList: (_asList: boolean) => {},
+})
 
 export function ContractSearch(props: {
   defaultSort?: Sort
@@ -117,6 +130,7 @@ export function ContractSearch(props: {
   const searchParams = useRef<SearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SearchParameters>()
   const requestId = useRef(0)
+  const [asList, setAsList] = useState(true)
 
   useSafeLayoutEffect(() => {
     if (persistPrefix) {
@@ -196,34 +210,42 @@ export function ContractSearch(props: {
   }
 
   return (
-    <Col>
-      <ContractSearchControls
-        className={headerClassName}
-        defaultSort={defaultSort}
-        defaultFilter={defaultFilter}
-        additionalFilter={additionalFilter}
-        persistPrefix={persistPrefix}
-        hideOrderSelector={hideOrderSelector}
-        useQueryUrlParam={isWholePage}
-        includeProbSorts={includeProbSorts}
-        onSearchParametersChanged={onSearchParametersChanged}
-        autoFocus={autoFocus}
-      />
-      {renderContracts ? (
-        renderContracts(renderedContracts, performQuery)
-      ) : renderedContracts && renderedContracts.length === 0 && profile ? (
-        <p className="mx-2 text-gray-500">No markets found</p>
-      ) : (
-        <ContractsGrid
-          contracts={renderedContracts}
-          showTime={state.showTime ?? undefined}
-          onContractClick={onContractClick}
-          highlightCards={highlightCards}
-          cardUIOptions={cardUIOptions}
-          loadMore={performQuery}
+    <AsListContext.Provider value={{ asList, setAsList }}>
+      <Col>
+        <ContractSearchControls
+          className={headerClassName}
+          defaultSort={defaultSort}
+          defaultFilter={defaultFilter}
+          additionalFilter={additionalFilter}
+          persistPrefix={persistPrefix}
+          hideOrderSelector={hideOrderSelector}
+          useQueryUrlParam={isWholePage}
+          includeProbSorts={includeProbSorts}
+          onSearchParametersChanged={onSearchParametersChanged}
+          autoFocus={autoFocus}
         />
-      )}
-    </Col>
+
+        {renderContracts ? (
+          renderContracts(renderedContracts, performQuery)
+        ) : renderedContracts && renderedContracts.length === 0 && profile ? (
+          <p className="mx-2 text-gray-500">No markets found</p>
+        ) : asList ? (
+          <ContractsList
+            contracts={renderedContracts}
+            loadMore={performQuery}
+          />
+        ) : (
+          <ContractsGrid
+            contracts={renderedContracts}
+            showTime={state.showTime ?? undefined}
+            onContractClick={onContractClick}
+            highlightCards={highlightCards}
+            cardUIOptions={cardUIOptions}
+            loadMore={performQuery}
+          />
+        )}
+      </Col>
+    </AsListContext.Provider>
   )
 }
 
@@ -242,7 +264,7 @@ function ContractSearchControls(props: {
   const {
     className,
     defaultSort = 'relevance',
-    defaultFilter = 'all',
+    defaultFilter = 'open',
     additionalFilter,
     persistPrefix,
     hideOrderSelector,
@@ -303,7 +325,7 @@ function ContractSearchControls(props: {
   ]
   const facetFilters = [
     ...additionalFilters,
-    ...(additionalFilter?.nonQueryFacetFilters ?? []),
+    ...(!query ? additionalFilter?.nonQueryFacetFilters ?? [] : []),
     additionalFilter?.creatorId || additionalFilter?.groupSlug
       ? ''
       : 'visibility:public',
@@ -380,6 +402,8 @@ function SearchFilters(props: {
   className?: string
   includeProbSorts?: boolean
 }) {
+  const { asList, setAsList } = useContext(AsListContext)
+
   const {
     filter,
     selectFilter,
@@ -399,7 +423,7 @@ function SearchFilters(props: {
       <Select
         value={filter}
         onChange={(e) => selectFilter(e.target.value as filter)}
-        className="!h-full grow py-1"
+        className={clsx('!h-full grow py-1')}
       >
         <option value="open">Open</option>
         <option value="closed">Closed</option>
@@ -419,6 +443,18 @@ function SearchFilters(props: {
           ))}
         </Select>
       )}
+
+      <button
+        type="button"
+        onClick={() => setAsList(!asList)}
+        className="relative inline-flex h-full items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
+      >
+        {asList ? (
+          <ViewGridIcon className="h-5 w-5" aria-hidden="true" />
+        ) : (
+          <ViewListIcon className="h-5 w-5" aria-hidden="true" />
+        )}
+      </button>
     </div>
   )
 }

@@ -60,6 +60,7 @@ import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { getTotalContractMetrics } from 'web/lib/supabase/contract-metrics'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 
 const CONTRACT_BET_FILTER: BetFilter = {
@@ -112,6 +113,10 @@ export async function getStaticPropz(ctx: {
   const topContractMetrics = contract?.resolution
     ? await getTopContractMetrics(contract.id, 10)
     : []
+  const totalPositions =
+    contractId && contract?.outcomeType === 'BINARY'
+      ? await getTotalContractMetrics(contractId)
+      : 0
 
   return {
     props: {
@@ -122,6 +127,7 @@ export async function getStaticPropz(ctx: {
       },
       comments,
       userPositionsByOutcome,
+      totalPositions,
       totalBets,
       topContractMetrics,
     },
@@ -137,6 +143,7 @@ export default function ContractPage(props: {
   historyData: HistoryData
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
+  totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
 }) {
@@ -147,6 +154,7 @@ export default function ContractPage(props: {
     userPositionsByOutcome: {},
     totalBets: 0,
     topContractMetrics: [],
+    totalPositions: 0,
   }
 
   const inIframe = useIsIframe()
@@ -168,7 +176,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositionsByOutcome, comments } = props
+  const { userPositionsByOutcome, comments, totalPositions } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
@@ -376,6 +384,7 @@ export function ContractPageContent(
             totalBets={totalBets}
             comments={comments}
             userPositionsByOutcome={userPositionsByOutcome}
+            totalPositions={totalPositions}
             answerResponse={answerResponse}
             onCancelAnswerResponse={onCancelAnswerResponse}
             blockedUserIds={blockedUserIds}
@@ -426,7 +435,7 @@ const RelatedContractsWidget = memo(function RecommendedContractsWidget(props: {
   }
   return (
     <Col className="mt-2 gap-2 px-2 sm:px-1">
-      <Title className="text-gray-700" text="Related markets" />
+      <Title className="text-gray-700" children="Related markets" />
       <ContractsGrid
         contracts={relatedMarkets ?? []}
         trackingPostfix=" related"

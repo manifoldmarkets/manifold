@@ -289,10 +289,9 @@ export function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const format = getFormattedMappedValue(contract)
-
-  const getValue = getMappedValue(contract)
-  const rawDifference = Math.abs(getValue(resultProb) - getValue(initialProb))
+  const rawDifference = Math.abs(
+    getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
+  )
   const displayedDifference = isPseudoNumeric
     ? formatLargeNumber(rawDifference)
     : formatPercent(rawDifference)
@@ -357,7 +356,7 @@ export function BuyPanel(props: {
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}
-          showSlider={true}
+          sliderOptions={{ show: true, wrap: !mobileView }}
           binaryOutcome={outcome}
           hideInput={hideInput}
         />
@@ -396,10 +395,12 @@ export function BuyPanel(props: {
               )}
             </Row>
             {probStayedSame ? (
-              <div className="text-lg">{format(initialProb)}</div>
+              <div className="text-lg">
+                {getFormattedMappedValue(contract, initialProb)}
+              </div>
             ) : (
               <div className="text-lg">
-                {format(resultProb)}
+                {getFormattedMappedValue(contract, resultProb)}
                 <span className={clsx('text-sm text-gray-500')}>
                   {isPseudoNumeric ? (
                     <></>
@@ -407,7 +408,10 @@ export function BuyPanel(props: {
                     <>
                       {' '}
                       {outcome != 'NO' && '+'}
-                      {format(resultProb - initialProb)}
+                      {getFormattedMappedValue(
+                        contract,
+                        resultProb - initialProb
+                      )}
                     </>
                   )}
                 </span>
@@ -448,13 +452,14 @@ export function BuyPanel(props: {
           setOpen={setSeeLimit}
           className="rounded-lg bg-white px-4 pb-4"
         >
-          <Title text="Limit Order" />
+          <Title children="Limit Order" />
           <LimitOrderPanel
             hidden={!seeLimit}
             contract={contract}
             user={user}
             unfilledBets={unfilledBets}
             balanceByUserId={balanceByUserId}
+            mobileView={mobileView}
           />
           <LimitBets
             contract={contract}
@@ -474,6 +479,7 @@ function LimitOrderPanel(props: {
   balanceByUserId: { [userId: string]: number }
   hidden: boolean
   onBuySuccess?: () => void
+  mobileView?: boolean
 }) {
   const {
     contract,
@@ -482,6 +488,7 @@ function LimitOrderPanel(props: {
     balanceByUserId,
     hidden,
     onBuySuccess,
+    mobileView,
   } = props
 
   const initialProb = getProbability(contract)
@@ -707,7 +714,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        showSlider={true}
+        sliderOptions={{ show: true, wrap: !mobileView }}
       />
 
       <Col className="mt-8 w-full gap-3">

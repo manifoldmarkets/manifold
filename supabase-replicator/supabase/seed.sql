@@ -67,6 +67,7 @@ create index user_contract_metrics_recent_bets on user_contract_metrics (
      user_id,
      ((data->'lastBetTime')::bigint) desc
     );
+create index if not exists user_contract_metrics_contract_id on user_contract_metrics (contract_id);
 
 create table if not exists user_follows (
     user_id text not null,
@@ -134,6 +135,7 @@ drop policy if exists "public read" on contracts;
 create policy "public read" on contracts for select using (true);
 create index if not exists contracts_data_gin on contracts using GIN (data);
 create index if not exists contracts_group_slugs_gin on contracts using GIN ((data->'groupSlugs'));
+create index if not exists contracts_creator_id on contracts ((to_jsonb(data)->'creatorId'));
 
 create table if not exists contract_answers (
     contract_id text not null,

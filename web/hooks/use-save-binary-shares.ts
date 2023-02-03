@@ -31,7 +31,7 @@ export const useSaveBinaryShares = (
       setSavedShares(JSON.parse(savedShares))
     }
 
-    if (userBets) {
+    if (userBets?.length) {
       // Save shares to local storage.
       const sharesData = JSON.stringify({ yesShares, noShares })
       local?.setItem(`${contract.id}-shares`, sharesData)

@@ -79,3 +79,13 @@ export async function getTopContractUserMetrics(
   )
   return data.map((d) => d.data)
 }
+
+export async function getTotalContractMetrics(contractId: string) {
+  const { count } = await run(
+    db
+      .from('user_contract_metrics')
+      .select('*', { head: true, count: 'exact' })
+      .eq('contract_id', contractId)
+  )
+  return count
+}

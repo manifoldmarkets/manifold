@@ -58,10 +58,8 @@ export default function Notifications() {
 
   return (
     <Page>
-      <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
-        <Row className={clsx('hidden w-full justify-between lg:block')}>
-          <Title text={'Notifications'} className="grow" />
-        </Row>
+      <Col className="mx-auto w-full p-2 pb-0">
+        <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
         {isNative ? (
           <div />
@@ -137,7 +135,7 @@ export default function Notifications() {
             </div>
           </div>
         )}
-      </div>
+      </Col>
     </Page>
   )
 }

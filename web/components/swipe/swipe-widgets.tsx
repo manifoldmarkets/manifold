@@ -5,6 +5,7 @@ import { richTextToString } from 'common/util/parse'
 import CountUp from 'react-countup'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
+import { Row } from '../layout/row'
 import { Content } from '../widgets/editor'
 
 export default function Percent(props: {
@@ -12,20 +13,22 @@ export default function Percent(props: {
   yesPercent: number
   noPercent: number
   outcome?: 'NO' | 'YES'
+  className?: string
 }) {
-  const { currPercent, yesPercent, noPercent, outcome } = props
+  const { currPercent, yesPercent, noPercent, outcome, className } = props
   return (
-    <div
+    <Row
       className={clsx(
-        'transition-color flex w-full items-center justify-center font-bold',
+        'transition-color items-center font-bold',
         !outcome && 'text-white',
         outcome === 'YES' && 'text-teal-100',
-        outcome === 'NO' && 'text-scarlet-100'
+        outcome === 'NO' && 'text-scarlet-100',
+        className
       )}
     >
-      <span
+      <div
         className={clsx(
-          'text-8xl transition-all',
+          'text-5xl transition-all',
           !outcome && '[text-shadow:#4337c9_0_8px]',
           outcome === 'YES' &&
             '[text-shadow:#14b8a6_-6px_4px,#0f766e_-12px_8px]',
@@ -47,9 +50,10 @@ export default function Percent(props: {
           />
         )}
         {!outcome && formatPercentNumber(currPercent)}
-      </span>
-      <span className="pt-2 text-2xl">%</span>
-    </div>
+      </div>
+      <div className="pt-2 text-2xl">%</div>
+      <div className="ml-2 self-end text-2xl">chance</div>
+    </Row>
   )
 }
 
@@ -68,13 +72,15 @@ export function DescriptionAndModal(props: {
 
   return (
     <Col className={clsx(descriptionClass, 'items-end')}>
-      <span className="line-clamp-2">{descriptionString}</span>
-      {descriptionString.length >= 70 &&
+      <div className="line-clamp-3 w-full [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]">
+        {descriptionString}
+      </div>
+      {descriptionString.length >= 100 &&
         isModalOpen != undefined &&
         setIsModalOpen && (
           <>
             <span
-              className="mr-2 font-semibold text-indigo-400 drop-shadow-sm"
+              className="mr-2 font-semibold text-indigo-400"
               onClick={() => setIsModalOpen(true)}
             >
               See more

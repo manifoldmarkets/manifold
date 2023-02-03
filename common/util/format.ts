@@ -45,10 +45,11 @@ function getPercentDecimalPlaces(zeroToOne: number) {
   return zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
 }
 
-export function formatPercent(zeroToOne: number) {
+export function formatPercent(zeroToOne: number, shortFormat = false) {
   // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
-  const decimalPlaces = getPercentDecimalPlaces(zeroToOne)
-  return (zeroToOne * 100).toFixed(decimalPlaces) + '%'
+  const decimalPlaces = shortFormat ? 0 : getPercentDecimalPlaces(zeroToOne)
+  const percent = shortFormat ? Math.min(zeroToOne * 100, 99) : zeroToOne * 100
+  return percent.toFixed(decimalPlaces) + '%'
 }
 
 export function formatPercentNumber(zeroToOne: number) {

@@ -26,12 +26,15 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
         contract={contract}
         contentText={contract.question}
         className={clsx(
-          'py-1',
+          'mt-1 !items-start',
           isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
         )}
       />
 
-      <SimpleLinkButton getUrl={() => getShareUrl(contract, user?.username)} />
+      <SimpleLinkButton
+        getUrl={() => getShareUrl(contract, user?.username)}
+        tooltip="Copy link to market"
+      />
 
       <ContractInfoDialog contract={contract} user={user} />
     </Row>

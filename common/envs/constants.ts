@@ -107,7 +107,7 @@ export const CHECK_USERNAMES = [
   'Yev',
   'ZviMowshowitz',
   'NathanpmYoung',
-  'kolotom99',
+  'itsTomekK',
   'SneakySly',
   'IsaacKing',
   'MattP',
@@ -129,6 +129,7 @@ export const CHECK_USERNAMES = [
   'CarsonGale',
   'Tetraspace',
   'BoltonBailey',
+  'MatthewBarnett',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -166,3 +167,4 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
+export const NATIVE_BUILD = process.env.NATIVE_BUILD_TYPE ?? 'PREVIEW'

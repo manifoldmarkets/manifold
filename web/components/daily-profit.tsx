@@ -1,6 +1,6 @@
-import React, { memo, useEffect, useMemo, useState } from 'react'
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { getUserEvents } from 'web/lib/supabase/user-events'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
@@ -13,12 +13,18 @@ import { getUserContractMetricsByProfit } from 'web/lib/supabase/contract-metric
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { keyBy, partition, sortBy } from 'lodash'
+import { keyBy, partition, sortBy, sum } from 'lodash'
 import { _ as r, Grid } from 'gridjs-react'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { dailyStatsClass } from 'web/components/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
+import {
+  storageStore,
+  usePersistentRevalidatedState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { LoadingIndicator } from './widgets/loading-indicator'
+const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
   user: User | null | undefined
@@ -26,46 +32,75 @@ export const DailyProfit = memo(function DailyProfit(props: {
   const { user } = props
   const [open, setOpen] = useState(false)
   const [seen, setSeen] = useState(true)
-  const dailyProfitEventName = 'click daily profit button'
+
+  const refreshContractMetrics = useCallback(async () => {
+    if (user) return getUserContractMetricsByProfit(user.id)
+  }, [user])
+
+  const [data] = usePersistentRevalidatedState<
+    { metrics: ContractMetrics[]; contracts: CPMMBinaryContract[] } | undefined
+  >(
+    undefined,
+    {
+      key: `daily-profit-${user?.id}`,
+      store: storageStore(safeLocalStorage()),
+    },
+    {
+      every: HOUR_MS,
+      callback: refreshContractMetrics,
+    }
+  )
+
+  const dailyProfit = useMemo(() => {
+    if (!data) return 0
+    return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
+  }, [data])
+
   useEffect(() => {
     if (!user) return
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const todayMs = today.getTime()
     const todayMsEnd = todayMs + DAY_MS
-    getUserEvents(user.id, dailyProfitEventName, todayMs, todayMsEnd).then(
+    getUserEvents(user.id, DAILY_PROFIT_CLICK_EVENT, todayMs, todayMsEnd).then(
       (events) => setSeen(events.length > 0)
     )
   }, [user])
 
-  const profit = user?.profitCached.daily ?? 0
-  // emoji options: ⌛ 💰 🕛
+  // Other emoji options: ⌛ 💰 🕛
   return (
     <>
       <button
         className={clsx(
           'rounded-md py-1 text-center transition-colors disabled:cursor-not-allowed',
           !seen
-            ? 'from-indigo-500 to-blue-500 px-1.5 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r'
+            ? 'from-amber-400 via-yellow-200 to-amber-400 px-1.5 text-yellow-600 transition-all hover:from-yellow-400 hover:via-yellow-100 hover:to-yellow-400 enabled:bg-gradient-to-tr'
             : ''
         )}
         onClick={withTracking(() => {
           setOpen(true)
           setSeen(true)
-        }, dailyProfitEventName)}
+        }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Tooltip text={'Daily profit'}>
           <Row
             className={clsx(
               dailyStatsClass,
-              profit > 0 && seen && 'text-teal-500'
+              dailyProfit > 0 && seen && 'text-teal-500'
             )}
           >
-            <span>💰{formatMoney(profit)}</span>
+            <span>💰{formatMoney(dailyProfit)}</span>
           </Row>
         </Tooltip>
       </button>
-      {user && <DailyProfitModal user={user} setOpen={setOpen} open={open} />}
+      {user && (
+        <DailyProfitModal
+          setOpen={setOpen}
+          open={open}
+          metrics={data?.metrics}
+          contracts={data?.contracts}
+        />
+      )}
     </>
   )
 })
@@ -73,22 +108,10 @@ export const DailyProfit = memo(function DailyProfit(props: {
 function DailyProfitModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
-  user: User
+  metrics?: ContractMetrics[]
+  contracts?: CPMMBinaryContract[]
 }) {
-  const { open, setOpen, user } = props
-  const [data, setData] = useState<
-    { metrics: ContractMetrics[]; contracts: CPMMBinaryContract[] } | undefined
-  >()
-
-  const sum = useMemo(() => {
-    if (!data) return 0
-    return data.metrics.reduce((sum, m) => sum + (m.from?.day.profit ?? 0), 0)
-  }, [data])
-
-  useEffect(() => {
-    if (!open || data) return
-    getUserContractMetricsByProfit(user.id).then(setData)
-  }, [data, user.id, open])
+  const { open, setOpen, metrics, contracts } = props
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -97,18 +120,13 @@ function DailyProfitModal(props: {
           <Title className={'mb-1'}>Daily profit</Title>
           <span className="text-sm text-gray-500">
             Change in the value of your Yes/No positions over the last 24 hours.
-            Doesn't include{' '}
-            {data?.metrics ? formatMoney(user.profitCached.daily - sum) : '...'}{' '}
-            in profit from other market types. (Updates every 30 min)
+            (Updates every 30 min)
           </span>
         </Col>
-        {!data ? (
+        {!metrics || !contracts ? (
           <LoadingIndicator />
         ) : (
-          <ProfitChangeTable
-            contracts={data.contracts}
-            metrics={data.metrics}
-          />
+          <ProfitChangeTable contracts={contracts} metrics={metrics} />
         )}
       </div>
     </Modal>

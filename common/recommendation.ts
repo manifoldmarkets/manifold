@@ -56,9 +56,8 @@ export function getMarketRecommendations(
       columnSet.add('swiped-' + contractId)
     }
     for (const contractId of likedOrBetOnIds) {
-      if (columnSet.has('swiped-' + contractId)) {
-        sparseMatrix[userIndex]['swiped-' + contractId] = 1
-      }
+      sparseMatrix[userIndex]['swiped-' + contractId] = 1
+      columnSet.add('swiped-' + contractId)
     }
 
     // Add new columns for groups.

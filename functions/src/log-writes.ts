@@ -8,6 +8,7 @@ import { Database } from '../../common/supabase/schema'
 type TableName = keyof Database['public']['Tables']
 
 const pubSubClient = new PubSub()
+const writeTopic = pubSubClient.topic('firestoreWrite')
 
 function getWriteInfo<T>(change: Change<DocumentSnapshot<T>>) {
   const { before, after } = change
@@ -41,9 +42,12 @@ function getTLEntry<T extends DocumentData>(
 }
 
 function logger(path: string, tableName: TableName) {
-  return functions.firestore.document(path).onWrite((change, ctx) => {
+  return functions.firestore.document(path).onWrite(async (change, ctx) => {
     const entry = getTLEntry(change, ctx, tableName)
-    return pubSubClient.topic('firestoreWrite').publishMessage({ json: entry })
+    const messageId = await writeTopic.publishMessage({ json: entry })
+    console.log(
+      `Published: messageId=${messageId} eventId=${entry.eventId} kind=${entry.writeKind} docId=${entry.docId} parentId=${entry.parentId}`
+    )
   })
 }
 

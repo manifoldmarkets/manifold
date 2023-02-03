@@ -3,9 +3,9 @@ import Link from 'next/link'
 import {
   HomeIcon,
   MenuAlt3Icon,
-  SparklesIcon,
   XIcon,
   BookOpenIcon,
+  ScaleIcon,
 } from '@heroicons/react/outline'
 import { DeviceMobileIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
@@ -36,7 +36,7 @@ const touchItemClass = 'bg-indigo-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Discover', href: '/swipe', icon: SparklesIcon },
+    { name: 'Markets', href: '/markets', icon: ScaleIcon },
     {
       name: 'Profile',
       href: `/${user.username}?tab=portfolio`,
@@ -57,9 +57,7 @@ const signedOutNavigation = (appStoreUrl: string) => [
     icon: DeviceMobileIcon,
   },
   { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
-  // [c] evil experiment: go to home instead of help, since home explains it anyways
-  // [s] changing help to about
-  { name: 'About', href: '/#about', icon: BookOpenIcon },
+  { name: 'About', href: '/?showHelpModal=true', icon: BookOpenIcon },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL

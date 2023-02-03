@@ -14,3 +14,15 @@ export const getContracts = async (contractIds: string[]) => {
   const results = await Promise.all(promises)
   return results.flatMap((result) => result.data.map((r) => r.data))
 }
+
+export const getUnresolvedContracts = async (creatorId: string) => {
+  const { count } = await run(
+    db
+      .from('contracts')
+      .select('*', { head: true, count: 'exact' })
+      .eq('data->>creatorId', creatorId)
+      .contains('data', { isResolved: false })
+      .lt('data->>closeTime', Date.now())
+  )
+  return count
+}

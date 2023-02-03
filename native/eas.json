@@ -28,7 +28,8 @@
     "production": {
       "channel": "default",
       "env": {
-        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD",
+        "NATIVE_BUILD_TYPE": "PROD"
       },
       "android": {
         "credentialsSource": "local"

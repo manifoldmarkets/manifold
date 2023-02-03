@@ -120,7 +120,7 @@ export default function DestinyLandingPage(props: { subCount: number }) {
         </div>
 
         <Spacer h={2} />
-        <Subtitle text="New to Manifold Markets?" />
+        <Subtitle>New to Manifold Markets?</Subtitle>
         <Col className=" max-w-3xl gap-4 px-4">
           <LandingPagePanel />
           <Row className="w-full gap-2 sm:gap-4">
@@ -144,7 +144,7 @@ export default function DestinyLandingPage(props: { subCount: number }) {
         </Col>
 
         <Spacer h={4} />
-        <Subtitle text="Trending markets" />
+        <Subtitle>Trending markets</Subtitle>
         {trendingContracts ? (
           <ContractsGrid
             contracts={trendingContracts}
@@ -197,7 +197,7 @@ export function InfoCard(props: {
     <>
       <Modal open={open} setOpen={setOpen} size="md">
         <Col className="rounded-md bg-white px-8 pb-6 pt-0 text-sm font-light md:text-lg">
-          <Title text={text} />
+          <Title children={text} />
           {modal}
           <Link
             href={link}

@@ -41,7 +41,6 @@ export function PushNotificationsModal(props: {
       setOpen(shouldShowOurNotificationPrompt)
     }, 1000)
     return () => clearTimeout(openTimer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     privateUser.pushToken,
     privateUser.interestedInPushNotifications,

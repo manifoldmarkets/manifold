@@ -30,8 +30,11 @@ export function ShowMoreLessButton(props: {
 
   return (
     <Button
-      color={'indigo-text-only'}
-      className={clsx('z-10 select-none bg-white text-sm', className)}
+      color="override"
+      className={clsx(
+        'z-10 select-none bg-white text-sm text-indigo-500 hover:text-indigo-700',
+        className
+      )}
       onClick={onClick}
       size={'xs'}
     >

@@ -23,13 +23,14 @@ import {
   BinaryContractOutcomeLabel,
   CancelLabel,
   FreeResponseOutcomeLabel,
+  NumericValueLabel,
 } from '../outcome-label'
 import {
   getOutcomeProbability,
   getProbability,
   getTopAnswer,
 } from 'common/calculate'
-import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
+import { MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { getTextColor, QuickBet, QuickOutcomeView } from '../bet/quick-bet'
 import { useUser } from 'web/hooks/use-user'
@@ -48,6 +49,11 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import Image from 'next/image'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { ContractCardView } from 'common/events'
+import { Avatar } from '../widgets/avatar'
+import { UserLink } from '../widgets/user-link'
+import { getLinkTarget } from 'web/components/widgets/site-link'
+import { JSONContent } from '@tiptap/core'
+import { richTextToString } from 'common/util/parse'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -61,6 +67,7 @@ export const ContractCard = memo(function ContractCard(props: {
   noLinkAvatar?: boolean
   newTab?: boolean
   showImage?: boolean
+  showDescription?: boolean
   children?: ReactNode
   pinned?: boolean
   hideQuestion?: boolean
@@ -79,6 +86,7 @@ export const ContractCard = memo(function ContractCard(props: {
     noLinkAvatar,
     newTab,
     showImage,
+    showDescription,
     children,
     pinned,
     hideQuestion,
@@ -87,7 +95,8 @@ export const ContractCard = memo(function ContractCard(props: {
     trackCardViews,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
-  const { isResolved, createdTime, featuredLabel } = contract
+  const { isResolved, createdTime, featuredLabel, creatorCreatedTime } =
+    contract
   const { question, outcomeType } = contract
   const { resolution } = contract
 
@@ -114,6 +123,7 @@ export const ContractCard = memo(function ContractCard(props: {
 
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   const hasImage = contract.coverImageUrl && showImage
+  const href = contractPath(contract)
   return (
     <Card
       className={clsx(
@@ -125,12 +135,22 @@ export const ContractCard = memo(function ContractCard(props: {
     >
       <Col className="relative flex-1 gap-1 pt-2">
         {!hideDetails && (
-          <Row className="justify-between px-4 ">
-            <AvatarDetails
-              contract={contract}
-              noLink={noLinkAvatar}
-              className="z-10"
-            />
+          <Row className="justify-between px-4">
+            <Row className="z-10 items-center gap-2">
+              <Avatar
+                username={contract.creatorUsername}
+                avatarUrl={contract.creatorAvatarUrl}
+                size={4}
+                noLink={noLinkAvatar}
+              />
+              <UserLink
+                name={contract.creatorName}
+                username={contract.creatorUsername}
+                noLink={noLinkAvatar}
+                className="text-sm text-gray-400"
+                createdTime={creatorCreatedTime}
+              />
+            </Row>
             <Row className="gap-1">
               {pinned && <FeaturedPill label={featuredLabel} />}
               {/* {isNew && <NewContractBadge />} */}
@@ -180,6 +200,11 @@ export const ContractCard = memo(function ContractCard(props: {
             <QuickOutcomeView contract={contract} numAnswersFR={numAnswersFR} />
           )}
         </Col>
+
+        {showDescription && (
+          <DescriptionRow description={contract.description} />
+        )}
+
         <Row className={clsx('gap-1 px-4', children ? '' : 'mb-2')}>
           <MiscDetails
             contract={contract}
@@ -205,7 +230,7 @@ export const ContractCard = memo(function ContractCard(props: {
       {onClick ? (
         <a
           className="absolute top-0 left-0 right-0 bottom-0"
-          href={contractPath(contract)}
+          href={href}
           onClick={(e) => {
             // Let the browser handle the link click (opens in new tab).
             if (e.ctrlKey || e.metaKey) {
@@ -221,7 +246,7 @@ export const ContractCard = memo(function ContractCard(props: {
         />
       ) : (
         <Link
-          href={contractPath(contract)}
+          href={href}
           onClick={trackCallback(
             'click market card' + (trackingPostfix ?? ''),
             {
@@ -230,51 +255,62 @@ export const ContractCard = memo(function ContractCard(props: {
             }
           )}
           className="absolute top-0 left-0 right-0 bottom-0"
-          target={newTab ? '_blank' : '_self'}
+          target={newTab ? getLinkTarget(href, newTab) : '_self'}
         />
       )}
     </Card>
   )
 })
 
+function DescriptionRow(props: { description: string | JSONContent }) {
+  const { description } = props
+
+  const descriptionString =
+    typeof description === 'string'
+      ? description
+      : richTextToString(description)
+
+  return (
+    <Row className="px-4 pb-1">
+      <div className="break-anywhere line-clamp-6 text-sm font-thin">
+        {descriptionString}
+      </div>
+    </Row>
+  )
+}
+
+// TODO: move the "resolution or chance" components out of this file
+
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
-  large?: boolean
   className?: string
 }) {
-  const { contract, large, className } = props
+  const { contract, className } = props
   const { resolution } = contract
   const textColor = getTextColor(contract)
 
   const prob = getBinaryProbPercent(contract)
 
   return (
-    <Col
-      className={clsx('items-end', large ? 'text-4xl' : 'text-3xl', className)}
-    >
+    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
       {resolution ? (
-        <Row className="flex items-start">
-          <div>
-            <div
-              className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
-            >
-              Resolved
-            </div>
-            <BinaryContractOutcomeLabel
-              contract={contract}
-              resolution={resolution}
-            />
+        <>
+          <div className={clsx('text-base font-light')}>
+            Resolved
+            {resolution === 'MKT' && ' as '}
           </div>
-        </Row>
+          <BinaryContractOutcomeLabel
+            contract={contract}
+            resolution={resolution}
+          />
+        </>
       ) : (
         <>
           <div className={textColor}>{prob}</div>
-          <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
-            chance
-          </div>
+          <div className={clsx(textColor, 'text-base font-light')}>chance</div>
         </>
       )}
-    </Col>
+    </Row>
   )
 }
 
@@ -381,40 +417,37 @@ export function PseudoNumericResolutionOrExpectation(props: {
 }) {
   const { contract, className } = props
   const { resolution, resolutionValue, resolutionProbability } = contract
-  const textColor = `text-gray-900`
 
   const value = resolution
     ? resolutionValue
       ? resolutionValue
-      : getMappedValue(contract)(resolutionProbability ?? 0)
-    : getMappedValue(contract)(getProbability(contract))
+      : getMappedValue(contract, resolutionProbability ?? 0)
+    : getMappedValue(contract, getProbability(contract))
 
   return (
-    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
+    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
       {resolution ? (
         <>
-          <div className={clsx('text-base text-gray-500')}>Resolved</div>
-
+          <div className="text-base font-light">Resolved</div>
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <Tooltip className={textColor} text={value.toFixed(2)}>
-              {formatLargeNumber(value)}
-            </Tooltip>
+            <>
+              <Tooltip text={value.toFixed(2)} placement="bottom">
+                <NumericValueLabel value={value} />
+              </Tooltip>
+            </>
           )}
         </>
       ) : (
         <>
-          <Tooltip
-            className={clsx('text-3xl', textColor)}
-            text={value.toFixed(2)}
-          >
+          <Tooltip text={value.toFixed(2)} placement="bottom">
             {formatLargeNumber(value)}
           </Tooltip>
-          <div className={clsx('text-base', textColor)}>expected</div>
+          <div className="text-base font-light">expected</div>
         </>
       )}
-    </Col>
+    </Row>
   )
 }
 

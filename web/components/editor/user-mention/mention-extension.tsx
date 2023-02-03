@@ -1,7 +1,7 @@
 import Mention from '@tiptap/extension-mention'
 import { mergeAttributes } from '@tiptap/react'
-import { Linkify } from '../widgets/linkify'
 import { mentionSuggestion } from './mention-suggestion'
+import { UserMention } from './user-mention'
 
 const name = 'mention-component'
 
@@ -17,5 +17,5 @@ export const DisplayMention = Mention.extend({
     mergeAttributes({ HTMLAttributes }),
     0,
   ],
-  renderReact: (attrs: any) => <Linkify text={'@' + attrs.label} />,
+  renderReact: (attrs: any) => <UserMention userName={attrs.label} />,
 }).configure({ suggestion: mentionSuggestion })

@@ -195,7 +195,7 @@ export const ChoiceContractChart = (props: {
         <>
           <Row className="items-center gap-2">
             {prev.obj && (
-              <Avatar size="xxs" avatarUrl={prev.obj.userAvatarUrl} />
+              <Avatar size="2xs" avatarUrl={prev.obj.userAvatarUrl} />
             )}
             <span className="text-semibold text-base">
               {formatDateInRange(d, start, end)}

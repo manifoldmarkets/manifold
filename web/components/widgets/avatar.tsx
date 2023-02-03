@@ -10,14 +10,14 @@ export const Avatar = memo(
     username?: string
     avatarUrl?: string
     noLink?: boolean
-    size?: number | 'xxs' | 'xs' | 'sm'
+    size?: number | '2xs' | 'xs' | 'sm'
     className?: string
   }) => {
     const { username, noLink, size, className } = props
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
     const s =
-      size == 'xxs' ? 4 : size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
+      size == '2xs' ? 4 : size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
     const sizeInPx = s * 4
 
     const onClick = (e: MouseEvent) => {

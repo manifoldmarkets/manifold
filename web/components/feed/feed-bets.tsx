@@ -17,7 +17,7 @@ import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
   bet: Bet
-  avatarSize?: number | 'xxs' | 'xs' | 'sm'
+  avatarSize?: number | '2xs' | 'xs' | 'sm'
   className?: string
 }) {
   const { contract, bet, avatarSize, className } = props
@@ -75,13 +75,13 @@ export function BetStatusText(props: {
 
   const fromProb =
     hadPoolMatch || isFreeResponse
-      ? getFormattedMappedValue(contract)(bet.probBefore)
-      : getFormattedMappedValue(contract)(bet.limitProb ?? bet.probBefore)
+      ? getFormattedMappedValue(contract, bet.probBefore)
+      : getFormattedMappedValue(contract, bet.limitProb ?? bet.probBefore)
 
   const toProb =
     hadPoolMatch || isFreeResponse
-      ? getFormattedMappedValue(contract)(bet.probAfter)
-      : getFormattedMappedValue(contract)(bet.limitProb ?? bet.probAfter)
+      ? getFormattedMappedValue(contract, bet.probAfter)
+      : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
 
   return (
     <div className={clsx('text-sm text-gray-500', className)}>

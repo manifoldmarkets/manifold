@@ -1,10 +1,13 @@
 import { Col } from 'web/components/layout/col'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export default function SignInWaiting() {
   useRedirectIfSignedIn()
+  // Flappy is too small during an android native client side resizing, so we use dynamic sizing
+  const { width, height } = useWindowSize()
   return (
-    <Col className="h-[100vh] items-center justify-center">
+    <Col style={{ width, height }} className="items-center justify-center">
       <img
         className="mb-6 block -scale-x-100 self-center"
         src="/logo-flapping-with-money.gif"
