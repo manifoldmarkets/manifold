@@ -42,11 +42,11 @@ export function AddMarketToGroupModal(props: {
             <UncontrolledTabs
               tabs={[
                 {
-                  title: 'Create new market',
+                  title: 'New market',
                   content: <NewContractFromGroup group={group} user={user} />,
                 },
                 {
-                  title: 'Add existing market',
+                  title: 'Existing market',
                   content: (
                     <SelectMarkets
                       submitLabel={(len) =>

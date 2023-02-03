@@ -18,7 +18,6 @@ export async function call(url: string, method: string, params: any) {
     body: JSON.stringify(params),
   })
   return await fetch(req).then(async (resp) => {
-    console.log(req, resp)
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
       throw new APIError(resp.status, json?.message, json?.details)

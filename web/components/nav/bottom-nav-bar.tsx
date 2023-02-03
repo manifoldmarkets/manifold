@@ -160,7 +160,7 @@ export function MobileSidebar(props: {
       <Transition.Root show={sidebarOpen} as={Fragment}>
         <Dialog
           as="div"
-          className="fixed inset-0 z-40 flex"
+          className="fixed inset-0 z-50 flex"
           onClose={setSidebarOpen}
         >
           <Transition.Child

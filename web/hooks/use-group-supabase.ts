@@ -115,7 +115,6 @@ export function useRealtimeGroupMembers(
       },
       (payload) => {
         fetchGroupMembers()
-        // console.log(payload)
       }
     )
     channel.subscribe(async (status) => {})
