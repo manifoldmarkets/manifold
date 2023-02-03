@@ -5,6 +5,7 @@ import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { createGroup } from 'web/lib/firebase/api'
+import { ColorType } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { TextEditor, useTextEditor } from '../widgets/editor'
@@ -36,6 +37,7 @@ export function CreateGroupButton(props: {
   goToGroupOnSubmit?: boolean
   addGroupIdParamOnSubmit?: boolean
   icon?: JSX.Element
+  openModalBtnColor?: ColorType
 }) {
   const {
     user,
@@ -45,6 +47,7 @@ export function CreateGroupButton(props: {
     goToGroupOnSubmit,
     addGroupIdParamOnSubmit,
     icon,
+    openModalBtnColor,
   } = props
 
   const [name, setName] = useState('')
@@ -115,6 +118,7 @@ export function CreateGroupButton(props: {
         icon: icon,
         className: className,
         disabled: isSubmitting,
+        color: openModalBtnColor,
       }}
       submitBtn={{
         label: 'Create',

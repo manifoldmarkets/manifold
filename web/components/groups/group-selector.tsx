@@ -14,6 +14,8 @@ import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
 import { User } from 'common/user'
 import { searchInAny } from 'common/util/parse'
 import { Row } from 'web/components/layout/row'
+import { ChartBarIcon, UsersIcon } from '@heroicons/react/solid'
+import DocumentChartBarIcon from 'web/lib/icons/document-chart-bar-icon'
 
 export function GroupSelector(props: {
   selectedGroup: Group | undefined
@@ -35,14 +37,8 @@ export function GroupSelector(props: {
   const memberGroups = useMemberGroups(creator?.id)
   const memberGroupIds = memberGroups?.map((g) => g.id) ?? []
 
-  console.log('in selector', permittedGroups)
   const sortGroups = (groups: Group[]) =>
-    groups.sort(
-      (a, b) =>
-        // weight group higher if user is a member
-        (memberGroupIds.includes(b.id) ? 5 : 1) * b.totalContracts -
-        (memberGroupIds.includes(a.id) ? 5 : 1) * a.totalContracts
-    )
+    groups.sort((a, b) => b.totalMembers - a.totalMembers)
 
   let availableGroups
   if (permittedGroups) {
@@ -79,13 +75,13 @@ export function GroupSelector(props: {
     )
   }
   return (
-    <div className="flex flex-col items-start">
+    <div className="flex w-full flex-col items-start">
       <Combobox
         as="div"
         value={selectedGroup}
         onChange={setSelectedGroup}
         nullable={true}
-        className={'text-sm'}
+        className={'w-full text-sm'}
       >
         {() => (
           <>
@@ -95,9 +91,9 @@ export function GroupSelector(props: {
                 <InfoTooltip text="Question will be displayed alongside the other questions in the group." />
               </Combobox.Label>
             )}
-            <div className="relative mt-2">
+            <div className="relative mt-2 w-full">
               <Combobox.Input
-                className="w-60 rounded-md border border-gray-300 bg-white p-3 pl-4 pr-20 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 "
+                className="w-full rounded-md border border-gray-300 bg-white p-3 pl-4 pr-20 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 onChange={(event) => setQuery(event.target.value)}
                 displayValue={(group: Group) => group && group.name}
                 placeholder={'E.g. Science, Politics'}
@@ -119,7 +115,7 @@ export function GroupSelector(props: {
                     value={group}
                     className={({ active }) =>
                       clsx(
-                        'relative h-12 cursor-pointer select-none py-2 pr-6',
+                        'relative h-12 cursor-pointer select-none py-2 pr-6 transition-colors',
                         active ? 'bg-indigo-500 text-white' : 'text-gray-900'
                       )
                     }
@@ -143,23 +139,19 @@ export function GroupSelector(props: {
                           )}
                         >
                           <Row className={'items-center gap-1 truncate pl-5'}>
-                            {memberGroupIds.includes(group.id) && (
-                              <UserIcon
-                                className={'h-4 w-4 shrink-0 text-teal-500'}
-                              />
-                            )}
                             {group.name}
                           </Row>
-                          <span
+                          <Row
                             className={clsx(
-                              'ml-1 w-[1.4rem] shrink-0 rounded-full bg-indigo-500 text-center text-white',
-                              group.totalContracts > 99 ? 'w-[2.1rem]' : ''
+                              'gap-2 text-sm text-gray-500',
+                              active ? 'text-white' : 'text-gray-500'
                             )}
                           >
-                            {group.totalContracts > 99
-                              ? '99+'
-                              : group.totalContracts}
-                          </span>
+                            <Row className="w-12 items-center gap-0.5">
+                              <UsersIcon className="h-4 w-4" />
+                              {group.totalMembers}
+                            </Row>
+                          </Row>
                         </span>
                       </>
                     )}
@@ -170,13 +162,14 @@ export function GroupSelector(props: {
                   user={creator}
                   onOpenStateChange={setIsCreatingNewGroup}
                   className={
-                    'flex w-full flex-row items-center justify-start rounded-none border-0 bg-white pl-2 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white'
+                    'group flex w-full flex-row items-center justify-start rounded-none border-0 bg-white font-normal text-gray-900 transition-colors hover:bg-indigo-500 hover:text-white'
                   }
                   label={'Create a new Group'}
                   addGroupIdParamOnSubmit
                   icon={
-                    <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
+                    <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500 group-hover:text-teal-300" />
                   }
+                  openModalBtnColor="gray-white"
                 />
               </Combobox.Options>
             </div>
