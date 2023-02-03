@@ -223,7 +223,7 @@ export function NewContractPanel(props: {
     getGroupsWhereUserIsMember(creator.id).then((g) =>
       setPermittedGroups(g.map((gp: { group_data: any }) => gp.group_data))
     )
-  }, [])
+  }, [creator.id])
 
   return (
     <div className={className}>

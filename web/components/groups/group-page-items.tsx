@@ -1,6 +1,5 @@
 import { UserGroupIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
-import { User } from 'common/user'
 import { useState } from 'react'
 import { useRealtimeNumGroupMembers } from 'web/hooks/use-group-supabase'
 import {

@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import Router, { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 
@@ -8,15 +7,11 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Leaderboard } from 'web/components/leaderboard'
 import { SEO } from 'web/components/SEO'
-import {
-  useGroup,
-  useGroupContractIds,
-  useMemberGroupsSubscription,
-} from 'web/hooks/use-group'
+import { useGroup } from 'web/hooks/use-group'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Contract } from 'web/lib/firebase/contracts'
-import { getGroupBySlug, listMemberIds } from 'web/lib/firebase/groups'
+import { getGroupBySlug } from 'web/lib/firebase/groups'
 import {
   getUser,
   getUsersBlockFacetFilters,
@@ -35,44 +30,27 @@ import { GroupComment } from 'common/comment'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
+import toast from 'react-hot-toast'
 import { IconButton } from 'web/components/buttons/button'
 import { ContractSearch } from 'web/components/contract-search'
-import { SelectMarketsModal } from 'web/components/contract-select-modal'
+import { AddMarketToGroupModal } from 'web/components/groups/add-market-modal'
 import { GroupAboutSection } from 'web/components/groups/group-about-section'
 import BannerImage from 'web/components/groups/group-banner-image'
+import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { GroupOptions } from 'web/components/groups/group-options'
-import GroupOpenClosedWidget, {
-  GroupMembersWidget,
-} from 'web/components/groups/group-page-items'
+import { GroupMembersWidget } from 'web/components/groups/group-page-items'
 import { GroupPostSection } from 'web/components/groups/group-post-section'
-import {
-  AddMembersButton,
-  JoinOrLeaveGroupButton,
-} from 'web/components/groups/groups-button'
+import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePost, usePosts } from 'web/hooks/use-post'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { addContractToGroup } from 'web/lib/firebase/api'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
-import { useRealtimeRole } from 'web/hooks/use-group-supabase'
-import { groupRoleType } from 'web/components/groups/group-member-modal'
-import { NewContractPanel } from 'web/components/new-contract-panel'
-import {
-  Modal,
-  MODAL_CLASS,
-  SCROLLABLE_MODAL_CLASS,
-} from 'web/components/layout/modal'
-import {
-  AddMarketToGroupModal,
-  NewContractFromGroup,
-} from 'web/components/groups/add-market-modal'
-import { addContractToGroup } from 'web/lib/firebase/api'
-import toast from 'react-hot-toast'
-import { options } from 'preact'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -80,7 +58,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const group = await getGroupBySlug(slugs[0])
-  const memberIds = group && (await listMemberIds(group))
   const creatorPromise = group ? getUser(group.creatorId) : null
 
   const messages = group && (await listAllCommentsOnGroup(group.id))
@@ -102,7 +79,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   return {
     props: {
       group,
-      memberIds,
       creator,
       topTraders,
       topCreators,
@@ -132,7 +108,6 @@ export default function GroupPage(props: {
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
-    memberIds: [],
     creator: null,
     topTraders: [],
     topCreators: [],
@@ -140,7 +115,7 @@ export default function GroupPage(props: {
     aboutPost: null,
     posts: [],
   }
-  const { creator, topTraders, topCreators, posts, memberIds } = props
+  const { creator, topTraders, topCreators, posts } = props
 
   const router = useRouter()
 
@@ -468,7 +443,6 @@ function AddContractButton(props: {
 }) {
   const { group, user, className, userRole } = props
   const [open, setOpen] = useState(false)
-  const groupContractIds = useGroupContractIds(group.id)
 
   async function onSubmit(contracts: Contract[]) {
     await Promise.all(

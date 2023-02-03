@@ -2,7 +2,6 @@ import { DotsVerticalIcon, MinusCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import e from 'cors'
 import { removeContractFromGroup } from 'web/lib/firebase/api'
 import DropdownMenu from '../comments/dropdown-menu'
 

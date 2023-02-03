@@ -22,7 +22,6 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { Content } from '../widgets/editor'
 import { ExpandableContent } from '../widgets/expandable-content'
-import { groupRoleType } from './group-member-modal'
 
 function GroupAboutModalContent(props: {
   content: JSONContent | string

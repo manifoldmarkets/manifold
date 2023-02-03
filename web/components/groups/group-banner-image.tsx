@@ -11,7 +11,6 @@ import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
-import { groupRoleType } from './group-member-modal'
 
 export const DEFAULT_BANNERS = [
   '/group/default_group_banner_indigo.png',

@@ -16,7 +16,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { partition, uniqBy } from 'lodash'
-import { getContractFromId, updateContract } from 'web/lib/firebase/contracts'
+import { getContractFromId } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/firebase/init'
 import {
   coll,
@@ -213,11 +213,6 @@ export function getGroupLinksToDisplay(contract: Contract) {
     (g) => g.userId === contract.creatorId
   )
   return [...groupsCreatorAdded, ...otherGroups].slice(0, 3)
-}
-
-export async function listMemberIds(group: Group) {
-  const members = await getValues<GroupMemberDoc>(groupMembers(group.id))
-  return members.map((m) => m.userId)
 }
 
 export const topFollowedGroupsQuery = query(

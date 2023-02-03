@@ -33,7 +33,6 @@ export function GroupSelector(props: {
   const [query, setQuery] = useState('')
   const openGroups = useOpenGroups()
   const memberGroups = useMemberGroups(creator?.id)
-  const memberGroupIds = memberGroups?.map((g) => g.id) ?? []
 
   const sortGroups = (groups: Group[]) =>
     groups.sort((a, b) => b.totalMembers - a.totalMembers)

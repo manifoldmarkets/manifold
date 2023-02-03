@@ -1,6 +1,6 @@
-import { Fragment, MutableRefObject, ReactNode } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import clsx from 'clsx'
+import { Fragment, ReactNode } from 'react'
 
 export const MODAL_CLASS = 'items-center gap-4 rounded-md bg-white px-8 py-6'
 export const SCROLLABLE_MODAL_CLASS =

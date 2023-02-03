@@ -39,7 +39,6 @@ import { SiteLink } from '../widgets/site-link'
 import { UserLink } from '../widgets/user-link'
 import { EditGroupButton } from './edit-group-button'
 import { JoinOrLeaveGroupButton } from './groups-button'
-import { groupRoleType } from './group-member-modal'
 
 export function GroupPostSection(props: {
   group: Group

@@ -1,16 +1,14 @@
+import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useState } from 'react'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { Button } from './buttons/button'
 import { AdditionalFilter, ContractSearch } from './contract-search'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './widgets/loading-indicator'
-import { usePrivateUser } from 'web/hooks/use-user'
-import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
-import { Spacer } from './layout/spacer'
-import clsx from 'clsx'
-import { group } from 'console'
 
 export function SelectMarketsModal(props: {
   title: string
@@ -30,15 +28,6 @@ export function SelectMarketsModal(props: {
     onSubmit,
     contractSearchOptions,
   } = props
-
-  const privateUser = usePrivateUser()
-  const [contracts, setContracts] = useState<Contract[]>([])
-
-  async function addContract(contract: Contract) {
-    if (contracts.find((c) => c.id === contract.id) !== undefined) {
-      setContracts(contracts.filter((c) => c.id !== contract.id))
-    } else setContracts([...contracts, contract])
-  }
 
   return (
     <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>

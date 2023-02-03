@@ -6,7 +6,6 @@ import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { SimpleLinkButton } from '../buttons/simple-link-button'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
-import { groupRoleType } from './group-member-modal'
 import { getBlockGroupDropdownItem } from './hide-group-item'
 
 export function GroupOptions(props: {

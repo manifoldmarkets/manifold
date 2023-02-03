@@ -19,6 +19,7 @@ import {
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 import { Linkify } from '../widgets/linkify'
 import {
   AvatarNotificationIcon,
@@ -28,7 +29,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { useIsVisible } from 'web/hooks/use-is-visible'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -1046,15 +1046,8 @@ function GroupRoleChangedNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const {
-    sourceUserName,
-    sourceUserUsername,
-    sourceUserAvatarUrl,
-    sourceText,
-    sourceId,
-    sourceTitle,
-    sourceSlug,
-  } = notification
+  const { sourceUserName, sourceUserUsername, sourceText, sourceTitle } =
+    notification
   return (
     <NotificationFrame
       notification={notification}

@@ -1,19 +1,16 @@
-import { XIcon } from '@heroicons/react/outline'
 import { XCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { CHECK_USERNAMES, CORE_USERNAMES } from 'common/envs/constants'
-import { Group, GroupLink } from 'common/group'
+import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { IconButton } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useGroupsWithContract } from 'web/hooks/use-group'
-import { useRealtimeGroupMembers } from 'web/hooks/use-group-supabase'
 import {
   addContractToGroup,
   removeContractFromGroup,
@@ -49,7 +46,8 @@ export function ContractGroupsList(props: {
         )
       }
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
   const isAdmin = useAdmin()
   function canRemoveFromGroup(group: Group) {
     if (!user) {
@@ -85,9 +83,7 @@ export function ContractGroupsList(props: {
                     'group relative rounded-full bg-gray-600 p-1 px-4 text-sm text-white transition-colors hover:bg-indigo-600'
                   )}
                 >
-                  {/* <Row className="line-clamp-1 h-8 items-center gap-2"> */}
                   <GroupLinkItem group={groupLink} />
-                  {/* </Row> */}
                   {group && canRemoveFromGroup(group) && (
                     <div className="absolute -top-2 -right-4 md:invisible md:group-hover:visible">
                       <IconButton
