@@ -286,7 +286,7 @@ function EditableCloseDate(props: {
       editor.commands.focus('end')
       insertContent(
         editor,
-        `<br><p>Close date updated to ${formattedCloseDate}</p>`
+        `<p></p><p>Close date updated to ${formattedCloseDate}</p>`
       )
 
       updateContract(contract.id, {
