@@ -21,7 +21,7 @@ import { Linkify } from './linkify'
 import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
-import { debounce } from 'lodash'
+import { debounce, noop } from 'lodash'
 import {
   storageStore,
   usePersistentState,
@@ -105,7 +105,7 @@ export function useTextEditor(props: {
     editorProps: {
       attributes: { class: editorClass, spellcheck: simple ? 'true' : 'false' },
     },
-    onUpdate: key ? ({ editor }) => save(editor.getJSON()) : undefined,
+    onUpdate: !key ? noop : ({ editor }) => save(editor.getJSON()),
     extensions: [
       ...editorExtensions(simple),
       Placeholder.configure({
