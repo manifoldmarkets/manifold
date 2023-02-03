@@ -64,9 +64,9 @@ function DesktopPopover(props: { contract: Contract }) {
         />
       }
     >
-      <span tabIndex={0}>
+      <div>
         <ContractsListEntry contract={contract} />
-      </span>
+      </div>
     </Tippy>
   )
 }
