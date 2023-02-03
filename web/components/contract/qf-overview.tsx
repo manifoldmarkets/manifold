@@ -154,7 +154,10 @@ function QfPayPanel(props: {
         inputClassName="w-full max-w-none"
         amount={betAmount}
         onChange={setBetAmount}
-        showSlider={true}
+        sliderOptions={{
+          show: true,
+          wrap: true,
+        }}
         error={undefined}
         setError={() => {}}
       />
@@ -311,7 +314,10 @@ function QfPoolPanel(props: { contract: QuadraticFundingContract }) {
         inputClassName="w-full max-w-none"
         amount={amount}
         onChange={setAmount}
-        showSlider={true}
+        sliderOptions={{
+          show: true,
+          wrap: true,
+        }}
         error={undefined}
         setError={() => {}}
       />
