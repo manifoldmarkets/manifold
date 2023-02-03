@@ -51,6 +51,7 @@ function DesktopPopover(props: { contract: Contract }) {
 
   return (
     <Tippy
+      appendTo={document.body}
       interactive
       duration={0}
       offset={[0, 0]}
