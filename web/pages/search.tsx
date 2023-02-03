@@ -18,9 +18,9 @@ export default function Search() {
   useTracking('view search')
 
   const { query } = useRouter()
-  const { q, s, p } = query
+  const { q, s } = query
   // Allow users to browse without keyboard popping up on mobile.
-  const autoFocus = !isMobile && !q && !s && !p
+  const autoFocus = !isMobile && !q && !s
 
   const followedGroups = useMemberGroupsSubscription(user)
   const shouldFilterDestiny = !followedGroups?.find((g) =>

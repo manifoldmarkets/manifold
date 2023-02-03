@@ -129,6 +129,7 @@ export const usePersistentState = <T>(
   }, [key, state, hasLoaded])
 
   if (store?.readsUrl) {
+    // On route change on the same page, set the state.
     // On page load, router isn't ready immediately, so set state once it is.
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -139,7 +140,7 @@ export const usePersistentState = <T>(
         const savedValue = key != null ? store.get(key) : undefined
         setState(savedValue ?? initial)
       }
-    }, [router.isReady])
+    }, [router.isReady, router.query])
   }
 
   return [state, setState] as const
