@@ -36,6 +36,7 @@ import { getCloseDate } from './helpers/openai-utils'
 import { marked } from 'marked'
 import { mintAndPoolCert } from './helpers/cert-txns'
 import { Bet } from 'common/bet'
+import { QfPoolTxn } from 'common/txn'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -350,7 +351,20 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     // certs have the mint and pool specified in txn
     await mintAndPoolCert(providerId, contract.id, DEFAULT_SHARES, ante)
   } else if (outcomeType === 'QUADRATIC_FUNDING') {
-    // TODO: Could create a QfPoolTxn using the ante
+    const txnDoc = firestore.collection('txns').doc()
+    const txn: QfPoolTxn = {
+      id: txnDoc.id,
+      category: 'QF_POOL',
+      createdTime: Date.now(),
+      fromId: providerId,
+      fromType: 'USER',
+      toId: contract.id,
+      toType: 'CONTRACT',
+      amount: ante,
+      token: 'M$',
+      qfId: contract.id,
+    }
+    await txnDoc.set(txn)
   }
 
   return contract
