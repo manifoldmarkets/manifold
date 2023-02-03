@@ -172,7 +172,7 @@ export async function joinGroup(
   groupId: string,
   userId: string
 ): Promise<void> {
-  // create a new member document in grouoMembers collection
+  // create a new member document in groupMembers collection
   const memberDoc = doc(groupMembers(groupId), userId)
   return await setDoc(memberDoc, {
     userId,
@@ -188,56 +188,6 @@ export async function leaveGroup(
   const memberDoc = doc(groupMembers(groupId), userId)
   return await deleteDoc(memberDoc)
 }
-
-// TODO: need to add this to firestore rules
-// export async function addContractToGroup(
-//   group: Group,
-//   contract: Contract,
-//   userId: string,
-//   userRole: groupRoleType
-// ) {
-//   const newGroupLinks = [
-//     ...(contract.groupLinks ?? []),
-//     {
-//       groupId: group.id,
-//       createdTime: Date.now(),
-//       slug: group.slug,
-//       userId,
-//       name: group.name,
-//     } as GroupLink,
-//   ]
-
-//   if (
-//     userRole === 'admin' ||
-//     userRole === 'moderator' ||
-//     (contract.creatorId == userId && userRole === 'member')
-//   ) {
-//     // It's good to update the contract first, so the on-update-group trigger doesn't re-add them
-//     await updateContract(contract.id, {
-//       groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
-//       groupLinks: newGroupLinks,
-//     })
-//   } else {
-//     console.log('You do not have permission to add a market to this group!')
-//   }
-// }
-
-// TODO: This doesn't check if the user has permission to do this
-// export async function removeContractFromGroup(
-//   group: Group,
-//   contract: Contract
-// ) {
-//   if (contract.groupLinks?.some((l) => l.groupId === group.id)) {
-//     const newGroupLinks = contract.groupLinks?.filter(
-//       (link) => link.slug !== group.slug
-//     )
-//     await updateContract(contract.id, {
-//       groupSlugs:
-//         contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
-//       groupLinks: newGroupLinks ?? [],
-//     })
-//   }
-// }
 
 export function getGroupLinkToDisplay(contract: Contract) {
   const { groupLinks } = contract

@@ -161,12 +161,9 @@ export function useRealtimeNumGroupMembers(groupId: string) {
         getNumGroupMembers(groupId)
           .then((result) => setNumMembers(result))
           .catch((e) => console.log(e))
-        // console.log('payload', payload)
       }
     )
-    channel.subscribe(async (status) => {
-      // console.log('STATUS', status)
-    })
+    channel.subscribe(async (status) => {})
   }, [db])
   return numMembers
 }
