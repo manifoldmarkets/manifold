@@ -1120,7 +1120,6 @@ export const createMarketClosedNotification = async (
   )
 }
 
-// TODO: inga when admin changes your role in a group you get notified
 export const createGroupStatusChangeNotification = async (
   initiator: User,
   affectedMember: GroupMember,
@@ -1129,13 +1128,6 @@ export const createGroupStatusChangeNotification = async (
 ) => {
   const privateUser = await getPrivateUser(affectedMember.userId)
   if (!privateUser) return
-  // TODO: inga add this back in when figure out permissions
-  // const { sendToBrowser } = getNotificationDestinationsForUser(
-  //   privateUser,
-  //   'group_role_changed'
-  // )
-  // if (!sendToBrowser) return
-
   let sourceText = `changed your role to ${newStatus}`
   if (
     ((!affectedMember.role || affectedMember.role == 'member') &&
@@ -1172,7 +1164,7 @@ export const createGroupStatusChangeNotification = async (
     sourceText: sourceText,
     sourceSlug: group.slug,
     sourceTitle: group.name,
-    sourceContractId: undefined,
+    sourceContractId: 'group' + group.id,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }

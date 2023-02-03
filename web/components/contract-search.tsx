@@ -104,6 +104,8 @@ export function ContractSearch(props: {
     group: Group
     userRole: groupRoleType | null
   }
+  listViewDisabled?: boolean
+  contractSearchControlsClassName?: string
 }) {
   const {
     defaultSort,
@@ -121,6 +123,7 @@ export function ContractSearch(props: {
     autoFocus,
     profile,
     fromGroupProps,
+    listViewDisabled,
   } = props
 
   const [state, setState] = usePersistentState(
@@ -216,6 +219,40 @@ export function ContractSearch(props: {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
   }
 
+  if (listViewDisabled) {
+    return (
+      <Col>
+        <ContractSearchControls
+          className={headerClassName}
+          defaultSort={defaultSort}
+          defaultFilter={defaultFilter}
+          additionalFilter={additionalFilter}
+          persistPrefix={persistPrefix}
+          hideOrderSelector={hideOrderSelector}
+          useQueryUrlParam={isWholePage}
+          includeProbSorts={includeProbSorts}
+          onSearchParametersChanged={onSearchParametersChanged}
+          autoFocus={autoFocus}
+          listViewDisabled={listViewDisabled}
+        />
+        {renderContracts ? (
+          renderContracts(renderedContracts, performQuery)
+        ) : renderedContracts && renderedContracts.length === 0 && profile ? (
+          <p className="mx-2 text-gray-500">No markets found</p>
+        ) : (
+          <ContractsGrid
+            contracts={renderedContracts}
+            showTime={state.showTime ?? undefined}
+            onContractClick={onContractClick}
+            highlightCards={highlightCards}
+            cardUIOptions={cardUIOptions}
+            loadMore={performQuery}
+            fromGroupProps={fromGroupProps}
+          />
+        )}
+      </Col>
+    )
+  }
   return (
     <AsListContext.Provider value={{ asList, setAsList }}>
       <Col>
@@ -267,6 +304,7 @@ function ContractSearchControls(props: {
   onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
   autoFocus?: boolean
+  listViewDisabled?: boolean
 }) {
   const {
     className,
@@ -279,6 +317,7 @@ function ContractSearchControls(props: {
     useQueryUrlParam,
     autoFocus,
     includeProbSorts,
+    listViewDisabled,
   } = props
 
   const router = useRouter()
@@ -395,6 +434,7 @@ function ContractSearchControls(props: {
         sort={sort}
         className={'flex flex-row gap-2'}
         includeProbSorts={includeProbSorts}
+        listViewDisabled={listViewDisabled}
       />
     </div>
   )
@@ -408,6 +448,7 @@ function SearchFilters(props: {
   sort: string
   className?: string
   includeProbSorts?: boolean
+  listViewDisabled?: boolean
 }) {
   const { asList, setAsList } = useContext(AsListContext)
 
@@ -419,6 +460,7 @@ function SearchFilters(props: {
     sort,
     className,
     includeProbSorts,
+    listViewDisabled,
   } = props
 
   const sorts = includeProbSorts
@@ -451,17 +493,19 @@ function SearchFilters(props: {
         </Select>
       )}
 
-      <button
-        type="button"
-        onClick={() => setAsList(!asList)}
-        className="relative inline-flex h-full items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
-      >
-        {asList ? (
-          <ViewGridIcon className="h-5 w-5" aria-hidden="true" />
-        ) : (
-          <ViewListIcon className="h-5 w-5" aria-hidden="true" />
-        )}
-      </button>
+      {!listViewDisabled && (
+        <button
+          type="button"
+          onClick={() => setAsList(!asList)}
+          className="relative inline-flex h-full items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
+        >
+          {asList ? (
+            <ViewGridIcon className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <ViewListIcon className="h-5 w-5" aria-hidden="true" />
+          )}
+        </button>
+      )}
     </div>
   )
 }

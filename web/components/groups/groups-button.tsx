@@ -112,9 +112,6 @@ export function JoinOrLeaveGroupButton(props: {
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => setIsMember(props.isMember), [props.isMember])
 
-  // if (!group.anyoneCanJoin) {
-  //   return <></>
-  // }
   const unfollow = user
     ? withTracking(() => {
         leaveGroup(group.id, user.id)

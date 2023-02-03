@@ -37,6 +37,9 @@ export function useRealtimeRole(groupId: string | undefined) {
       }
     )
     channel.subscribe(async (status) => {})
+    return () => {
+      db.removeChannel(channel)
+    }
   }, [db, user])
   return userRole
 }
@@ -117,6 +120,9 @@ export function useRealtimeGroupMembers(
       }
     )
     channel.subscribe(async (status) => {})
+    return () => {
+      db.removeChannel(channel)
+    }
   }, [db])
   return { admins, moderators, members, loadMore }
 }

@@ -53,6 +53,7 @@ export function SelectMarkets(props: {
   setOpen: (open: boolean) => void
   className?: string
   additionalFilter?: AdditionalFilter
+  headerClassName?: string
 }) {
   const {
     submitLabel,
@@ -61,6 +62,7 @@ export function SelectMarkets(props: {
     setOpen,
     className,
     additionalFilter,
+    headerClassName,
   } = props
 
   const privateUser = usePrivateUser()
@@ -101,8 +103,9 @@ export function SelectMarkets(props: {
           excludeContractIds: additionalFilter?.excludeContractIds,
           facetFilters: getUsersBlockFacetFilters(privateUser),
         }}
-        headerClassName="bg-white"
+        headerClassName={clsx('bg-white', headerClassName)}
         {...contractSearchOptions}
+        listViewDisabled={true}
       />
       <Row className="fixed inset-x-0 bottom-0 z-40 justify-end bg-white px-8 py-2">
         {!loading && (

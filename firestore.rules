@@ -228,8 +228,7 @@ service cloud.firestore {
         isGroupMember() && 
         (
         get(/databases/$(database)/documents/contracts/$(contractId)).data.creatorId == request.auth.uid || 
-        get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role == 'admin' ||
-        get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role == 'contributor'
+        ['admin','contributor'].includes(get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role)
         )
         )
         );

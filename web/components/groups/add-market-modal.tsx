@@ -38,7 +38,7 @@ export function AddMarketToGroupModal(props: {
           </Col>
         )}
         {(userRole === 'admin' || userRole === 'moderator') && (
-          <Col className="w-full pt-4">
+          <Col className="-mt-1 w-full pt-4">
             <UncontrolledTabs
               tabs={[
                 {
@@ -57,6 +57,7 @@ export function AddMarketToGroupModal(props: {
                       additionalFilter={{
                         excludeContractIds: groupContractIds,
                       }}
+                      headerClassName="top-[6px]"
                     />
                   ),
                 },
