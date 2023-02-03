@@ -47,7 +47,7 @@ function duplicateContractHref(contract: Contract) {
       // Conditional, because `?isLogScale=false` evaluates to `true`
       params.isLogScale = true
     }
-    params.initValue = getMappedValue(contract)(contract.initialProbability)
+    params.initValue = getMappedValue(contract, contract.initialProbability)
   }
 
   // TODO: Support multiple choice markets?

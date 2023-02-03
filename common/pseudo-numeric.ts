@@ -5,11 +5,11 @@ export function formatNumericProbability(
   p: number,
   contract: PseudoNumericContract
 ) {
-  const value = getMappedValue(contract)(p)
+  const value = getMappedValue(contract, p)
   return formatLargeNumber(value)
 }
 
-export const getMappedValue = (contract: Contract) => (p: number) => {
+export const getMappedValue = (contract: Contract, p: number) => {
   if (contract.outcomeType !== 'PSEUDO_NUMERIC') return p
 
   const { min, max, isLogScale } = contract
@@ -22,10 +22,10 @@ export const getMappedValue = (contract: Contract) => (p: number) => {
   return p * (max - min) + min
 }
 
-export const getFormattedMappedValue = (contract: Contract) => (p: number) => {
+export const getFormattedMappedValue = (contract: Contract, p: number) => {
   if (contract.outcomeType !== 'PSEUDO_NUMERIC') return formatPercent(p)
 
-  const value = getMappedValue(contract)(p)
+  const value = getMappedValue(contract, p)
   return formatLargeNumber(value)
 }
 

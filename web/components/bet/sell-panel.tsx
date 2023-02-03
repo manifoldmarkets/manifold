@@ -119,8 +119,9 @@ export function SellPanel(props: {
   const profit = saleValue - costBasis
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
-  const getValue = getMappedValue(contract)
-  const rawDifference = Math.abs(getValue(resultProb) - getValue(initialProb))
+  const rawDifference = Math.abs(
+    getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
+  )
   const displayedDifference =
     contract.outcomeType === 'PSEUDO_NUMERIC'
       ? formatLargeNumber(rawDifference)
@@ -147,7 +148,6 @@ export function SellPanel(props: {
 
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const format = getFormattedMappedValue(contract)
 
   return (
     <>
@@ -180,9 +180,9 @@ export function SellPanel(props: {
             {isPseudoNumeric ? 'Estimated value' : 'Probability'}
           </div>
           <div>
-            {format(initialProb)}
+            {getFormattedMappedValue(contract, initialProb)}
             <span className="mx-2">→</span>
-            {format(resultProb)}
+            {getFormattedMappedValue(contract, initialProb)}
           </div>
         </Row>
         {loanPaid !== 0 && (
@@ -234,7 +234,7 @@ const getSaleProbChange = (
     balanceByUserId
   )
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
-
-  const getValue = getMappedValue(contract)
-  return Math.abs(getValue(resultProb) - getValue(initialProb))
+  return Math.abs(
+    getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
+  )
 }

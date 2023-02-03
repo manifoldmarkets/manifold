@@ -185,7 +185,7 @@ function LimitBet(props: {
       )}
       <td>
         {isPseudoNumeric
-          ? getFormattedMappedValue(contract)(limitProb)
+          ? getFormattedMappedValue(contract, limitProb)
           : formatPercent(limitProb)}
       </td>
       <td>{formatMoney(orderAmount - amount)}</td>
