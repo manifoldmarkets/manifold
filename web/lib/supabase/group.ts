@@ -55,3 +55,10 @@ export async function getMemberRole(user: User, groupId: string) {
   )
   return followers
 }
+
+export async function getGroupContractIds(groupId: string) {
+  const groupContractIds = await run(
+    db.from('group_contracts').select('contract_id').eq('group_id', groupId)
+  )
+  return groupContractIds.data
+}

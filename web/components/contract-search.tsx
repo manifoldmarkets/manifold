@@ -56,7 +56,7 @@ type SearchParameters = {
   facetFilters: SearchOptions['facetFilters']
 }
 
-type AdditionalFilter = {
+export type AdditionalFilter = {
   creatorId?: string
   tag?: string
   excludeContractIds?: string[]

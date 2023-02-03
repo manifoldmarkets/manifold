@@ -1,7 +1,7 @@
 import { Contract } from 'common/contract'
 import { useState } from 'react'
 import { Button } from './buttons/button'
-import { ContractSearch } from './contract-search'
+import { AdditionalFilter, ContractSearch } from './contract-search'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
@@ -10,6 +10,7 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { Spacer } from './layout/spacer'
 import clsx from 'clsx'
+import { group } from 'console'
 
 export function SelectMarketsModal(props: {
   title: string
@@ -62,9 +63,16 @@ export function SelectMarkets(props: {
   contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
   setOpen: (open: boolean) => void
   className?: string
+  additionalFilter?: AdditionalFilter
 }) {
-  const { submitLabel, onSubmit, contractSearchOptions, setOpen, className } =
-    props
+  const {
+    submitLabel,
+    onSubmit,
+    contractSearchOptions,
+    setOpen,
+    className,
+    additionalFilter,
+  } = props
 
   const privateUser = usePrivateUser()
   const [contracts, setContracts] = useState<Contract[]>([])
@@ -101,6 +109,7 @@ export function SelectMarkets(props: {
         }}
         highlightCards={contracts.map((c) => c.id)}
         additionalFilter={{
+          excludeContractIds: additionalFilter?.excludeContractIds,
           facetFilters: getUsersBlockFacetFilters(privateUser),
         }}
         headerClassName="bg-white"

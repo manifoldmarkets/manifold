@@ -2,6 +2,8 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { User } from 'common/user'
+import { useEffect, useState } from 'react'
+import { getGroupContractIds } from 'web/lib/supabase/group'
 import { SelectMarkets } from '../contract-select-modal'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -18,6 +20,12 @@ export function AddMarketToGroupModal(props: {
   userRole: groupRoleType
 }) {
   const { group, user, open, setOpen, onAddMarkets, userRole } = props
+  const [groupContractIds, setGroupContractIds] = useState<string[]>([])
+  useEffect(() => {
+    getGroupContractIds(group.id).then((ids) =>
+      setGroupContractIds(ids.map((contractId: any) => contractId.contract_id))
+    )
+  }, [group.id])
   return (
     <Modal open={open} setOpen={setOpen} size="lg">
       <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
@@ -46,6 +54,9 @@ export function AddMarketToGroupModal(props: {
                       }
                       onSubmit={onAddMarkets}
                       setOpen={setOpen}
+                      additionalFilter={{
+                        excludeContractIds: groupContractIds,
+                      }}
                     />
                   ),
                 },
