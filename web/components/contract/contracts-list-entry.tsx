@@ -52,7 +52,7 @@ export function ContractsListEntry(props: {
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'group flex flex-row gap-2 whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50 md:gap-4',
+        'group flex flex-row gap-2 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 md:gap-4',
         className
       )}
     >
