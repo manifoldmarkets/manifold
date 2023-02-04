@@ -162,11 +162,13 @@ function QfPayPanel(props: {
         setError={() => {}}
       />
 
-      <Row className="mt-8 items-baseline gap-1.5 text-gray-500">
-        <div className="text-2xl">{formatMoney(deltaMatch)}</div>
-        match <InfoTooltip text="Match may change after more people pay" />
-      </Row>
-
+      {deltaMatch > 0 && (
+        <Row className="mt-8 items-baseline gap-1.5 text-gray-500">
+          <div className="text-2xl">{formatMoney(deltaMatch)}</div>
+          match{' '}
+          <InfoTooltip text="Quadratic match. May decrease as other entries get funding." />
+        </Row>
+      )}
       <Button
         size="xl"
         color="indigo"
