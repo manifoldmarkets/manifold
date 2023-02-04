@@ -10,8 +10,8 @@ import { run } from '../../common/supabase/utils'
 import { mapAsync } from '../../common/util/promise'
 import { createSupabaseClient } from './supabase/init'
 import { buildArray, filterDefined } from '../../common/util/array'
-import { Contract } from 'common/contract'
-import { chooseRandomSubset } from 'common/util/random'
+import { Contract } from '../../common/contract'
+import { chooseRandomSubset } from '../../common/util/random'
 
 const firestore = admin.firestore()
 
