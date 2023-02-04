@@ -120,14 +120,7 @@ export const LikeButton = memo(function LikeButton(props: {
   const hasSafePolygon =
     (likedUserInfo != undefined && likedUserInfo.length > 0) || userLiked
   return (
-    <Row
-      className={clsx(
-        'relative items-center',
-        size === 'md' && 'mx-2',
-        size === 'xl' && 'mx-4',
-        className
-      )}
-    >
+    <>
       <Tooltip
         text={
           <UserLikedList
@@ -140,7 +133,12 @@ export const LikeButton = memo(function LikeButton(props: {
         placement={'bottom'}
         noTap
         hasSafePolygon={hasSafePolygon}
-        className={'flex items-center'}
+        className={clsx(
+          'flex flex-row items-center',
+          size === 'md' && 'mx-2',
+          size === 'xl' && 'mx-4',
+          className
+        )}
       >
         <button
           disabled={disabled}
@@ -199,7 +197,7 @@ export const LikeButton = memo(function LikeButton(props: {
           {totalLikes > 0 ? totalLikes : ''}
         </div>
       )}
-    </Row>
+    </>
   )
 })
 

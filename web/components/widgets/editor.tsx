@@ -208,16 +208,15 @@ function RichContent(props: {
   )
 
   return (
-    <div className={className}>
-      <div
-        className={clsx(
-          'ProseMirror',
-          proseClass(size),
-          String.raw`empty:prose-p:after:content-["\00a0"]` // make empty paragraphs have height
-        )}
-      >
-        {jsxContent}
-      </div>
+    <div
+      className={clsx(
+        'ProseMirror',
+        className,
+        proseClass(size),
+        String.raw`empty:prose-p:after:content-["\00a0"]` // make empty paragraphs have height
+      )}
+    >
+      {jsxContent}
     </div>
   )
 }

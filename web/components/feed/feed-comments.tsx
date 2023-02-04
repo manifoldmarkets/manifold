@@ -69,7 +69,7 @@ export function FeedCommentThread(props: {
   })
 
   return (
-    <Col className="relative w-full items-stretch gap-3 pb-2">
+    <Col className="w-full items-stretch gap-3 pb-2">
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -151,13 +151,11 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       id={comment.id}
       className={clsx(
         commentKind,
-        'relative ml-3 gap-2',
+        'gap-2',
         highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
       )}
     >
-      <Col className="-ml-3.5">
-        <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
-      </Col>
+      <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
         <Content size="sm" content={content || text} />
@@ -287,13 +285,11 @@ export const FeedComment = memo(function FeedComment(props: {
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'relative ml-12 gap-2 ',
+        'ml-9 gap-2 ',
         highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
       )}
     >
-      <Col className="-ml-3">
-        <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
-      </Col>
+      <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
         <Content className="mt-2 grow" size="sm" content={content || text} />
@@ -402,31 +398,29 @@ export function FeedCommentHeader(props: {
   }
   const shouldDisplayOutcome = betOutcome && !comment.answerOutcome
   return (
-    <Row>
-      <div className="mt-0.5 text-sm text-gray-600">
-        <UserLink username={userUsername} name={userName} />{' '}
-        <span className="text-gray-400">
-          <CommentStatus contract={contract} comment={comment} />
-          {bought} {money}
-          {shouldDisplayOutcome && (
-            <>
-              {' '}
-              of{' '}
-              <OutcomeLabel
-                outcome={betOutcome ? betOutcome : ''}
-                contract={contract}
-                truncate="short"
-              />
-            </>
-          )}
-        </span>
-        <CopyLinkDateTimeComponent
-          prefix={contract.creatorUsername}
-          slug={contract.slug}
-          createdTime={createdTime}
-          elementId={comment.id}
-        />
-      </div>
-    </Row>
+    <span className="mt-0.5 text-sm text-gray-600">
+      <UserLink username={userUsername} name={userName} />
+      <span className="ml-1 text-gray-400">
+        <CommentStatus contract={contract} comment={comment} />
+        {bought} {money}
+        {shouldDisplayOutcome && (
+          <>
+            {' '}
+            of{' '}
+            <OutcomeLabel
+              outcome={betOutcome ? betOutcome : ''}
+              contract={contract}
+              truncate="short"
+            />
+          </>
+        )}
+      </span>
+      <CopyLinkDateTimeComponent
+        prefix={contract.creatorUsername}
+        slug={contract.slug}
+        createdTime={createdTime}
+        elementId={comment.id}
+      />
+    </span>
   )
 }
