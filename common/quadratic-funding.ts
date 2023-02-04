@@ -21,7 +21,7 @@ export function quadraticMatches(
       sumBy(txns, 'amount')
     )
     const sumOfRoots = sumBy(sumByDonor, Math.sqrt)
-    return sumOfRoots ** 2 - sum(sumByDonor)
+    return clean(sumOfRoots ** 2 - sum(sumByDonor))
   })
 
   // Then distribute the matching pool based on the individual weights
@@ -30,4 +30,10 @@ export function quadraticMatches(
   const factor = Math.min(1, matchingPool / totalWeight)
   // Round to the nearest 0.01 mana
   return mapValues(weights, (weight) => Math.round(weight * factor * 100) / 100)
+}
+
+// If a number is epsilon close to 0, return 0
+function clean(num: number) {
+  const EPSILON = 0.0001
+  return Math.abs(num) < EPSILON ? 0 : num
 }
