@@ -25,7 +25,7 @@ function useNotifications(privateUser: PrivateUser) {
     Notification[] | undefined
   >(undefined, {
     key: NOTIFICATIONS_KEY,
-    store: storageStore(safeLocalStorage()),
+    store: storageStore(safeLocalStorage),
   })
   useEffect(() => {
     listenForNotifications(privateUser.id, setNotifications)
@@ -47,7 +47,7 @@ function useUnseenNotifications(privateUser: PrivateUser) {
     undefined,
     {
       key: NOTIFICATIONS_KEY,
-      store: storageStore(safeLocalStorage()),
+      store: storageStore(safeLocalStorage),
     }
   )
   useEffect(() => {

@@ -88,7 +88,7 @@ export function useTextEditor(props: {
     undefined,
     {
       key: `text ${key}`,
-      store: storageStore(safeLocalStorage()),
+      store: storageStore(safeLocalStorage),
     }
   )
 

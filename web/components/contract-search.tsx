@@ -279,7 +279,7 @@ function ContractSearchControls(props: {
   )
 
   const sortKey = `${persistPrefix}-search-sort`
-  const savedSort = safeLocalStorage()?.getItem(sortKey)
+  const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
     savedSort ?? defaultSort,
@@ -302,7 +302,7 @@ function ContractSearchControls(props: {
 
   useEffect(() => {
     if (persistPrefix && sort) {
-      safeLocalStorage()?.setItem(sortKey, sort as string)
+      safeLocalStorage?.setItem(sortKey, sort as string)
     }
   }, [persistPrefix, query, sort, sortKey])
 

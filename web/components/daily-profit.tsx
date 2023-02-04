@@ -43,7 +43,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
     undefined,
     {
       key: `daily-profit-${user?.id}`,
-      store: storageStore(safeLocalStorage()),
+      store: storageStore(safeLocalStorage),
     },
     {
       every: HOUR_MS,
