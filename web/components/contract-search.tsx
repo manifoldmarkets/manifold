@@ -7,12 +7,12 @@ import {
   useEffect,
   useRef,
   useMemo,
-  ReactNode,
   useState,
   createContext,
   useContext,
 } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { useEvent } from 'web/hooks/use-event'
 import {
   historyStore,
   inMemoryStore,
@@ -92,10 +92,6 @@ export function ContractSearch(props: {
   persistPrefix?: string
   isWholePage?: boolean
   includeProbSorts?: boolean
-  renderContracts?: (
-    contracts: Contract[] | undefined,
-    loadMore: () => void
-  ) => ReactNode
   autoFocus?: boolean
   profile?: boolean | undefined
 }) {
@@ -111,7 +107,6 @@ export function ContractSearch(props: {
     persistPrefix,
     includeProbSorts,
     isWholePage,
-    renderContracts,
     autoFocus,
     profile,
   } = props
@@ -146,7 +141,7 @@ export function ContractSearch(props: {
     [searchIndexName]
   )
 
-  const performQuery = async (freshQuery?: boolean) => {
+  const performQuery = useEvent(async (freshQuery?: boolean) => {
     if (searchParams.current == null) {
       return
     }
@@ -179,7 +174,7 @@ export function ContractSearch(props: {
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
-  }
+  })
 
   // Always do first query when loading search page, unless going back in history.
   const [firstQuery, setFirstQuery] = usePersistentState(true, {
@@ -225,9 +220,7 @@ export function ContractSearch(props: {
           autoFocus={autoFocus}
         />
 
-        {renderContracts ? (
-          renderContracts(renderedContracts, performQuery)
-        ) : renderedContracts && renderedContracts.length === 0 && profile ? (
+        {renderedContracts && renderedContracts.length === 0 && profile ? (
           <p className="mx-2 text-gray-500">No markets found</p>
         ) : asList ? (
           <ContractsList
@@ -447,7 +440,7 @@ function SearchFilters(props: {
       <button
         type="button"
         onClick={() => setAsList(!asList)}
-        className="relative inline-flex h-full items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
+        className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
       >
         {asList ? (
           <ViewGridIcon className="h-5 w-5" aria-hidden="true" />

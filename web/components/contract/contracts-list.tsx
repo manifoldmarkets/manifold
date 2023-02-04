@@ -51,6 +51,7 @@ function DesktopPopover(props: { contract: Contract }) {
 
   return (
     <Tippy
+      appendTo={document.body}
       interactive
       duration={0}
       offset={[0, 0]}
@@ -64,9 +65,9 @@ function DesktopPopover(props: { contract: Contract }) {
         />
       }
     >
-      <span tabIndex={0}>
+      <div>
         <ContractsListEntry contract={contract} />
-      </span>
+      </div>
     </Tippy>
   )
 }
