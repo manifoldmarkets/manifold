@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import { Contract } from 'common/contract'
 import Link from 'next/link'
 import { getProbability } from 'common/calculate'
@@ -44,24 +45,27 @@ function ContractStatusLabel(props: { contract: Contract }) {
 }
 
 // TODO: Replace with a proper table/datagrid implementation?
-export function ContractsListEntry(props: { contract: Contract }) {
-  const { contract } = props
-  return (
-    <Link
-      href={contractPath(contract)}
-      className="group flex flex-row gap-2 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 md:gap-4"
-    >
-      <Avatar
-        username={contract.creatorUsername}
-        avatarUrl={contract.creatorAvatarUrl}
-        size="xs"
-      />
-      <div className="min-w-[34px] rounded-full font-semibold">
-        <ContractStatusLabel contract={contract} />
-      </div>
-      <div className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
-        {contract.question}
-      </div>
-    </Link>
-  )
-}
+export const ContractsListEntry = forwardRef(
+  (props: { contract: Contract }, ref: React.Ref<HTMLAnchorElement>) => {
+    const { contract } = props
+    return (
+      <Link
+        ref={ref}
+        href={contractPath(contract)}
+        className="group flex flex-row gap-2 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 md:gap-4"
+      >
+        <Avatar
+          username={contract.creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+          size="xs"
+        />
+        <div className="min-w-[34px] rounded-full font-semibold">
+          <ContractStatusLabel contract={contract} />
+        </div>
+        <div className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
+          {contract.question}
+        </div>
+      </Link>
+    )
+  }
+)

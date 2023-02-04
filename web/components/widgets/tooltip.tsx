@@ -10,7 +10,7 @@ import {
   useHover,
   useInteractions,
   useRole,
-} from '@floating-ui/react-dom-interactions'
+} from '@floating-ui/react'
 import { Transition } from '@headlessui/react'
 import { ReactNode, useRef, useState } from 'react'
 
