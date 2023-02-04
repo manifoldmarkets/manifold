@@ -1,7 +1,7 @@
 import { HeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { ReactionContentTypes, ReactionTypes } from 'common/reaction'
+import { Reaction, ReactionContentTypes, ReactionTypes } from 'common/reaction'
 import { User } from 'common/user'
 import { memo, useEffect, useState } from 'react'
 import { useIsLiked, useLikesOnContent } from 'web/hooks/use-likes'
@@ -51,7 +51,6 @@ export const LikeButton = memo(function LikeButton(props: {
     isSwipe,
   } = props
   const userLiked = useIsLiked(user?.id, contentType, contentId)
-  const [allLikes, setAllLikes] = useState<MultiUserLinkInfo[]>([])
   const disabled = !user || contentCreatorId === user?.id
   const [liked, setLiked] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -109,13 +108,10 @@ export const LikeButton = memo(function LikeButton(props: {
       <Tooltip
         text={
           showList ? (
-            <UserLikedList
+            <UserLikedPopup
               contentType={contentType}
               contentId={contentId}
-              onRequestModal={(infos) => {
-                setAllLikes(infos)
-                setModalOpen(true)
-              }}
+              onRequestModal={() => setModalOpen(true)}
               user={user}
               userLiked={liked}
             />
@@ -167,15 +163,15 @@ export const LikeButton = memo(function LikeButton(props: {
           </div>
         </button>
       </Tooltip>
-      <MultiUserTransactionModal
-        userInfos={allLikes}
-        modalLabel={`💖 Liked this ${
-          contentType === 'contract' ? 'market' : contentType
-        }`}
-        open={modalOpen}
-        setOpen={setModalOpen}
-        short={true}
-      />
+      {modalOpen && (
+        <UserLikedFullList
+          contentType={contentType}
+          contentId={contentId}
+          user={user}
+          userLiked={liked}
+          setOpen={setModalOpen}
+        />
+      )}
       {showTotalLikesUnder && (
         <div
           className={clsx(
@@ -190,16 +186,12 @@ export const LikeButton = memo(function LikeButton(props: {
   )
 })
 
-function UserLikedList(props: {
-  contentType: ReactionContentTypes
-  contentId: string
-  onRequestModal: (infos: MultiUserLinkInfo[]) => void
-  user?: User | null
-  userLiked?: boolean
-}) {
-  const { contentType, contentId, onRequestModal, user, userLiked } = props
-  const likedUsers = useLikesOnContent(contentType, contentId) ?? []
-  const likedUserInfos = likedUsers.map((reaction) => {
+function getLikeDisplayList(
+  reacts: Reaction[],
+  self?: User | null,
+  prependSelf?: boolean
+) {
+  const likedUserInfos = reacts.map((reaction) => {
     return {
       name: reaction.userDisplayName,
       username: reaction.userUsername,
@@ -208,12 +200,48 @@ function UserLikedList(props: {
   })
 
   let displayInfos = likedUserInfos
-  if (user) {
-    displayInfos = likedUserInfos.filter((u) => u.username !== user.username)
-    if (userLiked) {
-      displayInfos = [user, ...displayInfos]
+  if (self) {
+    displayInfos = likedUserInfos.filter((u) => u.username !== self.username)
+    if (prependSelf) {
+      displayInfos = [self, ...displayInfos]
     }
   }
+  return displayInfos
+}
+
+function UserLikedFullList(props: {
+  contentType: ReactionContentTypes
+  contentId: string
+  user?: User | null
+  userLiked?: boolean
+  setOpen: (isOpen: boolean) => void
+}) {
+  const { contentType, contentId, user, userLiked, setOpen } = props
+  const reacts = useLikesOnContent(contentType, contentId) ?? []
+  const displayInfos = getLikeDisplayList(reacts, user, userLiked)
+  return (
+    <MultiUserTransactionModal
+      userInfos={displayInfos}
+      modalLabel={`💖 Liked this ${
+        contentType === 'contract' ? 'market' : contentType
+      }`}
+      open={true}
+      setOpen={setOpen}
+      short={true}
+    />
+  )
+}
+
+function UserLikedPopup(props: {
+  contentType: ReactionContentTypes
+  contentId: string
+  onRequestModal: () => void
+  user?: User | null
+  userLiked?: boolean
+}) {
+  const { contentType, contentId, onRequestModal, user, userLiked } = props
+  const reacts = useLikesOnContent(contentType, contentId) ?? []
+  const displayInfos = getLikeDisplayList(reacts, user, userLiked)
 
   // only show "& n more" for n > 1
   const shown =
@@ -227,19 +255,14 @@ function UserLikedList(props: {
       {displayInfos.length == 0 ? (
         <LoadingIndicator className="mx-auto my-2" size="sm" />
       ) : (
-        shown.map((u) => {
-          return (
-            <UserLikedItem
-              key={u.avatarUrl + u.username + u.name}
-              userInfo={u}
-            />
-          )
+        shown.map((u, i) => {
+          return <UserLikedItem key={i} userInfo={u} />
         })
       )}
       {displayInfos.length > shown.length && (
         <div
           className="w-full cursor-pointer text-left text-indigo-300 hover:text-indigo-200"
-          onClick={() => onRequestModal(displayInfos)}
+          onClick={onRequestModal}
         >
           & {displayInfos.length - shown.length} more
         </div>
