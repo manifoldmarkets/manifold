@@ -43,7 +43,7 @@ export default function QfTradesTable(props: {
 
   function formatWalletId(type: string, id: string) {
     if (type === 'CONTRACT') {
-      return '-'
+      return '🏦'
     } else if (type === 'BANK') {
       return 'Bank'
     } else if (type === 'USER') {
@@ -61,14 +61,14 @@ export default function QfTradesTable(props: {
   }
 
   const getText = (txn: QfTxn) =>
-    contract.answers.find((a) => a.id === txn.data?.answerId)?.text || '-'
+    contract.answers.find((a) => a.id === txn.data?.answerId)?.text
 
   // TODO: Condense PAY_MANA/TRANFER pairs into a single row
   const entries = txns.map((txn) => ({
     id: txn.id,
     from: formatWalletId(txn.fromType, txn.fromId),
     to: formatWalletId(txn.toType, txn.toId),
-    answer: getText(txn),
+    answer: getText(txn) ?? formatWalletId(txn.toType, txn.toId),
     amount: formatMoney(txn.amount),
     time: formatTimeShort(txn.createdTime),
   })) as QfEntry[]
