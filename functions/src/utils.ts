@@ -12,7 +12,7 @@ import {
 } from 'firebase-admin/firestore'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { generateJSON } from '@tiptap/html'
-import { stringParseExts } from '../../common/util/parse'
+import { extensions } from '../../common/util/parse'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
@@ -31,7 +31,7 @@ export const logMemory = () => {
 }
 
 export function htmlToRichText(html: string) {
-  return generateJSON(html, stringParseExts)
+  return generateJSON(html, extensions)
 }
 
 export const invokeFunction = async (name: string, body?: unknown) => {
