@@ -108,7 +108,6 @@ function dividendTxns(
     payout: number
   }[]
 ) {
-  // Create one CertDividend for each recipient
   payouts.forEach(({ userId, payout }) => {
     const ref = firestore.collection('txns').doc()
     const certDividendTxn: QfDividendTxn = {
