@@ -1,12 +1,17 @@
 import { Contract } from 'common/contract'
 import { ContractCard } from './contract-card'
 import { Col } from '../layout/col'
-import Tippy from '@tippyjs/react'
 import { VisibilityObserver } from '../widgets/visibility-observer'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractsListEntry } from './contracts-list-entry'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import {
+  useFloating,
+  useHover,
+  useInteractions,
+  safePolygon,
+} from '@floating-ui/react'
 
 export function ContractsList(props: {
   contracts: Contract[] | undefined
@@ -22,15 +27,24 @@ export function ContractsList(props: {
     [loadMore]
   )
 
+  const isMobile = useIsMobile()
+
   if (contracts === undefined) {
     return <LoadingIndicator />
   }
 
   return (
     <Col>
-      {contracts.map((contract) => (
-        <DesktopPopover contract={contract} key={contract.id}></DesktopPopover>
-      ))}
+      {contracts.map((contract) =>
+        isMobile ? (
+          <ContractsListEntry contract={contract} key={contract.id} />
+        ) : (
+          <DesktopPopover
+            contract={contract}
+            key={contract.id}
+          ></DesktopPopover>
+        )
+      )}
 
       {loadMore && (
         <VisibilityObserver
@@ -44,31 +58,44 @@ export function ContractsList(props: {
 
 function DesktopPopover(props: { contract: Contract }) {
   const { contract } = props
-  const isMobile = useIsMobile()
-  if (isMobile) {
-    return <ContractsListEntry contract={contract} />
-  }
-
+  const [isOpen, setIsOpen] = useState(false)
+  const { x, y, strategy, refs, context } = useFloating({
+    open: isOpen,
+    onOpenChange: setIsOpen,
+    placement: 'bottom-end',
+  })
+  const hover = useHover(context, {
+    mouseOnly: true,
+    handleClose: safePolygon({ buffer: -Infinity }),
+  })
+  const { getReferenceProps, getFloatingProps } = useInteractions([hover])
   return (
-    <Tippy
-      appendTo={document.body}
-      interactive
-      duration={0}
-      offset={[0, 0]}
-      placement="bottom-end"
-      content={
-        <ContractCard
-          contract={contract}
-          hideQuickBet
-          showImage
-          showDescription
-          className="w-[350px]"
-        />
-      }
-    >
-      <div>
-        <ContractsListEntry contract={contract} />
-      </div>
-    </Tippy>
+    <>
+      <ContractsListEntry
+        ref={refs.setReference}
+        contract={contract}
+        {...getReferenceProps()}
+      />
+      {isOpen && (
+        <div
+          ref={refs.setFloating}
+          style={{
+            position: strategy,
+            top: y ?? 0,
+            left: x ?? 0,
+            width: 'max-content',
+          }}
+          {...getFloatingProps()}
+        >
+          <ContractCard
+            contract={contract}
+            hideQuickBet
+            showImage
+            showDescription
+            className="w-[350px]"
+          />
+        </div>
+      )}
+    </>
   )
 }
