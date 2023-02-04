@@ -89,7 +89,6 @@ function DesktopPopover(props: { contract: Contract }) {
         >
           <ContractCard
             contract={contract}
-            hideQuickBet
             showImage
             showDescription
             className="w-[350px]"
