@@ -1,7 +1,6 @@
 import React, { memo, useEffect, useRef, useState } from 'react'
 import { Editor } from '@tiptap/react'
 import { useRouter } from 'next/router'
-import { sum } from 'lodash'
 import clsx from 'clsx'
 
 import { ContractComment } from 'common/comment'
@@ -19,7 +18,6 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { createCommentOnContract } from 'web/lib/firebase/comments'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useEvent } from 'web/hooks/use-event'
 import { Content } from '../widgets/editor'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -41,14 +39,12 @@ export type ReplyTo = { id: string; username: string }
 export function FeedCommentThread(props: {
   contract: Contract
   threadComments: ContractComment[]
-  tips: CommentTipMap
   parentComment: ContractComment
 }) {
-  const { contract, threadComments, tips, parentComment } = props
+  const { contract, threadComments, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
   const [seeReplies, setSeeReplies] = useState(true)
   const [highlightedId, setHighlightedId] = useState<string>()
-  const user = useUser()
 
   const router = useRouter()
   useEffect(() => {
@@ -75,8 +71,6 @@ export function FeedCommentThread(props: {
         contract={contract}
         comment={parentComment}
         highlighted={highlightedId === parentComment.id}
-        myTip={user ? tips[parentComment.id]?.[user.id] : undefined}
-        totalTip={sum(Object.values(tips[parentComment.id] ?? {}))}
         showLike={true}
         seeReplies={seeReplies}
         numComments={threadComments.length}
@@ -90,8 +84,6 @@ export function FeedCommentThread(props: {
             contract={contract}
             comment={comment}
             highlighted={highlightedId === comment.id}
-            myTip={user ? tips[comment.id]?.[user.id] : undefined}
-            totalTip={sum(Object.values(tips[comment.id] ?? {}))}
             showLike={true}
             onReplyClick={onReplyClick}
           />
@@ -115,8 +107,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   comment: ContractComment
   highlighted?: boolean
   showLike?: boolean
-  myTip?: number
-  totalTip?: number
   seeReplies: boolean
   numComments: number
   onReplyClick?: (comment: ContractComment) => void
@@ -126,8 +116,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     contract,
     comment,
     highlighted,
-    myTip,
-    totalTip,
     showLike,
     onReplyClick,
     onSeeReplyClick,
@@ -169,8 +157,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
             onReplyClick={onReplyClick}
             comment={comment}
             showLike={showLike}
-            myTip={myTip}
-            totalTip={totalTip}
             contract={contract}
           />
         </Row>
@@ -183,8 +169,6 @@ export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
   comment: ContractComment
   showLike?: boolean
-  myTip?: number
-  totalTip?: number
   contract: Contract
 }) {
   const { onReplyClick, comment, showLike, contract } = props
@@ -258,19 +242,9 @@ export const FeedComment = memo(function FeedComment(props: {
   comment: ContractComment
   highlighted?: boolean
   showLike?: boolean
-  myTip?: number
-  totalTip?: number
   onReplyClick?: (comment: ContractComment) => void
 }) {
-  const {
-    contract,
-    comment,
-    highlighted,
-    myTip,
-    totalTip,
-    showLike,
-    onReplyClick,
-  } = props
+  const { contract, comment, highlighted, showLike, onReplyClick } = props
   const { text, content, userUsername, userAvatarUrl } = comment
   const commentRef = useRef<HTMLDivElement>(null)
 
@@ -297,8 +271,6 @@ export const FeedComment = memo(function FeedComment(props: {
           onReplyClick={onReplyClick}
           comment={comment}
           showLike={showLike}
-          myTip={myTip}
-          totalTip={totalTip}
           contract={contract}
         />
       </Col>
