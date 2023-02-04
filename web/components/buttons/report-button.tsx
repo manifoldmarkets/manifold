@@ -55,7 +55,7 @@ export const reportContent = async (
     contentId,
     description,
   } = report
-  const reportDoc = await doc(collection(db, 'reports'))
+  const reportDoc = doc(collection(db, 'reports'))
   await setDoc(
     reportDoc,
     removeUndefinedProps({

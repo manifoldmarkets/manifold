@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { groupBy, last, sortBy, sum } from 'lodash'
+import { groupBy, last, sortBy } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
@@ -15,7 +15,6 @@ import { Col } from '../layout/col'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import { useTipTxns } from 'web/hooks/use-tip-txns'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -309,7 +308,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 }) {
   const { contract, answerResponse, onCancelAnswerResponse, blockedUserIds } =
     props
-  const tips = useTipTxns({ contractId: contract.id })
   const comments = (useComments(contract.id) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
@@ -362,15 +360,11 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
         sort={sort}
         onSortClick={() => {
           setSort(sort === 'Newest' ? 'Best' : 'Newest')
-          const totalTips = sum(
-            Object.values(tips).map((t) => sum(Object.values(t)))
-          )
           track('change-comments-sort', {
             contractSlug: contract.slug,
             contractName: contract.question,
             totalComments: comments.length,
             totalUniqueTraders: contract.uniqueBettorCount,
-            totalTips,
           })
         }}
       />
@@ -381,7 +375,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           onCancelAnswerResponse={onCancelAnswerResponse}
           topLevelComments={topLevelComments}
           commentsByParent={commentsByParent}
-          tips={tips}
         />
       )}
       {contract.outcomeType !== 'FREE_RESPONSE' &&
@@ -394,7 +387,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
               commentsByParent[parent.id] ?? [],
               (c) => c.createdTime
             )}
-            tips={tips}
           />
         ))}
     </>
