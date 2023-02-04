@@ -45,7 +45,6 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
-import { getTotalContractMetrics } from 'web/lib/supabase/contract-metrics'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -81,8 +80,6 @@ export function ContractTabs(props: {
     [contractComments, blockedUserIds]
   )
 
-  const [totalPositions, setTotalPositions] = useState(props.totalPositions)
-
   const commentTitle =
     comments.length === 0
       ? 'Comments'
@@ -109,7 +106,8 @@ export function ContractTabs(props: {
     (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
     (isMobile ? 'You' : 'Your Trades')
 
-  const positionsTitle = shortFormatNumber(totalPositions) + ' Holders'
+  const { uniqueBettorCount } = contract
+  const positionsTitle = uniqueBettorCount + ' Traders'
 
   return (
     <ControlledTabs
@@ -133,14 +131,13 @@ export function ContractTabs(props: {
           ),
         },
 
-        totalPositions > 0 &&
+        !!uniqueBettorCount &&
           contract.outcomeType === 'BINARY' && {
             title: positionsTitle,
             content: (
               <BinaryUserPositionsTabContent
                 positions={userPositionsByOutcome}
                 contractId={contract.id}
-                setTotalPositions={setTotalPositions}
               />
             ),
           },
@@ -174,9 +171,8 @@ const BinaryUserPositionsTabContent = memo(
   function BinaryUserPositionsTabContent(props: {
     contractId: string
     positions: ContractMetricsByOutcome
-    setTotalPositions: (count: number) => void
   }) {
-    const { contractId, setTotalPositions } = props
+    const { contractId } = props
     const outcomes = ['YES', 'NO']
     const positions =
       useContractMetrics(contractId, 100, outcomes) ?? props.positions
@@ -186,9 +182,6 @@ const BinaryUserPositionsTabContent = memo(
     const followedUsers = useFollows(currentUser?.id)
     const yesPositionsSorted = positions.YES ?? []
     const noPositionsSorted = positions.NO ?? []
-    useEffect(() => {
-      getTotalContractMetrics(contractId).then(setTotalPositions)
-    }, [positions, setTotalPositions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
       page * pageSize,
