@@ -217,8 +217,11 @@ function UserLikedFullList(props: {
   setOpen: (isOpen: boolean) => void
 }) {
   const { contentType, contentId, user, userLiked, setOpen } = props
-  const reacts = useLikesOnContent(contentType, contentId) ?? []
-  const displayInfos = getLikeDisplayList(reacts, user, userLiked)
+  const reacts = useLikesOnContent(contentType, contentId)
+  const displayInfos = reacts
+    ? getLikeDisplayList(reacts, user, userLiked)
+    : null
+
   return (
     <MultiUserTransactionModal
       userInfos={displayInfos}
@@ -240,8 +243,19 @@ function UserLikedPopup(props: {
   userLiked?: boolean
 }) {
   const { contentType, contentId, onRequestModal, user, userLiked } = props
-  const reacts = useLikesOnContent(contentType, contentId) ?? []
-  const displayInfos = getLikeDisplayList(reacts, user, userLiked)
+  const reacts = useLikesOnContent(contentType, contentId)
+  const displayInfos = reacts
+    ? getLikeDisplayList(reacts, user, userLiked)
+    : null
+
+  if (displayInfos == null) {
+    return (
+      <Col className="min-w-24 items-start">
+        <div className="mb-1 font-bold">Like</div>
+        <LoadingIndicator className="mx-auto my-2" size="sm" />
+      </Col>
+    )
+  }
 
   // only show "& n more" for n > 1
   const shown =
@@ -252,13 +266,9 @@ function UserLikedPopup(props: {
   return (
     <Col className="min-w-24 items-start">
       <div className="mb-1 font-bold">Like</div>
-      {displayInfos.length == 0 ? (
-        <LoadingIndicator className="mx-auto my-2" size="sm" />
-      ) : (
-        shown.map((u, i) => {
-          return <UserLikedItem key={i} userInfo={u} />
-        })
-      )}
+      {shown.map((u, i) => {
+        return <UserLikedItem key={i} userInfo={u} />
+      })}
       {displayInfos.length > shown.length && (
         <div
           className="w-full cursor-pointer text-left text-indigo-300 hover:text-indigo-200"
