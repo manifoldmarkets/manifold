@@ -127,7 +127,7 @@ export function writeReferralInfo(
     groupId?: string
   }
 ) {
-  const local = safeLocalStorage()
+  const local = safeLocalStorage
   const cachedReferralUser = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
   const { contractId, explicitReferrer, groupId } = otherOptions || {}
 
@@ -158,7 +158,7 @@ export async function setCachedReferralInfoForUser(user: User | null) {
   const userCreatedTime = dayjs(user.createdTime)
   if (now.diff(userCreatedTime, 'minute') > 5) return
 
-  const local = safeLocalStorage()
+  const local = safeLocalStorage
   const cachedReferralUsername = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
   const cachedReferralContractId = local?.getItem(
     CACHED_REFERRAL_CONTRACT_ID_KEY

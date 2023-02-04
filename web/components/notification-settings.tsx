@@ -285,7 +285,7 @@ export function NotificationSettings(props: {
     // due to a private user settings change. Just going to persist expanded state here
     const [expanded, setExpanded] = usePersistentState(expand ?? false, {
       key: 'NotificationsSettingsSection-' + subscriptionTypes.join('-'),
-      store: storageStore(safeLocalStorage()),
+      store: storageStore(safeLocalStorage),
     })
 
     // Not working as the default value for expanded, so using a useEffect

@@ -12,7 +12,7 @@ export const useSavedContractMetrics = (contract: Contract) => {
     ContractMetrics | undefined
   >(undefined, {
     key: `contract-metrics-${contract.id}`,
-    store: storageStore(safeLocalStorage()),
+    store: storageStore(safeLocalStorage),
   })
 
   const metrics =
