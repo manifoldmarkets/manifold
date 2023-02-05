@@ -59,7 +59,8 @@ export const ContractsListEntry = forwardRef(
     return (
       <Link
         onClick={(e) => {
-          onContractClick?.(contract)
+          if (!onContractClick) return
+          onContractClick(contract)
           e.preventDefault()
         }}
         ref={ref}
