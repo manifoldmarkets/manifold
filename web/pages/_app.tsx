@@ -16,6 +16,7 @@ import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
 import { Major_Mono_Display, Figtree } from 'next/font/google'
+import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
 import clsx from 'clsx'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
@@ -143,6 +144,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         src="https://analytics.umami.is/script.js"
         data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
       />
+      <GoogleOneTapSetup />
     </>
   )
 }
