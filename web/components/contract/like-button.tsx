@@ -115,7 +115,9 @@ export const LikeButton = memo(function LikeButton(props: {
               user={user}
               userLiked={liked}
             />
-          ) : null
+          ) : (
+            'Like'
+          )
         }
         placement={'bottom'}
         noTap
