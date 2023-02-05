@@ -74,6 +74,7 @@ import {
 } from 'web/components/nav/search-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
+import Swipe from '../swipe'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -95,10 +96,9 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
         <LoadingIndicator className="mt-6" />
       </Page>
     )
-  //TODO: Cards aren't loading for users rn
-  // if (isMobile) {
-  //   return <Swipe />
-  // }
+  if (isMobile) {
+    return <Swipe />
+  }
   return <HomeDashboard globalConfig={props.globalConfig} />
 }
 
