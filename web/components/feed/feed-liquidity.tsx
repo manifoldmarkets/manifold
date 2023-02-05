@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { BETTOR, User } from 'common/user'
 import { useUser, useUserById } from 'web/hooks/use-user'
