@@ -151,7 +151,7 @@ function RenderNotificationGroups(props: {
   return (
     <>
       {notificationGroups.map((notification) => (
-        <Fragment key={notification.groupedById + notification.timePeriod}>
+        <Fragment key={notification.groupedById}>
           {notification.notifications.length === 1 ? (
             <>
               <NotificationItem
@@ -164,7 +164,7 @@ function RenderNotificationGroups(props: {
             <>
               <NotificationGroupItem
                 notificationGroup={notification}
-                key={notification.groupedById + notification.timePeriod}
+                key={notification.groupedById}
               />
               {grayLine}
             </>
