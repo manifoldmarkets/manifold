@@ -58,7 +58,7 @@ function LiquidityStatusText(props: {
   const money = formatMoney(Math.abs(amount))
 
   return (
-    <div className="flex items-center gap-1 pr-4 text-sm text-gray-500">
+    <div className="flex flex-wrap items-center gap-x-1 pr-4 text-sm text-gray-500">
       {bettor ? (
         <UserLink name={bettor.name} username={bettor.username} />
       ) : (
