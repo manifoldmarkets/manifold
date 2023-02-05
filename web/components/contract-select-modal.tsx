@@ -93,7 +93,7 @@ export function SelectMarketsModal(props: {
               hideQuickBet: true,
               noLinkAvatar: true,
             }}
-            highlightCards={contracts.map((c) => c.id)}
+            highlightContractIds={contracts.map((c) => c.id)}
             additionalFilter={{
               facetFilters: getUsersBlockFacetFilters(privateUser),
             }}

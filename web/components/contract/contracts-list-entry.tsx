@@ -8,6 +8,7 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { Avatar } from '../widgets/avatar'
+import clsx from 'clsx'
 
 function ContractStatusLabel(props: { contract: Contract }) {
   const { contract } = props
@@ -46,13 +47,27 @@ function ContractStatusLabel(props: { contract: Contract }) {
 
 // TODO: Replace with a proper table/datagrid implementation?
 export const ContractsListEntry = forwardRef(
-  (props: { contract: Contract }, ref: React.Ref<HTMLAnchorElement>) => {
-    const { contract } = props
+  (
+    props: {
+      contract: Contract
+      onContractClick?: (contract: Contract) => void
+      className?: string
+    },
+    ref: React.Ref<HTMLAnchorElement>
+  ) => {
+    const { contract, onContractClick, className } = props
     return (
       <Link
+        onClick={(e) => {
+          onContractClick?.(contract)
+          e.preventDefault()
+        }}
         ref={ref}
         href={contractPath(contract)}
-        className="group flex flex-row gap-2 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 md:gap-4"
+        className={clsx(
+          'group flex flex-row gap-2 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 md:gap-4',
+          className
+        )}
       >
         <Avatar
           username={contract.creatorUsername}

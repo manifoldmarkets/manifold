@@ -80,7 +80,7 @@ export function ContractSearch(props: {
   defaultSort?: Sort
   defaultFilter?: filter
   additionalFilter?: AdditionalFilter
-  highlightCards?: string[]
+  highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
   cardUIOptions?: {
@@ -102,7 +102,7 @@ export function ContractSearch(props: {
     onContractClick,
     hideOrderSelector,
     cardUIOptions,
-    highlightCards,
+    highlightContractIds,
     headerClassName,
     persistPrefix,
     includeProbSorts,
@@ -226,13 +226,15 @@ export function ContractSearch(props: {
           <ContractsList
             contracts={renderedContracts}
             loadMore={performQuery}
+            onContractClick={onContractClick}
+            highlightContractIds={highlightContractIds}
           />
         ) : (
           <ContractsGrid
             contracts={renderedContracts}
             showTime={state.showTime ?? undefined}
             onContractClick={onContractClick}
-            highlightCards={highlightCards}
+            highlightContractIds={highlightContractIds}
             cardUIOptions={cardUIOptions}
             loadMore={performQuery}
           />

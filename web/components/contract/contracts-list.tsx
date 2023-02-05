@@ -13,11 +13,15 @@ import {
   safePolygon,
 } from '@floating-ui/react'
 
+const contractListEntryHighlightClass =
+  'bg-gradient-to-b from-indigo-100 via-white to-white outline outline-2 outline-indigo-400'
 export function ContractsList(props: {
   contracts: Contract[] | undefined
   loadMore?: () => void
+  onContractClick?: (contract: Contract) => void
+  highlightContractIds?: string[]
 }) {
-  const { contracts, loadMore } = props
+  const { contracts, loadMore, onContractClick, highlightContractIds } = props
   const onVisibilityUpdated = useCallback(
     (visible: boolean) => {
       if (visible && loadMore) {
@@ -37,11 +41,22 @@ export function ContractsList(props: {
     <Col>
       {contracts.map((contract) =>
         isMobile ? (
-          <ContractsListEntry contract={contract} key={contract.id} />
+          <ContractsListEntry
+            contract={contract}
+            key={contract.id}
+            onContractClick={onContractClick}
+            className={
+              highlightContractIds?.includes(contract.id)
+                ? contractListEntryHighlightClass
+                : ''
+            }
+          />
         ) : (
           <DesktopPopover
             contract={contract}
             key={contract.id}
+            onContractClick={onContractClick}
+            highlightContractIds={highlightContractIds}
           ></DesktopPopover>
         )
       )}
@@ -56,8 +71,12 @@ export function ContractsList(props: {
   )
 }
 
-function DesktopPopover(props: { contract: Contract }) {
-  const { contract } = props
+function DesktopPopover(props: {
+  contract: Contract
+  onContractClick?: (contract: Contract) => void
+  highlightContractIds?: string[]
+}) {
+  const { contract, onContractClick, highlightContractIds } = props
   const [isOpen, setIsOpen] = useState(false)
   const { x, y, strategy, refs, context } = useFloating({
     open: isOpen,
@@ -74,6 +93,12 @@ function DesktopPopover(props: { contract: Contract }) {
       <ContractsListEntry
         ref={refs.setReference}
         contract={contract}
+        onContractClick={onContractClick}
+        className={
+          highlightContractIds?.includes(contract.id)
+            ? contractListEntryHighlightClass
+            : ''
+        }
         {...getReferenceProps()}
       />
       {isOpen && (
