@@ -25,7 +25,7 @@ export const FeedBet = memo(function FeedBet(props: {
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
 
   return (
-    <Row className={clsx(className, 'items-center gap-2 pt-3')}>
+    <Row className={clsx(className, 'items-center gap-2')}>
       {showUser ? (
         <Avatar
           size={avatarSize}

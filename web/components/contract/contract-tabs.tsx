@@ -459,7 +459,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
 
   return (
     <>
-      <Col className="mb-4 gap-4">
+      <Col className="mb-4 items-start gap-7">
         {shouldLoadMore ? (
           <LoadingIndicator />
         ) : (
