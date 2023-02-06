@@ -56,7 +56,7 @@ export function MiscDetails(props: {
   return (
     <Row className="w-full items-center gap-3 text-sm text-gray-400">
       {isOpen && contract.elasticity < 0.5 ? (
-        <Tooltip text={'High-stakes market'} className={'z-10'}>
+        <Tooltip text={'High-stakes'} className={'z-10'}>
           <FireIcon className="h-5 w-5 text-blue-700" />
         </Tooltip>
       ) : null}
