@@ -11,6 +11,7 @@ import {
   Numeric,
   outcomeType,
   PseudoNumeric,
+  QuadraticFunding,
   Uniswap2,
   visibility,
 } from './contract'
@@ -46,18 +47,16 @@ export function getNewContract(
 ) {
   const createdTime = Date.now()
 
-  const propsByOutcomeType =
-    outcomeType === 'BINARY'
-      ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
-      : outcomeType === 'PSEUDO_NUMERIC'
-      ? getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale)
-      : outcomeType === 'NUMERIC'
-      ? getNumericProps(ante, bucketCount, min, max)
-      : outcomeType === 'MULTIPLE_CHOICE'
-      ? getDpmMultipleChoiceProps(ante, answers)
-      : outcomeType === 'CERT'
-      ? getCertProps(ante)
-      : getFreeAnswerProps(ante)
+  const propsByOutcomeType = {
+    BINARY: () => getBinaryCpmmProps(initialProb, ante),
+    PSEUDO_NUMERIC: () =>
+      getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale),
+    NUMERIC: () => getNumericProps(ante, bucketCount, min, max),
+    MULTIPLE_CHOICE: () => getDpmMultipleChoiceProps(ante, answers),
+    QUADRATIC_FUNDING: () => getQfProps(ante),
+    CERT: () => getCertProps(ante),
+    FREE_RESPONSE: () => getFreeAnswerProps(ante),
+  }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
     id,
@@ -167,6 +166,16 @@ const getCertProps = (ante: number) => {
     },
     // TODO: Update price in the cert when trades happen
     price: 1,
+  }
+  return system
+}
+
+const getQfProps = (ante: number) => {
+  const system: QuadraticFunding = {
+    outcomeType: 'QUADRATIC_FUNDING',
+    mechanism: 'qf',
+    answers: [],
+    pool: { M$: ante },
   }
   return system
 }

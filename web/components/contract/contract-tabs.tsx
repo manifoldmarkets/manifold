@@ -45,6 +45,7 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
+import { QfTrades } from './qf-overview'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -161,6 +162,10 @@ export function ContractTabs(props: {
         contract.outcomeType === 'CERT' && [
           { title: 'Trades', content: <CertTrades contract={contract} /> },
           { title: 'Positions', content: <CertInfo contract={contract} /> },
+        ],
+
+        contract.outcomeType === 'QUADRATIC_FUNDING' && [
+          { title: 'Payments', content: <QfTrades contract={contract} /> },
         ]
       )}
     />

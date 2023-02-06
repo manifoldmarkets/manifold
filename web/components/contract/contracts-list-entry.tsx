@@ -42,6 +42,11 @@ function ContractStatusLabel(props: { contract: Contract }) {
     case 'CERT': {
       return <span>CERT</span>
     }
+    case 'QUADRATIC_FUNDING': {
+      return <span>QF</span>
+    }
+    default:
+      return <span>-</span>
   }
 }
 
