@@ -275,9 +275,12 @@ export default function Swipe() {
 
           {!cards.length && (
             <div className="flex w-full flex-col items-center justify-center">
-              No more cards!
-              <SiteLink href="/home" className="text-indigo-700">
-                Return home
+              We're fresh out of cards!
+              <SiteLink
+                href="/markets?s=newest&f=open"
+                className="text-indigo-700"
+              >
+                Check out new ones in the markets section
               </SiteLink>
             </div>
           )}
