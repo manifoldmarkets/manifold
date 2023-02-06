@@ -9,8 +9,8 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { ManaPurchaseTxn } from '../../common/txn'
-import { runTxn } from './transact'
 import { sendThankYouEmail } from './emails'
+import { runTxn } from './run-txn'
 
 const bodySchema = z.object({
   receipt: z.string(),

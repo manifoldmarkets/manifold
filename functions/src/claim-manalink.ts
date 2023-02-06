@@ -3,8 +3,8 @@ import { z } from 'zod'
 
 import { User } from '../../common/user'
 import { canCreateManalink, Manalink } from '../../common/manalink'
-import { runTxn, TxnData } from './transact'
 import { APIError, newEndpoint, validate } from './api'
+import { runTxn, TxnData } from './run-txn'
 
 const bodySchema = z.object({
   slug: z.string(),
