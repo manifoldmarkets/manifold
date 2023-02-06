@@ -5,8 +5,8 @@ import { FieldValue, Transaction } from 'firebase-admin/firestore'
 import { APIError } from 'common/api'
 
 export function initAdmin() {
-  // Right now, FIREBASE_SERVICE_ACCOUNT_KEY points at the dev-mantic-markets key
-  // TODO: Support prod environment too
+  // This is the stringified JSON of the Firebase Admin SDK service account key
+  // Configured on Vercel, eg for dev: https://vercel.com/mantic/dev/settings/environment-variables
   const serviceAccount = JSON.parse(
     process.env.FIREBASE_SERVICE_ACCOUNT_KEY ?? ''
   )
