@@ -46,7 +46,7 @@ export async function runTxn(
   return { status: 'success', txn }
 }
 
-export async function runContractPayoutTxn(
+export function runContractPayoutTxn(
   fbTransaction: admin.firestore.Transaction,
   data: Omit<ContractResolutionPayoutTxn, 'id' | 'createdTime'>,
   deposit: number

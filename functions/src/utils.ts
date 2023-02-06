@@ -331,8 +331,7 @@ export const payUsersTransactions = async (
 
   for (const payoutChunk of payoutChunks) {
     await firestore.runTransaction(async (transaction) => {
-      await Promise.all(
-        payoutChunk.map(async ({ userId, payout, deposit }) => {
+        payoutChunk.forEach( ({ userId, payout, deposit }) => {
           const payoutTxn: Omit<
             ContractResolutionPayoutTxn,
             'id' | 'createdTime'
@@ -346,9 +345,8 @@ export const payUsersTransactions = async (
             token: 'M$',
             description: 'Contract payout for resolution: ' + contractId,
           } as ContractResolutionPayoutTxn
-          await runContractPayoutTxn(transaction, payoutTxn, deposit ?? 0)
+          runContractPayoutTxn(transaction, payoutTxn, deposit ?? 0)
         })
-      )
     })
   }
 }
