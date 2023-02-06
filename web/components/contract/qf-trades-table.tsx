@@ -83,6 +83,7 @@ export default function QfTradesTable(props: {
                 <tr>
                   {titles.map((title) => (
                     <th
+                      key={title}
                       scope="col"
                       className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
                     >
