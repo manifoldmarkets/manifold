@@ -175,7 +175,7 @@ const getQfProps = (ante: number) => {
     outcomeType: 'QUADRATIC_FUNDING',
     mechanism: 'qf',
     answers: [],
-    pool: { M$: ante }, // TODO: Set to ante when we set up payments
+    pool: { M$: ante },
   }
   return system
 }
