@@ -10,7 +10,7 @@ import { getUserId, initAdmin, payUsers, safeGet } from '../_firebase-utils'
 import { validate } from '../_validate'
 import { QuadraticFundingContract } from 'common/contract'
 import { APIError } from 'common/api'
-import { QfPoolTxn } from 'common/txn'
+import { QfAddPoolTxn } from 'common/txn'
 import { User } from 'common/user'
 
 export const config = { api: { bodyParser: true } }
@@ -64,8 +64,8 @@ async function addPool(req: NextApiRequest, userId: string) {
 
     // Create a txn to mark the transfer
     const txnDoc = firestore.collection('txns').doc()
-    const txn: QfPoolTxn = {
-      category: 'QF_POOL',
+    const txn: QfAddPoolTxn = {
+      category: 'QF_ADD_POOL',
       id: txnDoc.id,
       qfId,
       createdTime: Date.now(),

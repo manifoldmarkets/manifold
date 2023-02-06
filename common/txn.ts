@@ -18,7 +18,7 @@ type AnyTxnType =
   | CertBurn
   | ContractResolutionPayout
   | QfPayment
-  | QfPool
+  | QfAddPool
   | QfDividend
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
 
@@ -52,7 +52,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'CERT_BURN' // Destroy a cert
     | 'CONTRACT_RESOLUTION_PAYOUT' // Contract resolution pays out to a user
     | 'QF_PAYMENT' // Pay one of the entries in a QF pool
-    | 'QF_POOL' // Fund a QF pool
+    | 'QF_ADD_POOL' // Fund a QF pool
     | 'QF_DIVIDEND' // Pay out QF dividends
 
   // Any extra data
@@ -198,8 +198,8 @@ type QfPayment = {
   }
 }
 
-type QfPool = {
-  category: 'QF_POOL'
+type QfAddPool = {
+  category: 'QF_ADD_POOL'
   fromType: 'USER'
   toType: 'CONTRACT'
 }
@@ -228,5 +228,5 @@ export type CertBurnTxn = CertTxn & CertBurn
 export type ContractResolutionPayoutTxn = Txn & ContractResolutionPayout
 export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
-export type QfPoolTxn = QfTxn & QfPool
+export type QfAddPoolTxn = QfTxn & QfAddPool
 export type QfDividendTxn = QfTxn & QfDividend

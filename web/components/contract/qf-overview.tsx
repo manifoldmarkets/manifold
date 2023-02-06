@@ -7,7 +7,7 @@ import { Button } from '../buttons/button'
 import { useState } from 'react'
 import { Spacer } from '../layout/spacer'
 import {
-  addQfPool,
+  addQfAddPool,
   createQfAnswer,
   payQfAnswer,
   resolveQf,
@@ -72,7 +72,7 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
           </Col>
         </div>
       </div>
-      {poolPanel && <QfPoolPanel contract={contract} />}
+      {poolPanel && <QfAddPoolPanel contract={contract} />}
 
       <AlertBox
         title="Quadratic funding is experimental."
@@ -304,7 +304,7 @@ export function QfTrades(props: { contract: QuadraticFundingContract }) {
 }
 
 // Allow the user to contribute funds to the pool
-function QfPoolPanel(props: { contract: QuadraticFundingContract }) {
+function QfAddPoolPanel(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
   const [amount, setAmount] = useState<number | undefined>(undefined)
   const [submitting, setSubmitting] = useState(false)
@@ -331,7 +331,7 @@ function QfPoolPanel(props: { contract: QuadraticFundingContract }) {
         loading={submitting}
         onClick={async () => {
           setSubmitting(true)
-          await addQfPool({
+          await addQfAddPool({
             qfId: contract.id,
             amount: amount ?? 0,
           })

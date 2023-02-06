@@ -127,7 +127,7 @@ export function payQfAnswer(params: QfPayReq) {
   return call('/api/v0/qf/pay', 'POST', params)
 }
 
-export function addQfPool(params: QfAddPoolReq) {
+export function addQfAddPool(params: QfAddPoolReq) {
   return call('/api/v0/qf/add-pool', 'POST', params)
 }
 
