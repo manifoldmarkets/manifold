@@ -1,6 +1,6 @@
 import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
-import { groupBy, map, uniqBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 import {
   listenForNotifications,
@@ -17,7 +17,6 @@ export type NotificationGroup = {
   notifications: Notification[]
   groupedById: string
   isSeen: boolean
-  timePeriod: string
 }
 const NOTIFICATIONS_KEY = 'notifications'
 function useNotifications(privateUser: PrivateUser) {
@@ -25,7 +24,7 @@ function useNotifications(privateUser: PrivateUser) {
     Notification[] | undefined
   >(undefined, {
     key: NOTIFICATIONS_KEY,
-    store: storageStore(safeLocalStorage()),
+    store: storageStore(safeLocalStorage),
   })
   useEffect(() => {
     listenForNotifications(privateUser.id, setNotifications)
@@ -47,7 +46,7 @@ function useUnseenNotifications(privateUser: PrivateUser) {
     undefined,
     {
       key: NOTIFICATIONS_KEY,
-      store: storageStore(safeLocalStorage()),
+      store: storageStore(safeLocalStorage),
     }
   )
   useEffect(() => {
@@ -55,10 +54,12 @@ function useUnseenNotifications(privateUser: PrivateUser) {
       setUnseenNotifications(unseenNotifications)
       if (unseenNotifications.length > 0) {
         setNotifications((notifications) => {
-          return uniqBy(
-            [...unseenNotifications, ...(notifications ?? [])],
-            (n) => n.id
-          )
+          return [
+            ...unseenNotifications.filter(
+              (n) => !notifications?.some((n2) => n2.id === n.id)
+            ),
+            ...(notifications ?? []),
+          ]
         })
       }
     })
@@ -81,37 +82,19 @@ export function useGroupedUnseenNotifications(privateUser: PrivateUser) {
 }
 
 function groupNotifications(notifications: Notification[]) {
-  let notificationGroups: NotificationGroup[] = []
-  const notificationGroupsByDay = groupBy(notifications, (notification) =>
-    new Date(notification.createdTime).toDateString()
+  const sortedNotifications = sortBy(notifications, (n) => -n.createdTime)
+  const notificationGroupsByDayAndContract = groupBy(
+    sortedNotifications,
+    (notification) =>
+      new Date(notification.createdTime).toDateString() +
+      notification.sourceContractId
   )
 
-  Object.keys(notificationGroupsByDay).forEach((day) => {
-    const notificationsGroupedByDay = notificationGroupsByDay[day]
-    // Group notifications by contract
-    const groupedNotificationsByContractId = groupBy(
-      notificationsGroupedByDay,
-      (notification) => {
-        return notification.sourceContractId
-      }
-    )
-    notificationGroups = notificationGroups.concat(
-      map(groupedNotificationsByContractId, (notifications, contractId) => {
-        const notificationsForContractId = groupedNotificationsByContractId[
-          contractId
-        ].sort((a, b) => {
-          return b.createdTime - a.createdTime
-        })
-        // Create a notification group for each contract within each day
-        const notificationGroup: NotificationGroup = {
-          notifications: notificationsForContractId,
-          groupedById: contractId,
-          isSeen: notificationsForContractId.some((n) => !n.isSeen),
-          timePeriod: day,
-        }
-        return notificationGroup
-      })
-    )
-  })
-  return notificationGroups
+  return Object.entries(notificationGroupsByDayAndContract).map(
+    ([key, value]) => ({
+      notifications: value,
+      groupedById: key,
+      isSeen: value.some((n) => !n.isSeen),
+    })
+  )
 }

@@ -85,7 +85,7 @@ function ActuallyCollapsibleContent(props: {
 }) {
   const { content, stateKey } = props
   const [isCollapsed, setIsCollapsed] = usePersistentState<boolean>(false, {
-    store: storageStore(safeLocalStorage()),
+    store: storageStore(safeLocalStorage),
     key: stateKey,
   })
   return (

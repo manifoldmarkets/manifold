@@ -7,7 +7,7 @@ export function useIsMobile(threshold = 640) {
   const [isMobile, setIsMobile] = usePersistentState(false, {
     key: 'is-mobile',
     // Save in localstorage because isMobile status doesn't change much.
-    store: storageStore(safeLocalStorage()),
+    store: storageStore(safeLocalStorage),
   })
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < threshold)

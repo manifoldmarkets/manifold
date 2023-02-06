@@ -152,7 +152,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     on_new_follow: constructPref(true, true, false),
     contract_from_followed_user: constructPref(true, true, false),
     trending_markets: constructPref(false, true, false),
-    profit_loss_updates: constructPref(false, true, false),
+    profit_loss_updates: constructPref(true, true, false),
     probability_updates_on_watched_markets: constructPref(true, false, true),
     thank_you_for_purchases: constructPref(false, false, false),
     onboarding_flow: constructPref(true, true, false),

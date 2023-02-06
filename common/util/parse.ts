@@ -1,4 +1,11 @@
-import { generateText, JSONContent, Node } from '@tiptap/core'
+import {
+  getText,
+  getSchema,
+  getTextSerializersFromSchema,
+  Node,
+  JSONContent,
+} from '@tiptap/core'
+import { Node as ProseMirrorNode } from 'prosemirror-model'
 import { StarterKit } from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
@@ -47,7 +54,7 @@ function skippableComponent(extension: string, label: string): Node<any, any> {
   })
 }
 
-export const stringParseExts = [
+export const extensions = [
   StarterKit,
   Link,
   Image.extend({ renderText: () => '[image]' }),
@@ -63,10 +70,17 @@ export const stringParseExts = [
   TiptapSpoiler.extend({ renderHTML: () => ['span', '[spoiler]', 0] }),
 ]
 
+const extensionSchema = getSchema(extensions)
+const extensionSerializers = getTextSerializersFromSchema(extensionSchema)
+
 export function richTextToString(text?: JSONContent) {
   if (!text) return ''
   try {
-    return generateText(text, stringParseExts)
+    const node = ProseMirrorNode.fromJSON(extensionSchema, text)
+    return getText(node, {
+      blockSeparator: '\n\n',
+      textSerializers: extensionSerializers,
+    })
   } catch (e) {
     console.error('error parsing rich text', `"${text}":`, e)
     return ''

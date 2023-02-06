@@ -9,7 +9,9 @@ import { getMarketRecommendations } from '../../common/recommendation'
 import { run } from '../../common/supabase/utils'
 import { mapAsync } from '../../common/util/promise'
 import { createSupabaseClient } from './supabase/init'
-import { filterDefined } from '../../common/util/array'
+import { buildArray, filterDefined } from '../../common/util/array'
+import { Contract } from '../../common/contract'
+import { chooseRandomSubset } from '../../common/util/random'
 
 const firestore = admin.firestore()
 
@@ -40,7 +42,7 @@ export const updateRecommendedMarkets = async () => {
   console.log('Computing recommendations...')
 
   const { userIds, userFeatures, contractIds, contractFeatures } =
-    getMarketRecommendations(userData, 3000)
+    getMarketRecommendations(userData, 2500)
 
   const userFeatureRows = userFeatures.map((features, i) => ({
     user_id: userIds[i],
@@ -79,89 +81,110 @@ export const loadUserDataForRecommendations = async () => {
 
   console.log('Loaded', userIds.length, 'users')
 
-  return await mapAsync(userIds, async (userId) => {
-    const betOnIds = (
-      await loadPaginated(
-        firestore
-          .collection('users')
+  const db = createSupabaseClient()
+  const { data } = await run(
+    db.rpc('search_contracts_by_group_slugs', {
+      group_slugs: ['destinygg'],
+      lim: 200,
+      start: 0,
+    })
+  )
+  const destinyContracts = data as any as Contract[]
+  const destinyContractIds = destinyContracts.map((c) => c.id)
+
+  console.log('Loaded Destiny contracts', destinyContractIds.length)
+
+  return await mapAsync(
+    userIds,
+    async (userId) => {
+      const betOnIds = (
+        await loadPaginated(
+          firestore
+            .collection('users')
+            .doc(userId)
+            .collection('contract-metrics')
+            .select('contractId') as Query<{ contractId: string }>
+        )
+      ).map(({ contractId }) => contractId)
+
+      const destinyContractIdSubset = chooseRandomSubset(destinyContractIds, 25)
+      const swipeData = await loadPaginated(
+        admin
+          .firestore()
+          .collection('private-users')
           .doc(userId)
-          .collection('contract-metrics')
-          .select('contractId') as Query<{ contractId: string }>
+          .collection('seenMarkets')
+          .select('id') as Query<{ id: string }>
       )
-    ).map(({ contractId }) => contractId)
-
-    const swipedIds = uniq(
-      (
-        await loadPaginated(
-          admin
-            .firestore()
-            .collection('private-users')
-            .doc(userId)
-            .collection('seenMarkets')
-            .select('id') as Query<{ id: string }>
+      const swipedIds = uniq(
+        buildArray(
+          swipeData.map(({ id }) => id),
+          // Pretend you swiped and skipped a subset of Destiny markets so it's prior is you don't like Destiny markets.
+          destinyContractIdSubset
         )
-      ).map(({ id }) => id)
-    )
-
-    const viewedCardIds = uniq(
-      (
-        await loadPaginated(
-          firestore
-            .collection('users')
-            .doc(userId)
-            .collection('events')
-            .where('name', '==', 'view market card')
-            .select('contractId') as Query<{ contractId: string }>
-        )
-      ).map(({ contractId }) => contractId)
-    )
-
-    const viewedPageIds = uniq(
-      (
-        await loadPaginated(
-          firestore
-            .collection('users')
-            .doc(userId)
-            .collection('events')
-            .where('name', '==', 'view market')
-            .select('contractId') as Query<{ contractId: string }>
-        )
-      ).map(({ contractId }) => contractId)
-    )
-
-    const likedIds = uniq(
-      (
-        await loadPaginated(
-          admin
-            .firestore()
-            .collection('users')
-            .doc(userId)
-            .collection('reactions')
-            .where('contentType', '==', 'contract')
-            .select('contentId') as Query<{ contentId: string }>
-        )
-      ).map(({ contentId }) => contentId)
-    )
-
-    const groupMemberSnap = await admin
-      .firestore()
-      .collectionGroup('groupMembers')
-      .where('userId', '==', userId)
-      .select()
-      .get()
-    const groupIds = uniq(
-      filterDefined(
-        groupMemberSnap.docs.map((doc) => doc.ref.parent.parent?.id)
       )
-    )
-    return {
-      userId,
-      betOnIds,
-      swipedIds,
-      viewedCardIds,
-      viewedPageIds,
-      likedIds,
-      groupIds,
-    }
-  })
+
+      const viewedCardIds = uniq(
+        (
+          await loadPaginated(
+            firestore
+              .collection('users')
+              .doc(userId)
+              .collection('events')
+              .where('name', '==', 'view market card')
+              .select('contractId') as Query<{ contractId: string }>
+          )
+        ).map(({ contractId }) => contractId)
+      )
+
+      const viewedPageIds = uniq(
+        (
+          await loadPaginated(
+            firestore
+              .collection('users')
+              .doc(userId)
+              .collection('events')
+              .where('name', '==', 'view market')
+              .select('contractId') as Query<{ contractId: string }>
+          )
+        ).map(({ contractId }) => contractId)
+      )
+
+      const likedIds = uniq(
+        (
+          await loadPaginated(
+            admin
+              .firestore()
+              .collection('users')
+              .doc(userId)
+              .collection('reactions')
+              .where('contentType', '==', 'contract')
+              .select('contentId') as Query<{ contentId: string }>
+          )
+        ).map(({ contentId }) => contentId)
+      )
+
+      const groupMemberSnap = await admin
+        .firestore()
+        .collectionGroup('groupMembers')
+        .where('userId', '==', userId)
+        .select()
+        .get()
+      const groupIds = uniq(
+        filterDefined(
+          groupMemberSnap.docs.map((doc) => doc.ref.parent.parent?.id)
+        )
+      )
+      return {
+        userId,
+        betOnIds,
+        swipedIds,
+        viewedCardIds,
+        viewedPageIds,
+        likedIds,
+        groupIds,
+      }
+    },
+    10
+  )
 }

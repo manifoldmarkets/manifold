@@ -96,7 +96,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
         <LoadingIndicator className="mt-6" />
       </Page>
     )
-
   if (isMobile) {
     return <Swipe />
   }

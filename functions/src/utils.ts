@@ -12,12 +12,15 @@ import {
 } from 'firebase-admin/firestore'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { generateJSON } from '@tiptap/html'
-import { stringParseExts } from '../../common/util/parse'
+import { extensions } from '../../common/util/parse'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
 import { Post } from '../../common/post'
 import { getFunctionUrl } from '../../common/api'
+
+import { ContractResolutionPayoutTxn } from '../../common/txn'
+import { runContractPayoutTxn } from './run-txn'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -31,7 +34,7 @@ export const logMemory = () => {
 }
 
 export function htmlToRichText(html: string) {
-  return generateJSON(html, stringParseExts)
+  return generateJSON(html, extensions)
 }
 
 export const invokeFunction = async (name: string, body?: unknown) => {
@@ -314,12 +317,13 @@ export const payUsers = (
   }
 }
 
-export const payUsersMultipleTransactions = async (
+export const payUsersTransactions = async (
   payouts: {
     userId: string
     payout: number
     deposit?: number
-  }[]
+  }[],
+  contractId: string
 ) => {
   const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
@@ -327,9 +331,22 @@ export const payUsersMultipleTransactions = async (
 
   for (const payoutChunk of payoutChunks) {
     await firestore.runTransaction(async (transaction) => {
-      for (const { userId, payout, deposit } of payoutChunk) {
-        updateUserBalance(transaction, userId, payout, deposit)
-      }
+        payoutChunk.forEach( ({ userId, payout, deposit }) => {
+          const payoutTxn: Omit<
+            ContractResolutionPayoutTxn,
+            'id' | 'createdTime'
+          > = {
+            category: 'CONTRACT_RESOLUTION_PAYOUT',
+            fromType: 'CONTRACT',
+            fromId: contractId,
+            toType: 'USER',
+            toId: userId,
+            amount: payout,
+            token: 'M$',
+            description: 'Contract payout for resolution: ' + contractId,
+          } as ContractResolutionPayoutTxn
+          runContractPayoutTxn(transaction, payoutTxn, deposit ?? 0)
+        })
     })
   }
 }

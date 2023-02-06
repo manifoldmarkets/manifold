@@ -19,7 +19,7 @@ export function ContractsGrid(props: {
     hideGroupLink?: boolean
     noLinkAvatar?: boolean
   }
-  highlightCards?: string[]
+  highlightContractIds?: string[]
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
   showImageOnTopContract?: boolean
@@ -31,7 +31,7 @@ export function ContractsGrid(props: {
     loadMore,
     onContractClick,
     cardUIOptions,
-    highlightCards,
+    highlightContractIds,
     trackingPostfix,
     showImageOnTopContract,
     trackCardViews,
@@ -93,7 +93,7 @@ export function ContractsGrid(props: {
             trackingPostfix={trackingPostfix}
             className={clsx(
               'mb-4 transition-all',
-              highlightCards?.includes(contract.id) &&
+              highlightContractIds?.includes(contract.id) &&
                 'bg-gradient-to-b from-indigo-50 via-white to-white outline outline-2 outline-indigo-400'
             )}
             trackCardViews={trackCardViews}

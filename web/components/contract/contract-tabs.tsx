@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { groupBy, last, sortBy, sum } from 'lodash'
+import { groupBy, last, sortBy } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
@@ -15,7 +15,6 @@ import { Col } from '../layout/col'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import { useTipTxns } from 'web/hooks/use-tip-txns'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -46,7 +45,6 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
-import { getTotalContractMetrics } from 'web/lib/supabase/contract-metrics'
 import { QfTrades } from './qf-overview'
 
 export function ContractTabs(props: {
@@ -83,8 +81,6 @@ export function ContractTabs(props: {
     [contractComments, blockedUserIds]
   )
 
-  const [totalPositions, setTotalPositions] = useState(props.totalPositions)
-
   const commentTitle =
     comments.length === 0
       ? 'Comments'
@@ -111,7 +107,8 @@ export function ContractTabs(props: {
     (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
     (isMobile ? 'You' : 'Your Trades')
 
-  const positionsTitle = shortFormatNumber(totalPositions) + ' Holders'
+  const { uniqueBettorCount } = contract
+  const positionsTitle = uniqueBettorCount + ' Traders'
 
   return (
     <ControlledTabs
@@ -135,14 +132,13 @@ export function ContractTabs(props: {
           ),
         },
 
-        totalPositions > 0 &&
+        !!uniqueBettorCount &&
           contract.outcomeType === 'BINARY' && {
             title: positionsTitle,
             content: (
               <BinaryUserPositionsTabContent
                 positions={userPositionsByOutcome}
                 contractId={contract.id}
-                setTotalPositions={setTotalPositions}
               />
             ),
           },
@@ -180,9 +176,8 @@ const BinaryUserPositionsTabContent = memo(
   function BinaryUserPositionsTabContent(props: {
     contractId: string
     positions: ContractMetricsByOutcome
-    setTotalPositions: (count: number) => void
   }) {
-    const { contractId, setTotalPositions } = props
+    const { contractId } = props
     const outcomes = ['YES', 'NO']
     const positions =
       useContractMetrics(contractId, 100, outcomes) ?? props.positions
@@ -192,9 +187,6 @@ const BinaryUserPositionsTabContent = memo(
     const followedUsers = useFollows(currentUser?.id)
     const yesPositionsSorted = positions.YES ?? []
     const noPositionsSorted = positions.NO ?? []
-    useEffect(() => {
-      getTotalContractMetrics(contractId).then(setTotalPositions)
-    }, [positions, setTotalPositions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
       page * pageSize,
@@ -314,7 +306,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 }) {
   const { contract, answerResponse, onCancelAnswerResponse, blockedUserIds } =
     props
-  const tips = useTipTxns({ contractId: contract.id })
   const comments = (useComments(contract.id) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
@@ -367,15 +358,11 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
         sort={sort}
         onSortClick={() => {
           setSort(sort === 'Newest' ? 'Best' : 'Newest')
-          const totalTips = sum(
-            Object.values(tips).map((t) => sum(Object.values(t)))
-          )
           track('change-comments-sort', {
             contractSlug: contract.slug,
             contractName: contract.question,
             totalComments: comments.length,
             totalUniqueTraders: contract.uniqueBettorCount,
-            totalTips,
           })
         }}
       />
@@ -386,7 +373,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           onCancelAnswerResponse={onCancelAnswerResponse}
           topLevelComments={topLevelComments}
           commentsByParent={commentsByParent}
-          tips={tips}
         />
       )}
       {contract.outcomeType !== 'FREE_RESPONSE' &&
@@ -399,7 +385,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
               commentsByParent[parent.id] ?? [],
               (c) => c.createdTime
             )}
-            tips={tips}
           />
         ))}
     </>
@@ -479,7 +464,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
 
   return (
     <>
-      <Col className="mb-4 gap-4">
+      <Col className="mb-4 items-start gap-7">
         {shouldLoadMore ? (
           <LoadingIndicator />
         ) : (

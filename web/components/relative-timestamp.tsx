@@ -1,7 +1,7 @@
 import { DateTimeTooltip } from './widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { Placement } from '@floating-ui/react-dom-interactions'
+import { Placement } from '@floating-ui/react'
 
 export function RelativeTimestamp(props: {
   time: number

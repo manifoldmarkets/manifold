@@ -1,5 +1,6 @@
 // A txn (pronounced "texan") respresents a payment between two ids on Manifold
 // Shortened from "transaction" to distinguish from Firebase transactions (and save chars)
+
 type AnyTxnType =
   | Donation
   | Tip
@@ -15,6 +16,7 @@ type AnyTxnType =
   | CertPayMana
   | CertDividend
   | CertBurn
+  | ContractResolutionPayout
   | QfPayment
   | QfPool
   | QfDividend
@@ -48,6 +50,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'CERT_PAY_MANA' // Transfer mana for a cert
     | 'CERT_DIVIDEND' // Cert holder pays out dividends
     | 'CERT_BURN' // Destroy a cert
+    | 'CONTRACT_RESOLUTION_PAYOUT' // Contract resolution pays out to a user
     | 'QF_PAYMENT' // Pay one of the entries in a QF pool
     | 'QF_POOL' // Fund a QF pool
     | 'QF_DIVIDEND' // Pay out QF dividends
@@ -175,6 +178,13 @@ type SignupBonus = {
   category: 'SIGNUP_BONUS'
 }
 
+type ContractResolutionPayout = {
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  category: 'CONTRACT_RESOLUTION_PAYOUT'
+  token: 'M$'
+}
+
 type QfId = {
   qfId: string
 }
@@ -215,6 +225,7 @@ export type CertTransferTxn = CertTxn & CertTransfer
 export type CertPayManaTxn = CertTxn & CertPayMana
 export type CertDividendTxn = CertTxn & CertDividend
 export type CertBurnTxn = CertTxn & CertBurn
+export type ContractResolutionPayoutTxn = Txn & ContractResolutionPayout
 export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
 export type QfPoolTxn = QfTxn & QfPool

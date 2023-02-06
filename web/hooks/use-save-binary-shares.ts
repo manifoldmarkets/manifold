@@ -23,10 +23,8 @@ export const useSaveBinaryShares = (
     : [savedShares.yesShares, savedShares.noShares]
 
   useEffectCheckEquality(() => {
-    const local = safeLocalStorage()
-
     // Read shares from local storage.
-    const savedShares = local?.getItem(`${contract.id}-shares`)
+    const savedShares = safeLocalStorage?.getItem(`${contract.id}-shares`)
     if (savedShares) {
       setSavedShares(JSON.parse(savedShares))
     }
@@ -34,7 +32,7 @@ export const useSaveBinaryShares = (
     if (userBets?.length) {
       // Save shares to local storage.
       const sharesData = JSON.stringify({ yesShares, noShares })
-      local?.setItem(`${contract.id}-shares`, sharesData)
+      safeLocalStorage?.setItem(`${contract.id}-shares`, sharesData)
     }
   }, [contract.id, userBets, noShares, yesShares])
 
