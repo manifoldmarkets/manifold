@@ -450,7 +450,7 @@ export function BuyPanel(props: {
         <Modal
           open={seeLimit}
           setOpen={setSeeLimit}
-          className="rounded-lg bg-white px-4 pb-4"
+          className="rounded-lg bg-white p-4"
         >
           <Title children="Limit Order" />
           <LimitOrderPanel
