@@ -149,7 +149,7 @@ export function PinnedSelectModal(props: {
                 hideQuickBet: true,
                 noLinkAvatar: true,
               }}
-              highlightCards={[selectedItem?.itemId ?? '']}
+              highlightContractIds={[selectedItem?.itemId ?? '']}
               additionalFilter={group ? { groupSlug: group.slug } : undefined}
               persistPrefix={group ? `group-${group.slug}` : undefined}
               headerClassName="bg-white"

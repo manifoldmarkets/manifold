@@ -60,7 +60,14 @@ import { searchInAny } from 'common/util/parse'
 import { useContract } from 'web/hooks/use-contracts'
 import { AddFundsButton } from '../profile/add-funds-button'
 
-type BetSort = 'newest' | 'profit' | 'loss' | 'closeTime' | 'value'
+type BetSort =
+  | 'newest'
+  | 'profit'
+  | 'loss'
+  | 'closeTime'
+  | 'value'
+  | 'liquidity'
+
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
 const CONTRACTS_PER_PAGE = 50
@@ -193,6 +200,7 @@ export function BetsList(props: { user: User }) {
       nullableMetricsByContract[c.id].lastBetTime ??
       max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
       0,
+    liquidity: (c) => -c.elasticity ?? 1,
     closeTime: (c) =>
       // This is in fact the intuitive sort direction.
       (filter === 'open' ? -1 : 1) *
@@ -287,6 +295,7 @@ export function BetsList(props: { user: User }) {
               <option value="value">Value</option>
               <option value="profit">Profit</option>
               <option value="loss">Loss</option>
+              <option value="liquidity">Liquidity</option>
               <option value="closeTime">Close date</option>
             </Select>
           </Row>

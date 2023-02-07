@@ -11,17 +11,12 @@ import { copyToClipboard } from 'web/lib/util/copy'
 export const SimpleLinkButton = (props: {
   getUrl: () => string
   className?: string
-  tooltip?: string
+  tooltip: string
 }) => {
   const { getUrl, tooltip, className } = props
 
   return (
-    <Tooltip
-      text={tooltip ?? 'Copy link to market'}
-      placement="bottom"
-      noTap
-      noFade
-    >
+    <Tooltip text={tooltip} placement="bottom" noTap noFade>
       <IconButton
         size="2xs"
         onClick={() => {

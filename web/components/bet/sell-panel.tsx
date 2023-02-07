@@ -182,7 +182,7 @@ export function SellPanel(props: {
           <div>
             {getFormattedMappedValue(contract, initialProb)}
             <span className="mx-2">→</span>
-            {getFormattedMappedValue(contract, initialProb)}
+            {getFormattedMappedValue(contract, resultProb)}
           </div>
         </Row>
         {loanPaid !== 0 && (

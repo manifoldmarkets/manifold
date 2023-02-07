@@ -3,7 +3,6 @@ import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 
-export type AnyMechanism = DPM | CPMM | CPMM2
 export type AnyOutcomeType =
   | Binary
   | MultipleChoice
@@ -11,6 +10,7 @@ export type AnyOutcomeType =
   | FreeResponse
   | Numeric
   | Cert
+  | QuadraticFunding
 
 export type AnyContractType =
   | (CPMM & Binary)
@@ -21,6 +21,7 @@ export type AnyContractType =
   | (DPM & MultipleChoice)
   | (Uniswap2 & Cert)
   | (CPMM2 & MultipleChoice)
+  | QuadraticFunding
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -92,6 +93,7 @@ export type CertContract = Contract & Cert
 export type Uniswap2CertContract = CertContract & Uniswap2
 export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
 export type CPMMMultipleChoiceContract = Contract & MultipleChoice & CPMM2
+export type QuadraticFundingContract = Contract & QuadraticFunding
 
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
@@ -137,6 +139,19 @@ export type Uniswap2 = {
 
 export type Cert = {
   outcomeType: 'CERT'
+}
+
+export type QuadraticFunding = {
+  outcomeType: 'QUADRATIC_FUNDING'
+  mechanism: 'qf'
+  answers: Answer[]
+  // Mapping of how much each user has contributed to the matching pool
+  // Note: Our codebase assumes every contract has a pool, which is why this isn't just a constant
+  pool: { M$: number }
+
+  // Used when the funding round pays out
+  resolution?: 'MKT' | 'CANCEL'
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
 export type Binary = {
@@ -191,6 +206,7 @@ export const OUTCOME_TYPES = [
   'PSEUDO_NUMERIC',
   'NUMERIC',
   'CERT',
+  'QUADRATIC_FUNDING',
 ] as const
 
 export const MAX_QUESTION_LENGTH = 240

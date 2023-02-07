@@ -7,12 +7,12 @@ import {
   useEffect,
   useRef,
   useMemo,
-  ReactNode,
   useState,
   createContext,
   useContext,
 } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { useEvent } from 'web/hooks/use-event'
 import {
   historyStore,
   inMemoryStore,
@@ -82,7 +82,7 @@ export function ContractSearch(props: {
   defaultSort?: Sort
   defaultFilter?: filter
   additionalFilter?: AdditionalFilter
-  highlightCards?: string[]
+  highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
   cardUIOptions?: {
@@ -94,10 +94,6 @@ export function ContractSearch(props: {
   persistPrefix?: string
   isWholePage?: boolean
   includeProbSorts?: boolean
-  renderContracts?: (
-    contracts: Contract[] | undefined,
-    loadMore: () => void
-  ) => ReactNode
   autoFocus?: boolean
   profile?: boolean | undefined
   fromGroupProps?: {
@@ -114,12 +110,11 @@ export function ContractSearch(props: {
     onContractClick,
     hideOrderSelector,
     cardUIOptions,
-    highlightCards,
+    highlightContractIds,
     headerClassName,
     persistPrefix,
     includeProbSorts,
     isWholePage,
-    renderContracts,
     autoFocus,
     profile,
     fromGroupProps,
@@ -156,7 +151,7 @@ export function ContractSearch(props: {
     [searchIndexName]
   )
 
-  const performQuery = async (freshQuery?: boolean) => {
+  const performQuery = useEvent(async (freshQuery?: boolean) => {
     if (searchParams.current == null) {
       return
     }
@@ -189,7 +184,7 @@ export function ContractSearch(props: {
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
-  }
+  })
 
   // Always do first query when loading search page, unless going back in history.
   const [firstQuery, setFirstQuery] = usePersistentState(true, {
@@ -276,13 +271,15 @@ export function ContractSearch(props: {
           <ContractsList
             contracts={renderedContracts}
             loadMore={performQuery}
+            onContractClick={onContractClick}
+            highlightContractIds={highlightContractIds}
           />
         ) : (
           <ContractsGrid
             contracts={renderedContracts}
             showTime={state.showTime ?? undefined}
             onContractClick={onContractClick}
-            highlightCards={highlightCards}
+            highlightContractIds={highlightContractIds}
             cardUIOptions={cardUIOptions}
             loadMore={performQuery}
             fromGroupProps={fromGroupProps}
@@ -332,7 +329,7 @@ function ContractSearchControls(props: {
   )
 
   const sortKey = `${persistPrefix}-search-sort`
-  const savedSort = safeLocalStorage()?.getItem(sortKey)
+  const savedSort = safeLocalStorage?.getItem(sortKey)
 
   const [sort, setSort] = usePersistentState(
     savedSort ?? defaultSort,
@@ -355,7 +352,7 @@ function ContractSearchControls(props: {
 
   useEffect(() => {
     if (persistPrefix && sort) {
-      safeLocalStorage()?.setItem(sortKey, sort as string)
+      safeLocalStorage?.setItem(sortKey, sort as string)
     }
   }, [persistPrefix, query, sort, sortKey])
 
@@ -492,7 +489,6 @@ function SearchFilters(props: {
           ))}
         </Select>
       )}
-
       {!listViewDisabled && (
         <button
           type="button"

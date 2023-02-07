@@ -53,8 +53,15 @@ We're using Expo to help with android and ios builds. You can find more informat
 - Builds an iOS IPA for App Store distribution
 - I think we use Transporter once we have our Apple Business Developer account set up
 
-## OTA updates
+### OTA updates
 `eas update --branch default` to publish an over-the-air update to production 
+
+### Adding Environment Variables
+- Set the variable in `package.json` (used for local development aka `yarn ios:prod`)  
+- Add the key-value pair to the `extra.eas` object in `app.config.js` with value `process.env.YOUR_ENV_VARIABLE` 
+- Set the build variable in `eas.json` for the profile you want (used for eas builds aka `yarn build:ios:prod`)
+- Reference it in js: `Constants.expoConfig?.extra?.eas.YOUR_ENV_VARIABLE`
+- Run `yarn clear` to clear the env variable between builds
 
 # Icons
 find icons [here](https://icons.expo.fyi/)

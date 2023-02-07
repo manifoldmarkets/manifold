@@ -1,4 +1,4 @@
-import { Placement } from '@floating-ui/react-dom-interactions'
+import { Placement } from '@floating-ui/react'
 import { ReactNode } from 'react'
 import { formatTime } from 'web/lib/util/time'
 import { Tooltip } from './tooltip'

@@ -4,7 +4,6 @@ import {
   HomeIcon,
   SearchIcon,
   BookOpenIcon,
-  ChatIcon,
   LogoutIcon,
   BeakerIcon,
   HeartIcon,
@@ -35,6 +34,7 @@ import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-ge
 import { SearchButton } from './search-button'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
+import DiscordOutlineIcon from 'web/lib/icons/discord-outline-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -195,7 +195,7 @@ const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
       isMobile && {
         name: 'Discord',
         href: 'https://discord.gg/eHQBNBqXuh',
-        icon: ChatIcon,
+        icon: DiscordOutlineIcon,
       },
     isMobile &&
       loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }

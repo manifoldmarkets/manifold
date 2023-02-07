@@ -58,16 +58,14 @@ export function UserLink(props: {
     <SiteLink
       href={`/${username}`}
       className={clsx(
-        'max-w-[120px] truncate min-[480px]:max-w-[200px]',
+        'inline-flex max-w-[120px] flex-row items-center gap-1 truncate min-[480px]:max-w-[200px]',
         className,
         noLink && 'pointer-events-none'
       )}
       followsLinkClass
     >
-      <div className="inline-flex flex-row items-center gap-1">
-        {shortName}
-        <UserBadge username={username} fresh={fresh} />
-      </div>
+      {shortName}
+      <UserBadge username={username} fresh={fresh} />
     </SiteLink>
   )
 }

@@ -23,14 +23,11 @@ import { safeLocalStorage } from 'web/lib/util/local'
 export type AuthUser = undefined | null | UserAndPrivateUser
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
 
-// Proxy localStorage in case it's not available (eg in incognito iframe)
-const localStorage = safeLocalStorage()
-
 const ensureDeviceToken = () => {
-  let deviceToken = localStorage.getItem('device-token')
+  let deviceToken = safeLocalStorage?.getItem('device-token')
   if (!deviceToken) {
     deviceToken = randomString()
-    localStorage.setItem('device-token', deviceToken)
+    safeLocalStorage?.setItem('device-token', deviceToken)
   }
   return deviceToken
 }

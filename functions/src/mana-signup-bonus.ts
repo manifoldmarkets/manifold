@@ -16,9 +16,9 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
-import { runTxn, TxnData } from './transact'
 import { APIError } from '../../common/api'
 import { userOptedOutOfBrowserNotifications } from '../../common/user-notification-preferences'
+import { runTxn, TxnData } from './run-txn'
 
 // TODO: delete email mana signup bonus
 export const manasignupbonus = functions

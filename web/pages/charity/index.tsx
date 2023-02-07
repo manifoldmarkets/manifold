@@ -38,7 +38,7 @@ export async function getStaticProps() {
     (charity) => (charity.tags?.includes('New') ? 0 : 1),
     (charity) => -totals[charity.id],
   ])
-  const matches = quadraticMatches(txns, totalRaised)
+  const matches = quadraticMatches(txns, totalRaised, 'toId')
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
   const mostRecentDonor = txns[0] ? await getUser(txns[0].fromId) : null
   const mostRecentCharity = txns[0]?.toId ?? ''

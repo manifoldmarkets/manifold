@@ -31,7 +31,10 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
         )}
       />
 
-      <SimpleLinkButton getUrl={() => getShareUrl(contract, user?.username)} />
+      <SimpleLinkButton
+        getUrl={() => getShareUrl(contract, user?.username)}
+        tooltip="Copy link to market"
+      />
 
       <ContractInfoDialog contract={contract} user={user} />
     </Row>

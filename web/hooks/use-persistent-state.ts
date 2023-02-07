@@ -10,6 +10,8 @@ export type RevalidationOptions<T> = {
   callback: () => Promise<T>
 }
 
+export type Backend = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+
 export interface PersistentStore<T> {
   get: (k: string) => T | undefined
   set: (k: string, v: T | undefined) => void
@@ -28,7 +30,7 @@ const withURLParam = (location: Location, k: string, v?: string) => {
   return newUrl
 }
 
-export const storageStore = <T>(storage?: Storage): PersistentStore<T> => ({
+export const storageStore = <T>(storage?: Backend): PersistentStore<T> => ({
   get: (k: string) => {
     if (!storage) {
       return undefined

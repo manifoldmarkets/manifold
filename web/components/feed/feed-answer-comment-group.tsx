@@ -16,7 +16,6 @@ import { ContractComment } from 'common/comment'
 import { Dictionary, sortBy } from 'lodash'
 import { getAnswerColor } from '../answers/answers-panel'
 import Curve from 'web/public/custom-components/curve'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useChartAnswers } from '../charts/contract/choice'
 
 export function CommentsAnswer(props: {
@@ -76,7 +75,6 @@ export function FreeResponseComments(props: {
   onCancelAnswerResponse?: () => void
   topLevelComments: ContractComment[]
   commentsByParent: Dictionary<[ContractComment, ...ContractComment[]]>
-  tips: CommentTipMap
 }) {
   const {
     contract,
@@ -84,7 +82,6 @@ export function FreeResponseComments(props: {
     onCancelAnswerResponse,
     topLevelComments,
     commentsByParent,
-    tips,
   } = props
   const answersArray = useChartAnswers(contract).map((answer) => answer.text)
   return (
@@ -108,7 +105,6 @@ export function FreeResponseComments(props: {
                 commentsByParent[parent.id] ?? [],
                 (c) => c.createdTime
               )}
-              tips={tips}
             />
           )
         }
@@ -143,7 +139,6 @@ export function FreeResponseComments(props: {
                   commentsByParent[parent.id] ?? [],
                   (c) => c.createdTime
                 )}
-                tips={tips}
               />
             </div>
           </>

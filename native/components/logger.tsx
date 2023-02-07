@@ -1,13 +1,13 @@
-// Logging to file system for debugging on Ian's device
 import { fileAsyncTransport, logger } from 'react-native-logs'
 import * as FileSystem from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
-import { NATIVE_BUILD } from 'common/envs/constants'
 import { Text, TouchableOpacity, View } from 'react-native'
 import React from 'react'
+import Constants from 'expo-constants'
 
+const NATIVE_BUILD = Constants.expoConfig?.extra?.eas.NATIVE_BUILD_TYPE ?? 'PREVIEW'
 const now = new Date()
-const fileName = `logs_${now.toISOString().replaceAll(':', '-')}.txt`
+const fileName = `logs_${now.toISOString().replace(/:/g, '-')}.txt`
 const filePath = FileSystem.documentDirectory
 const initLogger = () => {
   console.log('[Manifold Markets] logger filePath', filePath + fileName)
@@ -36,7 +36,7 @@ const exportLogsViaSharingMenu = async () => {
 }
 
 export const ExportLogsButton = () => {
-  if (NATIVE_BUILD === 'PROD') return <div />
+  if (NATIVE_BUILD === 'PROD') return <View />
   return (
     <View
       style={{
