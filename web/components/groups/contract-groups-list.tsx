@@ -114,39 +114,38 @@ export function ContractGroupsList(props: {
             })}
           </Row>
           {/* if is manifold admin, show all possible groups */}
-          {isAdmin ||
-            (permittedGroups.length > 0 && (
-              <Col className={'my-2 items-center justify-between p-0.5'}>
-                <Row className="w-full justify-start text-sm text-gray-400">
-                  Add to group
-                </Row>
-                <GroupSelector
-                  options={{
-                    showSelector: true,
-                    showLabel: false,
-                    ignoreGroupIds: groupLinks.map((g) => g.groupId),
-                  }}
-                  setSelectedGroup={(group) =>
-                    group &&
-                    addContractToGroup({
-                      groupId: group.id,
-                      contractId: contract.id,
-                    })
-                  }
-                  selectedGroup={undefined}
-                  creator={user}
-                  permittedGroups={
-                    isAdmin
-                      ? undefined
-                      : contract.groupSlugs
-                      ? permittedGroups.filter(
-                          (g) => !contract.groupSlugs?.includes(g.slug)
-                        )
-                      : permittedGroups
-                  }
-                />
-              </Col>
-            ))}
+          {(isAdmin || permittedGroups.length > 0) && (
+            <Col className={'my-2 items-center justify-between p-0.5'}>
+              <Row className="w-full justify-start text-sm text-gray-400">
+                Add to group
+              </Row>
+              <GroupSelector
+                options={{
+                  showSelector: true,
+                  showLabel: false,
+                  ignoreGroupIds: groupLinks.map((g) => g.groupId),
+                }}
+                setSelectedGroup={(group) =>
+                  group &&
+                  addContractToGroup({
+                    groupId: group.id,
+                    contractId: contract.id,
+                  })
+                }
+                selectedGroup={undefined}
+                creator={user}
+                permittedGroups={
+                  isAdmin
+                    ? undefined
+                    : contract.groupSlugs
+                    ? permittedGroups.filter(
+                        (g) => !contract.groupSlugs?.includes(g.slug)
+                      )
+                    : permittedGroups
+                }
+              />
+            </Col>
+          )}
         </Col>
         <GroupsInfoBlob isCreator={isCreator} />
       </Col>

@@ -51,6 +51,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { addContractToGroup } from 'web/lib/firebase/api'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -137,6 +138,7 @@ export default function GroupPage(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
   const userRole = useRealtimeRole(group?.id)
+  const isManifoldAdmin = useAdmin()
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
     setActiveIndex(tabIndex)
@@ -158,7 +160,6 @@ export default function GroupPage(props: {
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
   const chatEmbed = <ChatEmbed group={group} />
-
   return (
     <Page rightSidebar={chatEmbed} touchesTop={true}>
       <SEO
@@ -166,7 +167,15 @@ export default function GroupPage(props: {
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-      {user && userRole && (
+      {user && isManifoldAdmin && (
+        <AddContractButton
+          group={group}
+          user={user}
+          userRole={'admin'}
+          className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
+        />
+      )}
+      {user && !isManifoldAdmin && userRole && (
         <AddContractButton
           group={group}
           user={user}
@@ -180,7 +189,7 @@ export default function GroupPage(props: {
           isMember={!!userRole}
           groupUrl={groupUrl}
           privateUser={privateUser}
-          canEdit={userRole === 'admin'}
+          canEdit={isManifoldAdmin || userRole === 'admin'}
           setWritingNewAbout={setWritingNewAbout}
           bannerVisible={bannerVisible}
         />
@@ -190,7 +199,7 @@ export default function GroupPage(props: {
           <BannerImage
             group={group}
             user={user}
-            canEdit={userRole === 'admin'}
+            canEdit={isManifoldAdmin || userRole === 'admin'}
           />
         </div>
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
@@ -217,7 +226,7 @@ export default function GroupPage(props: {
                     group={group}
                     groupUrl={groupUrl}
                     privateUser={privateUser}
-                    canEdit={userRole === 'admin'}
+                    canEdit={isManifoldAdmin || userRole === 'admin'}
                     setWritingNewAbout={setWritingNewAbout}
                   />
                 )}
@@ -225,7 +234,10 @@ export default function GroupPage(props: {
             </Col>
           </Row>
           <Row className="mb-2 gap-4">
-            <GroupMembersWidget group={group} canEdit={userRole === 'admin'} />
+            <GroupMembersWidget
+              group={group}
+              canEdit={isManifoldAdmin || userRole === 'admin'}
+            />
             {/* <GroupOpenClosedWidget group={group} /> */}
           </Row>
         </Col>
@@ -233,7 +245,7 @@ export default function GroupPage(props: {
 
       <GroupAboutSection
         group={group}
-        canEdit={userRole === 'admin'}
+        canEdit={isManifoldAdmin || userRole === 'admin'}
         post={aboutPost}
         writingNewAbout={writingNewAbout}
         setWritingNewAbout={setWritingNewAbout}
@@ -263,7 +275,7 @@ export default function GroupPage(props: {
                   includeProbSorts
                   fromGroupProps={{
                     group: group,
-                    userRole: userRole,
+                    userRole: isManifoldAdmin ? 'admin' : userRole,
                   }}
                 />
               ),
@@ -274,7 +286,7 @@ export default function GroupPage(props: {
                 <GroupPostSection
                   group={group}
                   posts={groupPosts}
-                  canEdit={userRole === 'admin'}
+                  canEdit={isManifoldAdmin || userRole === 'admin'}
                 />
               ),
             },

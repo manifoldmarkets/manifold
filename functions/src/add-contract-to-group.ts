@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { isAdmin, isManifoldId } from '../../common/envs/constants'
 import { Group, GroupLink } from 'common/group'
 import { GroupMember } from 'common/group-member'
 import * as admin from 'firebase-admin'
@@ -43,32 +43,33 @@ export const addcontracttogroup = newEndpoint({}, async (req, auth) => {
     const firebaseUser = await admin.auth().getUser(auth.uid)
 
     // checks if have permission to add a contract to the group
-    if (!groupMember) {
-      // checks if is manifold admin (therefore does not have to be a group member)
-      if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email))
+    if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email)) {
+      if (!groupMember) {
+        // checks if is manifold admin (therefore does not have to be a group member)
         throw new APIError(
           400,
           'User is not a member of the group, therefore can not add any markets'
         )
-    } else {
-      // must either be admin, moderator or owner of contract to add to group
-      if (
-        group.creatorId !== auth.uid &&
-        groupMember.role !== 'admin' &&
-        groupMember.role !== 'moderator' &&
-        contract.creatorId !== auth.uid
-      )
-        throw new APIError(
-          400,
-          'User does not have permission to add this market to group'
+      } else {
+        // must either be admin, moderator or owner of contract to add to group
+        if (
+          group.creatorId !== auth.uid &&
+          groupMember.role !== 'admin' &&
+          groupMember.role !== 'moderator' &&
+          contract.creatorId !== auth.uid
         )
-      if (
-        contract.groupLinks &&
-        contract.groupLinks
-          .map((gl) => gl.groupId)
-          .some((gid) => gid === group.id)
-      )
-        throw new APIError(400, 'This market already exists in this group')
+          throw new APIError(
+            400,
+            'User does not have permission to add this market to group'
+          )
+        if (
+          contract.groupLinks &&
+          contract.groupLinks
+            .map((gl) => gl.groupId)
+            .some((gid) => gid === group.id)
+        )
+          throw new APIError(400, 'This market already exists in this group')
+      }
     }
     const newGroupLinks = [
       ...(contract.groupLinks ?? []),
