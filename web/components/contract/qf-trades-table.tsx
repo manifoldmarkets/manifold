@@ -100,7 +100,7 @@ export default function QfTradesTable(props: {
                   >
                     {keys.map((key) => (
                       <td
-                        className="whitespace-nowrap px-2 py-0.5 text-sm text-gray-500"
+                        className="max-w-[10rem] truncate whitespace-nowrap px-2 py-0.5 text-sm text-gray-500"
                         key={key}
                       >
                         {

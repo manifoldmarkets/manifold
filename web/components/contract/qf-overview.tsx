@@ -51,37 +51,39 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
 
       <div className="flex gap-2">
         <Image
-          alt=""
-          width={100}
-          height={100}
+          alt={`Cover image for ${contract.question}.`}
+          className="object-cover"
+          width={120}
+          height={120}
           src={contract.coverImageUrl ?? ''}
-          className="rounded-md"
         />
-        <div className="flex grow justify-between gap-4">
-          <Title className="!my-0">{contract.question}</Title>
-          <Col className="items-end">
-            <div className="text-3xl">{raised} raised</div>
+        <Col className="gap-2">
+          <h1 className="break-anywhere text-lg text-indigo-700 sm:text-2xl">
+            {contract.question}
+          </h1>
+          <Row className="items-end gap-4">
+            <div className="text-2xl">{raised} raised</div>
             <div className="text-xl text-green-800">+{match} match</div>
             <Button
-              color="indigo-text-only"
+              color="gray-white"
               size="2xs"
               onClick={() => setPoolPanel(!poolPanel)}
             >
               (contribute)
             </Button>
-          </Col>
-        </div>
+          </Row>
+        </Col>
       </div>
       {poolPanel && <QfAddPoolPanel contract={contract} />}
+
+      <QfAnswersPanel contract={contract} />
+
+      <CreateAnswerWidget contract={contract} />
 
       <AlertBox
         title="Quadratic funding is experimental."
         text="This is a quadratic funding contract, which lets you crowdfund entries with a democratic matching pool. For more info, see https://wtfisqf.com/"
       />
-
-      <QfAnswersPanel contract={contract} />
-
-      <CreateAnswerWidget contract={contract} />
     </Col>
   )
 }
