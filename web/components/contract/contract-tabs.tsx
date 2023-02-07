@@ -297,7 +297,7 @@ const BinaryUserPositionsTabContent = memo(
   }
 )
 
-const CommentsTabContent = memo(function CommentsTabContent(props: {
+export const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
   comments: ContractComment[]
   answerResponse?: Answer

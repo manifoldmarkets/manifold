@@ -17,6 +17,7 @@ import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
 import { DailyStats } from '../daily-stats'
+import { SwipeComments } from './swipe-comments'
 
 export const SwipeCard = memo(
   (props: {
@@ -174,7 +175,7 @@ function CardActions(props: { user?: User; contract: BinaryContract }) {
   const { user, contract } = props
 
   return (
-    <Col className="flex flex-col items-center justify-end">
+    <Col className="flex flex-col items-center justify-end gap-2">
       <LikeButton
         contentId={contract.id}
         contentCreatorId={contract.creatorId}
@@ -189,6 +190,7 @@ function CardActions(props: { user?: User; contract: BinaryContract }) {
         className={'flex-col gap-2 drop-shadow-sm'}
         isSwipe
       />
+      <SwipeComments contract={contract} />
       {/* TODO Share button */}
     </Col>
   )
