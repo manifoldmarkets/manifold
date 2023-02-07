@@ -246,7 +246,6 @@ export default function Swipe() {
             betStatus={betStatus}
             onBet={onBet}
             user={user}
-            isModalOpen={false}
             setIsModalOpen={setIsModalOpen}
           />
         )}
@@ -266,7 +265,6 @@ export default function Swipe() {
               betDirection={betDirection}
               betStatus={betStatus}
               onBet={onBet}
-              isModalOpen={isModalOpen && i === index}
               setIsModalOpen={setIsModalOpen}
               user={user}
               small={height < 750}

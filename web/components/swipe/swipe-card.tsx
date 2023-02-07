@@ -28,7 +28,6 @@ export const SwipeCard = memo(
     betStatus: 'loading' | 'success' | string | undefined
     onBet: (outcome: 'YES' | 'NO') => void
     user: User | undefined
-    isModalOpen: boolean
     setIsModalOpen: Dispatch<SetStateAction<boolean>>
     small?: boolean
     className?: string
@@ -41,7 +40,6 @@ export const SwipeCard = memo(
       betStatus,
       onBet,
       user,
-      isModalOpen,
       setIsModalOpen,
     } = props
     const contract = (useContract(props.contract.id) ??
@@ -123,7 +121,6 @@ export const SwipeCard = memo(
             <Col className="h-20 w-full justify-end">
               <DescriptionAndModal
                 description={description}
-                isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}
               />
             </Col>

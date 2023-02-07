@@ -2,6 +2,7 @@ import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { formatPercentNumber } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
+import { useState } from 'react'
 import CountUp from 'react-countup'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
@@ -59,11 +60,15 @@ export default function Percent(props: {
 
 export function DescriptionAndModal(props: {
   description: string | JSONContent
-  isModalOpen?: boolean
-  setIsModalOpen?: (open: boolean) => void
+  setIsModalOpen: (open: boolean) => void
 }) {
-  const { description, isModalOpen, setIsModalOpen } = props
-  const descriptionClass = 'text-sm font-thin text-gray-100 break-words'
+  const { description, setIsModalOpen } = props
+
+  const [isOpen, setIsOpen] = useState(false)
+  const setAllOpen = (open: boolean) => {
+    setIsOpen(open)
+    setIsModalOpen(open)
+  }
 
   const descriptionString =
     typeof description === 'string'
@@ -71,34 +76,37 @@ export function DescriptionAndModal(props: {
       : richTextToString(description)
 
   return (
-    <Col className={clsx(descriptionClass, 'items-end')}>
+    <Col
+      className={clsx(
+        'break-words text-sm font-thin text-gray-100',
+        'items-end'
+      )}
+    >
       <div className="line-clamp-3 w-full [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]">
         {descriptionString}
       </div>
-      {descriptionString.length >= 100 &&
-        isModalOpen != undefined &&
-        setIsModalOpen && (
-          <>
-            <span
-              className="mr-2 font-semibold text-indigo-400"
-              onClick={() => setIsModalOpen(true)}
-            >
-              See more
-            </span>
-            <Modal
-              open={isModalOpen}
-              setOpen={setIsModalOpen}
-              className={clsx(
-                MODAL_CLASS,
-                'pointer-events-auto max-h-[32rem] overflow-auto'
-              )}
-            >
-              <Col>
-                <Content content={descriptionString} />
-              </Col>
-            </Modal>
-          </>
-        )}
+      {descriptionString.length >= 100 && (
+        <>
+          <span
+            className="mr-2 font-semibold text-indigo-400"
+            onClick={() => setAllOpen(true)}
+          >
+            See more
+          </span>
+          <Modal
+            open={isOpen}
+            setOpen={setAllOpen}
+            className={clsx(
+              MODAL_CLASS,
+              'pointer-events-auto max-h-[32rem] overflow-auto'
+            )}
+          >
+            <Col>
+              <Content content={descriptionString} />
+            </Col>
+          </Modal>
+        </>
+      )}
     </Col>
   )
 }
