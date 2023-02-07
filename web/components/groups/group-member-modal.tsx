@@ -195,7 +195,7 @@ export function Member(props: {
       </Row>
       <Row className="items-center gap-1">
         {tag}
-        <AdminRoleDropdown group={group} member={member} canEdit={canEdit} />
+        {/* <AdminRoleDropdown group={group} member={member} canEdit={canEdit} /> */}
       </Row>
     </Row>
   )
