@@ -117,6 +117,7 @@ export interface Database {
           f2: number
           f3: number
           f4: number
+          freshness_score: number
         }
         Insert: {
           contract_id: string
@@ -125,6 +126,7 @@ export interface Database {
           f2: number
           f3: number
           f4: number
+          freshness_score?: number
         }
         Update: {
           contract_id?: string
@@ -133,6 +135,7 @@ export interface Database {
           f2?: number
           f3?: number
           f4?: number
+          freshness_score?: number
         }
       }
       contracts: {
@@ -515,51 +518,125 @@ export interface Database {
     }
     Functions: {
       calculate_distance: {
-        Args: { row1: unknown; row2: unknown }
+        Args: {
+          row1: unknown
+          row2: unknown
+        }
         Returns: number
       }
       dot: {
-        Args: { urf: unknown; crf: unknown }
+        Args: {
+          urf: unknown
+          crf: unknown
+        }
         Returns: number
       }
-      dot_bigint: {
-        Args: { urf: unknown; crf: unknown }
-        Returns: number
-      }
-      get_contract_metrics_with_contracts: {
-        Args: { uid: string; count: number }
-        Returns: { contract_id: string; metrics: Json; contract: Json }[]
-      }
+      get_contract_metrics_with_contracts:
+        | {
+            Args: {
+              uid: string
+              count: number
+            }
+            Returns: {
+              contract_id: string
+              metrics: Json
+              contract: Json
+            }[]
+          }
+        | {
+            Args: {
+              uid: string
+              count: number
+              start: number
+            }
+            Returns: {
+              contract_id: string
+              metrics: Json
+              contract: Json
+            }[]
+          }
       get_document_table: {
-        Args: { doc_kind: string }
+        Args: {
+          doc_kind: string
+        }
         Returns: string
       }
       get_document_table_spec: {
-        Args: { table_id: string }
-        Returns: unknown
+        Args: {
+          table_id: string
+        }
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_open_limit_bets_with_contracts: {
-        Args: { uid: string; count: number }
-        Returns: { contract_id: string; bets: Json[]; contract: Json }[]
+        Args: {
+          uid: string
+          count: number
+        }
+        Returns: {
+          contract_id: string
+          bets: Json[]
+          contract: Json
+        }[]
       }
       get_recommended_contract_scores: {
-        Args: { uid: string }
-        Returns: { contract_id: string; rec_score: number }[]
+        Args: {
+          uid: string
+        }
+        Returns: {
+          contract_id: string
+          rec_score: number
+        }[]
       }
       get_recommended_contracts: {
-        Args: { uid: string; count: number }
+        Args: {
+          uid: string
+          count: number
+        }
         Returns: Json[]
       }
       get_recommended_contracts_by_score: {
-        Args: { uid: string }
-        Returns: { data: Json; score: number }[]
+        Args: {
+          uid: string
+        }
+        Returns: {
+          data: Json
+          score: number
+        }[]
+      }
+      get_recommended_contracts_by_score_test: {
+        Args: {
+          uid: string
+          count: number
+        }
+        Returns: {
+          data: Json
+          score: number
+        }[]
       }
       get_related_contract_ids: {
-        Args: { source_id: string }
-        Returns: { contract_id: string; distance: number }[]
+        Args: {
+          source_id: string
+        }
+        Returns: {
+          contract_id: string
+          distance: number
+        }[]
+      }
+      get_related_contract_ids_test: {
+        Args: {
+          source_id: string
+        }
+        Returns: {
+          contract_id: string
+          distance: number
+        }[]
       }
       get_related_contracts: {
-        Args: { cid: string; lim: number; start: number }
+        Args: {
+          cid: string
+          lim: number
+          start: number
+        }
         Returns: Json[]
       }
       get_time: {
@@ -567,23 +644,33 @@ export interface Database {
         Returns: number
       }
       gtrgm_compress: {
-        Args: { "": unknown }
+        Args: {
+          "": unknown
+        }
         Returns: unknown
       }
       gtrgm_decompress: {
-        Args: { "": unknown }
+        Args: {
+          "": unknown
+        }
         Returns: unknown
       }
       gtrgm_in: {
-        Args: { "": unknown }
+        Args: {
+          "": unknown
+        }
         Returns: unknown
       }
       gtrgm_options: {
-        Args: { "": unknown }
+        Args: {
+          "": unknown
+        }
         Returns: undefined
       }
       gtrgm_out: {
-        Args: { "": unknown }
+        Args: {
+          "": unknown
+        }
         Returns: unknown
       }
       install_available_extensions_and_test: {
@@ -591,23 +678,41 @@ export interface Database {
         Returns: boolean
       }
       is_valid_contract: {
-        Args: { data: Json }
+        Args: {
+          data: Json
+        }
         Returns: boolean
       }
       recently_liked_contract_counts: {
-        Args: { since: number }
-        Returns: { contract_id: string; n: number }[]
+        Args: {
+          since: number
+        }
+        Returns: {
+          contract_id: string
+          n: number
+        }[]
       }
       replicate_writes_process_one: {
-        Args: { r: unknown }
+        Args: {
+          r: unknown
+        }
         Returns: boolean
       }
       replicate_writes_process_since: {
-        Args: { since: string }
-        Returns: { id: number; succeeded: boolean }[]
+        Args: {
+          since: string
+        }
+        Returns: {
+          id: number
+          succeeded: boolean
+        }[]
       }
       search_contracts_by_group_slugs: {
-        Args: { group_slugs: string[]; lim: number; start: number }
+        Args: {
+          group_slugs: string[]
+          lim: number
+          start: number
+        }
         Returns: Json[]
       }
       search_contracts_by_group_slugs_for_creator: {
@@ -620,7 +725,9 @@ export interface Database {
         Returns: Json[]
       }
       set_limit: {
-        Args: { "": number }
+        Args: {
+          "": number
+        }
         Returns: number
       }
       show_limit: {
@@ -628,16 +735,39 @@ export interface Database {
         Returns: number
       }
       show_trgm: {
-        Args: { "": string }
+        Args: {
+          "": string
+        }
         Returns: string[]
       }
+      squared_distance: {
+        Args: {
+          row1: unknown
+          row2: unknown
+        }
+        Returns: number
+      }
       to_jsonb: {
-        Args: { "": Json }
+        Args: {
+          "": Json
+        }
         Returns: Json
       }
     }
     Enums: {
       [_ in never]: never
+    }
+    CompositeTypes: {
+      contract_ids: {
+        contract_id: string
+      }
+      contract_score: {
+        contract_id: string
+      }
+      table_spec: {
+        parent_id_col_name: string
+        id_col_name: string
+      }
     }
   }
 }
