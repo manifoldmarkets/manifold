@@ -39,7 +39,7 @@ export default function NotificationDropdown(props: {
             )}
           />
         }
-        menuWidth="w-52"
+        MenuWidth="w-52"
       />
     )
   }

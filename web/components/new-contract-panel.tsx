@@ -34,8 +34,6 @@ import { createMarket } from 'web/lib/firebase/api'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
-import { getGroupsWhereUserIsMember } from 'web/lib/supabase/groups'
-import { GroupsInfoBlob } from './groups/contract-groups-list'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -56,10 +54,8 @@ export type NewQuestionParams = {
 export function NewContractPanel(props: {
   creator: User
   params?: NewQuestionParams
-  fromGroup?: boolean
-  className?: string
 }) {
-  const { creator, params, fromGroup, className } = props
+  const { creator, params } = props
   const { groupId, initValue } = params ?? {}
   const [outcomeType, setOutcomeType] = useState<outcomeType>(
     (params?.outcomeType as outcomeType) ?? 'BINARY'
@@ -220,15 +216,8 @@ export function NewContractPanel(props: {
 
   const [hideOptions, setHideOptions] = useState(true)
 
-  const [permittedGroups, setPermittedGroups] = useState<Group[]>([])
-  useEffect(() => {
-    getGroupsWhereUserIsMember(creator.id).then((g) =>
-      setPermittedGroups(g.map((gp: { group_data: any }) => gp.group_data))
-    )
-  }, [creator.id])
-
   return (
-    <div className={className}>
+    <div>
       <div className="flex w-full flex-col">
         <label className="px-1 pt-2 pb-3">
           Question<span className={'text-scarlet-500'}>*</span>
@@ -380,28 +369,24 @@ export function NewContractPanel(props: {
               </div>
             </>
           )}
-          {!fromGroup && (
-            <>
-              <Spacer h={4} />
-              <Row className={'items-end gap-x-2'}>
-                <GroupSelector
-                  selectedGroup={selectedGroup}
-                  setSelectedGroup={setSelectedGroup}
-                  creator={creator}
-                  options={{ showSelector: true, showLabel: true }}
-                  permittedGroups={permittedGroups}
-                />
-                {selectedGroup && (
-                  <a target="_blank" href={groupPath(selectedGroup.slug)}>
-                    <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
-                  </a>
-                )}
-              </Row>
-              <Spacer h={2} />
-              <GroupsInfoBlob isCreator={true} />
-              <Spacer h={6} />
-            </>
-          )}
+
+          <Spacer h={4} />
+
+          <Row className={'items-end gap-x-2'}>
+            <GroupSelector
+              selectedGroup={selectedGroup}
+              setSelectedGroup={setSelectedGroup}
+              creator={creator}
+              options={{ showSelector: true, showLabel: true }}
+            />
+            {selectedGroup && (
+              <a target="_blank" href={groupPath(selectedGroup.slug)}>
+                <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
+              </a>
+            )}
+          </Row>
+
+          <Spacer h={6} />
 
           <div className="mb-1 flex flex-col items-start">
             <label className="mb-1 gap-2 px-1 py-2">
@@ -518,22 +503,19 @@ export function NewContractPanel(props: {
       </Row>
 
       <Spacer h={6} />
-      <Row className="w-full justify-center">
-        <Button
-          className="w-full"
-          type="submit"
-          color="indigo"
-          size="xl"
-          loading={isSubmitting}
-          disabled={!isValid || editor?.storage.upload.mutation.isLoading}
-          onClick={(e) => {
-            e.preventDefault()
-            submit()
-          }}
-        >
-          {isSubmitting ? 'Creating...' : 'Create market'}
-        </Button>
-      </Row>
+      <Button
+        type="submit"
+        color="indigo"
+        size="xl"
+        loading={isSubmitting}
+        disabled={!isValid || editor?.storage.upload.mutation.isLoading}
+        onClick={(e) => {
+          e.preventDefault()
+          submit()
+        }}
+      >
+        {isSubmitting ? 'Creating...' : 'Create market'}
+      </Button>
 
       <Spacer h={6} />
     </div>

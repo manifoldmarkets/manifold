@@ -38,17 +38,17 @@ function GroupAboutModalContent(props: {
 
 export function GroupAboutSection(props: {
   group: Group
-  canEdit: boolean
+  isEditable: boolean
   post: Post | null
   writingNewAbout: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
-  const { group, canEdit, post, writingNewAbout, setWritingNewAbout } = props
+  const { group, isEditable, post, writingNewAbout, setWritingNewAbout } = props
   if ((post && post.content) || writingNewAbout) {
     return (
       <Col className="group my-2 gap-2 px-4 py-2 lg:px-0">
         <div className=" text-gray-500">ABOUT</div>
-        {canEdit && (
+        {isEditable && (
           <EditableGroupAbout
             group={group}
             post={post}
@@ -56,7 +56,7 @@ export function GroupAboutSection(props: {
             setWritingNewAbout={setWritingNewAbout}
           />
         )}
-        {canEdit && post && post.content && (
+        {!isEditable && post && post.content && (
           <ExpandableContent
             content={post.content}
             modalContent={

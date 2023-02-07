@@ -2,29 +2,26 @@ import { useState, useEffect, MutableRefObject } from 'react'
 
 export const useIntersection = (
   element: MutableRefObject<Element | null>,
-  rootMargin: string,
-  rootRef: MutableRefObject<Element | null>
+  rootMargin: string
 ) => {
-  const [isVisible, setIsVisible] = useState(false)
+  const [isVisible, setState] = useState(false)
 
   useEffect(() => {
-    const currElement = element?.current
-    const currRoot = rootRef?.current
-    if (!currElement || !currRoot) return
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsVisible(entry.isIntersecting)
+        setState(entry.isIntersecting)
       },
-      { rootMargin, root: currRoot }
+      { rootMargin }
     )
-    currElement && observer.observe(currElement)
+
+    element.current && observer.observe(element.current)
 
     return () => {
-      if (currElement) {
-        observer.unobserve(currElement)
+      if (element.current) {
+        observer.unobserve(element.current)
       }
     }
-  }, [element, rootMargin, rootRef])
+  }, [])
 
   return isVisible
 }

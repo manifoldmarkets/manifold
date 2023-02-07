@@ -119,28 +119,6 @@ export function markAllNotifications(params: any) {
   return call(getFunctionUrl('markallnotifications'), 'POST', params)
 }
 
-export function updateMemberRole(params: {
-  groupId: string
-  memberId: string
-  role: string
-}) {
-  return call(getFunctionUrl('updatememberrole'), 'POST', params)
-}
-
-export function addContractToGroup(params: {
-  groupId: string
-  contractId: string
-}) {
-  return call(getFunctionUrl('addcontracttogroup'), 'POST', params)
-}
-
-export function removeContractFromGroup(params: {
-  groupId: string
-  contractId: string
-}) {
-  return call(getFunctionUrl('removecontractfromgroup'), 'POST', params)
-}
-
 export function createQfAnswer(params: QfAnswerReq) {
   return call('/api/v0/qf/answer', 'POST', params)
 }

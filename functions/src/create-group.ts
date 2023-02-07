@@ -69,20 +69,12 @@ export const creategroup = newEndpoint({}, async (req, auth) => {
 
   // create a GroupMemberDoc for each member
   await Promise.all(
-    memberIds.map((memberId) => {
-      if (memberId === creator.id) {
-        groupRef.collection('groupMembers').doc(memberId).create({
-          userId: memberId,
-          createdTime: Date.now(),
-          role: 'admin',
-        })
-      } else {
-        groupRef.collection('groupMembers').doc(memberId).create({
-          userId: memberId,
-          createdTime: Date.now(),
-        })
-      }
-    })
+    memberIds.map((memberId) =>
+      groupRef.collection('groupMembers').doc(memberId).create({
+        userId: memberId,
+        createdTime: Date.now(),
+      })
+    )
   )
 
   return { status: 'success', group: group }
