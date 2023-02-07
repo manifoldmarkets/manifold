@@ -159,7 +159,6 @@ export default function GroupPage(props: {
 
   const chatEmbed = <ChatEmbed group={group} />
 
-  console.log(user, userRole)
   return (
     <Page rightSidebar={chatEmbed} touchesTop={true}>
       <SEO
