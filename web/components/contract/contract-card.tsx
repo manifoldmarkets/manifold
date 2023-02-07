@@ -19,7 +19,6 @@ import {
   PseudoNumericContract,
 } from 'common/contract'
 import {
-  AnswerLabel,
   BinaryContractOutcomeLabel,
   CancelLabel,
   FreeResponseOutcomeLabel,
@@ -312,23 +311,6 @@ export function BinaryResolutionOrChance(props: {
       )}
     </Row>
   )
-}
-
-export function FreeResponseTopAnswer(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-  className?: string
-}) {
-  const { contract } = props
-
-  const topAnswer = getTopAnswer(contract)
-
-  return topAnswer ? (
-    <AnswerLabel
-      className="text-md !text-gray-900"
-      answer={topAnswer}
-      truncate="medium"
-    />
-  ) : null
 }
 
 export function FreeResponseResolutionOrChance(props: {

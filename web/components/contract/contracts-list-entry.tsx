@@ -9,6 +9,7 @@ import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { Avatar } from '../widgets/avatar'
 import clsx from 'clsx'
+import { ContractMinibar } from '../charts/minibar'
 
 function ContractStatusLabel(props: { contract: Contract }) {
   const { contract } = props
@@ -37,13 +38,13 @@ function ContractStatusLabel(props: { contract: Contract }) {
     }
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE': {
-      return <span>FR</span>
+      return <ContractMinibar contract={contract} />
     }
     case 'CERT': {
       return <span>CERT</span>
     }
     case 'QUADRATIC_FUNDING': {
-      return <span>QF</span>
+      return <span>RAD</span>
     }
     default:
       return <span>-</span>
@@ -80,7 +81,7 @@ export const ContractsListEntry = forwardRef(
           avatarUrl={contract.creatorAvatarUrl}
           size="xs"
         />
-        <div className="min-w-[34px] rounded-full font-semibold">
+        <div className="min-w-[34px] font-semibold">
           <ContractStatusLabel contract={contract} />
         </div>
         <div className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
