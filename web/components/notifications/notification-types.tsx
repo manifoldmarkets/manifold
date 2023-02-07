@@ -1064,7 +1064,11 @@ function WeeklyUpdateNotification(props: {
       <>
         <span>
           Your portfolio{' '}
-          <span className="text-teal-500">
+          <span
+            className={clsx(
+              weeklyProfit > 0 ? 'text-teal-600' : 'text-scarlet-600'
+            )}
+          >
             {weeklyProfit > 0 ? 'gained' : 'lost'}{' '}
             {formatMoney(Math.abs(weeklyProfit))}
           </span>{' '}

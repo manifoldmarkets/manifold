@@ -87,7 +87,8 @@ function groupNotifications(notifications: Notification[]) {
     sortedNotifications,
     (notification) =>
       new Date(notification.createdTime).toDateString() +
-      notification.sourceContractId
+      notification.sourceContractId +
+      notification.sourceTitle
   )
 
   return Object.entries(notificationGroupsByDayAndContract).map(
