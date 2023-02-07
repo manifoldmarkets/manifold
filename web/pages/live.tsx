@@ -9,8 +9,8 @@ export default function LivePage() {
 
   return (
     <Page>
-      <Col className="pm:mx-10 gap-4 sm:px-4 sm:pb-4">
-        <Title className="!mb-0">Live feed</Title>
+      <Col className="gap-4 sm:px-4 sm:pb-4">
+        <Title className="mx-2 !mb-0 mt-2 sm:mx-0 lg:mt-0">Live feed</Title>
         <ActivityLog count={30} showPills />
       </Col>
     </Page>
