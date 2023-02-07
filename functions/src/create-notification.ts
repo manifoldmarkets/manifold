@@ -35,6 +35,7 @@ import {
 import { ContractFollow } from '../../common/follow'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
+import { group } from 'console'
 import { GroupMember } from 'common/group-member'
 
 const firestore = admin.firestore()
