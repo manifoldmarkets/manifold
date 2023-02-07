@@ -49,7 +49,7 @@ import {
   calculateDpmSaleAmount,
   getDpmProbabilityAfterSale,
 } from 'common/calculate-dpm'
-import { getUserContractMetricsWithContracts } from 'web/lib/supabase/contract-metrics'
+import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { buildArray } from 'common/util/array'
 import { useBets } from 'web/hooks/use-bets'
@@ -59,6 +59,7 @@ import { Input } from 'web/components/widgets/input'
 import { searchInAny } from 'common/util/parse'
 import { useContract } from 'web/hooks/use-contracts'
 import { AddFundsButton } from '../profile/add-funds-button'
+import { db } from 'web/lib/supabase/db'
 
 type BetSort =
   | 'newest'
@@ -99,7 +100,7 @@ export function BetsList(props: { user: User }) {
     })
 
   useEffect(() => {
-    getUserContractMetricsWithContracts(user.id, 5000).then(
+    getUserContractMetricsWithContracts(user.id,  db,5000).then(
       (metricsWithContracts) => {
         const { contracts, metricsByContract } = metricsWithContracts
         setMetricsByContract(metricsByContract)

@@ -1118,3 +1118,44 @@ export const createMarketClosedNotification = async (
     contract
   )
 }
+
+export const createWeeklyPortfolioUpdateNotification = async (
+  privateUser: PrivateUser,
+  userUsername: string,
+  weeklyProfit: number,
+  rangeEndDate: string,
+  rank: number
+) => {
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'profit_loss_updates'
+  )
+  if (!sendToBrowser) return
+
+  const id = rangeEndDate + 'weekly_portfolio_update'
+  const notificationRef = firestore
+    .collection(`/users/${privateUser.id}/notifications`)
+    .doc(id)
+  const notification: Notification = {
+    id,
+    userId: privateUser.id,
+    reason: 'profit_loss_updates',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: id,
+    sourceType: 'weekly_portfolio_update',
+    sourceUpdateType: 'created',
+    sourceUserName: '',
+    sourceUserUsername: userUsername,
+    sourceUserAvatarUrl: '',
+    sourceText: '',
+    sourceSlug: rangeEndDate,
+    sourceTitle: `Weekly Portfolio Update for ${rangeEndDate}`,
+    data: {
+      weeklyProfit,
+      rangeEndDate,
+      rank,
+    },
+  }
+  await notificationRef.set(removeUndefinedProps(notification))
+}

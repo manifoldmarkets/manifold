@@ -4,6 +4,8 @@ import { BetFilter } from 'web/lib/firebase/bets'
 import { Contract } from 'common/contract'
 import { Dictionary, flatMap } from 'lodash'
 import { LimitBet } from 'common/bet'
+import { useCallback, useEffect, useState } from 'react'
+import { getUserContractMetricsWithContracts } from 'common/supabase/contract-metrics'
 
 export async function getOlderBets(
   contractId: string,
@@ -74,4 +76,25 @@ export const getOpenLimitOrdersWithContracts = async (
     contracts.push(d.contract as Contract)
   })
   return { betsByContract, contracts }
+}
+
+export const useRecentlyBetOnContracts = (userId: string) => {
+  const [savedContracts, setSavedContracts] = useState<Contract[]>()
+
+  const loadMore = useCallback(async () => {
+    const { contracts } = await getUserContractMetricsWithContracts(
+      userId,
+      db,
+      10,
+      savedContracts?.length ?? 0
+    )
+    setSavedContracts((prev) => (prev ? [...prev, ...contracts] : contracts))
+  }, [userId])
+  useEffect(() => {
+    // Don't fire multiple times on load so that we lose the proper count
+    const timeout = setTimeout(loadMore, 1000)
+    return () => clearTimeout(timeout)
+  }, [loadMore])
+
+  return { contracts: savedContracts, loadMore }
 }

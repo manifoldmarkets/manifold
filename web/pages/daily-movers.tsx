@@ -1,4 +1,4 @@
-import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
+import { ProfitChangeCardsTable } from 'web/components/contract/prob-change-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -32,5 +32,7 @@ function ProbChangesWrapper(props: { userId: string }) {
 
   if (!data) return <LoadingIndicator />
 
-  return <ProfitChangeTable contracts={data.contracts} metrics={data.metrics} />
+  return (
+    <ProfitChangeCardsTable contracts={data.contracts} metrics={data.metrics} />
+  )
 }

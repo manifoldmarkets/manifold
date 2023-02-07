@@ -14,6 +14,7 @@ import {
   StatusBar as RNStatusBar,
   Dimensions,
   View,
+  Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -351,6 +352,13 @@ const App = () => {
       const { page } = payload
       log('page:', page)
       setAllowSystemBack(page !== 'swipe')
+    } else if (type === 'share') {
+      const { url, title } = payload
+      log('Sharing url:', url)
+      Share.share({
+        url,
+        title,
+      })
     } else {
       log('Unhandled nativeEvent.data: ', data)
     }
