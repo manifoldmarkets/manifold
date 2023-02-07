@@ -497,7 +497,21 @@ export interface Database {
       }
     }
     Views: {
-      [_ in never]: never
+      group_role: {
+        Row: {
+          avatar_url: Json | null
+          createdtime: Json | null
+          creator_id: Json | null
+          group_data: Json | null
+          group_id: string | null
+          group_name: Json | null
+          group_slug: Json | null
+          member_id: string | null
+          name: Json | null
+          role: string | null
+          username: Json | null
+        }
+      }
     }
     Functions: {
       calculate_distance: {
@@ -505,6 +519,10 @@ export interface Database {
         Returns: number
       }
       dot: {
+        Args: { urf: unknown; crf: unknown }
+        Returns: number
+      }
+      dot_bigint: {
         Args: { urf: unknown; crf: unknown }
         Returns: number
       }

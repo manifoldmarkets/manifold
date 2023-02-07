@@ -1,4 +1,4 @@
-import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
+import { PlusIcon, UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { User } from 'common/user'
@@ -8,19 +8,19 @@ import { TextButton } from 'web/components/buttons/text-button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
-import { groupButtonClass } from 'web/pages/group/[...slugs]'
-import { GroupLinkItem } from 'web/pages/groups'
-import { Button } from '../buttons/button'
 import {
   getMemberGroups,
   getMemberGroupsCount,
   SearchGroupInfo,
 } from 'web/lib/supabase/groups'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { groupButtonClass } from 'web/pages/group/[...slugs]'
+import { GroupLinkItem } from 'web/pages/groups'
+import { Button } from '../buttons/button'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -112,9 +112,6 @@ export function JoinOrLeaveGroupButton(props: {
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => setIsMember(props.isMember), [props.isMember])
 
-  if (!group.anyoneCanJoin) {
-    return <></>
-  }
   const unfollow = user
     ? withTracking(() => {
         leaveGroup(group.id, user.id)
@@ -146,7 +143,7 @@ export function JoinOrLeaveGroupButton(props: {
       <Button color="dark-gray" className={className} onClick={unfollow}>
         <Row className="gap-1">
           <UserRemoveIcon className="h-5 w-5" />
-          Unfollow
+          Leave
         </Row>
       </Button>
     )
@@ -163,7 +160,23 @@ export function JoinOrLeaveGroupButton(props: {
     <Button color="indigo" className={className} onClick={follow}>
       <Row className="gap-1">
         <UserAddIcon className="h-5 w-5" />
-        Follow
+        Join
+      </Row>
+    </Button>
+  )
+}
+
+export function AddMembersButton(props: { group: Group; className?: string }) {
+  const {
+    // group,
+    className,
+  } = props
+  const [_open, setOpen] = useState(false)
+  return (
+    <Button color="indigo" className={className} onClick={() => setOpen(true)}>
+      <Row className="gap-1">
+        <PlusIcon className="h-5 w-5" />
+        Add members
       </Row>
     </Button>
   )

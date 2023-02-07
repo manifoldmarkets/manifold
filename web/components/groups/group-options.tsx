@@ -12,12 +12,11 @@ export function GroupOptions(props: {
   group: Group
   groupUrl: string
   privateUser: PrivateUser | undefined | null
-  isEditable: boolean
+  canEdit: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
-  const { group, groupUrl, privateUser, isEditable, setWritingNewAbout } = props
+  const { group, groupUrl, privateUser, canEdit, setWritingNewAbout } = props
   let groupOptionItems = [] as DropdownItem[]
-
   if (privateUser) {
     groupOptionItems = groupOptionItems.concat(
       getBlockGroupDropdownItem({
@@ -25,7 +24,7 @@ export function GroupOptions(props: {
         user: privateUser,
       })
     )
-    if (isEditable && !group.aboutPostId) {
+    if (canEdit && !group.aboutPostId) {
       groupOptionItems = groupOptionItems.concat({
         name: 'Create about section',
         icon: <PlusCircleIcon className="h-5 w-5" />,
@@ -47,7 +46,7 @@ export function GroupOptions(props: {
             Icon={
               <DotsVerticalIcon className={clsx('h-5 w-5', groupButtonClass)} />
             }
-            MenuWidth={'w-60'}
+            menuWidth={'w-60'}
             className="z-40"
           />
         )}
