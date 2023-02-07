@@ -5,6 +5,7 @@ import { Group } from 'common/group'
 import { buildArray } from 'common/util/array'
 import { useRef } from 'react'
 import toast from 'react-hot-toast'
+import { useAdmin } from 'web/hooks/use-admin'
 import { useRealtimeGroupMembers } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useUser } from 'web/hooks/use-user'
@@ -213,7 +214,6 @@ export function AdminRoleDropdown(props: {
   if (!user) {
     return <></>
   }
-
   const errorMessage = 'Could not change role, try again?'
   const groupMemberOptions = buildArray(
     // ADMIN ONLY: if the member is below admin, can upgrade to admin
