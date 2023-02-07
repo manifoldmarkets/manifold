@@ -9,6 +9,7 @@ import { useComments } from 'web/hooks/use-comments'
 import { CommentsTabContent } from '../contract/contract-tabs'
 import { ContractComment } from 'common/comment'
 import { usePrivateUser } from 'web/hooks/use-user'
+import { withTracking } from 'web/lib/service/analytics'
 
 export function SwipeComments(props: {
   contract: BinaryContract
@@ -26,7 +27,9 @@ export function SwipeComments(props: {
   return (
     <button
       className={clsx('text-white hover:text-gray-600 disabled:opacity-50')}
-      onClick={() => setAllOpen(true)}
+      onClick={withTracking(() => setAllOpen(true), 'view swipe comments', {
+        contractId: contract.id,
+      })}
     >
       <div className="relative">
         <ChatIcon className={clsx('h-12 w-12')} />
