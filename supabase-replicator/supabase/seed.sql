@@ -135,7 +135,8 @@ drop policy if exists "public read" on contracts;
 create policy "public read" on contracts for select using (true);
 create index if not exists contracts_data_gin on contracts using GIN (data);
 create index if not exists contracts_group_slugs_gin on contracts using GIN ((data->'groupSlugs'));
-create index if not exists contracts_creator_id on contracts ((to_jsonb(data)->'creatorId'));
+create index if not exists contracts_creator_id on contracts ((data->>'creatorId'));
+create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
 
 create table if not exists contract_answers (
     contract_id text not null,
@@ -691,11 +692,10 @@ $$;
 
 create or replace function is_valid_contract(data jsonb)
     returns boolean
+    stable parallel safe
 as $$
-select
-        not (data->>'isResolved')::boolean
-        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
-        and not (data->>'visibility') = 'unlisted'
+select data @> '{"isResolved": false, "visibility": "public"}'
+       and (data->>'closeTime')::bigint > extract(epoch from now() + interval '10 minutes') * 1000
 $$ language sql;
 
 create or replace function get_related_contract_ids(source_id text)
