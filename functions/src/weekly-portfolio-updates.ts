@@ -8,7 +8,7 @@ import { createWeeklyPortfolioUpdateNotification } from 'functions/src/create-no
 import { getUsernameById } from 'common/supabase/users'
 import { db } from './supabase/init'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
-import { DAY_MS } from 'common/lib/util/time'
+import { DAY_MS } from 'common/util/time'
 import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
 
 const firestore = admin.firestore()

@@ -43,6 +43,7 @@ import {
 } from 'components/external-web-view'
 import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
+import Constants from 'expo-constants'
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
@@ -236,8 +237,8 @@ const App = () => {
   }
 
   const getPushToken = async () => {
-    const appConfig = require('./app.json')
-    const projectId = appConfig.expo.extra.eas.projectId
+    const projectId = Constants.expoConfig?.extra?.eas.projectId
+    console.log('projectId', projectId)
     const token = (
       await Notifications.getExpoPushTokenAsync({
         projectId,

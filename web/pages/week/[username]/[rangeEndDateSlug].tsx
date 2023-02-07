@@ -14,7 +14,7 @@ import {
 import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
 import { coll, getValues } from 'web/lib/firebase/utils'
 import { Row } from 'web/components/layout/row'
-import { formatMoney } from 'common/lib/util/format'
+import { formatMoney } from 'common/util/format'
 import { getContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { CPMMBinaryContract } from 'common/contract'
