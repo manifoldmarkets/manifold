@@ -165,7 +165,6 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     )
     if (
       !groupMemberDocs.some((m) => m.userId === userId) &&
-      !group.anyoneCanJoin &&
       group.creatorId !== userId
     ) {
       throw new APIError(

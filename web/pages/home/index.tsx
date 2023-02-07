@@ -563,7 +563,7 @@ function CustomizeButton(props: {
         },
       ]}
       Icon={<DotsVerticalIcon className={clsx('my-1 h-4 w-4', className)} />}
-      MenuWidth="w-44"
+      menuWidth="w-44"
     />
   )
 }
