@@ -31,7 +31,7 @@ export function useRealtimeRole(groupId: string | undefined) {
         filter: `group_id=eq.${groupId}`,
       },
       (payload) => {
-        if (payload.new.member_id === user?.id) {
+        if ((payload.new as any).member_id === user?.id) {
           setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
         }
       }
@@ -180,7 +180,7 @@ export async function setTranslatedMemberRole(
   user?: User | null
 ) {
   if (isManifoldAdmin) {
-    return 'admin' as groupRoleType
+    setRole('admin')
   }
   if (user && groupId) {
     getMemberRole(user, groupId)

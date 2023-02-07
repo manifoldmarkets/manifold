@@ -2,6 +2,7 @@ import { DotsVerticalIcon, MinusCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
+import toast from 'react-hot-toast'
 import { removeContractFromGroup } from 'web/lib/firebase/api'
 import DropdownMenu from '../comments/dropdown-menu'
 
@@ -28,7 +29,6 @@ export function GroupContractOptions(props: {
       Items={contractOptions}
       Icon={<DotsVerticalIcon className={clsx('h-5 w-5 text-gray-400')} />}
       menuWidth={'w-52'}
-      //   className={clsx(className)}
     />
   )
 }

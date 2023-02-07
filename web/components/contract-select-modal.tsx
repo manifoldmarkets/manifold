@@ -98,7 +98,7 @@ export function SelectMarkets(props: {
           hideQuickBet: true,
           noLinkAvatar: true,
         }}
-        highlightCards={contracts.map((c) => c.id)}
+        highlightContractIds={contracts.map((c) => c.id)}
         additionalFilter={{
           excludeContractIds: additionalFilter?.excludeContractIds,
           facetFilters: getUsersBlockFacetFilters(privateUser),
@@ -135,25 +135,5 @@ export function SelectMarkets(props: {
         )}
       </Row>
     </div>
-
-        <div className="grow overflow-y-auto px-2 sm:px-8">
-          <ContractSearch
-            hideOrderSelector
-            onContractClick={addContract}
-            cardUIOptions={{
-              hideGroupLink: true,
-              hideQuickBet: true,
-              noLinkAvatar: true,
-            }}
-            highlightContractIds={contracts.map((c) => c.id)}
-            additionalFilter={{
-              facetFilters: getUsersBlockFacetFilters(privateUser),
-            }}
-            headerClassName="bg-white"
-            {...contractSearchOptions}
-          />
-        </div>
-      </Col>
-    </Modal>
   )
 }

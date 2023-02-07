@@ -139,7 +139,8 @@ export function removeContractFromGroup(params: {
   contractId: string
 }) {
   return call(getFunctionUrl('removecontractfromgroup'), 'POST', params)
-  
+}
+
 export function createQfAnswer(params: QfAnswerReq) {
   return call('/api/v0/qf/answer', 'POST', params)
 }

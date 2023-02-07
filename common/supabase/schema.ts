@@ -69,23 +69,6 @@ export interface Database {
           fs_updated_time?: string
         }
       }
-      contract_embeddings: {
-        Row: {
-          contract_id: string
-          created_at: string | null
-          embeddings: number[]
-        }
-        Insert: {
-          contract_id: string
-          created_at?: string | null
-          embeddings: number[]
-        }
-        Update: {
-          contract_id?: string
-          created_at?: string | null
-          embeddings?: number[]
-        }
-      }
       contract_follows: {
         Row: {
           contract_id: string
@@ -307,60 +290,6 @@ export interface Database {
           data?: Json
           fs_updated_time?: string
           id?: string
-        }
-      }
-      test_contracts: {
-        Row: {
-          created_at: string | null
-          id: number
-          question: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: number
-          question?: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: number
-          question?: string
-        }
-      }
-      test_user_contracts: {
-        Row: {
-          contract_id: number
-          created_at: string | null
-          liked: boolean | null
-          user_id: number
-        }
-        Insert: {
-          contract_id: number
-          created_at?: string | null
-          liked?: boolean | null
-          user_id: number
-        }
-        Update: {
-          contract_id?: number
-          created_at?: string | null
-          liked?: boolean | null
-          user_id?: number
-        }
-      }
-      test_users: {
-        Row: {
-          created_at: string | null
-          id: number
-          name: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: number
-          name?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: number
-          name?: string | null
         }
       }
       tombstones: {
@@ -593,6 +522,10 @@ export interface Database {
         Args: { urf: unknown; crf: unknown }
         Returns: number
       }
+      dot_bigint: {
+        Args: { urf: unknown; crf: unknown }
+        Returns: number
+      }
       get_contract_metrics_with_contracts: {
         Args: { uid: string; count: number }
         Returns: { contract_id: string; metrics: Json; contract: Json }[]
@@ -609,15 +542,6 @@ export interface Database {
         Args: { uid: string; count: number }
         Returns: { contract_id: string; bets: Json[]; contract: Json }[]
       }
-      get_recommended_contract_ids:
-        | {
-            Args: { uid: string; count: number }
-            Returns: { contract_id: string }[]
-          }
-        | {
-            Args: { uid: string }
-            Returns: { contract_id: string }[]
-          }
       get_recommended_contract_scores: {
         Args: { uid: string }
         Returns: { contract_id: string; rec_score: number }[]
@@ -629,10 +553,6 @@ export interface Database {
       get_recommended_contracts_by_score: {
         Args: { uid: string }
         Returns: { data: Json; score: number }[]
-      }
-      get_recommended_contracts2: {
-        Args: { uid: string; count: number }
-        Returns: { data: Json }[]
       }
       get_related_contract_ids: {
         Args: { source_id: string }
@@ -666,9 +586,17 @@ export interface Database {
         Args: { "": unknown }
         Returns: unknown
       }
+      install_available_extensions_and_test: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_valid_contract: {
         Args: { data: Json }
         Returns: boolean
+      }
+      recently_liked_contract_counts: {
+        Args: { since: number }
+        Returns: { contract_id: string; n: number }[]
       }
       replicate_writes_process_one: {
         Args: { r: unknown }

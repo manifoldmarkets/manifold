@@ -230,16 +230,14 @@ export function ContractSearch(props: {
           autoFocus={autoFocus}
           listViewDisabled={listViewDisabled}
         />
-        {renderContracts ? (
-          renderContracts(renderedContracts, performQuery)
-        ) : renderedContracts && renderedContracts.length === 0 && profile ? (
+        {renderedContracts && renderedContracts.length === 0 && profile ? (
           <p className="mx-2 text-gray-500">No markets found</p>
         ) : (
           <ContractsGrid
             contracts={renderedContracts}
             showTime={state.showTime ?? undefined}
             onContractClick={onContractClick}
-            highlightCards={highlightCards}
+            highlightContractIds={highlightContractIds}
             cardUIOptions={cardUIOptions}
             loadMore={performQuery}
             fromGroupProps={fromGroupProps}
@@ -263,9 +261,7 @@ export function ContractSearch(props: {
           onSearchParametersChanged={onSearchParametersChanged}
           autoFocus={autoFocus}
         />
-        {renderContracts ? (
-          renderContracts(renderedContracts, performQuery)
-        ) : renderedContracts && renderedContracts.length === 0 && profile ? (
+        {renderedContracts && renderedContracts.length === 0 && profile ? (
           <p className="mx-2 text-gray-500">No markets found</p>
         ) : asList ? (
           <ContractsList
