@@ -580,13 +580,14 @@ create or replace function dot(
 ) returns real
 immutable parallel safe
 language sql as $$
-  select (
-    urf.f0 * crf.f0 +
-    urf.f1 * crf.f1 +
-    urf.f2 * crf.f2 +
-    urf.f3 * crf.f3 +
-    urf.f4 * crf.f4
-  );
+  select  round(
+    (
+      urf.f0 * crf.f0 +
+      urf.f1 * crf.f1 +
+      urf.f2 * crf.f2 +
+      urf.f3 * crf.f3 +
+      urf.f4 * crf.f4
+    ) * 10000) / 10000;
 $$;
 
 create or replace function calculate_distance(row1 contract_recommendation_features, row2 contract_recommendation_features)
