@@ -265,6 +265,7 @@ export default function GroupPage(props: {
               title: 'Markets',
               content: (
                 <ContractSearch
+                  defaultFilter="all"
                   additionalFilter={{
                     groupSlug: group.slug,
                     facetFilters: getUsersBlockFacetFilters(privateUser, true),
