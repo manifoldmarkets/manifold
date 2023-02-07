@@ -11,7 +11,7 @@ import { Avatar } from '../widgets/avatar'
 import clsx from 'clsx'
 import { ContractMinibar } from '../charts/minibar'
 
-function ContractStatusLabel(props: { contract: Contract }) {
+export function ContractStatusLabel(props: { contract: Contract }) {
   const { contract } = props
   const probTextColor = getTextColor(contract)
 
