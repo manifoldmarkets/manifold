@@ -594,6 +594,7 @@ $$;
 create or replace function calculate_distance(row1 contract_recommendation_features, row2 contract_recommendation_features)
     returns float
     language sql
+    immutable parallel safe
 as $$
 select sqrt((row1.f0 - row2.f0)^2 +
             (row1.f1 - row2.f1)^2 +
