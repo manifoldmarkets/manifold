@@ -55,8 +55,6 @@ export function GroupSelector(props: {
     availableGroups.filter((group) => searchInAny(query, group.name))
   )
 
-  console.log(permittedGroups, availableGroups)
-
   if (!showSelector || !creator) {
     return (
       <>
