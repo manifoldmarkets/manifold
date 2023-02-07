@@ -796,3 +796,24 @@ from (
  on contracts.id = bets.contract_id
 limit count
 $$;
+
+
+create or replace view group_role as(
+  select member_id, 
+    gp.id as group_id,
+    gp.data as group_data,
+    gp.data -> 'name' as group_name,
+    gp.data -> 'slug' as group_slug,
+    gp.data -> 'creatorId' as creator_id,
+    users.data -> 'name' as name,
+    users.data -> 'username' as username,
+    users.data -> 'avatarUrl' as avatar_url,
+    (select 
+      CASE
+      WHEN (gp.data ->> 'creatorId')::text = member_id THEN 'admin'
+      ELSE (gm.data ->> 'role')
+      END
+    ) as role,
+    gm.data -> 'createdTime' as createdTime
+  from (group_members gm join groups gp on gp.id = gm.group_id) join users on users.id = gm.member_id
+) 

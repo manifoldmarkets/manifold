@@ -42,13 +42,13 @@ import { JoinOrLeaveGroupButton } from './groups-button'
 
 export function GroupPostSection(props: {
   group: Group
-  isEditable: boolean
+  canEdit: boolean
   posts: Post[]
 }) {
-  const { group, isEditable, posts } = props
+  const { group, canEdit, posts } = props
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
-      <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
+      <GroupFeatured group={group} posts={posts} canEdit={canEdit} />
       <GroupPosts group={group} posts={posts} />
     </Col>
   )
@@ -97,9 +97,9 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
 function GroupFeatured(props: {
   group: Group
   posts: Post[]
-  isEditable: boolean
+  canEdit: boolean
 }) {
-  const { group, posts, isEditable } = props
+  const { group, posts, canEdit } = props
   const [pinned, setPinned] = useState<JSX.Element[]>([])
 
   useEffect(() => {
@@ -150,13 +150,13 @@ function GroupFeatured(props: {
 
   if (!group.pinnedItems || group.pinnedItems.length == 0) return <></>
 
-  return isEditable || (group.pinnedItems && group?.pinnedItems.length > 0) ? (
+  return canEdit || (group.pinnedItems && group?.pinnedItems.length > 0) ? (
     <div className="relative">
-      {isEditable && <Spacer h={12} />}
+      {canEdit && <Spacer h={12} />}
       <PinnedItems
         posts={posts}
         group={group}
-        isEditable={isEditable}
+        isEditable={canEdit}
         pinned={pinned}
         onDeleteClicked={onDeleteClicked}
         onSubmit={onSubmit}

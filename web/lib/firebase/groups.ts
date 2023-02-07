@@ -1,3 +1,6 @@
+import { Contract } from 'common/contract'
+import { Group, GroupContractDoc } from 'common/group'
+import { filterDefined } from 'common/util/array'
 import {
   collection,
   collectionGroup,
@@ -12,13 +15,9 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { partition, uniq, uniqBy } from 'lodash'
-import {
-  Group,
-  GroupMemberDoc,
-  GroupContractDoc,
-  GroupLink,
-} from 'common/group'
+import { partition, uniqBy } from 'lodash'
+import { getContractFromId } from 'web/lib/firebase/contracts'
+import { db } from 'web/lib/firebase/init'
 import {
   coll,
   getValue,
@@ -26,10 +25,6 @@ import {
   listenForValue,
   listenForValues,
 } from './utils'
-import { Contract } from 'common/contract'
-import { getContractFromId, updateContract } from 'web/lib/firebase/contracts'
-import { db } from 'web/lib/firebase/init'
-import { filterDefined } from 'common/util/array'
 
 export const groups = coll<Group>('groups')
 export const groupMembers = (groupId: string) =>
@@ -174,7 +169,7 @@ export async function joinGroup(
   groupId: string,
   userId: string
 ): Promise<void> {
-  // create a new member document in grouoMembers collection
+  // create a new member document in groupMembers collection
   const memberDoc = doc(groupMembers(groupId), userId)
   return await setDoc(memberDoc, {
     userId,
@@ -189,46 +184,6 @@ export async function leaveGroup(
   // delete the member document in groupMembers collection
   const memberDoc = doc(groupMembers(groupId), userId)
   return await deleteDoc(memberDoc)
-}
-
-// TODO: This doesn't check if the user has permission to do this
-export async function addContractToGroup(
-  group: Group,
-  contract: Contract,
-  userId: string
-) {
-  const newGroupLinks = [
-    ...(contract.groupLinks ?? []),
-    {
-      groupId: group.id,
-      createdTime: Date.now(),
-      slug: group.slug,
-      userId,
-      name: group.name,
-    } as GroupLink,
-  ]
-  // It's good to update the contract first, so the on-update-group trigger doesn't re-add them
-  await updateContract(contract.id, {
-    groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
-    groupLinks: newGroupLinks,
-  })
-}
-
-// TODO: This doesn't check if the user has permission to do this
-export async function removeContractFromGroup(
-  group: Group,
-  contract: Contract
-) {
-  if (contract.groupLinks?.some((l) => l.groupId === group.id)) {
-    const newGroupLinks = contract.groupLinks?.filter(
-      (link) => link.slug !== group.slug
-    )
-    await updateContract(contract.id, {
-      groupSlugs:
-        contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
-      groupLinks: newGroupLinks ?? [],
-    })
-  }
 }
 
 export function getGroupLinkToDisplay(contract: Contract) {
@@ -255,11 +210,6 @@ export function getGroupLinksToDisplay(contract: Contract) {
     (g) => g.userId === contract.creatorId
   )
   return [...groupsCreatorAdded, ...otherGroups].slice(0, 3)
-}
-
-export async function listMemberIds(group: Group) {
-  const members = await getValues<GroupMemberDoc>(groupMembers(group.id))
-  return members.map((m) => m.userId)
 }
 
 export const topFollowedGroupsQuery = query(

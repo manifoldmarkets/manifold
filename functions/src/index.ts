@@ -73,6 +73,9 @@ import { swapcert } from './swap-cert'
 import { dividendcert } from './dividend-cert'
 import { markallnotifications } from './mark-all-notifications'
 import { claimdestinysub } from './claim-destiny-sub'
+import { addcontracttogroup } from './add-contract-to-group'
+import { updatememberrole } from './update-group-member-role'
+import { removecontractfromgroup } from './remove-contract-from-group'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -111,6 +114,9 @@ const swapCertFunction = toCloudFunction(swapcert)
 const dividendCertFunction = toCloudFunction(dividendcert)
 const markAllNotificationsFunction = toCloudFunction(markallnotifications)
 const claimDestinySubFunction = toCloudFunction(claimdestinysub)
+const addContractToGroupFunction = toCloudFunction(addcontracttogroup)
+const updateMemberRoleFunction = toCloudFunction(updatememberrole)
+const removeContractFromGroupFunction = toCloudFunction(removecontractfromgroup)
 
 export {
   healthFunction as health,
@@ -147,4 +153,7 @@ export {
   dividendCertFunction as dividendcert,
   markAllNotificationsFunction as markallnotifications,
   claimDestinySubFunction as claimdestinysub,
+  addContractToGroupFunction as addcontracttogroup,
+  updateMemberRoleFunction as updatememberrole,
+  removeContractFromGroupFunction as removecontractfromgroup,
 }

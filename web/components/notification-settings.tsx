@@ -164,6 +164,10 @@ export function NotificationSettings(props: {
       'user_liked_your_content',
     ],
   }
+  const groups: SectionData = {
+    label: 'Groups',
+    subscriptionTypes: ['group_role_changed'],
+  }
   const generalOther: SectionData = {
     label: 'Other',
     subscriptionTypes: [
@@ -426,9 +430,10 @@ export function NotificationSettings(props: {
           <span>General</span>
         </Row>
         <Section
-          icon={<UsersIcon className={'h-6 w-6'} />}
+          icon={<UserIcon className={'h-6 w-6'} />}
           data={userInteractions}
         />
+        <Section icon={<UsersIcon className={'h-6 w-6'} />} data={groups} />
         <Section
           icon={<InboxInIcon className={'h-6 w-6'} />}
           data={generalOther}
