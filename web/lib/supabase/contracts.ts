@@ -20,8 +20,10 @@ export const getUnresolvedContracts = async (creatorId: string) => {
     db
       .from('contracts')
       .select('*', { head: true, count: 'exact' })
-      .eq('data->>creatorId', creatorId)
-      .contains('data', { isResolved: false })
+      .contains('data', {
+        creatorId: creatorId,
+        isResolved: false,
+      })
       .lt('data->>closeTime', Date.now())
   )
   return count
