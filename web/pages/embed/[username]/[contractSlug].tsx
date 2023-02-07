@@ -32,7 +32,7 @@ import {
   HistoryPoint,
   useSingleValueHistoryChartViewScale,
 } from 'web/components/charts/generic-charts'
-import { getBets } from 'web/lib/supabase/bets'
+import { listBets } from 'web/lib/firebase/bets'
 
 type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
@@ -45,7 +45,7 @@ async function getHistoryData(contract: Contract) {
   if (contract.outcomeType === 'NUMERIC') {
     return null
   }
-  const bets = await getBets({
+  const bets = await listBets({
     contractId: contract.id,
     ...CONTRACT_BET_LOADING_OPTS,
     limit: 10000,
