@@ -99,7 +99,10 @@ export default function QfTradesTable(props: {
                     className={i % 2 === 0 ? undefined : 'bg-gray-100'}
                   >
                     {keys.map((key) => (
-                      <td className="whitespace-nowrap px-2 py-0.5 text-sm text-gray-500">
+                      <td
+                        className="whitespace-nowrap px-2 py-0.5 text-sm text-gray-500"
+                        key={key}
+                      >
                         {
                           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore
