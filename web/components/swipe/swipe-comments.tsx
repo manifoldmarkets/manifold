@@ -10,15 +10,23 @@ import { CommentsTabContent } from '../contract/contract-tabs'
 import { ContractComment } from 'common/comment'
 import { usePrivateUser } from 'web/hooks/use-user'
 
-export function SwipeComments(props: { contract: BinaryContract }) {
-  const { contract } = props
-  const [open, seOpen] = useState(false)
+export function SwipeComments(props: {
+  contract: BinaryContract
+  setIsModalOpen: (open: boolean) => void
+}) {
+  const { contract, setIsModalOpen } = props
+  const [open, setOpen] = useState(false)
+  const setAllOpen = (open: boolean) => {
+    setOpen(open)
+    setIsModalOpen(open)
+  }
+
   const comments = useComments(contract.id) ?? []
 
   return (
     <button
       className={clsx('text-white hover:text-gray-600 disabled:opacity-50')}
-      onClick={() => seOpen(true)}
+      onClick={() => setAllOpen(true)}
     >
       <div className="relative">
         <ChatIcon className={clsx('h-12 w-12')} />
@@ -35,7 +43,7 @@ export function SwipeComments(props: { contract: BinaryContract }) {
       <CommentsDialog
         contract={contract}
         open={open}
-        setOpen={seOpen}
+        setOpen={setAllOpen}
         comments={comments}
       />
     </button>

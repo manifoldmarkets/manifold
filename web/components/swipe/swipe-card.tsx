@@ -113,7 +113,11 @@ export const SwipeCard = memo(
           <Row className="mx-auto w-full grow items-center" />
 
           <Row className="justify-end">
-            <CardActions user={user} contract={contract} />
+            <CardActions
+              user={user}
+              contract={contract}
+              setIsModalOpen={setIsModalOpen}
+            />
           </Row>
           <Col className="mt-2 gap-6">
             <Col className="h-20 w-full justify-end">
@@ -171,8 +175,12 @@ const CornerDetails = (props: {
   )
 }
 
-function CardActions(props: { user?: User; contract: BinaryContract }) {
-  const { user, contract } = props
+function CardActions(props: {
+  user?: User
+  contract: BinaryContract
+  setIsModalOpen: (open: boolean) => void
+}) {
+  const { user, contract, setIsModalOpen } = props
 
   return (
     <Col className="flex flex-col items-center justify-end gap-2">
@@ -190,7 +198,7 @@ function CardActions(props: { user?: User; contract: BinaryContract }) {
         className={'flex-col gap-2 drop-shadow-sm'}
         isSwipe
       />
-      <SwipeComments contract={contract} />
+      <SwipeComments contract={contract} setIsModalOpen={setIsModalOpen} />
       {/* TODO Share button */}
     </Col>
   )
