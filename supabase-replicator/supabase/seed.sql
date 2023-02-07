@@ -314,7 +314,8 @@ create table if not exists contract_recommendation_features (
     f1 real not null,
     f2 real not null,
     f3 real not null,
-    f4 real not null
+    f4 real not null,
+    freshness_score real not null default 1
 );
 alter table contract_recommendation_features enable row level security;
 drop policy if exists "public read" on contract_recommendation_features;
@@ -323,6 +324,7 @@ drop policy if exists "admin write access" on contract_recommendation_features;
 create policy "admin write access" on contract_recommendation_features
   as PERMISSIVE FOR ALL
   to service_role;
+create index if not exists contract_recommendation_features_freshness_score on contract_recommendation_features (freshness_score desc);
 
 begin;
   drop publication if exists supabase_realtime;
@@ -622,7 +624,7 @@ returns table (contract_id text, rec_score real)
 immutable parallel safe
 language sql
 as $$
-  select crf.contract_id, dot(urf, crf) as rec_score
+  select crf.contract_id, dot(urf, crf) * crf.freshness_score as rec_score
   from user_recommendation_features as urf
   cross join contract_recommendation_features as crf
   where user_id = uid
@@ -654,7 +656,7 @@ returns table (data jsonb, score real)
 immutable parallel safe
 language sql
 as $$
-  select data, (log(coalesce((data->>'popularityScore')::real, 0) + 3) * rec_score) as score
+  select data, rec_score as score
   from get_recommended_contract_scores(uid)
   left join contracts
   on contracts.id = contract_id

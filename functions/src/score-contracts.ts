@@ -8,6 +8,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { DAY_MS, HOUR_MS } from '../../common/util/time'
 import { createSupabaseClient } from './supabase/init'
 import { getRecentContractLikes } from './supabase/likes'
+import { run } from '../../common/supabase/utils'
 
 export const scoreContracts = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540, secrets: ['SUPABASE_KEY'] })
@@ -17,7 +18,7 @@ export const scoreContracts = functions
   })
 const firestore = admin.firestore()
 
-async function scoreContractsInternal() {
+export async function scoreContractsInternal() {
   const now = Date.now()
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
@@ -45,14 +46,15 @@ async function scoreContractsInternal() {
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
 
   for (const contract of contracts) {
-    const likesToday = todayLikesByContract[contract.id] ?? 0
-    const likes7Days = thisWeekLikesByContract[contract.id] ?? 0
-
-    const popularityScore =
-      likesToday +
-      likes7Days / 10 +
-      (contract.uniqueBettors7Days ?? 0) / 10 +
+    const todayScore =
+      (todayLikesByContract[contract.id] ?? 0) +
       (contract.uniqueBettors24Hours ?? 0)
+    const thisWeekScore =
+      (thisWeekLikesByContract[contract.id] ?? 0) +
+      (contract.uniqueBettors7Days ?? 0)
+
+    const popularityScore = todayScore + thisWeekScore / 10
+    const freshnessScore = Math.log(todayScore / (thisWeekScore / 7 + 1)) + 1
     const wasCreatedToday = contract.createdTime > dayAgo
 
     let dailyScore: number | undefined
@@ -75,5 +77,14 @@ async function scoreContractsInternal() {
         .doc(contract.id)
         .update(removeUndefinedProps({ popularityScore, dailyScore }))
     }
+
+    await run(
+      db
+        .from('contract_recommendation_features')
+        .update({
+          freshness_score: freshnessScore,
+        })
+        .eq('contract_id', contract.id)
+    ).catch((e) => console.error(e))
   }
 }
