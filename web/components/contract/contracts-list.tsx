@@ -11,6 +11,7 @@ import {
   useHover,
   useInteractions,
   safePolygon,
+  flip,
 } from '@floating-ui/react'
 
 const contractListEntryHighlightClass =
@@ -82,6 +83,7 @@ function DesktopPopover(props: {
     open: isOpen,
     onOpenChange: setIsOpen,
     placement: 'bottom-end',
+    middleware: [flip()],
   })
   const hover = useHover(context, {
     mouseOnly: true,
@@ -116,7 +118,7 @@ function DesktopPopover(props: {
             contract={contract}
             showImage
             showDescription
-            className="w-[350px]"
+            className="z-30 w-[350px]"
           />
         </div>
       )}
