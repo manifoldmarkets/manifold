@@ -1,8 +1,8 @@
-import { app, auth } from './init'
+import { app, auth, ENV } from './init'
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
-import { ENV, EXTERNAL_REDIRECTS } from 'common/envs/constants'
+import { EXTERNAL_REDIRECTS } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -48,7 +48,9 @@ import Constants from 'expo-constants'
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const baseUri =
-  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
+  ENV === 'DEV'
+    ? 'https://dev.manifold.markets/'
+    : 'https://dc60-2600-4040-228e-ba00-283a-deee-a82f-856.ngrok.io/'
 const nativeQuery = `?nativePlatform=${Platform.OS}`
 const isIOS = Platform.OS === 'ios'
 const App = () => {
