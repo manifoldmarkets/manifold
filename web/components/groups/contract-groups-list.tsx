@@ -1,26 +1,20 @@
-import { XCircleIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
-import { Contract } from 'common/contract'
-import { Group } from 'common/group'
-import { User } from 'common/user'
-import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
-import { IconButton } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { SiteLink } from 'web/components/widgets/site-link'
-import { useAdmin } from 'web/hooks/use-admin'
-import { useGroupsWithContract } from 'web/hooks/use-group'
+import clsx from 'clsx'
+import { GroupLinkItem } from 'web/pages/groups'
+import { XIcon } from '@heroicons/react/outline'
+import { Button } from 'web/components/buttons/button'
+import { GroupSelector } from 'web/components/groups/group-selector'
 import {
   addContractToGroup,
   removeContractFromGroup,
-} from 'web/lib/firebase/api'
-import {
-  getGroupsWhereUserHasRole,
-  getGroupsWhereUserIsMember,
-} from 'web/lib/supabase/groups'
-import { GroupLinkItem } from 'web/pages/groups'
-import { GroupSelector } from './group-selector'
+} from 'web/lib/firebase/groups'
+import { User } from 'common/user'
+import { Contract } from 'common/contract'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { useGroupsWithContract } from 'web/hooks/use-group'
+import { Group, GroupLink } from 'common/group'
+import { CHECK_USERNAMES, CORE_USERNAMES } from 'common/envs/constants'
 
 export function ContractGroupsList(props: {
   contract: Contract
@@ -29,150 +23,72 @@ export function ContractGroupsList(props: {
   const { user, contract } = props
   const { groupLinks = [] } = contract
   const groups = useGroupsWithContract(contract) ?? []
-
   const isCreator = contract.creatorId === user?.id
-  const [permittedGroups, setPermittedGroups] = useState<Group[]>([])
-  useEffect(() => {
-    if (user) {
-      // if user is the creator of contract, show all groups that user is a member of
-      if (isCreator) {
-        getGroupsWhereUserIsMember(user.id).then((g) =>
-          setPermittedGroups(g.map((gp: { group_data: any }) => gp.group_data))
-        )
-        // show all groups where user is an admin/contributor
-      } else {
-        getGroupsWhereUserHasRole(user.id).then((g) =>
-          setPermittedGroups(g.map((gp: { group_data: any }) => gp.group_data))
-        )
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
-  const isAdmin = useAdmin()
-  function canRemoveFromGroup(group: Group) {
-    if (!user) {
-      return false
-    }
+  const adminOrTrustworthyish =
+    user &&
+    (CORE_USERNAMES.includes(user.username) ||
+      CHECK_USERNAMES.includes(user.username))
+  const addGroupsDisabled = !user || (!adminOrTrustworthyish && !isCreator)
+  const canModifyGroupLink = (
+    groupLink: GroupLink,
+    group: Group,
+    userId: string
+  ) => {
     return (
-      // if user is contract creator
-      contract.creatorId === user.id ||
-      // if user has admin role in that group
-      (permittedGroups && permittedGroups.some((g) => g.id === group.id)) ||
-      // if user is manifoldAdmin
-      isAdmin
+      group.creatorId === userId ||
+      adminOrTrustworthyish ||
+      groupLink.userId === userId
     )
   }
-
   return (
     <Col className={'gap-2'}>
       <span className={'text-xl text-indigo-700'}>
         <SiteLink href={'/groups/'}>Groups</SiteLink>
       </span>
-      <Col className="h-96 justify-between overflow-auto">
-        <Col>
-          {groupLinks.length === 0 && (
-            <Col className="text-gray-400">No groups yet...</Col>
-          )}
-          <Row className="my-2 flex-wrap gap-3">
-            {groupLinks.map((groupLink) => {
-              const group = groups.find((g) => g.id === groupLink.groupId)
-              return (
-                <span
-                  key={groupLink.groupId}
-                  className={clsx(
-                    'group relative rounded-full bg-gray-600 p-1 px-4 text-sm text-white transition-colors hover:bg-indigo-600'
-                  )}
-                >
-                  <GroupLinkItem group={groupLink} />
-                  {group && canRemoveFromGroup(group) && (
-                    <div className="absolute -top-2 -right-4 md:invisible md:group-hover:visible">
-                      <IconButton
-                        size={'xs'}
-                        onClick={() => {
-                          toast.promise(
-                            removeContractFromGroup({
-                              groupId: group.id,
-                              contractId: contract.id,
-                            }),
-                            {
-                              loading: `Removing market from "${group.name}"`,
-                              success: `Successfully removed market from "${group.name}"!`,
-                              error: `Error removing group. Try again?`,
-                            }
-                          )
-                        }}
-                      >
-                        <div className="group relative transition-colors">
-                          <div className="z-0 h-4 w-4 rounded-full bg-white group-hover:bg-gray-600" />
-                          <XCircleIcon className="absolute -inset-1 text-gray-400 group-hover:text-gray-200" />
-                        </div>
-                      </IconButton>
-                    </div>
-                  )}
-                </span>
-              )
-            })}
-          </Row>
-          {/* if is manifold admin, show all possible groups */}
-          {isAdmin ||
-            (permittedGroups.length > 0 && (
-              <Col className={'my-2 items-center justify-between p-0.5'}>
-                <Row className="w-full justify-start text-sm text-gray-400">
-                  Add to group
-                </Row>
-                <GroupSelector
-                  options={{
-                    showSelector: true,
-                    showLabel: false,
-                    ignoreGroupIds: groupLinks.map((g) => g.groupId),
-                  }}
-                  setSelectedGroup={(group) =>
-                    group &&
-                    addContractToGroup({
-                      groupId: group.id,
-                      contractId: contract.id,
-                    })
-                  }
-                  selectedGroup={undefined}
-                  creator={user}
-                  permittedGroups={
-                    isAdmin
-                      ? undefined
-                      : contract.groupSlugs
-                      ? permittedGroups.filter(
-                          (g) => !contract.groupSlugs?.includes(g.slug)
-                        )
-                      : permittedGroups
-                  }
-                />
-              </Col>
-            ))}
+      {!addGroupsDisabled && (
+        <Col className={'ml-2 items-center justify-between sm:flex-row'}>
+          <span>Add to: </span>
+          <GroupSelector
+            options={{
+              showSelector: true,
+              showLabel: false,
+              ignoreGroupIds: groupLinks.map((g) => g.groupId),
+            }}
+            setSelectedGroup={(group) =>
+              group && addContractToGroup(group, contract, user.id)
+            }
+            selectedGroup={undefined}
+            creator={user}
+          />
         </Col>
-        <GroupsInfoBlob isCreator={isCreator} />
+      )}
+      <Col className="h-96 overflow-auto">
+        {groupLinks.length === 0 && (
+          <Col className="text-gray-400">No groups yet...</Col>
+        )}
+        {groupLinks.map((groupLink) => {
+          const group = groups.find((g) => g.id === groupLink.groupId)
+          return (
+            <Row
+              key={groupLink.groupId}
+              className={clsx('items-center justify-between gap-2 p-2')}
+            >
+              <Row className="line-clamp-1 h-8 items-center gap-2">
+                <GroupLinkItem group={groupLink} />
+              </Row>
+              {group && user && canModifyGroupLink(groupLink, group, user.id) && (
+                <Button
+                  color={'gray-white'}
+                  size={'xs'}
+                  onClick={() => removeContractFromGroup(group, contract)}
+                >
+                  <XIcon className="h-4 w-4 text-gray-400" />
+                </Button>
+              )}
+            </Row>
+          )
+        })}
       </Col>
     </Col>
-  )
-}
-
-export function GroupsInfoBlob(props: {
-  isCreator: boolean
-  className?: string
-}) {
-  const { isCreator, className } = props
-  const infoString = isCreator
-    ? 'You can only add your market to groups you are a member of. '
-    : 'You can only add this market to groups you are an admin or moderator of. '
-  return (
-    <span className={clsx('text-sm font-light text-gray-600', className)}>
-      {infoString}Explore more groups{' '}
-      <a
-        href="/groups"
-        target="_blank"
-        className="font-semibold text-indigo-700 hover:text-indigo-500"
-      >
-        here
-      </a>
-      !
-    </span>
   )
 }

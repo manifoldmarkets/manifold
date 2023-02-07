@@ -6,18 +6,18 @@ import { Row } from 'web/components/layout/row'
 
 export type DropdownItem = {
   name: string
-  icon?: ReactNode
+  icon: ReactNode
   onClick: () => void | Promise<void>
 }
 
 export default function DropdownMenu(props: {
   Items: DropdownItem[]
   Icon?: ReactNode
-  menuWidth?: string
+  MenuWidth?: string
   buttonClass?: string
   className?: string
 }) {
-  const { Items, Icon, menuWidth, buttonClass, className } = props
+  const { Items, Icon, MenuWidth, buttonClass, className } = props
   const icon = Icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
   )
@@ -31,9 +31,6 @@ export default function DropdownMenu(props: {
           'flex items-center rounded-full text-gray-400 hover:text-gray-600',
           buttonClass
         )}
-        onClick={(e: any) => {
-          e.stopPropagation()
-        }}
       >
         <span className="sr-only">Open options</span>
         {icon}
@@ -51,7 +48,7 @@ export default function DropdownMenu(props: {
         <Menu.Items
           className={clsx(
             'absolute right-0 z-30 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none',
-            menuWidth ?? 'w-32'
+            MenuWidth ?? 'w-32'
           )}
         >
           <div className="py-1">
@@ -66,7 +63,7 @@ export default function DropdownMenu(props: {
                     )}
                   >
                     <Row className={'gap-2'}>
-                      {item.icon && <div className="w-5">{item.icon}</div>}
+                      <div className="w-5">{item.icon}</div>
                       <div className="text-left">{item.name}</div>
                     </Row>
                   </button>

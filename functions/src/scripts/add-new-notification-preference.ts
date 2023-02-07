@@ -21,7 +21,7 @@ async function main() {
         ? privateUser.notificationPreferences
         : defaults
       // Add your new pref here, and be sure to add the default as well
-      const newPref: notification_preference = 'group_role_changed'
+      const newPref: notification_preference = 'user_liked_your_content'
       if (prefs[newPref] === undefined) {
         prefs[newPref] = defaults[newPref]
       }

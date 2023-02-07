@@ -1,14 +1,10 @@
 import { UserGroupIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
-import { useState } from 'react'
-import { useRealtimeNumGroupMembers } from 'web/hooks/use-group-supabase'
 import {
   default as ClosedDoorIcon,
   default as OpenDoorIcon,
 } from 'web/lib/icons/open-door-icon'
-import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { GroupMemberModalContent } from './group-member-modal'
 
 export default function GroupOpenClosedWidget(props: { group: Group }) {
   const { group } = props
@@ -30,26 +26,35 @@ export default function GroupOpenClosedWidget(props: { group: Group }) {
   )
 }
 
-export function GroupMembersWidget(props: { group: Group; canEdit: boolean }) {
-  const { group, canEdit } = props
-  const [open, setOpen] = useState(false)
-  const numMembers = useRealtimeNumGroupMembers(group.id)
+//for larget groups, getting a too many outstanding requests error
+export function GroupMembersWidget(props: { group: Group }) {
+  const { group } = props
+  // const [open, setOpen] = useState(false)
+  //   const groupMembers = useMembers(group.id)
+  //   const groupMembersItems = groupMembers
+  //     .filter((groupMember) => groupMember)
+  //     .map((groupMember) => {
+  //       return {
+  //         name: groupMember.name,
+  //         username: groupMember.username,
+  //         avatarUrl: groupMember.avatarUrl,
+  //       }
+  //     })
   return (
     <>
-      <button onClick={() => setOpen(true)}>
-        <Row className="cursor-pointer items-center gap-1 text-sm text-gray-700">
-          <Row className="items-center gap-1 text-sm text-gray-700"></Row>
-          <UserGroupIcon className="h-4 w-4" />
-          <span>{numMembers} members</span>
-        </Row>
-      </button>
-      <Modal open={open} setOpen={setOpen}>
-        <GroupMemberModalContent
-          group={group}
-          canEdit={canEdit}
-          numMembers={numMembers}
-        />
-      </Modal>
+      {/* <button onClick={() => setOpen(true)}> */}
+      <Row className="cursor-pointer items-center gap-1 text-sm text-gray-700">
+        <Row className="items-center gap-1 text-sm text-gray-700"></Row>
+        <UserGroupIcon className="h-4 w-4" />
+        <span>{group.totalMembers} members</span>
+      </Row>
+      {/* </button> */}
+      {/* <MultiUserTransactionModal
+        userInfos={groupMembersItems}
+        modalLabel="Members"
+        open={open}
+        setOpen={setOpen}
+      /> */}
     </>
   )
 }

@@ -24,9 +24,9 @@ function isDefaultBanner(url: string) {
 export default function BannerImage(props: {
   group: Group
   user: User | undefined | null
-  canEdit: boolean
+  isEditable: boolean
 }) {
-  const { group, user, canEdit } = props
+  const { group, user, isEditable } = props
   const [groupBannerUrl, setGroupBannerUrl] = useState(
     group.bannerUrl ?? DEFAULT_BANNERS[0]
   )
@@ -35,7 +35,7 @@ export default function BannerImage(props: {
     <>
       <figure className="group relative h-60 w-full sm:h-72">
         <div className="absolute top-2 right-4 z-20 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-          {user && canEdit && (
+          {user && isEditable && (
             <BannerDropdown
               group={group}
               open={changeBannerModalOpen}
@@ -247,7 +247,7 @@ function BannerDropdown(props: {
         ]}
         Icon={<PencilIcon className="h-5 w-5 text-gray-900" />}
         buttonClass="rounded-md bg-white bg-opacity-50 p-1"
-        menuWidth="w-60"
+        MenuWidth="w-60"
       />
       <ChangeBannerModal
         group={group}

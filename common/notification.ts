@@ -99,7 +99,6 @@ export type notification_reason_types =
   | 'reply_to_users_comment'
   | 'your_contract_closed'
   | 'subsidized_your_market'
-  | 'group_role_changed'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -258,10 +257,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   user_liked_your_content: {
     simple: 'A user liked your content',
     detailed: 'A user liked your comment, market, or other content',
-  },
-  group_role_changed: {
-    simple: 'Changes in group roles',
-    detailed: 'Changes to your role in groups you are a member of',
   },
 }
 

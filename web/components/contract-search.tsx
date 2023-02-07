@@ -33,8 +33,6 @@ import {
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
-import { groupRoleType } from './groups/group-member-modal'
-import { Group } from 'common/group'
 import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
 import { ContractsList } from './contract/contracts-list'
 
@@ -65,7 +63,7 @@ type SearchParameters = {
   facetFilters: SearchOptions['facetFilters']
 }
 
-export type AdditionalFilter = {
+type AdditionalFilter = {
   creatorId?: string
   tag?: string
   excludeContractIds?: string[]
@@ -96,12 +94,6 @@ export function ContractSearch(props: {
   includeProbSorts?: boolean
   autoFocus?: boolean
   profile?: boolean | undefined
-  fromGroupProps?: {
-    group: Group
-    userRole: groupRoleType | null
-  }
-  listViewDisabled?: boolean
-  contractSearchControlsClassName?: string
 }) {
   const {
     defaultSort,
@@ -117,8 +109,6 @@ export function ContractSearch(props: {
     isWholePage,
     autoFocus,
     profile,
-    fromGroupProps,
-    listViewDisabled,
   } = props
 
   const [state, setState] = usePersistentState(
@@ -214,38 +204,6 @@ export function ContractSearch(props: {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
   }
 
-  if (listViewDisabled) {
-    return (
-      <Col>
-        <ContractSearchControls
-          className={headerClassName}
-          defaultSort={defaultSort}
-          defaultFilter={defaultFilter}
-          additionalFilter={additionalFilter}
-          persistPrefix={persistPrefix}
-          hideOrderSelector={hideOrderSelector}
-          useQueryUrlParam={isWholePage}
-          includeProbSorts={includeProbSorts}
-          onSearchParametersChanged={onSearchParametersChanged}
-          autoFocus={autoFocus}
-          listViewDisabled={listViewDisabled}
-        />
-        {renderedContracts && renderedContracts.length === 0 && profile ? (
-          <p className="mx-2 text-gray-500">No markets found</p>
-        ) : (
-          <ContractsGrid
-            contracts={renderedContracts}
-            showTime={state.showTime ?? undefined}
-            onContractClick={onContractClick}
-            highlightContractIds={highlightContractIds}
-            cardUIOptions={cardUIOptions}
-            loadMore={performQuery}
-            fromGroupProps={fromGroupProps}
-          />
-        )}
-      </Col>
-    )
-  }
   return (
     <AsListContext.Provider value={{ asList, setAsList }}>
       <Col>
@@ -261,6 +219,7 @@ export function ContractSearch(props: {
           onSearchParametersChanged={onSearchParametersChanged}
           autoFocus={autoFocus}
         />
+
         {renderedContracts && renderedContracts.length === 0 && profile ? (
           <p className="mx-2 text-gray-500">No markets found</p>
         ) : asList ? (
@@ -278,7 +237,6 @@ export function ContractSearch(props: {
             highlightContractIds={highlightContractIds}
             cardUIOptions={cardUIOptions}
             loadMore={performQuery}
-            fromGroupProps={fromGroupProps}
           />
         )}
       </Col>
@@ -297,7 +255,6 @@ function ContractSearchControls(props: {
   onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
   autoFocus?: boolean
-  listViewDisabled?: boolean
 }) {
   const {
     className,
@@ -310,7 +267,6 @@ function ContractSearchControls(props: {
     useQueryUrlParam,
     autoFocus,
     includeProbSorts,
-    listViewDisabled,
   } = props
 
   const router = useRouter()
@@ -405,7 +361,7 @@ function ContractSearchControls(props: {
   return (
     <div
       className={clsx(
-        'sticky top-0 z-30 mb-1 flex flex-col items-stretch gap-3 bg-gray-50 pb-2 pt-px sm:flex-row sm:gap-2',
+        'sticky top-0 z-20 mb-1 flex flex-col items-stretch gap-3 bg-gray-50 pb-2 pt-px sm:flex-row sm:gap-2',
         className
       )}
     >
@@ -427,7 +383,6 @@ function ContractSearchControls(props: {
         sort={sort}
         className={'flex flex-row gap-2'}
         includeProbSorts={includeProbSorts}
-        listViewDisabled={listViewDisabled}
       />
     </div>
   )
@@ -441,7 +396,6 @@ function SearchFilters(props: {
   sort: string
   className?: string
   includeProbSorts?: boolean
-  listViewDisabled?: boolean
 }) {
   const { asList, setAsList } = useContext(AsListContext)
 
@@ -453,7 +407,6 @@ function SearchFilters(props: {
     sort,
     className,
     includeProbSorts,
-    listViewDisabled,
   } = props
 
   const sorts = includeProbSorts
@@ -485,19 +438,18 @@ function SearchFilters(props: {
           ))}
         </Select>
       )}
-      {!listViewDisabled && (
-        <button
-          type="button"
-          onClick={() => setAsList(!asList)}
-          className="relative inline-flex h-full items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
-        >
-          {asList ? (
-            <ViewGridIcon className="h-5 w-5" aria-hidden="true" />
-          ) : (
-            <ViewListIcon className="h-5 w-5" aria-hidden="true" />
-          )}
-        </button>
-      )}
+
+      <button
+        type="button"
+        onClick={() => setAsList(!asList)}
+        className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
+      >
+        {asList ? (
+          <ViewGridIcon className="h-5 w-5" aria-hidden="true" />
+        ) : (
+          <ViewListIcon className="h-5 w-5" aria-hidden="true" />
+        )}
+      </button>
     </div>
   )
 }
