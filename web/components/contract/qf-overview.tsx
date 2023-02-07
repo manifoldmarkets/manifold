@@ -1,6 +1,5 @@
 import { QuadraticFundingContract } from 'common/contract'
 import { Col } from '../layout/col'
-import { Title } from '../widgets/title'
 import Image from 'next/image'
 import { formatMoney } from 'common/util/format'
 import { Button } from '../buttons/button'
