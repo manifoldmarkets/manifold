@@ -692,10 +692,10 @@ $$;
 
 create or replace function is_valid_contract(data jsonb)
     returns boolean
+    stable parallel safe
 as $$
-select
-        data @> '{"isResolved": false, "visibility": "public"}'
-        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
+select data @> '{"isResolved": false, "visibility": "public"}'
+       and (data->>'closeTime')::bigint > extract(epoch from now() + interval '10 minutes') * 1000
 $$ language sql;
 
 create or replace function get_related_contract_ids(source_id text)
