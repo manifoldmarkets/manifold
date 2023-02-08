@@ -37,7 +37,7 @@ export function SellRow(props: {
   if (sharesOutcome && user && mechanism === 'cpmm-1') {
     return (
       <Col className={className}>
-        <Row className="items-center justify-between gap-2 ">
+        <Row className="items-center justify-between gap-4">
           <div>
             You have {formatWithCommas(shares)}{' '}
             <OutcomeLabel
@@ -49,7 +49,7 @@ export function SellRow(props: {
           </div>
 
           <Button
-            className="my-auto"
+            className="!py-1"
             size="xs"
             color="gray-outline"
             onClick={() => setShowSellModal(true)}
@@ -75,7 +75,6 @@ export function SellRow(props: {
                 contract,
                 user.username
               )}
-              className="ml-2"
             />
           )}
         </Row>
