@@ -14,6 +14,10 @@ export { scheduleUpdateUserMetrics } from './update-user-metrics'
 export { scheduleUpdateGroupMetrics } from './update-group-metrics'
 export { scheduleUpdateLoans } from './update-loans'
 export { scheduleUpdateRecommended } from './update-recommended'
+export {
+  sendWeeklyPortfolioUpdate,
+  saveWeeklyContractMetrics,
+} from './weekly-portfolio-updates'
 export * from './update-stats'
 export * from './backup-db'
 export * from './mana-signup-bonus'

@@ -54,6 +54,7 @@ export type notification_source_types =
   | 'signup_bonus'
   | 'comment_like'
   | 'contract_like'
+  | 'weekly_portfolio_update'
 
 export type notification_source_update_types =
   | 'created'
@@ -314,6 +315,8 @@ export function getSourceUrl(notification: Notification) {
     sourceContractSlug,
     sourceSlug,
   } = notification
+  if (sourceType === 'weekly_portfolio_update')
+    return `/week/${sourceUserUsername}/${sourceSlug}`
   if (sourceType === 'follow') return `/${sourceUserUsername}`
   if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
   // User referral via contract:

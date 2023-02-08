@@ -1,8 +1,8 @@
-import { app, auth } from './init'
+import { app, auth, ENV } from './init'
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
-import { ENV, EXTERNAL_REDIRECTS } from 'common/envs/constants'
+import { EXTERNAL_REDIRECTS } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -14,6 +14,7 @@ import {
   StatusBar as RNStatusBar,
   Dimensions,
   View,
+  Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -42,6 +43,7 @@ import {
 } from 'components/external-web-view'
 import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
+import Constants from 'expo-constants'
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
@@ -235,8 +237,8 @@ const App = () => {
   }
 
   const getPushToken = async () => {
-    const appConfig = require('./app.json')
-    const projectId = appConfig.expo.extra.eas.projectId
+    const projectId = Constants.expoConfig?.extra?.eas.projectId
+    console.log('projectId', projectId)
     const token = (
       await Notifications.getExpoPushTokenAsync({
         projectId,
@@ -351,6 +353,13 @@ const App = () => {
       const { page } = payload
       log('page:', page)
       setAllowSystemBack(page !== 'swipe')
+    } else if (type === 'share') {
+      const { url, title } = payload
+      log('Sharing url:', url)
+      Share.share({
+        url,
+        title,
+      })
     } else {
       log('Unhandled nativeEvent.data: ', data)
     }

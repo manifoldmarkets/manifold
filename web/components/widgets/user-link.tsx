@@ -50,8 +50,10 @@ export function UserLink(props: {
   short?: boolean
   noLink?: boolean
   createdTime?: number
+  hideBadge?: boolean
 }) {
-  const { name, username, className, short, noLink, createdTime } = props
+  const { name, username, className, short, noLink, createdTime, hideBadge } =
+    props
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name) : name
   return (
@@ -65,7 +67,7 @@ export function UserLink(props: {
       followsLinkClass
     >
       {shortName}
-      <UserBadge username={username} fresh={fresh} />
+      {!hideBadge && <UserBadge username={username} fresh={fresh} />}
     </SiteLink>
   )
 }

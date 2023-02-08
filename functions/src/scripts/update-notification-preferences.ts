@@ -1,22 +1,32 @@
 import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
-import { getAllPrivateUsers } from 'functions/src/utils'
-import { FieldValue } from 'firebase-admin/firestore'
 initAdmin()
+import { getAllPrivateUsers } from 'functions/src/utils'
+import { uniq } from 'lodash'
+import { notification_destination_types } from 'common/user-notification-preferences'
 
-const firestore = admin.firestore()
 
 async function main() {
+  const firestore = admin.firestore()
   const privateUsers = await getAllPrivateUsers()
+  // filter out users who have already opted in to browser notifications
+  const privateUsersToOptIn = privateUsers.filter((privateUser) => {
+    if (!privateUser.id) return false
+    const previousProfitLossPrefs = privateUser.notificationPreferences.profit_loss_updates ?? []
+    return !previousProfitLossPrefs.includes('browser')
+  })
+  console.log(`Opting in ${privateUsersToOptIn.length} users to browser notifications`)
+  // TODO: this seems to only be capable of updating a few thousand users at a time and must be rerun multiple times
   await Promise.all(
-    privateUsers.map((privateUser) => {
-      if (!privateUser.id) return Promise.resolve()
+    privateUsersToOptIn.map((privateUser) => {
+      if (!privateUser.id) return
+      const previousProfitLossPrefs = privateUser.notificationPreferences.profit_loss_updates ?? []
       return firestore.collection('private-users').doc(privateUser.id).update({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        notificationPreferences: privateUser.notificationSubscriptionTypes,
-        notificationSubscriptionTypes: FieldValue.delete(),
+        notificationPreferences: {
+          ...privateUser.notificationPreferences,
+          profit_loss_updates: uniq([...previousProfitLossPrefs, 'browser']) as notification_destination_types[],
+        }
       })
     })
   )

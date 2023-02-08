@@ -1,6 +1,9 @@
 import { APIError, newEndpoint } from './api'
-import { isProd } from './utils'
-import { sendOneWeekManaBonuses } from './mana-signup-bonus'
+import {
+  saveWeeklyContractMetricsInternal,
+  sendWeeklyPortfolioUpdateNotifications,
+} from 'functions/src/weekly-portfolio-updates'
+import { isProd } from 'functions/src/utils'
 
 // Function for testing scheduled functions locally
 export const testscheduledfunction = newEndpoint(
@@ -9,7 +12,8 @@ export const testscheduledfunction = newEndpoint(
     if (isProd())
       throw new APIError(400, 'This function is only available in dev mode')
 
-    sendOneWeekManaBonuses()
+    await saveWeeklyContractMetricsInternal()
+    await sendWeeklyPortfolioUpdateNotifications()
 
     return { success: true }
   }

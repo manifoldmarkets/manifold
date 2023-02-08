@@ -29,3 +29,4 @@ export type webToNativeMessageType =
   | 'users'
   | 'error'
   | 'onPageVisit'
+  | 'share'

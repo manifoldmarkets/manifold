@@ -1,12 +1,17 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
-import { ENV, FIREBASE_CONFIG } from 'common/envs/constants'
+import { CONFIGS } from 'common/envs/constants'
 import { getAuth } from 'firebase/auth'
 import * as Device from 'expo-device'
 import * as Sentry from 'sentry-expo'
 import * as Notifications from 'expo-notifications'
 import { log } from 'components/logger'
+import Constants from 'expo-constants'
 
-export const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
+export const ENV =
+  Constants.expoConfig?.extra?.eas.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
+export const app = getApps().length
+  ? getApp()
+  : initializeApp(CONFIGS[ENV].firebaseConfig)
 export const auth = getAuth(app)
 
 if (Device.isDevice) {

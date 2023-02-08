@@ -1,10 +1,32 @@
-import { ImageResponse } from '@vercel/og'
+import { ImageResponse, ImageResponseOptions } from '@vercel/og'
 import { NextRequest } from 'next/server'
 import React from 'react'
 import { OgMarket } from 'web/pages/og/og-market'
 import { OgCardProps } from 'common/contract-details'
 
 export const config = { runtime: 'edge' }
+export const getCardOptions = async () => {
+  const [readexPro, majorMono] = await Promise.all([
+    READEX_PRO_DATA,
+    MAJOR_MONO_DATA,
+  ])
+  return {
+    width: 1200,
+    height: 600,
+    fonts: [
+      {
+        name: 'Readex Pro',
+        data: readexPro,
+        style: 'normal',
+      },
+      {
+        name: 'Major Mono Display',
+        data: majorMono,
+        style: 'normal',
+      },
+    ],
+  }
+}
 
 const READEX_PRO_URL = new URL('ReadexPro-Regular.ttf', import.meta.url)
 const READEX_PRO_DATA = fetch(READEX_PRO_URL).then((res) => res.arrayBuffer())
@@ -14,31 +36,13 @@ const MAJOR_MONO_DATA = fetch(MAJOR_MONO_URL).then((res) => res.arrayBuffer())
 export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const [readexPro, majorMono] = await Promise.all([
-      READEX_PRO_DATA,
-      MAJOR_MONO_DATA,
-    ])
+    const options = await getCardOptions()
     const OgMarketProps = Object.fromEntries(
       searchParams.entries()
     ) as OgCardProps
     const image = OgMarket(OgMarketProps)
 
-    return new ImageResponse(replaceTw(image), {
-      width: 1200,
-      height: 600,
-      fonts: [
-        {
-          name: 'Readex Pro',
-          data: readexPro,
-          style: 'normal',
-        },
-        {
-          name: 'Major Mono Display',
-          data: majorMono,
-          style: 'normal',
-        },
-      ],
-    })
+    return new ImageResponse(replaceTw(image), options as ImageResponseOptions)
   } catch (e: any) {
     console.log(`${e.message}`)
     return new Response(`Failed to generate the image`, {
@@ -47,7 +51,7 @@ export default async function handler(req: NextRequest) {
   }
 }
 
-function replaceTw(element: JSX.Element | string): JSX.Element {
+export function replaceTw(element: JSX.Element | string): JSX.Element {
   // Base case
   if (typeof element === 'string' || !element?.props) {
     return element as JSX.Element

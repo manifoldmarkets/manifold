@@ -60,7 +60,8 @@ import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
-import { getTotalContractMetrics } from 'web/lib/supabase/contract-metrics'
+import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
+import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 
 const CONTRACT_BET_FILTER: BetFilter = {
@@ -115,7 +116,7 @@ export async function getStaticPropz(ctx: {
     : []
   const totalPositions =
     contractId && contract?.outcomeType === 'BINARY'
-      ? await getTotalContractMetrics(contractId)
+      ? await getTotalContractMetrics(contractId, db)
       : 0
 
   return {

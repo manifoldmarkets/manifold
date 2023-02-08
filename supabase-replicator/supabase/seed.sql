@@ -767,7 +767,7 @@ select array_agg(data) from (
 $$;
 
 
-create or replace function get_contract_metrics_with_contracts(uid text, count int)
+create or replace function get_contract_metrics_with_contracts(uid text, count int, start int)
     returns table(contract_id text, metrics jsonb, contract jsonb)
     immutable parallel safe
     language sql
@@ -775,8 +775,9 @@ as $$
 select ucm.contract_id, ucm.data as metrics, c.data as contract
 from user_contract_metrics as ucm
 join contracts as c on c.id = ucm.contract_id
-where ucm.user_id = uid
+where ucm.user_id = uid and ucm.data->'lastBetTime' is not null
 order by ((ucm.data)->'lastBetTime')::bigint desc
+offset start
 limit count
 $$;
 

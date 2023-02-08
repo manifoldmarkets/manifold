@@ -9,7 +9,7 @@ import { Row } from 'web/components/layout/row'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMBinaryContract } from 'common/contract'
-import { getUserContractMetricsByProfit } from 'web/lib/supabase/contract-metrics'
+import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
@@ -24,6 +24,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { LoadingIndicator } from './widgets/loading-indicator'
+import { db } from 'web/lib/supabase/db'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -34,7 +35,8 @@ export const DailyProfit = memo(function DailyProfit(props: {
   const [seen, setSeen] = useState(true)
 
   const refreshContractMetrics = useCallback(async () => {
-    if (user) return getUserContractMetricsByProfit(user.id)
+    if (user)
+      return getUserContractMetricsByProfitWithContracts(user.id, db, 'day')
   }, [user])
 
   const [data] = usePersistentRevalidatedState<
@@ -126,43 +128,54 @@ function DailyProfitModal(props: {
         {!metrics || !contracts ? (
           <LoadingIndicator />
         ) : (
-          <ProfitChangeTable contracts={contracts} metrics={metrics} />
+          <ProfitChangeTable
+            contracts={contracts}
+            metrics={metrics}
+            from={'day'}
+            rowsPerSection={5}
+            showPagination={true}
+          />
         )}
       </div>
     </Modal>
   )
 }
 
-function ProfitChangeTable(props: {
+export function ProfitChangeTable(props: {
   contracts: CPMMBinaryContract[]
   metrics: ContractMetrics[]
+  from: 'day' | 'week' | 'month'
+  rowsPerSection: number
+  showPagination: boolean
 }) {
-  const { metrics } = props
-  const rowsPerSection = 5
+  const { metrics, from, rowsPerSection, showPagination } = props
   const [page, setPage] = useState(0)
   const currentSlice = page * rowsPerSection
 
   const metricsByContractId = keyBy(metrics, (m) => m.contractId)
   const [nonZeroProfitMetrics, _] = partition(
     metrics,
-    (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
+    (m) => Math.floor(Math.abs(m.from?.[from].profit ?? 0)) !== 0
   )
   const contracts = props.contracts.filter((c) =>
     nonZeroProfitMetrics.some((m) => m.contractId === c.id)
   )
   const [positive, negative] = partition(
     contracts,
-    (c) => (metricsByContractId[c.id].from?.day.profit ?? 0) > 0
+    (c) => (metricsByContractId[c.id].from?.[from].profit ?? 0) > 0
   )
   const rows = [
     ...sortBy(
       positive,
-      (c) => -(metricsByContractId[c.id].from?.day.profit ?? 0)
+      (c) => -(metricsByContractId[c.id].from?.[from].profit ?? 0)
     )
-      .map((c) => [c, metricsByContractId[c.id].from?.day.profit ?? 0])
+      .map((c) => [c, metricsByContractId[c.id].from?.[from].profit ?? 0])
       .slice(currentSlice, currentSlice + rowsPerSection),
-    ...sortBy(negative, (c) => metricsByContractId[c.id].from?.day.profit ?? 0)
-      .map((c) => [c, metricsByContractId[c.id].from?.day.profit ?? 0])
+    ...sortBy(
+      negative,
+      (c) => metricsByContractId[c.id].from?.[from].profit ?? 0
+    )
+      .map((c) => [c, metricsByContractId[c.id].from?.[from].profit ?? 0])
       .slice(currentSlice, currentSlice + rowsPerSection),
   ]
 
@@ -175,8 +188,8 @@ function ProfitChangeTable(props: {
         <ContractMention
           contract={c}
           probChange={
-            (c.probChanges.day > 0 ? '+' : '') +
-            formatPercent(c.probChanges.day).replace('%', '')
+            (c.probChanges[from] > 0 ? '+' : '') +
+            formatPercent(c.probChanges[from]).replace('%', '')
           }
           className={'line-clamp-6 sm:line-clamp-4 !whitespace-normal'}
         />
@@ -223,12 +236,14 @@ function ProfitChangeTable(props: {
           ]}
           sort={false}
         />
-        <Pagination
-          page={page}
-          itemsPerPage={rowsPerSection * 2}
-          totalItems={contracts.length}
-          setPage={setPage}
-        />
+        {showPagination && (
+          <Pagination
+            page={page}
+            itemsPerPage={rowsPerSection * 2}
+            totalItems={contracts.length}
+            setPage={setPage}
+          />
+        )}
       </Col>
     </Col>
   )

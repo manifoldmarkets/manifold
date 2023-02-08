@@ -1,6 +1,27 @@
 import { ReactNode } from 'react'
 import Head from 'next/head'
 import { buildCardUrl, OgCardProps } from 'common/contract-details'
+import { filterDefined } from 'common/util/array'
+import { DOMAIN } from 'common/envs/constants'
+
+export function buildBasicOgUrl(
+  props: Record<string, string | undefined>,
+  endpoint: string
+) {
+  const generateUrlParams = (params: Record<string, string | undefined>) =>
+    filterDefined(
+      Object.entries(params).map(([key, value]) =>
+        value ? `${key}=${encodeURIComponent(value)}` : null
+      )
+    ).join('&')
+
+  // Change to localhost:3000 for local testing
+  const url =
+    // `http://localhost:3000/api/og/${endpoint}?` +
+    `https://${DOMAIN}/api/og/${endpoint}?` + generateUrlParams(props)
+
+  return url
+}
 
 export function SEO(props: {
   title: string
@@ -8,14 +29,28 @@ export function SEO(props: {
   url?: string
   children?: ReactNode
   ogCardProps?: OgCardProps
+  basicOgProps?: {
+    props: Record<string, string | undefined>
+    endpoint: string
+  }
   image?: string
 }) {
-  const { title, description, url, children, image, ogCardProps } = props
+  const {
+    title,
+    description,
+    url,
+    children,
+    image,
+    ogCardProps,
+    basicOgProps,
+  } = props
 
   const imageUrl = image
     ? image
     : ogCardProps
     ? buildCardUrl(ogCardProps)
+    : basicOgProps
+    ? buildBasicOgUrl(basicOgProps.props, basicOgProps.endpoint)
     : undefined
 
   const absUrl = 'https://manifold.markets' + url

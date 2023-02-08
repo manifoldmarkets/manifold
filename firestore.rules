@@ -53,6 +53,10 @@ service cloud.firestore {
         allow create: if (request.auth == null && userId == 'NO_USER') || userId == request.auth.uid;
         allow read: if userId == request.auth.uid || userId == '_';
       }
+
+      match /weekly-update/{rangeSlug} {
+        allow read;
+      }
     }
 
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {

@@ -7,7 +7,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractCardWithPosition } from './contract-card'
 import { User } from 'common/user'
 
-export function ProfitChangeTable(props: {
+export function ProfitChangeCardsTable(props: {
   contracts: CPMMBinaryContract[]
   metrics: ContractMetrics[]
   maxRows?: number

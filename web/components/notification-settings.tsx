@@ -80,7 +80,6 @@ export function NotificationSettings(props: {
   ]
   const browserDisabled: Array<notification_preference> = [
     'trending_markets',
-    'profit_loss_updates',
     'onboarding_flow',
     'thank_you_for_purchases',
   ]

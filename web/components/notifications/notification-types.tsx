@@ -19,7 +19,6 @@ import {
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useIsVisible } from 'web/hooks/use-is-visible'
 import { Linkify } from '../widgets/linkify'
 import {
   AvatarNotificationIcon,
@@ -29,6 +28,8 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -201,6 +202,14 @@ export function NotificationItem(props: {
       <UserLikeNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'profit_loss_updates') {
+    return (
+      <WeeklyUpdateNotification
+        notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
       />
@@ -1070,6 +1079,49 @@ function GroupRoleChangedNotification(props: {
             <PrimaryNotificationLink text={sourceTitle} truncatedLength="xl" />{' '}
           </span>
         )}
+      </>
+    </NotificationFrame>
+  )
+}
+
+function WeeklyUpdateNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { data } = notification
+  const { weeklyProfit } = data as WeeklyPortfolioUpdate
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <NotificationIcon
+          symbol={'✨'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-indigo-600 to-indigo-300'
+          }
+        />
+      }
+    >
+      <>
+        <span>
+          Your portfolio{' '}
+          <span
+            className={clsx(
+              weeklyProfit > 0 ? 'text-teal-600' : 'text-scarlet-600'
+            )}
+          >
+            {weeklyProfit > 0 ? 'gained' : 'lost'}{' '}
+            {formatMoney(Math.abs(weeklyProfit))}
+          </span>{' '}
+          this week. Tap here to see your summary!
+        </span>
       </>
     </NotificationFrame>
   )

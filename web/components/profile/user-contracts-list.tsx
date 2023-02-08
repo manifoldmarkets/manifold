@@ -7,7 +7,8 @@ import { Row } from 'web/components/layout/row'
 import { ContractSearch } from 'web/components/contract-search'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { formatWithCommas } from 'common/util/format'
-import { getUnresolvedContracts } from 'web/lib/supabase/contracts'
+import { getUnresolvedContracts } from 'common/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
 
 export function UserContractsList(props: { creator: User }) {
   const { creator } = props
@@ -20,7 +21,7 @@ export function UserContractsList(props: { creator: User }) {
   useEffect(() => {
     getTotalContractCreated(creator.id).then(setMarketsCreated)
     getCreatorRank(allTime, 'allTime').then(setCreatorRank)
-    getUnresolvedContracts(creator.id).then((count) =>
+    getUnresolvedContracts(creator.id, db).then((count) =>
       setUnresolvedMarkets(count)
     )
   }, [creator.id, allTime])

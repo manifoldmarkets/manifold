@@ -30,8 +30,8 @@ import {
   SliceMarker,
   TooltipParams,
   TooltipComponent,
-  computeColorStops,
   formatPct,
+  computeColorStops,
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
 import { formatMoneyNumber } from 'common/util/format'
