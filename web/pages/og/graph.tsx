@@ -1,8 +1,8 @@
 import { area, curveStepBefore, line } from 'd3-shape'
 import { scaleLinear, scaleTime } from 'd3-scale'
-type HistoryPoint = { x: number; y: number }
+export type ogPoint = { x: number; y: number }
 export function Graph(props: {
-  data: HistoryPoint[]
+  data: ogPoint[]
   size: number
   scaleX?: number
 }) {
@@ -16,16 +16,16 @@ export function Graph(props: {
 
   const xScale = scaleTime(visibleRange, [0, w])
   const yScale = scaleLinear([minY, maxY], [h, 0])
-  const px = (p: HistoryPoint) => xScale(p.x)
+  const px = (p: ogPoint) => xScale(p.x)
   const py0 = yScale(0)
-  const py1 = (p: HistoryPoint) => yScale(p.y)
+  const py1 = (p: ogPoint) => yScale(p.y)
   const clipId = ':rnm:'
   const gradientId = ':rnc:'
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const da = area(px, py0, py1).curve(curve)(data)!
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const dl = line(px, py1).curve(curve)(data)!
-  const color = (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
+  const color = (p: ogPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
   const stops = computeColorStops(data, color, px)
 
   return (
@@ -56,9 +56,9 @@ export function Graph(props: {
 }
 
 const computeColorStops = (
-  data: HistoryPoint[],
-  pc: (p: HistoryPoint) => string,
-  px: (p: HistoryPoint) => number
+  data: ogPoint[],
+  pc: (p: ogPoint) => string,
+  px: (p: ogPoint) => number
 ) => {
   const segments: { x: number; color: string }[] = []
   let currOffset = px(data[0])

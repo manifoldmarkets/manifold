@@ -1,6 +1,5 @@
 import { WeeklyPortfolioUpdateOGCardProps } from 'common/weekly-portfolio-update'
-import { HistoryPoint } from 'web/components/charts/generic-charts'
-import { Graph } from 'web/pages/og/graph'
+import { Graph, ogPoint } from 'web/pages/og/graph'
 
 // Notes for working with this:
 // - Some css elements are missing or broken (e.g. 'gap' and 'text-ellipsis' and 'line-clamp')
@@ -16,7 +15,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
     weeklyProfit,
     points,
   } = props
-  const data = JSON.parse(points) as HistoryPoint[]
+  const data = JSON.parse(points) as ogPoint[]
   const date =
     new Date(data[0].x).toLocaleDateString('en-US', {
       month: 'short',
