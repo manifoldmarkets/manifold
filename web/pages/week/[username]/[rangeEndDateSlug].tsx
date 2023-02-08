@@ -69,7 +69,7 @@ export async function getStaticProps(props: {
       contractsString: JSON.stringify(contracts),
     },
 
-    revalidate: 60, // regenerate after a minute
+    revalidate: 60 * 60, // regenerate after an hour
   }
 }
 const averagePointsInChunks = (points: { x: number; y: number }[]) => {
@@ -88,24 +88,30 @@ export async function getStaticPaths() {
 
 export default function RangePerformancePage(props: {
   user: User | null
-  weeklyPortfolioUpdateString: string | null
-  contractsString: string | null
+  weeklyPortfolioUpdateString: string
+  contractsString: string
 }) {
   const { user, weeklyPortfolioUpdateString } = props
   const weeklyPortfolioUpdate = JSON.parse(
-    weeklyPortfolioUpdateString ?? '{}'
+    weeklyPortfolioUpdateString
   ) as WeeklyPortfolioUpdate
-  const contracts = JSON.parse(
-    props.contractsString ?? '{}'
-  ) as CPMMBinaryContract[]
+  const contracts = JSON.parse(props.contractsString) as CPMMBinaryContract[]
   const currentUser = useUser()
-  const { profitPoints, contractMetrics, weeklyProfit, rangeEndDateSlug } =
-    weeklyPortfolioUpdate
-
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,
   })
   const [graphMode, setGraphMode] = useState<GraphMode>('profit')
+  const graphView = useSingleValueHistoryChartViewScale()
+  const { contracts: relatedMarkets, loadMore } = useRecentlyBetOnContracts(
+    user?.id ?? '_'
+  )
+
+  if (!user || !weeklyPortfolioUpdate) return <Custom404 />
+
+  const { profitPoints, contractMetrics, weeklyProfit, rangeEndDateSlug } =
+    weeklyPortfolioUpdate
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const graphPoints = useMemo(() => {
     const contractMetricsSum = sum(
       contractMetrics.map((c) => c.from?.week.profit ?? 0)
@@ -127,13 +133,6 @@ export default function RangePerformancePage(props: {
     return points.concat(portfolioPoints)
   }, [profitPoints, graphMode])
 
-  const averagePoints = averagePointsInChunks(graphPoints)
-  const graphView = useSingleValueHistoryChartViewScale()
-  const { contracts: relatedMarkets, loadMore } = useRecentlyBetOnContracts(
-    user?.id ?? '_'
-  )
-
-  if (!user || !weeklyPortfolioUpdateString) return <Custom404 />
   const date =
     new Date(graphPoints[0].x).toLocaleDateString('en-US', {
       month: 'short',
@@ -146,6 +145,7 @@ export default function RangePerformancePage(props: {
         day: 'numeric',
       }
     )
+  const averagePoints = averagePointsInChunks(graphPoints)
   const ogProps = {
     points: JSON.stringify(averagePoints),
     weeklyProfit: weeklyProfit.toString(),
