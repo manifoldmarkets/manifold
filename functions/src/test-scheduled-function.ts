@@ -2,8 +2,8 @@ import { APIError, newEndpoint } from './api'
 import {
   saveWeeklyContractMetricsInternal,
   sendWeeklyPortfolioUpdateNotifications,
-} from 'functions/src/weekly-portfolio-updates'
-import { isProd } from 'functions/src/utils'
+} from './weekly-portfolio-updates'
+import { isProd } from './utils'
 
 // Function for testing scheduled functions locally
 export const testscheduledfunction = newEndpoint(

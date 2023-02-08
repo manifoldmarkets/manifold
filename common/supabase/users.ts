@@ -1,5 +1,5 @@
-import { run, selectFrom, SupabaseClient } from 'common/supabase/utils'
 import { chunk, keyBy } from 'lodash'
+import { run, selectFrom, SupabaseClient } from './utils'
 
 export const getUsernameById = async (
   userIds: string[],

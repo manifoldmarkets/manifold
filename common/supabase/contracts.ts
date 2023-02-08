@@ -1,8 +1,11 @@
-import { run, selectJson, SupabaseClient } from 'common/supabase/utils'
-import { Contract } from 'common/contract'
 import { chunk } from 'lodash'
+import { run, selectJson, SupabaseClient } from './utils'
+import { Contract } from '../contract'
 
-export const getContracts = async (contractIds: string[], db: SupabaseClient) => {
+export const getContracts = async (
+  contractIds: string[],
+  db: SupabaseClient
+) => {
   if (contractIds.length === 0) {
     return [] as Contract[]
   }
@@ -14,7 +17,10 @@ export const getContracts = async (contractIds: string[], db: SupabaseClient) =>
   return results.flatMap((result) => result.data.map((r) => r.data))
 }
 
-export const getUnresolvedContracts = async (creatorId: string, db: SupabaseClient) => {
+export const getUnresolvedContracts = async (
+  creatorId: string,
+  db: SupabaseClient
+) => {
   const { count } = await run(
     db
       .from('contracts')

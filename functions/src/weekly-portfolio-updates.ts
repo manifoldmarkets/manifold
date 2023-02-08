@@ -1,14 +1,15 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { PrivateUser } from '../../common/user'
-import { getBestAndWorstUserContractMetrics } from 'common/supabase/contract-metrics'
 import { sortBy, sum } from 'lodash'
-import { createWeeklyPortfolioUpdateNotification } from 'functions/src/create-notification'
-import { getUsernameById } from 'common/supabase/users'
+
+import { PrivateUser } from '../../common/user'
+import { getBestAndWorstUserContractMetrics } from '../../common/supabase/contract-metrics'
+import { createWeeklyPortfolioUpdateNotification } from './create-notification'
+import { getUsernameById } from '../../common/supabase/users'
 import { createSupabaseClient } from './supabase/init'
-import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
-import { DAY_MS } from 'common/util/time'
-import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { WeeklyPortfolioUpdate } from '../../common/weekly-portfolio-update'
+import { DAY_MS } from '../../common/util/time'
+import { getPortfolioHistory } from '../../common/supabase/portfolio-metrics'
 
 const firestore = admin.firestore()
 const now = new Date()

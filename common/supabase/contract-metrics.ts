@@ -1,8 +1,8 @@
-import { run, selectJson, SupabaseClient } from 'common/supabase/utils'
-import { ContractMetrics } from 'common/calculate-metrics'
 import { Dictionary, flatMap, orderBy } from 'lodash'
-import { getContracts } from 'common/supabase/contracts'
-import { Contract, CPMMBinaryContract } from 'common/contract'
+import { run, selectJson, SupabaseClient } from './utils'
+import { ContractMetrics } from '../calculate-metrics'
+import { getContracts } from './contracts'
+import { Contract, CPMMBinaryContract } from '../contract'
 
 export async function getUserContractMetrics(
   userId: string,
