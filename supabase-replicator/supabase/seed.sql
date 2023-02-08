@@ -650,6 +650,7 @@ as $$
     and user_events.data->>'contractId' = crf.contract_id
     and (user_events.data->'timestamp')::bigint > (extract(epoch from (now() - interval '1 day')) * 1000)::bigint
   )
+  order by rec_score desc
 $$;
 
 create or replace function get_recommended_contracts_by_score(uid text, count int)
@@ -663,7 +664,6 @@ as $$
   on contracts.id = contract_id
   where is_valid_contract(data)
   and data->>'outcomeType' = 'BINARY'
-  order by score desc
   limit count
 $$;
 
