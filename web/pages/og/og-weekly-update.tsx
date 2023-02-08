@@ -59,7 +59,9 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
         </div>
       </div>
 
-      <div className={'relative mt-36 flex w-full flex-row justify-center'}>
+      <div
+        className={'relative mt-[8.5rem] flex w-full flex-row justify-center'}
+      >
         <Graph data={data} margin={25} size={500} scaleX={2.5} />
       </div>
 
