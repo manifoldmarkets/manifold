@@ -49,13 +49,15 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
       <ContractDetails contract={contract} />
 
       <div className="flex gap-2">
-        <Image
-          alt={`Cover image for ${contract.question}.`}
-          className="object-cover"
-          width={120}
-          height={120}
-          src={contract.coverImageUrl ?? ''}
-        />
+        {contract.coverImageUrl && (
+          <Image
+            alt=""
+            className="object-cover"
+            width={120}
+            height={120}
+            src={contract.coverImageUrl}
+          />
+        )}
         <Col className="gap-2">
           <h1 className="break-anywhere text-lg text-indigo-700 sm:text-2xl">
             {contract.question}
