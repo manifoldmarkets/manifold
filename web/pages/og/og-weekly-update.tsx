@@ -17,6 +17,15 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
     points,
   } = props
   const data = JSON.parse(points) as HistoryPoint[]
+  const date =
+    new Date(data[0].x).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }) +
+    ' - ' +
+    new Date(data[data.length - 1].x).toLocaleDateString('en-US', {
+      day: 'numeric',
+    })
 
   return (
     <div className="flex h-full w-full flex-col bg-white px-24">
@@ -50,22 +59,26 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
         </div>
       </div>
 
-      {/*<div className="pt-42 flex w-full flex-row justify-between">*/}
-      {/*  {ProfitDiv(parseInt(weeklyProfit))}*/}
-      {/*</div>*/}
-      <div className={'relative -mt-40 flex w-full flex-row'}>
-        <Graph data={data} margin={25} w={800} h={800} />
+      <div className={'relative mt-36 flex w-full flex-row justify-center'}>
+        <Graph data={data} margin={25} size={500} scaleX={2.5} />
+      </div>
+
+      {/* We render the profit last so it appears over the graph*/}
+      <div className="absolute top-44 left-20 flex w-full flex-row justify-between">
+        {ProfitDiv(parseInt(weeklyProfit), date)}
       </div>
     </div>
   )
 }
 
-function ProfitDiv(profit: number) {
+function ProfitDiv(profit: number, date: string) {
   const color = profit > 0 ? 'text-teal-500' : 'text-red-600'
   return (
-    <div className={'flex flex-col ' + color}>
+    <div className={'flex flex-col rounded-md bg-white p-2 ' + color}>
       <div className="flex flex-row text-8xl">M${profit}</div>
-      <div className="flex w-full flex-row justify-center text-4xl">profit</div>
+      <div className=" flex w-full flex-row justify-center text-4xl">
+        {date} profit
+      </div>
     </div>
   )
 }

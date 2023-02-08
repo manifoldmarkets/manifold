@@ -52,7 +52,6 @@ export function SEO(props: {
     : basicOgProps
     ? buildBasicOgUrl(basicOgProps.props, basicOgProps.endpoint)
     : undefined
-  console.log('imageUrl', imageUrl)
 
   const absUrl = 'https://manifold.markets' + url
 

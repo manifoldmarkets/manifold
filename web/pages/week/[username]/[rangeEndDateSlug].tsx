@@ -73,9 +73,8 @@ export async function getStaticProps(props: {
   }
 }
 const averagePointsInChunks = (points: { x: number; y: number }[]) => {
-  const chunkSize = 5
+  const chunkSize = 2
   const chunks = chunk(points, chunkSize)
-  console.log('chunks', chunks)
   return chunks.map((c) => {
     const sumY = sum(c.map((p) => p.y))
     const avgY = sumY / chunkSize
@@ -135,7 +134,18 @@ export default function RangePerformancePage(props: {
   )
 
   if (!user || !weeklyPortfolioUpdateString) return <Custom404 />
-
+  const date =
+    new Date(graphPoints[0].x).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }) +
+    ' - ' +
+    new Date(graphPoints[graphPoints.length - 1].x).toLocaleDateString(
+      'en-US',
+      {
+        day: 'numeric',
+      }
+    )
   const ogProps = {
     points: JSON.stringify(averagePoints),
     weeklyProfit: weeklyProfit.toString(),
@@ -146,10 +156,10 @@ export default function RangePerformancePage(props: {
   return (
     <Page>
       <SEO
-        title={'Weekly Profit for ' + user.name}
+        title={date + ' profit for ' + user.name}
         description={`${user.name} made ${formatMoney(
           weeklyProfit
-        )} in the last week.`}
+        )} in the past week. See how they did it.`}
         url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDate}`.replace(
           'https://',
           ''
@@ -167,7 +177,7 @@ export default function RangePerformancePage(props: {
               hideBadge={true}
               username={user.username}
             />{' '}
-            Weekly Profit
+            {date} Profit
           </Title>
           <Button
             size={'xs'}
@@ -224,7 +234,7 @@ export default function RangePerformancePage(props: {
             />
           </Col>
         </Col>
-        <Title children="Related markets" />
+        <Title children="Also betting on" />
         {relatedMarkets ? (
           <ContractsGrid
             contracts={relatedMarkets ?? []}
