@@ -63,7 +63,7 @@ alter table user_contract_metrics enable row level security;
 drop policy if exists "public read" on user_contract_metrics;
 create policy "public read" on user_contract_metrics for select using (true);
 create index if not exists user_contract_metrics_gin on user_contract_metrics using GIN (data);
-create index user_contract_metrics_recent_bets on user_contract_metrics (
+create index if not exists user_contract_metrics_recent_bets on user_contract_metrics (
      user_id,
      ((data->'lastBetTime')::bigint) desc
     );
@@ -178,7 +178,7 @@ create index if not exists contract_bets_user_id on contract_bets (
     (to_jsonb(data)->>'userId'),
     (to_jsonb(data)->>'createdTime') desc
 );
-create index contract_bets_user_outstanding_limit_orders on contract_bets (
+create index if not exists contract_bets_user_outstanding_limit_orders on contract_bets (
    (data->>'userId'),
    ((data->'isFilled')::boolean),
    ((data->'isCancelled')::boolean));
