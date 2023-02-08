@@ -104,20 +104,11 @@ export const ReportModal = (props: {
             ? `You've reported this ${label}. Our team will take a look within 24 hours.`
             : `Report this ${label} for objectionable content that violates our Terms of Service.`}
         </span>
-        <Row className={'justify-between'}>
+        <Row className={'items-center justify-between'}>
           <Button color={'gray-white'} onClick={() => setIsModalOpen(false)}>
-            Cancel
+            {isReported ? 'Done' : 'Cancel'}
           </Button>
-          {isReported ? (
-            <Button
-              size="sm"
-              color="gray-outline"
-              className="my-auto"
-              disabled={true}
-            >
-              Reported
-            </Button>
-          ) : (
+          {!isReported && (
             <Button
               size="sm"
               color="red"
