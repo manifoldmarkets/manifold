@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { PrivateUser } from '../../common/user'
-import { createSupabaseClient } from 'functions/src/supabase/init'
 import { getBestAndWorstUserContractMetrics } from 'common/supabase/contract-metrics'
 import { sortBy, sum } from 'lodash'
 import { createWeeklyPortfolioUpdateNotification } from 'functions/src/create-notification'
@@ -46,8 +45,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
     )
     .get()
   const privateUsers = users.docs.map((doc) => doc.data() as PrivateUser)
-  console.log(privateUsers.length)
-  const db = createSupabaseClient()
+
   const results = sortBy(
     await Promise.all(
       privateUsers.map(async (user) => {
@@ -78,7 +76,6 @@ export const saveWeeklyContractMetricsInternal = async () => {
     ),
     (r) => -r.weeklyProfit
   )
-  console.log(results)
   const batch = firestore.batch()
   results.forEach((result) => {
     const ref = firestore
@@ -111,13 +108,13 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
 
   await Promise.all(
     privateUsers.map(async (privateUser) => {
-      const doc = await firestore
+      const snap = await firestore
         .collection(`users/${privateUser.id}/weekly-update`)
         .where('rangeEndSlug', '==', date)
         .get()
-      if (doc.empty) return
+      if (snap.empty) return
       const { weeklyProfit, rangeEndDateSlug } =
-        doc.docs[0].data() as WeeklyPortfolioUpdate
+        snap.docs[0].data() as WeeklyPortfolioUpdate
       await createWeeklyPortfolioUpdateNotification(
         privateUser,
         userData[privateUser.id].username,
