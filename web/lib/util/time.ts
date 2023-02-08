@@ -10,7 +10,7 @@ export function fromNow(time: number) {
 
 const FORMATTER = new Intl.DateTimeFormat('default', {
   dateStyle: 'medium',
-  timeStyle: 'long',
+  timeStyle: 'medium',
 })
 
 export const formatTime = FORMATTER.format

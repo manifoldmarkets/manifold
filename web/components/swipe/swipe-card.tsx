@@ -15,9 +15,10 @@ import { Avatar } from '../widgets/avatar'
 import { SiteLink } from '../widgets/site-link'
 import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize from './swipe-helpers'
-import Percent, { DescriptionAndModal } from './swipe-widgets'
+import { MoreSwipeInfo } from './more-swipe-info'
 import { DailyStats } from '../daily-stats'
 import { SwipeComments } from './swipe-comments'
+import { Percent } from './percent'
 
 export const SwipeCard = memo(
   (props: {
@@ -44,7 +45,7 @@ export const SwipeCard = memo(
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
-    const { question, description, coverImageUrl } = contract
+    const { question, coverImageUrl } = contract
 
     const image =
       coverImageUrl ??
@@ -119,8 +120,8 @@ export const SwipeCard = memo(
           </Row>
           <Col className="mt-2 gap-6">
             <Col className="h-20 w-full justify-end">
-              <DescriptionAndModal
-                description={description}
+              <MoreSwipeInfo
+                contract={contract}
                 setIsModalOpen={setIsModalOpen}
               />
             </Col>

@@ -126,7 +126,7 @@ const BinaryOverview = (props: {
           />
         </Row>
       </Col>
-      <SizedContainer fullHeight={250} mobileHeight={150}>
+      <SizedContainer fullHeight={125} mobileHeight={75}>
         {(w, h) => (
           <BinaryContractChart
             width={w}

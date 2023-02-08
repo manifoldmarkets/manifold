@@ -38,11 +38,12 @@ import { dreamDefault } from '../editor/image-modal'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { CopyLinkButton } from '../buttons/copy-link-button'
 
-const Stats = (props: {
+export const Stats = (props: {
   contract: Contract
   user?: User | null | undefined
+  hideAdvanced?: boolean
 }) => {
-  const { contract, user } = props
+  const { contract, user, hideAdvanced } = props
 
   const isDev = useDev()
   const isAdmin = useAdmin()
@@ -76,33 +77,35 @@ const Stats = (props: {
   return (
     <Table>
       <tbody>
-        <tr>
-          <td>Type</td>
-          <td className="flex gap-1">
-            {typeDisplay}
-            <div className="mx-1 select-none">&middot;</div>
-            {mechanism === 'cpmm-1' ? (
-              <>
-                Fixed{' '}
-                <InfoTooltip
-                  text={`Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins.`}
-                />
-              </>
-            ) : mechanism === 'cpmm-2' ? (
-              <>
-                Fixed{' '}
-                <InfoTooltip
-                  text={`Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen.`}
-                />
-              </>
-            ) : (
-              <>
-                Parimutuel{' '}
-                <InfoTooltip text="Each share is a fraction of the pool. " />
-              </>
-            )}
-          </td>
-        </tr>
+        {!hideAdvanced && (
+          <tr>
+            <td>Type</td>
+            <td className="flex gap-1">
+              {typeDisplay}
+              <div className="mx-1 select-none">&middot;</div>
+              {mechanism === 'cpmm-1' ? (
+                <>
+                  Fixed{' '}
+                  <InfoTooltip
+                    text={`Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins.`}
+                  />
+                </>
+              ) : mechanism === 'cpmm-2' ? (
+                <>
+                  Fixed{' '}
+                  <InfoTooltip
+                    text={`Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen.`}
+                  />
+                </>
+              ) : (
+                <>
+                  Parimutuel{' '}
+                  <InfoTooltip text="Each share is a fraction of the pool. " />
+                </>
+              )}
+            </td>
+          </tr>
+        )}
 
         <tr>
           <td>Market created</td>
@@ -144,7 +147,7 @@ const Stats = (props: {
           <td>{uniqueBettorCount ?? '0'}</td>
         </tr>
 
-        {!contract.resolution && (
+        {!hideAdvanced && !contract.resolution && (
           <tr>
             <td>
               <Row>
@@ -181,19 +184,21 @@ const Stats = (props: {
           </td>
         </tr>
 
-        <tr>
-          <td>Pool</td>
-          <td>
-            {mechanism === 'cpmm-1' && outcomeType === 'BINARY'
-              ? `${Math.round(pool.YES)} YES, ${Math.round(pool.NO)} NO`
-              : mechanism === 'cpmm-1' && outcomeType === 'PSEUDO_NUMERIC'
-              ? `${Math.round(pool.YES)} HIGHER, ${Math.round(pool.NO)} LOWER`
-              : contractPool(contract)}
-          </td>
-        </tr>
+        {!hideAdvanced && (
+          <tr>
+            <td>Pool</td>
+            <td>
+              {mechanism === 'cpmm-1' && outcomeType === 'BINARY'
+                ? `${Math.round(pool.YES)} YES, ${Math.round(pool.NO)} NO`
+                : mechanism === 'cpmm-1' && outcomeType === 'PSEUDO_NUMERIC'
+                ? `${Math.round(pool.YES)} HIGHER, ${Math.round(pool.NO)} LOWER`
+                : contractPool(contract)}
+            </td>
+          </tr>
+        )}
 
         {/* Show a path to Firebase if user is an admin, or we're on localhost */}
-        {(isAdmin || isDev) && (
+        {!hideAdvanced && (isAdmin || isDev) && (
           <tr className="bg-scarlet-50">
             <td>Firestore link</td>
             <td>
@@ -208,34 +213,36 @@ const Stats = (props: {
           </tr>
         )}
 
-        <tr className={clsx(isAdmin && 'bg-scarlet-50')}>
-          <td>
-            Publicly listed{' '}
-            <InfoTooltip
-              text={
-                isPublic
-                  ? 'Visible on home page and search results'
-                  : 'Only visible via link'
-              }
-            />
-          </td>
-          <td>
-            <ShortToggle
-              disabled={
-                isPublic
-                  ? !(isCreator || isAdmin)
-                  : !(isAdmin || (isCreator && wasUnlistedByCreator))
-              }
-              on={isPublic}
-              setOn={(pub) =>
-                updateContract(id, {
-                  visibility: pub ? 'public' : 'unlisted',
-                  unlistedById: pub ? '' : user?.id,
-                })
-              }
-            />
-          </td>
-        </tr>
+        {!hideAdvanced && (
+          <tr className={clsx(isAdmin && 'bg-scarlet-50')}>
+            <td>
+              Publicly listed{' '}
+              <InfoTooltip
+                text={
+                  isPublic
+                    ? 'Visible on home page and search results'
+                    : 'Only visible via link'
+                }
+              />
+            </td>
+            <td>
+              <ShortToggle
+                disabled={
+                  isPublic
+                    ? !(isCreator || isAdmin)
+                    : !(isAdmin || (isCreator && wasUnlistedByCreator))
+                }
+                on={isPublic}
+                setOn={(pub) =>
+                  updateContract(id, {
+                    visibility: pub ? 'public' : 'unlisted',
+                    unlistedById: pub ? '' : user?.id,
+                  })
+                }
+              />
+            </td>
+          </tr>
+        )}
       </tbody>
     </Table>
   )
