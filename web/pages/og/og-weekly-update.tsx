@@ -61,7 +61,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
       <div
         className={'relative mt-[8.5rem] flex w-full flex-row justify-center'}
       >
-        <Graph data={data} margin={25} size={500} scaleX={2.5} />
+        <Graph data={data} size={500} scaleX={2.4} />
       </div>
 
       {/* We render the profit last so it appears over the graph*/}

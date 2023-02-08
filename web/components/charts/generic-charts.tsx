@@ -31,10 +31,10 @@ import {
   TooltipParams,
   TooltipComponent,
   formatPct,
+  computeColorStops,
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
 import { formatMoneyNumber } from 'common/util/format'
-import { computeColorStops } from 'web/components/charts/compute-color-stops'
 
 export type MultiPoint<T = unknown> = Point<number, number[], T>
 export type HistoryPoint<T = unknown> = Point<number, number, T>

@@ -1,30 +1,23 @@
 import { area, curveStepBefore, line } from 'd3-shape'
 import { scaleLinear, scaleTime } from 'd3-scale'
-import { axisBottom, axisRight } from 'd3-axis'
-import { formatMoneyNumber } from 'common/util/format'
-import { computeColorStops } from 'web/components/charts/compute-color-stops'
-
 type HistoryPoint = { x: number; y: number }
 export function Graph(props: {
   data: HistoryPoint[]
   size: number
-  margin: number
   scaleX?: number
 }) {
-  const { data, size, margin, scaleX } = props
+  const { data, size, scaleX } = props
   const w = size
   const h = size
-  const innerW = w - 2 * margin
-  const innerH = h - 2 * margin
   const visibleRange = [data[0].x, data[data.length - 1].x]
   const minY = Math.min(...data.map((p) => p.y))
   const maxY = Math.max(...data.map((p) => p.y))
   const curve = curveStepBefore
 
-  const xScale = scaleTime(visibleRange, [0, w - margin])
-  const yScale = scaleLinear([minY, maxY], [h - margin, 0])
+  const xScale = scaleTime(visibleRange, [0, w])
+  const yScale = scaleLinear([minY, maxY], [h, 0])
   const px = (p: HistoryPoint) => xScale(p.x)
-  const py0 = yScale(yScale.domain()[0])
+  const py0 = yScale(0)
   const py1 = (p: HistoryPoint) => yScale(p.y)
   const clipId = ':rnm:'
   const gradientId = ':rnc:'
@@ -35,19 +28,13 @@ export function Graph(props: {
   const color = (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
   const stops = computeColorStops(data, color, px)
 
-  // TODO: how do we add axes?
-  const nTicks = h < 200 ? 3 : 5
-  const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
-  const yAxis = axisRight<number>(yScale)
-    .ticks(nTicks)
-    .tickFormat((n) => formatMoneyNumber(n))
-
   return (
-    <svg width={w * (scaleX ?? 0)} height={h} viewBox={`0 0 ${w} ${h}`}>
+    <svg width={w * (scaleX ?? 1)} height={h} viewBox={`0 0 ${w} ${h}`}>
       <clipPath id={clipId}>
-        <rect x={0} y={0} width={innerW * (scaleX ?? 0)} height={innerH} />
+        <rect x={0} y={0} width={w * (scaleX ?? 1)} height={h} />
       </clipPath>
-      <g transform={`translate(${margin / 2}, ${margin / 2})`}>
+
+      <g>
         <g transform={`translate(0, ${h})`} />
         <g clipPath={`url(#${clipId})`}>
           <defs>
@@ -66,4 +53,31 @@ export function Graph(props: {
       </g>
     </svg>
   )
+}
+
+const computeColorStops = (
+  data: HistoryPoint[],
+  pc: (p: HistoryPoint) => string,
+  px: (p: HistoryPoint) => number
+) => {
+  const segments: { x: number; color: string }[] = []
+  let currOffset = px(data[0])
+  let currColor = pc(data[0])
+  for (const p of data) {
+    const c = pc(p)
+    if (c !== currColor) {
+      segments.push({ x: currOffset, color: currColor })
+      currOffset = px(p)
+      currColor = c
+    }
+  }
+  segments.push({ x: currOffset, color: currColor })
+
+  const stops: { x: number; color: string }[] = []
+  stops.push({ x: segments[0].x, color: segments[0].color })
+  for (const s of segments.slice(1)) {
+    stops.push({ x: s.x, color: stops[stops.length - 1].color })
+    stops.push({ x: s.x, color: s.color })
+  }
+  return stops
 }
