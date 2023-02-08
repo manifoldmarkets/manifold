@@ -23,9 +23,9 @@ export const useFeed = (user: User | null | undefined, key: string) => {
 
   const loadMore = useCallback(() => {
     if (userId) {
-      db.rpc('get_recommended_contracts' as any, {
+      db.rpc('get_recommended_contract_set' as any, {
         uid: userId,
-        count: PAGE_SIZE,
+        n: PAGE_SIZE,
       }).then((res) => {
         const newContracts = res.data as Contract[] | undefined
         setSavedContracts((contracts) =>
