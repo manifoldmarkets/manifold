@@ -100,7 +100,7 @@ export function BetsList(props: { user: User }) {
     })
 
   useEffect(() => {
-    getUserContractMetricsWithContracts(user.id,  db,5000).then(
+    getUserContractMetricsWithContracts(user.id, db, 5000).then(
       (metricsWithContracts) => {
         const { contracts, metricsByContract } = metricsWithContracts
         setMetricsByContract(metricsByContract)
