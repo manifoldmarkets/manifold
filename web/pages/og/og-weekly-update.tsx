@@ -33,8 +33,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
       <div className="absolute left-24 top-8 flex flex-row ">
         <img
           className="mr-6 flex h-24 w-24 items-center justify-center rounded-full bg-white"
-          // Fill in with a placeholder image if missing
-          src={creatorAvatarUrl ?? 'https://via.placeholder.com/150.png'}
+          src={creatorAvatarUrl}
           alt=""
         />
         <div className="mt-3 flex flex-col">
