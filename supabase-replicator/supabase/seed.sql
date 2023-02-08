@@ -110,8 +110,9 @@ alter table user_events enable row level security;
 drop policy if exists "public read" on user_events;
 create policy "public read" on user_events for select using (true);
 create index if not exists user_events_data_gin on user_events using GIN (data);
-create index if not exists user_events_user_id_name
-    on user_events (user_id, (to_jsonb(data)->>'name'));
+create index if not exists user_events_viewed_markets
+    on user_events (user_id, (data->>'name'), (data->>'contractId'), ((data->'timestamp')::bigint) desc)
+    where data->>'name' = 'view market' or data->>'name' = 'view market card';
 
 create table if not exists user_seen_markets (
     user_id text not null,
@@ -647,8 +648,9 @@ as $$
     where user_events.user_id = uid
     and user_events.data->>'name' = 'view market card'
     and user_events.data->>'contractId' = crf.contract_id
-    and (user_events.data->>'timestamp')::bigint > extract(epoch from (now() - interval '1 day')) * 1000
+    and (user_events.data->'timestamp')::bigint > (extract(epoch from (now() - interval '1 day')) * 1000)::bigint
   )
+  order by rec_score desc
 $$;
 
 create or replace function get_recommended_contracts_by_score(uid text, count int)
@@ -662,7 +664,6 @@ as $$
   on contracts.id = contract_id
   where is_valid_contract(data)
   and data->>'outcomeType' = 'BINARY'
-  order by score desc
   limit count
 $$;
 
@@ -699,7 +700,7 @@ create or replace function is_valid_contract(data jsonb)
     stable parallel safe
 as $$
 select not (data->>'isResolved')::boolean
-       and (data->>'visibility') = 'public'
+       and (data->>'visibility') != 'unlisted'
        and (data->>'closeTime')::bigint > extract(epoch from now() + interval '10 minutes') * 1000
 $$ language sql;
 
@@ -800,7 +801,7 @@ $$;
 
 
 create or replace view group_role as(
-  select member_id, 
+  select member_id,
     gp.id as group_id,
     gp.data as group_data,
     gp.data -> 'name' as group_name,
@@ -809,7 +810,7 @@ create or replace view group_role as(
     users.data -> 'name' as name,
     users.data -> 'username' as username,
     users.data -> 'avatarUrl' as avatar_url,
-    (select 
+    (select
       CASE
       WHEN (gp.data ->> 'creatorId')::text = member_id THEN 'admin'
       ELSE (gm.data ->> 'role')
@@ -817,4 +818,4 @@ create or replace view group_role as(
     ) as role,
     gm.data -> 'createdTime' as createdTime
   from (group_members gm join groups gp on gp.id = gm.group_id) join users on users.id = gm.member_id
-) 
+)
