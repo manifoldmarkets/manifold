@@ -48,22 +48,20 @@ export default function DatePage(props: {
     <Page>
       <NoSEO />
       <div className="mx-auto w-full max-w-xl">
-        <Row className="items-center justify-between p-4 sm:p-0">
-          <Title className="!my-0 px-2 text-blue-500" children="Date docs" />
+        <Row className="mb-6 items-center justify-between p-4 sm:p-0">
+          <Title className="!my-0 px-2">Date docs</Title>
           {!hasDoc && (
             <Link
               href="/date-docs/create"
-              className={clsx(buttonClass('md', 'blue'), 'flex flex-row gap-1')}
+              className={clsx(
+                buttonClass('md', 'indigo'),
+                'flex flex-row gap-1'
+              )}
             >
-              <PlusCircleIcon
-                className={'h-5 w-5 flex-shrink-0 text-white'}
-                aria-hidden
-              />
-              New
+              Create one!
             </Link>
           )}
         </Row>
-        <Spacer h={6} />
         <Col className="gap-4">
           {dateDocs.map((dateDoc, i) => (
             <DateDocPost
