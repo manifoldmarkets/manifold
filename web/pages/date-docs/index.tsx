@@ -1,10 +1,8 @@
 import { Page } from 'web/components/layout/page'
-import { PlusCircleIcon } from '@heroicons/react/outline'
 
 import { getDateDocs } from 'web/lib/firebase/posts'
 import type { DateDoc } from 'common/post'
 import { Title } from 'web/components/widgets/title'
-import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
