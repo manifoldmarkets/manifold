@@ -160,6 +160,16 @@ export function NotificationItem(props: {
       />
     )
   } else if (sourceType === 'group') {
+    if (reason === 'group_role_changed') {
+      return (
+        <GroupRoleChangedNotification
+          notification={notification}
+          isChildOfGroup={isChildOfGroup}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+        />
+      )
+    }
     return (
       // not appearing?
       <GroupAddNotification
@@ -1029,6 +1039,44 @@ function ChallengeNotification(props: {
             <span className="text-teal-500">
               {formatMoney(parseInt(sourceText))}
             </span>
+          </span>
+        )}
+      </>
+    </NotificationFrame>
+  )
+}
+
+function GroupRoleChangedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceUserName, sourceUserUsername, sourceText, sourceTitle } =
+    notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'👥'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <>
+        <UserLink
+          name={sourceUserName || ''}
+          username={sourceUserUsername || ''}
+          className={'relative flex-shrink-0 hover:text-indigo-500'}
+        />{' '}
+        {sourceText}{' '}
+        {!isChildOfGroup && (
+          <span>
+            in{' '}
+            <PrimaryNotificationLink text={sourceTitle} truncatedLength="xl" />{' '}
           </span>
         )}
       </>

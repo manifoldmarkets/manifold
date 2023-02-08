@@ -83,8 +83,7 @@ export default function Home() {
     <Page>
       <SEO
         title="Manifold Markets"
-        description="Create a play-money prediction market on any topic you care about
-            and bet with your friends on what will happen!"
+        description="Ask any question. Bet mana vs 100+ players. Unfold the future together."
       />
       <Col className="mx-auto mb-8 max-w-3xl gap-4 px-4">
         <LandingPagePanel />

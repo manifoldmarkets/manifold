@@ -35,6 +35,11 @@ export const mapAsync = <T, U>(
   let currRequests = 0
   const results: U[] = []
 
+  // The following is a hack to fix a Node bug where the process exits before
+  // the promise is resolved.
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  const intervalId = setInterval(() => {}, 10000)
+
   return new Promise((resolve: (results: U[]) => void, reject) => {
     const doWork = () => {
       while (index < items.length && currRequests < maxConcurrentRequests) {
@@ -55,5 +60,5 @@ export const mapAsync = <T, U>(
 
     if (items.length === 0) resolve([])
     else doWork()
-  })
+  }).finally(() => clearInterval(intervalId))
 }

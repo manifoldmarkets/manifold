@@ -41,6 +41,7 @@ import { Period } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
 import { periodDurations } from 'web/lib/util/time'
 import { getDateRange } from '../charts/helpers'
+import { QfOverview } from './qf-overview'
 
 export const ContractOverview = memo(
   (props: {
@@ -60,6 +61,8 @@ export const ContractOverview = memo(
         )
       case 'CERT':
         return <CertOverview contract={contract} />
+      case 'QUADRATIC_FUNDING':
+        return <QfOverview contract={contract} />
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         return <ChoiceOverview contract={contract} bets={bets} />

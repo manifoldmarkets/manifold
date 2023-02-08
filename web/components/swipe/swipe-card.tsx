@@ -17,6 +17,7 @@ import { SwipeBetPanel } from './swipe-bet-panel'
 import getQuestionSize from './swipe-helpers'
 import Percent, { DescriptionAndModal } from './swipe-widgets'
 import { DailyStats } from '../daily-stats'
+import { SwipeComments } from './swipe-comments'
 
 export const SwipeCard = memo(
   (props: {
@@ -27,7 +28,6 @@ export const SwipeCard = memo(
     betStatus: 'loading' | 'success' | string | undefined
     onBet: (outcome: 'YES' | 'NO') => void
     user: User | undefined
-    isModalOpen: boolean
     setIsModalOpen: Dispatch<SetStateAction<boolean>>
     small?: boolean
     className?: string
@@ -40,7 +40,6 @@ export const SwipeCard = memo(
       betStatus,
       onBet,
       user,
-      isModalOpen,
       setIsModalOpen,
     } = props
     const contract = (useContract(props.contract.id) ??
@@ -112,13 +111,16 @@ export const SwipeCard = memo(
           <Row className="mx-auto w-full grow items-center" />
 
           <Row className="justify-end">
-            <CardActions user={user} contract={contract} />
+            <CardActions
+              user={user}
+              contract={contract}
+              setIsModalOpen={setIsModalOpen}
+            />
           </Row>
           <Col className="mt-2 gap-6">
             <Col className="h-20 w-full justify-end">
               <DescriptionAndModal
                 description={description}
-                isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}
               />
             </Col>
@@ -170,11 +172,15 @@ const CornerDetails = (props: {
   )
 }
 
-function CardActions(props: { user?: User; contract: BinaryContract }) {
-  const { user, contract } = props
+function CardActions(props: {
+  user?: User
+  contract: BinaryContract
+  setIsModalOpen: (open: boolean) => void
+}) {
+  const { user, contract, setIsModalOpen } = props
 
   return (
-    <Col className="flex flex-col items-center justify-end">
+    <Col className="flex flex-col items-center justify-end gap-2">
       <LikeButton
         contentId={contract.id}
         contentCreatorId={contract.creatorId}
@@ -189,6 +195,7 @@ function CardActions(props: { user?: User; contract: BinaryContract }) {
         className={'flex-col gap-2 drop-shadow-sm'}
         isSwipe
       />
+      <SwipeComments contract={contract} setIsModalOpen={setIsModalOpen} />
       {/* TODO Share button */}
     </Col>
   )

@@ -62,6 +62,7 @@ import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
+import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -315,16 +316,16 @@ export function ContractPageContent(
               isCreator={!isAdmin}
               contract={contract}
             />
-          ) : (
-            outcomeType === 'BINARY' && (
-              <ResolutionPanel
-                isAdmin={!!isAdmin}
-                creator={user}
-                isCreator={!isAdmin}
-                contract={contract}
-              />
-            )
-          ))}
+          ) : outcomeType === 'BINARY' ? (
+            <ResolutionPanel
+              isAdmin={!!isAdmin}
+              creator={user}
+              isCreator={!isAdmin}
+              contract={contract}
+            />
+          ) : outcomeType === 'QUADRATIC_FUNDING' ? (
+            <QfResolutionPanel contract={contract} />
+          ) : null)}
 
         {(outcomeType === 'FREE_RESPONSE' ||
           outcomeType === 'MULTIPLE_CHOICE') && (

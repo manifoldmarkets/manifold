@@ -1,6 +1,10 @@
 import { auth } from './users'
 import { APIError, getFunctionUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
+import { QfAnswerReq } from 'web/pages/api/v0/qf/answer'
+import { QfPayReq } from 'web/pages/api/v0/qf/pay'
+import { QfAddPoolReq } from 'web/pages/api/v0/qf/add-pool'
+import { QfResolveReq } from 'web/pages/api/v0/qf/resolve'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -113,4 +117,42 @@ export function validateIapReceipt(params: any) {
 
 export function markAllNotifications(params: any) {
   return call(getFunctionUrl('markallnotifications'), 'POST', params)
+}
+
+export function updateMemberRole(params: {
+  groupId: string
+  memberId: string
+  role: string
+}) {
+  return call(getFunctionUrl('updatememberrole'), 'POST', params)
+}
+
+export function addContractToGroup(params: {
+  groupId: string
+  contractId: string
+}) {
+  return call(getFunctionUrl('addcontracttogroup'), 'POST', params)
+}
+
+export function removeContractFromGroup(params: {
+  groupId: string
+  contractId: string
+}) {
+  return call(getFunctionUrl('removecontractfromgroup'), 'POST', params)
+}
+
+export function createQfAnswer(params: QfAnswerReq) {
+  return call('/api/v0/qf/answer', 'POST', params)
+}
+
+export function payQfAnswer(params: QfPayReq) {
+  return call('/api/v0/qf/pay', 'POST', params)
+}
+
+export function addQfAddPool(params: QfAddPoolReq) {
+  return call('/api/v0/qf/add-pool', 'POST', params)
+}
+
+export function resolveQf(params: QfResolveReq) {
+  return call('/api/v0/qf/resolve', 'POST', params)
 }

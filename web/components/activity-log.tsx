@@ -149,7 +149,7 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
   return (
     <Col className="gap-4">
       {showPills && (
-        <Row className="gap-2">
+        <Row className="mx-2 gap-2 sm:mx-0">
           <PillButton selected={pill === 'all'} onSelect={() => setPill('all')}>
             All
           </PillButton>

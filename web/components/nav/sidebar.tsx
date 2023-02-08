@@ -174,8 +174,8 @@ const getMobileNav = () => {
   }
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
-    { name: 'Dashboard', href: '/dashboard', icon: TableIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
+    { name: 'Dashboard', href: '/dashboard', icon: TableIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     {
       name: 'Groups',
@@ -190,6 +190,12 @@ const getMobileNav = () => {
 
 const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
   buildArray(
+    loggedIn &&
+      isMobile && {
+        name: 'Help & About',
+        href: 'https://help.manifold.markets/',
+        icon: BookOpenIcon,
+      },
     !IS_PRIVATE_MANIFOLD &&
       loggedIn &&
       isMobile && {
@@ -197,6 +203,7 @@ const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
         href: 'https://discord.gg/eHQBNBqXuh',
         icon: DiscordOutlineIcon,
       },
+
     isMobile &&
       loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )

@@ -84,7 +84,7 @@ export function BottomNavBar() {
     : signedOutNavigation(appStoreUrl)
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 flex select-none items-center justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem
           key={item.name}
@@ -201,7 +201,7 @@ export function MobileSidebar(props: {
       <Transition.Root show={sidebarOpen} as={Fragment}>
         <Dialog
           as="div"
-          className="fixed inset-0 z-40 flex"
+          className="fixed inset-0 z-50 flex"
           onClose={setSidebarOpen}
         >
           <Transition.Child

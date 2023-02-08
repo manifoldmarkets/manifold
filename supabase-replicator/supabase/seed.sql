@@ -135,7 +135,8 @@ drop policy if exists "public read" on contracts;
 create policy "public read" on contracts for select using (true);
 create index if not exists contracts_data_gin on contracts using GIN (data);
 create index if not exists contracts_group_slugs_gin on contracts using GIN ((data->'groupSlugs'));
-create index if not exists contracts_creator_id on contracts ((to_jsonb(data)->'creatorId'));
+create index if not exists contracts_creator_id on contracts ((data->>'creatorId'));
+create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
 
 create table if not exists contract_answers (
     contract_id text not null,
@@ -313,7 +314,8 @@ create table if not exists contract_recommendation_features (
     f1 real not null,
     f2 real not null,
     f3 real not null,
-    f4 real not null
+    f4 real not null,
+    freshness_score real not null default 1
 );
 alter table contract_recommendation_features enable row level security;
 drop policy if exists "public read" on contract_recommendation_features;
@@ -322,6 +324,7 @@ drop policy if exists "admin write access" on contract_recommendation_features;
 create policy "admin write access" on contract_recommendation_features
   as PERMISSIVE FOR ALL
   to service_role;
+create index if not exists contract_recommendation_features_freshness_score on contract_recommendation_features (freshness_score desc);
 
 begin;
   drop publication if exists supabase_realtime;
@@ -580,18 +583,20 @@ create or replace function dot(
 ) returns real
 immutable parallel safe
 language sql as $$
-  select (
-    urf.f0 * crf.f0 +
-    urf.f1 * crf.f1 +
-    urf.f2 * crf.f2 +
-    urf.f3 * crf.f3 +
-    urf.f4 * crf.f4
-  );
+  select  round(
+    (
+      urf.f0 * crf.f0 +
+      urf.f1 * crf.f1 +
+      urf.f2 * crf.f2 +
+      urf.f3 * crf.f3 +
+      urf.f4 * crf.f4
+    ) * 10000) / 10000;
 $$;
 
 create or replace function calculate_distance(row1 contract_recommendation_features, row2 contract_recommendation_features)
     returns float
     language sql
+    immutable parallel safe
 as $$
 select sqrt((row1.f0 - row2.f0)^2 +
             (row1.f1 - row2.f1)^2 +
@@ -619,7 +624,7 @@ returns table (contract_id text, rec_score real)
 immutable parallel safe
 language sql
 as $$
-  select crf.contract_id, dot(urf, crf) as rec_score
+  select crf.contract_id, dot(urf, crf) * crf.freshness_score as rec_score
   from user_recommendation_features as urf
   cross join contract_recommendation_features as crf
   where user_id = uid
@@ -646,18 +651,19 @@ as $$
   )
 $$;
 
-create or replace function get_recommended_contracts_by_score(uid text)
+create or replace function get_recommended_contracts_by_score(uid text, count int)
 returns table (data jsonb, score real)
 immutable parallel safe
 language sql
 as $$
-  select data, (log(coalesce((data->>'popularityScore')::real, 0) + 3) * rec_score) as score
+  select data, rec_score as score
   from get_recommended_contract_scores(uid)
   left join contracts
   on contracts.id = contract_id
   where is_valid_contract(data)
   and data->>'outcomeType' = 'BINARY'
   order by score desc
+  limit count
 $$;
 
 create or replace function get_recommended_contracts(uid text, count int)
@@ -670,10 +676,10 @@ as $$
     from
     (
       select *, 1 as priority
-      from get_recommended_contracts_by_score(uid)
+      from get_recommended_contracts_by_score(uid, count)
       union all
       -- Default recommendations from this particular user if none for you.
-      select *, 2 as priority from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
+      select *, 2 as priority from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', count)
     ) as rec_contract_ids
     order by priority
     limit count
@@ -690,11 +696,11 @@ $$;
 
 create or replace function is_valid_contract(data jsonb)
     returns boolean
+    stable parallel safe
 as $$
-select
-        not (data->>'isResolved')::boolean
-        and (data->>'closeTime')::bigint > (select get_time() + 10 * 60000)
-        and not (data->>'visibility') = 'unlisted'
+select not (data->>'isResolved')::boolean
+       and (data->>'visibility') = 'public'
+       and (data->>'closeTime')::bigint > extract(epoch from now() + interval '10 minutes') * 1000
 $$ language sql;
 
 create or replace function get_related_contract_ids(source_id text)
@@ -792,3 +798,24 @@ from (
  on contracts.id = bets.contract_id
 limit count
 $$;
+
+
+create or replace view group_role as(
+  select member_id, 
+    gp.id as group_id,
+    gp.data as group_data,
+    gp.data -> 'name' as group_name,
+    gp.data -> 'slug' as group_slug,
+    gp.data -> 'creatorId' as creator_id,
+    users.data -> 'name' as name,
+    users.data -> 'username' as username,
+    users.data -> 'avatarUrl' as avatar_url,
+    (select 
+      CASE
+      WHEN (gp.data ->> 'creatorId')::text = member_id THEN 'admin'
+      ELSE (gm.data ->> 'role')
+      END
+    ) as role,
+    gm.data -> 'createdTime' as createdTime
+  from (group_members gm join groups gp on gp.id = gm.group_id) join users on users.id = gm.member_id
+) 
