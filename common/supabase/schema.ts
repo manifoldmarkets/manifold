@@ -587,10 +587,10 @@ export interface Database {
           rec_score: number
         }[]
       }
-      get_recommended_contracts: {
+      get_recommended_contract_set: {
         Args: {
           uid: string
-          count: number
+          n: number
         }
         Returns: Json[]
       }
@@ -604,26 +604,7 @@ export interface Database {
           score: number
         }[]
       }
-      get_recommended_contracts_by_score_test: {
-        Args: {
-          uid: string
-          count: number
-        }
-        Returns: {
-          data: Json
-          score: number
-        }[]
-      }
       get_related_contract_ids: {
-        Args: {
-          source_id: string
-        }
-        Returns: {
-          contract_id: string
-          distance: number
-        }[]
-      }
-      get_related_contract_ids_test: {
         Args: {
           source_id: string
         }
