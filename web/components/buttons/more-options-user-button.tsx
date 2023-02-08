@@ -31,9 +31,10 @@ export function MoreOptionsUserButton(props: { user: User }) {
         />
       </Button>
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
-        <Col className={'rounded-md bg-white p-4 pt-1'}>
-          {isAdmin && (
-            <Row className={'mt-3 justify-end'}>
+        <Col className={'rounded-md bg-white p-4'}>
+          <Title className={'!mb-2 flex justify-between'}>
+            {name}
+            {isAdmin && (
               <Button
                 color={'red'}
                 onClick={() => {
@@ -44,9 +45,8 @@ export function MoreOptionsUserButton(props: { user: User }) {
               >
                 {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
               </Button>
-            </Row>
-          )}
-          <Title className={'!mb-2'}>{name}</Title>
+            )}
+          </Title>
           <UncontrolledTabs
             className={'mb-4'}
             tabs={[

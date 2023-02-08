@@ -47,19 +47,17 @@ export const BlockUser = (props: {
     <Col>
       <Col className={'mb-6 gap-2'}>
         <span>
-          · You {isBlocked ? `will` : `won't`} see content from them on your
-          homepage and search.
+          · You {isBlocked ? "can't" : "won't"} see their content on home and
+          search.
+        </span>
+        <span>· You {isBlocked ? "can't" : "won't"} see their comments</span>
+        <span>
+          · They {isBlocked ? "can't" : "won't"} add new comments on your
+          content.
         </span>
         <span>
-          · Their comments will be {isBlocked ? `visible` : `invisible`} to you.
-        </span>
-        <span>
-          · They {isBlocked ? `will` : `won't`} be able to add new comments to
-          your content.
-        </span>
-        <span>
-          · They {isBlocked ? `will` : `won't`} see your content on their
-          homepage and search.
+          · They {isBlocked ? "can't" : "won't"} see your content on home and
+          search.
         </span>
       </Col>
       <Row className={'justify-between'}>
@@ -70,11 +68,11 @@ export const BlockUser = (props: {
           {isBlocked ? (
             <Button
               size="sm"
-              color="gray-outline"
+              color="indigo"
               className="my-auto"
               onClick={withTracking(unblockUser, 'unblock')}
             >
-              Blocked
+              Unblock {user.name}
             </Button>
           ) : (
             <Button
@@ -83,7 +81,7 @@ export const BlockUser = (props: {
               className="my-auto"
               onClick={withTracking(onBlock, 'block')}
             >
-              Block User
+              Block {user.name}
             </Button>
           )}
         </Row>
