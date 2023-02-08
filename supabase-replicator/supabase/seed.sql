@@ -110,8 +110,9 @@ alter table user_events enable row level security;
 drop policy if exists "public read" on user_events;
 create policy "public read" on user_events for select using (true);
 create index if not exists user_events_data_gin on user_events using GIN (data);
-create index if not exists user_events_user_id_name
-    on user_events (user_id, (to_jsonb(data)->>'name'));
+create index if not exists user_events_viewed_markets
+    on user_events (user_id, (data->>'name'), (data->>'contractId'), ((data->'timestamp')::bigint) desc)
+    where data->>'name' = 'view market' or data->>'name' = 'view market card';
 
 create table if not exists user_seen_markets (
     user_id text not null,
@@ -647,7 +648,7 @@ as $$
     where user_events.user_id = uid
     and user_events.data->>'name' = 'view market card'
     and user_events.data->>'contractId' = crf.contract_id
-    and (user_events.data->>'timestamp')::bigint > extract(epoch from (now() - interval '1 day')) * 1000
+    and (user_events.data->'timestamp')::bigint > (extract(epoch from (now() - interval '1 day')) * 1000)::bigint
   )
 $$;
 
