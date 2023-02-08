@@ -700,7 +700,7 @@ create or replace function is_valid_contract(data jsonb)
     stable parallel safe
 as $$
 select not (data->>'isResolved')::boolean
-       and (data->>'visibility') = 'public'
+       and (data->>'visibility') != 'unlisted'
        and (data->>'closeTime')::bigint > extract(epoch from now() + interval '10 minutes') * 1000
 $$ language sql;
 
