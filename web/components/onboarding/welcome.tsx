@@ -33,7 +33,8 @@ export default function Welcome() {
     isNative && platform === 'ios' ? null : <CharityPage />,
     user && <ThankYouPage />,
   ])
-  const TOTAL_PAGES = availablePages.length
+
+  const isLastPage = page === availablePages.length - 1
 
   useEffect(() => {
     if (user) return
@@ -60,7 +61,7 @@ export default function Welcome() {
     if (showSignedOutUser) setShowSignedOutUser(false)
   }
   function increasePage() {
-    if (page < TOTAL_PAGES - 1) setPage(page + 1)
+    if (!isLastPage) setPage(page + 1)
     else close()
   }
 
@@ -74,7 +75,7 @@ export default function Welcome() {
     (user && !user.shouldShowWelcome && groupSelectorOpen) ||
     showSignedOutUser
 
-  if (!shouldShowWelcomeModals) return <></>
+  // if (!shouldShowWelcomeModals) return <></>
 
   if (groupSelectorOpen)
     return (
@@ -89,25 +90,27 @@ export default function Welcome() {
       <Col className="place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:text-lg">
         {availablePages[page]}
         <Col>
-          <Row className="place-content-between">
+          <Row className="justify-between">
             <Button
               color={'gray'}
+              className={page === 0 ? 'invisible' : ''}
               onClick={decreasePage}
-              className={clsx(
-                'text-gray-400 hover:text-gray-500',
-                page === 0 ? 'disabled invisible' : ''
-              )}
             >
               Previous
             </Button>
-            <Button onClick={increasePage}>Next</Button>
+            <Button onClick={increasePage}>
+              {isLastPage ? 'Done' : 'Next'}
+            </Button>
           </Row>
-          <u
-            className="cursor-pointer self-center text-xs text-gray-500 no-underline hover:underline"
+          <span
+            className={clsx(
+              'cursor-pointer self-center text-xs text-gray-500 hover:underline',
+              isLastPage && 'invisible'
+            )}
             onClick={close}
           >
             I got the gist, exit welcome
-          </u>
+          </span>
         </Col>
       </Col>
     </Modal>
@@ -185,7 +188,7 @@ export function WhatIsManaPage() {
         Mana <strong>can't be converted to real money</strong>.
       </p>
       <img
-        src="logo-flapping-with-money.gif"
+        src="/logo-flapping-with-money.gif"
         height={200}
         width={200}
         className="place-self-center object-contain"
@@ -219,14 +222,11 @@ function ThankYouPage() {
         className="mx-auto mb-8 w-[60%] object-contain"
         src={'/welcome/treasure.png'}
       />
-      <Title className="mx-auto" children="Let's start predicting!" />
-      <p className="mb-8">
-        As a thank you for signing up, we’ve sent you{' '}
-        <span className="font-normal text-indigo-700">
-          {formatMoney(STARTING_BALANCE)}
-        </span>
-        .
-      </p>
+      <Title className="mx-auto" children="Start predicting!" />
+      <p className="text-center">As a thank you for signing up, we sent you </p>
+      <div className="mx-auto mt-2 mb-8 text-2xl font-normal text-indigo-700">
+        {formatMoney(STARTING_BALANCE)}
+      </div>
     </>
   )
 }
