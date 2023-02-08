@@ -44,6 +44,7 @@ import {
 import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Constants from 'expo-constants'
+import { NativeShareData } from 'common/native-share-data'
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
@@ -354,11 +355,12 @@ const App = () => {
       log('page:', page)
       setAllowSystemBack(page !== 'swipe')
     } else if (type === 'share') {
-      const { url, title } = payload
+      const { url, title, message } = payload as NativeShareData
       log('Sharing url:', url)
       Share.share({
         url,
         title,
+        message,
       })
     } else {
       log('Unhandled nativeEvent.data: ', data)

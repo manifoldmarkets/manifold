@@ -9,7 +9,6 @@
     "build:dev": "yarn prebuild && NEXT_PUBLIC_FIREBASE_ENV=DEV sh envscript.sh && eas build --local",
     "build:preview": "yarn prebuild && NEXT_PUBLIC_FIREBASE_ENV=PROD sh envscript.sh && eas build --local",
     "build:prod": "yarn prebuild && NEXT_PUBLIC_FIREBASE_ENV=PROD NATIVE_BUILD_TYPE=PROD sh envscript.sh && eas build --local",
-    "build:android:dev": "yarn build:dev -p android --profile prod-development",
     "build:android:preview": "yarn build:preview -p android --profile preview",
     "build:android:prod": "yarn build:prod -p android --profile production ",
     "build:ios:devdev": "yarn build:dev -p ios --profile development",

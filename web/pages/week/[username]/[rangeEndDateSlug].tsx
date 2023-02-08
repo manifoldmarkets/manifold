@@ -39,6 +39,7 @@ import toast from 'react-hot-toast'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { NativeShareData } from 'common/native-share-data'
 
 export async function getStaticProps(props: {
   params: { username: string; rangeEndDateSlug: string }
@@ -185,10 +186,12 @@ export default function RangePerformancePage(props: {
             className={'text-indigo-700'}
             onClick={() => {
               if (getIsNative()) {
+                const url = window.location.href
                 postMessageToNative('share', {
-                  title: "Share this week's performance",
-                  url: window.location.href,
-                })
+                  title: 'Check out my profit this week on Manifold',
+                  url,
+                  message: url,
+                } as NativeShareData)
               } else {
                 copyToClipboard(window.location.href)
                 toast.success('Link copied!')

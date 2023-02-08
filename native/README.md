@@ -11,9 +11,10 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 ## Developing  
 1. Connect your phone to your computer  
-2. NEW: this recently changed - for some reason you can't `yarn ios:prod` and have it create and install a dev client. You now have to build the dev client like so:  `yarn build:ios:dev` and drag it onto your iPhone to install it.
-   - Then you can run `yarn start` and scan the QR code 
-3. OLD: `yarn android:dev` or `yarn ios:dev` or `yarn ios:prod`   
+2. **iOS**: You have to build a dev client: `yarn build:ios:dev` or `yarn build:ios:devdev` and drag it onto your iPhone to install it.
+   - Then you can run `yarn start` and scan the QR code
+   - It's handy to keep dev client builds around in the native directory so you can just drag and drop them onto your phone to install them
+3. **Android**: `yarn android:dev` or `yarn android:prod`   
 4. Scan the QR code with the app (it opens automatically after installing)    
 **Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.
 - Want to see console logs? (Only works on android):
@@ -41,6 +42,9 @@ We're using Expo to help with android and ios builds. You can find more informat
 `yarn build:android:preview` 
 - Builds an Android APK for previewing on a device
 - `adb install build_name_here.apk` after it's built to install
+
+`yarn build:ios:prod`
+- Builds an iOS IPA that you can upload to TestFlight
 
 `yarn build:ios:preview`  
 - Builds an iOS IPA for previewing on a device
