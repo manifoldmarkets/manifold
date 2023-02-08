@@ -1,10 +1,10 @@
 import { area, curveStepBefore, line } from 'd3-shape'
 import { scaleLinear, scaleTime } from 'd3-scale'
-import { HistoryPoint } from 'web/components/charts/generic-charts'
-import { computeColorStops } from 'web/components/charts/helpers'
 import { axisBottom, axisRight } from 'd3-axis'
 import { formatMoneyNumber } from 'common/util/format'
+import { computeColorStops } from 'web/components/charts/compute-color-stops'
 
+type HistoryPoint = { x: number; y: number }
 export function Graph(props: {
   data: HistoryPoint[]
   size: number
