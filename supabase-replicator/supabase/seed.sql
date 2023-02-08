@@ -671,7 +671,9 @@ create or replace function get_recommended_contract_set(uid text, n int)
   returns setof jsonb
   language plpgsql
 as $$ begin
-  create temp table your_recs as select * from get_recommended_contracts_by_score(uid, n);
+  create temp table your_recs on commit drop as (
+    select * from get_recommended_contracts_by_score(uid, n)
+  );
   if (select count(*) from your_recs) = n then
     return query select data from your_recs;
   else
