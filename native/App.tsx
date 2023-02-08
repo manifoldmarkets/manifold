@@ -48,9 +48,7 @@ import Constants from 'expo-constants'
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const baseUri =
-  ENV === 'DEV'
-    ? 'https://dev.manifold.markets/'
-    : 'https://dc60-2600-4040-228e-ba00-283a-deee-a82f-856.ngrok.io/'
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const nativeQuery = `?nativePlatform=${Platform.OS}`
 const isIOS = Platform.OS === 'ios'
 const App = () => {
