@@ -430,7 +430,7 @@ export const formatDateInRange = (d: Date, start: Date, end: Date) => {
   }
   return formatDate(d, opts)
 }
-export const computeColorStops = <P extends any>(
+export const computeColorStops = <P,>(
   data: P[],
   pc: (p: P) => string,
   px: (p: P) => number
