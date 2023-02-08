@@ -651,7 +651,7 @@ as $$
   )
 $$;
 
-create or replace function get_recommended_contracts_by_score(uid text)
+create or replace function get_recommended_contracts_by_score(uid text, count int)
 returns table (data jsonb, score real)
 immutable parallel safe
 language sql
@@ -663,6 +663,7 @@ as $$
   where is_valid_contract(data)
   and data->>'outcomeType' = 'BINARY'
   order by score desc
+  limit count
 $$;
 
 create or replace function get_recommended_contracts(uid text, count int)
@@ -675,10 +676,10 @@ as $$
     from
     (
       select *, 1 as priority
-      from get_recommended_contracts_by_score(uid)
+      from get_recommended_contracts_by_score(uid, count)
       union all
       -- Default recommendations from this particular user if none for you.
-      select *, 2 as priority from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2')
+      select *, 2 as priority from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', count)
     ) as rec_contract_ids
     order by priority
     limit count

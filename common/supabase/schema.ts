@@ -597,6 +597,7 @@ export interface Database {
       get_recommended_contracts_by_score: {
         Args: {
           uid: string
+          count: number
         }
         Returns: {
           data: Json
