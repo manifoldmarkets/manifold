@@ -6,7 +6,7 @@ export type WeeklyPortfolioUpdate = {
   contractMetrics: ContractMetric[]
   profitPoints: { x: number; y: number }[]
   weeklyProfit: number
-  rangeEndDate: string // format yyyy-m-d
+  rangeEndDateSlug: string // format yyyy-m-d
 }
 
 export type WeeklyPortfolioUpdateOGCardProps = {

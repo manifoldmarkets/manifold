@@ -1123,7 +1123,7 @@ export const createWeeklyPortfolioUpdateNotification = async (
   privateUser: PrivateUser,
   userUsername: string,
   weeklyProfit: number,
-  rangeEndDate: string
+  rangeEndDateSlug: string
 ) => {
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
@@ -1131,7 +1131,7 @@ export const createWeeklyPortfolioUpdateNotification = async (
   )
   if (!sendToBrowser) return
 
-  const id = rangeEndDate + 'weekly_portfolio_update'
+  const id = rangeEndDateSlug + 'weekly_portfolio_update'
   const notificationRef = firestore
     .collection(`/users/${privateUser.id}/notifications`)
     .doc(id)
@@ -1148,11 +1148,11 @@ export const createWeeklyPortfolioUpdateNotification = async (
     sourceUserUsername: userUsername,
     sourceUserAvatarUrl: '',
     sourceText: '',
-    sourceSlug: rangeEndDate,
-    sourceTitle: `Weekly Portfolio Update for ${rangeEndDate}`,
+    sourceSlug: rangeEndDateSlug,
+    sourceTitle: `Weekly Portfolio Update for ${rangeEndDateSlug}`,
     data: {
       weeklyProfit,
-      rangeEndDate,
+      rangeEndDateSlug,
     },
   }
   await notificationRef.set(removeUndefinedProps(notification))

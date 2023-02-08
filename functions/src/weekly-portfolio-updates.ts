@@ -15,21 +15,23 @@ const firestore = admin.firestore()
 const now = new Date()
 const time = now.getTime()
 const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
-export const sendWeeklyPortfolioUpdate = functions
-  .runWith({ memory: '4GB', timeoutSeconds: 540 })
-  // every minute on Friday for two hours at 12pm PT (UTC -07:00)
-  .pubsub.schedule('* 19-20 * * 5')
-  .timeZone('Etc/UTC')
-  .onRun(async () => {
-    await sendWeeklyPortfolioUpdateNotifications()
-  })
+
 export const saveWeeklyContractMetrics = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540 })
-  // once a week an hour before sendWeeklyPortfolioUpdate
+  // every Friday at 11am PT (UTC -07:00)
   .pubsub.schedule('0 18 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await saveWeeklyContractMetricsInternal()
+  })
+
+export const sendWeeklyPortfolioUpdate = functions
+  .runWith({ memory: '4GB', timeoutSeconds: 540 })
+  // every Friday at 12pm PT (UTC -07:00)
+  .pubsub.schedule('* 19 * * 5')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await sendWeeklyPortfolioUpdateNotifications()
   })
 
 export const saveWeeklyContractMetricsInternal = async () => {
@@ -69,7 +71,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
           weeklyProfit: sum(
             contractMetrics.map((m) => m.from?.week.profit ?? 0)
           ),
-          rangeEndDate: date,
+          rangeEndDateSlug: date,
           profitPoints: portfolioMetrics,
         } as WeeklyPortfolioUpdate
       })
@@ -107,10 +109,6 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
     db
   )
 
-  // join the user data with the private user data
-  console.log(privateUsers.length)
-  // get their archived contract metrics for the week
-
   await Promise.all(
     privateUsers.map(async (privateUser) => {
       const doc = await firestore
@@ -118,13 +116,13 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
         .where('rangeEndSlug', '==', date)
         .get()
       if (doc.empty) return
-      const { weeklyProfit, rangeEndDate } =
+      const { weeklyProfit, rangeEndDateSlug } =
         doc.docs[0].data() as WeeklyPortfolioUpdate
       await createWeeklyPortfolioUpdateNotification(
         privateUser,
         userData[privateUser.id].username,
         weeklyProfit,
-        rangeEndDate
+        rangeEndDateSlug
       )
     })
   )

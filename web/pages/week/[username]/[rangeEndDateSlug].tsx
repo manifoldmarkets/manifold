@@ -50,7 +50,7 @@ export async function getStaticProps(props: {
     ? await getValues<WeeklyPortfolioUpdate>(
         query(
           coll<WeeklyPortfolioUpdate>(`users/${user.id}/weekly-update`),
-          where('rangeEndDate', '==', rangeEndDateSlug)
+          where('rangeEndDateSlug', '==', rangeEndDateSlug)
         )
       )
     : null
@@ -99,7 +99,7 @@ export default function RangePerformancePage(props: {
     props.contractsString ?? '{}'
   ) as CPMMBinaryContract[]
   const currentUser = useUser()
-  const { profitPoints, contractMetrics, weeklyProfit, rangeEndDate } =
+  const { profitPoints, contractMetrics, weeklyProfit, rangeEndDateSlug } =
     weeklyPortfolioUpdate
 
   useSaveReferral(currentUser, {
@@ -160,7 +160,7 @@ export default function RangePerformancePage(props: {
         description={`${user.name} made ${formatMoney(
           weeklyProfit
         )} in the past week. See how they did it.`}
-        url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDate}`.replace(
+        url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDateSlug}`.replace(
           'https://',
           ''
         )}
