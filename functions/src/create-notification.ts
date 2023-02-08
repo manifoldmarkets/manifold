@@ -1123,8 +1123,7 @@ export const createWeeklyPortfolioUpdateNotification = async (
   privateUser: PrivateUser,
   userUsername: string,
   weeklyProfit: number,
-  rangeEndDate: string,
-  rank: number
+  rangeEndDate: string
 ) => {
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
@@ -1154,7 +1153,6 @@ export const createWeeklyPortfolioUpdateNotification = async (
     data: {
       weeklyProfit,
       rangeEndDate,
-      rank,
     },
   }
   await notificationRef.set(removeUndefinedProps(notification))

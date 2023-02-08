@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { PrivateUser } from '../../common/user'
 import { createSupabaseClient } from 'functions/src/supabase/init'
 import { getBestAndWorstUserContractMetrics } from 'common/supabase/contract-metrics'
-import { indexOf, sortBy, sum } from 'lodash'
+import { sortBy, sum } from 'lodash'
 import { createWeeklyPortfolioUpdateNotification } from 'functions/src/create-notification'
 import { getUsernameById } from 'common/supabase/users'
 import { db } from './supabase/init'
@@ -85,8 +85,6 @@ export const saveWeeklyContractMetricsInternal = async () => {
     batch.set(ref, {
       ...result,
       id: ref.id,
-      // This rank will only be out of those users queried, not all users
-      rank: indexOf(results, result) + 1,
     } as WeeklyPortfolioUpdate)
   })
   await batch.commit()
@@ -120,14 +118,13 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
         .where('rangeEndSlug', '==', date)
         .get()
       if (doc.empty) return
-      const { weeklyProfit, rank, rangeEndDate } =
+      const { weeklyProfit, rangeEndDate } =
         doc.docs[0].data() as WeeklyPortfolioUpdate
       await createWeeklyPortfolioUpdateNotification(
         privateUser,
         userData[privateUser.id].username,
         weeklyProfit,
-        rangeEndDate,
-        rank
+        rangeEndDate
       )
     })
   )

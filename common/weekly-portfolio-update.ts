@@ -3,7 +3,6 @@ import { ContractMetric } from 'common/contract-metric'
 export type WeeklyPortfolioUpdate = {
   id: string
   userId: string
-  rank: number
   contractMetrics: ContractMetric[]
   profitPoints: { x: number; y: number }[]
   weeklyProfit: number
