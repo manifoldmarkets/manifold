@@ -1,6 +1,6 @@
 import { ImageResponse, ImageResponseOptions } from '@vercel/og'
 import { NextRequest } from 'next/server'
-import { OgWeeklyUpdate } from 'web/pages/api/og/og-weekly-update'
+import { OgWeeklyUpdate } from 'web/components/og/og-weekly-update'
 import { WeeklyPortfolioUpdateOGCardProps } from 'common/weekly-portfolio-update'
 import { getCardOptions, replaceTw } from 'web/pages/api/og/market'
 

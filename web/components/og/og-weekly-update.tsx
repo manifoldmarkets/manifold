@@ -1,5 +1,5 @@
 import { WeeklyPortfolioUpdateOGCardProps } from 'common/weekly-portfolio-update'
-import { Graph, ogPoint } from 'web/pages/api/og/graph'
+import { Graph, ogPoint } from 'web/components/og/graph'
 // Notes for working with this:
 // - Some css elements are missing or broken (e.g. 'gap' and 'text-ellipsis' and 'line-clamp')
 // - I also can't make things overflow hidden in only one direction
