@@ -5,7 +5,10 @@ import Custom404 from 'web/pages/404'
 import React, { useMemo, useState } from 'react'
 import { Page } from 'web/components/layout/page'
 import { query, where } from 'firebase/firestore'
-import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
+import {
+  WeeklyPortfolioUpdate,
+  WeeklyPortfolioUpdateOGCardProps,
+} from 'common/weekly-portfolio-update'
 import { Col } from 'web/components/layout/col'
 import {
   GraphMode,
@@ -21,7 +24,7 @@ import { CPMMBinaryContract } from 'common/contract'
 import { ProfitChangeTable } from 'web/components/daily-profit'
 import clsx from 'clsx'
 import { SizedContainer } from 'web/components/sized-container'
-import { sum } from 'lodash'
+import { chunk, sum } from 'lodash'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Title } from 'web/components/widgets/title'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -34,6 +37,8 @@ import { postMessageToNative } from 'web/components/native-message-listener'
 import { copyToClipboard } from 'web/lib/util/copy'
 import toast from 'react-hot-toast'
 import { track } from 'web/lib/service/analytics'
+import { SEO } from 'web/components/SEO'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export async function getStaticProps(props: {
   params: { username: string; rangeEndDateSlug: string }
@@ -41,7 +46,6 @@ export async function getStaticProps(props: {
   const { username, rangeEndDateSlug } = props.params
 
   const user = (await getUserByUsername(username)) ?? null
-  console.log('yyyyMMDD', rangeEndDateSlug)
   const weeklyPortfolioUpdates = user
     ? await getValues<WeeklyPortfolioUpdate>(
         query(
@@ -68,6 +72,16 @@ export async function getStaticProps(props: {
     revalidate: 60, // regenerate after a minute
   }
 }
+const averagePointsInChunks = (points: { x: number; y: number }[]) => {
+  const chunkSize = 5
+  const chunks = chunk(points, chunkSize)
+  console.log('chunks', chunks)
+  return chunks.map((c) => {
+    const sumY = sum(c.map((p) => p.y))
+    const avgY = sumY / chunkSize
+    return { x: c[0].x, y: avgY }
+  })
+}
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
@@ -86,61 +100,65 @@ export default function RangePerformancePage(props: {
     props.contractsString ?? '{}'
   ) as CPMMBinaryContract[]
   const currentUser = useUser()
-  const { portfolioMetrics, contractMetrics, rank, weeklyProfit } =
+  const { profitPoints, contractMetrics, weeklyProfit, rangeEndDate } =
     weeklyPortfolioUpdate
 
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,
   })
-
   const [graphMode, setGraphMode] = useState<GraphMode>('profit')
   const graphPoints = useMemo(() => {
     const contractMetricsSum = sum(
       contractMetrics.map((c) => c.from?.week.profit ?? 0)
     )
     const points = [] as { x: number; y: number; obj: any }[]
-    const firstPointToScaleBy =
-      portfolioMetrics[0].balance +
-      portfolioMetrics[0].investmentValue -
-      portfolioMetrics[0].totalDeposits
-    const portfolioPoints = portfolioMetrics.map((p) => {
+    const firstPointToScaleBy = profitPoints[0].y
+    const portfolioPoints = profitPoints.map((p) => {
       // Squash the range by 2 times the total profit
-      const possibleY =
-        p.balance +
-        p.investmentValue -
-        (graphMode === 'profit'
-          ? p.totalDeposits + firstPointToScaleBy
-          : firstPointToScaleBy)
+      const possibleY = p.y - firstPointToScaleBy
       const y =
         Math.abs(possibleY - contractMetricsSum) > contractMetricsSum * 2
           ? contractMetricsSum * (possibleY < 0 ? -1 : 1)
           : possibleY
-      return { x: p.timestamp, y, obj: p }
+      return { x: p.x, y, obj: p }
     })
+
     // We could replace last point with sum of contractMetrics
     // portfolioPoints[portfolioPoints.length - 1].y = contractMetricsSum - firstPointToScaleBy
     return points.concat(portfolioPoints)
-  }, [portfolioMetrics, graphMode])
+  }, [profitPoints, graphMode])
+
+  const averagePoints = averagePointsInChunks(graphPoints)
   const graphView = useSingleValueHistoryChartViewScale()
   const { contracts: relatedMarkets, loadMore } = useRecentlyBetOnContracts(
     user?.id ?? '_'
   )
 
   if (!user || !weeklyPortfolioUpdateString) return <Custom404 />
-  //
-  // const ogCardProps = getOpenGraphProps(contract)
-  // ogCardProps.creatorUsername = challenge.creatorUsername
-  // ogCardProps.creatorName = challenge.creatorName
-  // ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
 
+  const ogProps = {
+    points: JSON.stringify(averagePoints),
+    weeklyProfit: weeklyProfit.toString(),
+    creatorUsername: user.username,
+    creatorAvatarUrl: user.avatarUrl,
+    creatorName: user.name,
+  } as WeeklyPortfolioUpdateOGCardProps
   return (
     <Page>
-      {/*<SEO*/}
-      {/*  title={ogCardProps.question}*/}
-      {/*  description={ogCardProps.description}*/}
-      {/*  url={getChallengeUrl(challenge).replace('https://', '')}*/}
-      {/*  ogCardProps={ogCardProps}*/}
-      {/*/>*/}
+      <SEO
+        title={'Weekly Profit for ' + user.name}
+        description={`${user.name} made ${formatMoney(
+          weeklyProfit
+        )} in the last week.`}
+        url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDate}`.replace(
+          'https://',
+          ''
+        )}
+        basicOgProps={{
+          props: ogProps,
+          endpoint: 'update',
+        }}
+      />
       <Col className={' p-2'}>
         <Row className={'w-full items-start justify-between pb-6'}>
           <Title>

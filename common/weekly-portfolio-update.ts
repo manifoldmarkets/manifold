@@ -1,12 +1,19 @@
 import { ContractMetric } from 'common/contract-metric'
-import { PortfolioMetrics } from 'common/user'
 
 export type WeeklyPortfolioUpdate = {
   id: string
   userId: string
   rank: number
   contractMetrics: ContractMetric[]
-  portfolioMetrics: PortfolioMetrics[]
+  profitPoints: { x: number; y: number }[]
   weeklyProfit: number
   rangeEndDate: string // format yyyy-m-d
+}
+
+export type WeeklyPortfolioUpdateOGCardProps = {
+  creatorName: string
+  creatorUsername: string
+  creatorAvatarUrl: string
+  weeklyProfit: string
+  points: string // JSON.stringify {x:number, y:number}[]
 }

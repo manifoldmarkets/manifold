@@ -56,11 +56,12 @@ export const saveWeeklyContractMetricsInternal = async () => {
           10
         )
 
-        const portfolioMetrics = await getPortfolioHistory(
-          user.id,
-          time - 7 * DAY_MS,
-          db
-        )
+        const portfolioMetrics = (
+          await getPortfolioHistory(user.id, time - 7 * DAY_MS, db)
+        ).map((p) => ({
+          x: p.timestamp,
+          y: p.balance + p.investmentValue - p.totalDeposits,
+        }))
 
         return {
           contractMetrics,
@@ -69,7 +70,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
             contractMetrics.map((m) => m.from?.week.profit ?? 0)
           ),
           rangeEndDate: date,
-          portfolioMetrics,
+          profitPoints: portfolioMetrics,
         } as WeeklyPortfolioUpdate
       })
     ),
