@@ -11,8 +11,6 @@ export const pgp = pgPromise()
 
 export type SupabaseDirectClient = ReturnType<typeof createSupabaseDirectClient>
 
-export const db = createSupabaseClient()
-
 export function createSupabaseClient() {
   const instanceId =
     process.env.SUPABASE_INSTANCE_ID ??

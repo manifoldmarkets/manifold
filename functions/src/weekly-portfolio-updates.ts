@@ -5,7 +5,7 @@ import { getBestAndWorstUserContractMetrics } from 'common/supabase/contract-met
 import { sortBy, sum } from 'lodash'
 import { createWeeklyPortfolioUpdateNotification } from 'functions/src/create-notification'
 import { getUsernameById } from 'common/supabase/users'
-import { db } from './supabase/init'
+import { createSupabaseClient } from './supabase/init'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { DAY_MS } from 'common/util/time'
 import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
@@ -34,6 +34,8 @@ export const sendWeeklyPortfolioUpdate = functions
   })
 
 export const saveWeeklyContractMetricsInternal = async () => {
+  const db = createSupabaseClient()
+
   // users who have disabled browser notifications for profit/loss updates won't be able to see their portfolio updates in the past
   const users = await firestore
     .collection('private-users')
@@ -90,6 +92,8 @@ export const saveWeeklyContractMetricsInternal = async () => {
 }
 
 export const sendWeeklyPortfolioUpdateNotifications = async () => {
+  const db = createSupabaseClient()
+
   // get all users who have opted in to weekly portfolio updates
   const usersSnap = await firestore
     .collection('private-users')
