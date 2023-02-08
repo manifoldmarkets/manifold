@@ -1,7 +1,8 @@
 import { ReactNode } from 'react'
 import Head from 'next/head'
 import { buildCardUrl, OgCardProps } from 'common/contract-details'
-import { filterDefined } from 'common/lib/util/array'
+import { filterDefined } from 'common/util/array'
+import { DOMAIN } from 'common/envs/constants'
 
 export function buildBasicOgUrl(
   props: Record<string, string | undefined>,
@@ -16,9 +17,8 @@ export function buildBasicOgUrl(
 
   // Change to localhost:3000 for local testing
   const url =
-    `http://localhost:3000/api/og/${endpoint}?` +
-    // `https://${DOMAIN}/api/og/${endpoint}?` +
-    generateUrlParams(props)
+    // `http://localhost:3000/api/og/${endpoint}?` +
+    `https://${DOMAIN}/api/og/${endpoint}?` + generateUrlParams(props)
 
   return url
 }
