@@ -61,9 +61,7 @@ export const ReportUser = (props: {
           <span>Thank you for your report.</span>
           <span>We'll review the user and take action if necessary.</span>
           <Row className={'mt-2 justify-end'}>
-            <Button color={'blue'} onClick={closeModal}>
-              Close
-            </Button>
+            <Button onClick={closeModal}>Close</Button>
           </Row>
         </Col>
       ) : (

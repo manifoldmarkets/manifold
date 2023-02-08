@@ -610,7 +610,6 @@ export function YesNoCancelSelector(props: { selected: Resolution | undefined; o
 
   return (
     <Col className="gap-2">
-      {/* Should ideally use a radio group instead of buttons */}
       <Button color={selected === 'YES' ? 'green' : 'gray'} onClick={() => onSelect('YES')} className={btnClassName}>
         YES
       </Button>
@@ -618,10 +617,6 @@ export function YesNoCancelSelector(props: { selected: Resolution | undefined; o
       <Button color={selected === 'NO' ? 'red' : 'gray'} onClick={() => onSelect('NO')} className={btnClassName}>
         NO
       </Button>
-
-      {/* <Button color={selected === "MKT" ? "blue" : "gray"} onClick={() => onSelect("MKT")} className={clsx(btnClassName, "btn-sm")}>
-                PROB
-            </Button> */}
 
       <Button color={selected === 'CANCEL' ? 'yellow' : 'gray'} onClick={() => onSelect('CANCEL')} className={clsx(btnClassName, 'btn-sm')}>
         N/A

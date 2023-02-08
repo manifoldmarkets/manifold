@@ -90,7 +90,6 @@ export default function CreateDateDocPage() {
                 await saveDateDoc()
                 setIsSubmitting(false)
               }}
-              color="blue"
             >
               {isSubmitting ? 'Publishing...' : 'Publish'}
             </Button>

@@ -362,9 +362,8 @@ export function NotificationSettings(props: {
       return (
         <Row className="items-center justify-center font-medium text-gray-700">
           <span className={'rounded-md bg-gray-100 p-2'}>
-            You haven't enabled mobile push notifications. To enable them
+            You haven't enabled mobile push notifications.
             <Button
-              color={'blue'}
               size={'2xs'}
               className={'ml-2 inline-block whitespace-nowrap'}
               onClick={() => {
@@ -375,7 +374,7 @@ export function NotificationSettings(props: {
                 })
               }}
             >
-              click here
+              Turn on
             </Button>
           </span>
         </Row>

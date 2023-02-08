@@ -209,7 +209,7 @@ export function SellPanel(props: {
         onSubmit={betDisabled ? undefined : submitSell}
         disabled={!!betDisabled}
         size="xl"
-        color="blue"
+        color="indigo"
         actionLabel={`Sell ${Math.floor(soldShares)} shares`}
       />
 

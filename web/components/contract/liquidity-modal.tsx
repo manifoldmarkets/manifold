@@ -94,7 +94,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
           disabled={isLoading}
           inputClassName="w-28 mr-4"
         />
-        <Button size="md" color="blue" onClick={submit} disabled={isLoading}>
+        <Button onClick={submit} disabled={isLoading}>
           Add
         </Button>
       </Row>

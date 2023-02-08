@@ -86,7 +86,6 @@ export function PushNotificationsModal(props: {
                 showSystemNotificationsPrompt()
                 setOpen(false)
               }}
-              color={'blue'}
             >
               Sure
             </Button>
