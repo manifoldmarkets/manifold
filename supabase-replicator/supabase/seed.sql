@@ -667,25 +667,22 @@ as $$
   limit count
 $$;
 
-create or replace function get_recommended_contracts(uid text, count int)
-returns jsonb[]
-immutable parallel safe
-language sql
-as $$
-  select array_agg(data) from (
-    select data
-    from
-    (
-      select *, 1 as priority
-      from get_recommended_contracts_by_score(uid, count)
-      union all
-      -- Default recommendations from this particular user if none for you.
-      select *, 2 as priority from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', count)
-    ) as rec_contract_ids
-    order by priority
-    limit count
-  ) as rec_contracts
-$$;
+create or replace function get_recommended_contract_set(uid text, n int)
+  returns setof jsonb
+  language plpgsql
+as $$ begin
+  create temp table your_recs as select * from get_recommended_contracts_by_score(uid, n);
+  if (select count(*) from your_recs) = n then
+    return query select data from your_recs;
+  else
+    -- Default recommendations from this particular user if none for you.
+    return query (
+      select data from your_recs union all
+      select data from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', n)
+      limit n
+    );
+  end if;
+end $$;
 
 create or replace function get_time()
     returns bigint
