@@ -1155,6 +1155,7 @@ export const createWeeklyPortfolioUpdateNotification = async (
     },
   }
   await notificationRef.set(removeUndefinedProps(notification))
+}
 export const createGroupStatusChangeNotification = async (
   initiator: User,
   affectedMember: GroupMember,
