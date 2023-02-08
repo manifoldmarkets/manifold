@@ -36,10 +36,10 @@ export const BetSlider = (props: {
           activeDotStyle={{
             borderColor:
               binaryOutcome === 'YES'
-                ? 'teal'
+                ? ' rgb(13 148 136)' // teal-600
                 : binaryOutcome === 'NO'
-                ? 'mediumvioletred'
-                : 'blue',
+                ? 'rgb(204 29 0)' // scarlet-600
+                : 'rgb(67 56 202)', // indigo-700
           }}
           dotStyle={{ borderColor: 'lightgray' }}
           value={amount ?? 0}
