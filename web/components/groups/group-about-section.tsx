@@ -44,7 +44,6 @@ export function GroupAboutSection(props: {
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
   const { group, canEdit, post, writingNewAbout, setWritingNewAbout } = props
-  console.log(canEdit)
   if ((post && post.content) || writingNewAbout) {
     return (
       <Col className="group my-2 gap-2 px-4 py-2 lg:px-0">
