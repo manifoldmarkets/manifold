@@ -40,7 +40,7 @@ export function ChoicesToggleGroup(props: {
     <RadioGroup
       className={clsx(
         className,
-        'flex flex-row gap-2 rounded-md border border-gray-300 bg-white p-1 text-sm text-gray-400 shadow-sm',
+        'inline-flex flex-row gap-2 rounded-md border border-gray-300 bg-white p-1 text-sm text-gray-400 shadow-sm',
         disabled && '!cursor-not-allowed bg-gray-50'
       )}
       value={currentChoice}

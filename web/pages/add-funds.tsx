@@ -55,7 +55,6 @@ export default function AddFundsPage() {
         <div className="mb-2 text-sm text-gray-500">Amount</div>
         <FundsSelector
           fundAmounts={WEB_PRICES}
-          className="max-w-md"
           selected={amountSelected}
           onSelect={setAmountSelected}
         />

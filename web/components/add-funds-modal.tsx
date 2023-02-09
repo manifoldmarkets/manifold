@@ -21,6 +21,7 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -94,7 +95,6 @@ function BuyManaTab(props: { onClose: () => void }) {
         fundAmounts={prices}
         selected={amountSelected}
         onSelect={setAmountSelected}
-        btnClassName={'max-w-[7rem]'}
       />
 
       <div className="mt-6">
@@ -199,24 +199,15 @@ export function FundsSelector(props: {
   fundAmounts: { [key: string]: number }
   selected: number
   onSelect: (selected: number) => void
-  className?: string
-  btnClassName?: string
 }) {
-  const { selected, onSelect, className, fundAmounts } = props
-  const btnClassName = clsx('!px-2 whitespace-nowrap', props.btnClassName)
+  const { selected, onSelect, fundAmounts } = props
 
   return (
-    <Row className={clsx('flex-wrap gap-3', className)}>
-      {Object.entries(fundAmounts).map(([key, amount]) => (
-        <Button
-          key={amount}
-          color={selected === amount ? 'indigo' : 'gray'}
-          onClick={() => onSelect(amount as any)}
-          className={btnClassName}
-        >
-          {key}
-        </Button>
-      ))}
-    </Row>
+    <ChoicesToggleGroup
+      className="self-start"
+      currentChoice={selected}
+      choicesMap={fundAmounts}
+      setChoice={onSelect as any}
+    />
   )
 }
