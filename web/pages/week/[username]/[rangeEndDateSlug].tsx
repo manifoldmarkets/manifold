@@ -74,7 +74,8 @@ export async function getStaticProps(props: {
   }
 }
 const averagePointsInChunks = (points: { x: number; y: number }[]) => {
-  const chunkSize = 2
+  // Smaller chunks sizes may result in the og image not working bc the url is too long
+  const chunkSize = 3
   const chunks = chunk(points, chunkSize)
   return chunks.map((c) => {
     const sumY = sum(c.map((p) => p.y))

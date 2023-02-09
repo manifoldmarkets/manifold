@@ -40,7 +40,6 @@ export const saveWeeklyContractMetricsInternal = async () => {
   // users who have disabled browser notifications for profit/loss updates won't be able to see their portfolio updates in the past
   const users = await firestore
     .collection('private-users')
-    .where('id', '==', 'AJwLWoo3xue32XIiAVrL5SyR1WB2')
     .where(
       'notificationPreferences.profit_loss_updates',
       'array-contains',
@@ -49,6 +48,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
     .get()
   const privateUsers = users.docs.map((doc) => doc.data() as PrivateUser)
 
+  // If the function doesn't complete, filter by those who haven't had their weekly update saved yet
   const results = sortBy(
     await Promise.all(
       privateUsers.map(async (user) => {
