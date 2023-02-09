@@ -1,14 +1,14 @@
 import * as functions from 'firebase-functions'
 import { getContract, getUser, log } from './utils'
 import { createFollowOrMarketSubsidizedNotification } from './create-notification'
-import { LiquidityProvision } from '../../common/liquidity-provision'
+import { LiquidityProvision } from 'common/liquidity-provision'
 import { addUserToContractFollowers } from './follow-market'
-import { FIXED_ANTE } from '../../common/economy'
+import { FIXED_ANTE } from 'common/economy'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
   UNIQUE_BETTOR_LIQUIDITY_AMOUNT,
-} from '../../common/antes'
+} from 'common/antes'
 
 export const onCreateLiquidityProvision = functions.firestore
   .document('contracts/{contractId}/liquidity/{liquidityId}')

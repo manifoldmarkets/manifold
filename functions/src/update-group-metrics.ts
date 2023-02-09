@@ -3,8 +3,8 @@ import * as admin from 'firebase-admin'
 import { groupBy, sumBy, mapValues, uniq } from 'lodash'
 
 import { log } from './utils'
-import { Contract } from '../../common/contract'
-import { mapAsync } from '../../common/util/promise'
+import { Contract } from 'common/contract'
+import { mapAsync } from 'common/util/promise'
 import { newEndpointNoAuth } from './api'
 import { invokeFunction } from './utils'
 const firestore = admin.firestore()

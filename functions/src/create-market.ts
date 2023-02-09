@@ -14,24 +14,24 @@ import {
   OUTCOME_TYPES,
   VISIBILITIES,
   DpmMultipleChoiceContract,
-} from '../../common/contract'
-import { slugify } from '../../common/util/slugify'
-import { randomString } from '../../common/util/random'
+} from 'common/contract'
+import { slugify } from 'common/util/slugify'
+import { randomString } from 'common/util/random'
 import { getContract, htmlToRichText } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
-import { ANTES } from '../../common/economy'
+import { ANTES } from 'common/economy'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getMultipleChoiceAntes,
   getNumericAnte,
-} from '../../common/antes'
-import { Answer, getNoneAnswer } from '../../common/answer'
-import { getNewContract } from '../../common/new-contract'
-import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
-import { User } from '../../common/user'
-import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
-import { getPseudoProbability } from '../../common/pseudo-numeric'
+} from 'common/antes'
+import { Answer, getNoneAnswer } from 'common/answer'
+import { getNewContract } from 'common/new-contract'
+import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
+import { User } from 'common/user'
+import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
+import { getPseudoProbability } from 'common/pseudo-numeric'
 import { getCloseDate } from './helpers/openai-utils'
 import { marked } from 'marked'
 import { mintAndPoolCert } from './helpers/cert-txns'

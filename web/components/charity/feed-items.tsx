@@ -1,7 +1,7 @@
 import { DonationTxn } from 'common/txn'
 import { Avatar } from '../widgets/avatar'
 import { useUserById } from 'web/hooks/use-user'
-import { manaToUSD } from '../../../common/util/format'
+import { manaToUSD } from 'common/util/format'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { UserLink } from 'web/components/widgets/user-link'
 

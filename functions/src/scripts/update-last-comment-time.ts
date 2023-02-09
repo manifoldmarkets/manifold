@@ -3,9 +3,9 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Contract } from '../../../common/contract'
+import { Contract } from 'common/contract'
 import { getValues } from '../utils'
-import { Comment } from '../../../common/comment'
+import { Comment } from 'common/comment'
 
 async function updateLastCommentTime() {
   const firestore = admin.firestore()

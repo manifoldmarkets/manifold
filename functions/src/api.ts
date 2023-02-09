@@ -5,14 +5,14 @@ import { error } from 'firebase-functions/logger'
 import { HttpsOptions } from 'firebase-functions/v2/https'
 
 import { log } from './utils'
-import { APIError } from '../../common/api'
-import { PrivateUser } from '../../common/user'
+import { APIError } from 'common/api'
+import { PrivateUser } from 'common/user'
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
   CORS_ORIGIN_VERCEL,
-} from '../../common/envs/constants'
-export { APIError } from '../../common/api'
+} from 'common/envs/constants'
+export { APIError } from 'common/api'
 
 type Output = Record<string, unknown>
 export type AuthedUser = {

@@ -1,10 +1,10 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { isAdmin, isManifoldId } from '../../common/envs/constants'
+import { isAdmin, isManifoldId } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { User } from 'common/user'
-import { GroupMember } from '../../common/group-member'
+import { GroupMember } from 'common/group-member'
 import { APIError, newEndpoint, validate } from './api'
 import { createGroupStatusChangeNotification } from './create-notification'
 

@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { APIError, newEndpoint, validate } from './api'
-import { LimitBet } from '../../common/bet'
+import { LimitBet } from 'common/bet'
 
 const bodySchema = z.object({
   betId: z.string(),

@@ -1,8 +1,8 @@
 import * as admin from 'firebase-admin'
-import { User } from '../../common/user'
+import { User } from 'common/user'
 import { FieldValue } from 'firebase-admin/firestore'
-import { removeUndefinedProps } from '../../common/util/object'
-import { ContractResolutionPayoutTxn, Txn } from '../../common/txn'
+import { removeUndefinedProps } from 'common/util/object'
+import { ContractResolutionPayoutTxn, Txn } from 'common/txn'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 

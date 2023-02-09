@@ -4,7 +4,7 @@ import {
   CertPayManaTxn,
   CertTransferTxn,
 } from 'common/txn'
-import { formatMoney } from '../../../common/util/format'
+import { formatMoney } from 'common/util/format'
 import * as admin from 'firebase-admin'
 
 const firestore = admin.firestore()

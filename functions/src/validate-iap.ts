@@ -3,12 +3,12 @@ import { z } from 'zod'
 import { getPrivateUser, getUser, isProd, log } from './utils'
 import { track } from './analytics'
 import * as admin from 'firebase-admin'
-import { IapTransaction, PurchaseData } from '../../common/iap'
+import { IapTransaction, PurchaseData } from 'common/iap'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-} from '../../common/antes'
-import { ManaPurchaseTxn } from '../../common/txn'
+} from 'common/antes'
+import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from './emails'
 import { runTxn } from './run-txn'
 

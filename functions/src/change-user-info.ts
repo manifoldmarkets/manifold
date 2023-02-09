@@ -3,22 +3,22 @@ import { z } from 'zod'
 import { uniq } from 'lodash'
 
 import { getUser, getUserByUsername } from './utils'
-import { Bet } from '../../common/bet'
+import { Bet } from 'common/bet'
 import {
   Contract,
   FreeResponseContract,
   MultipleChoiceContract,
-} from '../../common/contract'
-import { Comment } from '../../common/comment'
-import { User } from '../../common/user'
+} from 'common/contract'
+import { Comment } from 'common/comment'
+import { User } from 'common/user'
 import {
   cleanUsername,
   cleanDisplayName,
-} from '../../common/util/clean-username'
-import { removeUndefinedProps } from '../../common/util/object'
-import { Answer } from '../../common/answer'
+} from 'common/util/clean-username'
+import { removeUndefinedProps } from 'common/util/object'
+import { Answer } from 'common/answer'
 import { APIError, newEndpoint, validate } from './api'
-import { ContractMetric } from '../../common/contract-metric'
+import { ContractMetric } from 'common/contract-metric'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 

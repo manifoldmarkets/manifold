@@ -1,5 +1,5 @@
 import { pgp, SupabaseDirectClient } from './init'
-import { Tables, TableName } from '../../../common/supabase/utils'
+import { Tables, TableName } from 'common/supabase/utils'
 
 export async function bulkInsert<
   T extends TableName,

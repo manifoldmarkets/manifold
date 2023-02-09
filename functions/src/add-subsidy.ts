@@ -1,9 +1,9 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { Contract, CPMMContract } from '../../common/contract'
-import { User } from '../../common/user'
-import { getNewLiquidityProvision } from '../../common/add-liquidity'
+import { Contract, CPMMContract } from 'common/contract'
+import { User } from 'common/user'
+import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, newEndpoint, validate } from './api'
 
 const bodySchema = z.object({

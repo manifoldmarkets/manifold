@@ -8,10 +8,10 @@ dayjs.extend(timezone)
 
 import { range, zip, uniq, sum, sumBy, countBy } from 'lodash'
 import { log, logMemory } from './utils'
-import { Stats } from '../../common/stats'
-import { DAY_MS } from '../../common/util/time'
-import { average, median } from '../../common/util/math'
-import { mapAsync } from '../../common/util/promise'
+import { Stats } from 'common/stats'
+import { DAY_MS } from 'common/util/time'
+import { average, median } from 'common/util/math'
+import { mapAsync } from 'common/util/promise'
 
 const firestore = admin.firestore()
 

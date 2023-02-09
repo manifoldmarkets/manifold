@@ -6,18 +6,18 @@ import {
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
-} from '../../common/notification'
-import { PrivateUser, User } from '../../common/user'
-import { Contract } from '../../common/contract'
+} from 'common/notification'
+import { PrivateUser, User } from 'common/user'
+import { Contract } from 'common/contract'
 import { getPrivateUser, getValues, log } from './utils'
-import { Comment } from '../../common/comment'
+import { Comment } from 'common/comment'
 import { groupBy, sum, uniq } from 'lodash'
-import { Bet, LimitBet } from '../../common/bet'
-import { Answer } from '../../common/answer'
-import { removeUndefinedProps } from '../../common/util/object'
-import { TipTxn } from '../../common/txn'
-import { Group } from '../../common/group'
-import { Challenge } from '../../common/challenge'
+import { Bet, LimitBet } from 'common/bet'
+import { Answer } from 'common/answer'
+import { removeUndefinedProps } from 'common/util/object'
+import { TipTxn } from 'common/txn'
+import { Group } from 'common/group'
+import { Challenge } from 'common/challenge'
 import {
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
@@ -26,13 +26,13 @@ import {
   sendNewFollowedMarketEmail,
   sendNewUniqueBettorsEmail,
 } from './emails'
-import { filterDefined } from '../../common/util/array'
+import { filterDefined } from 'common/util/array'
 import {
   getNotificationDestinationsForUser,
   notification_destination_types,
   userIsBlocked,
-} from '../../common/user-notification-preferences'
-import { ContractFollow } from '../../common/follow'
+} from 'common/user-notification-preferences'
+import { ContractFollow } from 'common/follow'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
 import { GroupMember } from 'common/group-member'

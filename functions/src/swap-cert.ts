@@ -2,11 +2,11 @@ import * as admin from 'firebase-admin'
 import { APIError, newEndpoint, validate } from './api'
 import { z } from 'zod'
 import { User } from 'common/user'
-import { afterSwap } from '../../common/calculate/uniswap2'
+import { afterSwap } from 'common/calculate/uniswap2'
 import { Cert, Uniswap2CertContract } from 'common/contract'
 import { buyFromPool } from './helpers/cert-txns'
 import { CertTxn } from 'common/txn'
-import { getCertOwnershipUsers } from '../../common/calculate/cert'
+import { getCertOwnershipUsers } from 'common/calculate/cert'
 
 const bodySchema = z.object({
   certId: z.string(),

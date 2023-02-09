@@ -4,13 +4,13 @@ import { sortBy, sumBy } from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Contract, DPMBinaryContract } from '../../../common/contract'
-import { Bet } from '../../../common/bet'
+import { Contract, DPMBinaryContract } from 'common/contract'
+import { Bet } from 'common/bet'
 import {
   calculateDpmShares,
   getDpmProbability,
-} from '../../../common/calculate-dpm'
-import { getSellBetInfo } from '../../../common/sell-bet'
+} from 'common/calculate-dpm'
+import { getSellBetInfo } from 'common/sell-bet'
 
 type DocRef = admin.firestore.DocumentReference
 

@@ -1,11 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { CPMMContract } from '../../common/contract'
-import { mapAsync } from '../../common/util/promise'
-import { APIError } from '../../common/api'
-import { addCpmmLiquidity } from '../../common/calculate-cpmm'
-import { formatMoneyWithDecimals } from '../../common/util/format'
+import { CPMMContract } from 'common/contract'
+import { mapAsync } from 'common/util/promise'
+import { APIError } from 'common/api'
+import { addCpmmLiquidity } from 'common/calculate-cpmm'
+import { formatMoneyWithDecimals } from 'common/util/format'
 
 const firestore = admin.firestore()
 

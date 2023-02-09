@@ -9,22 +9,22 @@ import {
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
 import { APIError, newEndpoint, validate } from './api'
-import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
-import { User } from '../../common/user'
-import { FLAT_TRADE_FEE } from '../../common/fees'
+import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
+import { User } from 'common/user'
+import { FLAT_TRADE_FEE } from 'common/fees'
 import {
   BetInfo,
   getBinaryCpmmBetInfo,
   getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
   getNumericBetsInfo,
-} from '../../common/new-bet'
-import { addObjects, removeUndefinedProps } from '../../common/util/object'
-import { LimitBet } from '../../common/bet'
-import { floatingEqual } from '../../common/util/math'
+} from 'common/new-bet'
+import { addObjects, removeUndefinedProps } from 'common/util/object'
+import { LimitBet } from 'common/bet'
+import { floatingEqual } from 'common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from './utils'
-import { filterDefined } from '../../common/util/array'
+import { filterDefined } from 'common/util/array'
 
 const bodySchema = z.object({
   contractId: z.string(),

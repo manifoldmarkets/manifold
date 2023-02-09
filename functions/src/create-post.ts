@@ -1,15 +1,15 @@
 import * as admin from 'firebase-admin'
 
 import { getUser } from './utils'
-import { slugify } from '../../common/util/slugify'
-import { randomString } from '../../common/util/random'
-import { Post, MAX_POST_TITLE_LENGTH } from '../../common/post'
+import { slugify } from 'common/util/slugify'
+import { randomString } from 'common/util/random'
+import { Post, MAX_POST_TITLE_LENGTH } from 'common/post'
 import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
-import { removeUndefinedProps } from '../../common/util/object'
+import { removeUndefinedProps } from 'common/util/object'
 import { createMarketHelper } from './create-market'
-import { DAY_MS } from '../../common/util/time'
+import { DAY_MS } from 'common/util/time'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(

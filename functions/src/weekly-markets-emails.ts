@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
 import {
   getAllPrivateUsers,
   getGroup,
@@ -11,10 +11,10 @@ import {
   isProd,
   log,
 } from './utils'
-import { createRNG, shuffle } from '../../common/util/random'
-import { DAY_MS, HOUR_MS } from '../../common/util/time'
-import { filterDefined } from '../../common/util/array'
-import { Follow } from '../../common/follow'
+import { createRNG, shuffle } from 'common/util/random'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { filterDefined } from 'common/util/array'
+import { Follow } from 'common/follow'
 import { countBy, uniq, uniqBy } from 'lodash'
 import { sendInterestingMarketsEmail } from './emails'
 

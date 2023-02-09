@@ -1,9 +1,9 @@
 import * as admin from 'firebase-admin'
 import { groupBy } from 'lodash'
 
-import { Contract } from '../../../common/contract'
-import { Bet } from '../../../common/bet'
-import { calculateUserMetrics } from '../../../common/calculate-metrics'
+import { Contract } from 'common/contract'
+import { Bet } from 'common/bet'
+import { calculateUserMetrics } from 'common/calculate-metrics'
 
 const firestore = admin.firestore()
 

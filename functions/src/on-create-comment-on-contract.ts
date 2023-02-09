@@ -8,17 +8,17 @@ import {
   getValues,
   revalidateStaticProps,
 } from './utils'
-import { ContractComment } from '../../common/comment'
-import { Bet } from '../../common/bet'
-import { getLargestPosition } from '../../common/calculate'
+import { ContractComment } from 'common/comment'
+import { Bet } from 'common/bet'
+import { getLargestPosition } from 'common/calculate'
 import {
   createCommentOrAnswerOrUpdatedContractNotification,
   replied_users_info,
 } from './create-notification'
-import { parseMentions, richTextToString } from '../../common/util/parse'
+import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from './follow-market'
-import { Contract } from '../../common/contract'
-import { User } from '../../common/user'
+import { Contract } from 'common/contract'
+import { User } from 'common/user'
 
 const firestore = admin.firestore()
 

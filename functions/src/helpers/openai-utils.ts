@@ -2,7 +2,7 @@ import * as dayjs from 'dayjs'
 import * as admin from 'firebase-admin'
 import { Configuration, OpenAIApi } from 'openai'
 
-import { filterTopGroups, Group } from '../../../common/group'
+import { filterTopGroups, Group } from 'common/group'
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,

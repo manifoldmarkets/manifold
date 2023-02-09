@@ -2,15 +2,15 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { maxBy } from 'lodash'
 
-import { Bet } from '../../common/bet'
+import { Bet } from 'common/bet'
 import {
   getRedeemableAmount,
   getRedemptionBets,
   getRedemptionBetMulti,
-} from '../../common/redeem'
-import { floatingEqual } from '../../common/util/math'
-import { poolToProbs } from '../../common/calculate-cpmm-multi'
-import { CPMM2Contract, CPMMContract } from '../../common/contract'
+} from 'common/redeem'
+import { floatingEqual } from 'common/util/math'
+import { poolToProbs } from 'common/calculate-cpmm-multi'
+import { CPMM2Contract, CPMMContract } from 'common/contract'
 
 export const redeemShares = async (
   userId: string,

@@ -1,10 +1,10 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
 import { getUser } from './utils'
 
-import { isAdmin, isManifoldId } from '../../common/envs/constants'
+import { isAdmin, isManifoldId } from 'common/envs/constants'
 import { APIError, newEndpoint, validate } from './api'
 
 const bodySchema = z.object({

@@ -7,8 +7,8 @@ import {
   FreeResponseContract,
   MultipleChoiceContract,
   RESOLUTIONS,
-} from '../../common/contract'
-import { Bet } from '../../common/bet'
+} from 'common/contract'
+import { Bet } from 'common/bet'
 import {
   getContractPath,
   getUser,
@@ -22,18 +22,18 @@ import {
   getLoanPayouts,
   getPayouts,
   groupPayoutsByUser,
-} from '../../common/payouts'
-import { isAdmin, isManifoldId } from '../../common/envs/constants'
-import { removeUndefinedProps } from '../../common/util/object'
-import { LiquidityProvision } from '../../common/liquidity-provision'
+} from 'common/payouts'
+import { isAdmin, isManifoldId } from 'common/envs/constants'
+import { removeUndefinedProps } from 'common/util/object'
+import { LiquidityProvision } from 'common/liquidity-provision'
 import { APIError, newEndpoint, validate } from './api'
-import { getContractBetMetrics } from '../../common/calculate'
+import { getContractBetMetrics } from 'common/calculate'
 import { createContractResolvedNotifications } from './create-notification'
-import { CancelUniqueBettorBonusTxn, Txn } from '../../common/txn'
+import { CancelUniqueBettorBonusTxn, Txn } from 'common/txn'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-} from '../../common/antes'
+} from 'common/antes'
 import { User } from 'common/user'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
 import { computeContractMetricUpdates } from './update-contract-metrics'

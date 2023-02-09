@@ -1,10 +1,10 @@
 import * as functions from 'firebase-functions'
 import { getUser, getContractPath, revalidateStaticProps } from './utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
 import * as admin from 'firebase-admin'
 
-import { GroupContractDoc } from '../../common/group'
+import { GroupContractDoc } from 'common/group'
 import { isEqual } from 'lodash'
 
 export const onUpdateContract = functions

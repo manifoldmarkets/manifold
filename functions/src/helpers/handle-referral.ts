@@ -1,12 +1,12 @@
 import * as admin from 'firebase-admin'
 
-import { User } from '../../../common/user'
-import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../../common/antes'
+import { User } from 'common/user'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { createReferralNotification } from '../create-notification'
-import { ReferralTxn } from '../../../common/txn'
-import { Contract } from '../../../common/contract'
-import { Group } from '../../../common/group'
-import { REFERRAL_AMOUNT } from '../../../common/economy'
+import { ReferralTxn } from 'common/txn'
+import { Contract } from 'common/contract'
+import { Group } from 'common/group'
+import { REFERRAL_AMOUNT } from 'common/economy'
 
 const firestore = admin.firestore()
 

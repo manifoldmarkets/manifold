@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { Group } from '../../common/group'
+import { Group } from 'common/group'
 import { getContract } from './utils'
 import { uniq } from 'lodash'
 const firestore = admin.firestore()
