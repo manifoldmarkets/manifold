@@ -10,6 +10,7 @@ import { getTextColor } from '../bet/quick-bet'
 import { Avatar } from '../widgets/avatar'
 import clsx from 'clsx'
 import { ContractMinibar } from '../charts/minibar'
+import { useContract } from 'web/hooks/use-contracts'
 
 export function ContractStatusLabel(props: { contract: Contract }) {
   const { contract } = props
@@ -61,7 +62,9 @@ export const ContractsListEntry = forwardRef(
     },
     ref: React.Ref<HTMLAnchorElement>
   ) => {
-    const { contract, onContractClick, className } = props
+    const { onContractClick, className } = props
+    const contract = useContract(props.contract.id) ?? props.contract
+
     return (
       <Link
         onClick={(e) => {
