@@ -17,7 +17,7 @@ const time = now.getTime()
 const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
 
 export const saveWeeklyContractMetrics = functions
-  .runWith({ memory: '4GB', timeoutSeconds: 540 })
+  .runWith({ memory: '4GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 540 })
   // every Friday at 11am PT (UTC -07:00)
   .pubsub.schedule('0 18 * * 5')
   .timeZone('Etc/UTC')
