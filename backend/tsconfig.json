@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": "../",
-    "rootDir": "src",
+    "rootDir": "functions",
     "composite": true,
     "module": "commonjs",
     "noImplicitReturns": true,
@@ -25,5 +25,5 @@
     }
   ],
   "compileOnSave": true,
-  "include": ["src"]
+  "include": ["functions"]
 }
