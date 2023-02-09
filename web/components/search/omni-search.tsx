@@ -3,12 +3,19 @@ import { SearchIcon, SparklesIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useRouter } from 'next/router'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
+import { useMemberGroupIds } from 'web/hooks/use-group'
+import { useUser } from 'web/hooks/use-user'
 import { searchContracts } from 'web/lib/service/algolia'
-import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import {
+  getGroupsWhereUserIsMember,
+  SearchGroupInfo,
+  searchGroups,
+} from 'web/lib/supabase/groups'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { ContractStatusLabel } from '../contract/contracts-list-entry'
+import { JoinOrLeaveGroupButton } from '../groups/groups-button'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { defaultPages, PageData, searchPages } from './query-pages'
@@ -227,16 +234,29 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
 }
 
 const GroupResults = (props: { groups: SearchGroupInfo[] }) => {
+  const me = useUser()
+  const myGroups = useMemberGroupIds(me) || []
+
   if (!props.groups.length) return null
   return (
     <>
       <SectionTitle>Groups</SectionTitle>
-      {props.groups.map(({ id, name, slug, totalMembers }) => (
-        <ResultOption value={{ id, slug: `/group/${slug}` }}>
-          <div className="flex items-center">
-            <span className="mr-3">{name}</span>
-            <UsersIcon className="mr-1 h-4 w-4" />
-            {totalMembers}
+      {props.groups.map((group) => (
+        <ResultOption value={{ id: group.id, slug: `/group/${group.slug}` }}>
+          <div className="flex items-center gap-3">
+            <span className="grow">{group.name}</span>
+            <span className="flex items-center">
+              <UsersIcon className="mr-1 h-4 w-4" />
+              {group.totalMembers}
+            </span>
+            <div onClick={(e) => e.stopPropagation()}>
+              <JoinOrLeaveGroupButton
+                group={group}
+                user={me}
+                isMember={myGroups.includes(group.id)}
+                className="w-[80px] !px-0 !py-1"
+              />
+            </div>
           </div>
         </ResultOption>
       ))}

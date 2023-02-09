@@ -99,7 +99,7 @@ function GroupsDialog(props: {
 }
 
 export function JoinOrLeaveGroupButton(props: {
-  group: Group | SearchGroupInfo
+  group: SearchGroupInfo
   isMember: boolean | undefined
   user: User | undefined | null
   className?: string
