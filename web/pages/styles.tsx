@@ -60,6 +60,9 @@ function ButtonSection() {
         <Button disabled={disabled} loading={loading} color="blue">
           blue
         </Button>
+        <Button disabled={disabled} loading={loading} color="dark-gray">
+          dark-gray
+        </Button>
         <Button disabled={disabled} loading={loading} color="gray">
           gray
         </Button>

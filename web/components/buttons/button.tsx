@@ -12,14 +12,9 @@ export type ColorType =
   | 'gray'
   | 'dark-gray'
   | 'gray-outline'
-  | 'green-outline'
-  | 'red-outline'
-  | 'green-white'
-  | 'red-white'
   | 'gradient'
   | 'gradient-pink'
   | 'gray-white'
-  | 'indigo-text-only'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -39,10 +34,6 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
       'disabled:bg-gray-300 bg-teal-500 text-white hover:bg-teal-600',
     color === 'red' &&
       'disabled:bg-gray-300 bg-scarlet-300 text-white hover:bg-scarlet-400',
-    color === 'green-outline' &&
-      'ring-2 ring-teal-500 text-teal-500 enabled:hover:bg-teal-500 enabled:hover:text-white disabled:opacity-50',
-    color === 'red-outline' &&
-      'ring-2 ring-scarlet-300 text-scarlet-300 enabled:hover:bg-scarlet-300 enabled:hover:text-white disabled:opacity-50',
     color === 'yellow' &&
       'disabled:bg-gray-300 bg-yellow-400 text-white hover:bg-yellow-500',
     color === 'blue' &&

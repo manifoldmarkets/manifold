@@ -22,7 +22,7 @@ export function FollowButton(props: {
     return (
       <Button
         size="sm"
-        color="gray-outline"
+        color="dark-gray"
         className="my-auto"
         onClick={withTracking(onUnfollow, 'unfollow')}
       >
