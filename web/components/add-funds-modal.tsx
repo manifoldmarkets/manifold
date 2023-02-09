@@ -19,7 +19,6 @@ import { Card } from 'web/components/widgets/card'
 import { validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
 
