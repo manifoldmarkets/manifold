@@ -12,7 +12,6 @@ import { track } from 'web/lib/service/analytics'
 import { useEffect, useState } from 'react'
 import { FeaturedPill } from '../contract/contract-card'
 import { richTextToString } from 'common/util/parse'
-import { Content } from '../widgets/editor'
 import { Linkify } from '../widgets/linkify'
 
 export function PostCard(props: {
