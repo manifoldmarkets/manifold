@@ -1,17 +1,15 @@
 {
   "compilerOptions": {
-    "baseUrl": "../",
-    "rootDir": "functions",
+    "baseUrl": "../../",
     "composite": true,
     "module": "commonjs",
     "noImplicitReturns": true,
     "outDir": "./lib",
-    "tsBuildInfoFile": "./lib/tsconfig.tsbuildinfo",
     "sourceMap": true,
     "strict": true,
     "target": "es2017",
     "paths": {
-      "common/*": ["../common/*"]
+      "common/*": ["../../common/*"]
     }
   },
   "tsc-alias": {
@@ -21,9 +19,8 @@
   },
   "references": [
     {
-      "path": "../common"
+      "path": "../../common"
     }
   ],
-  "compileOnSave": true,
-  "include": ["functions"]
+  "compileOnSave": true
 }

@@ -1,19 +1,9 @@
 # Secrets
 .runtimeconfig.json
 
-# GCP deployment artifact
-dist/
-
-# Compiled JavaScript files
-lib/
-
-# TypeScript v1 declaration files
-typings/
-
 # Node.js dependency directory
 node_modules/
 
-package-lock.json
 ui-debug.log
 firebase-debug.log
 firestore-debug.log
