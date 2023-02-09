@@ -11,6 +11,9 @@ import { UserLink } from '../widgets/user-link'
 import { track } from 'web/lib/service/analytics'
 import { useEffect, useState } from 'react'
 import { FeaturedPill } from '../contract/contract-card'
+import { richTextToString } from 'common/util/parse'
+import { Content } from '../widgets/editor'
+import { Linkify } from '../widgets/linkify'
 
 export function PostCard(props: {
   post: Post
@@ -45,10 +48,13 @@ export function PostCard(props: {
           </Row>
           {pinned && <FeaturedPill label={post.featuredLabel} />}
         </Row>
-        <div className="text-md mb-1 font-medium text-gray-900 transition-all">
+        <div className="text-md mb-1 font-medium text-gray-900">
           {post.title}
         </div>
-        <div className="break-words text-sm text-gray-600">{post.subtitle}</div>
+        <Linkify
+          className="line-clamp-5 text-sm text-gray-600"
+          text={richTextToString(post.content)}
+        />
         <Row className="gap-2 pt-1">
           <Row className="gap-1 text-sm text-gray-400">
             <div className="font-semibold">{post.commentCount ?? 0}</div>

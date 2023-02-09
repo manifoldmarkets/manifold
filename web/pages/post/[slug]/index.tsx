@@ -33,6 +33,7 @@ import { SEO } from 'web/components/SEO'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
+import { richTextToString } from 'common/util/parse'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -81,7 +82,7 @@ export default function PostPage(props: {
     <Page>
       <SEO
         title={post.title}
-        description={post.subtitle}
+        description={richTextToString(post.content)}
         url={'/post/' + post.slug}
       />
       <div className="mx-auto mt-1 flex w-full max-w-3xl flex-col">
@@ -94,14 +95,6 @@ export default function PostPage(props: {
           {(value) => <Title className="!my-0 p-2" children={value} />}
         </EditInPlaceInput>
         <div className="h-2" />
-        <EditInPlaceInput
-          className="-m-px px-2 !text-xl"
-          initialValue={post.subtitle}
-          onSave={(subtitle) => updatePost(post, { subtitle })}
-          disabled={!canEdit}
-        >
-          {(value) => <Subtitle className="!my-0 p-2" children={value} />}
-        </EditInPlaceInput>
         <Row className="mt-4 items-center">
           <Col className="flex-1 px-2">
             <div className={'inline-flex'}>

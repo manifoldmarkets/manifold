@@ -15,7 +15,6 @@ import clsx from 'clsx'
 
 export function CreatePostForm(props: { group?: Group }) {
   const [title, setTitle] = useState('')
-  const [subtitle, setSubtitle] = useState('')
 
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -27,8 +26,7 @@ export function CreatePostForm(props: { group?: Group }) {
     size: 'lg',
   })
 
-  const isValid =
-    editor && title.length > 0 && subtitle.length > 0 && !editor.isEmpty
+  const isValid = editor && title.length > 0 && !editor.isEmpty
 
   const user = useUser()
   const canCreate =
@@ -39,7 +37,6 @@ export function CreatePostForm(props: { group?: Group }) {
     if (!editor) return
     const newPost = {
       title: title,
-      subtitle: subtitle,
       content: editor.getJSON(),
       groupId: group?.id,
     }
@@ -77,19 +74,6 @@ export function CreatePostForm(props: { group?: Group }) {
                 <Spacer h={6} />
                 <label className="px-1 py-2">
                   <span className="mb-1">
-                    Subtitle<span className={'text-scarlet-500'}> *</span>
-                  </span>
-                </label>
-                <ExpandingInput
-                  placeholder="e.g. How Elon Musk is getting everyone's attention"
-                  autoFocus
-                  maxLength={MAX_POST_TITLE_LENGTH}
-                  value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value || '')}
-                />
-                <Spacer h={6} />
-                <label className="px-1 py-2">
-                  <span className="mb-1">
                     Content<span className={'text-scarlet-500'}> *</span>
                   </span>
                 </label>
@@ -103,7 +87,6 @@ export function CreatePostForm(props: { group?: Group }) {
             </form>
             <Button
               type="submit"
-              color="green"
               size="xl"
               loading={isSubmitting}
               disabled={!isValid || editor.storage.upload.mutation.isLoading}
@@ -113,7 +96,7 @@ export function CreatePostForm(props: { group?: Group }) {
                 setIsSubmitting(false)
               }}
             >
-              {isSubmitting ? 'Creating...' : 'Create a post'}
+              {isSubmitting ? 'Creating...' : 'Create post'}
             </Button>
           </>
         ) : (
