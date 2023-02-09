@@ -41,7 +41,6 @@ import { ReferralsButton } from 'web/components/buttons/referrals-button'
 import { UserCommentsList } from 'web/components/comments/comments-list'
 import { FollowList } from 'web/components/follow-list'
 import { GroupsButton } from 'web/components/groups/groups-button'
-import { SectionHeader } from 'web/components/groups/group-post-section'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Page } from 'web/components/layout/page'
@@ -61,6 +60,7 @@ import {
   UserBadge,
 } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { Subtitle } from 'web/components/widgets/subtitle'
 
 export const getStaticProps = async (props: {
   params: {
@@ -368,16 +368,11 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                     {userPosts.length > 0 && (
                       <>
                         <Spacer h={4} />
-
-                        <Row className="flex items-center justify-between">
-                          <SectionHeader label={'Posts'} href={''} />
-
+                        <Row className="mb-3 flex items-center justify-between">
+                          <Subtitle className="!my-0">Posts</Subtitle>
                           {isCurrentUser && (
                             <Link
-                              className={clsx(
-                                'mb-3',
-                                buttonClass('md', 'indigo')
-                              )}
+                              className={clsx(buttonClass('md', 'indigo'))}
                               href={'/create-post'}
                               onClick={() => track('profile click create post')}
                             >
@@ -387,8 +382,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                         </Row>
 
                         <PostCardList posts={userPosts} limit={6} />
-                        <Spacer h={4} />
-                        <SectionHeader label={'Comments'} href={''} />
+                        <Subtitle>Comments</Subtitle>
                       </>
                     )}
                     <Col>
