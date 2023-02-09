@@ -2,8 +2,8 @@ import { DocumentData, DocumentSnapshot } from 'firebase-admin/firestore'
 import * as functions from 'firebase-functions'
 import { Change, EventContext } from 'firebase-functions'
 import { PubSub } from '@google-cloud/pubsub'
-import { TLEntry } from '../../common/transaction-log'
-import { Database } from '../../common/supabase/schema'
+import { TLEntry } from 'common/transaction-log'
+import { Database } from 'common/supabase/schema'
 
 type TableName = keyof Database['public']['Tables']
 

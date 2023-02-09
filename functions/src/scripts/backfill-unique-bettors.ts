@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 import { getValues, log, writeAsync } from '../utils'
-import { Bet } from '../../../common/bet'
+import { Bet } from 'common/bet'
 import { groupBy, mapValues, sortBy, uniq } from 'lodash'
 
 initAdmin()

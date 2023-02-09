@@ -1,12 +1,12 @@
 import * as admin from 'firebase-admin'
 
-import { CPMMContract } from '../../../common/contract'
+import { CPMMContract } from 'common/contract'
 import { isProd } from '../utils'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-} from '../../../common/antes'
-import { getNewLiquidityProvision } from '../../../common/add-liquidity'
+} from 'common/antes'
+import { getNewLiquidityProvision } from 'common/add-liquidity'
 
 const firestore = admin.firestore()
 

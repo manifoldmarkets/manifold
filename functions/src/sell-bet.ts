@@ -2,11 +2,11 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { APIError, newEndpoint, validate } from './api'
-import { Contract } from '../../common/contract'
-import { User } from '../../common/user'
-import { Bet } from '../../common/bet'
-import { getSellBetInfo } from '../../common/sell-bet'
-import { addObjects, removeUndefinedProps } from '../../common/util/object'
+import { Contract } from 'common/contract'
+import { User } from 'common/user'
+import { Bet } from 'common/bet'
+import { getSellBetInfo } from 'common/sell-bet'
+import { addObjects, removeUndefinedProps } from 'common/util/object'
 
 const bodySchema = z.object({
   contractId: z.string(),

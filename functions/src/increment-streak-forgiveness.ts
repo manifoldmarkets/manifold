@@ -2,7 +2,7 @@
 
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { User } from '../../common/user'
+import { User } from 'common/user'
 const firestore = admin.firestore()
 
 export const incrementStreakForgiveness = functions

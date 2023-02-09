@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { isAdmin, isManifoldId } from '../../common/envs/constants'
+import { isAdmin, isManifoldId } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { GroupMember } from 'common/group-member'
 import * as admin from 'firebase-admin'

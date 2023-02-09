@@ -8,16 +8,16 @@ import {
   MANIFOLD_USER_NAME,
   MANIFOLD_USER_USERNAME,
   User,
-} from '../../common/user'
-import { Notification } from '../../common/notification'
-import { STARTING_BONUS } from '../../common/economy'
-import { SignupBonusTxn } from '../../common/txn'
+} from 'common/user'
+import { Notification } from 'common/notification'
+import { STARTING_BONUS } from 'common/economy'
+import { SignupBonusTxn } from 'common/txn'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-} from '../../common/antes'
-import { APIError } from '../../common/api'
-import { userOptedOutOfBrowserNotifications } from '../../common/user-notification-preferences'
+} from 'common/antes'
+import { APIError } from 'common/api'
+import { userOptedOutOfBrowserNotifications } from 'common/user-notification-preferences'
 import { runTxn, TxnData } from './run-txn'
 
 // TODO: delete email mana signup bonus

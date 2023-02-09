@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 import { isProd, log } from '../utils'
 import { getSlug } from '../create-group'
-import { Group, GroupLink } from '../../../common/group'
+import { Group, GroupLink } from 'common/group'
 import { uniq } from 'lodash'
 import { Contract } from 'common/contract'
 

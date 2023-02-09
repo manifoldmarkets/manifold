@@ -4,7 +4,7 @@ import { getContract, getUser, htmlToRichText } from './utils'
 import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
-import { removeUndefinedProps } from '../../common/util/object'
+import { removeUndefinedProps } from 'common/util/object'
 import { marked } from 'marked'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>

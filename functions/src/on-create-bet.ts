@@ -2,15 +2,15 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { keyBy, uniq } from 'lodash'
 
-import { Bet, LimitBet } from '../../common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { getUser, getValues, isProd, log } from './utils'
 import {
   createBetFillNotification,
   createBettingStreakBonusNotification,
   createUniqueBettorBonusNotification,
 } from './create-notification'
-import { filterDefined } from '../../common/util/array'
-import { Contract } from '../../common/contract'
+import { filterDefined } from 'common/util/array'
+import { Contract } from 'common/contract'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
@@ -18,19 +18,19 @@ import {
   MAX_TRADERS_FOR_BONUS,
   UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_LIQUIDITY,
-} from '../../common/economy'
+} from 'common/economy'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-} from '../../common/antes'
-import { User } from '../../common/user'
-import { DAY_MS } from '../../common/util/time'
-import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
+} from 'common/antes'
+import { User } from 'common/user'
+import { DAY_MS } from 'common/util/time'
+import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from 'common/txn'
 import { addHouseSubsidy } from './helpers/add-house-subsidy'
-import { BOT_USERNAMES } from '../../common/envs/constants'
+import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from './follow-market'
 import { handleReferral } from './helpers/handle-referral'
-import { calculateUserMetrics } from '../../common/calculate-metrics'
+import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxn, TxnData } from './run-txn'
 
 const firestore = admin.firestore()

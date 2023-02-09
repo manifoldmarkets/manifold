@@ -10,22 +10,22 @@ import {
   log,
   revalidateStaticProps,
 } from './utils'
-import { Bet } from '../../common/bet'
-import { Contract } from '../../common/contract'
-import { PortfolioMetrics, User } from '../../common/user'
-import { DAY_MS } from '../../common/util/time'
-import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
+import { Bet } from 'common/bet'
+import { Contract } from 'common/contract'
+import { PortfolioMetrics, User } from 'common/user'
+import { DAY_MS } from 'common/util/time'
+import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateCreatorTraders,
   calculateMetricsByContract,
-} from '../../common/calculate-metrics'
-import { mapAsync } from '../../common/util/promise'
-import { hasChanges } from '../../common/util/object'
+} from 'common/calculate-metrics'
+import { mapAsync } from 'common/util/promise'
+import { hasChanges } from 'common/util/object'
 import { newEndpointNoAuth } from './api'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
-import { filterDefined } from '../../common/util/array'
+import { filterDefined } from 'common/util/array'
 
 const firestore = admin.firestore()
 

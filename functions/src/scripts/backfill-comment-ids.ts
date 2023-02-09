@@ -6,7 +6,7 @@ import * as admin from 'firebase-admin'
 import { QueryDocumentSnapshot } from 'firebase-admin/firestore'
 import { initAdmin } from './script-init'
 import { log, writeAsync } from '../utils'
-import { Bet } from '../../../common/bet'
+import { Bet } from 'common/bet'
 
 initAdmin()
 const firestore = admin.firestore()

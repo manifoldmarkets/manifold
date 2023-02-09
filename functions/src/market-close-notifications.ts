@@ -1,10 +1,10 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
 import { getPrivateUser, getUserByUsername, isProd } from './utils'
 import { createMarketClosedNotification } from './create-notification'
-import { DAY_MS } from '../../common/util/time'
+import { DAY_MS } from 'common/util/time'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 export const marketCloseNotifications = functions

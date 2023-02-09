@@ -5,10 +5,10 @@ import {
   QueryDocumentSnapshot,
 } from 'firebase-admin/firestore'
 import { chunk } from 'lodash'
-import { withRetries } from '../../../common/util/promise'
+import { withRetries } from 'common/util/promise'
 import { log, processPartitioned } from '../utils'
 import { initAdmin } from '../scripts/script-init'
-import { Database } from '../../../common/supabase/schema'
+import { Database } from 'common/supabase/schema'
 import { DAY_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,

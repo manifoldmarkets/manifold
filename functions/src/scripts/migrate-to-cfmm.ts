@@ -8,15 +8,15 @@ import {
   Contract,
   DPMBinaryContract,
   CPMMBinaryContract,
-} from '../../../common/contract'
-import { Bet } from '../../../common/bet'
+} from 'common/contract'
+import { Bet } from 'common/bet'
 import {
   calculateDpmPayout,
   getDpmProbability,
-} from '../../../common/calculate-dpm'
-import { getCpmmInitialLiquidity } from '../../../common/antes'
-import { noFees } from '../../../common/fees'
-import { addObjects } from '../../../common/util/object'
+} from 'common/calculate-dpm'
+import { getCpmmInitialLiquidity } from 'common/antes'
+import { noFees } from 'common/fees'
+import { addObjects } from 'common/util/object'
 
 type DocRef = admin.firestore.DocumentReference
 

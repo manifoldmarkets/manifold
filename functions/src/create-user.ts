@@ -1,25 +1,25 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { PrivateUser, User } from '../../common/user'
+import { PrivateUser, User } from 'common/user'
 import { getUser, getUserByUsername, getValues } from './utils'
-import { randomString } from '../../common/util/random'
+import { randomString } from 'common/util/random'
 import {
   cleanDisplayName,
   cleanUsername,
-} from '../../common/util/clean-username'
-import { isWhitelisted } from '../../common/envs/constants'
+} from 'common/util/clean-username'
+import { isWhitelisted } from 'common/envs/constants'
 import {
   CATEGORIES_GROUP_SLUG_POSTFIX,
   DEFAULT_CATEGORIES,
-} from '../../common/categories'
+} from 'common/categories'
 
 import { track } from './analytics'
 import { APIError, newEndpoint, validate } from './api'
-import { Group } from '../../common/group'
-import { SUS_STARTING_BALANCE, STARTING_BALANCE } from '../../common/economy'
-import { getDefaultNotificationPreferences } from '../../common/user-notification-preferences'
-import { removeUndefinedProps } from '../../common/util/object'
+import { Group } from 'common/group'
+import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
+import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
+import { removeUndefinedProps } from 'common/util/object'
 import { generateAvatarUrl } from './helpers/generate-and-update-avatar-urls'
 import { getStorage } from 'firebase-admin/storage'
 

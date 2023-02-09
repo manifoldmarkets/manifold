@@ -4,9 +4,9 @@ import { sortBy } from 'lodash'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Bet } from '../../../common/bet'
-import { getDpmProbability } from '../../../common/calculate-dpm'
-import { DPMBinaryContract } from '../../../common/contract'
+import { Bet } from 'common/bet'
+import { getDpmProbability } from 'common/calculate-dpm'
+import { DPMBinaryContract } from 'common/contract'
 
 type DocRef = admin.firestore.DocumentReference
 const firestore = admin.firestore()

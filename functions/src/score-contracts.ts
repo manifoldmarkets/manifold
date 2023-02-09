@@ -2,13 +2,13 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { Query } from 'firebase-admin/firestore'
 
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
 import { loadPaginated, log } from './utils'
-import { removeUndefinedProps } from '../../common/util/object'
-import { DAY_MS, HOUR_MS } from '../../common/util/time'
+import { removeUndefinedProps } from 'common/util/object'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { createSupabaseClient } from './supabase/init'
 import { getRecentContractLikes } from './supabase/likes'
-import { run } from '../../common/supabase/utils'
+import { run } from 'common/supabase/utils'
 
 export const scoreContracts = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540, secrets: ['SUPABASE_KEY'] })

@@ -1,15 +1,15 @@
 import * as admin from 'firebase-admin'
 
 import { getUser } from './utils'
-import { Contract } from '../../common/contract'
-import { slugify } from '../../common/util/slugify'
-import { randomString } from '../../common/util/random'
+import { Contract } from 'common/contract'
+import { slugify } from 'common/util/slugify'
+import { randomString } from 'common/util/random'
 import {
   Group,
   MAX_ABOUT_LENGTH,
   MAX_GROUP_NAME_LENGTH,
   MAX_ID_LENGTH,
-} from '../../common/group'
+} from 'common/group'
 import { APIError, newEndpoint, validate } from './api'
 import { z } from 'zod'
 

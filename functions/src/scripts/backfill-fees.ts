@@ -2,7 +2,7 @@
 
 import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
-import { noFees } from '../../../common/fees'
+import { noFees } from 'common/fees'
 
 initAdmin()
 const firestore = admin.firestore()

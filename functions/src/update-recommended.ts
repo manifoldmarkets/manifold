@@ -5,13 +5,13 @@ import { uniq } from 'lodash'
 
 import { invokeFunction, loadPaginated } from './utils'
 import { newEndpointNoAuth } from './api'
-import { getMarketRecommendations } from '../../common/recommendation'
-import { run } from '../../common/supabase/utils'
-import { mapAsync } from '../../common/util/promise'
+import { getMarketRecommendations } from 'common/recommendation'
+import { run } from 'common/supabase/utils'
+import { mapAsync } from 'common/util/promise'
 import { createSupabaseClient } from './supabase/init'
-import { buildArray, filterDefined } from '../../common/util/array'
-import { Contract } from '../../common/contract'
-import { chooseRandomSubset } from '../../common/util/random'
+import { buildArray, filterDefined } from 'common/util/array'
+import { Contract } from 'common/contract'
+import { chooseRandomSubset } from 'common/util/random'
 
 const firestore = admin.firestore()
 

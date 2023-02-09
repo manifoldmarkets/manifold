@@ -1,10 +1,10 @@
 import * as admin from 'firebase-admin'
 import { EndpointDefinition } from './api'
 import { getPrivateUser } from './utils'
-import { PrivateUser } from '../../common/user'
-import { NOTIFICATION_DESCRIPTIONS } from '../../common/notification'
-import { notification_preference } from '../../common/user-notification-preferences'
-import { getFunctionUrl } from '../../common/api'
+import { PrivateUser } from 'common/user'
+import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
+import { notification_preference } from 'common/user-notification-preferences'
+import { getFunctionUrl } from 'common/api'
 
 export const unsubscribe: EndpointDefinition = {
   opts: { method: 'GET', minInstances: 1 },

@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { Contract } from '../../../common/contract'
+import { Contract } from 'common/contract'
 import { getValues } from '../utils'
 
 const firestore = admin.firestore()

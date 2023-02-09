@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract, CPMMContract } from '../../common/contract'
+import { Contract, CPMMContract } from 'common/contract'
 import {
   getAllPrivateUsers,
   getPrivateUser,
@@ -11,15 +11,15 @@ import {
   isProd,
   log,
 } from './utils'
-import { filterDefined } from '../../common/util/array'
-import { DAY_MS } from '../../common/util/time'
+import { filterDefined } from 'common/util/array'
+import { DAY_MS } from 'common/util/time'
 import { partition, sortBy, uniq, uniqBy } from 'lodash'
-import { Bet } from '../../common/bet'
+import { Bet } from 'common/bet'
 import { emailMoneyFormat, sendWeeklyPortfolioUpdateEmail } from './emails'
 import { contractUrl } from './utils'
-import { Txn } from '../../common/txn'
-import { Reaction, ReactionTypes } from '../../common/reaction'
-import { ContractMetric } from '../../common/contract-metric'
+import { Txn } from 'common/txn'
+import { Reaction, ReactionTypes } from 'common/reaction'
+import { ContractMetric } from 'common/contract-metric'
 
 const USERS_TO_EMAIL = 600
 const WEEKLY_MOVERS_TO_SEND = 6

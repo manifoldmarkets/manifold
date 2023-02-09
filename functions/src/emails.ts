@@ -1,22 +1,22 @@
-import { DOMAIN, ENV_CONFIG } from '../../common/envs/constants'
-import { Bet } from '../../common/bet'
-import { getProbability } from '../../common/calculate'
-import { Contract } from '../../common/contract'
-import { PrivateUser, User } from '../../common/user'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
+import { Bet } from 'common/bet'
+import { getProbability } from 'common/calculate'
+import { Contract } from 'common/contract'
+import { PrivateUser, User } from 'common/user'
 import {
   formatLargeNumber,
   formatMoney,
   formatPercent,
-} from '../../common/util/format'
-import { getValueFromBucket } from '../../common/calculate-dpm'
-import { formatNumericProbability } from '../../common/pseudo-numeric'
+} from 'common/util/format'
+import { getValueFromBucket } from 'common/calculate-dpm'
+import { formatNumericProbability } from 'common/pseudo-numeric'
 
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getUser, log } from './utils'
-import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
-import { notification_reason_types } from '../../common/notification'
+import { buildCardUrl, getOpenGraphProps } from 'common/contract-details'
+import { notification_reason_types } from 'common/notification'
 import { Dictionary } from 'lodash'
-import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
+import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import {
   PerContractInvestmentsData,
   OverallPerformanceData,
