@@ -3,13 +3,12 @@ import { SearchIcon, SparklesIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useRouter } from 'next/router'
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { searchContracts } from 'web/lib/service/algolia'
 import {
-  getGroupsWhereUserIsMember,
   SearchGroupInfo,
   searchGroups,
 } from 'web/lib/supabase/groups'
