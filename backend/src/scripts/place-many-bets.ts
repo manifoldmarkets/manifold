@@ -1,4 +1,4 @@
-import { initAdmin } from 'functions/src/scripts/script-init'
+import { initAdmin } from './script-init'
 import fetch from 'node-fetch'
 
 async function placeManyBets(apiKey: string, count: number) {

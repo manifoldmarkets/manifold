@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
 import { Txn } from 'common/txn'
-import { getValues } from 'functions/src/utils'
+import { getValues } from '../utils'
 
 initAdmin()
 

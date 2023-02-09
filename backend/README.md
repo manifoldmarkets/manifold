@@ -9,13 +9,15 @@ This is code that doesn't make sense on the frontend client, e.g.
 If you want to make and test changes, you'll have to do a bit of setup...
 
 ## Running a script
-Use [ts-node](https://www.npmjs.com/package/ts-node) tu run a script.  
-`ts-node functions/src/<script>.ts`
+
+Use [ts-node](https://www.npmjs.com/package/ts-node) tu run a script.
+`ts-node backend/src/<script>.ts`
+
 ## Installing
 
 Adapted from https://firebase.google.com/docs/functions/get-started
 
-0. `$ cd functions` to switch to this folder
+0. `$ cd backend` to switch to this folder
 1. `$ yarn global add firebase-tools` to install the Firebase CLI globally
 2. `$ yarn` to install JS dependencies
 3. `$ firebase login` to authenticate the CLI tools to Firebase
@@ -33,8 +35,7 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 3. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
 4. `$ mkdir firestore_export` to create a folder to store the exported database
 5. `$ yarn db:update-local-from-remote` to pull the remote db from Firestore to local OR if you don't have permission, see the next item.
-6. We host db exports [here](https://drive.google.com/drive/folders/1C_EuERO9KlQEH9hg9aCMjcKYvL39kTrU?usp=share_link), after downloading one you'll want to change the name to `firestore_export` and put it in `functions/` directory
-
+6. We host db exports [here](https://drive.google.com/drive/folders/1C_EuERO9KlQEH9hg9aCMjcKYvL39kTrU?usp=share_link), after downloading one you'll want to change the name to `firestore_export` and put it in `backend/` directory
 
 ## Developing locally
 
@@ -45,7 +46,7 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 2. If you want to test a scheduled function replace your function in `test-scheduled-function.ts` and send a GET to `http://localhost:8088/testscheduledfunction` (Best user experience is via [Postman](https://www.postman.com/downloads/)!)
 3. If your emulators won't start, try running `export JAVA_TOOL_OPTIONS="-Xmx4g"` to give them more memory (4gb in this example)
 4. It's best to use Google Chrome (both on localhost:3000 and localhost:4000) with either **totally clean** history or history **only** from the emulator to avoid buggy mixing of cached data.
-5. By default, changes made to the local db are not saved. If you start the emulators and add the `--export-on-exit` flag, the emulators will save changes to `./firestore_export` on exit. 
+5. By default, changes made to the local db are not saved. If you start the emulators and add the `--export-on-exit` flag, the emulators will save changes to `./firestore_export` on exit.
 
 ## Debugging
 
@@ -70,8 +71,8 @@ Secrets are strings that shouldn't be checked into Git (eg API keys, passwords).
 - Read a secret: `$ firebase functions:secrets:access STRIPE_APIKEY`
 
 To access a secret from a cloud function, you'll need to:
-1. Expose it to the function, by editing the function in Google Cloud Console (ex [link for the onCreateContract function:] (https://console.cloud.google.com/functions/edit/us-central1/onCreateContract?env=gen1&authuser=0&hl=en&project=mantic-markets)). 
-   - Go to  "Security and image repo"->Secrets->Add->choose exposed as env variable.
-2. Expose it programatically to the function by adding a runWith param 
+
+1. Expose it to the function, by editing the function in Google Cloud Console (ex [link for the onCreateContract function:] (https://console.cloud.google.com/functions/edit/us-central1/onCreateContract?env=gen1&authuser=0&hl=en&project=mantic-markets)).
+   - Go to "Security and image repo"->Secrets->Add->choose exposed as env variable.
+2. Expose it programatically to the function by adding a runWith param
    - Example: `.runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY'] }`)
- 

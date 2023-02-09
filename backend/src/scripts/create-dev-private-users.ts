@@ -5,7 +5,7 @@ initAdmin()
 
 import { PrivateUser } from 'common/user'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
-import { isProd } from 'functions/src/utils'
+import { isProd } from '../utils'
 
 const firestore = admin.firestore()
 
