@@ -81,7 +81,6 @@ export async function savePost(
   if (!editor) return
   const newPost = {
     title: group.name,
-    subtitle: 'About post for the group',
     content: editor.getJSON(),
     isGroupAboutPost: true,
   }
