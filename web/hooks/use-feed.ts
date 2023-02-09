@@ -1,5 +1,5 @@
 import { uniqBy } from 'lodash'
-import { Contract } from 'common/contract'
+import { CPMMBinaryContract } from 'common/contract'
 import { User } from 'common/user'
 import { useCallback, useEffect, useMemo } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
@@ -12,7 +12,7 @@ const PAGE_SIZE = 20
 
 export const useFeed = (user: User | null | undefined, key: string) => {
   const [savedContracts, setSavedContracts] = usePersistentState<
-    Contract[] | undefined
+    CPMMBinaryContract[] | undefined
   >(undefined, {
     key: `recommended-contracts-${user?.id}-${key}`,
     store: inMemoryStore(),
@@ -27,7 +27,7 @@ export const useFeed = (user: User | null | undefined, key: string) => {
         uid: userId,
         n: PAGE_SIZE,
       }).then((res) => {
-        const newContracts = res.data as Contract[] | undefined
+        const newContracts = res.data as CPMMBinaryContract[] | undefined
         setSavedContracts((contracts) =>
           uniqBy(buildArray(contracts, newContracts), (c) => c.id).filter(
             (c) => !isContractBlocked(privateUser, c)

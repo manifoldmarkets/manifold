@@ -42,6 +42,7 @@ export const SwipeCard = memo(
       onBet,
       user,
       setIsModalOpen,
+      small,
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
@@ -68,7 +69,7 @@ export const SwipeCard = memo(
         className={clsx(className, 'relative h-full w-full select-none')}
         onClick={(e) => e.preventDefault()}
       >
-        <Col className="relative h-full grow">
+        <Col className={clsx(small ? 'absolute' : 'relative', 'h-full grow')}>
           <img
             src={image}
             alt=""
@@ -77,7 +78,12 @@ export const SwipeCard = memo(
           <div className="absolute top-0 z-0 h-[10%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
           <div className="absolute bottom-0 z-0 h-[30%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
         </Col>
-        <Col className="absolute inset-0 z-10 h-full gap-2 p-4">
+        <Col
+          className={clsx(
+            !small && 'absolute',
+            'inset-0 z-10 h-full gap-2 p-4'
+          )}
+        >
           <CornerDetails contract={contract} user={user} />
 
           <div className="line-clamp-6 mt-6 overflow-ellipsis">

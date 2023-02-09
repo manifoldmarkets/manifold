@@ -266,7 +266,6 @@ export default function Swipe() {
               onBet={onBet}
               setIsModalOpen={setIsModalOpen}
               user={user}
-              small={height < 750}
             />
           ))}
 
