@@ -56,7 +56,7 @@ export function GroupAboutSection(props: {
             setWritingNewAbout={setWritingNewAbout}
           />
         )}
-        {canEdit && post && post.content && (
+        {!canEdit && post && post.content && (
           <ExpandableContent
             content={post.content}
             modalContent={
