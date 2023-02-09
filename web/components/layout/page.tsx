@@ -44,7 +44,7 @@ export function Page(props: {
             className={clsx(
               'flex flex-1 flex-col lg:mt-6',
               rightSidebar ? 'col-span-7' : 'col-span-8',
-              mainClassName,
+              mainClassName
             )}
           >
             {children}
