@@ -21,7 +21,7 @@
     "verify": "(cd .. && yarn verify)",
     "verify:dir": "npx eslint . --max-warnings 0; tsc -b -v --pretty"
   },
-  "main": "lib/index.js",
+  "main": "backend/functions/index.js",
   "dependencies": {
     "@amplitude/node": "1.10.0",
     "@flat/in-app-purchase": "FlatIO/in-app-purchase#1.13.5",
