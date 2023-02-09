@@ -13,7 +13,6 @@ typings/
 # Node.js dependency directory
 node_modules/
 
-tsconfig.tsbuildinfo
 package-lock.json
 ui-debug.log
 firebase-debug.log
