@@ -5,9 +5,8 @@
     "firestore": "dev-mantic-markets.appspot.com"
   },
   "scripts": {
-    "build": "yarn compile && rm -rf dist && mkdir -p dist/functions && cp -R ../common/lib dist/common && cp -R lib/src dist/functions/src && cp ../yarn.lock dist && cp package.json dist && cp .env.prod dist && cp .env.dev dist",
-    "compile": "tsc -b",
-    "watch": "tsc -w",
+    "build": "yarn compile && rm -rf dist && mkdir -p dist/functions && cp -R ../common/lib dist/common && cp -R lib dist/functions && cp ../yarn.lock dist && cp package.json dist && cp .env.prod dist && cp .env.dev dist",
+    "compile": "tsc -b && tsc-alias",
     "shell": "yarn build && firebase functions:shell",
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
@@ -22,7 +21,7 @@
     "verify": "(cd .. && yarn verify)",
     "verify:dir": "npx eslint . --max-warnings 0; tsc -b -v --pretty"
   },
-  "main": "functions/src/index.js",
+  "main": "functions/lib/index.js",
   "dependencies": {
     "@amplitude/node": "1.10.0",
     "@flat/in-app-purchase": "FlatIO/in-app-purchase#1.13.5",
@@ -56,7 +55,8 @@
     "@types/mailgun-js": "0.22.12",
     "@types/marked": "4.0.7",
     "@types/node-fetch": "2.6.2",
-    "puppeteer": "18.0.5"
+    "puppeteer": "18.0.5",
+    "tsc-alias": "1.8.2"
   },
   "private": true
 }

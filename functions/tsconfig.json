@@ -1,13 +1,23 @@
 {
   "compilerOptions": {
     "baseUrl": "../",
+    "rootDir": "src",
     "composite": true,
     "module": "commonjs",
     "noImplicitReturns": true,
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017"
+    "target": "es2017",
+    "paths": {
+      "functions/*": ["./*"],
+      "common/*": ["../common/*"]
+    }
+  },
+  "tsc-alias": {
+    "fileExtensions": {
+      "outputCheck": ["ts"]
+    }
   },
   "references": [
     {
