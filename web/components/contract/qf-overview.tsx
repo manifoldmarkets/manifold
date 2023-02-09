@@ -77,14 +77,14 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
       </div>
       {poolPanel && <QfAddPoolPanel contract={contract} />}
 
+      <AlertBox
+        title="This is a Quadratic Funding round."
+        text="Quadratic funding is an experimental market type which lets you crowdfund entries. The matching pool allocates extra mana to popular and highly-funded entries. For more info, see https://wtfisqf.com/"
+      />
+
       <QfAnswersPanel contract={contract} />
 
       <CreateAnswerWidget contract={contract} />
-
-      <AlertBox
-        title="Quadratic funding is experimental."
-        text="This is a quadratic funding contract, which lets you crowdfund entries with a democratic matching pool. For more info, see https://wtfisqf.com/"
-      />
     </Col>
   )
 }
@@ -270,11 +270,11 @@ function CreateAnswerWidget(props: { contract: QuadraticFundingContract }) {
   // Return a form with a button to create an answer
   return (
     <Col className="flex-1 gap-2 px-4 xl:px-0">
-      <div className="mb-1">Add your answer</div>
+      <div className="mb-1">Create an entry</div>
       <ExpandingInput
         value={answer}
         onChange={(e) => setAnswer(e.target.value)}
-        placeholder="Type your answer..."
+        placeholder="Write your entry..."
       />
       <Col className="gap-4 self-end sm:flex-row sm:items-end">
         <Button

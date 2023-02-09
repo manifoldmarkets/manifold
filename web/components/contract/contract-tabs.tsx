@@ -165,7 +165,7 @@ export function ContractTabs(props: {
         ],
 
         contract.outcomeType === 'QUADRATIC_FUNDING' && [
-          { title: 'Payments', content: <QfTrades contract={contract} /> },
+          { title: 'History', content: <QfTrades contract={contract} /> },
         ]
       )}
     />
