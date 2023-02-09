@@ -7,6 +7,7 @@ const IS_NATIVE_KEY = 'is-native'
 const PLATFORM_KEY = 'native-platform'
 
 export const getIsNative = () => {
+  // TODO cache the result of this in memory
   const { isNative } = getNativeInfo()
   return isNative
 }

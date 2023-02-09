@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
@@ -9,58 +8,76 @@ import { IconButton } from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
 import { Col } from 'web/components/layout/col'
 import LinkIcon from 'web/lib/icons/link-icon'
-
-const SimpleLinkButton = (props: {
-  url: string
-  className?: string
-  tooltip: string
-}) => {
-  const { url, tooltip, className } = props
-
-  return (
-    <Tooltip text={tooltip} placement="bottom" noTap noFade>
-      <IconButton
-        size="2xs"
-        onClick={() => {
-          copyToClipboard(url)
-          toast.success('Link copied!')
-          track('copy share link')
-        }}
-        className={className}
-      >
-        <Col className={'items-center gap-x-2 sm:flex-row'}>
-          <LinkIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-        </Col>
-      </IconButton>
-    </Tooltip>
-  )
-}
+import { postMessageToNative } from 'web/components/native-message-listener'
+import { NativeShareData } from 'common/native-share-data'
+import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
+import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export function CopyLinkButton(props: {
   url: string
-  linkOnlyProps?: {
+  linkIconOnlyProps?: {
     tooltip: string
     className?: string
   }
   displayUrl?: string
   tracking?: string
 }) {
-  const { url, displayUrl, tracking, linkOnlyProps } = props
-  const { className, tooltip } = linkOnlyProps ?? {}
+  const { url, displayUrl, tracking, linkIconOnlyProps } = props
+  const { className, tooltip } = linkIconOnlyProps ?? {}
+  // TODO: this is resulting in hydration errors on mobile dev
+  const isNative = getIsNative()
 
   // "copied" success state animations
   const [bgPressed, setBgPressed] = useState(false)
   const [iconPressed, setIconPressed] = useState(false)
 
-  if (linkOnlyProps) {
+  const onClick = () => {
+    if (isNative) {
+      // If we want to extend this: iOS can use a url and a message, Android can use a title and a message.
+      postMessageToNative('share', {
+        message: url,
+      } as NativeShareData)
+    } else if (linkIconOnlyProps) {
+      copyToClipboard(url)
+      toast.success('Link copied!')
+    } else {
+      setBgPressed(true)
+      setIconPressed(true)
+      setTimeout(() => setBgPressed(false), 300)
+      setTimeout(() => setIconPressed(false), 1000)
+      copyToClipboard(url)
+    }
+    track(tracking ?? 'copy share link')
+  }
+
+  const Button = (props: { onClick: () => void }) => {
+    const { onClick } = props
     return (
-      <SimpleLinkButton
-        url={url}
-        tooltip={tooltip ?? 'Copy link'}
-        className={className}
-      />
+      <Tooltip
+        text={tooltip ?? iconPressed ? 'Copied!' : 'Copy link'}
+        placement="bottom"
+        noTap
+        noFade
+      >
+        <IconButton size="2xs" onClick={onClick} className={className}>
+          <Col className={'items-center gap-x-2 sm:flex-row'}>
+            {isNative ? (
+              <ArrowUpSquareIcon className={'h-5 w-5'} />
+            ) : linkIconOnlyProps ? (
+              <LinkIcon className={clsx('h-5 w-5')} aria-hidden="true" />
+            ) : iconPressed ? (
+              <CheckIcon className="h-5 w-5" />
+            ) : (
+              <DuplicateIcon className="h-5 w-5" />
+            )}
+          </Col>
+        </IconButton>
+      </Tooltip>
     )
   }
+
+  if (linkIconOnlyProps) return <Button onClick={onClick} />
 
   return (
     <Row
@@ -70,26 +87,7 @@ export function CopyLinkButton(props: {
       )}
     >
       <div className="ml-3 w-full select-all truncate">{displayUrl ?? url}</div>
-
-      <Tooltip noTap text={iconPressed ? 'Copied!' : 'Copy Link'}>
-        <button
-          className="px-3 py-2 transition hover:opacity-50"
-          onClick={() => {
-            setBgPressed(true)
-            setIconPressed(true)
-            setTimeout(() => setBgPressed(false), 300)
-            setTimeout(() => setIconPressed(false), 1000)
-            copyToClipboard(url)
-            track(tracking ?? 'copy share link')
-          }}
-        >
-          {iconPressed ? (
-            <CheckIcon className="h-5 w-5" />
-          ) : (
-            <DuplicateIcon className="h-5 w-5" />
-          )}
-        </button>
-      </Tooltip>
+      <Button onClick={onClick} />
     </Row>
   )
 }

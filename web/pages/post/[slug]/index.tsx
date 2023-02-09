@@ -107,7 +107,7 @@ export default function PostPage(props: {
           </Col>
           <Row className="items-center gap-2 sm:pr-2">
             <CopyLinkButton
-              linkOnlyProps={{
+              linkIconOnlyProps={{
                 tooltip: 'Copy link to post',
               }}
               url={shareUrl}

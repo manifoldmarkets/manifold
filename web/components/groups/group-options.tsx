@@ -37,7 +37,7 @@ export function GroupOptions(props: {
       <Row className="items-center gap-2">
         <CopyLinkButton
           url={groupUrl}
-          linkOnlyProps={{
+          linkIconOnlyProps={{
             tooltip: `Copy link to ${group.name}`,
             className: groupButtonClass,
           }}

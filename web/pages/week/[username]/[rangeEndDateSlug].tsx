@@ -30,16 +30,9 @@ import { Title } from 'web/components/widgets/title'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Button } from 'web/components/buttons/button'
-import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
-import { getIsNative } from 'web/lib/native/is-native'
-import { postMessageToNative } from 'web/components/native-message-listener'
-import { copyToClipboard } from 'web/lib/util/copy'
-import toast from 'react-hot-toast'
-import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { NativeShareData } from 'common/native-share-data'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 
 export async function getStaticProps(props: {
   params: { username: string; rangeEndDateSlug: string }
@@ -181,27 +174,10 @@ export default function RangePerformancePage(props: {
             />{' '}
             {date} Profit
           </Title>
-          <Button
-            size={'xs'}
-            color={'gray-white'}
-            className={'text-indigo-700'}
-            onClick={() => {
-              if (getIsNative()) {
-                const url = window.location.href
-                postMessageToNative('share', {
-                  title: 'Check out my profit this week on Manifold',
-                  url,
-                  message: url,
-                } as NativeShareData)
-              } else {
-                copyToClipboard(window.location.href)
-                toast.success('Link copied!')
-                track('copy weekly update share link')
-              }
-            }}
-          >
-            <ArrowUpSquareIcon className={'h-6 w-6'} />
-          </Button>
+          <CopyLinkButton
+            url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDateSlug}`}
+            linkIconOnlyProps={{ tooltip: 'Copy link to this week' }}
+          />
         </Row>
 
         <Col className={'relative w-full items-center justify-center'}>

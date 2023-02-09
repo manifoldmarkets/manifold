@@ -158,7 +158,7 @@ export function ManalinkCardFromView(props: {
 
           <CopyLinkButton
             url={getManalinkUrl(link.slug)}
-            linkOnlyProps={{
+            linkIconOnlyProps={{
               tooltip: 'Copy link to Manalink',
             }}
           />

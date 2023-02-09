@@ -33,7 +33,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
 
       <CopyLinkButton
         url={getShareUrl(contract, user?.username)}
-        linkOnlyProps={{
+        linkIconOnlyProps={{
           tooltip: 'Copy link to market',
         }}
       />
