@@ -124,7 +124,6 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
   // get all users who have opted in to weekly portfolio updates
   const usersSnap = await firestore
     .collection('private-users')
-    .where('id', '==', 'AJwLWoo3xue32XIiAVrL5SyR1WB2')
     .where(
       'notificationPreferences.profit_loss_updates',
       'array-contains',
