@@ -184,10 +184,17 @@ const MarketResults = (props: { markets: Contract[] }) => {
             slug: `/${market.creatorUsername}/${market.slug}`,
           }}
         >
-          <span className="mr-2">{market.question}</span>
-          <span className="inline-flex min-w-[34px] align-bottom font-bold">
-            <ContractStatusLabel contract={market} />
-          </span>
+          <div className="flex gap-2">
+            <span className="grow">{market.question}</span>
+            <span className="font-bold">
+              <ContractStatusLabel contract={market} />
+            </span>
+            <Avatar
+              size="xs"
+              username={market.creatorUsername}
+              avatarUrl={market.creatorAvatarUrl}
+            />
+          </div>
         </ResultOption>
       ))}
     </>
