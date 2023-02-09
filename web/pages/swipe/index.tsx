@@ -6,7 +6,6 @@ import toast from 'react-hot-toast'
 import type { BinaryContract } from 'common/contract'
 import { Button } from 'web/components/buttons/button'
 import { Page } from 'web/components/layout/page'
-import { Row } from 'web/components/layout/row'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { SwipeCard } from 'web/components/swipe/swipe-card'
@@ -231,14 +230,14 @@ export default function Swipe() {
     )
   }
   return (
-    <Page>
-      <Row
-        className="absolute justify-center overflow-hidden overscroll-none"
+    <Page mainClassName="bg-black items-center">
+      <div
+        className="absolute overflow-hidden overscroll-none"
         style={{ height: cardHeight }}
       >
         {index + 1 < cards.length && (
           <SwipeCard
-            className="!absolute -z-10 select-none overflow-hidden"
+            className="!absolute isolate select-none overflow-hidden"
             amount={amount}
             setAmount={setAmount}
             contract={cards[index + 1]}
@@ -252,7 +251,7 @@ export default function Swipe() {
 
         <animated.div
           {...bind()}
-          className="h-full w-full max-w-lg touch-none select-none"
+          className="z-10 h-full w-full max-w-lg touch-none select-none"
           style={{ x, y }}
         >
           {cards.map((c, i) => (
@@ -278,12 +277,12 @@ export default function Swipe() {
                 href="/markets?s=newest&f=open"
                 className="text-indigo-700"
               >
-                Check out new ones in the markets section
+                Browse new markets
               </SiteLink>
             </div>
           )}
         </animated.div>
-      </Row>
+      </div>
     </Page>
   )
 }
