@@ -11,7 +11,6 @@
     "strict": true,
     "target": "es2017",
     "paths": {
-      "functions/*": ["./*"],
       "common/*": ["../common/*"]
     }
   },
