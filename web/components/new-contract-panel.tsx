@@ -271,8 +271,9 @@ export function NewContractPanel(props: {
                       'Users can submit their own answers to this market.',
                     PSEUDO_NUMERIC:
                       '[EXPERIMENTAL] Predict the value of a number.',
-                    CERT: '[EXPERIMENTAL] Tradeable shares of a stock',
-                    QUADRATIC_FUNDING: '[EXPERIMENTAL] Radically fund projects',
+                    CERT: '[EXPERIMENTAL] Tradeable shares of a stock.',
+                    QUADRATIC_FUNDING:
+                      '[EXPERIMENTAL] Radically fund projects. ',
                   }[choice] ?? ''
                 setMarketInfoText(text)
                 setOutcomeType(choice as outcomeType)
@@ -282,10 +283,9 @@ export function NewContractPanel(props: {
                 'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
+                'Quadratic Funding': 'QUADRATIC_FUNDING',
                 // Only show cert option in dev, for now
-                ...(ENV !== 'PROD'
-                  ? { Cert: 'CERT', 'Quadratic Funding': 'QUADRATIC_FUNDING' }
-                  : {}),
+                ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
               }}
               disabled={isSubmitting}
               className={'col-span-4'}
