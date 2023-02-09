@@ -29,7 +29,7 @@ export function ContractMention(props: {
       <span
         className={clsx(
           probTextColor,
-          'inline-flex min-w-[40px] rounded-full px-2 align-bottom font-semibold ring-1 ring-inset ring-indigo-100 transition-colors group-hover:ring-indigo-200'
+          'inline-flex rounded-full px-2 align-bottom font-semibold ring-1 ring-inset ring-indigo-100 transition-colors group-hover:ring-indigo-200'
         )}
       >
         <ContractStatusLabel contract={contract} />

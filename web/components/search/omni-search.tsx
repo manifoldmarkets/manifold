@@ -1,5 +1,5 @@
 import { Combobox } from '@headlessui/react'
-import { SearchIcon, UsersIcon } from '@heroicons/react/solid'
+import { SearchIcon, SparklesIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useRouter } from 'next/router'
@@ -9,6 +9,7 @@ import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { searchContracts } from 'web/lib/service/algolia'
 import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
+import { ContractStatusLabel } from '../contract/contracts-list-entry'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -71,9 +72,9 @@ const DefaultResults = () => {
       <PageResults pages={defaultPages} />
       <MarketResults markets={markets} />
       <div className="mx-2 my-2 text-xs">
-        <span className="uppercase text-teal-500">💹 Protip:</span> Start search
-        with <Key>%</Key> for markets, <Key>@</Key> for users, or <Key>#</Key>{' '}
-        for groups
+        <SparklesIcon className="mr-1 inline h-4 w-4 align-text-bottom text-indigo-500" />
+        Start with <Key>%</Key> for markets, <Key>@</Key> for users, or{' '}
+        <Key>#</Key> for groups
       </div>
     </>
   )
@@ -185,19 +186,10 @@ const MarketResults = (props: { markets: Contract[] }) => {
             slug: `/${market.creatorUsername}/${market.slug}`,
           }}
         >
-          {market.question}
-          {market.outcomeType === 'BINARY' && (
-            <span className="ml-2 font-bold">
-              {market.resolution ? (
-                <BinaryContractOutcomeLabel
-                  contract={market}
-                  resolution={market.resolution}
-                />
-              ) : (
-                getBinaryProbPercent(market)
-              )}
-            </span>
-          )}
+          <span className="mr-2">{market.question}</span>
+          <span className="inline-flex min-w-[34px] align-bottom font-bold">
+            <ContractStatusLabel contract={market} />
+          </span>
         </ResultOption>
       ))}
     </>

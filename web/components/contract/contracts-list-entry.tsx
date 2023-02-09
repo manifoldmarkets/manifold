@@ -84,7 +84,7 @@ export const ContractsListEntry = forwardRef(
           avatarUrl={contract.creatorAvatarUrl}
           size="xs"
         />
-        <div className="min-w-[34px] font-semibold">
+        <div className="font-semibold">
           <ContractStatusLabel contract={contract} />
         </div>
         <div className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
