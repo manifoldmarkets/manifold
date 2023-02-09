@@ -1,5 +1,5 @@
 import { run, selectFrom, SupabaseClient } from './utils'
-import { sortBy } from 'lodash'
+import { chunk, groupBy, sortBy } from 'lodash'
 
 export async function getPortfolioHistory(
   userId: string,
@@ -19,4 +19,29 @@ export async function getPortfolioHistory(
       .gt('data->>timestamp', cutoff)
   )
   return sortBy(data, 'timestamp')
+}
+export async function getPortfolioHistories(
+  userIds: string[],
+  cutoff: number,
+  db: SupabaseClient
+) {
+  const chunks = chunk(userIds, 200)
+  const promises = chunks.map(async (chunk) => {
+    const { data } = await run(
+      selectFrom(
+        db,
+        'user_portfolio_history',
+        'timestamp',
+        'investmentValue',
+        'totalDeposits',
+        'balance',
+        'userId'
+      )
+        .in('user_id', chunk)
+        .gt('data->>timestamp', cutoff)
+    )
+
+    return sortBy(data, 'timestamp')
+  })
+  return groupBy((await Promise.all(promises)).flat(), 'userId')
 }

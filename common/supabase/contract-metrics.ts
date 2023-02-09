@@ -1,4 +1,4 @@
-import { Dictionary, flatMap, orderBy } from 'lodash'
+import { chunk, Dictionary, flatMap, groupBy, orderBy } from 'lodash'
 import { run, selectJson, SupabaseClient } from './utils'
 import { ContractMetrics } from '../calculate-metrics'
 import { getContracts } from './contracts'
@@ -82,6 +82,37 @@ export async function getBestAndWorstUserContractMetrics(
       .limit(limit)
   )
   return [...profit, ...negative].map((d) => d.data) as ContractMetrics[]
+}
+
+export async function getUsersContractMetrics(
+  userIds: string[],
+  db: SupabaseClient,
+  from: 'day' | 'week' | 'month' | 'all'
+) {
+  const chunks = chunk(userIds, 200)
+  const promises = chunks.map(async (chunk) => {
+    const orderString =
+      from !== 'all' ? `data->from->${from}->profit` : 'data->profit'
+    const { data: negative } = await run(
+      selectJson(db, 'user_contract_metrics')
+        .in('user_id', chunk)
+        .order(orderString as any, {
+          ascending: true,
+        })
+    )
+    const { data: profit } = await run(
+      selectJson(db, 'user_contract_metrics')
+        .in('user_id', chunk)
+        .order(orderString as any, {
+          ascending: false,
+          nullsFirst: false,
+        })
+    )
+
+    return [...profit, ...negative].map((d) => d.data) as ContractMetrics[]
+  })
+  const results = await Promise.all(promises)
+  return groupBy(flatMap(results), 'userId')
 }
 
 export async function getTotalContractMetrics(

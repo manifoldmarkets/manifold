@@ -304,9 +304,7 @@ export const calculateUserMetrics = (
   } as ContractMetric)
 }
 
-export type ContractMetrics = ReturnType<
-  typeof calculateMetricsByContract
->[number]
+export type ContractMetrics = ContractMetric
 
 const calculatePeriodProfit = (
   contract: CPMMBinaryContract,
