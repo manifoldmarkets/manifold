@@ -10,4 +10,4 @@ RUN yarn install --frozen-lockfile --production
 # then copy over typescript payload
 COPY dist ./
 
-CMD [ "node", "supabase-replicator/src/index.js" ]
+CMD [ "node", "replicator/src/index.js" ]

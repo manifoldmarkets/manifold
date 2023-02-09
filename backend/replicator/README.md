@@ -1,4 +1,4 @@
-# supabase-replicator
+# replicator
 
 This is the service that is responsible for taking all interesting Firestore
 writes and replicating them to Supabase. It's mainly separate from the functions
