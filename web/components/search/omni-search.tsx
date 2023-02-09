@@ -8,10 +8,7 @@ import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { searchContracts } from 'web/lib/service/algolia'
-import {
-  SearchGroupInfo,
-  searchGroups,
-} from 'web/lib/supabase/groups'
+import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 import { searchUsers, UserSearchResult } from 'web/lib/supabase/users'
 import { ContractStatusLabel } from '../contract/contracts-list-entry'
 import { JoinOrLeaveGroupButton } from '../groups/groups-button'
