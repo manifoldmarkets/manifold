@@ -30,9 +30,9 @@ import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
-import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 import { richTextToString } from 'common/util/parse'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -106,9 +106,11 @@ export default function PostPage(props: {
             </div>
           </Col>
           <Row className="items-center gap-2 sm:pr-2">
-            <SimpleLinkButton
-              getUrl={() => shareUrl}
-              tooltip={'Copy link to post'}
+            <CopyLinkButton
+              linkOnlyProps={{
+                tooltip: 'Copy link to post',
+              }}
+              url={shareUrl}
             />
           </Row>
         </Row>

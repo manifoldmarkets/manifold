@@ -3,10 +3,10 @@ import clsx from 'clsx'
 import { Group } from 'common/group'
 import { PrivateUser } from 'common/user'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
-import { SimpleLinkButton } from '../buttons/simple-link-button'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { Row } from '../layout/row'
 import { getBlockGroupDropdownItem } from './hide-group-item'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 
 export function GroupOptions(props: {
   group: Group
@@ -35,10 +35,12 @@ export function GroupOptions(props: {
   return (
     <>
       <Row className="items-center gap-2">
-        <SimpleLinkButton
-          getUrl={() => groupUrl}
-          tooltip={`Copy link to ${group.name}`}
-          className={groupButtonClass}
+        <CopyLinkButton
+          url={groupUrl}
+          linkOnlyProps={{
+            tooltip: `Copy link to ${group.name}`,
+            className: groupButtonClass,
+          }}
         />
         {privateUser && (
           <DropdownMenu

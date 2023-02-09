@@ -4,9 +4,9 @@ import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { LikeButton } from 'web/components/contract/like-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
-import { SimpleLinkButton } from '../buttons/simple-link-button'
 import { getShareUrl } from 'common/util/share'
 import clsx from 'clsx'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
@@ -31,9 +31,11 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
         )}
       />
 
-      <SimpleLinkButton
-        getUrl={() => getShareUrl(contract, user?.username)}
-        tooltip="Copy link to market"
+      <CopyLinkButton
+        url={getShareUrl(contract, user?.username)}
+        linkOnlyProps={{
+          tooltip: 'Copy link to market',
+        }}
       />
 
       <ContractInfoDialog contract={contract} user={user} />
