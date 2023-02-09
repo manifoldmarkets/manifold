@@ -108,7 +108,7 @@ export function ContractTabs(props: {
     (isMobile ? 'You' : 'Your Trades')
 
   const { uniqueBettorCount } = contract
-  const positionsTitle = uniqueBettorCount + ' Traders'
+  const positionsTitle = uniqueBettorCount + ' Holders'
 
   return (
     <ControlledTabs
