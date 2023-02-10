@@ -1,9 +1,9 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { sortBy, sum, uniqBy } from 'lodash'
+import { sortBy, sum } from 'lodash'
 
 import { PrivateUser } from 'common/user'
-import { getUsersContractMetrics } from 'common/supabase/contract-metrics'
+import { getUsersContractMetricsOrderedByProfit } from 'common/supabase/contract-metrics'
 import { createWeeklyPortfolioUpdateNotification } from './create-notification'
 import { getUsernameById } from 'common/supabase/users'
 import { createSupabaseClient } from 'shared/supabase/init'
@@ -65,11 +65,12 @@ export const saveWeeklyContractMetricsInternal = async () => {
   log('usersToSave', usersToSave.length)
   if (usersToSave.length === 0) return
 
-  const allContractMetrics = await getUsersContractMetrics(
-    usersToSave.map((u) => u.id),
-    db,
-    'week'
-  )
+  const allContractMetricsByUsers =
+    await getUsersContractMetricsOrderedByProfit(
+      usersToSave.map((u) => u.id),
+      db,
+      'week'
+    )
   const allPortfolioMetrics = await getPortfolioHistories(
     usersToSave.map((u) => u.id),
     time - 7 * DAY_MS,
@@ -85,13 +86,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
             y: p.balance + p.investmentValue - p.totalDeposits,
           })
         )
-        const myMetrics = allContractMetrics[user.id] ?? []
-        const topAndLowestMetrics = [
-          ...myMetrics.slice(0, 5),
-          ...myMetrics.slice(-5),
-        ]
-        // We're saving portfolio updates for users even with no update bc they act as a flag that they've been processed
-        const contractMetrics = uniqBy(topAndLowestMetrics, 'contractId')
+        const contractMetrics = allContractMetricsByUsers[user.id]
         return {
           contractMetrics,
           userId: user.id,

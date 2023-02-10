@@ -1,4 +1,4 @@
-import { chunk } from 'lodash'
+import { chunk, groupBy } from 'lodash'
 import { run, selectJson, SupabaseClient } from './utils'
 import { Contract } from '../contract'
 
@@ -32,4 +32,37 @@ export const getUnresolvedContracts = async (
       .lt('data->>closeTime', Date.now())
   )
   return count
+}
+
+export const getContractsByUsers = async (
+  userIds: string[],
+  db: SupabaseClient,
+  createdTime?: number
+) => {
+  if (userIds.length === 0) {
+    return null
+  }
+  const chunks = chunk(userIds, 500)
+  const promises = chunks.map(async (chunk) => {
+    const { data } = await run(
+      db.rpc('get_contracts_by_creator_ids', {
+        creator_ids: chunk,
+        created_time: createdTime ?? 0,
+      })
+    )
+    return data
+  })
+  try {
+    const results = (await Promise.all(promises)).flat().flat()
+    return groupBy(
+      results.map((r) => ({
+        userId: r.creator_id,
+        contracts: r.contracts as Contract[],
+      })),
+      'userId'
+    )
+  } catch (e) {
+    console.log(e)
+  }
+  return null
 }

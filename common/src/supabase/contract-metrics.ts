@@ -1,8 +1,9 @@
-import { chunk, Dictionary, flatMap, groupBy, orderBy } from 'lodash'
-import { run, selectJson, SupabaseClient } from './utils'
+import { chunk, Dictionary, flatMap, groupBy, orderBy, uniqBy } from 'lodash'
+import { run, selectFrom, selectJson, SupabaseClient } from './utils'
 import { ContractMetrics } from '../calculate-metrics'
 import { getContracts } from './contracts'
 import { Contract, CPMMBinaryContract } from '../contract'
+import { ContractMetric } from 'common/contract-metric'
 
 export async function getUserContractMetrics(
   userId: string,
@@ -84,7 +85,7 @@ export async function getBestAndWorstUserContractMetrics(
   return [...profit, ...negative].map((d) => d.data) as ContractMetrics[]
 }
 
-export async function getUsersContractMetrics(
+export async function getUsersContractMetricsOrderedByProfit(
   userIds: string[],
   db: SupabaseClient,
   from: 'day' | 'week' | 'month' | 'all'
@@ -110,6 +111,39 @@ export async function getUsersContractMetrics(
     )
 
     return [...profit, ...negative].map((d) => d.data) as ContractMetrics[]
+  })
+  const results = await Promise.all(promises)
+  const allContractMetrics: { [key: string]: ContractMetric[] } = groupBy(
+    flatMap(results),
+    'userId'
+  )
+  userIds.forEach((id) => {
+    const myMetrics = allContractMetrics[id] ?? []
+    const topAndLowestMetrics = [
+      ...myMetrics.slice(0, 5),
+      ...myMetrics.slice(-5),
+    ]
+    allContractMetrics[id] = uniqBy(topAndLowestMetrics, 'contractId')
+  })
+  return allContractMetrics
+}
+
+export async function getUsersRecentBetContractIds(
+  userIds: string[],
+  db: SupabaseClient,
+  lastBetTime = 0
+) {
+  const chunks = chunk(userIds, 200)
+  const promises = chunks.map(async (chunk) => {
+    const { data } = await run(
+      selectFrom(db, 'user_contract_metrics', 'userId', 'contractId')
+        .in('user_id', chunk)
+        .gt('data->lastBetTime', lastBetTime)
+    )
+    return data.map((d) => ({
+      userId: d.userId,
+      contractId: d.contractId,
+    })) as Partial<ContractMetrics>[]
   })
   const results = await Promise.all(promises)
   return groupBy(flatMap(results), 'userId')

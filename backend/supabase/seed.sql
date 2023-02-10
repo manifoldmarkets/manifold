@@ -819,3 +819,16 @@ create or replace view group_role as(
     gm.data -> 'createdTime' as createdTime
   from (group_members gm join groups gp on gp.id = gm.group_id) join users on users.id = gm.member_id
 )
+
+create or replace function get_contracts_by_creator_ids(creator_ids text[], created_time bigint)
+returns table(creator_id text, contracts jsonb)
+    immutable parallel safe
+    language sql
+as $$
+    select data->>'creatorId' as creator_id, jsonb_agg(data) as contracts
+    from contracts
+    where data->>'creatorId' = any(creator_ids)
+    and (data->>'createdTime')::bigint > created_time
+    group by creator_id;
+$$;
+

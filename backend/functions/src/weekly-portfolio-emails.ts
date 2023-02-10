@@ -1,31 +1,38 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { Contract, CPMMContract } from 'common/contract'
+import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import {
   getAllPrivateUsers,
   getPrivateUser,
   getUser,
-  getValue,
   getValues,
   isProd,
   log,
 } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { DAY_MS } from 'common/util/time'
-import { partition, sortBy, uniq, uniqBy } from 'lodash'
-import { Bet } from 'common/bet'
+import { partition, sortBy, sum, uniq, uniqBy } from 'lodash'
 import { emailMoneyFormat, sendWeeklyPortfolioUpdateEmail } from './emails'
 import { contractUrl } from 'shared/utils'
 import { Txn } from 'common/txn'
 import { Reaction, ReactionTypes } from 'common/reaction'
-import { ContractMetric } from 'common/contract-metric'
+import {
+  getUsersRecentBetContractIds,
+  getUsersContractMetricsOrderedByProfit,
+} from 'common/supabase/contract-metrics'
+import { createSupabaseClient } from 'shared/supabase/init'
+import { getContracts, getContractsByUsers } from 'common/supabase/contracts'
 
 const USERS_TO_EMAIL = 600
 const WEEKLY_MOVERS_TO_SEND = 6
 // This should(?) work until we have ~70k users (500 * 120)
 export const weeklyPortfolioUpdateEmails = functions
-  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB', timeoutSeconds: 540 })
+  .runWith({
+    secrets: ['MAILGUN_KEY', 'SUPABASE_KEY'],
+    memory: '4GB',
+    timeoutSeconds: 540,
+  })
   // every minute on Friday for two hours at 12pm PT (UTC -07:00)
   .pubsub.schedule('* 19-20 * * 5')
   .timeZone('Etc/UTC')
@@ -75,41 +82,30 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       })
     })
   )
+  const db = createSupabaseClient()
 
-  // Get all bets made by each user
-  const usersToBetsInLastWeek: { [userId: string]: Bet[] } = {}
-  await Promise.all(
-    privateUsersToSendEmailsTo.map(async (user) => {
-      usersToBetsInLastWeek[user.id] = await getValues<Bet>(
-        firestore
-          .collectionGroup('bets')
-          .where('userId', '==', user.id)
-          .where('createdTime', '>=', Date.now() - 7 * DAY_MS)
-      )
-    })
+  const userIds = privateUsersToSendEmailsTo.map((user) => user.id)
+  // Get all contracts created by each user
+  const usersToContractsCreated = await getContractsByUsers(
+    userIds,
+    db,
+    Date.now() - 7 * DAY_MS
   )
 
-  // Get all contracts created by each user
-  const usersToContractsCreated: { [userId: string]: Contract[] } = {}
-  await Promise.all(
-    privateUsersToSendEmailsTo.map(async (user) => {
-      usersToContractsCreated[user.id] = await getValues<Contract>(
-        firestore
-          .collection('contracts')
-          .where('creatorId', '==', user.id)
-          .where('createdTime', '>', Date.now() - 7 * DAY_MS)
-      )
-    })
+  const contractIdsBetOnInLastWeek = await getUsersRecentBetContractIds(
+    userIds,
+    db,
+    Date.now() - 7 * DAY_MS
   )
 
   // Get all txns the users received over the past week
   const usersToTxnsReceived: { [userId: string]: Txn[] } = {}
   await Promise.all(
-    privateUsersToSendEmailsTo.map(async (user) => {
-      usersToTxnsReceived[user.id] = await getValues<Txn>(
+    userIds.map(async (id) => {
+      usersToTxnsReceived[id] = await getValues<Txn>(
         firestore
           .collection(`txns`)
-          .where('toId', '==', user.id)
+          .where('toId', '==', id)
           .where('createdTime', '>', Date.now() - 7 * DAY_MS)
       )
     })
@@ -118,52 +114,30 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
   // Get all likes the users received over the past week
   const usersToLikesReceived: { [userId: string]: Reaction[] } = {}
   await Promise.all(
-    privateUsersToSendEmailsTo.map(async (user) => {
-      usersToLikesReceived[user.id] = await getValues<Reaction>(
+    userIds.map(async (id) => {
+      usersToLikesReceived[id] = await getValues<Reaction>(
         firestore
           .collectionGroup(`reactions`)
-          .where('contentOwnerId', '==', user.id)
+          .where('contentOwnerId', '==', id)
           .where('type', '==', 'like' as ReactionTypes)
           .where('createdTime', '>', Date.now() - 7 * DAY_MS)
       )
     })
   )
 
-  // Get all contract metrics for each user
-  const usersToContractMetrics: { [userId: string]: ContractMetric[] } = {}
-  await Promise.all(
-    privateUsersToSendEmailsTo.map(async (user) => {
-      const topProfits = await getValues<ContractMetric>(
-        firestore
-          .collection(`users/${user.id}/contract-metrics`)
-          .orderBy('from.week.profit', 'desc')
-          .limit(Math.round(WEEKLY_MOVERS_TO_SEND / 2))
-      )
-      const topLosses = await getValues<ContractMetric>(
-        firestore
-          .collection(`users/${user.id}/contract-metrics`)
-          .orderBy('from.week.profit', 'asc')
-          .limit(Math.round(WEEKLY_MOVERS_TO_SEND / 2))
-      )
-      usersToContractMetrics[user.id] = uniqBy(
-        [...topProfits, ...topLosses],
-        (cm) => cm.contractId
-      )
-    })
+  const usersToContractMetrics = await getUsersContractMetricsOrderedByProfit(
+    userIds,
+    db,
+    'week'
   )
-
-  // Get a flat map of all the contracts that users have metrics for
-  const allWeeklyMoversContracts = filterDefined(
-    await Promise.all(
-      uniq(
-        Object.values(usersToContractMetrics).flatMap((cms) =>
-          cms.map((cm) => cm.contractId)
-        )
-      ).map((contractId) =>
-        getValue<Contract>(firestore.collection('contracts').doc(contractId))
+  const allWeeklyMoversContracts = (await getContracts(
+    uniq(
+      Object.values(usersToContractMetrics).flatMap((cms) =>
+        cms.map((cm) => cm.contractId)
       )
-    )
-  )
+    ),
+    db
+  )) as CPMMBinaryContract[]
 
   let sent = 0
   await Promise.all(
@@ -173,24 +147,24 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       if (!user || user.createdTime > Date.now() - 5 * DAY_MS) return
 
       // Compute fun auxiliary stats
-      const totalContractsUserBetOnInLastWeek = uniq(
-        usersToBetsInLastWeek[privateUser.id].map((bet) => bet.contractId)
+      const totalContractsUserBetOnInLastWeek = uniqBy(
+        contractIdsBetOnInLastWeek[privateUser.id],
+        (cm) => cm.contractId
       ).length
       const greenBg = 'rgba(0,160,0,0.2)'
       const redBg = 'rgba(160,0,0,0.2)'
       const clearBg = 'rgba(255,255,255,0)'
-      const roundedProfit =
-        Math.round(user.profitCached.weekly) === 0
-          ? 0
-          : Math.floor(user.profitCached.weekly)
-
+      const usersMetrics = usersToContractMetrics[privateUser.id]
+      const profit = sum(usersMetrics.map((cm) => cm.from?.week.profit ?? 0))
+      const roundedProfit = Math.round(profit) === 0 ? 0 : Math.floor(profit)
+      const marketsCreated = (usersToContractsCreated?.[privateUser.id] ?? [])
+        .length
       const performanceData = {
-        profit: emailMoneyFormat(user.profitCached.weekly),
+        profit: emailMoneyFormat(profit),
         profit_style: `background-color: ${
           roundedProfit > 0 ? greenBg : roundedProfit === 0 ? clearBg : redBg
         }`,
-        markets_created:
-          usersToContractsCreated[privateUser.id].length.toString(),
+        markets_created: marketsCreated.toString(),
         likes_received: usersToLikesReceived[privateUser.id].length.toString(),
         unique_bettors: usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
@@ -260,7 +234,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         totalContractsUserBetOnInLastWeek === 0 &&
         topInvestments.length === 0 &&
         worstInvestments.length === 0 &&
-        usersToContractsCreated[privateUser.id].length === 0
+        marketsCreated === 0
       ) {
         return
       }
