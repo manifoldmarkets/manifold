@@ -11,7 +11,8 @@
     "strict": true,
     "target": "es2017",
     "paths": {
-      "common/*": ["../../common/*", "../../common/lib/*"]
+      "common/*": ["../../common/src/*", "../../../common/lib/*"],
+      "shared/*": ["./src/*"]
     }
   },
   "references": [{ "path": "../../common" }],

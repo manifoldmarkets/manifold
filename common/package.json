@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build": "yarn compile",
+    "compile": "tsc -b",
     "verify": "yarn --cwd=.. verify",
     "verify:dir": "npx eslint . --max-warnings 0",
     "test": "jest"

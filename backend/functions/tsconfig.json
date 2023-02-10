@@ -10,8 +10,9 @@
     "strict": true,
     "target": "es2017",
     "paths": {
-      "common/*": ["../../../common/*", "../../../common/lib/*"],
-      "shared/*": ["../shared/src/*", "../shared/lib/*"]
+      "common/*": ["../../common/src/*", "../../../common/lib/*"],
+      "shared/*": ["../shared/src/*", "../../shared/lib/*"],
+      "functions/*": ["./src/*"]
     }
   },
   "references": [
