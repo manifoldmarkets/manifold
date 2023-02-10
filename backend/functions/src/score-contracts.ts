@@ -68,8 +68,7 @@ export async function scoreContractsInternal() {
       const logOddsChange = Math.abs(
         logit(prob + probChanges.day) - logit(prob)
       )
-      dailyScore =
-        Math.log((contract.uniqueBettors7Days ?? 0) + 1) * logOddsChange
+      dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
     }
 
     let firebaseUpdate: Promise<any> = Promise.resolve()
