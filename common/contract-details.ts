@@ -9,25 +9,9 @@ import {
 import { richTextToString } from './util/parse'
 import { getCpmmProbability } from './calculate-cpmm'
 import { getDpmProbability } from './calculate-dpm'
-import { formatMoney, formatPercent } from './util/format'
+import { formatPercent } from './util/format'
 import { filterDefined } from './util/array'
 import { DOMAIN } from './envs/constants'
-
-export function contractMetrics(contract: Contract) {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const dayjs = require('dayjs')
-  const { createdTime, resolutionTime, isResolved } = contract
-
-  const createdDate = dayjs(createdTime).format('MMM D')
-
-  const resolvedDate = isResolved
-    ? dayjs(resolutionTime).format('MMM D')
-    : undefined
-
-  const volumeLabel = `${formatMoney(contract.volume)} bet`
-
-  return { volumeLabel, createdDate, resolvedDate }
-}
 
 // String version of the above, to send to the OpenGraph image generator
 export function contractTextDetails(contract: Contract) {

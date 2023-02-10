@@ -27,7 +27,6 @@ import {
   getGroupLinkToDisplay,
 } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
-import { contractMetrics } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
@@ -161,23 +160,23 @@ export function CloseOrResolveTime(props: {
   editable?: boolean
 }) {
   const { contract, editable } = props
-  const { resolvedDate } = contractMetrics(contract)
-  const { resolutionTime, closeTime } = contract
-  if (!!closeTime || !!resolvedDate) {
+  const { resolutionTime, closeTime, isResolved } = contract
+
+  if (!!closeTime || !!isResolved) {
     return (
       <Row className="select-none items-center">
-        {resolvedDate && resolutionTime && (
+        {isResolved && resolutionTime && (
           <DateTimeTooltip
             className="whitespace-nowrap"
             text="Market resolved:"
             time={resolutionTime}
             placement="bottom-start"
           >
-            resolved {resolvedDate}
+            resolved {dayjs(resolutionTime).format('MMM D')}
           </DateTimeTooltip>
         )}
 
-        {!resolvedDate && closeTime && (
+        {!isResolved && closeTime && (
           <EditableCloseDate
             closeTime={closeTime}
             contract={contract}
