@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "tsc -b",
-    "verify": "(cd .. && yarn verify)",
+    "build": "yarn compile && yarn alias",
+    "compile": "tsc -b",
+    "alias": "tsc-alias",
+    "verify": "yarn --cwd=../.. verify",
     "verify:dir": "npx eslint . --max-warnings 0"
   },
   "sideEffects": false,
@@ -19,6 +21,7 @@
     "openai": "3.0.1"
   },
   "devDependencies": {
-    "@types/node-fetch": "2.6.2"
+    "@types/node-fetch": "2.6.2",
+    "tsc-alias": "1.8.2"
   }
 }

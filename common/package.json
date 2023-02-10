@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "verify": "(cd .. && yarn verify)",
+    "verify": "yarn --cwd=.. verify",
     "verify:dir": "npx eslint . --max-warnings 0",
     "test": "jest"
   },

@@ -1,13 +1,3 @@
-import * as pgPromise from 'pg-promise'
-import {
-  Tables,
-  TableName,
-  getInstanceHostname,
-} from '../../../common/supabase/utils'
-import { createSupabaseDirectClient } from '../../shared/supabase/init'
-
-export const pgp = pgPromise()
-
 function getMessage(obj: unknown) {
   if (typeof obj === 'string') {
     return obj

@@ -1,22 +1,17 @@
 {
   "compilerOptions": {
-    "baseUrl": "../../",
     "rootDir": "src",
     "composite": true,
     "module": "commonjs",
     "noImplicitReturns": true,
     "outDir": "./lib",
+    "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
     "sourceMap": true,
     "strict": true,
     "target": "es2017",
     "paths": {
-      "common/*": ["../common/*"],
-      "shared/*": ["../backend/shared/*"]
-    }
-  },
-  "tsc-alias": {
-    "fileExtensions": {
-      "outputCheck": ["ts"]
+      "common/*": ["../../../common/*", "../../../common/lib/*"],
+      "shared/*": ["../shared/src/*", "../shared/lib/*"]
     }
   },
   "references": [
@@ -28,5 +23,5 @@
     }
   ],
   "compileOnSave": true,
-  "include": ["src/**/*"]
+  "include": ["src/**/*.ts"]
 }

@@ -7,9 +7,9 @@ import {
   replayFailedWrites,
 } from './replicate-writes'
 import { log } from './utils'
-import { TLEntry } from '../../../common/transaction-log'
-import { CONFIGS } from '../../../common/envs/constants'
-import { createSupabaseDirectClient } from '../../shared/supabase/init'
+import { TLEntry } from 'common/transaction-log'
+import { CONFIGS } from 'common/envs/constants'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 

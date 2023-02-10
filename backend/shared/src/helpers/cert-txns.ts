@@ -152,7 +152,7 @@ export function dividendTxns(
   })
 }
 
-/* 
+/*
 txns for minting:
 {
   fromId: 'BANK'
@@ -212,7 +212,7 @@ txns for sending dividends:
   description: 'user/alice distributes 250 M$ to user/bob'
 }
 
-txns for resolving/burning: 
+txns for resolving/burning:
 {
   fromId: 'user/alice'
   toId: 'BANK'

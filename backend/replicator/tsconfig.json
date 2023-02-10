@@ -1,13 +1,18 @@
 {
   "compilerOptions": {
-    "baseUrl": "../../",
+    "rootDir": "src",
     "composite": true,
     "module": "commonjs",
     "noImplicitReturns": true,
     "outDir": "lib",
+    "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
     "sourceMap": true,
     "strict": true,
-    "target": "es2022"
+    "target": "es2022",
+    "paths": {
+      "common/*": ["../../common/*", "../../common/lib/*"],
+      "shared/*": ["../shared/src/*", "../shared/lib/*"]
+    }
   },
   "references": [
     {
@@ -18,5 +23,5 @@
     }
   ],
   "compileOnSave": true,
-  "include": ["src"]
+  "include": ["src/**/*.ts"]
 }

@@ -5,8 +5,12 @@
     "firestore": "dev-mantic-markets.appspot.com"
   },
   "scripts": {
-    "build": "yarn compile && rm -rf dist && mkdir -p dist/backend/functions && cp -R ../../common/lib dist/common && cp -R ../shared/lib dist/backend/shared && cp -R lib dist/backend/functions && cp ../../yarn.lock dist && cp package.json dist && cp .env.prod dist && cp .env.dev dist",
-    "compile": "tsc -b && tsc-alias",
+    "build": "yarn compile && yarn --cwd=../shared alias && yarn alias && yarn dist",
+    "dist": "yarn dist:prepare && yarn dist:copy",
+    "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib dist/backend/shared/lib dist/backend/functions/lib",
+    "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ../shared/lib/* dist/backend/shared/lib && cp -R ./lib/* dist/backend/functions/lib && cp ../../yarn.lock dist && cp package.json dist && cp .env.prod dist && cp .env.dev dist",
+    "compile": "tsc -b",
+    "alias": "tsc-alias",
     "shell": "yarn build && firebase functions:shell",
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
@@ -18,7 +22,7 @@
     "db:backup-local": "firebase emulators:export --force ./firestore_export",
     "db:rename-remote-backup-folder": "gsutil -m mv gs://$npm_package_config_firestore/firestore_export gs://$npm_package_config_firestore/firestore_export_$(date +%d-%m-%Y-%H-%M)",
     "db:backup-remote": "yarn db:rename-remote-backup-folder && gcloud firestore export gs://$npm_package_config_firestore/firestore_export/",
-    "verify": "(cd .. && yarn verify)",
+    "verify": "yarn --cwd=../.. verify",
     "verify:dir": "npx eslint . --max-warnings 0; tsc -b -v --pretty"
   },
   "main": "backend/functions/lib/index.js",
