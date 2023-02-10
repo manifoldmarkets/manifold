@@ -37,6 +37,8 @@ import { mintAndPoolCert } from 'shared/helpers/cert-txns'
 import { getCloseDate } from 'shared/helpers/openai-utils'
 import { getContract, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
+import { canUserAddGroupToMarket } from './add-contract-to-group'
+import { isAdmin, isManifoldId } from 'common/envs/constants'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -152,31 +154,34 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   if (groupId) {
     const groupDocRef = firestore.collection('groups').doc(groupId)
     const groupDoc = await groupDocRef.get()
+    const firebaseUser = await admin.auth().getUser(auth.uid)
     if (!groupDoc.exists) {
       throw new APIError(400, 'No group exists with the given group ID.')
     }
 
     group = groupDoc.data() as Group
+    const groupMembersSnap = await firestore
+      .collection(`groups/${groupId}/groupMembers`)
+      .get()
+    const groupMemberDocs = groupMembersSnap.docs.map(
+      (doc) =>
+        doc.data() as { userId: string; createdTime: number; role?: string }
+    )
 
-    // check if group is not public
-    if (group.privacyStatus) {
-      const groupMembersSnap = await firestore
-        .collection(`groups/${groupId}/groupMembers`)
-        .get()
-      const groupMemberDocs = groupMembersSnap.docs.map(
-        (doc) =>
-          doc.data() as { userId: string; createdTime: number; role?: string }
+    if (
+      !canUserAddGroupToMarket({
+        userId: auth.uid,
+        group: group,
+        isMarketCreator: true,
+        isManifoldAdmin: isManifoldId(auth.uid) || isAdmin(firebaseUser.email),
+        userGroupRole: groupMemberDocs.filter((m) => m.userId === userId)[0]
+          .role as 'admin' | 'moderator' | undefined,
+      })
+    ) {
+      throw new APIError(
+        400,
+        `User does not have permission to add this market to group "${group.name}".`
       )
-      if (
-        (!groupMemberDocs.some((m) => m.userId === userId) ||
-          !groupMemberDocs.filter((m) => m.userId === userId)[0].role) &&
-        group.creatorId !== userId
-      ) {
-        throw new APIError(
-          400,
-          'User must be a admin/moderator of this group or group must be public to add markets to it.'
-        )
-      }
     }
   }
 
