@@ -7,6 +7,7 @@ export type WeeklyPortfolioUpdate = {
   profitPoints: { x: number; y: number }[]
   weeklyProfit: number
   rangeEndDateSlug: string // format yyyy-m-d
+  createdTime?: number
 }
 
 export type WeeklyPortfolioUpdateOGCardProps = {
