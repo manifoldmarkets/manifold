@@ -19,9 +19,21 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.2.0",
+    "@google-cloud/eventarc": "2.3.0",
     "@google-cloud/pubsub": "3.2.1",
+    "@tiptap/core": "2.0.0-beta.204",
+    "@tiptap/extension-image": "2.0.0-beta.204",
+    "@tiptap/extension-link": "2.0.0-beta.204",
+    "@tiptap/extension-mention": "2.0.0-beta.204",
+    "@tiptap/html": "2.0.0-beta.204",
+    "@tiptap/starter-kit": "2.0.0-beta.204",
+    "@tiptap/suggestion": "2.0.0-beta.204",
     "express": "4.18.1",
     "firebase-admin": "11.2.0",
+    "node-fetch": "2",
+    "pg-promise": "11.0.2",
+    "lodash": "4.17.21",
     "typescript": "4.9.3"
   },
   "devDependencies": {
