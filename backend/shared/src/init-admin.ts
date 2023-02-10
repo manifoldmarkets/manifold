@@ -3,17 +3,6 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as admin from 'firebase-admin'
 
-// First, generate a private key from the Google service account management page:
-// Prod: https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
-// Dev: https://console.firebase.google.com/u/0/project/dev-mantic-markets/settings/serviceaccounts/adminsdk
-// Then set GOOGLE_APPLICATION_CREDENTIALS_PROD or GOOGLE_APPLICATION_CREDENTIALS_DEV to the path of the key.
-
-// Then, to run a script, make sure you are pointing at the Firebase you intend to:
-// $ firebase use dev (or prod)
-//
-// Followed by, if you have https://github.com/TypeStrong/ts-node installed (recommended):
-// $ ts-node my-script.ts
-
 const getFirebaseProjectRoot = (cwd: string) => {
   // see https://github.com/firebase/firebase-tools/blob/master/src/detectProjectRoot.ts
   let dir = cwd

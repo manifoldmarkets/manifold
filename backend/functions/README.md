@@ -8,16 +8,11 @@ This is code that doesn't make sense on the frontend client, e.g.
 
 If you want to make and test changes, you'll have to do a bit of setup...
 
-## Running a script
-
-Use [ts-node](https://www.npmjs.com/package/ts-node) tu run a script.
-`ts-node backend/src/<script>.ts`
-
 ## Installing
 
 Adapted from https://firebase.google.com/docs/functions/get-started
 
-0. `$ cd backend` to switch to this folder
+0. `$ cd backend/functions` to switch to this folder
 1. `$ yarn global add firebase-tools` to install the Firebase CLI globally
 2. `$ yarn` to install JS dependencies
 3. `$ firebase login` to authenticate the CLI tools to Firebase
