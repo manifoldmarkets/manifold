@@ -17,10 +17,11 @@ const now = new Date()
 const time = now.getTime()
 const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
 
+// Saving metrics should work until 60k users
 export const saveWeeklyContractMetrics = functions
   .runWith({ memory: '4GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 60 })
-  // every minute for 3 hours Friday starting at 10am PT (UTC -07:00)
-  .pubsub.schedule('* 17-19 * * 5')
+  // every minute for 2 hours Friday 2am PT (UTC -08:00)
+  .pubsub.schedule('* 10-12 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await saveWeeklyContractMetricsInternal()
@@ -28,7 +29,7 @@ export const saveWeeklyContractMetrics = functions
 
 export const sendWeeklyPortfolioUpdate = functions
   .runWith({ memory: '8GB', timeoutSeconds: 540 })
-  // every Friday at 12pm PT (UTC -07:00)
+  // every Friday at 12pm PT (UTC -08:00)
   .pubsub.schedule('0 20 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
