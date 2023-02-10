@@ -1,6 +1,8 @@
 import { Firestore } from 'firebase-admin/firestore'
-import { TLEntry } from '../../common/transaction-log'
-import { SupabaseDirectClient, bulkInsert, log } from './utils'
+import { TLEntry } from '../../../common/transaction-log'
+import { log } from './utils'
+import { bulkInsert } from '../../shared/supabase/utils'
+import { SupabaseDirectClient } from '../../shared/supabase/init'
 
 export async function createFailedWrites(
   firestore: Firestore,

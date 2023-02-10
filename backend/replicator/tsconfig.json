@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": "../",
+    "baseUrl": "../../",
     "composite": true,
     "module": "commonjs",
     "noImplicitReturns": true,
@@ -11,7 +11,10 @@
   },
   "references": [
     {
-      "path": "../common"
+      "path": "../../common"
+    },
+    {
+      "path": "../shared"
     }
   ],
   "compileOnSave": true,
