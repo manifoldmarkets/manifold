@@ -157,21 +157,26 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     }
 
     group = groupDoc.data() as Group
-    const groupMembersSnap = await firestore
-      .collection(`groups/${groupId}/groupMembers`)
-      .get()
-    const groupMemberDocs = groupMembersSnap.docs.map(
-      (doc) => doc.data() as { userId: string; createdTime: number }
-    )
-    if (
-      !groupMemberDocs.some((m) => m.userId === userId) &&
-      group.creatorId !== userId &&
-      (group.privacyStatus == 'restricted' || group.privacyStatus == 'private')
-    ) {
-      throw new APIError(
-        400,
-        'User must be a admin/moderator of this group or group must be open to add markets to it.'
+
+    // check if group is not public
+    if (group.privacyStatus) {
+      const groupMembersSnap = await firestore
+        .collection(`groups/${groupId}/groupMembers`)
+        .get()
+      const groupMemberDocs = groupMembersSnap.docs.map(
+        (doc) =>
+          doc.data() as { userId: string; createdTime: number; role?: string }
       )
+      if (
+        (!groupMemberDocs.some((m) => m.userId === userId) ||
+          !groupMemberDocs.filter((m) => m.userId === userId)[0].role) &&
+        group.creatorId !== userId
+      ) {
+        throw new APIError(
+          400,
+          'User must be a admin/moderator of this group or group must be public to add markets to it.'
+        )
+      }
     }
   }
 
