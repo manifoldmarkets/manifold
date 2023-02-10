@@ -30,6 +30,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SEO } from 'web/components/SEO'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { DAY_MS } from 'common/util/time'
 
 export async function getStaticProps(props: {
   params: { username: string; rangeEndDateSlug: string }
@@ -127,10 +128,16 @@ export default function RangePerformancePage(props: {
 
   // convert the yyyy-mm-dd to a date
   const endDate = new Date(rangeEndDateSlug)
-  const date = endDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  })
+  const startDate = endDate.getTime() - 7 * DAY_MS
+  const date =
+    new Date(startDate).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }) +
+    ' - ' +
+    endDate.toLocaleDateString('en-US', {
+      day: 'numeric',
+    })
   const averagePoints = averagePointsInChunks(graphPoints)
   const ogProps = {
     points: JSON.stringify(averagePoints),
