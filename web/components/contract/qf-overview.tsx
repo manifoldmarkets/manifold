@@ -35,7 +35,6 @@ import { useUser } from 'web/hooks/use-user'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import QfTradesTable from './qf-trades-table'
 import { AlertBox } from '../widgets/alert-box'
-import Link from 'next/link'
 import { SiteLink } from '../widgets/site-link'
 
 export function QfOverview(props: { contract: QuadraticFundingContract }) {
