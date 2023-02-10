@@ -1,8 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { sortBy, sum } from 'lodash'
+import { orderBy, sortBy, sum } from 'lodash'
 
-import { PrivateUser } from 'common/user'
 import { getUsersContractMetricsOrderedByProfit } from 'common/supabase/contract-metrics'
 import { createWeeklyPortfolioUpdateNotification } from './create-notification'
 import { getUsernameById } from 'common/supabase/users'
@@ -11,6 +10,7 @@ import { log } from 'shared/utils'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { DAY_MS } from 'common/util/time'
 import { getPortfolioHistories } from 'common/supabase/portfolio-metrics'
+import { PrivateUser } from 'common/user'
 
 const firestore = admin.firestore()
 const now = new Date()
@@ -29,8 +29,8 @@ export const saveWeeklyContractMetrics = functions
 
 export const sendWeeklyPortfolioUpdate = functions
   .runWith({ memory: '8GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 540 })
-  // every Friday at 12pm PT (UTC -08:00)
-  .pubsub.schedule('0 20 * * 5')
+  // every Friday at 12pm PT (UTC -06:00)
+  .pubsub.schedule('0 18 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await sendWeeklyPortfolioUpdateNotifications()
@@ -56,7 +56,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
 
   // get the parent ref is the user id
   const weeklyUpdatedUsers = snap.docs.map((doc) => doc.ref.parent.parent?.id)
-  log('already updated users', weeklyUpdatedUsers.length)
+  log('already updated users', weeklyUpdatedUsers.length, 'at', time)
   // filter out the users who have already had their weekly update saved
   const usersToSave = privateUsers
     .filter((user) => !weeklyUpdatedUsers.includes(user.id))
@@ -95,6 +95,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
           ),
           rangeEndDateSlug: date,
           profitPoints: portfolioMetrics,
+          createdTime: time,
         } as Omit<WeeklyPortfolioUpdate, 'id'>
       })
     ),
@@ -137,12 +138,16 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
     privateUsers.map(async (privateUser) => {
       const snap = await firestore
         .collection(`users/${privateUser.id}/weekly-update`)
-        .where('rangeEndSlug', '==', date)
+        .where('rangeEndDateSlug', '==', date)
         .get()
       if (snap.empty) return
+      const update = orderBy(snap.docs, (d) => -d.data().createdTime)[0]
       const { weeklyProfit, rangeEndDateSlug, contractMetrics } =
-        snap.docs[0].data() as WeeklyPortfolioUpdate
+        update.data() as WeeklyPortfolioUpdate
       // Don't send update if there are no contracts
+      count++
+      if (count % 100 === 0)
+        log('sent weekly portfolio updates to', count, '/', privateUsers.length)
       if (contractMetrics.length === 0) return
       await createWeeklyPortfolioUpdateNotification(
         privateUser,
@@ -150,8 +155,6 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
         weeklyProfit,
         rangeEndDateSlug
       )
-      count++
-      if (count % 100 === 0) log('sent weekly portfolio updates to', count)
     })
   )
 }
