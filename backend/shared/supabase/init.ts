@@ -1,8 +1,5 @@
 import * as pgPromise from 'pg-promise'
-import {
-  createClient,
-  getInstanceHostname,
-} from 'common/supabase/utils'
+import { createClient, getInstanceHostname } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { isProd } from 'shared/utils'

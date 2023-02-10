@@ -13,7 +13,8 @@
     "@tiptap/html": "2.0.0-beta.204",
     "firebase-admin": "11.2.0",
     "lodash": "4.17.21",
-    "node-fetch": "2"
+    "node-fetch": "2",
+    "pg-promise": "11.0.2"
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.2"

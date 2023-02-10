@@ -13,8 +13,8 @@ import { DAY_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
-} from '../supabase/init'
-import { bulkInsert } from '../supabase/utils'
+} from 'shared/supabase/init'
+import { bulkInsert } from 'shared/supabase/utils'
 import { program } from 'commander'
 type TableName = keyof Database['public']['Tables']
 
