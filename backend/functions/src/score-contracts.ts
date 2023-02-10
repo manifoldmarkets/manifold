@@ -9,6 +9,7 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { createSupabaseClient } from './supabase/init'
 import { getRecentContractLikes } from './supabase/likes'
 import { run } from 'common/supabase/utils'
+import { logit } from 'common/util/math'
 
 export const scoreContracts = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540, secrets: ['SUPABASE_KEY'] })
@@ -63,9 +64,12 @@ export async function scoreContractsInternal() {
       contract.mechanism === 'cpmm-1' &&
       !wasCreatedToday
     ) {
-      const percentChange = Math.abs(contract.probChanges.day)
+      const { prob, probChanges } = contract
+      const logOddsChange = Math.abs(
+        logit(prob + probChanges.day) - logit(prob)
+      )
       dailyScore =
-        Math.log((contract.uniqueBettors7Days ?? 0) + 1) * percentChange
+        Math.log((contract.uniqueBettors7Days ?? 0) + 1) * logOddsChange
     }
 
     if (

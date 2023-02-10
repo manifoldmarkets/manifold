@@ -7,6 +7,8 @@ export const logInterpolation = (min: number, max: number, value: number) => {
   return Math.log(value - min + 1) / Math.log(max - min + 1)
 }
 
+export const logit = (x: number) => Math.log(x / (1 - x))
+
 export function normpdf(x: number, mean = 0, variance = 1) {
   if (variance === 0) {
     return x === mean ? Infinity : 0

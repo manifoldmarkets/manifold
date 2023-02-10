@@ -14,7 +14,7 @@ import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { buy, getProb, shortSell } from './calculate-cpmm-multi'
-import { average } from './util/math'
+import { average, logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 
 const computeInvestmentValue = (
@@ -81,8 +81,6 @@ export const computeElasticity = (
       return 1
   }
 }
-
-const logit = (x: number) => Math.log(x / (1 - x))
 
 export const computeBinaryCpmmElasticity = (
   unfilledBets: LimitBet[],
