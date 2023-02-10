@@ -5,7 +5,7 @@
     "firestore": "dev-mantic-markets.appspot.com"
   },
   "scripts": {
-    "build": "yarn compile && rm -rf dist && mkdir -p dist/backend/functions && cp -R ../../common/lib dist/common && cp -R lib/* dist/backend/functions && cp ../../yarn.lock dist && cp package.json dist && cp .env.prod dist && cp .env.dev dist",
+    "build": "yarn compile && rm -rf dist && mkdir -p dist/backend/functions && cp -R ../../common/lib dist/common && cp -R lib dist/backend/functions && cp ../../yarn.lock dist && cp package.json dist && cp .env.prod dist && cp .env.dev dist",
     "compile": "tsc -b && tsc-alias",
     "shell": "yarn build && firebase functions:shell",
     "start": "yarn shell",
@@ -21,7 +21,7 @@
     "verify": "(cd .. && yarn verify)",
     "verify:dir": "npx eslint . --max-warnings 0; tsc -b -v --pretty"
   },
-  "main": "backend/functions/index.js",
+  "main": "backend/functions/lib/index.js",
   "dependencies": {
     "@amplitude/node": "1.10.0",
     "@flat/in-app-purchase": "FlatIO/in-app-purchase#1.13.5",

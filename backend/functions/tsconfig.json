@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": "../../",
+    "rootDir": "src",
     "composite": true,
     "module": "commonjs",
     "noImplicitReturns": true,
@@ -9,7 +10,7 @@
     "strict": true,
     "target": "es2017",
     "paths": {
-      "common/*": ["../../common/*"]
+      "common/*": ["../common/*"]
     }
   },
   "tsc-alias": {
@@ -22,5 +23,6 @@
       "path": "../../common"
     }
   ],
-  "compileOnSave": true
+  "compileOnSave": true,
+  "include": ["src/**/*"]
 }
