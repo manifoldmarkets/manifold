@@ -4,7 +4,7 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import { Contract } from 'common/contract'
-import { getValues } from '../utils'
+import { getValues } from 'shared/utils'
 import { Comment } from 'common/comment'
 
 async function updateLastCommentTime() {

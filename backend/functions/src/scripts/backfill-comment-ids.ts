@@ -5,7 +5,7 @@
 import * as admin from 'firebase-admin'
 import { QueryDocumentSnapshot } from 'firebase-admin/firestore'
 import { initAdmin } from './script-init'
-import { log, writeAsync } from '../utils'
+import { log, writeAsync } from 'shared/utils'
 import { Bet } from 'common/bet'
 
 initAdmin()

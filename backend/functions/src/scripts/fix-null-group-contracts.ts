@@ -5,7 +5,7 @@
 import * as admin from 'firebase-admin'
 import { zip } from 'lodash'
 import { initAdmin } from './script-init'
-import { log } from '../utils'
+import { log } from 'shared/utils'
 
 initAdmin()
 const firestore = admin.firestore()

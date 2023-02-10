@@ -5,7 +5,7 @@ initAdmin()
 
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { getValues } from '../utils'
+import { getValues } from 'shared/utils'
 
 async function removeAnswerAnte() {
   const firestore = admin.firestore()

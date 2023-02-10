@@ -2,7 +2,7 @@ import { initAdmin } from './script-init'
 
 initAdmin()
 
-import { getImagePrompt } from '../helpers/openai-utils'
+import { getImagePrompt } from 'shared/helpers/openai-utils'
 
 async function main(question: string) {
   console.log('Generating prompt for question:', question)

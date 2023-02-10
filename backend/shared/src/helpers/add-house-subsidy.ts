@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 
 import { CPMMContract } from 'common/contract'
-import { isProd } from '../utils'
+import { isProd } from 'shared/utils'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,

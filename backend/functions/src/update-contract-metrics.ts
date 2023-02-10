@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { CollectionReference } from 'firebase-admin/firestore'
 import { sumBy } from 'lodash'
 
-import { getValues, invokeFunction, loadPaginated, log } from './utils'
+import { getValues, invokeFunction, loadPaginated, log } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract, CPMM, CPMMContract } from 'common/contract'
 import { DAY_MS } from 'common/util/time'

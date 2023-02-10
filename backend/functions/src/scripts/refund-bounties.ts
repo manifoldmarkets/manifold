@@ -4,7 +4,7 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import { Contract } from 'common/contract'
-import { payUser } from '../utils'
+import { payUser } from 'shared/utils'
 
 const firestore = admin.firestore()
 

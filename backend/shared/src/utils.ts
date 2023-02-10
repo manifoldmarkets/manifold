@@ -19,9 +19,6 @@ import { Group } from 'common/group'
 import { Post } from 'common/post'
 import { getFunctionUrl } from 'common/api'
 
-import { ContractResolutionPayoutTxn } from 'common/txn'
-import { runContractPayoutTxn } from './run-txn'
-
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
 }
@@ -276,7 +273,7 @@ export const payUser = (userId: string, payout: number, isDeposit = false) => {
   })
 }
 
-const checkAndMergePayouts = (
+export const checkAndMergePayouts = (
   payouts: {
     userId: string
     payout: number
@@ -314,40 +311,6 @@ export const payUsers = (
   const mergedPayouts = checkAndMergePayouts(payouts)
   for (const { userId, payout, deposit } of mergedPayouts) {
     updateUserBalance(transaction, userId, payout, deposit)
-  }
-}
-
-export const payUsersTransactions = async (
-  payouts: {
-    userId: string
-    payout: number
-    deposit?: number
-  }[],
-  contractId: string
-) => {
-  const firestore = admin.firestore()
-  const mergedPayouts = checkAndMergePayouts(payouts)
-  const payoutChunks = chunk(mergedPayouts, 500)
-
-  for (const payoutChunk of payoutChunks) {
-    await firestore.runTransaction(async (transaction) => {
-      payoutChunk.forEach(({ userId, payout, deposit }) => {
-        const payoutTxn: Omit<
-          ContractResolutionPayoutTxn,
-          'id' | 'createdTime'
-        > = {
-          category: 'CONTRACT_RESOLUTION_PAYOUT',
-          fromType: 'CONTRACT',
-          fromId: contractId,
-          toType: 'USER',
-          toId: userId,
-          amount: payout,
-          token: 'M$',
-          description: 'Contract payout for resolution: ' + contractId,
-        } as ContractResolutionPayoutTxn
-        runContractPayoutTxn(transaction, payoutTxn, deposit ?? 0)
-      })
-    })
   }
 }
 

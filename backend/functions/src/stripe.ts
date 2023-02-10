@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 
 import { EndpointDefinition } from './api'
-import { getPrivateUser, getUser, isProd, payUsers } from './utils'
+import { getPrivateUser, getUser, isProd, payUsers } from 'shared/utils'
 import { sendThankYouEmail } from './emails'
 import { track } from './analytics'
 

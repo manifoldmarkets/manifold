@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { uniq } from 'lodash'
 
-import { getUser, getUserByUsername } from './utils'
+import { getUser, getUserByUsername } from 'shared/utils'
 import { Bet } from 'common/bet'
 import {
   Contract,

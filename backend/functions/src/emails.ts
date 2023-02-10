@@ -12,7 +12,7 @@ import { getValueFromBucket } from 'common/calculate-dpm'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 
 import { sendTemplateEmail, sendTextEmail } from './send-email'
-import { contractUrl, getUser, log } from './utils'
+import { contractUrl, getUser, log } from 'shared/utils'
 import { buildCardUrl, getOpenGraphProps } from 'common/contract-details'
 import { notification_reason_types } from 'common/notification'
 import { Dictionary } from 'lodash'

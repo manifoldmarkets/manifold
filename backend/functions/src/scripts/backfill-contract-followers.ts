@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { getValues } from '../utils'
+import { getValues } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { Comment } from 'common/comment'
 import { uniq } from 'lodash'

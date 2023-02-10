@@ -1,6 +1,6 @@
 import { Expo } from 'expo-server-sdk'
 import { PushTicket } from 'common/push-ticket'
-import { log } from './utils'
+import { log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { removeUndefinedProps } from 'common/util/object'
 import * as functions from 'firebase-functions'

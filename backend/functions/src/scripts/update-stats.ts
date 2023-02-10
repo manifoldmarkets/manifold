@@ -1,7 +1,7 @@
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { log, logMemory } from '../utils'
+import { log, logMemory } from 'shared/utils'
 import { updateStatsCore } from '../update-stats'
 
 async function updateStats() {

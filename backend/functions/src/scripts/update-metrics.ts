@@ -1,7 +1,7 @@
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { log } from '../utils'
+import { log } from 'shared/utils'
 import { updateUserMetrics } from '../update-user-metrics'
 import { updateContractMetrics } from '../update-contract-metrics'
 import { updateGroupMetrics } from '../update-group-metrics'

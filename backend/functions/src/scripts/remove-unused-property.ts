@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
-import { getValues } from '../utils'
+import { getValues } from 'shared/utils'
 import { FieldValue } from 'firebase-admin/firestore'
 import { User } from 'common/user'
 

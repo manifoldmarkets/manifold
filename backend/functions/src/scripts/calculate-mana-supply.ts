@@ -5,7 +5,7 @@ import { DAY_MS } from 'common/util/time'
 import * as admin from 'firebase-admin'
 import { CollectionReference } from 'firebase-admin/firestore'
 import { sum } from 'lodash'
-import { getValues, loadPaginated } from '../utils'
+import { getValues, loadPaginated } from 'shared/utils'
 import { initAdmin } from './script-init'
 initAdmin()
 

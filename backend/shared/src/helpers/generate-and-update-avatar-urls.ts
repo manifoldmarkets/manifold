@@ -1,10 +1,11 @@
 import * as admin from 'firebase-admin'
 
-import { getStorage } from 'firebase-admin/storage'
-import { Bucket } from '@google-cloud/storage'
+import { getStorage, Storage } from 'firebase-admin/storage'
 import fetch from 'node-fetch'
 import { User } from 'common/user'
 import { DOMAIN } from 'common/envs/constants'
+
+type Bucket = ReturnType<InstanceType<typeof Storage>['bucket']>
 
 const firestore = admin.firestore()
 export const generateAndUpdateAvatarUrls = async (users: User[]) => {

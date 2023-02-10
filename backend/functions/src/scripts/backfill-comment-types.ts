@@ -1,7 +1,7 @@
 // Comment types were introduced in August 2022.
 
 import { initAdmin } from './script-init'
-import { log, writeAsync } from '../utils'
+import { log, writeAsync } from 'shared/utils'
 
 if (require.main === module) {
   const app = initAdmin()

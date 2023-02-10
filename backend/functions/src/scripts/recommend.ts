@@ -1,7 +1,7 @@
 import { getMarketRecommendations, user_data } from 'common/recommendation'
 import { sortBy } from 'lodash'
-import { readJson, writeJson } from '../helpers/file'
-import { getContract } from '../utils'
+import { readJson, writeJson } from 'shared/helpers/file'
+import { getContract } from 'shared/utils'
 
 import { initAdmin } from './script-init'
 initAdmin()

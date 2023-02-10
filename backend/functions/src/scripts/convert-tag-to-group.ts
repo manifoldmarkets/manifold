@@ -2,7 +2,7 @@
 
 import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
-import { isProd, log } from '../utils'
+import { isProd, log } from 'shared/utils'
 import { getSlug } from '../create-group'
 import { Group, GroupLink } from 'common/group'
 import { uniq } from 'lodash'

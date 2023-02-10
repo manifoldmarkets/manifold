@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { Group } from 'common/group'
 import { initAdmin } from './script-init'
-import { log } from '../utils'
+import { log } from 'shared/utils'
 
 const getGroups = async () => {
   const firestore = admin.firestore()

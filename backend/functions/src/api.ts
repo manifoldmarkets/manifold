@@ -4,7 +4,7 @@ import { Request, RequestHandler, Response } from 'express'
 import { error } from 'firebase-functions/logger'
 import { HttpsOptions } from 'firebase-functions/v2/https'
 
-import { log } from './utils'
+import { log } from 'shared/utils'
 import { APIError } from 'common/api'
 import { PrivateUser } from 'common/user'
 import {

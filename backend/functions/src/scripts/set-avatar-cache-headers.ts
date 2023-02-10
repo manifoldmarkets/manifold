@@ -1,5 +1,5 @@
 import { initAdmin } from './script-init'
-import { log } from '../utils'
+import { log } from 'shared/utils'
 
 const app = initAdmin()
 const ONE_YEAR_SECS = 60 * 60 * 24 * 365

@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 initAdmin()
 import { FieldValue } from 'firebase-admin/firestore'
-import { getAllUsers } from '../utils'
+import { getAllUsers } from 'shared/utils'
 import { mapAsync } from 'common/util/promise'
 
 const firestore = admin.firestore()

@@ -3,7 +3,7 @@
 
 import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
-import { log, processPartitioned } from '../utils'
+import { log, processPartitioned } from 'shared/utils'
 
 initAdmin()
 const firestore = admin.firestore()

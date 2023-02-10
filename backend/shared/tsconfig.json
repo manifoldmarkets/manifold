@@ -3,25 +3,18 @@
     "rootDir": "src",
     "composite": true,
     "module": "commonjs",
+    "moduleResolution": "node",
     "noImplicitReturns": true,
     "outDir": "lib",
     "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
     "sourceMap": true,
     "strict": true,
-    "target": "es2022",
+    "target": "es2017",
     "paths": {
-      "common/*": ["../../common/*", "../../common/lib/*"],
-      "shared/*": ["../shared/src/*", "../shared/lib/*"]
+      "common/*": ["../../common/src/*", "../../../common/lib/*"],
+      "shared/*": ["./src/*"]
     }
   },
-  "references": [
-    {
-      "path": "../../common"
-    },
-    {
-      "path": "../shared"
-    }
-  ],
-  "compileOnSave": true,
+  "references": [{ "path": "../../common" }],
   "include": ["src/**/*.ts"]
 }

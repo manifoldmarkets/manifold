@@ -7,7 +7,7 @@ import {
   getUser,
   getValues,
   revalidateStaticProps,
-} from './utils'
+} from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import { getLargestPosition } from 'common/calculate'

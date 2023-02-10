@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
 initAdmin()
-import { getAllPrivateUsers, isProd } from '../utils'
+import { getAllPrivateUsers, isProd } from 'shared/utils'
 import {
   getDefaultNotificationPreferences,
   notification_preference,
