@@ -20,11 +20,11 @@ import { MINUTE_MS } from 'common/util/time'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { Checkbox } from 'web/components/widgets/checkbox'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -34,7 +34,10 @@ import { createMarket } from 'web/lib/firebase/api'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
-import { getGroupsWhereUserIsMember } from 'web/lib/supabase/groups'
+import {
+  getNonPublicGroupsWhereUserHasRole,
+  getPublicGroups,
+} from 'web/lib/supabase/groups'
 import { GroupsInfoBlob } from './groups/contract-groups-list'
 
 export type NewQuestionParams = {
@@ -220,12 +223,21 @@ export function NewContractPanel(props: {
 
   const [hideOptions, setHideOptions] = useState(true)
 
-  const [permittedGroups, setPermittedGroups] = useState<Group[]>([])
+  const [adminGroups, setAdminGroups] = useState<Group[]>([])
+  const [publicGroups, setPublicGroups] = useState<Group[]>([])
   useEffect(() => {
-    getGroupsWhereUserIsMember(creator.id).then((g) =>
-      setPermittedGroups(g.map((gp: { group_data: any }) => gp.group_data))
-    )
+    getNonPublicGroupsWhereUserHasRole(creator.id)
+      .then((g) =>
+        setAdminGroups(g.map((gp: { group_data: any }) => gp.group_data))
+      )
+      .catch((e) => console.log(e))
   }, [creator.id])
+
+  useEffect(() => {
+    getPublicGroups()
+      .then((g) => setPublicGroups(g.map((gp: { data: any }) => gp.data)))
+      .catch((e) => console.log(e))
+  }, [])
 
   return (
     <div className={className}>
@@ -389,7 +401,7 @@ export function NewContractPanel(props: {
                   setSelectedGroup={setSelectedGroup}
                   creator={creator}
                   options={{ showSelector: true, showLabel: true }}
-                  permittedGroups={permittedGroups}
+                  permittedGroups={adminGroups.concat(publicGroups)}
                 />
                 {selectedGroup && (
                   <a target="_blank" href={groupPath(selectedGroup.slug)}>

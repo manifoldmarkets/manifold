@@ -156,3 +156,10 @@ export function addQfAddPool(params: QfAddPoolReq) {
 export function resolveQf(params: QfResolveReq) {
   return call('/api/v0/qf/resolve', 'POST', params)
 }
+
+export function updateGroupPrivacy(params: {
+  groupId: string
+  privacy: 'public' | 'restricted' | 'private'
+}) {
+  return call(getFunctionUrl('updategroupprivacy'), 'POST', params)
+}

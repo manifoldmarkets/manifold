@@ -8,7 +8,7 @@ export type Group = {
   creatorId: string // User id
   createdTime: number
   mostRecentActivityTime: number
-  anyoneCanJoin: boolean
+  anyoneCanJoin?: boolean
   totalContracts: number
   totalMembers: number
   aboutPostId?: string
@@ -26,8 +26,10 @@ export type Group = {
   }
   pinnedItems: { itemId: string; type: 'post' | 'contract' }[]
   bannerUrl?: string
+  privacyStatus?: PrivacyStatusType
 }
 
+export type PrivacyStatusType = 'restricted' | 'private'
 export const MAX_GROUP_NAME_LENGTH = 75
 export const MAX_ABOUT_LENGTH = 140
 export const MAX_ID_LENGTH = 60

@@ -1,28 +1,30 @@
 import * as admin from 'firebase-admin'
 
-import { getUser } from './utils'
 import { Contract } from 'common/contract'
-import { slugify } from 'common/util/slugify'
-import { randomString } from 'common/util/random'
 import {
   Group,
   MAX_ABOUT_LENGTH,
   MAX_GROUP_NAME_LENGTH,
   MAX_ID_LENGTH,
+  PrivacyStatusType,
 } from 'common/group'
-import { APIError, newEndpoint, validate } from './api'
+import { removeUndefinedProps } from 'common/util/object'
+import { randomString } from 'common/util/random'
+import { slugify } from 'common/util/slugify'
 import { z } from 'zod'
+import { APIError, newEndpoint, validate } from './api'
+import { getUser } from './utils'
 
 const bodySchema = z.object({
   name: z.string().min(1).max(MAX_GROUP_NAME_LENGTH),
   memberIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)),
-  anyoneCanJoin: z.boolean(),
   about: z.string().min(1).max(MAX_ABOUT_LENGTH).optional(),
+  privacyStatus: z.string().min(1).optional(),
 })
 
 export const creategroup = newEndpoint({}, async (req, auth) => {
   const firestore = admin.firestore()
-  const { name, about, memberIds, anyoneCanJoin } = validate(
+  const { name, about, memberIds, privacyStatus } = validate(
     bodySchema,
     req.body
   )
@@ -41,6 +43,8 @@ export const creategroup = newEndpoint({}, async (req, auth) => {
     name,
     'about',
     about,
+    'privacy',
+    privacyStatus,
     'other member ids',
     memberIds
   )
@@ -49,7 +53,7 @@ export const creategroup = newEndpoint({}, async (req, auth) => {
 
   const groupRef = firestore.collection('groups').doc()
 
-  const group: Group = {
+  const group: Group = removeUndefinedProps({
     id: groupRef.id,
     creatorId: creator.id,
     slug,
@@ -58,12 +62,12 @@ export const creategroup = newEndpoint({}, async (req, auth) => {
     createdTime: Date.now(),
     mostRecentActivityTime: Date.now(),
     // TODO: allow users to add contract ids on group creation
-    anyoneCanJoin,
     totalContracts: 0,
     totalMembers: memberIds.length,
     postIds: [],
     pinnedItems: [],
-  }
+    privacyStatus: privacyStatus as PrivacyStatusType,
+  })
 
   await groupRef.create(group)
 

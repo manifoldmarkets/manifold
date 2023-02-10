@@ -1,42 +1,42 @@
-import * as admin from 'firebase-admin'
-import { z } from 'zod'
-import { FieldValue } from 'firebase-admin/firestore'
 import { JSONContent } from '@tiptap/core'
+import * as admin from 'firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 import { uniq, zip } from 'lodash'
+import { z } from 'zod'
 
-import {
-  Contract,
-  CPMMBinaryContract,
-  FreeResponseContract,
-  MAX_QUESTION_LENGTH,
-  MAX_TAG_LENGTH,
-  NumericContract,
-  OUTCOME_TYPES,
-  VISIBILITIES,
-  DpmMultipleChoiceContract,
-} from 'common/contract'
-import { slugify } from 'common/util/slugify'
-import { randomString } from 'common/util/random'
-import { getContract, htmlToRichText } from './utils'
-import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
-import { ANTES } from 'common/economy'
+import { Answer, getNoneAnswer } from 'common/answer'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getMultipleChoiceAntes,
   getNumericAnte,
 } from 'common/antes'
-import { Answer, getNoneAnswer } from 'common/answer'
+import { Bet } from 'common/bet'
+import {
+  Contract,
+  CPMMBinaryContract,
+  DpmMultipleChoiceContract,
+  FreeResponseContract,
+  MAX_QUESTION_LENGTH,
+  MAX_TAG_LENGTH,
+  NumericContract,
+  OUTCOME_TYPES,
+  VISIBILITIES,
+} from 'common/contract'
+import { ANTES } from 'common/economy'
+import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
 import { getNewContract } from 'common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
-import { User } from 'common/user'
-import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { getCloseDate } from './helpers/openai-utils'
-import { marked } from 'marked'
-import { mintAndPoolCert } from './helpers/cert-txns'
-import { Bet } from 'common/bet'
 import { QfAddPoolTxn } from 'common/txn'
+import { User } from 'common/user'
+import { randomString } from 'common/util/random'
+import { slugify } from 'common/util/slugify'
+import { marked } from 'marked'
+import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
+import { mintAndPoolCert } from './helpers/cert-txns'
+import { getCloseDate } from './helpers/openai-utils'
+import { getContract, htmlToRichText } from './utils'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -165,11 +165,12 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     )
     if (
       !groupMemberDocs.some((m) => m.userId === userId) &&
-      group.creatorId !== userId
+      group.creatorId !== userId &&
+      (group.privacyStatus == 'restricted' || group.privacyStatus == 'private')
     ) {
       throw new APIError(
         400,
-        'User must be a member/creator of the group or group must be open to add markets to it.'
+        'User must be a admin/moderator of this group or group must be open to add markets to it.'
       )
     }
   }

@@ -80,6 +80,7 @@ import { claimdestinysub } from './claim-destiny-sub'
 import { addcontracttogroup } from './add-contract-to-group'
 import { updatememberrole } from './update-group-member-role'
 import { removecontractfromgroup } from './remove-contract-from-group'
+import { updategroupprivacy } from './update-group-privacy'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -121,6 +122,7 @@ const claimDestinySubFunction = toCloudFunction(claimdestinysub)
 const addContractToGroupFunction = toCloudFunction(addcontracttogroup)
 const updateMemberRoleFunction = toCloudFunction(updatememberrole)
 const removeContractFromGroupFunction = toCloudFunction(removecontractfromgroup)
+const updateGroupPrivacyFunction = toCloudFunction(updategroupprivacy)
 
 export {
   healthFunction as health,
@@ -160,4 +162,5 @@ export {
   addContractToGroupFunction as addcontracttogroup,
   updateMemberRoleFunction as updatememberrole,
   removeContractFromGroupFunction as removecontractfromgroup,
+  updateGroupPrivacyFunction as updategroupprivacy,
 }

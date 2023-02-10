@@ -17,7 +17,7 @@ export function AddMarketToGroupModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   onAddMarkets: (contracts: Contract[]) => void | Promise<void>
-  userRole: groupRoleType
+  userRole?: groupRoleType
 }) {
   const { group, user, open, setOpen, onAddMarkets, userRole } = props
   const [groupContractIds, setGroupContractIds] = useState<string[]>([])
@@ -32,11 +32,13 @@ export function AddMarketToGroupModal(props: {
         <div className="fixed inset-x-0 top-0 z-40 w-full rounded-t-md bg-indigo-100 py-2 px-8 text-indigo-800">
           {group.name}
         </div>
-        {userRole === 'member' && (
-          <Col className="w-full pt-4">
-            <NewContractFromGroup group={group} user={user} />
-          </Col>
-        )}
+        {!group.privacyStatus &&
+          userRole != 'admin' &&
+          userRole != 'moderator' && (
+            <Col className="w-full pt-4">
+              <NewContractFromGroup group={group} user={user} />
+            </Col>
+          )}
         {(userRole === 'admin' || userRole === 'moderator') && (
           <Col className="-mt-1 w-full pt-4">
             <UncontrolledTabs

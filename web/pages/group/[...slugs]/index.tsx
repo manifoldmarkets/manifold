@@ -38,11 +38,14 @@ import { GroupAboutSection } from 'web/components/groups/group-about-section'
 import BannerImage from 'web/components/groups/group-banner-image'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { GroupOptions } from 'web/components/groups/group-options'
-import { GroupMembersWidget } from 'web/components/groups/group-page-items'
+import GroupPrivacyStatusWidget, {
+  GroupMembersWidget,
+} from 'web/components/groups/group-page-items'
 import { GroupPostSection } from 'web/components/groups/group-post-section'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
+import { useAdmin } from 'web/hooks/use-admin'
 import { useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -51,7 +54,6 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { addContractToGroup } from 'web/lib/firebase/api'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
-import { useAdmin } from 'web/hooks/use-admin'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -175,14 +177,18 @@ export default function GroupPage(props: {
           className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
         />
       )}
-      {user && !isManifoldAdmin && userRole && (
-        <AddContractButton
-          group={group}
-          user={user}
-          userRole={userRole}
-          className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
-        />
-      )}
+      {user &&
+        !isManifoldAdmin &&
+        (!group.privacyStatus ||
+          (group.privacyStatus == 'restricted' &&
+            (userRole == 'admin' || userRole == 'moderator'))) && (
+          <AddContractButton
+            group={group}
+            user={user}
+            userRole={userRole ?? undefined}
+            className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
+          />
+        )}
       {isMobile && (
         <TopGroupNavBar
           group={group}
@@ -238,7 +244,10 @@ export default function GroupPage(props: {
               group={group}
               canEdit={isManifoldAdmin || userRole === 'admin'}
             />
-            {/* <GroupOpenClosedWidget group={group} /> */}
+            <GroupPrivacyStatusWidget
+              group={group}
+              canEdit={isManifoldAdmin || userRole === 'admin'}
+            />
           </Row>
         </Col>
       </div>
@@ -450,7 +459,7 @@ function GroupLeaderboard(props: {
 function AddContractButton(props: {
   group: Group
   user: User
-  userRole: groupRoleType
+  userRole?: groupRoleType
   className?: string
 }) {
   const { group, user, className, userRole } = props

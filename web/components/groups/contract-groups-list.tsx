@@ -17,7 +17,7 @@ import {
 } from 'web/lib/firebase/api'
 import {
   getGroupsWhereUserHasRole,
-  getGroupsWhereUserIsMember,
+  getPublicGroups,
 } from 'web/lib/supabase/groups'
 import { GroupLinkItem } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
@@ -31,23 +31,29 @@ export function ContractGroupsList(props: {
   const groups = useGroupsWithContract(contract) ?? []
 
   const isCreator = contract.creatorId === user?.id
-  const [permittedGroups, setPermittedGroups] = useState<Group[]>([])
+  const [adminGroups, setAdminGroups] = useState<Group[]>([])
+  const [publicGroups, setPublicGroups] = useState<Group[]>([])
+
   useEffect(() => {
     if (user) {
-      // if user is the creator of contract, show all groups that user is a member of
-      if (isCreator) {
-        getGroupsWhereUserIsMember(user.id).then((g) =>
-          setPermittedGroups(g.map((gp: { group_data: any }) => gp.group_data))
-        )
-        // show all groups where user is an admin/contributor
-      } else {
-        getGroupsWhereUserHasRole(user.id).then((g) =>
-          setPermittedGroups(g.map((gp: { group_data: any }) => gp.group_data))
-        )
-      }
+      getGroupsWhereUserHasRole(user.id).then((g) =>
+        setAdminGroups(g.map((gp: { group_data: any }) => gp.group_data))
+      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
+
+  useEffect(() => {
+    if (user) {
+      //if user is the creator of contract, show all public groups, and non public groups which use has admin/moderator role
+      if (isCreator) {
+        getPublicGroups().then((pg) =>
+          setPublicGroups(pg.map((pgp: { data: any }) => pgp.data))
+        )
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }
+  }, [])
   const isAdmin = useAdmin()
   function canRemoveFromGroup(group: Group) {
     if (!user) {
@@ -56,10 +62,10 @@ export function ContractGroupsList(props: {
     return (
       // if user is contract creator
       contract.creatorId === user.id ||
-      // if user has admin role in that group
-      (permittedGroups && permittedGroups.some((g) => g.id === group.id)) ||
       // if user is manifoldAdmin
-      isAdmin
+      isAdmin ||
+      // if user has admin role in that group
+      (adminGroups && adminGroups.some((g) => g.id === group.id))
     )
   }
 
@@ -114,7 +120,7 @@ export function ContractGroupsList(props: {
             })}
           </Row>
           {/* if is manifold admin, show all possible groups */}
-          {(isAdmin || permittedGroups.length > 0) && (
+          {(isAdmin || isCreator || adminGroups.length > 0) && (
             <Col className={'my-2 items-center justify-between p-0.5'}>
               <Row className="w-full justify-start text-sm text-gray-400">
                 Add to group
@@ -137,11 +143,16 @@ export function ContractGroupsList(props: {
                 permittedGroups={
                   isAdmin
                     ? undefined
-                    : contract.groupSlugs
-                    ? permittedGroups.filter(
-                        (g) => !contract.groupSlugs?.includes(g.slug)
-                      )
-                    : permittedGroups
+                    : isCreator
+                    ? adminGroups
+                        .filter(
+                          (g) =>
+                            g.privacyStatus == 'private' ||
+                            g.privacyStatus == 'restricted'
+                        )
+                        .concat(publicGroups)
+                        .filter((g) => !contract.groupSlugs?.includes(g.slug))
+                    : adminGroups
                 }
               />
             </Col>
