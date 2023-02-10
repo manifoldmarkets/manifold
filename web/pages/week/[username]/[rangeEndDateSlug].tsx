@@ -102,8 +102,13 @@ export default function RangePerformancePage(props: {
 
   if (!user || !weeklyPortfolioUpdate) return <Custom404 />
 
-  const { profitPoints, contractMetrics, weeklyProfit, rangeEndDateSlug } =
-    weeklyPortfolioUpdate
+  const {
+    profitPoints,
+    contractMetrics,
+    weeklyProfit,
+    rangeEndDateSlug,
+    createdTime,
+  } = weeklyPortfolioUpdate
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const graphPoints = useMemo(() => {
@@ -128,8 +133,7 @@ export default function RangePerformancePage(props: {
     return points.concat(portfolioPoints)
   }, [profitPoints])
 
-  // convert the yyyy-mm-dd to a date
-  const endDate = new Date(rangeEndDateSlug)
+  const endDate = createdTime ? new Date(createdTime) : new Date()
   const startDate = endDate.getTime() - 7 * DAY_MS
   const date =
     new Date(startDate).toLocaleDateString('en-US', {
