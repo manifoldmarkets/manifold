@@ -21,7 +21,7 @@ import { CPMMBinaryContract } from 'common/contract'
 import { ProfitChangeTable } from 'web/components/daily-profit'
 import clsx from 'clsx'
 import { SizedContainer } from 'web/components/sized-container'
-import { chunk, sum } from 'lodash'
+import { chunk, orderBy, sum } from 'lodash'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Title } from 'web/components/widgets/title'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -46,7 +46,9 @@ export async function getStaticProps(props: {
         )
       )
     : null
-  const weeklyPortfolioUpdate = weeklyPortfolioUpdates?.[0] ?? null
+  const weeklyPortfolioUpdate = weeklyPortfolioUpdates
+    ? orderBy(weeklyPortfolioUpdates, (u) => -(u.createdTime ?? 0))[0]
+    : null
   const contracts = weeklyPortfolioUpdate
     ? await getContracts(
         weeklyPortfolioUpdate.contractMetrics.map((c) => c.contractId),
