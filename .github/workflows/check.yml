@@ -38,5 +38,5 @@ jobs:
         run: tsc --pretty --project tsconfig.json --noEmit
       - name: Run Typescript checker on cloud functions
         if: ${{ success() || failure() }}
-        working-directory: functions
+        working-directory: backend/functions
         run: tsc -b -v --pretty
