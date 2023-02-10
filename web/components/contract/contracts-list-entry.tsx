@@ -31,11 +31,19 @@ export function ContractStatusLabel(props: { contract: Contract }) {
     }
     case 'PSEUDO_NUMERIC': {
       const val = contract.resolutionProbability ?? getProbability(contract)
-      return <span>{getFormattedMappedValue(contract, val)}</span>
+      return (
+        <span className={probTextColor}>
+          {getFormattedMappedValue(contract, val)}
+        </span>
+      )
     }
     case 'NUMERIC': {
       const val = contract.resolutionValue ?? getValueFromBucket('', contract)
-      return <span>{getFormattedMappedValue(contract, val)}</span>
+      return (
+        <span className={probTextColor}>
+          {getFormattedMappedValue(contract, val)}
+        </span>
+      )
     }
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE': {
