@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { Contract } from 'common/contract'
-import { getPrivateUser, getUserByUsername, isProd } from './utils'
+import { getPrivateUser, getUserByUsername, isProd } from 'shared/utils'
 import { createMarketClosedNotification } from './create-notification'
 import { DAY_MS } from 'common/util/time'
 

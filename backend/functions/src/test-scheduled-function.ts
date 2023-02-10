@@ -3,7 +3,7 @@ import {
   saveWeeklyContractMetricsInternal,
   sendWeeklyPortfolioUpdateNotifications,
 } from './weekly-portfolio-updates'
-import { isProd } from './utils'
+import { isProd } from 'shared/utils'
 
 // Function for testing scheduled functions locally
 export const testscheduledfunction = newEndpoint(

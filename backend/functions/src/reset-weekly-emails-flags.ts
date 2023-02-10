@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { getAllPrivateUsers } from './utils'
+import { getAllPrivateUsers } from 'shared/utils'
 
 export const resetWeeklyEmailsFlags = functions
   .runWith({

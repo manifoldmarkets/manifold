@@ -5,7 +5,7 @@ import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { getNewMultiBetInfo } from 'common/new-bet'
 import { Answer, MAX_ANSWER_LENGTH } from 'common/answer'
-import { getValues } from './utils'
+import { getValues } from 'shared/utils'
 import { APIError, newEndpoint, validate } from './api'
 import { addUserToContractFollowers } from './follow-market'
 

@@ -33,10 +33,10 @@ import { User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { marked } from 'marked'
+import { mintAndPoolCert } from 'shared/helpers/cert-txns'
+import { getCloseDate } from 'shared/helpers/openai-utils'
+import { getContract, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
-import { mintAndPoolCert } from './helpers/cert-txns'
-import { getCloseDate } from './helpers/openai-utils'
-import { getContract, htmlToRichText } from './utils'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(

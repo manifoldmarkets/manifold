@@ -2,7 +2,7 @@ import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import Custom404 from 'web/pages/404'
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import { Page } from 'web/components/layout/page'
 import { query, where } from 'firebase/firestore'
 import {
@@ -10,10 +10,7 @@ import {
   WeeklyPortfolioUpdateOGCardProps,
 } from 'common/weekly-portfolio-update'
 import { Col } from 'web/components/layout/col'
-import {
-  GraphMode,
-  PortfolioGraph,
-} from 'web/components/portfolio/portfolio-value-graph'
+import { PortfolioGraph } from 'web/components/portfolio/portfolio-value-graph'
 import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
 import { coll, getValues } from 'web/lib/firebase/utils'
 import { Row } from 'web/components/layout/row'
@@ -95,7 +92,6 @@ export default function RangePerformancePage(props: {
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,
   })
-  const [graphMode, setGraphMode] = useState<GraphMode>('profit')
   const graphView = useSingleValueHistoryChartViewScale()
   const { contracts: relatedMarkets, loadMore } = useRecentlyBetOnContracts(
     user?.id ?? '_'
@@ -126,7 +122,7 @@ export default function RangePerformancePage(props: {
     // We could replace last point with sum of contractMetrics
     // portfolioPoints[portfolioPoints.length - 1].y = contractMetricsSum - firstPointToScaleBy
     return points.concat(portfolioPoints)
-  }, [profitPoints, graphMode])
+  }, [profitPoints])
 
   const date =
     new Date(graphPoints[0].x).toLocaleDateString('en-US', {
@@ -195,7 +191,7 @@ export default function RangePerformancePage(props: {
             <SizedContainer fullHeight={250} mobileHeight={250}>
               {(width, height) => (
                 <PortfolioGraph
-                  mode={graphMode}
+                  mode="profit"
                   points={graphPoints}
                   width={width}
                   height={height}

@@ -23,7 +23,7 @@ import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { redeemShares } from './redeem-shares'
-import { log } from './utils'
+import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 
 const bodySchema = z.object({

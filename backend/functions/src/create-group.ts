@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
 
+import { getUser } from 'shared/utils'
 import { Contract } from 'common/contract'
 import {
   Group,
@@ -13,7 +14,6 @@ import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { z } from 'zod'
 import { APIError, newEndpoint, validate } from './api'
-import { getUser } from './utils'
 
 const bodySchema = z.object({
   name: z.string().min(1).max(MAX_GROUP_NAME_LENGTH),

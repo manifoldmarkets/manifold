@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, newEndpoint, validate } from './api'
-import { log } from './utils'
+import { log } from 'shared/utils'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { User } from 'common/user'
 import * as admin from 'firebase-admin'
