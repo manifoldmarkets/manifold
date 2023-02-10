@@ -2,7 +2,7 @@ import { initAdmin } from './script-init'
 initAdmin()
 import * as admin from 'firebase-admin'
 
-import { getAllPrivateUsers } from '../utils'
+import { getAllPrivateUsers } from 'shared/utils'
 
 const firestore = admin.firestore()
 

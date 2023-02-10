@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 
-import { getUser } from './utils'
+import { getUser } from 'shared/utils'
 import { createNewContractNotification } from './create-notification'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'

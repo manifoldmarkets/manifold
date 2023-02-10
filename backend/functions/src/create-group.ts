@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 
-import { getUser } from './utils'
+import { getUser } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'

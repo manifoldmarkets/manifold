@@ -4,7 +4,7 @@
 import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 import { cleanDisplayName } from 'common/util/clean-username'
-import { log, writeAsync, UpdateSpec } from '../utils'
+import { log, writeAsync, UpdateSpec } from 'shared/utils'
 initAdmin()
 const firestore = admin.firestore()
 

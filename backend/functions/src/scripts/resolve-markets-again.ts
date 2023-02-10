@@ -4,7 +4,7 @@ initAdmin()
 import { zip } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { resolveMarket } from '../resolve-market'
-import { getContract, getUser } from '../utils'
+import { getContract, getUser } from 'shared/utils'
 
 if (require.main === module) {
   const contractIds = process.argv.slice(2)

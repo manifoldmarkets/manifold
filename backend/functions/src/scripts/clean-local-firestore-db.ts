@@ -5,7 +5,7 @@ initAdmin()
 
 import { PrivateUser, User } from 'common/user'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
-import { getAllUsers, isProd } from '../utils'
+import { getAllUsers, isProd } from 'shared/utils'
 import { mapAsync } from 'common/lib/util/promise'
 import { FieldValue } from 'firebase-admin/lib/firestore'
 

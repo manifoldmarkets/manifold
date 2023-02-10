@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { keyBy, uniq } from 'lodash'
 
 import { Bet, LimitBet } from 'common/bet'
-import { getUser, getValues, isProd, log } from './utils'
+import { getUser, getValues, isProd, log } from 'shared/utils'
 import {
   createBetFillNotification,
   createBettingStreakBonusNotification,

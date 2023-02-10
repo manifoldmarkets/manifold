@@ -3,7 +3,7 @@ import * as Amplitude from '@amplitude/node'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 
-import { isProd, tryOrLogError } from './utils'
+import { isProd, tryOrLogError } from 'shared/utils'
 
 const key = isProd() ? PROD_CONFIG.amplitudeApiKey : DEV_CONFIG.amplitudeApiKey
 

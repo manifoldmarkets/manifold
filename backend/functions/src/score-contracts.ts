@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { Query } from 'firebase-admin/firestore'
 
 import { Contract } from 'common/contract'
-import { loadPaginated, log } from './utils'
+import { loadPaginated, log } from 'shared/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { createSupabaseClient } from './supabase/init'

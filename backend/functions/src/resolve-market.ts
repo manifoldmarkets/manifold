@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { mapValues, groupBy, sumBy, sum } from 'lodash'
+import { chunk, mapValues, groupBy, sumBy, sum } from 'lodash'
 
 import {
   Contract,
@@ -15,14 +15,10 @@ import {
   getValues,
   isProd,
   log,
-  payUsersTransactions,
+  checkAndMergePayouts,
   revalidateStaticProps,
-} from './utils'
-import {
-  getLoanPayouts,
-  getPayouts,
-  groupPayoutsByUser,
-} from 'common/payouts'
+} from 'shared/utils'
+import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { isAdmin, isManifoldId } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import { LiquidityProvision } from 'common/liquidity-provision'
@@ -38,6 +34,43 @@ import { User } from 'common/user'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
 import { computeContractMetricUpdates } from './update-contract-metrics'
 import { runTxn, TxnData } from './run-txn'
+
+import { ContractResolutionPayoutTxn } from 'common/txn'
+import { runContractPayoutTxn } from './run-txn'
+
+export const payUsersTransactions = async (
+  payouts: {
+    userId: string
+    payout: number
+    deposit?: number
+  }[],
+  contractId: string
+) => {
+  const firestore = admin.firestore()
+  const mergedPayouts = checkAndMergePayouts(payouts)
+  const payoutChunks = chunk(mergedPayouts, 500)
+
+  for (const payoutChunk of payoutChunks) {
+    await firestore.runTransaction(async (transaction) => {
+      payoutChunk.forEach(({ userId, payout, deposit }) => {
+        const payoutTxn: Omit<
+          ContractResolutionPayoutTxn,
+          'id' | 'createdTime'
+        > = {
+          category: 'CONTRACT_RESOLUTION_PAYOUT',
+          fromType: 'CONTRACT',
+          fromId: contractId,
+          toType: 'USER',
+          toId: userId,
+          amount: payout,
+          token: 'M$',
+          description: 'Contract payout for resolution: ' + contractId,
+        } as ContractResolutionPayoutTxn
+        runContractPayoutTxn(transaction, payoutTxn, deposit ?? 0)
+      })
+    })
+  }
+}
 
 const bodySchema = z.object({
   contractId: z.string(),

@@ -1,6 +1,6 @@
 import { APIError, newEndpoint, validate } from './api'
 import { z } from 'zod'
-import { getPrivateUser, getUser, isProd, log } from './utils'
+import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { track } from './analytics'
 import * as admin from 'firebase-admin'
 import { IapTransaction, PurchaseData } from 'common/iap'

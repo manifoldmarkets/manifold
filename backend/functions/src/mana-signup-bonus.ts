@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
 
-import { getPrivateUser, isProd } from './utils'
+import { getPrivateUser, isProd } from 'shared/utils'
 import {
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USER_NAME,

@@ -273,7 +273,7 @@ export const payUser = (userId: string, payout: number, isDeposit = false) => {
   })
 }
 
-const checkAndMergePayouts = (
+export const checkAndMergePayouts = (
   payouts: {
     userId: string
     payout: number

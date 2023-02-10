@@ -6,7 +6,7 @@ import {
 } from 'firebase-admin/firestore'
 import { chunk } from 'lodash'
 import { withRetries } from 'common/util/promise'
-import { log, processPartitioned } from '../utils'
+import { log, processPartitioned } from 'shared/utils'
 import { initAdmin } from '../scripts/script-init'
 import { Database } from 'common/supabase/schema'
 import { DAY_MS } from 'common/util/time'

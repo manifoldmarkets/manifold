@@ -3,7 +3,7 @@ import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
-import { getPrivateUser } from './utils'
+import { getPrivateUser } from 'shared/utils'
 import { User } from 'common/user'
 import {
   sendCreatorGuideEmail,

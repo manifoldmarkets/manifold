@@ -8,7 +8,7 @@ import {
   log,
   payUser,
   writeAsync,
-} from './utils'
+} from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { PortfolioMetrics, User } from 'common/user'

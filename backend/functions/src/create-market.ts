@@ -17,7 +17,7 @@ import {
 } from 'common/contract'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
-import { getContract, htmlToRichText } from './utils'
+import { getContract, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
 import { ANTES } from 'common/economy'
 import {

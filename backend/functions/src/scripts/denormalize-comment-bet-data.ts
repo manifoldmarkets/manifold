@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin'
 import { zip } from 'lodash'
 import { initAdmin } from './script-init'
 import { findDiffs, describeDiff, applyDiff } from './denormalize'
-import { log } from '../utils'
+import { log } from 'shared/utils'
 import { Transaction } from 'firebase-admin/firestore'
 
 initAdmin()

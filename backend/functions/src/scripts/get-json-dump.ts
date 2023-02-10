@@ -6,7 +6,7 @@ initAdmin()
 
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { getValues } from '../utils'
+import { getValues } from 'shared/utils'
 import { Comment } from 'common/comment'
 
 const firestore = admin.firestore()

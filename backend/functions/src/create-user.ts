@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { PrivateUser, User } from 'common/user'
-import { getUser, getUserByUsername, getValues } from './utils'
+import { getUser, getUserByUsername, getValues } from 'shared/utils'
 import { randomString } from 'common/util/random'
 import {
   cleanDisplayName,

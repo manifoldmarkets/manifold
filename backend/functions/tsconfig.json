@@ -11,7 +11,7 @@
     "target": "es2017",
     "paths": {
       "common/*": ["../common/*"],
-      "backend/shared/*": ["../shared/*"]
+      "shared/*": ["../backend/shared/*"]
     }
   },
   "tsc-alias": {

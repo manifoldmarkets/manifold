@@ -5,7 +5,7 @@ import {
 } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { isProd } from '../utils'
+import { isProd } from 'shared/utils'
 
 export const pgp = pgPromise()
 

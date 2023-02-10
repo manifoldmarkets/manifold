@@ -13,7 +13,7 @@ import { Contract } from 'common/contract'
 import { getLargestPosition } from 'common/calculate'
 import { initAdmin } from './script-init'
 import { DocumentSnapshot } from 'firebase-admin/firestore'
-import { log, writeAsync } from '../utils'
+import { log, writeAsync } from 'shared/utils'
 
 initAdmin()
 const firestore = admin.firestore()

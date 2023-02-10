@@ -1,7 +1,7 @@
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { getUserByUsername } from '../utils'
+import { getUserByUsername } from 'shared/utils'
 import { changeUser } from '../change-user-info'
 
 async function main() {

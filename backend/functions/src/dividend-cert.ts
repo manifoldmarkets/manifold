@@ -6,7 +6,7 @@ import { getDividendPayouts } from 'common/calculate/cert'
 import { Uniswap2CertContract } from 'common/contract'
 import { dividendTxns } from './helpers/cert-txns'
 import { CertTxn } from 'common/txn'
-import { payUsers } from './utils'
+import { payUsers } from 'shared/utils'
 
 // Split "amount" of mana between all holders of the cert.
 const bodySchema = z.object({

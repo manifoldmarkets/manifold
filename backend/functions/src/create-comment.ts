@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 
-import { getContract, getUser, htmlToRichText } from './utils'
+import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'

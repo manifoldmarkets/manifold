@@ -1,4 +1,4 @@
-import { getValues } from '../utils'
+import { getValues } from 'shared/utils'
 import { Group } from 'common/group'
 import { Contract } from 'common/contract'
 import { initAdmin } from './script-init'
