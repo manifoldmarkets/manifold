@@ -120,7 +120,11 @@ export function MemberRoleSection(props: {
     <Col className="w-full gap-3">
       <MemberRoleHeader
         headerText={`${role.toLocaleUpperCase()}S`}
-        description={roleDescription[role]}
+        description={
+          group.privacyStatus === 'restricted' && role === 'member'
+            ? undefined
+            : roleDescription[role]
+        }
       />
       {members === undefined ? (
         <LoadingIndicator />
