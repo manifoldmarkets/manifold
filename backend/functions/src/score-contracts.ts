@@ -3,12 +3,13 @@ import * as admin from 'firebase-admin'
 import { Query } from 'firebase-admin/firestore'
 
 import { Contract } from 'common/contract'
-import { loadPaginated, log } from './utils'
+import { loadPaginated, log } from 'shared/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
-import { createSupabaseClient } from './supabase/init'
-import { getRecentContractLikes } from './supabase/likes'
+import { createSupabaseClient } from 'shared/supabase/init'
+import { getRecentContractLikes } from 'shared/supabase/likes'
 import { run } from 'common/supabase/utils'
+import { logit } from 'common/util/math'
 
 export const scoreContracts = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540, secrets: ['SUPABASE_KEY'] })
@@ -63,28 +64,34 @@ export async function scoreContractsInternal() {
       contract.mechanism === 'cpmm-1' &&
       !wasCreatedToday
     ) {
-      const percentChange = Math.abs(contract.probChanges.day)
-      dailyScore =
-        Math.log((contract.uniqueBettors7Days ?? 0) + 1) * percentChange
+      const { prob, probChanges } = contract
+      const logOddsChange = Math.abs(
+        logit(prob + probChanges.day) - logit(prob)
+      )
+      dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
     }
 
+    let firebaseUpdate: Promise<any> = Promise.resolve()
     if (
       contract.popularityScore !== popularityScore ||
       contract.dailyScore !== dailyScore
     ) {
-      await firestore
+      firebaseUpdate = firestore
         .collection('contracts')
         .doc(contract.id)
         .update(removeUndefinedProps({ popularityScore, dailyScore }))
     }
 
-    await run(
-      db
-        .from('contract_recommendation_features')
-        .update({
-          freshness_score: freshnessScore,
-        })
-        .eq('contract_id', contract.id)
-    ).catch((e) => console.error(e))
+    await Promise.all([
+      firebaseUpdate,
+      run(
+        db
+          .from('contract_recommendation_features')
+          .update({
+            freshness_score: freshnessScore,
+          })
+          .eq('contract_id', contract.id)
+      ).catch((e) => console.error(e)),
+    ])
   }
 }

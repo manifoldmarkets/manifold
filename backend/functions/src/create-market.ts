@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { uniq, zip } from 'lodash'
 import { z } from 'zod'
-
 import { Answer, getNoneAnswer } from 'common/answer'
 import {
   getCpmmInitialLiquidity,
@@ -28,15 +27,15 @@ import { Group, GroupLink, MAX_ID_LENGTH } from 'common/group'
 import { getNewContract } from 'common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from 'common/numeric-constants'
 import { getPseudoProbability } from 'common/pseudo-numeric'
+import { getCloseDate } from 'shared/helpers/openai-utils'
+import { marked } from 'marked'
+import { mintAndPoolCert } from 'shared/helpers/cert-txns'
 import { QfAddPoolTxn } from 'common/txn'
 import { User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { marked } from 'marked'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
-import { mintAndPoolCert } from './helpers/cert-txns'
-import { getCloseDate } from './helpers/openai-utils'
-import { getContract, htmlToRichText } from './utils'
+import { getContract, htmlToRichText } from 'shared/utils'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(

@@ -10,13 +10,13 @@ import {
   getValues,
   isProd,
   log,
-} from './utils'
+} from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { DAY_MS } from 'common/util/time'
 import { partition, sortBy, uniq, uniqBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { emailMoneyFormat, sendWeeklyPortfolioUpdateEmail } from './emails'
-import { contractUrl } from './utils'
+import { contractUrl } from 'shared/utils'
 import { Txn } from 'common/txn'
 import { Reaction, ReactionTypes } from 'common/reaction'
 import { ContractMetric } from 'common/contract-metric'

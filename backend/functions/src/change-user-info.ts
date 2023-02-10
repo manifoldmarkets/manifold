@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
 import { z } from 'zod'
 
-import { Answer } from 'common/answer'
+import { getUser, getUserByUsername } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import {
@@ -15,8 +15,7 @@ import { User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
 import { APIError, newEndpoint, validate } from './api'
-import { getUser, getUserByUsername } from './utils'
-
+import { Answer } from 'common/answer'
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
 const bodySchema = z.object({

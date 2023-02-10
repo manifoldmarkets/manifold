@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { getContract, getUser } from './utils'
+import { getContract, getUser } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
 import { Answer } from 'common/answer'
 

@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { getPost } from './utils'
+import { getPost } from 'shared/utils'
 
 export const onCreateCommentOnPost = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })

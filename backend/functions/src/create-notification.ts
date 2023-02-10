@@ -9,7 +9,7 @@ import {
 } from 'common/notification'
 import { PrivateUser, User } from 'common/user'
 import { Contract } from 'common/contract'
-import { getPrivateUser, getValues, log } from './utils'
+import { getPrivateUser, getValues, log } from 'shared/utils'
 import { Comment } from 'common/comment'
 import { groupBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'

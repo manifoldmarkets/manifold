@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { getContract, getUser, log } from './utils'
+import { getContract, getUser, log } from 'shared/utils'
 import { createFollowOrMarketSubsidizedNotification } from './create-notification'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { addUserToContractFollowers } from './follow-market'

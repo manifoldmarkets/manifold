@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import { TipTxn, Txn } from 'common/txn'
-import { getContract, getGroup, getUser, log } from './utils'
+import { getContract, getGroup, getUser, log } from 'shared/utils'
 import { createTipNotification } from './create-notification'
 import * as admin from 'firebase-admin'
 import { Comment } from 'common/comment'

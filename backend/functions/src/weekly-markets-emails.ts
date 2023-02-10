@@ -10,7 +10,7 @@ import {
   getValues,
   isProd,
   log,
-} from './utils'
+} from 'shared/utils'
 import { createRNG, shuffle } from 'common/util/random'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { filterDefined } from 'common/util/array'

@@ -82,7 +82,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
       <div className="mb-4 text-gray-500">
         Contribute your {ENV_CONFIG.moneyMoniker} to make this market more
         accurate by subsidizing trading.{' '}
-        <InfoTooltip text="Liquidity is how much money traders can make if they're right. The more traders can earn, the greater the incentive to find the correct probability." />
+        <InfoTooltip text="Liquidity is how much money traders can make if they're right. The higher the stakes for traders, the greater the incentive to find the correct probability." />
       </div>
 
       <Row>

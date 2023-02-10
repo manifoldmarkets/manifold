@@ -22,10 +22,9 @@ Operations with complicated contracts (e.g. buying shares) are provided in a sep
 
 - `web/`: UI and business logic for the client. Where most of the site lives. The public API endpoints are also in here.
 
-- `functions/`: Firebase cloud functions, for secure work (e.g. balances, Stripe payments, emails). Also contains in
-  `functions/src/scripts/` some Typescript scripts that do ad hoc CLI interaction with Firebase.
+- `backend/`: All the rest of the stuff we run on GCP.
 
-- `common/`: Typescript library code shared between `web/` & `functions/`. If you want to look at how the market math
+- `common/`: Typescript library code shared between `web/` & `backend/`. If you want to look at how the market math
   works, most of that's in here (it gets called from the `placeBet` and `sellBet` endpoints in `functions/`.) Also
   contains in `common/envs` configuration for the different environments (i.e. prod, dev, Manifold for Teams instances.)
 

@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 
-import { getUser } from './utils'
+import { getUser } from 'shared/utils'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import { Post, MAX_POST_TITLE_LENGTH } from 'common/post'
