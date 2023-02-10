@@ -3,7 +3,6 @@ import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 import { min, max } from 'lodash'
 import dayjs from 'dayjs'
-import { PortfolioMetrics } from 'common/user'
 import { Col } from '../layout/col'
 import { TooltipProps } from 'web/components/charts/helpers'
 import {
@@ -11,6 +10,7 @@ import {
   HistoryPoint,
   viewScale,
 } from 'web/components/charts/generic-charts'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 const MARGIN = { top: 12, right: 48, bottom: 20, left: 12 }
 const MARGIN_X = MARGIN.left + MARGIN.right

@@ -7,12 +7,13 @@ import {
 } from '@supabase/supabase-js'
 
 import { Database } from './schema'
-import { User, PortfolioMetrics } from '../user'
+import { User } from '../user'
 import { Contract } from '../contract'
 import { Bet } from '../bet'
 import { ContractMetrics } from '../calculate-metrics'
 import { Group, GroupMemberDoc, GroupContractDoc } from '../group'
 import { UserEvent } from '../events'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 export type Schema = Database['public']
 export type Tables = Schema['Tables']

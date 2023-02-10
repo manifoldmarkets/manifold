@@ -18,12 +18,7 @@ import {
 } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { app, db } from './init'
-import {
-  PortfolioMetrics,
-  PrivateUser,
-  User,
-  UserAndPrivateUser,
-} from 'common/user'
+import { PrivateUser, User, UserAndPrivateUser } from 'common/user'
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
@@ -36,6 +31,7 @@ import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
 import { Contract } from 'common/contract'
 import { nativeSignOut } from 'web/lib/native/native-messages'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 dayjs.extend(utc)
 

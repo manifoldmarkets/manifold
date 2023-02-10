@@ -12,7 +12,7 @@ import {
 } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { PortfolioMetrics, User } from 'common/user'
+import { User } from 'common/user'
 import { DAY_MS } from 'common/util/time'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import {
@@ -26,6 +26,7 @@ import { hasChanges } from 'common/util/object'
 import { newEndpointNoAuth } from './api'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
 import { filterDefined } from 'common/util/array'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 const firestore = admin.firestore()
 

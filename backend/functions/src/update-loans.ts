@@ -11,13 +11,14 @@ import {
 } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { PortfolioMetrics, User } from 'common/user'
+import { User } from 'common/user'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import { createLoanIncomeNotification } from './create-notification'
 import { filterDefined } from 'common/util/array'
 import { newEndpointNoAuth } from './api'
 import { mapAsync } from 'common/util/promise'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 const firestore = admin.firestore()
 
