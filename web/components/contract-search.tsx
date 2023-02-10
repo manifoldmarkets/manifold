@@ -45,7 +45,7 @@ export const SORTS = [
   { label: 'Daily change', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: 'Total traders', value: 'most-popular' },
-  { label: 'Liquidity', value: 'liquidity' },
+  { label: 'High stakes', value: 'liquidity' },
   { label: 'Last activity', value: 'last-updated' },
   { label: 'Close date', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },

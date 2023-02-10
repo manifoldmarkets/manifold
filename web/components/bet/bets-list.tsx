@@ -296,7 +296,7 @@ export function BetsList(props: { user: User }) {
               <option value="value">Value</option>
               <option value="profit">Profit</option>
               <option value="loss">Loss</option>
-              <option value="liquidity">Liquidity</option>
+              <option value="liquidity">High stakes</option>
               <option value="closeTime">Close date</option>
             </Select>
           </Row>
