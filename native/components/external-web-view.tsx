@@ -19,7 +19,9 @@ import * as Sentry from 'sentry-expo'
 import { SplashLoading } from 'components/splash-loading'
 import { log } from 'components/logger'
 const isIOS = Platform.OS === 'ios'
-
+const JAVASCRIPT_PREVENT_ZOOM = `(function() {
+  const meta = document.createElement('meta'); meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'); meta.setAttribute('name', 'viewport'); document.getElementsByTagName('head')[0].appendChild(meta);
+})();`
 export const sharedWebViewProps: WebViewProps = {
   allowsInlineMediaPlayback: true,
   showsHorizontalScrollIndicator: false,
@@ -32,6 +34,7 @@ export const sharedWebViewProps: WebViewProps = {
   mediaPlaybackRequiresUserAction: true,
   allowsFullscreenVideo: true,
   autoManageStatusBarEnabled: false,
+  injectedJavaScript: JAVASCRIPT_PREVENT_ZOOM,
 }
 
 export const handleWebviewCrash = (
