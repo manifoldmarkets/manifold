@@ -15,7 +15,7 @@ import * as admin from 'firebase-admin'
 // $ ts-node my-script.ts
 //
 // Or compile it and run the compiled version:
-// $ yarn build && ../../lib/functions/scripts/src/my-script.js
+// $ yarn build && ../../lib/backend/scripts/src/my-script.js
 
 const getFirebaseProjectRoot = (cwd: string) => {
   // see https://github.com/firebase/firebase-tools/blob/master/src/detectProjectRoot.ts

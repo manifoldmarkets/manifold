@@ -2,7 +2,7 @@ import { initAdmin } from '../scripts/script-init'
 initAdmin()
 
 import { DAY_MS } from 'common/util/time'
-import { createSupabaseClient } from 'functions/src/supabase/init'
+import { createSupabaseClient } from '../supabase/init'
 import { getRecentContractLikes } from '../supabase/likes'
 
 const main = async () => {

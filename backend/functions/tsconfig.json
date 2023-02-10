@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
-    "baseUrl": "../",
+    "baseUrl": "../../",
     "rootDir": "src",
     "composite": true,
     "module": "commonjs",
     "noImplicitReturns": true,
     "outDir": "./lib",
-    "tsBuildInfoFile": "./lib/tsconfig.tsbuildinfo",
     "sourceMap": true,
     "strict": true,
     "target": "es2017",
@@ -21,9 +20,9 @@
   },
   "references": [
     {
-      "path": "../common"
+      "path": "../../common"
     }
   ],
   "compileOnSave": true,
-  "include": ["src"]
+  "include": ["src/**/*"]
 }

@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { Group } from 'common/group'
-import { initAdmin } from 'functions/src/scripts/script-init'
+import { initAdmin } from './script-init'
 import { log } from '../utils'
 
 const getGroups = async () => {

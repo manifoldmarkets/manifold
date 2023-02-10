@@ -1,7 +1,7 @@
 // for each user, get all contract metrics
 // fill in the user data
 
-import { initAdmin } from 'functions/src/scripts/script-init'
+import { initAdmin } from './script-init'
 import * as admin from 'firebase-admin'
 import { ContractMetric } from 'common/contract-metric'
 import { User } from 'common/user'

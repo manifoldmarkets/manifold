@@ -20,7 +20,7 @@ export function initAdmin() {
 }
 
 export async function getUserId(req: NextApiRequest, res: NextApiResponse) {
-  // Check for the correct bearer token. Taken from functions/src/api.ts
+  // Check for the correct bearer token. Taken from backend/src/api.ts
   const authHeader = req.headers.authorization ?? ''
   const authParts = authHeader.split(' ')
   if (authParts.length !== 2) {
@@ -49,7 +49,7 @@ export async function safeGet<T>(
   return doc.data() as T
 }
 
-// Copied from functions/src/utils
+// Copied from backend/src/utils
 export const payUsers = (
   transaction: Transaction,
   payouts: {
