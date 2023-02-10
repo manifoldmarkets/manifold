@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "baseUrl": "../",
+    "composite": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitReturns": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2017"
+  }
+}

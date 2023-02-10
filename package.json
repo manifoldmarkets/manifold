@@ -5,6 +5,7 @@
     "common",
     "backend/functions",
     "backend/replicator",
+    "backend/shared",
     "web"
   ],
   "scripts": {

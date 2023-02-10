@@ -1,0 +1,21 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b",
+    "verify": "(cd .. && yarn verify)",
+    "verify:dir": "npx eslint . --max-warnings 0"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@tiptap/core": "2.0.0-beta.204",
+    "@tiptap/html": "2.0.0-beta.204",
+    "firebase-admin": "11.2.0",
+    "lodash": "4.17.21",
+    "node-fetch": "2"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "2.6.2"
+  }
+}

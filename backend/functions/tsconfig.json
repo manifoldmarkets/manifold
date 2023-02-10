@@ -10,7 +10,8 @@
     "strict": true,
     "target": "es2017",
     "paths": {
-      "common/*": ["../common/*"]
+      "common/*": ["../common/*"],
+      "backend/shared/*": ["../shared/*"]
     }
   },
   "tsc-alias": {
@@ -21,6 +22,9 @@
   "references": [
     {
       "path": "../../common"
+    },
+    {
+      "path": "../shared"
     }
   ],
   "compileOnSave": true,
