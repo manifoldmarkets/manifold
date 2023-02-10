@@ -118,7 +118,6 @@ export function PrivacyStatusSelect(props: {
   setSelectedStatus: (selectedStatus: 'public' | 'restricted') => void
 }) {
   const { snippetStatus, selectedStatus, setSelectedStatus } = props
-  const { bigIcon, status, descriptor } = PRIVACY_STATUS_ITEMS[snippetStatus]
   return (
     <PrivacyStatusView
       viewStatus={snippetStatus}
@@ -191,6 +190,7 @@ export function ChangePrivacyStatusButton(props: {
           )
           .finally(() => setLoading(false))
       }}
+      loading={loading}
     >
       <Row className="items-center gap-1">
         <PencilIcon className="h-4 w-4" />
