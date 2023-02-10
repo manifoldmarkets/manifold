@@ -104,11 +104,12 @@ export default function RangePerformancePage(props: {
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const graphPoints = useMemo(() => {
+    if (profitPoints.length === 0) return []
     const contractMetricsSum = sum(
       contractMetrics.map((c) => c.from?.week.profit ?? 0)
     )
     const points = [] as { x: number; y: number; obj: any }[]
-    const firstPointToScaleBy = profitPoints[0].y
+    const firstPointToScaleBy = profitPoints[0]?.y ?? 0
     const portfolioPoints = profitPoints.map((p) => {
       // Squash the range by 2 times the total profit
       const possibleY = p.y - firstPointToScaleBy
@@ -124,18 +125,12 @@ export default function RangePerformancePage(props: {
     return points.concat(portfolioPoints)
   }, [profitPoints])
 
-  const date =
-    new Date(graphPoints[0].x).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    }) +
-    ' - ' +
-    new Date(graphPoints[graphPoints.length - 1].x).toLocaleDateString(
-      'en-US',
-      {
-        day: 'numeric',
-      }
-    )
+  // convert the yyyy-mm-dd to a date
+  const endDate = new Date(rangeEndDateSlug)
+  const date = endDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
   const averagePoints = averagePointsInChunks(graphPoints)
   const ogProps = {
     points: JSON.stringify(averagePoints),
@@ -187,19 +182,21 @@ export default function RangePerformancePage(props: {
           </span>
         </Col>
         <Col className={'items-center justify-center'}>
-          <Col className={'-mt-2 w-full max-w-md'}>
-            <SizedContainer fullHeight={250} mobileHeight={250}>
-              {(width, height) => (
-                <PortfolioGraph
-                  mode="profit"
-                  points={graphPoints}
-                  width={width}
-                  height={height}
-                  viewScaleProps={graphView}
-                />
-              )}
-            </SizedContainer>
-          </Col>
+          {graphPoints.length > 0 && (
+            <Col className={'-mt-2 w-full max-w-md'}>
+              <SizedContainer fullHeight={250} mobileHeight={250}>
+                {(width, height) => (
+                  <PortfolioGraph
+                    mode="profit"
+                    points={graphPoints}
+                    width={width}
+                    height={height}
+                    viewScaleProps={graphView}
+                  />
+                )}
+              </SizedContainer>
+            </Col>
+          )}
           <Col className={'my-6 '}>
             <ProfitChangeTable
               contracts={contracts}

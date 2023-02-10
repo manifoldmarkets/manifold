@@ -5,7 +5,7 @@ export const getUsernameById = async (
   userIds: string[],
   db: SupabaseClient
 ) => {
-  const chunks = chunk(userIds, 300)
+  const chunks = chunk(userIds, 150)
   const promises = chunks.map((chunk) =>
     run(selectFrom(db, 'users', 'username', 'id').in('id', chunk))
   )
