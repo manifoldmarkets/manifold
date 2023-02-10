@@ -42,33 +42,37 @@ export const addcontracttogroup = newEndpoint({}, async (req, auth) => {
     const contract = contractSnap.data() as Contract
     const firebaseUser = await admin.auth().getUser(auth.uid)
 
-    // checks if have permission to add a contract to the group
-    if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email)) {
-      if (!groupMember) {
-        // checks if is manifold admin (therefore does not have to be a group member)
-        throw new APIError(
-          400,
-          'User is not a member of the group, therefore can not add any markets'
-        )
-      } else {
-        // must either be admin, moderator or owner of contract to add to group
-        if (
-          group.creatorId !== auth.uid &&
-          groupMember.role !== 'admin' &&
-          groupMember.role !== 'moderator' &&
-          contract.creatorId !== auth.uid
-        )
+    // check if contract already exists in group
+    if (
+      contract.groupLinks &&
+      contract.groupLinks
+        .map((gl) => gl.groupId)
+        .some((gid) => gid === group.id)
+    )
+      throw new APIError(400, 'This market already exists in this group')
+
+    // checks if group is not public
+    if (group.privacyStatus) {
+      // checks if is manifold admin (therefore does not have to be a group member)
+      if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email)) {
+        if (!groupMember) {
           throw new APIError(
             400,
-            'User does not have permission to add this market to group'
+            'User is not a member of the group, therefore can not add any markets'
           )
-        if (
-          contract.groupLinks &&
-          contract.groupLinks
-            .map((gl) => gl.groupId)
-            .some((gid) => gid === group.id)
-        )
-          throw new APIError(400, 'This market already exists in this group')
+        } else {
+          // must either be admin, moderator or owner of contract to add to group
+          if (
+            group.creatorId !== auth.uid &&
+            groupMember.role !== 'admin' &&
+            groupMember.role !== 'moderator' &&
+            contract.creatorId !== auth.uid
+          )
+            throw new APIError(
+              400,
+              'User does not have permission to add this market to group'
+            )
+        }
       }
     }
     const newGroupLinks = [
