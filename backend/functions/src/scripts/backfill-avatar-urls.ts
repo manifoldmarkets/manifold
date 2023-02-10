@@ -2,7 +2,7 @@ import { initAdmin } from './script-init'
 initAdmin()
 import * as admin from 'firebase-admin'
 import { User } from 'common/user'
-import { generateAndUpdateAvatarUrls } from '../helpers/generate-and-update-avatar-urls'
+import { generateAndUpdateAvatarUrls } from 'shared/helpers/generate-and-update-avatar-urls'
 
 const firestore = admin.firestore()
 async function backfillAvatarUrls() {

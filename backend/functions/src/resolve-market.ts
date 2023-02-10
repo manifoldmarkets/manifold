@@ -31,7 +31,7 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { User } from 'common/user'
-import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
+import { updateContractMetricsForUsers } from 'shared/helpers/user-contract-metrics'
 import { computeContractMetricUpdates } from './update-contract-metrics'
 import { runTxn, TxnData } from './run-txn'
 

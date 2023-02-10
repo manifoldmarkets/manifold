@@ -4,10 +4,7 @@ import { z } from 'zod'
 import { PrivateUser, User } from 'common/user'
 import { getUser, getUserByUsername, getValues } from 'shared/utils'
 import { randomString } from 'common/util/random'
-import {
-  cleanDisplayName,
-  cleanUsername,
-} from 'common/util/clean-username'
+import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { isWhitelisted } from 'common/envs/constants'
 import {
   CATEGORIES_GROUP_SLUG_POSTFIX,
@@ -20,7 +17,7 @@ import { Group } from 'common/group'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
 import { removeUndefinedProps } from 'common/util/object'
-import { generateAvatarUrl } from './helpers/generate-and-update-avatar-urls'
+import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
 import { getStorage } from 'firebase-admin/storage'
 
 const bodySchema = z.object({

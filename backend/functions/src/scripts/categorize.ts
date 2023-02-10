@@ -2,7 +2,7 @@ import { initAdmin } from './script-init'
 
 initAdmin()
 
-import { getGroupForMarket } from '../helpers/openai-utils'
+import { getGroupForMarket } from 'shared/helpers/openai-utils'
 
 async function main(question: string) {
   console.log('finding group for question:', question)

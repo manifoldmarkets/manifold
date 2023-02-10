@@ -8,7 +8,7 @@ import { JSONContent } from '@tiptap/core'
 import { addUserToContractFollowers } from './follow-market'
 
 import { dreamWithDefaultParams } from './dream-utils'
-import { getImagePrompt } from './helpers/openai-utils'
+import { getImagePrompt } from 'shared/helpers/openai-utils'
 
 export const onCreateContract = functions
   .runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY', 'OPENAI_API_KEY'] })
