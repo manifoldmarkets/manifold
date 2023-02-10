@@ -8,11 +8,6 @@ This is code that doesn't make sense on the frontend client, e.g.
 
 If you want to make and test changes, you'll have to do a bit of setup...
 
-## Running a script
-
-Use [ts-node](https://www.npmjs.com/package/ts-node) tu run a script.
-`ts-node backend/src/<script>.ts`
-
 ## Installing
 
 Adapted from https://firebase.google.com/docs/functions/get-started
