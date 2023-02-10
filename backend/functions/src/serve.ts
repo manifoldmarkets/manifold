@@ -5,7 +5,7 @@ import { EndpointDefinition } from './api'
 
 const PORT = 8088
 
-import { initAdmin } from './scripts/script-init'
+import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
 import { health } from './health'
