@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "yarn compile && rm -rf dist && mkdir -p dist/replicator && cp -R ../common/lib dist/common && cp -R lib/src dist/replicator/src && cp ../yarn.lock dist && cp package.json dist",
+    "build": "yarn compile && rm -rf dist && mkdir -p dist/backend/replicator && cp -R ../../common/lib dist/common && cp -R ../shared/lib dist/backend/shared && cp -R lib/src dist/backend/replicator/src && cp ../../yarn.lock dist && cp package.json dist",
     "regen-types": "supabase gen types typescript --project-id pxidrgkatumlvfqaxcll --schema public > ../common/supabase/schema.ts",
     "regen-types-dev": "supabase gen types typescript --project-id mfodonznyfxllcezufgr --schema public > ../common/supabase/schema.ts",
     "compile": "tsc -b",
