@@ -48,7 +48,7 @@ export const payUsersTransactions = async (
 ) => {
   const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
-  const payoutChunks = chunk(mergedPayouts, 500)
+  const payoutChunks = chunk(mergedPayouts, 250)
 
   for (const payoutChunk of payoutChunks) {
     await firestore.runTransaction(async (transaction) => {
