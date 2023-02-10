@@ -82,7 +82,8 @@ export type groupRoleType = 'admin' | 'moderator' | 'member'
 export const roleDescription = {
   admin: `Can appoint roles, edit the group, and add or delete anyone's content from group`,
   moderator: `Can add or delete anyone's content from group`,
-  member: 'Can only add their own content to group',
+  publicMember: 'Can only add their own content to group',
+  restrictedMember: undefined,
 }
 
 export function LoadingMember(props: { className?: string }) {
@@ -120,12 +121,18 @@ export function MemberRoleSection(props: {
     <Col className="w-full gap-3">
       <MemberRoleHeader
         headerText={`${role.toLocaleUpperCase()}S`}
-        description={roleDescription[role]}
+        description={
+          role === 'member'
+            ? group.privacyStatus === 'restricted'
+              ? roleDescription.restrictedMember
+              : roleDescription.publicMember
+            : roleDescription[role]
+        }
       />
       {members === undefined ? (
         <LoadingIndicator />
       ) : members.length === 0 ? (
-        <div className="text-gray-400">{`No ${role}s yet...`}</div>
+        <div className="text-gray-300">{`No ${role}s yet...`}</div>
       ) : (
         members.map((member) => {
           return (
@@ -155,7 +162,7 @@ export function MemberRoleHeader(props: {
         <div className="my-auto flex h-[1px] grow bg-gray-400" />
       </Row>
       {description && (
-        <div className="text-xs text-gray-500">{description}</div>
+        <div className="text-xs text-gray-400">{description}</div>
       )}
     </Col>
   )

@@ -1,0 +1,32 @@
+export type Challenge = {
+    slug: string;
+    creatorId: string;
+    creatorUsername: string;
+    creatorName: string;
+    creatorAvatarUrl?: string;
+    message: string;
+    creatorAmount: number;
+    creatorOutcome: string;
+    acceptorOutcome: string;
+    acceptorAmount: number;
+    creatorOutcomeProb: number;
+    contractId: string;
+    contractSlug: string;
+    contractQuestion: string;
+    contractCreatorUsername: string;
+    createdTime: number;
+    expiresTime: number | null;
+    maxUses: number;
+    acceptedByUserIds: string[];
+    acceptances: Acceptance[];
+    isResolved: boolean;
+    resolutionOutcome?: string;
+};
+export type Acceptance = {
+    userId: string;
+    userUsername: string;
+    userName: string;
+    userAvatarUrl: string;
+    betId: string;
+    createdTime: number;
+};

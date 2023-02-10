@@ -1,0 +1,11 @@
+import * as functions from 'firebase-functions';
+import { TLEntry } from '../../../common/transaction-log';
+export declare const logTxns: functions.CloudFunction<functions.Change<functions.firestore.DocumentSnapshot>>;
+export declare const logGroups: functions.CloudFunction<functions.Change<functions.firestore.DocumentSnapshot>>;
+export declare const logUsers: functions.CloudFunction<functions.Change<functions.firestore.DocumentSnapshot>>;
+export declare const logContracts: functions.CloudFunction<functions.Change<functions.firestore.DocumentSnapshot>>;
+export declare const logContractBets: functions.CloudFunction<functions.Change<functions.firestore.DocumentSnapshot>>;
+export declare const logContractComments: functions.CloudFunction<functions.Change<functions.firestore.DocumentSnapshot>>;
+export declare const replicatelogtofirestore: import("firebase-functions/lib/v2/core").CloudFunction<import("firebase-functions/lib/v2/core").CloudEvent<import("firebase-functions/v2/pubsub").MessagePublishedData<TLEntry<import("../../../common/transaction-log").WriteDocument>>>>;
+export declare const replicatelogtosupabase: import("firebase-functions/lib/v2/core").CloudFunction<import("firebase-functions/lib/v2/core").CloudEvent<import("firebase-functions/v2/pubsub").MessagePublishedData<TLEntry<import("../../../common/transaction-log").WriteDocument>>>>;
+export declare const replayFailedSupabaseWrites: functions.CloudFunction<unknown>;

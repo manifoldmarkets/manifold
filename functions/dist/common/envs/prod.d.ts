@@ -1,0 +1,51 @@
+export type EnvConfig = {
+    domain: string;
+    firebaseConfig: FirebaseConfig;
+    amplitudeApiKey?: string;
+    supabaseInstanceId?: string;
+    supabaseAnonKey?: string;
+    twitchBotEndpoint?: string;
+    sprigEnvironmentId?: string;
+    cloudRunId: string;
+    cloudRunRegion: string;
+    adminEmails: string[];
+    whitelistEmail?: string;
+    visibility: 'PRIVATE' | 'PUBLIC';
+    moneyMoniker: string;
+    bettor?: string;
+    nounBet?: string;
+    verbPastBet?: string;
+    faviconPath?: string;
+    navbarLogoPath?: string;
+    newQuestionPlaceholders: string[];
+    expoConfig?: {
+        iosClientId?: string;
+        expoClientId?: string;
+        androidClientId?: string;
+    };
+    economy?: Economy;
+};
+export type Economy = {
+    FIXED_ANTE?: number;
+    STARTING_BALANCE?: number;
+    SUS_STARTING_BALANCE?: number;
+    REFERRAL_AMOUNT?: number;
+    UNIQUE_BETTOR_BONUS_AMOUNT?: number;
+    BETTING_STREAK_BONUS_AMOUNT?: number;
+    BETTING_STREAK_BONUS_MAX?: number;
+    BETTING_STREAK_RESET_HOUR?: number;
+    FREE_MARKETS_PER_USER_MAX?: number;
+    STARTING_BONUS?: number;
+};
+type FirebaseConfig = {
+    apiKey: string;
+    authDomain: string;
+    projectId: string;
+    region?: string;
+    storageBucket: string;
+    messagingSenderId: string;
+    appId: string;
+    measurementId: string;
+};
+export declare const PROD_CONFIG: EnvConfig;
+export {};

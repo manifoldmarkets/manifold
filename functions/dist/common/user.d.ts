@@ -1,0 +1,86 @@
+import { notification_preferences } from './user-notification-preferences';
+export type User = {
+    id: string;
+    createdTime: number;
+    name: string;
+    username: string;
+    avatarUrl: string;
+    bio?: string;
+    website?: string;
+    twitterHandle?: string;
+    discordHandle?: string;
+    balance: number;
+    totalDeposits: number;
+    profitCached: {
+        daily: number;
+        weekly: number;
+        monthly: number;
+        allTime: number;
+    };
+    creatorTraders: {
+        daily: number;
+        weekly: number;
+        monthly: number;
+        allTime: number;
+    };
+    fractionResolvedCorrectly?: number;
+    nextLoanCached: number;
+    followerCountCached: number;
+    homeSections?: string[];
+    referredByUserId?: string;
+    referredByContractId?: string;
+    referredByGroupId?: string;
+    shouldShowWelcome?: boolean;
+    lastBetTime?: number;
+    currentBettingStreak?: number;
+    streakForgiveness: number;
+    hasSeenContractFollowModal?: boolean;
+    isBannedFromPosting?: boolean;
+    userDeleted?: boolean;
+};
+export type PrivateUser = {
+    id: string;
+    email?: string;
+    weeklyTrendingEmailSent?: boolean;
+    weeklyPortfolioUpdateEmailSent?: boolean;
+    manaBonusSent?: boolean;
+    initialDeviceToken?: string;
+    initialIpAddress?: string;
+    apiKey?: string;
+    notificationPreferences: notification_preferences;
+    twitchInfo?: {
+        twitchName: string;
+        controlToken: string;
+        botEnabled?: boolean;
+        needsRelinking?: boolean;
+    };
+    destinySubClaimed?: boolean;
+    pushToken?: string;
+    rejectedPushNotificationsOn?: number;
+    interestedInPushNotifications?: boolean;
+    blockedUserIds: string[];
+    blockedByUserIds: string[];
+    blockedContractIds: string[];
+    blockedGroupSlugs: string[];
+    hasSeenAppBannerInNotificationsOn?: number;
+    installedAppPlatforms?: string[];
+};
+export type PortfolioMetrics = {
+    investmentValue: number;
+    balance: number;
+    totalDeposits: number;
+    timestamp: number;
+    userId: string;
+};
+export declare const MANIFOLD_USER_USERNAME = "ManifoldMarkets";
+export declare const MANIFOLD_USER_NAME = "ManifoldMarkets";
+export declare const MANIFOLD_AVATAR_URL = "https://manifold.markets/logo-bg-white.png";
+export declare const BETTOR: string;
+export declare const BETTORS: string;
+export declare const SINGULAR_BET: string;
+export declare const PLURAL_BETS: string;
+export declare const PAST_BET: string;
+export type UserAndPrivateUser = {
+    user: User;
+    privateUser: PrivateUser;
+};
