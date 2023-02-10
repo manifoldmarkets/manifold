@@ -28,7 +28,7 @@ export const saveWeeklyContractMetrics = functions
   })
 
 export const sendWeeklyPortfolioUpdate = functions
-  .runWith({ memory: '8GB', timeoutSeconds: 540 })
+  .runWith({ memory: '8GB',secrets: ['SUPABASE_KEY'], timeoutSeconds: 540 })
   // every Friday at 12pm PT (UTC -08:00)
   .pubsub.schedule('0 20 * * 5')
   .timeZone('Etc/UTC')
