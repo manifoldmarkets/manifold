@@ -36,6 +36,7 @@ import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
 import { getGroupsWhereUserIsMember } from 'web/lib/supabase/groups'
 import { GroupsInfoBlob } from './groups/contract-groups-list'
+import { QfExplainer } from './contract/qf-overview'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -272,8 +273,8 @@ export function NewContractPanel(props: {
                     PSEUDO_NUMERIC:
                       '[EXPERIMENTAL] Predict the value of a number.',
                     CERT: '[EXPERIMENTAL] Tradeable shares of a stock.',
-                    QUADRATIC_FUNDING:
-                      '[EXPERIMENTAL] Radically fund projects. ',
+                    QUADRATIC_FUNDING: '',
+                    // '[EXPERIMENTAL] Radically fund projects. ',
                   }[choice] ?? ''
                 setMarketInfoText(text)
                 setOutcomeType(choice as outcomeType)
@@ -296,13 +297,13 @@ export function NewContractPanel(props: {
               {marketInfoText}
             </div>
           )}
+          <Spacer h={2} />
+          {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
 
-          <Spacer h={6} />
-
+          <Spacer h={4} />
           {outcomeType === 'MULTIPLE_CHOICE' && (
             <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
           )}
-
           {outcomeType === 'PSEUDO_NUMERIC' && (
             <>
               <div className="mb-2 flex flex-col items-start">
@@ -402,7 +403,6 @@ export function NewContractPanel(props: {
               <Spacer h={6} />
             </>
           )}
-
           <div className="mb-1 flex flex-col items-start">
             <label className="mb-1 gap-2 px-1 py-2">
               <span>Question closes in </span>
@@ -452,9 +452,7 @@ export function NewContractPanel(props: {
               />
             </Row>
           </div>
-
           <Spacer h={6} />
-
           <Row className="items-center gap-2">
             <span>
               Publicly listed{' '}
