@@ -72,23 +72,27 @@ export async function scoreContractsInternal() {
         Math.log((contract.uniqueBettors7Days ?? 0) + 1) * logOddsChange
     }
 
+    let firebaseUpdate: Promise<any> = Promise.resolve()
     if (
       contract.popularityScore !== popularityScore ||
       contract.dailyScore !== dailyScore
     ) {
-      await firestore
+      firebaseUpdate = firestore
         .collection('contracts')
         .doc(contract.id)
         .update(removeUndefinedProps({ popularityScore, dailyScore }))
     }
 
-    await run(
-      db
-        .from('contract_recommendation_features')
-        .update({
-          freshness_score: freshnessScore,
-        })
-        .eq('contract_id', contract.id)
-    ).catch((e) => console.error(e))
+    await Promise.all([
+      firebaseUpdate,
+      run(
+        db
+          .from('contract_recommendation_features')
+          .update({
+            freshness_score: freshnessScore,
+          })
+          .eq('contract_id', contract.id)
+      ).catch((e) => console.error(e)),
+    ])
   }
 }
