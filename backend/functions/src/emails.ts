@@ -17,10 +17,26 @@ import { buildCardUrl, getOpenGraphProps } from 'common/contract-details'
 import { notification_reason_types } from 'common/notification'
 import { Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
-import {
-  PerContractInvestmentsData,
-  OverallPerformanceData,
-} from './weekly-portfolio-emails'
+
+export type PerContractInvestmentsData = {
+  questionTitle: string
+  questionUrl: string
+  questionProb: string
+  profitStyle: string
+  currentValue: number
+  pastValue: number
+  profit: number
+}
+
+export type OverallPerformanceData = {
+  profit: string
+  prediction_streak: string
+  markets_traded: string
+  profit_style: string
+  likes_received: string
+  markets_created: string
+  unique_bettors: string
+}
 
 export const emailMoneyFormat = (amount: number) => {
   return formatMoney(amount).replace(ENV_CONFIG.moneyMoniker, 'M')
