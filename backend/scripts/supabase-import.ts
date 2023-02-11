@@ -8,15 +8,14 @@ import { chunk } from 'lodash'
 import { withRetries } from 'common/util/promise'
 import { log, processPartitioned } from 'shared/utils'
 import { initAdmin } from 'shared/init-admin'
-import { Database } from 'common/supabase/schema'
 import { DAY_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
+import { TableName } from 'common/supabase/utils'
 import { program } from 'commander'
-type TableName = keyof Database['public']['Tables']
 
 // strategy for live importing collection C without dropping data (times are firestore server times)
 // 1. optional - clear supabase table for collection C
