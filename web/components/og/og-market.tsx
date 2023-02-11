@@ -38,7 +38,7 @@ export function OgMarket(props: OgCardProps) {
             <Sparkline
               data={data}
               height={300}
-              aspectRatio={3}
+              aspectRatio={2.5}
               min={0}
               max={1}
             />
