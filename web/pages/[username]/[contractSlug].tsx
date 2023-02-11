@@ -253,8 +253,12 @@ export function ContractPageContent(
 
   const ogCardProps = {
     ...getOpenGraphProps(contract),
-    // remove the avatars
-    points: JSON.stringify(betPoints.map(({ x, y }) => ({ x, y })).reverse()),
+    points: JSON.stringify(
+      betPoints
+        .map(({ x, y }) => ({ x, y })) // remove the avatars
+        .slice(0, 50)
+        .reverse()
+    ),
   }
   const seoDesc = getSeoDescription(contract, ogCardProps)
 

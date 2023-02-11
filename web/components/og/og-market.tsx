@@ -10,12 +10,13 @@ import { formatPercent } from 'common/util/format'
 export function OgMarket(props: OgCardProps) {
   const {
     question,
+    numTraders,
+    volume,
     creatorName,
     creatorAvatarUrl,
     numericValue,
     resolution,
     topAnswer,
-    probability,
     points,
   } = props
   const data = JSON.parse(points) as ogPoint[]
@@ -30,7 +31,7 @@ export function OgMarket(props: OgCardProps) {
       >
         {question}
       </div>
-      <div className="flex w-full flex-row justify-center self-stretch">
+      <div className="relative flex w-full flex-row justify-center">
         {data.length ? (
           <>
             {TimeProb({ date: data[0].x, prob: data[0].y })}
@@ -41,56 +42,60 @@ export function OgMarket(props: OgCardProps) {
               min={0}
               max={1}
             />
-            {TimeProb({
-              date: data[data.length - 1].x,
-              prob: data[data.length - 1].y,
-            })}
+            {resolution
+              ? ResolutionDiv(props)
+              : TimeProb({
+                  date: data[data.length - 1].x,
+                  prob: data[data.length - 1].y,
+                })}
           </>
-        ) : null}
-
-        {/* answer */}
-        {resolution && !topAnswer
-          ? ResolutionDiv(props)
-          : numericValue
-          ? NumericValueDiv(props)
-          : topAnswer
-          ? AnswerDiv(props)
-          : // : probability != undefined
-            // ? ProbabilityDiv(props)
-            null}
+        ) : (
+          <div className="flex w-full flex-row items-center justify-end px-24">
+            {resolution && !topAnswer
+              ? ResolutionDiv(props)
+              : numericValue
+              ? NumericValueDiv(props)
+              : topAnswer
+              ? AnswerDiv(props)
+              : null}
+          </div>
+        )}
       </div>
 
       {/* Bottom row */}
-      <div className="flex flex-row items-center justify-between self-stretch px-24 text-2xl text-gray-600">
-        <div className="flex">
-          {/* Profile image */}
-          {creatorAvatarUrl && (
-            <img
-              className="mr-4 h-8 w-8 rounded-full bg-white"
-              src={creatorAvatarUrl}
-            />
-          )}
-          <span>{creatorName}</span>
+      <div className="flex w-full flex-row items-center justify-between self-stretch px-24 text-3xl text-gray-600">
+        {/* Details */}
+        <div className="flex items-center">
+          <div className="mr-6 flex items-center">
+            {/* Profile image */}
+            {creatorAvatarUrl && (
+              <img
+                className="mr-2 h-12 w-12 rounded-full bg-white"
+                src={creatorAvatarUrl}
+              />
+            )}
+            <span>{creatorName}</span>
+          </div>
+
+          <span className="mr-6">$M{volume} bet</span>
+
+          <span className="mr-6">{numTraders} traders</span>
         </div>
 
-        <span>$M69 bet</span>
-
-        <span>420 traders</span>
-
         {/* Manifold logo */}
-        <div className="flex">
+        <div className="flex items-center">
           <img
             className="mr-3 h-12 w-12"
             src="https://manifold.markets/logo.svg"
             width="40"
             height="40"
           />
-          <div
-            className="mt-3 flex text-3xl lowercase"
+          <span
+            className="text-4xl lowercase"
             style={{ fontFamily: 'Major Mono Display' }}
           >
-            Manifold Markets
-          </div>
+            Manifold
+          </span>
         </div>
       </div>
     </div>
@@ -100,8 +105,8 @@ export function OgMarket(props: OgCardProps) {
 function AnswerDiv(props: OgCardProps) {
   const { probability, topAnswer, resolution } = props
   return (
-    <div className="flex w-full flex-row items-center px-24">
-      <div className="flex max-h-[3.8rem] w-full justify-start overflow-hidden pr-4 text-5xl">
+    <>
+      <div className="flex max-h-[9rem] w-full justify-start overflow-hidden pr-8 text-5xl">
         {topAnswer}
       </div>
       {!resolution && (
@@ -110,17 +115,15 @@ function AnswerDiv(props: OgCardProps) {
           <div className="flex w-full justify-center text-4xl">chance</div>
         </div>
       )}
-    </div>
+    </>
   )
 }
 
 function NumericValueDiv(props: OgCardProps) {
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-row text-6xl">{props.numericValue}</div>
-      <div className="flex w-full flex-row justify-center text-4xl">
-        expected
-      </div>
+    <div className="flex flex-col items-center">
+      <span className="text-6xl">{props.numericValue}</span>
+      <span className="text-4xl">expected</span>
     </div>
   )
 }
@@ -145,9 +148,9 @@ function ResolutionDiv(props: OgCardProps) {
   }[resolution]
 
   return (
-    <div className={`flex flex-col ${color}`}>
-      <div className="flex w-full justify-center text-4xl">resolved</div>
-      <div className="flex text-center text-6xl">{text}</div>
+    <div className={`flex flex-col ${color} items-center`}>
+      <span className="text-4xl">resolved</span>
+      <span className="text-6xl">{text}</span>
     </div>
   )
 }
@@ -158,7 +161,7 @@ function TimeProb(props: { date: number; prob: number }) {
   return (
     <div className="flex w-32">
       <div
-        className="absolute flex h-full flex-col items-center"
+        className="absolute flex flex-col items-center"
         style={{ top: `${(1 - prob) * 100 - 20}%` }}
       >
         <span className="text-6xl">{formatPercent(prob)}</span>

@@ -8,7 +8,7 @@ import {
 import { richTextToString } from './util/parse'
 import { getCpmmProbability } from './calculate-cpmm'
 import { getDpmProbability } from './calculate-dpm'
-import { formatPercent } from './util/format'
+import { formatPercent, formatWithCommas } from './util/format'
 
 export function getBinaryProb(contract: BinaryContract) {
   const { pool, resolutionProbability, mechanism } = contract
@@ -24,8 +24,15 @@ export function getBinaryProb(contract: BinaryContract) {
 export const getOpenGraphProps = (
   contract: Contract
 ): Omit<OgCardProps, 'points'> => {
-  const { resolution, question, creatorName, outcomeType, creatorAvatarUrl } =
-    contract
+  const {
+    resolution,
+    uniqueBettorCount,
+    volume,
+    question,
+    creatorName,
+    outcomeType,
+    creatorAvatarUrl,
+  } = contract
 
   const topAnswer =
     outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
@@ -53,6 +60,8 @@ export const getOpenGraphProps = (
 
   return {
     question,
+    numTraders: formatWithCommas(uniqueBettorCount ?? 0),
+    volume: formatWithCommas(volume),
     probability: probPercent,
     creatorName,
     creatorAvatarUrl,
@@ -64,6 +73,8 @@ export const getOpenGraphProps = (
 
 export type OgCardProps = {
   question: string
+  numTraders: string
+  volume: string
   probability?: string
   creatorName: string
   creatorAvatarUrl?: string
