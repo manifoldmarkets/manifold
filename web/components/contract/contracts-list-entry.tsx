@@ -12,8 +12,11 @@ import clsx from 'clsx'
 import { ContractMinibar } from '../charts/minibar'
 import { useContract } from 'web/hooks/use-contracts'
 
-export function ContractStatusLabel(props: { contract: Contract }) {
-  const { contract } = props
+export function ContractStatusLabel(props: {
+  contract: Contract
+  chanceLabel?: boolean
+}) {
+  const { contract, chanceLabel } = props
   const probTextColor = getTextColor(contract)
 
   switch (contract.outcomeType) {
@@ -26,6 +29,7 @@ export function ContractStatusLabel(props: { contract: Contract }) {
       ) : (
         <span className={probTextColor}>
           {getBinaryProbPercent(contract, true)}
+          {chanceLabel && <span className="font-normal text-gray-500"> chance</span>}
         </span>
       )
     }

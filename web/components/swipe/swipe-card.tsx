@@ -202,7 +202,12 @@ function CardActions(props: {
         className={'flex-col gap-2 drop-shadow-sm'}
         isSwipe
       />
-      <SwipeComments contract={contract} setIsModalOpen={setIsModalOpen} />
+      <SwipeComments
+        contract={contract}
+        setIsModalOpen={setIsModalOpen}
+        color="white"
+        size="xl"
+      />
       {/* TODO Share button */}
     </Col>
   )

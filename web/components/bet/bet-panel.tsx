@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { clamp } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
@@ -178,6 +178,7 @@ export function BuyPanel(props: {
   hidden: boolean
   onBuySuccess?: () => void
   mobileView?: boolean
+  initialOutcome?: binaryOutcomes
 }) {
   const {
     contract,
@@ -187,16 +188,23 @@ export function BuyPanel(props: {
     hidden,
     onBuySuccess,
     mobileView,
+    initialOutcome,
   } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const [outcome, setOutcome] = useState<binaryOutcomes>()
+  const [outcome, setOutcome] = useState<binaryOutcomes>(initialOutcome)
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [inputRef, focusAmountInput] = useFocus()
+
+  useEffect(() => {
+    if (initialOutcome) {
+      setOutcome(initialOutcome)
+    }
+  }, [initialOutcome])
 
   function onBetChoice(choice: 'YES' | 'NO') {
     setOutcome(choice)

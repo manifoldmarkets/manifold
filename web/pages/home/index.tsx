@@ -74,7 +74,7 @@ import {
 } from 'web/components/nav/search-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
-import Swipe from '../swipe'
+import { ContractsFeed } from '../../components/contract/contracts-feed'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -96,9 +96,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
         <LoadingIndicator className="mt-6" />
       </Page>
     )
-  if (isMobile) {
-    return <Swipe />
-  }
   return <HomeDashboard globalConfig={props.globalConfig} />
 }
 
@@ -178,7 +175,7 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
 
   return (
     <Page>
-      <Col className="gap-4 p-2 pb-8">
+      <Col className="gap-4 py-2 pb-8 sm:px-2">
         <Row className={'mb-2 w-full items-center justify-between gap-4'}>
           <Title children="Home" className="!my-0 hidden sm:block" />
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />
@@ -193,6 +190,7 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
           <LoadingIndicator />
         ) : (
           <>
+            <YourFeedSection user={user} />
             {renderSections(
               sections,
               {
@@ -204,8 +202,6 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
               globalConfig,
               pinned
             )}
-
-            <YourFeedSection user={user} />
           </>
         )}
       </Col>
@@ -311,22 +307,10 @@ export function renderSections(
 }
 
 const YourFeedSection = (props: { user: User }) => {
-  const { user } = props
-
-  const [hasViewedBottom, setHasViewedBottom] = usePersistentState(false, {
-    key: 'has-viewed-bottom',
-    store: inMemoryStore(),
-  })
-
   return (
     <Col>
       <HomeSectionHeader label="Discover" href="/discover" icon={'✨'} />
-      <VisibilityObserver
-        className="relative -top-[300px] h-1"
-        onVisibilityUpdated={(visible) => visible && setHasViewedBottom(true)}
-      />
-
-      {hasViewedBottom ? <DiscoverFeed user={user} /> : <LoadingIndicator />}
+      <ContractsFeed />
     </Col>
   )
 }
