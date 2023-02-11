@@ -5,26 +5,37 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "yarn compile && rm -rf dist && mkdir -p dist/replicator && cp -R ../common/lib dist/common && cp -R lib/src dist/replicator/src && cp ../yarn.lock dist && cp package.json dist",
-    "regen-types": "supabase gen types typescript --project-id pxidrgkatumlvfqaxcll --schema public > ../common/supabase/schema.ts",
-    "regen-types-dev": "supabase gen types typescript --project-id mfodonznyfxllcezufgr --schema public > ../common/supabase/schema.ts",
+    "build": "yarn compile && yarn --cwd=../shared alias && yarn alias && yarn dist",
+    "dist": "yarn dist:prepare && yarn dist:copy",
+    "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib dist/backend/shared/lib dist/backend/replicator/lib",
+    "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ../shared/lib/* dist/backend/shared/lib && cp -R ./lib/* dist/backend/replicator/lib && cp ../../yarn.lock dist && cp package.json dist",
     "compile": "tsc -b",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "alias": "tsc-alias",
+    "regen-types": "supabase gen types typescript --project-id pxidrgkatumlvfqaxcll --schema public > ../../common/src/supabase/schema.ts",
+    "regen-types-dev": "supabase gen types typescript --project-id mfodonznyfxllcezufgr --schema public > ../../common/src/supabase.schema.ts"
   },
   "engines": {
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "3.2.1",
     "@supabase/supabase-js": "2.2.0",
+    "@google-cloud/pubsub": "3.2.1",
+    "@tiptap/core": "2.0.0-beta.204",
+    "@tiptap/extension-image": "2.0.0-beta.204",
+    "@tiptap/extension-link": "2.0.0-beta.204",
+    "@tiptap/extension-mention": "2.0.0-beta.204",
+    "@tiptap/html": "2.0.0-beta.204",
+    "@tiptap/starter-kit": "2.0.0-beta.204",
+    "@tiptap/suggestion": "2.0.0-beta.204",
     "express": "4.18.1",
     "firebase-admin": "11.2.0",
-    "node-fetch": "2.6.7",
+    "node-fetch": "2",
     "pg-promise": "11.0.2",
+    "lodash": "4.17.21",
     "typescript": "4.9.3"
   },
   "devDependencies": {
-    "@types/node-fetch": "2.6.2",
-    "supabase": "^1.34.2"
+    "tsc-alias": "1.8.2"
   }
 }

@@ -1,0 +1,27 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "yarn compile && yarn alias",
+    "compile": "tsc -b",
+    "alias": "tsc-alias",
+    "verify": "yarn --cwd=../.. verify",
+    "verify:dir": "npx eslint . --max-warnings 0"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@tiptap/core": "2.0.0-beta.204",
+    "@tiptap/html": "2.0.0-beta.204",
+    "firebase-admin": "11.2.0",
+    "lodash": "4.17.21",
+    "node-fetch": "2",
+    "pg-promise": "11.0.2",
+    "dayjs": "1.11.4",
+    "openai": "3.0.1"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "2.6.2",
+    "tsc-alias": "1.8.2"
+  }
+}

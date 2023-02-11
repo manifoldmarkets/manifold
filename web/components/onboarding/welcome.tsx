@@ -70,12 +70,13 @@ export default function Welcome() {
       setPage(page - 1)
     }
   }
+
   const shouldShowWelcomeModals =
     (!isTwitch && user && user.shouldShowWelcome) ||
     (user && !user.shouldShowWelcome && groupSelectorOpen) ||
     showSignedOutUser
 
-  // if (!shouldShowWelcomeModals) return <></>
+  if (!shouldShowWelcomeModals) return <></>
 
   if (groupSelectorOpen)
     return (

@@ -21,7 +21,7 @@ import { CPMMBinaryContract } from 'common/contract'
 import { ProfitChangeTable } from 'web/components/daily-profit'
 import clsx from 'clsx'
 import { SizedContainer } from 'web/components/sized-container'
-import { chunk, sum } from 'lodash'
+import { chunk, orderBy, sum } from 'lodash'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Title } from 'web/components/widgets/title'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -30,6 +30,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SEO } from 'web/components/SEO'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { DAY_MS } from 'common/util/time'
 
 export async function getStaticProps(props: {
   params: { username: string; rangeEndDateSlug: string }
@@ -45,7 +46,9 @@ export async function getStaticProps(props: {
         )
       )
     : null
-  const weeklyPortfolioUpdate = weeklyPortfolioUpdates?.[0] ?? null
+  const weeklyPortfolioUpdate = weeklyPortfolioUpdates
+    ? orderBy(weeklyPortfolioUpdates, (u) => -(u.createdTime ?? 0))[0]
+    : null
   const contracts = weeklyPortfolioUpdate
     ? await getContracts(
         weeklyPortfolioUpdate.contractMetrics.map((c) => c.contractId),
@@ -99,16 +102,22 @@ export default function RangePerformancePage(props: {
 
   if (!user || !weeklyPortfolioUpdate) return <Custom404 />
 
-  const { profitPoints, contractMetrics, weeklyProfit, rangeEndDateSlug } =
-    weeklyPortfolioUpdate
+  const {
+    profitPoints,
+    contractMetrics,
+    weeklyProfit,
+    rangeEndDateSlug,
+    createdTime,
+  } = weeklyPortfolioUpdate
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const graphPoints = useMemo(() => {
+    if (profitPoints.length === 0) return []
     const contractMetricsSum = sum(
       contractMetrics.map((c) => c.from?.week.profit ?? 0)
     )
     const points = [] as { x: number; y: number; obj: any }[]
-    const firstPointToScaleBy = profitPoints[0].y
+    const firstPointToScaleBy = profitPoints[0]?.y ?? 0
     const portfolioPoints = profitPoints.map((p) => {
       // Squash the range by 2 times the total profit
       const possibleY = p.y - firstPointToScaleBy
@@ -124,18 +133,17 @@ export default function RangePerformancePage(props: {
     return points.concat(portfolioPoints)
   }, [profitPoints])
 
+  const endDate = createdTime ? new Date(createdTime) : new Date()
+  const startDate = endDate.getTime() - 7 * DAY_MS
   const date =
-    new Date(graphPoints[0].x).toLocaleDateString('en-US', {
+    new Date(startDate).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     }) +
     ' - ' +
-    new Date(graphPoints[graphPoints.length - 1].x).toLocaleDateString(
-      'en-US',
-      {
-        day: 'numeric',
-      }
-    )
+    endDate.toLocaleDateString('en-US', {
+      day: 'numeric',
+    })
   const averagePoints = averagePointsInChunks(graphPoints)
   const ogProps = {
     points: JSON.stringify(averagePoints),
@@ -187,19 +195,21 @@ export default function RangePerformancePage(props: {
           </span>
         </Col>
         <Col className={'items-center justify-center'}>
-          <Col className={'-mt-2 w-full max-w-md'}>
-            <SizedContainer fullHeight={250} mobileHeight={250}>
-              {(width, height) => (
-                <PortfolioGraph
-                  mode="profit"
-                  points={graphPoints}
-                  width={width}
-                  height={height}
-                  viewScaleProps={graphView}
-                />
-              )}
-            </SizedContainer>
-          </Col>
+          {graphPoints.length > 0 && (
+            <Col className={'-mt-2 w-full max-w-md'}>
+              <SizedContainer fullHeight={250} mobileHeight={250}>
+                {(width, height) => (
+                  <PortfolioGraph
+                    mode="profit"
+                    points={graphPoints}
+                    width={width}
+                    height={height}
+                    viewScaleProps={graphView}
+                  />
+                )}
+              </SizedContainer>
+            </Col>
+          )}
           <Col className={'my-6 '}>
             <ProfitChangeTable
               contracts={contracts}

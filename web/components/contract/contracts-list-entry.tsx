@@ -31,11 +31,19 @@ export function ContractStatusLabel(props: { contract: Contract }) {
     }
     case 'PSEUDO_NUMERIC': {
       const val = contract.resolutionProbability ?? getProbability(contract)
-      return <span>{getFormattedMappedValue(contract, val)}</span>
+      return (
+        <span className={probTextColor}>
+          {getFormattedMappedValue(contract, val)}
+        </span>
+      )
     }
     case 'NUMERIC': {
       const val = contract.resolutionValue ?? getValueFromBucket('', contract)
-      return <span>{getFormattedMappedValue(contract, val)}</span>
+      return (
+        <span className={probTextColor}>
+          {getFormattedMappedValue(contract, val)}
+        </span>
+      )
     }
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE': {
@@ -65,6 +73,10 @@ export const ContractsListEntry = forwardRef(
     const { onContractClick, className } = props
     const contract = useContract(props.contract.id) ?? props.contract
 
+    const isClosed = contract.closeTime && contract.closeTime < Date.now()
+    const textColor =
+      isClosed && !contract.isResolved ? 'text-gray-500' : 'text-gray-900'
+
     return (
       <Link
         onClick={(e) => {
@@ -87,7 +99,12 @@ export const ContractsListEntry = forwardRef(
         <div className="font-semibold">
           <ContractStatusLabel contract={contract} />
         </div>
-        <div className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900">
+        <div
+          className={clsx(
+            'break-anywhere mr-0.5 whitespace-normal font-medium',
+            textColor
+          )}
+        >
           {contract.question}
         </div>
       </Link>

@@ -9,3 +9,5 @@ firebase-debug.log
 firestore-debug.log
 pubsub-debug.log
 firestore_export*
+
+tsconfig.tsbuildinfo

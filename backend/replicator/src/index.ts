@@ -6,9 +6,10 @@ import {
   createFailedWrites,
   replayFailedWrites,
 } from './replicate-writes'
-import { log, createSupabaseDirectClient } from './utils'
-import { TLEntry } from '../../common/transaction-log'
-import { CONFIGS } from '../../common/envs/constants'
+import { log } from './utils'
+import { TLEntry } from 'common/transaction-log'
+import { CONFIGS } from 'common/envs/constants'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
@@ -23,17 +24,10 @@ if (!SUPABASE_INSTANCE_ID) {
   throw new Error(`Can't connect to Supabase; no instance ID set for ${ENV}.`)
 }
 
-const SUPABASE_PASSWORD = process.env.SUPABASE_PASSWORD
-if (!SUPABASE_PASSWORD) {
-  throw new Error(
-    "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
-  )
-}
-
 const pubsub = new PubSub()
 const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
-const pg = createSupabaseDirectClient(SUPABASE_INSTANCE_ID, SUPABASE_PASSWORD)
+const pg = createSupabaseDirectClient(SUPABASE_INSTANCE_ID)
 
 const app = express()
 app.use(express.json())

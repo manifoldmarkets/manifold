@@ -35,6 +35,7 @@ import { useUser } from 'web/hooks/use-user'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import QfTradesTable from './qf-trades-table'
 import { AlertBox } from '../widgets/alert-box'
+import { SiteLink } from '../widgets/site-link'
 
 export function QfOverview(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
@@ -77,15 +78,38 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
       </div>
       {poolPanel && <QfAddPoolPanel contract={contract} />}
 
-      <AlertBox
-        title="This is a Quadratic Funding round."
-        text="Quadratic funding is an experimental market type which lets you crowdfund entries. The matching pool allocates extra mana to popular and highly-funded entries. For more info, see https://wtfisqf.com/"
-      />
+      <QfExplainer />
 
       <QfAnswersPanel contract={contract} />
 
       <CreateAnswerWidget contract={contract} />
     </Col>
+  )
+}
+
+export function QfExplainer() {
+  return (
+    <AlertBox
+      title="This is Quadratic Funding, an experimental market type."
+      text=""
+    >
+      Unlike Free Response where you bet on what the market creator will
+      resolve, here you send mana as a tip to your favorite entries. The
+      quadratic funding pool will then match donations - popular entries get
+      larger matches.
+      <br /> <br />
+      Each entry will receive the square of the sum of sqrt(tips): an entry that
+      gets 10 tips of 1 mana will receive 100 mana total, with the 90 extra mana
+      coming from the matching pool. See{' '}
+      <SiteLink
+        followsLinkClass
+        className="text-indigo-700"
+        href="https://vitalik.ca/general/2019/12/07/quadratic.html"
+      >
+        this primer
+      </SiteLink>{' '}
+      for more details.
+    </AlertBox>
   )
 }
 

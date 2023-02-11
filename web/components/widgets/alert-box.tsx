@@ -3,8 +3,12 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Linkify } from './linkify'
 
-export function AlertBox(props: { title: string; text: string }) {
-  const { title, text } = props
+export function AlertBox(props: {
+  title: string
+  text: string
+  children?: React.ReactNode
+}) {
+  const { title, text, children } = props
   return (
     <Col className="rounded-md bg-yellow-50 p-4">
       <Row className="mb-2 flex-shrink-0">
@@ -19,7 +23,11 @@ export function AlertBox(props: { title: string; text: string }) {
       </Row>
 
       <div className="mt-2 whitespace-pre-line text-sm text-yellow-700">
-        <Linkify text={text} />
+        {children ? (
+          children
+        ) : (
+          <Linkify text={text} className="block whitespace-pre-line" />
+        )}
       </div>
     </Col>
   )
