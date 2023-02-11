@@ -1,44 +1,14 @@
 import * as cors from 'cors'
 import * as express from 'express'
 import { Express, Request, Response, NextFunction } from 'express'
-import { EndpointDefinition } from './endpoint'
+import { EndpointDefinition } from './helpers'
 
 const PORT = 8088
 
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
-import { health } from './health'
-import { transact } from './transact'
-import { changeuserinfo } from './change-user-info'
-import { createuser } from './create-user'
-import { createanswer } from './create-answer'
-import { placebet } from './place-bet'
-import { cancelbet } from './cancel-bet'
-import { sellbet } from './sell-bet'
-import { sellshares } from './sell-shares'
-import { claimmanalink } from './claim-manalink'
-import { createmarket } from './create-market'
-import { createcomment } from './create-comment'
-import { creategroup } from './create-group'
-import { resolvemarket } from './resolve-market'
-import { closemarket } from './close-market'
-import { unsubscribe } from './unsubscribe'
-import { stripewebhook, createcheckoutsession } from './stripe'
-import { getcurrentuser } from './get-current-user'
-import { acceptchallenge } from './accept-challenge'
-import { createpost } from './create-post'
-import { savetwitchcredentials } from './save-twitch-credentials'
-import { addsubsidy } from './add-subsidy'
-import { testscheduledfunction } from './test-scheduled-function'
-import { validateiap } from './validate-iap'
-import { swapcert } from './swap-cert'
-import { dividendcert } from './dividend-cert'
-import { markallnotifications } from './mark-all-notifications'
-import { claimdestinysub } from './claim-destiny-sub'
-import { addcontracttogroup } from './add-contract-to-group'
-import { updatememberrole } from './update-group-member-role'
-import { removecontractfromgroup } from './remove-contract-from-group'
+import * as endpoints from '.'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -59,38 +29,41 @@ const addJsonEndpointRoute = (name: string, endpoint: EndpointDefinition) => {
   addEndpointRoute(name, endpoint, express.json())
 }
 
-addEndpointRoute('/health', health)
-addJsonEndpointRoute('/transact', transact)
-addJsonEndpointRoute('/changeuserinfo', changeuserinfo)
-addJsonEndpointRoute('/createuser', createuser)
-addJsonEndpointRoute('/createanswer', createanswer)
-addJsonEndpointRoute('/createcomment', createcomment)
-addJsonEndpointRoute('/swapcert', swapcert)
-addJsonEndpointRoute('/dividendcert', dividendcert)
-addJsonEndpointRoute('/placebet', placebet)
-addJsonEndpointRoute('/cancelbet', cancelbet)
-addJsonEndpointRoute('/sellbet', sellbet)
-addJsonEndpointRoute('/sellshares', sellshares)
-addJsonEndpointRoute('/addsubsidy', addsubsidy)
-addJsonEndpointRoute('/claimmanalink', claimmanalink)
-addJsonEndpointRoute('/createmarket', createmarket)
-addJsonEndpointRoute('/creategroup', creategroup)
-addJsonEndpointRoute('/resolvemarket', resolvemarket)
-addJsonEndpointRoute('/closemarket', closemarket)
-addJsonEndpointRoute('/unsubscribe', unsubscribe)
-addJsonEndpointRoute('/createcheckoutsession', createcheckoutsession)
-addJsonEndpointRoute('/getcurrentuser', getcurrentuser)
-addJsonEndpointRoute('/acceptchallenge', acceptchallenge)
-addJsonEndpointRoute('/savetwitchcredentials', savetwitchcredentials)
-addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
-addEndpointRoute('/createpost', createpost)
-addEndpointRoute('/testscheduledfunction', testscheduledfunction)
-addJsonEndpointRoute('/validateIap', validateiap)
-addJsonEndpointRoute('/markallnotifications', markallnotifications)
-addJsonEndpointRoute('/claimdestinysub', claimdestinysub)
-addJsonEndpointRoute('/updatememberrole', updatememberrole)
-addJsonEndpointRoute('/addcontracttogroup', addcontracttogroup)
-addJsonEndpointRoute('/removecontractfromgroup', removecontractfromgroup)
+addEndpointRoute('/health', endpoints.health)
+addJsonEndpointRoute('/transact', endpoints.transact)
+addJsonEndpointRoute('/changeuserinfo', endpoints.changeuserinfo)
+addJsonEndpointRoute('/createuser', endpoints.createuser)
+addJsonEndpointRoute('/createanswer', endpoints.createanswer)
+addJsonEndpointRoute('/createcomment', endpoints.createcomment)
+addJsonEndpointRoute('/swapcert', endpoints.swapcert)
+addJsonEndpointRoute('/dividendcert', endpoints.dividendcert)
+addJsonEndpointRoute('/placebet', endpoints.placebet)
+addJsonEndpointRoute('/cancelbet', endpoints.cancelbet)
+addJsonEndpointRoute('/sellbet', endpoints.sellbet)
+addJsonEndpointRoute('/sellshares', endpoints.sellshares)
+addJsonEndpointRoute('/addsubsidy', endpoints.addsubsidy)
+addJsonEndpointRoute('/claimmanalink', endpoints.claimmanalink)
+addJsonEndpointRoute('/createmarket', endpoints.createmarket)
+addJsonEndpointRoute('/creategroup', endpoints.creategroup)
+addJsonEndpointRoute('/resolvemarket', endpoints.resolvemarket)
+addJsonEndpointRoute('/closemarket', endpoints.closemarket)
+addJsonEndpointRoute('/unsubscribe', endpoints.unsubscribe)
+addJsonEndpointRoute('/createcheckoutsession', endpoints.createcheckoutsession)
+addJsonEndpointRoute('/getcurrentuser', endpoints.getcurrentuser)
+addJsonEndpointRoute('/acceptchallenge', endpoints.acceptchallenge)
+addJsonEndpointRoute('/savetwitchcredentials', endpoints.savetwitchcredentials)
+addEndpointRoute('/stripewebhook', endpoints.stripewebhook, express.raw())
+addEndpointRoute('/createpost', endpoints.createpost)
+addEndpointRoute('/testscheduledfunction', endpoints.testscheduledfunction)
+addJsonEndpointRoute('/validateIap', endpoints.validateiap)
+addJsonEndpointRoute('/markallnotifications', endpoints.markallnotifications)
+addJsonEndpointRoute('/claimdestinysub', endpoints.claimdestinysub)
+addJsonEndpointRoute('/updatememberrole', endpoints.updatememberrole)
+addJsonEndpointRoute('/addcontracttogroup', endpoints.addcontracttogroup)
+addJsonEndpointRoute(
+  '/removecontractfromgroup',
+  endpoints.removecontractfromgroup
+)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)
