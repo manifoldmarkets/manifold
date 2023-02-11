@@ -12,11 +12,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import {
-  getPositionTweet,
-  getWinningTweet,
-  TweetButton,
-} from '../buttons/tweet-button'
+import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -131,23 +127,6 @@ export function BetsSummary(props: {
           </div>
         </Col>
       </Row>
-
-      {!hideTweet && !resolution && Math.abs(position) > 1e-7 && (
-        <Row className={'mt-4 items-center gap-2'}>
-          <div>
-            You're betting {position > 0 ? <YesLabel /> : <NoLabel />}.{' '}
-            <TweetButton
-              tweetText={getPositionTweet(
-                position,
-                invested,
-                contract,
-                username
-              )}
-              className="ml-2"
-            />
-          </div>
-        </Row>
-      )}
 
       {!hideTweet && resolution && profit >= 1 && (
         <Row className={'mt-4 items-center gap-2'}>
