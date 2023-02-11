@@ -19,6 +19,8 @@ import { MoreSwipeInfo } from './more-swipe-info'
 import { DailyStats } from '../daily-stats'
 import { SwipeComments } from './swipe-comments'
 import { Percent } from './percent'
+import { SwipeSharer } from './swipe-sharer'
+import { useWindowSize } from '../../hooks/use-window-size'
 
 export const SwipeCard = memo(
   (props: {
@@ -185,6 +187,7 @@ function CardActions(props: {
   setIsModalOpen: (open: boolean) => void
 }) {
   const { user, contract, setIsModalOpen } = props
+  const { height } = useWindowSize()
 
   return (
     <Col className="flex flex-col items-center justify-end gap-2">
@@ -202,8 +205,12 @@ function CardActions(props: {
         className={'flex-col gap-2 drop-shadow-sm'}
         isSwipe
       />
+
+      {(height ?? 400) >= 700 && (
+        <SwipeSharer contract={contract} user={user} />
+      )}
+
       <SwipeComments contract={contract} setIsModalOpen={setIsModalOpen} />
-      {/* TODO Share button */}
     </Col>
   )
 }

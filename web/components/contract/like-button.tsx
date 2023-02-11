@@ -174,7 +174,7 @@ export const LikeButton = memo(function LikeButton(props: {
           setOpen={setModalOpen}
         />
       )}
-      {showTotalLikesUnder && (
+      {showTotalLikesUnder && totalLikes > 0 && (
         <div
           className={clsx(
             size === 'xl' ? '-mt-3 text-lg' : '-mt-1.5 text-xs',

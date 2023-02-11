@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChatIcon } from '@heroicons/react/solid'
+import { ChatIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 
 import { BinaryContract } from 'common/contract'
