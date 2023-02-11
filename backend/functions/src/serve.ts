@@ -1,42 +1,44 @@
 import * as cors from 'cors'
 import * as express from 'express'
 import { Express, Request, Response, NextFunction } from 'express'
-import { EndpointDefinition } from './api'
+import { EndpointDefinition } from './api/api'
 
 const PORT = 8088
 
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
-import { health } from './health'
-import { transact } from './transact'
-import { changeuserinfo } from './change-user-info'
-import { createuser } from './create-user'
-import { createanswer } from './create-answer'
-import { swapcert } from './swap-cert'
-import { dividendcert } from './dividend-cert'
-import { placebet } from './place-bet'
-import { cancelbet } from './cancel-bet'
-import { sellbet } from './sell-bet'
-import { sellshares } from './sell-shares'
-import { addsubsidy } from './add-subsidy'
-import { claimmanalink } from './claim-manalink'
-import { createmarket } from './create-market'
-import { createcomment } from './create-comment'
-import { creategroup } from './create-group'
-import { resolvemarket } from './resolve-market'
-import { unsubscribe } from './unsubscribe'
-import { stripewebhook, createcheckoutsession } from './stripe'
-import { getcurrentuser } from './get-current-user'
-import { createpost } from './create-post'
-import { savetwitchcredentials } from './save-twitch-credentials'
-import { testscheduledfunction } from './test-scheduled-function'
-import { validateiap } from './validate-iap'
-import { markallnotifications } from './mark-all-notifications'
-import { claimdestinysub } from './claim-destiny-sub'
-import { updatememberrole } from './update-group-member-role'
-import { addcontracttogroup } from './add-contract-to-group'
-import { removecontractfromgroup } from './remove-contract-from-group'
+import { health } from './api/health'
+import { transact } from './api/transact'
+import { changeuserinfo } from './api/change-user-info'
+import { createuser } from './api/create-user'
+import { createanswer } from './api/create-answer'
+import { placebet } from './api/place-bet'
+import { cancelbet } from './api/cancel-bet'
+import { sellbet } from './api/sell-bet'
+import { sellshares } from './api/sell-shares'
+import { claimmanalink } from './api/claim-manalink'
+import { createmarket } from './api/create-market'
+import { createcomment } from './api/create-comment'
+import { creategroup } from './api/create-group'
+import { resolvemarket } from './api/resolve-market'
+import { closemarket } from './api/close-market'
+import { unsubscribe } from './api/unsubscribe'
+import { stripewebhook, createcheckoutsession } from './api/stripe'
+import { getcurrentuser } from './api/get-current-user'
+import { acceptchallenge } from './api/accept-challenge'
+import { createpost } from './api/create-post'
+import { savetwitchcredentials } from './api/save-twitch-credentials'
+import { addsubsidy } from './api/add-subsidy'
+import { testscheduledfunction } from './api/test-scheduled-function'
+import { validateiap } from './api/validate-iap'
+import { swapcert } from './api/swap-cert'
+import { dividendcert } from './api/dividend-cert'
+import { markallnotifications } from './api/mark-all-notifications'
+import { claimdestinysub } from './api/claim-destiny-sub'
+import { addcontracttogroup } from './api/add-contract-to-group'
+import { updatememberrole } from './api/update-group-member-role'
+import { removecontractfromgroup } from './api/remove-contract-from-group'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -74,9 +76,11 @@ addJsonEndpointRoute('/claimmanalink', claimmanalink)
 addJsonEndpointRoute('/createmarket', createmarket)
 addJsonEndpointRoute('/creategroup', creategroup)
 addJsonEndpointRoute('/resolvemarket', resolvemarket)
+addJsonEndpointRoute('/closemarket', closemarket)
 addJsonEndpointRoute('/unsubscribe', unsubscribe)
 addJsonEndpointRoute('/createcheckoutsession', createcheckoutsession)
 addJsonEndpointRoute('/getcurrentuser', getcurrentuser)
+addJsonEndpointRoute('/acceptchallenge', acceptchallenge)
 addJsonEndpointRoute('/savetwitchcredentials', savetwitchcredentials)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 addEndpointRoute('/createpost', createpost)
