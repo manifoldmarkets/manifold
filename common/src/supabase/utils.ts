@@ -20,6 +20,42 @@ export type Tables = Schema['Tables']
 export type TableName = keyof Tables
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 
+export type CollectionTableMapping = { [coll: string]: TableName }
+export const collectionTables: CollectionTableMapping = {
+  users: 'users',
+  contracts: 'contracts',
+  groups: 'groups',
+  txns: 'txns',
+  manalinks: 'manalinks',
+  posts: 'posts',
+  test: 'test',
+}
+
+export type SubcollectionTableMapping = {
+  [parent: string]: { [child: string]: TableName }
+}
+export const subcollectionTables: SubcollectionTableMapping = {
+  users: {
+    portfolioHistory: 'user_portfolio_history',
+    'contract-metrics': 'user_contract_metrics',
+    follows: 'user_follows',
+    reactions: 'user_reactions',
+    events: 'user_events',
+    seenMarkets: 'user_seen_markets',
+  },
+  contracts: {
+    answers: 'contract_answers',
+    bets: 'contract_bets',
+    comments: 'contract_comments',
+    follows: 'contract_follows',
+    liquidity: 'contract_liquidity',
+  },
+  groups: {
+    groupContracts: 'group_contracts',
+    groupMembers: 'group_members',
+  },
+}
+
 export function getInstanceHostname(instanceId: string) {
   return `${instanceId}.supabase.co`
 }
