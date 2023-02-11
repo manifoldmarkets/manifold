@@ -1,4 +1,3 @@
-import { Challenge } from './challenge'
 import { BinaryContract, Contract } from './contract'
 import { getFormattedMappedValue } from './pseudo-numeric'
 import {
@@ -10,29 +9,6 @@ import { richTextToString } from './util/parse'
 import { getCpmmProbability } from './calculate-cpmm'
 import { getDpmProbability } from './calculate-dpm'
 import { formatPercent } from './util/format'
-import { filterDefined } from './util/array'
-import { DOMAIN } from './envs/constants'
-
-// String version of the above, to send to the OpenGraph image generator
-export function contractTextDetails(contract: Contract) {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const dayjs = require('dayjs')
-  const { closeTime, groupLinks } = contract
-  const { createdDate, resolvedDate, volumeLabel } = contractMetrics(contract)
-
-  const groupHashtags = groupLinks?.map((g) => `#${g.name.replace(/ /g, '')}`)
-
-  return (
-    `${resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}` +
-    (closeTime
-      ? ` • ${closeTime > Date.now() ? 'Closes' : 'Closed'} ${dayjs(
-          closeTime
-        ).format('MMM D, h:mma')}`
-      : '') +
-    ` • ${volumeLabel}` +
-    (groupHashtags ? ` • ${groupHashtags.join(' ')}` : '')
-  )
-}
 
 export function getBinaryProb(contract: BinaryContract) {
   const { pool, resolutionProbability, mechanism } = contract
@@ -47,16 +23,9 @@ export function getBinaryProb(contract: BinaryContract) {
 
 export const getOpenGraphProps = (
   contract: Contract
-): OgCardProps & { description: string } => {
-  const {
-    resolution,
-    question,
-    creatorName,
-    creatorUsername,
-    outcomeType,
-    creatorAvatarUrl,
-    description: desc,
-  } = contract
+): Omit<OgCardProps, 'points'> => {
+  const { resolution, question, creatorName, outcomeType, creatorAvatarUrl } =
+    contract
 
   const topAnswer =
     outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
@@ -82,22 +51,11 @@ export const getOpenGraphProps = (
         )
       : undefined
 
-  const stringDesc = typeof desc === 'string' ? desc : richTextToString(desc)
-
-  const description = resolution
-    ? `Resolved ${resolution}. ${stringDesc}`
-    : probPercent
-    ? `${probPercent} chance. ${stringDesc}`
-    : stringDesc
-
   return {
     question,
     probability: probPercent,
-    metadata: contractTextDetails(contract),
     creatorName,
-    creatorUsername,
     creatorAvatarUrl,
-    description,
     numericValue,
     resolution,
     topAnswer: topAnswer?.text,
@@ -107,47 +65,27 @@ export const getOpenGraphProps = (
 export type OgCardProps = {
   question: string
   probability?: string
-  metadata: string
   creatorName: string
-  creatorUsername: string
   creatorAvatarUrl?: string
   numericValue?: string
   resolution?: string
   topAnswer?: string
+  points: string // jsonified points
 }
 
-export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
-  const {
-    creatorAmount,
-    acceptances,
-    acceptorAmount,
-    creatorOutcome,
-    acceptorOutcome,
-  } = challenge || {}
-  const { userName, userAvatarUrl } = acceptances?.[0] ?? {}
+export function getSeoDescription(contract: Contract, ogProps: OgCardProps) {
+  const { description: desc, resolution } = contract
+  const { probability, numericValue } = ogProps
 
-  const ignoredKeys = ['description']
-  const generateUrlParams = (params: Record<string, string | undefined>) =>
-    filterDefined(
-      Object.entries(params).map(([key, value]) =>
-        !ignoredKeys.includes(key) && value
-          ? `${key}=${encodeURIComponent(value)}`
-          : null
-      )
-    ).join('&')
+  const stringDesc = typeof desc === 'string' ? desc : richTextToString(desc)
 
-  const challengeUrlParams = challenge
-    ? `&creatorAmount=${creatorAmount}&creatorOutcome=${creatorOutcome}` +
-      `&challengerAmount=${acceptorAmount}&challengerOutcome=${acceptorOutcome}` +
-      `&acceptedName=${userName ?? ''}&acceptedAvatarUrl=${userAvatarUrl ?? ''}`
+  const prefix = resolution
+    ? `Resolved ${resolution}. `
+    : probability
+    ? `${probability} chance. `
+    : numericValue
+    ? `${numericValue} expected. `
     : ''
 
-  // Change to localhost:3000 for local testing
-  const url =
-    // `http://localhost:3000/api/og/market?` +
-    `https://${DOMAIN}/api/og/market?` +
-    generateUrlParams(props) +
-    challengeUrlParams
-
-  return url
+  return prefix + stringDesc
 }

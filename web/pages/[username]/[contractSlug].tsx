@@ -31,7 +31,7 @@ import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { getOpenGraphProps } from 'common/contract-details'
+import { getOpenGraphProps, getSeoDescription } from 'common/contract-details'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -63,6 +63,8 @@ import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
+import { OgMarket } from 'web/components/og/og-market'
+import { buildOgUrl } from 'common/util/og'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -249,7 +251,12 @@ export function ContractPageContent(
 
   const allowTrade = tradingAllowed(contract)
 
-  const ogCardProps = getOpenGraphProps(contract)
+  const ogCardProps = {
+    ...getOpenGraphProps(contract),
+    // remove the avatars
+    points: JSON.stringify(betPoints.map(({ x, y }) => ({ x, y })).reverse()),
+  }
+  const seoDesc = getSeoDescription(contract, ogCardProps)
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
@@ -285,9 +292,9 @@ export function ContractPageContent(
       {ogCardProps && (
         <SEO
           title={question}
-          description={ogCardProps.description}
+          description={seoDesc}
           url={`/${contract.creatorUsername}/${contract.slug}`}
-          ogCardProps={ogCardProps}
+          ogProps={{ props: ogCardProps, endpoint: 'market' }}
         />
       )}
 

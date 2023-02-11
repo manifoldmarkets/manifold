@@ -13,7 +13,7 @@ import { formatNumericProbability } from 'common/pseudo-numeric'
 
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getUser, log } from './utils'
-import { buildCardUrl, getOpenGraphProps } from 'common/contract-details'
+import { getOpenGraphProps } from 'common/contract-details'
 import { notification_reason_types } from 'common/notification'
 import { Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
@@ -21,6 +21,7 @@ import {
   PerContractInvestmentsData,
   OverallPerformanceData,
 } from './weekly-portfolio-emails'
+import { buildOgUrl } from 'common/util/og'
 
 export const emailMoneyFormat = (amount: number) => {
   return formatMoney(amount).replace(ENV_CONFIG.moneyMoniker, 'M')
@@ -468,7 +469,7 @@ export const sendInterestingMarketsEmail = async (
 }
 
 function imageSourceUrl(contract: Contract) {
-  return buildCardUrl(getOpenGraphProps(contract))
+  return buildOgUrl(getOpenGraphProps(contract), 'market')
 }
 
 export const sendNewFollowedMarketEmail = async (

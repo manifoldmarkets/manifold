@@ -1,11 +1,9 @@
 import { WeeklyPortfolioUpdateOGCardProps } from 'common/weekly-portfolio-update'
-import { Graph, ogPoint } from 'web/components/og/graph'
+import { ogPoint, ProfitLossGraph } from 'web/components/og/graph'
 // Notes for working with this:
 // - Some css elements are missing or broken (e.g. 'gap' and 'text-ellipsis' and 'line-clamp')
 // - I also can't make things overflow hidden in only one direction
 // - Every element should have `flex` set
-//   - Empty elements can be set to 'hidden'
-// - You can't use real react components with proper props, only constants
 export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
   const {
     creatorName,
@@ -57,7 +55,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
       </div>
 
       <div className={'relative mt-[6rem] flex w-full flex-row justify-center'}>
-        <Graph data={data} size={500} scaleX={2.4} />
+        <ProfitLossGraph data={data} height={500} aspectRatio={2.4} />
       </div>
 
       {/* We render the profit last so it appears over the graph*/}

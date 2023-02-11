@@ -155,7 +155,7 @@ export default function RangePerformancePage(props: {
           'https://',
           ''
         )}
-        basicOgProps={{
+        ogProps={{
           props: ogProps,
           endpoint: 'update',
         }}

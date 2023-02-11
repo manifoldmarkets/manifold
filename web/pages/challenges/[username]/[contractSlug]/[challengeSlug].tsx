@@ -24,12 +24,10 @@ import { formatMoney } from 'common/util/format'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Bet } from 'web/lib/firebase/bets'
-import { SEO } from 'web/components/SEO'
 import Custom404 from 'web/pages/404'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { BinaryContract } from 'common/contract'
 import { Title } from 'web/components/widgets/title'
-import { getOpenGraphProps } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contracts'
 import { getBets } from 'web/lib/supabase/bets'
@@ -87,19 +85,8 @@ export default function ChallengePage(props: {
 
   if (!contract || !challenge) return <Custom404 />
 
-  const ogCardProps = getOpenGraphProps(contract)
-  ogCardProps.creatorUsername = challenge.creatorUsername
-  ogCardProps.creatorName = challenge.creatorName
-  ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
-
   return (
     <Page>
-      <SEO
-        title={ogCardProps.question}
-        description={ogCardProps.description}
-        url={getChallengeUrl(challenge).replace('https://', '')}
-        ogCardProps={ogCardProps}
-      />
       {challenge.acceptances.length >= challenge.maxUses ? (
         <ClosedChallengeContent
           contract={contract}
