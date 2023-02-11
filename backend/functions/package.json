@@ -15,7 +15,7 @@
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "dev": "nodemon -r tsconfig-paths/register src/serve.ts",
+    "dev": "nodemon -r tsconfig-paths/register src/api/serve.ts",
     "localDbScript": "firebase emulators:start --only functions,firestore,pubsub --import=./firestore_export",
     "serve": "firebase use dev && yarn build && firebase emulators:start --only functions,firestore,pubsub --import=./firestore_export",
     "db:update-local-from-remote": "yarn db:backup-remote && gsutil -m rsync -r gs://$npm_package_config_firestore/firestore_export ./firestore_export",
