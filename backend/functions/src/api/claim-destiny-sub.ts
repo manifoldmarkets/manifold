@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import fetch from 'node-fetch'
 import { FieldValue } from 'firebase-admin/firestore'
 
 import { APIError, newEndpoint, validate } from './helpers'

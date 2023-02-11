@@ -30,7 +30,6 @@
     "@tiptap/suggestion": "2.0.0-beta.204",
     "express": "4.18.1",
     "firebase-admin": "11.2.0",
-    "node-fetch": "2",
     "pg-promise": "11.0.2",
     "lodash": "4.17.21",
     "typescript": "4.9.3"
