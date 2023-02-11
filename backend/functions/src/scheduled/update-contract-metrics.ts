@@ -11,7 +11,7 @@ import { computeElasticity } from 'common/calculate-metrics'
 import { getProbability } from 'common/calculate'
 import { mapAsync } from 'common/util/promise'
 import { hasChanges } from 'common/util/object'
-import { newEndpointNoAuth } from '../api/api'
+import { newEndpointNoAuth } from '../api/helpers'
 
 const firestore = admin.firestore()
 export const scheduleUpdateContractMetrics = functions.pubsub

@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { FieldValue } from 'firebase-admin/firestore'
-import { newEndpoint, validate } from './api'
+import { newEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   seen: z.boolean(),

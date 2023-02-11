@@ -23,7 +23,7 @@ import {
 } from 'common/calculate-metrics'
 import { mapAsync } from 'common/util/promise'
 import { hasChanges } from 'common/util/object'
-import { newEndpointNoAuth } from '../api/api'
+import { newEndpointNoAuth } from '../api/helpers'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
 import { filterDefined } from 'common/util/array'
 import { PortfolioMetrics } from 'common/portfolio-metrics'

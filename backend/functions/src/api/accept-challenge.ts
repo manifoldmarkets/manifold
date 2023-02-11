@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { log } from 'shared/utils'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { User } from 'common/user'

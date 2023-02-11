@@ -3,7 +3,7 @@ import { z } from 'zod'
 import fetch from 'node-fetch'
 import { FieldValue } from 'firebase-admin/firestore'
 
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { PrivateUser, User } from 'common/user'
 import { DestinySub, DESTINY_SUB_COST } from 'common/destiny-sub'
 

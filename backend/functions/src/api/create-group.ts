@@ -10,7 +10,7 @@ import {
   MAX_GROUP_NAME_LENGTH,
   MAX_ID_LENGTH,
 } from 'common/group'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { z } from 'zod'
 
 const bodySchema = z.object({

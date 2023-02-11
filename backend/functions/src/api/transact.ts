@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { APIError, newEndpoint } from './api'
+import { APIError, newEndpoint } from './helpers'
 import { runTxn } from 'shared/run-txn'
 
 // TODO: We totally fail to validate most of the input to this function,

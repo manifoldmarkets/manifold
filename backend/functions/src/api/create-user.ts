@@ -12,7 +12,7 @@ import {
 } from 'common/categories'
 
 import { track } from '../analytics'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { Group } from 'common/group'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'

@@ -8,7 +8,7 @@ import {
 } from 'firebase-admin/firestore'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
 import { FLAT_TRADE_FEE } from 'common/fees'

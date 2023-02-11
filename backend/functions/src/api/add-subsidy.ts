@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { Contract, CPMMContract } from 'common/contract'
 import { User } from 'common/user'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   contractId: z.string(),

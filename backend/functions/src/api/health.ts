@@ -1,4 +1,4 @@
-import { newEndpoint } from './api'
+import { newEndpoint } from './helpers'
 
 export const health = newEndpoint({ method: 'GET' }, async (_req, auth) => {
   return {

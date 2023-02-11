@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { FieldValue } from 'firebase-admin/firestore'
 
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
 import { getCpmmSellBetInfo } from 'common/sell-bet'

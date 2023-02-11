@@ -1,6 +1,6 @@
 import { User } from 'common/user'
 import * as admin from 'firebase-admin'
-import { newEndpoint, APIError } from './api'
+import { newEndpoint, APIError } from './helpers'
 
 export const getcurrentuser = newEndpoint(
   { method: 'GET' },

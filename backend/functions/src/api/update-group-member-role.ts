@@ -5,7 +5,7 @@ import { isAdmin, isManifoldId } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import { GroupMember } from 'common/group-member'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { createGroupStatusChangeNotification } from '../create-notification'
 
 const bodySchema = z.object({

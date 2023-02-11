@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { onRequest } from 'firebase-functions/v2/https'
-import { EndpointDefinition } from './api/api'
+import { EndpointDefinition } from './api/helpers'
 
 admin.initializeApp()
 

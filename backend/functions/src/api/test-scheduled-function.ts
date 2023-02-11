@@ -1,4 +1,4 @@
-import { APIError, newEndpoint } from './api'
+import { APIError, newEndpoint } from './helpers'
 import {
   saveWeeklyContractMetricsInternal,
   sendWeeklyPortfolioUpdateNotifications,

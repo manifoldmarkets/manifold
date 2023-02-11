@@ -4,7 +4,7 @@ import { Query } from 'firebase-admin/firestore'
 import { uniq } from 'lodash'
 
 import { invokeFunction, loadPaginated } from 'shared/utils'
-import { newEndpointNoAuth } from '../api/api'
+import { newEndpointNoAuth } from '../api/helpers'
 import { getMarketRecommendations } from 'common/recommendation'
 import { run } from 'common/supabase/utils'
 import { mapAsync } from 'common/util/promise'

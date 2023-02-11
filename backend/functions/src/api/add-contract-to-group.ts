@@ -5,7 +5,7 @@ import { GroupMember } from 'common/group-member'
 import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
 import { z } from 'zod'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   groupId: z.string(),

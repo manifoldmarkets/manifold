@@ -18,7 +18,7 @@ import {
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import { getContract, htmlToRichText } from 'shared/utils'
-import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
+import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './helpers'
 import { ANTES } from 'common/economy'
 import {
   getCpmmInitialLiquidity,

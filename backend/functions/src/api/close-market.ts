@@ -5,7 +5,7 @@ import { Contract } from 'common/contract'
 import { getUser } from 'shared/utils'
 
 import { isAdmin, isManifoldId } from 'common/envs/constants'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 
 const bodySchema = z.object({
   contractId: z.string(),

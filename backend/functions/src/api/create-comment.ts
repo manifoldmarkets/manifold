@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 import { removeUndefinedProps } from 'common/util/object'

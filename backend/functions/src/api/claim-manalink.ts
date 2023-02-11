@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { User } from 'common/user'
 import { canCreateManalink, Manalink } from 'common/manalink'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { runTxn, TxnData } from 'shared/run-txn'
 
 const bodySchema = z.object({

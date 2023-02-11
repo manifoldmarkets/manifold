@@ -1,4 +1,4 @@
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { z } from 'zod'
 import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { track } from '../analytics'

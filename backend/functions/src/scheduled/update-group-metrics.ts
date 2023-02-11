@@ -5,7 +5,7 @@ import { groupBy, sumBy, mapValues, uniq } from 'lodash'
 import { log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { mapAsync } from 'common/util/promise'
-import { newEndpointNoAuth } from '../api/api'
+import { newEndpointNoAuth } from '../api/helpers'
 import { invokeFunction } from 'shared/utils'
 const firestore = admin.firestore()
 

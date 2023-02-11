@@ -17,7 +17,7 @@ import {
 } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
 import { Answer } from 'common/answer'
-import { APIError, newEndpoint, validate } from './api'
+import { APIError, newEndpoint, validate } from './helpers'
 import { ContractMetric } from 'common/contract-metric'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract

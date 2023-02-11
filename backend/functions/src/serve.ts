@@ -1,7 +1,7 @@
 import * as cors from 'cors'
 import * as express from 'express'
 import { Express, Request, Response, NextFunction } from 'express'
-import { EndpointDefinition } from './api/api'
+import { EndpointDefinition } from './api/endpoint'
 
 const PORT = 8088
 
