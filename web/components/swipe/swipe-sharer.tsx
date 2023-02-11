@@ -31,9 +31,7 @@ export function SwipeSharer(props: { contract: BinaryContract; user?: User }) {
 
   return (
     <button
-      className={clsx(
-        'text-white hover:text-gray-600 disabled:opacity-50'
-      )}
+      className={clsx('text-white hover:text-gray-600 disabled:opacity-50')}
       onClick={onClick}
     >
       <div className="relative">
