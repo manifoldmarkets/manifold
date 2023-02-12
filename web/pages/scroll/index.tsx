@@ -115,6 +115,7 @@ export default function Scroll() {
             betStatus={betStatus}
             onBet={onBet(c)}
             setIsModalOpen={() => {}}
+            cardHeight={700}
             user={user}
             small
           />
