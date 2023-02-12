@@ -177,8 +177,8 @@ export const LikeButton = memo(function LikeButton(props: {
       {showTotalLikesUnder && (
         <div
           className={clsx(
-            size === 'xl' ? '-mt-3 text-lg' : '-mt-1.5 text-xs',
-            'mx-auto h-6 disabled:opacity-50',
+            'h-5 disabled:opacity-50',
+            size === 'xl' ? '-mt-3 text-lg' : 'text-sm',
             color === 'white' ? 'text-white' : 'text-gray-500'
           )}
         >

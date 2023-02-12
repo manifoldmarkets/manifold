@@ -29,7 +29,9 @@ export function ContractStatusLabel(props: {
       ) : (
         <span className={probTextColor}>
           {getBinaryProbPercent(contract, true)}
-          {chanceLabel && <span className="font-normal text-gray-500"> chance</span>}
+          {chanceLabel && (
+            <span className="text-sm font-normal text-gray-500"> chance</span>
+          )}
         </span>
       )
     }

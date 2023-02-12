@@ -1,7 +1,7 @@
 import { memo, ReactNode } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { UserGroupIcon } from '@heroicons/react/outline'
+import { UserIcon } from '@heroicons/react/outline'
 import { FireIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 
@@ -52,17 +52,16 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import Image from 'next/image'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { ContractCardView } from 'common/events'
-import { Group, groupPath } from 'common/group'
+import { Group } from 'common/group'
 import { groupRoleType } from '../groups/group-member-modal'
 import { GroupContractOptions } from '../groups/group-contract-options'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
-import { getLinkTarget, linkClass } from 'web/components/widgets/site-link'
+import { getLinkTarget } from 'web/components/widgets/site-link'
 import { richTextToString } from 'common/util/parse'
 import { ContractStatusLabel } from './contracts-list-entry'
 import { LikeButton } from './like-button'
-import { SwipeComments } from '../swipe/swipe-comments'
-import { getGroupLinkToDisplay } from '../../lib/firebase/groups'
+import { CommentsButton } from '../swipe/swipe-comments'
 import { BetRow } from '../bet/bet-row'
 
 export const ContractCard = memo(function ContractCard(props: {
@@ -575,18 +574,16 @@ export function ContractCardSingleColumn(props: {
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-gray-500' : 'text-gray-900'
 
-  const groupToDisplay = getGroupLinkToDisplay(contract)
-
   return (
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'group flex flex-col gap-1 whitespace-nowrap rounded-sm bg-white hover:bg-indigo-50 focus:bg-indigo-50',
-        'max-w-[600px] border-l border-r p-3 pb-0',
+        'group flex flex-col gap-2 whitespace-nowrap rounded-sm bg-white hover:bg-indigo-50 focus:bg-indigo-50',
+        'max-w-[600px] border-l border-r py-3 px-4',
         className
       )}
     >
-      <Row className="max-w-full items-center gap-3 text-sm text-gray-500">
+      <Row className="max-w-full items-center gap-4 text-sm text-gray-500">
         <Row className="z-10 gap-2">
           <Avatar
             username={creatorUsername}
@@ -600,6 +597,7 @@ export function ContractCardSingleColumn(props: {
             createdTime={creatorCreatedTime}
           />
         </Row>
+        <div className="flex-1" />
         {!isClosed && contract.elasticity < 0.5 ? (
           <Tooltip text={'High-stakes'} className={'z-10'}>
             <FireIcon className="h-5 w-5 text-blue-700" />
@@ -607,23 +605,14 @@ export function ContractCardSingleColumn(props: {
         ) : null}
         <Tooltip
           text={`${uniqueBettorCount} unique traders`}
+          placement="bottom"
           className={'z-10'}
         >
-          <Row className={'shrink-0 items-center gap-1'}>
-            <UserGroupIcon className="h-4 w-4" />
+          <Row className={'shrink-0 items-center gap-2'}>
+            <UserIcon className="h-5 w-5" />
             <div className="">{uniqueBettorCount || '0'}</div>
           </Row>
         </Tooltip>
-        <div className="flex-1" />
-        {groupToDisplay && (
-          <Link
-            prefetch={false}
-            href={groupPath(groupToDisplay.slug)}
-            className={clsx(linkClass, 'z-10 max-w-[8rem] truncate ')}
-          >
-            {groupToDisplay.name}
-          </Link>
-        )}
       </Row>
       <div
         className={clsx(
@@ -640,28 +629,20 @@ export function ContractCardSingleColumn(props: {
 
         {isBinaryCpmm && <BetRow buttonClassName="z-10" contract={contract} />}
 
-        <div className="flex-1" />
-        <Row className="z-10 gap-1">
-          <Col className="gap-1">
-            <LikeButton
-              contentId={contract.id}
-              contentCreatorId={contract.creatorId}
-              user={user}
-              contentType={'contract'}
-              totalLikes={contract.likedByUserCount ?? 0}
-              contract={contract}
-              contentText={question}
-              showTotalLikesUnder
-              size="md"
-              color="gray"
-              className={'flex-col gap-2 drop-shadow-sm'}
-            />
-          </Col>
-          <SwipeComments
+        <Row className="z-20 ml-auto items-center gap-2">
+          <CommentsButton contract={contract} color="gray" size="md" />
+          <LikeButton
+            contentId={contract.id}
+            contentCreatorId={contract.creatorId}
+            user={user}
+            contentType={'contract'}
+            totalLikes={contract.likedByUserCount ?? 0}
             contract={contract}
-            setIsModalOpen={() => {}}
-            color="gray"
+            contentText={question}
+            showTotalLikesUnder
             size="md"
+            color="gray"
+            className={'!mx-0 gap-2 drop-shadow-sm'}
           />
         </Row>
       </Row>

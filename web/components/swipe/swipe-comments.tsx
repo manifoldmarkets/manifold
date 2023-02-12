@@ -10,7 +10,9 @@ import { useComments } from 'web/hooks/use-comments'
 import { CommentsTabContent } from '../contract/contract-tabs'
 import { ContractComment } from 'common/comment'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { withTracking } from 'web/lib/service/analytics'
+import { track, withTracking } from 'web/lib/service/analytics'
+import { Row } from '../layout/row'
+import { Tooltip } from '../widgets/tooltip'
 
 export function SwipeComments(props: {
   contract: Contract
@@ -61,6 +63,55 @@ export function SwipeComments(props: {
         comments={comments}
       />
     </button>
+  )
+}
+
+export function CommentsButton(props: {
+  contract: Contract
+  color: 'gray' | 'white'
+  size?: 'md' | 'lg'
+}) {
+  const { contract, color, size } = props
+  const [open, setOpen] = useState(false)
+
+  const comments = useComments(contract.id) ?? []
+
+  return (
+    <Tooltip text={`Comments`} placement="bottom" className={'z-10'}>
+      <button
+        className={clsx(
+          'hover:text-gray-600 disabled:opacity-50',
+          color === 'white' ? 'text-white' : 'text-gray-500'
+        )}
+        onClick={(e) => {
+          e.preventDefault()
+          setOpen(true)
+          track('view comments', {
+            contractId: contract.id,
+          })
+        }}
+      >
+        <Row className="items-center gap-2 p-2">
+          <ChatIcon className={clsx(size === 'lg' ? 'h-8 w-8' : 'h-5 w-5')} />
+          <div
+            className={clsx(
+              'h-5 align-middle disabled:opacity-50',
+              size === 'md' ? 'text-sm' : '',
+              color === 'white' ? 'text-white' : 'text-gray-500'
+            )}
+          >
+            {comments.length > 0 && comments.length}
+          </div>
+        </Row>
+
+        <CommentsDialog
+          contract={contract}
+          open={open}
+          setOpen={setOpen}
+          comments={comments}
+        />
+      </button>
+    </Tooltip>
   )
 }
 
