@@ -22,9 +22,7 @@ import { Table } from '../widgets/table'
 import { ShareEmbedButton } from '../buttons/share-embed-button'
 import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
-import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { formatTime } from 'web/lib/util/time'
-import { ReportButton } from 'web/components/buttons/report-button'
 import { TweetButton } from '../buttons/tweet-button'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Tabs } from '../layout/tabs'
@@ -37,6 +35,9 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { dreamDefault } from '../editor/image-modal'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { CopyLinkButton } from '../buttons/copy-link-button'
+import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
+import { BlockMarketButton } from 'web/components/buttons/block-market-button'
+import { ReportButton } from '../buttons/report-button'
 
 export const Stats = (props: {
   contract: Contract
@@ -279,20 +280,9 @@ export function ContractInfoDialog(props: {
 
         <Modal open={open} setOpen={setOpen}>
           <Col className="gap-4 rounded bg-white p-6">
-            <Row className={'justify-between'}>
+            <Row className={'items-center justify-between'}>
               <Title className="!mb-0">This Market</Title>
-              <Row className="gap-4">
-                {user && (
-                  <ReportButton
-                    report={{
-                      contentId: contract.id,
-                      contentType: 'contract',
-                      contentOwnerId: contract.creatorId,
-                    }}
-                  />
-                )}
-                <BlockMarketButton contract={contract} />
-              </Row>
+              <FollowMarketButton contract={contract} user={user} />
             </Row>
 
             <Tabs
@@ -381,7 +371,16 @@ export function ContractInfoDialog(props: {
               />
 
               <TweetButton tweetText={getShareUrl(contract, user?.username)} />
+              <ReportButton
+                report={{
+                  contentId: contract.id,
+                  contentType: 'contract',
+                  contentOwnerId: contract.creatorId,
+                }}
+              />
+              <BlockMarketButton contract={contract} />
             </Row>
+            <Row className="items-center justify-start gap-4 rounded-md "></Row>
           </Col>
         </Modal>
       </Tooltip>

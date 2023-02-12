@@ -1,7 +1,6 @@
 import { Row } from '../layout/row'
 import { Contract } from 'web/lib/firebase/contracts'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { LikeButton } from 'web/components/contract/like-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { getShareUrl } from 'common/util/share'
@@ -15,8 +14,6 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
 
   return (
     <Row className="gap-1">
-      <FollowMarketButton contract={contract} user={user} />
-
       <LikeButton
         contentId={contract.id}
         contentCreatorId={contract.creatorId}

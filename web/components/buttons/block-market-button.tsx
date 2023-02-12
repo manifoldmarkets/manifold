@@ -39,7 +39,7 @@ export function BlockMarketButton(props: { contract: Contract }) {
   if (isBlocked) {
     return (
       <Button
-        size="sm"
+        size="xs"
         className="my-auto"
         onClick={withTracking(onUnblock, 'unblock')}
       >
@@ -50,8 +50,8 @@ export function BlockMarketButton(props: { contract: Contract }) {
 
   return (
     <Button
-      size="sm"
-      color="red"
+      size="xs"
+      color="gray-outline"
       className="my-auto"
       onClick={withTracking(onBlock, 'block')}
     >
