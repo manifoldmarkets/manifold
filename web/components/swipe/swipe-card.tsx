@@ -20,7 +20,6 @@ import { DailyStats } from '../daily-stats'
 import { SwipeComments } from './swipe-comments'
 import { Percent } from './percent'
 import { SwipeSharer } from './swipe-sharer'
-import { useWindowSize } from '../../hooks/use-window-size'
 
 export const SwipeCard = memo(
   (props: {
@@ -32,6 +31,7 @@ export const SwipeCard = memo(
     onBet: (outcome: 'YES' | 'NO') => void
     user: User | undefined
     setIsModalOpen: Dispatch<SetStateAction<boolean>>
+    cardHeight: number
     small?: boolean
     className?: string
   }) => {
@@ -44,6 +44,7 @@ export const SwipeCard = memo(
       onBet,
       user,
       setIsModalOpen,
+      cardHeight,
       small,
     } = props
     const contract = (useContract(props.contract.id) ??
@@ -93,7 +94,7 @@ export const SwipeCard = memo(
               <div
                 className={clsx(
                   'font-semibold text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
-                  getQuestionSize(question)
+                  getQuestionSize(question, cardHeight)
                 )}
               >
                 {question}
@@ -124,6 +125,7 @@ export const SwipeCard = memo(
               user={user}
               contract={contract}
               setIsModalOpen={setIsModalOpen}
+              cardHeight={cardHeight}
             />
           </Row>
           <Col className="mt-2 gap-6">
@@ -185,9 +187,9 @@ function CardActions(props: {
   user?: User
   contract: BinaryContract
   setIsModalOpen: (open: boolean) => void
+  cardHeight: number
 }) {
-  const { user, contract, setIsModalOpen } = props
-  const { height } = useWindowSize()
+  const { user, contract, setIsModalOpen, cardHeight } = props
 
   return (
     <Col className="flex flex-col items-center justify-end gap-2">
@@ -206,7 +208,7 @@ function CardActions(props: {
         isSwipe
       />
 
-      {(height ?? 400) >= 700 && (
+      {(cardHeight ?? 400) >= 700 && (
         <SwipeSharer contract={contract} user={user} />
       )}
 

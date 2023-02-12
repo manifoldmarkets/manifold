@@ -245,6 +245,7 @@ export default function Swipe() {
             betStatus={betStatus}
             onBet={onBet}
             user={user}
+            cardHeight={cardHeight}
             setIsModalOpen={setIsModalOpen}
           />
         )}
@@ -265,6 +266,7 @@ export default function Swipe() {
               betStatus={betStatus}
               onBet={onBet}
               setIsModalOpen={setIsModalOpen}
+              cardHeight={cardHeight}
               user={user}
             />
           ))}
