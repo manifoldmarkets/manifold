@@ -1,5 +1,4 @@
 import toast from 'react-hot-toast'
-import clsx from 'clsx'
 
 import { BinaryContract } from 'common/contract'
 import { track } from 'web/lib/service/analytics'
@@ -30,12 +29,9 @@ export function SwipeSharer(props: { contract: BinaryContract; user?: User }) {
   }
 
   return (
-    <button
-      className={clsx('text-white hover:text-gray-600 disabled:opacity-50')}
-      onClick={onClick}
-    >
+    <button className={'text-white disabled:opacity-50'} onClick={onClick}>
       <div className="relative">
-        <ArrowUpSquareIcon className={clsx('h-12 w-12')} />
+        <ArrowUpSquareIcon className={'h-12 w-12'} />
       </div>
     </button>
   )
