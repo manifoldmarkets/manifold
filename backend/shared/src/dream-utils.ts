@@ -1,4 +1,3 @@
-import fetch from 'node-fetch'
 import { DOMAIN } from 'common/envs/constants'
 
 export const dreamWithDefaultParams = async (input: string) => {
