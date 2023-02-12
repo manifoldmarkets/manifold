@@ -269,13 +269,10 @@ export default function Swipe() {
             />
           ))}
 
-          {!cards.length && (
+          {contracts !== undefined && !cards.length && (
             <div className="flex w-full flex-col items-center justify-center">
               We're fresh out of cards!
-              <SiteLink
-                href="/markets?s=newest&f=open"
-                className="text-indigo-700"
-              >
+              <SiteLink href="/markets?s=newest&f=open" className="text-white">
                 Browse new markets
               </SiteLink>
             </div>
