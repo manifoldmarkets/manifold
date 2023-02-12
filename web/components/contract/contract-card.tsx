@@ -565,6 +565,7 @@ export function ContractCardSingleColumn(props: {
     creatorUsername,
     creatorAvatarUrl,
     question,
+    coverImageUrl,
     uniqueBettorCount,
     outcomeType,
     mechanism,
@@ -621,6 +622,15 @@ export function ContractCardSingleColumn(props: {
         )}
       >
         {question}
+      </div>
+      <div className="relative h-36">
+        <Image
+          fill
+          alt={question}
+          sizes="100vw"
+          className="object-cover"
+          src={coverImageUrl ?? ''}
+        />
       </div>
       <Row className="max-w-full items-center gap-3 text-sm text-gray-500">
         <div className="text-base font-semibold">
