@@ -178,6 +178,7 @@ export function BuyPanel(props: {
   onBuySuccess?: () => void
   mobileView?: boolean
   initialOutcome?: binaryOutcomes
+  location?: string
 }) {
   const {
     contract,
@@ -188,6 +189,7 @@ export function BuyPanel(props: {
     onBuySuccess,
     mobileView,
     initialOutcome,
+    location = 'bet panel',
   } = props
 
   const initialProb = getProbability(contract)
@@ -264,7 +266,7 @@ export function BuyPanel(props: {
       })
 
     track('bet', {
-      location: 'bet panel',
+      location,
       outcomeType: contract.outcomeType,
       slug: contract.slug,
       contractId: contract.id,

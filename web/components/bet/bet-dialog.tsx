@@ -42,6 +42,7 @@ export function BetDialog(props: {
           hidden={false}
           initialOutcome={initialOutcome}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
+          location="contract card"
         />
       </Col>
     </Modal>
