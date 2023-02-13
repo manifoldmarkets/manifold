@@ -575,7 +575,6 @@ export function ContractCardNew(props: {
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-gray-500' : 'text-gray-900'
-
   const descriptionString =
     typeof description === 'string'
       ? description
@@ -590,7 +589,7 @@ export function ContractCardNew(props: {
         className
       )}
     >
-      <Row className="max-w-full items-center gap-4 text-sm text-gray-500">
+      <Row className="items-center gap-3 text-sm text-gray-500">
         <Row className="z-10 gap-2">
           <Avatar
             username={creatorUsername}
@@ -621,6 +620,7 @@ export function ContractCardNew(props: {
           </Row>
         </Tooltip>
       </Row>
+
       <div
         className={clsx(
           'break-anywhere whitespace-normal font-medium',
@@ -629,6 +629,7 @@ export function ContractCardNew(props: {
       >
         {question}
       </div>
+
       <div className="relative h-36 lg:h-48">
         <Image
           fill
@@ -638,7 +639,8 @@ export function ContractCardNew(props: {
           src={coverImageUrl ?? ''}
         />
       </div>
-      <Row className="max-w-full items-center gap-3 text-sm text-gray-500">
+
+      <Row className="items-center gap-3 text-sm text-gray-500">
         <div className="text-base font-semibold">
           <ContractStatusLabel contract={contract} chanceLabel />
         </div>
