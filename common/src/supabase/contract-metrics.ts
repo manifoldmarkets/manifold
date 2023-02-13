@@ -109,8 +109,10 @@ export async function getUsersContractMetricsOrderedByProfit(
           nullsFirst: false,
         })
     )
-
-    return [...profit, ...negative].map((d) => d.data) as ContractMetrics[]
+    // We want most profitable and least profitable
+    return [...profit, ...negative.reverse()].map(
+      (d) => d.data
+    ) as ContractMetrics[]
   })
   const results = await Promise.all(promises)
   const allContractMetrics: { [key: string]: ContractMetric[] } = groupBy(

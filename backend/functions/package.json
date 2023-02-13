@@ -15,7 +15,7 @@
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "dev": "nodemon -r tsconfig-paths/register src/serve.ts",
+    "dev": "nodemon -r tsconfig-paths/register src/api/serve.ts",
     "localDbScript": "firebase emulators:start --only functions,firestore,pubsub --import=./firestore_export",
     "serve": "firebase use dev && yarn build && firebase emulators:start --only functions,firestore,pubsub --import=./firestore_export",
     "db:update-local-from-remote": "yarn db:backup-remote && gsutil -m rsync -r gs://$npm_package_config_firestore/firestore_export ./firestore_export",
@@ -49,7 +49,6 @@
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "marked": "4.1.1",
-    "node-fetch": "2",
     "openai": "3.0.1",
     "pg-promise": "11.0.2",
     "stripe": "8.194.0",
@@ -58,7 +57,6 @@
   "devDependencies": {
     "@types/mailgun-js": "0.22.12",
     "@types/marked": "4.0.7",
-    "@types/node-fetch": "2.6.2",
     "puppeteer": "18.0.5",
     "tsc-alias": "1.8.2",
     "tsconfig-paths": "4.1.2"

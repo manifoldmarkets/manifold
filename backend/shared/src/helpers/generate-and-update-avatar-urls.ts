@@ -1,7 +1,6 @@
 import * as admin from 'firebase-admin'
 
 import { getStorage, Storage } from 'firebase-admin/storage'
-import fetch from 'node-fetch'
 import { User } from 'common/user'
 import { DOMAIN } from 'common/envs/constants'
 

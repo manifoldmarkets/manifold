@@ -1,126 +1,106 @@
 import * as admin from 'firebase-admin'
 import { onRequest } from 'firebase-functions/v2/https'
-import { EndpointDefinition } from './api'
+import { EndpointDefinition } from './api/helpers'
 
 admin.initializeApp()
 
-// v1
-export * from './on-create-user'
-export * from './on-create-bet'
-export * from './on-create-comment-on-contract'
-export * from './on-create-comment-on-post'
-export { scheduleUpdateContractMetrics } from './update-contract-metrics'
-export { scheduleUpdateUserMetrics } from './update-user-metrics'
-export { scheduleUpdateGroupMetrics } from './update-group-metrics'
-export { scheduleUpdateLoans } from './update-loans'
-export { scheduleUpdateRecommended } from './update-recommended'
+// triggers
+export * from './triggers/log-writes'
+export * from './triggers/on-create-user'
+export * from './triggers/on-create-bet'
+export * from './triggers/on-create-comment-on-contract'
+export * from './triggers/on-create-comment-on-post'
+export * from './triggers/on-create-answer'
+export * from './triggers/on-update-contract'
+export * from './triggers/on-create-contract'
+export * from './triggers/on-follow-user'
+export * from './triggers/on-unfollow-user'
+export * from './triggers/on-create-liquidity-provision'
+export * from './triggers/on-update-group'
+export * from './triggers/on-create-txn'
+export * from './triggers/on-delete-group'
+export * from './triggers/on-update-reaction'
+export * from './triggers/on-update-contract-follow'
+
+// scheduled functions
+export { scheduleUpdateContractMetrics } from './scheduled/update-contract-metrics'
+export { scheduleUpdateUserMetrics } from './scheduled/update-user-metrics'
+export { scheduleUpdateGroupMetrics } from './scheduled/update-group-metrics'
+export { scheduleUpdateLoans } from './scheduled/update-loans'
+export { scheduleUpdateRecommended } from './scheduled/update-recommended'
 export {
   sendWeeklyPortfolioUpdate,
   saveWeeklyContractMetrics,
-} from './weekly-portfolio-updates'
-export * from './update-stats'
-export * from './backup-db'
-export * from './mana-signup-bonus'
-export * from './market-close-notifications'
-export * from './on-create-answer'
-export * from './on-update-contract'
-export * from './on-create-contract'
-export * from './on-follow-user'
-export * from './on-unfollow-user'
-export * from './on-create-liquidity-provision'
-export * from './on-update-group'
-export * from './on-create-txn'
-export * from './on-delete-group'
-export * from './score-contracts'
-export * from './weekly-markets-emails'
-export * from './reset-betting-streaks'
-export * from './reset-weekly-emails-flags'
-export * from './on-update-contract-follow'
-export * from './weekly-portfolio-emails'
-export * from './drizzle-liquidity'
-export * from './check-push-notification-receipts'
-export * from './on-update-reaction'
-export * from './log-writes'
-export * from './increment-streak-forgiveness'
+} from './scheduled/weekly-portfolio-updates'
+export * from './scheduled/update-stats'
+export * from './scheduled/backup-db'
+export * from './scheduled/mana-signup-bonus'
+export * from './scheduled/market-close-notifications'
+export * from './scheduled/score-contracts'
+export * from './scheduled/weekly-markets-emails'
+export * from './scheduled/reset-betting-streaks'
+export * from './scheduled/reset-weekly-emails-flags'
+export * from './scheduled/weekly-portfolio-emails'
+export * from './scheduled/drizzle-liquidity'
+export * from './scheduled/check-push-notification-receipts'
+export * from './scheduled/increment-streak-forgiveness'
 
-// v2
-import { health } from './health'
-import { transact } from './transact'
-import { changeuserinfo } from './change-user-info'
-import { createuser } from './create-user'
-import { createanswer } from './create-answer'
-import { placebet } from './place-bet'
-import { cancelbet } from './cancel-bet'
-import { sellbet } from './sell-bet'
-import { sellshares } from './sell-shares'
-import { claimmanalink } from './claim-manalink'
-import { createmarket } from './create-market'
-import { createcomment } from './create-comment'
-import { creategroup } from './create-group'
-import { resolvemarket } from './resolve-market'
-import { closemarket } from './close-market'
-import { unsubscribe } from './unsubscribe'
-import { stripewebhook, createcheckoutsession } from './stripe'
-import { getcurrentuser } from './get-current-user'
-import { acceptchallenge } from './accept-challenge'
-import { createpost } from './create-post'
-import { savetwitchcredentials } from './save-twitch-credentials'
-import { updatecontractmetrics } from './update-contract-metrics'
-import { updateusermetrics } from './update-user-metrics'
-import { updategroupmetrics } from './update-group-metrics'
-import { updateloans } from './update-loans'
-import { updaterecommended } from './update-recommended'
-import { addsubsidy } from './add-subsidy'
-import { testscheduledfunction } from './test-scheduled-function'
-import { validateiap } from './validate-iap'
-import { swapcert } from './swap-cert'
-import { dividendcert } from './dividend-cert'
-import { markallnotifications } from './mark-all-notifications'
-import { claimdestinysub } from './claim-destiny-sub'
-import { addcontracttogroup } from './add-contract-to-group'
-import { updatememberrole } from './update-group-member-role'
-import { removecontractfromgroup } from './remove-contract-from-group'
+// HTTP endpoints
+import { updatecontractmetrics } from './scheduled/update-contract-metrics'
+import { updateusermetrics } from './scheduled/update-user-metrics'
+import { updategroupmetrics } from './scheduled/update-group-metrics'
+import { updateloans } from './scheduled/update-loans'
+import { updaterecommended } from './scheduled/update-recommended'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
 }
-const healthFunction = toCloudFunction(health)
-const transactFunction = toCloudFunction(transact)
-const changeUserInfoFunction = toCloudFunction(changeuserinfo)
-const createUserFunction = toCloudFunction(createuser)
-const createAnswerFunction = toCloudFunction(createanswer)
-const placeBetFunction = toCloudFunction(placebet)
-const cancelBetFunction = toCloudFunction(cancelbet)
-const sellBetFunction = toCloudFunction(sellbet)
-const sellSharesFunction = toCloudFunction(sellshares)
-const claimManalinkFunction = toCloudFunction(claimmanalink)
-const createMarketFunction = toCloudFunction(createmarket)
-const addSubsidyFunction = toCloudFunction(addsubsidy)
-const createCommentFunction = toCloudFunction(createcomment)
-const createGroupFunction = toCloudFunction(creategroup)
-const resolveMarketFunction = toCloudFunction(resolvemarket)
-const closeMarketFunction = toCloudFunction(closemarket)
-const unsubscribeFunction = toCloudFunction(unsubscribe)
-const stripeWebhookFunction = toCloudFunction(stripewebhook)
-const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
-const getCurrentUserFunction = toCloudFunction(getcurrentuser)
-const acceptChallenge = toCloudFunction(acceptchallenge)
-const createPostFunction = toCloudFunction(createpost)
-const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
-const testScheduledFunction = toCloudFunction(testscheduledfunction)
 const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
 const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 const updateLoansFunction = toCloudFunction(updateloans)
 const updateRecommendedFunction = toCloudFunction(updaterecommended)
-const validateIAPFunction = toCloudFunction(validateiap)
-const swapCertFunction = toCloudFunction(swapcert)
-const dividendCertFunction = toCloudFunction(dividendcert)
-const markAllNotificationsFunction = toCloudFunction(markallnotifications)
-const claimDestinySubFunction = toCloudFunction(claimdestinysub)
-const addContractToGroupFunction = toCloudFunction(addcontracttogroup)
-const updateMemberRoleFunction = toCloudFunction(updatememberrole)
-const removeContractFromGroupFunction = toCloudFunction(removecontractfromgroup)
+
+import * as endpoints from './api'
+
+const healthFunction = toCloudFunction(endpoints.health)
+const transactFunction = toCloudFunction(endpoints.transact)
+const changeUserInfoFunction = toCloudFunction(endpoints.changeuserinfo)
+const createUserFunction = toCloudFunction(endpoints.createuser)
+const createAnswerFunction = toCloudFunction(endpoints.createanswer)
+const placeBetFunction = toCloudFunction(endpoints.placebet)
+const cancelBetFunction = toCloudFunction(endpoints.cancelbet)
+const sellBetFunction = toCloudFunction(endpoints.sellbet)
+const sellSharesFunction = toCloudFunction(endpoints.sellshares)
+const claimManalinkFunction = toCloudFunction(endpoints.claimmanalink)
+const createMarketFunction = toCloudFunction(endpoints.createmarket)
+const addSubsidyFunction = toCloudFunction(endpoints.addsubsidy)
+const createCommentFunction = toCloudFunction(endpoints.createcomment)
+const createGroupFunction = toCloudFunction(endpoints.creategroup)
+const resolveMarketFunction = toCloudFunction(endpoints.resolvemarket)
+const closeMarketFunction = toCloudFunction(endpoints.closemarket)
+const unsubscribeFunction = toCloudFunction(endpoints.unsubscribe)
+const stripeWebhookFunction = toCloudFunction(endpoints.stripewebhook)
+const createCheckoutSessionFunction = toCloudFunction(
+  endpoints.createcheckoutsession
+)
+const getCurrentUserFunction = toCloudFunction(endpoints.getcurrentuser)
+const acceptChallenge = toCloudFunction(endpoints.acceptchallenge)
+const createPostFunction = toCloudFunction(endpoints.createpost)
+const saveTwitchCredentials = toCloudFunction(endpoints.savetwitchcredentials)
+const testScheduledFunction = toCloudFunction(endpoints.testscheduledfunction)
+const validateIAPFunction = toCloudFunction(endpoints.validateiap)
+const swapCertFunction = toCloudFunction(endpoints.swapcert)
+const dividendCertFunction = toCloudFunction(endpoints.dividendcert)
+const markAllNotificationsFunction = toCloudFunction(
+  endpoints.markallnotifications
+)
+const claimDestinySubFunction = toCloudFunction(endpoints.claimdestinysub)
+const addContractToGroupFunction = toCloudFunction(endpoints.addcontracttogroup)
+const updateMemberRoleFunction = toCloudFunction(endpoints.updatememberrole)
+const removeContractFromGroupFunction = toCloudFunction(
+  endpoints.removecontractfromgroup
+)
 
 export {
   healthFunction as health,

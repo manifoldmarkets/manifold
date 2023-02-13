@@ -1,5 +1,4 @@
 import { initAdmin } from 'shared/init-admin'
-import fetch from 'node-fetch'
 
 async function placeManyBets(apiKey: string, count: number) {
   const url = 'https://placebet-w3txbmd3ba-uc.a.run.app'

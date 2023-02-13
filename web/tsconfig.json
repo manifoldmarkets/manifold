@@ -16,7 +16,7 @@
     "incremental": true,
     "paths": {
       "common/*": ["../common/src/*"],
-      "web/*": ["./src/*"]
+      "web/*": ["./*"]
     }
   },
   "watchOptions": {
