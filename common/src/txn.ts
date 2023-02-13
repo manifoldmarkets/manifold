@@ -183,6 +183,10 @@ type ContractResolutionPayout = {
   toType: 'USER'
   category: 'CONTRACT_RESOLUTION_PAYOUT'
   token: 'M$'
+  data: {
+    reverted?: boolean
+    deposit?: number
+  }
 }
 
 type QfId = {

@@ -38,7 +38,7 @@ import { runTxn, TxnData } from 'shared/run-txn'
 import { ContractResolutionPayoutTxn } from 'common/txn'
 import { runContractPayoutTxn } from 'shared/run-txn'
 
-export const payUsersTransactions = async (
+const payUsersTransactions = async (
   payouts: {
     userId: string
     payout: number
@@ -64,9 +64,10 @@ export const payUsersTransactions = async (
           toId: userId,
           amount: payout,
           token: 'M$',
+          data: { deposit: deposit ?? 0 },
           description: 'Contract payout for resolution: ' + contractId,
         } as ContractResolutionPayoutTxn
-        runContractPayoutTxn(transaction, payoutTxn, deposit ?? 0)
+        runContractPayoutTxn(transaction, payoutTxn)
       })
     })
   }
