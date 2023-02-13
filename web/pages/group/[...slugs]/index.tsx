@@ -161,7 +161,7 @@ export default function GroupPage(props: {
 
   const chatEmbed = <ChatEmbed group={group} />
   return (
-    <Page rightSidebar={chatEmbed} mainClassName="!mt-0">
+    <Page rightSidebar={chatEmbed} touchesTop={true}>
       <SEO
         title={group.name}
         description={`Created by ${creator.name}. ${group.about}`}
