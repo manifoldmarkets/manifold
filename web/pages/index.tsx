@@ -85,7 +85,7 @@ export default function Home() {
         title="Manifold Markets"
         description="Ask any question. Bet mana vs 100+ players. Unfold the future together."
       />
-      <Col className="mx-auto mb-8 max-w-3xl gap-4 px-4">
+      <Col className="mx-auto mb-8 w-full gap-4 px-4">
         <LandingPagePanel />
         <Row className="w-full gap-2 sm:gap-4">
           <InfoCard
