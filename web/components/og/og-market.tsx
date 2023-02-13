@@ -1,7 +1,6 @@
 import { OgCardProps } from 'common/contract-details'
 import clsx from 'clsx'
 import { Sparkline, ogPoint } from './graph'
-import { formatPercent } from 'common/util/format'
 import { base64toPoints } from 'common/util/og'
 
 // Notes for working with this:
@@ -176,3 +175,11 @@ const dateFormat = Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
 }).format
+
+// copied from format.ts
+export function formatPercent(zeroToOne: number) {
+  // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
+  const decimalPlaces = zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
+  const percent = zeroToOne * 100
+  return percent.toFixed(decimalPlaces) + '%'
+}
