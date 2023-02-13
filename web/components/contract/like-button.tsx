@@ -138,6 +138,7 @@ export const LikeButton = memo(function LikeButton(props: {
               : 'text-gray-500',
             !disabled && color === 'gray' ? 'hover:text-gray-600' : ''
           )}
+          onClick={(e) => e.preventDefault()}
           {...likeLongPress}
         >
           <div className="relative">

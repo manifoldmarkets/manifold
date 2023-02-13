@@ -1,6 +1,7 @@
 import { useFeed } from '../../hooks/use-feed'
 import { useUser } from '../../hooks/use-user'
 import { Col } from '../layout/col'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { SiteLink } from '../widgets/site-link'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import { ContractCardNew } from './contract-card'
@@ -8,9 +9,8 @@ import { ContractCardNew } from './contract-card'
 export function ContractsFeed() {
   const user = useUser()
   const { contracts, loadMore } = useFeed(user, 'feed')
-  console.log('contracts', contracts)
 
-  if (!contracts) return null
+  if (!contracts) return <LoadingIndicator />
 
   return (
     <Col>
