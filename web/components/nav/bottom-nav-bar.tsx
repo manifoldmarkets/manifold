@@ -51,13 +51,14 @@ function getNavigation(user: User) {
 
 const signedOutNavigation = (appStoreUrl: string) => [
   { name: 'Home', href: '/', icon: HomeIcon },
+  { name: 'Markets', href: '/markets', icon: ScaleIcon },
   {
     name: 'Get app',
     href: appStoreUrl,
     icon: DeviceMobileIcon,
   },
-  { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
   { name: 'About', href: '/?showHelpModal=true', icon: BookOpenIcon },
+  { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
