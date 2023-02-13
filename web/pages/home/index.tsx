@@ -604,10 +604,10 @@ function MobileHome() {
   return (
     <Page>
       <Col className="gap-4 py-2 pb-8 sm:px-2">
-        <Row className="mx-3 mb-2 items-center justify-between gap-4">
+        <Row className="mx-4 mb-2 items-center justify-between gap-4">
           <MobileSearchButton className="flex-1" />
           <Row className="items-center gap-4">
-            <DailyStats user={user} showLoans />
+            <DailyStats user={user} />
           </Row>
         </Row>
 
