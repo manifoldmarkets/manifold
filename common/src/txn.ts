@@ -51,6 +51,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'CERT_DIVIDEND' // Cert holder pays out dividends
     | 'CERT_BURN' // Destroy a cert
     | 'CONTRACT_RESOLUTION_PAYOUT' // Contract resolution pays out to a user
+    | 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
     | 'QF_PAYMENT' // Pay one of the entries in a QF pool
     | 'QF_ADD_POOL' // Fund a QF pool
     | 'QF_DIVIDEND' // Pay out QF dividends
@@ -184,8 +185,19 @@ type ContractResolutionPayout = {
   category: 'CONTRACT_RESOLUTION_PAYOUT'
   token: 'M$'
   data: {
+    /** @deprecated **/
     reverted?: boolean
     deposit?: number
+  }
+}
+
+type ContractUndoResolutionPayout = {
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  category: 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+  token: 'M$'
+  data: {
+    revertsTxnId: string
   }
 }
 
@@ -230,6 +242,7 @@ export type CertPayManaTxn = CertTxn & CertPayMana
 export type CertDividendTxn = CertTxn & CertDividend
 export type CertBurnTxn = CertTxn & CertBurn
 export type ContractResolutionPayoutTxn = Txn & ContractResolutionPayout
+export type ContractUndoResolutionPayoutTxn = Txn & ContractUndoResolutionPayout
 export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
 export type QfAddPoolTxn = QfTxn & QfAddPool

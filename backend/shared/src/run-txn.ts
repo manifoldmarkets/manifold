@@ -2,7 +2,11 @@ import * as admin from 'firebase-admin'
 import { User } from 'common/user'
 import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from 'common/util/object'
-import { ContractResolutionPayoutTxn, Txn } from 'common/txn'
+import {
+  ContractResolutionPayoutTxn,
+  ContractUndoResolutionPayoutTxn,
+  Txn,
+} from 'common/txn'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -69,21 +73,29 @@ export function undoContractPayoutTxn(
   fbTransaction: admin.firestore.Transaction,
   txnData: ContractResolutionPayoutTxn
 ) {
-  const { amount, toId, id, data } = txnData
+  const { amount, toId, data, fromId, id } = txnData
   const { deposit } = data ?? {}
   const toDoc = firestore.doc(`users/${toId}`)
   fbTransaction.update(toDoc, {
     balance: FieldValue.increment(-amount),
     totalDeposits: FieldValue.increment(-(deposit ?? 0)),
   })
-  const txnDoc = firestore.doc(`txns/${id}`)
 
-  fbTransaction.update(txnDoc, {
-    data: {
-      ...(data ?? {}),
-      reverted: true,
-    },
-  })
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = {
+    id: newTxnDoc.id,
+    createdTime: Date.now(),
+    amount: amount,
+    toId: fromId,
+    fromType: 'USER',
+    fromId: toId,
+    toType: 'CONTRACT',
+    category: 'CONTRACT_UNDO_RESOLUTION_PAYOUT',
+    token: 'M$',
+    description: `Undo contract resolution payout from contract ${fromId}`,
+    data: { revertsTxnId: id },
+  } as ContractUndoResolutionPayoutTxn
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
 
   return { status: 'success', data: txnData }
 }
