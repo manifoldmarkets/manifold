@@ -41,6 +41,7 @@ export function BetDialog(props: {
           mobileView={true}
           hidden={false}
           initialOutcome={initialOutcome}
+          onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
         />
       </Col>
     </Modal>
