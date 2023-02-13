@@ -35,11 +35,12 @@ export const MobileSearchButton = (props: { className?: string }) => {
     <Link
       href="/find"
       className={clsx(
-        'bg rounded-md border border-gray-300 bg-white p-2 hover:border-indigo-300',
+        'bg flex flex-row gap-2 rounded-md border border-gray-300 bg-white p-2 hover:border-indigo-300',
         props.className
       )}
     >
       <SearchIcon className="h-6 w-6 text-gray-700 sm:text-inherit" />
+      <div className="text-gray-500">Search</div>
     </Link>
   )
 }
