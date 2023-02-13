@@ -9,8 +9,6 @@ import { undoContractPayoutTxn } from 'shared/run-txn'
 const firestore = admin.firestore()
 
 const undoResolution = async (contractId: string) => {
-  // get all the txns with category CONTRACT_RESOLUTION_PAYOUT
-  // and fromType CONTRACT and fromID contractId
   const txns = await firestore
     .collection('txns')
     .where('category', '==', 'CONTRACT_RESOLUTION_PAYOUT')
