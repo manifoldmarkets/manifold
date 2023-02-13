@@ -17,6 +17,10 @@
     "paths": {
       "common/*": ["../common/src/*"],
       "web/*": ["./*"],
+      "hooks/*": ["./hooks/*"],
+      "lib/*": ["./lib/*"],
+      "pages/*": ["./pages/*"],
+      "components/*": ["./components/*"]
     }
   },
   "watchOptions": {
