@@ -572,6 +572,8 @@ export function ContractCardNew(props: {
     mechanism,
   } = contract
 
+  const metrics = useSavedContractMetrics(contract)
+
   const { ref } = useIsVisible(
     () =>
       track('view market card', {
@@ -676,6 +678,38 @@ export function ContractCardNew(props: {
           />
         </Row>
       </Row>
+
+      {isBinaryCpmm && metrics && metrics.hasShares && (
+        <YourMetricsFooter metrics={metrics} />
+      )}
     </Link>
+  )
+}
+
+function YourMetricsFooter(props: { metrics: ContractMetrics }) {
+  const { metrics } = props
+  const { totalShares, maxSharesOutcome, profit } = metrics
+  const { YES: yesShares, NO: noShares } = totalShares
+
+  return (
+    <Row className="items-center gap-4 rounded bg-gray-50 p-2 text-sm">
+      <Row className="items-center gap-2">
+        <span className="text-gray-500">Your position</span>
+        <div className="text-gray-600">
+          <span className="font-semibold">
+            {maxSharesOutcome === 'YES'
+              ? formatWithCommas(yesShares)
+              : formatWithCommas(noShares)}{' '}
+          </span>
+          {maxSharesOutcome} shares
+        </div>
+      </Row>
+      <Row className="ml-auto items-center gap-2">
+        <div className="text-gray-500">Your profit </div>
+        <div className={clsx('font-semibold text-gray-600')}>
+          {profit ? formatMoney(profit) : '--'}
+        </div>
+      </Row>
+    </Row>
   )
 }
