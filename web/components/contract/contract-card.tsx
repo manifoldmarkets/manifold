@@ -572,6 +572,16 @@ export function ContractCardNew(props: {
     mechanism,
   } = contract
 
+  const { ref } = useIsVisible(
+    () =>
+      track('view market card', {
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        slug: contract.slug,
+      } as ContractCardView),
+    true
+  )
+
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const textColor = isClosed && !isResolved ? 'text-gray-500' : 'text-gray-900'
@@ -640,7 +650,7 @@ export function ContractCardNew(props: {
         />
       </div>
 
-      <Row className="items-center gap-3 text-sm text-gray-500">
+      <Row ref={ref} className="items-center gap-3 text-sm text-gray-500">
         <div className="text-base font-semibold">
           <ContractStatusLabel contract={contract} chanceLabel />
         </div>
