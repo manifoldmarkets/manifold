@@ -11,16 +11,16 @@ export async function updateContractMetricsForUsers(
   contract: Contract,
   allContractBets: Bet[]
 ) {
-  const batch = firestore.batch()
+  const writer = firestore.bulkWriter()
   const betsByUser = groupBy(allContractBets, 'userId')
 
-  Object.entries(betsByUser).forEach(async ([userId, bets]) => {
+  Object.entries(betsByUser).forEach(([userId, bets]) => {
     const metrics = calculateUserMetrics(contract, bets)
-    batch.update(
+    writer.update(
       firestore.collection(`users/${userId}/contract-metrics`).doc(contract.id),
       metrics
     )
   })
 
-  await batch.commit()
+  await writer.flush()
 }
