@@ -34,6 +34,7 @@ const undoResolution = async (contractId: string) => {
     resolutionTime: admin.firestore.FieldValue.delete(),
     resolution: admin.firestore.FieldValue.delete(),
     resolutionProbability: admin.firestore.FieldValue.delete(),
+    closeTime: Date.now(),
   })
   console.log('updated contract')
 }
