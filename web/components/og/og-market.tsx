@@ -1,7 +1,7 @@
 import { OgCardProps } from 'common/contract-details'
 import clsx from 'clsx'
 import { Sparkline, ogPoint } from './graph'
-import { base64toPoints } from 'common/util/og'
+import { base64toPoints } from 'common/edge/og'
 
 // Notes for working with this:
 // - Some css elements are missing or broken (e.g. 'gap' and 'text-ellipsis' and 'line-clamp')

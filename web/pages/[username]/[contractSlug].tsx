@@ -49,7 +49,6 @@ import {
   ContractMetricsByOutcome,
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
-import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
@@ -63,8 +62,7 @@ import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
-import { OgMarket } from 'web/components/og/og-market'
-import { buildOgUrl, pointsToBase64 } from 'common/util/og'
+import { pointsToBase64 } from 'common/util/og'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
