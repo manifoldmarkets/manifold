@@ -640,15 +640,17 @@ export function ContractCardNew(props: {
         {question}
       </div>
 
-      <div className="relative h-36 lg:h-48">
-        <Image
-          fill
-          alt={descriptionString}
-          sizes="100vw"
-          className="object-cover"
-          src={coverImageUrl ?? ''}
-        />
-      </div>
+      {coverImageUrl && (
+        <div className="relative h-36 lg:h-48">
+          <Image
+            fill
+            alt={descriptionString}
+            sizes="100vw"
+            className="object-cover"
+            src={coverImageUrl ?? ''}
+          />
+        </div>
+      )}
 
       <Row ref={ref} className="items-center gap-3 text-sm text-gray-500">
         <div className="text-base font-semibold">
