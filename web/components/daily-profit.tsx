@@ -39,7 +39,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
       return getUserContractMetricsByProfitWithContracts(user.id, db, 'day')
   }, [user])
 
-  const [data] = usePersistentRevalidatedState<
+  const [data, setData] = usePersistentRevalidatedState<
     { metrics: ContractMetrics[]; contracts: CPMMBinaryContract[] } | undefined
   >(
     undefined,
@@ -52,6 +52,9 @@ export const DailyProfit = memo(function DailyProfit(props: {
       callback: refreshContractMetrics,
     }
   )
+  useEffect(() => {
+    if (open) refreshContractMetrics().then(setData)
+  }, [open, refreshContractMetrics, setData])
 
   const dailyProfit = useMemo(() => {
     if (!data) return 0

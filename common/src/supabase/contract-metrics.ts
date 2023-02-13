@@ -82,7 +82,9 @@ export async function getBestAndWorstUserContractMetrics(
       })
       .limit(limit)
   )
-  return [...profit, ...negative].map((d) => d.data) as ContractMetrics[]
+  return uniqBy([...profit, ...negative], (d) => d.data.contractId).map(
+    (d) => d.data
+  ) as ContractMetrics[]
 }
 
 export async function getUsersContractMetricsOrderedByProfit(

@@ -199,5 +199,5 @@ export const usePersistentRevalidatedState = <T>(
     }, [router.isReady])
   }
 
-  return [state ?? savedValue] as const
+  return [state ?? savedValue, setState] as const
 }
