@@ -133,9 +133,9 @@ export default function Home() {
               pinned={pinned}
               isAdmin={false}
             />
+            <TestimonialsPanel />
           </>
         )}
-        <TestimonialsPanel />
       </Col>
     </Page>
   )
