@@ -20,9 +20,9 @@ module.exports = {
       transform: 'lodash/{{member}}',
     },
   },
+  transpilePackages: ['common'],
   experimental: {
     scrollRestoration: true,
-    externalDir: true,
   },
   images: {
     dangerouslyAllowSVG: true,
