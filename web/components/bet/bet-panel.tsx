@@ -48,7 +48,6 @@ import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
-import { useABTest } from 'web/hooks/use-ab-test'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -845,15 +844,9 @@ function QuickOrLimitBet(props: {
 }) {
   const { isLimitOrder, setIsLimitOrder, hideToggle } = props
 
-  const text = useABTest('bet panel title', {
-    predict: 'Predict',
-    bet: 'Bet',
-    trade: 'Trade',
-  })
-
   return (
     <Row className="align-center mb-4 justify-between">
-      <div className="mr-2 -ml-2 shrink-0 text-3xl sm:-ml-0">{text}</div>
+      <div className="mr-2 -ml-2 shrink-0 text-3xl sm:-ml-0">Trade</div>
       {!hideToggle && (
         <Row className="mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
           <PillButton
