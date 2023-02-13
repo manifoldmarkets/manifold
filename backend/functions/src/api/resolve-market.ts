@@ -38,7 +38,7 @@ import { runTxn, TxnData } from 'shared/run-txn'
 import { ContractResolutionPayoutTxn } from 'common/txn'
 import { runContractPayoutTxn } from 'shared/run-txn'
 
-export const payUsersTransactions = async (
+const payUsersTransactions = async (
   payouts: {
     userId: string
     payout: number
