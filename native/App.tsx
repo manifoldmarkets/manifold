@@ -2,7 +2,7 @@ import { app, auth, ENV } from './init'
 import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import 'expo-dev-client'
-import { EXTERNAL_REDIRECTS } from 'common/envs/constants'
+import { EXTERNAL_REDIRECTS } from 'common/src/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -21,19 +21,19 @@ import Clipboard from '@react-native-clipboard/clipboard'
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
-import { setFirebaseUserViaJson } from 'common/firebase-auth'
+import { setFirebaseUserViaJson } from 'common/src/firebase-auth'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 import { AuthPage } from 'components/auth-page'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { withIAPContext } from 'react-native-iap'
-import { getSourceUrl, Notification } from 'common/notification'
+import { getSourceUrl, Notification } from 'common/src/notification'
 import { SplashLoading } from 'components/splash-loading'
 import {
   nativeToWebMessage,
   nativeToWebMessageType,
   webToNativeMessage,
-} from 'common/native-message'
+} from 'common/src/native-message'
 import {
   handleWebviewCrash,
   ExternalWebView,
@@ -44,7 +44,7 @@ import {
 import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Constants from 'expo-constants'
-import { NativeShareData } from 'common/native-share-data'
+import { NativeShareData } from 'common/src/native-share-data'
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'

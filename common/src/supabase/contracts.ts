@@ -33,3 +33,34 @@ export const getUnresolvedContracts = async (
   )
   return count
 }
+
+export const getContractsByUsers = async (
+  userIds: string[],
+  db: SupabaseClient,
+  createdTime?: number
+) => {
+  if (userIds.length === 0) {
+    return null
+  }
+  const chunks = chunk(userIds, 300)
+  const promises = chunks.map(async (chunk) => {
+    const { data } = await run(
+      db.rpc('get_contracts_by_creator_ids', {
+        creator_ids: chunk,
+        created_time: createdTime ?? 0,
+      })
+    )
+    return data
+  })
+  try {
+    const usersToContracts = {} as { [userId: string]: Contract[] }
+    const results = (await Promise.all(promises)).flat().flat()
+    results.forEach((r) => {
+      usersToContracts[r.creator_id] = r.contracts as Contract[]
+    })
+    return usersToContracts
+  } catch (e) {
+    console.log(e)
+  }
+  return null
+}

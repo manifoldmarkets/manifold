@@ -240,9 +240,6 @@ export function ContractPageContent(
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
 
-  // check if market is less than an hour old
-  const isRecent = (contract.createdTime ?? 0) > Date.now() - 60 * 60 * 1000
-
   const [showResolver, setShowResolver] = useState(
     (isCreator || isAdmin) && !isResolved && (closeTime ?? 0) < Date.now()
   )
@@ -347,7 +344,7 @@ export function ContractPageContent(
           />
         )}
 
-        {isCreator && isRecent && (
+        {isCreator && !isResolved && (
           <>
             {showResolver && <Spacer h={4} />}
             <CreatorSharePanel contract={contract} />

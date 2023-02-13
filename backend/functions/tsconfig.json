@@ -15,6 +15,9 @@
       "functions/*": ["./src/*"]
     }
   },
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  },
   "references": [
     {
       "path": "../../common"

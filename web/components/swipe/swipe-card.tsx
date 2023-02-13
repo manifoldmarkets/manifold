@@ -19,6 +19,8 @@ import { MoreSwipeInfo } from './more-swipe-info'
 import { DailyStats } from '../daily-stats'
 import { SwipeComments } from './swipe-comments'
 import { Percent } from './percent'
+import { SwipeSharer } from './swipe-sharer'
+import { SwitchVerticalIcon } from '@heroicons/react/solid'
 
 export const SwipeCard = memo(
   (props: {
@@ -30,6 +32,8 @@ export const SwipeCard = memo(
     onBet: (outcome: 'YES' | 'NO') => void
     user: User | undefined
     setIsModalOpen: Dispatch<SetStateAction<boolean>>
+    cardHeight: number
+    toggleView?: () => void
     small?: boolean
     className?: string
   }) => {
@@ -42,7 +46,9 @@ export const SwipeCard = memo(
       onBet,
       user,
       setIsModalOpen,
+      cardHeight,
       small,
+      toggleView,
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as BinaryContract
@@ -84,14 +90,18 @@ export const SwipeCard = memo(
             'inset-0 z-10 h-full gap-2 p-4'
           )}
         >
-          <CornerDetails contract={contract} user={user} />
+          <CornerDetails
+            contract={contract}
+            user={user}
+            toggleView={toggleView}
+          />
 
           <div className="line-clamp-6 mt-6 overflow-ellipsis">
             <SiteLink href={contractPath(contract)} followsLinkClass>
               <div
                 className={clsx(
                   'font-semibold text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
-                  getQuestionSize(question)
+                  getQuestionSize(question, cardHeight)
                 )}
               >
                 {question}
@@ -122,6 +132,7 @@ export const SwipeCard = memo(
               user={user}
               contract={contract}
               setIsModalOpen={setIsModalOpen}
+              cardHeight={cardHeight}
             />
           </Row>
           <Col className="mt-2 gap-6">
@@ -150,8 +161,9 @@ const CornerDetails = (props: {
   contract: Contract
   user?: User
   className?: string
+  toggleView?: () => void
 }) => {
-  const { contract, className, user } = props
+  const { contract, className, user, toggleView } = props
   const { creatorName, creatorUsername, creatorAvatarUrl, closeTime } = contract
 
   return (
@@ -172,8 +184,11 @@ const CornerDetails = (props: {
         </div>
       </Row>
 
-      <div className="flex rounded-full text-gray-400">
+      <div className="flex items-center rounded-full text-gray-400">
         <DailyStats user={user} showLoans={false} />
+        {toggleView && (
+          <SwitchVerticalIcon className="ml-2 h-6 w-6" onClick={toggleView} />
+        )}
       </div>
     </div>
   )
@@ -183,8 +198,9 @@ function CardActions(props: {
   user?: User
   contract: BinaryContract
   setIsModalOpen: (open: boolean) => void
+  cardHeight: number
 }) {
-  const { user, contract, setIsModalOpen } = props
+  const { user, contract, setIsModalOpen, cardHeight } = props
 
   return (
     <Col className="flex flex-col items-center justify-end gap-2">
@@ -202,8 +218,17 @@ function CardActions(props: {
         className={'flex-col gap-2 drop-shadow-sm'}
         isSwipe
       />
-      <SwipeComments contract={contract} setIsModalOpen={setIsModalOpen} />
-      {/* TODO Share button */}
+
+      {(cardHeight ?? 400) >= 700 && (
+        <SwipeSharer contract={contract} user={user} />
+      )}
+
+      <SwipeComments
+        contract={contract}
+        setIsModalOpen={setIsModalOpen}
+        color="white"
+        size="xl"
+      />
     </Col>
   )
 }

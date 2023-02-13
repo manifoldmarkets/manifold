@@ -8,7 +8,7 @@ import {
   CPMMContract,
   DPMContract,
 } from './contract'
-import { PortfolioMetrics, User } from './user'
+import { User } from './user'
 import { DAY_MS } from './util/time'
 import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
@@ -16,6 +16,7 @@ import { removeUndefinedProps } from './util/object'
 import { buy, getProb, shortSell } from './calculate-cpmm-multi'
 import { average, logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 const computeInvestmentValue = (
   bets: Bet[],

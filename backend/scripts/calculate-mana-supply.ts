@@ -1,4 +1,4 @@
-import { PortfolioMetrics, User } from 'common/user'
+import { User } from 'common/user'
 import { formatLargeNumber } from 'common/util/format'
 import { mapAsync } from 'common/util/promise'
 import { DAY_MS } from 'common/util/time'
@@ -7,6 +7,7 @@ import { CollectionReference } from 'firebase-admin/firestore'
 import { sum } from 'lodash'
 import { getValues, loadPaginated } from 'shared/utils'
 import { initAdmin } from 'shared/init-admin'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 initAdmin()
 
 const firestore = admin.firestore()

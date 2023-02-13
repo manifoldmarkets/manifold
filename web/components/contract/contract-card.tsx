@@ -1,5 +1,10 @@
+import { memo, ReactNode } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
+import { UserIcon } from '@heroicons/react/outline'
+import { FireIcon } from '@heroicons/react/solid'
+import { JSONContent } from '@tiptap/core'
+
 import { Row } from '../layout/row'
 import {
   formatLargeNumber,
@@ -39,7 +44,6 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../widgets/tooltip'
 import { Card } from '../widgets/card'
 import { useContract } from 'web/hooks/use-contracts'
-import { memo, ReactNode } from 'react'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
@@ -54,8 +58,12 @@ import { GroupContractOptions } from '../groups/group-contract-options'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { getLinkTarget } from 'web/components/widgets/site-link'
-import { JSONContent } from '@tiptap/core'
 import { richTextToString } from 'common/util/parse'
+import { ContractStatusLabel } from './contracts-list-entry'
+import { LikeButton } from './like-button'
+import { CommentsButton } from '../swipe/swipe-comments'
+import { BetRow } from '../bet/bet-row'
+import { MoreInfoButton } from '../swipe/more-swipe-info'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -539,5 +547,171 @@ export function FeaturedPill(props: { label?: string }) {
     <div className="rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-xs text-white">
       {label}
     </div>
+  )
+}
+
+export function ContractCardNew(props: {
+  contract: Contract
+  className?: string
+}) {
+  const { className } = props
+  const user = useUser()
+
+  const contract = useContract(props.contract.id) ?? props.contract
+  const {
+    closeTime,
+    isResolved,
+    creatorCreatedTime,
+    creatorName,
+    creatorUsername,
+    creatorAvatarUrl,
+    question,
+    description,
+    coverImageUrl,
+    uniqueBettorCount,
+    outcomeType,
+    mechanism,
+  } = contract
+
+  const metrics = useSavedContractMetrics(contract)
+
+  const { ref } = useIsVisible(
+    () =>
+      track('view market card', {
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        slug: contract.slug,
+      } as ContractCardView),
+    true
+  )
+
+  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
+  const isClosed = closeTime && closeTime < Date.now()
+  const textColor = isClosed && !isResolved ? 'text-gray-500' : 'text-gray-900'
+  const descriptionString =
+    typeof description === 'string'
+      ? description
+      : richTextToString(description)
+
+  return (
+    <Link
+      href={contractPath(contract)}
+      className={clsx(
+        'group flex flex-col gap-2 whitespace-nowrap rounded-sm bg-white hover:bg-[#fafaff] focus:bg-[#fafaff]',
+        'max-w-[600px] border-l border-r py-3 px-4',
+        className
+      )}
+    >
+      <Row className="items-center gap-3 text-sm text-gray-500">
+        <Row className="z-10 gap-2">
+          <Avatar
+            username={creatorUsername}
+            avatarUrl={creatorAvatarUrl}
+            size="xs"
+          />
+          <UserLink
+            name={creatorName}
+            username={creatorUsername}
+            className="h-[24px] text-sm text-gray-500"
+            createdTime={creatorCreatedTime}
+          />
+        </Row>
+        <div className="flex-1" />
+        {!isClosed && contract.elasticity < 0.5 ? (
+          <Tooltip text={'High-stakes'} className={'z-10'}>
+            <FireIcon className="h-5 w-5 text-blue-700" />
+          </Tooltip>
+        ) : null}
+        <Tooltip
+          text={`${uniqueBettorCount} unique traders`}
+          placement="bottom"
+          className={'z-10'}
+        >
+          <Row className={'shrink-0 items-center gap-2'}>
+            <UserIcon className="h-5 w-5" />
+            <div className="">{uniqueBettorCount || '0'}</div>
+          </Row>
+        </Tooltip>
+      </Row>
+
+      <div
+        className={clsx(
+          'break-anywhere whitespace-normal font-medium',
+          textColor
+        )}
+      >
+        {question}
+      </div>
+
+      {coverImageUrl && (
+        <div className="relative h-36 lg:h-48">
+          <Image
+            fill
+            alt={descriptionString}
+            sizes="100vw"
+            className="object-cover"
+            src={coverImageUrl ?? ''}
+          />
+        </div>
+      )}
+
+      <Row ref={ref} className="items-center gap-3 text-sm text-gray-500">
+        <div className="text-base font-semibold">
+          <ContractStatusLabel contract={contract} chanceLabel />
+        </div>
+
+        {isBinaryCpmm && <BetRow buttonClassName="z-10" contract={contract} />}
+
+        <Row className="z-20 ml-auto items-center gap-2">
+          <MoreInfoButton contract={contract as any} color="gray" size="md" />
+          <CommentsButton contract={contract} color="gray" size="md" />
+          <LikeButton
+            contentId={contract.id}
+            contentCreatorId={contract.creatorId}
+            user={user}
+            contentType={'contract'}
+            totalLikes={contract.likedByUserCount ?? 0}
+            contract={contract}
+            contentText={question}
+            showTotalLikesUnder
+            size="md"
+            color="gray"
+            className={'!mx-0 gap-2 drop-shadow-sm'}
+          />
+        </Row>
+      </Row>
+
+      {isBinaryCpmm && metrics && metrics.hasShares && (
+        <YourMetricsFooter metrics={metrics} />
+      )}
+    </Link>
+  )
+}
+
+function YourMetricsFooter(props: { metrics: ContractMetrics }) {
+  const { metrics } = props
+  const { totalShares, maxSharesOutcome, profit } = metrics
+  const { YES: yesShares, NO: noShares } = totalShares
+
+  return (
+    <Row className="items-center gap-4 rounded bg-gray-50 p-2 text-sm">
+      <Row className="items-center gap-2">
+        <span className="text-gray-500">Your position</span>
+        <div className="text-gray-600">
+          <span className="font-semibold">
+            {maxSharesOutcome === 'YES'
+              ? formatWithCommas(yesShares)
+              : formatWithCommas(noShares)}{' '}
+          </span>
+          {maxSharesOutcome} shares
+        </div>
+      </Row>
+      <Row className="ml-auto items-center gap-2">
+        <div className="text-gray-500">Your profit </div>
+        <div className={clsx('font-semibold text-gray-600')}>
+          {profit ? formatMoney(profit) : '--'}
+        </div>
+      </Row>
+    </Row>
   )
 }

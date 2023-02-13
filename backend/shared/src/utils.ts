@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin'
-import fetch from 'node-fetch'
 import {
   CollectionReference,
   CollectionGroup,
@@ -320,4 +319,19 @@ export const getContractPath = (contract: Contract) => {
 
 export function contractUrl(contract: Contract) {
   return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
+}
+
+export async function getTrendingContracts() {
+  const firestore = admin.firestore()
+  return await getValues<Contract>(
+    firestore
+      .collection('contracts')
+      .where('isResolved', '==', false)
+      .where('visibility', '==', 'public')
+      // can't use multiple inequality (/orderBy) operators on different fields,
+      // so have to filter for closed contracts separately
+      .orderBy('popularityScore', 'desc')
+      // might as well go big and do a quick filter for closed ones later
+      .limit(500)
+  )
 }

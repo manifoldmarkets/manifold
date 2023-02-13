@@ -1,10 +1,9 @@
 export const horizontalSwipeDist = 80
 export const verticalSwipeDist = 40
 
-export default function getQuestionSize(question: string) {
+export default function getQuestionSize(question: string, cardHeight: number) {
   const questionLength = question.length
-  if (window.innerHeight <= 700)
-    return questionLength >= 120 ? 'text-xl' : 'text-2xl'
+  if (cardHeight < 700) return questionLength > 95 ? 'text-lg' : 'text-xl'
   return questionLength >= 120 ? 'text-2xl' : 'text-3xl'
 
   /* Inga's version.

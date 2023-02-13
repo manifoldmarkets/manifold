@@ -138,6 +138,7 @@ export const LikeButton = memo(function LikeButton(props: {
               : 'text-gray-500',
             !disabled && color === 'gray' ? 'hover:text-gray-600' : ''
           )}
+          onClick={(e) => e.preventDefault()}
           {...likeLongPress}
         >
           <div className="relative">
@@ -174,11 +175,12 @@ export const LikeButton = memo(function LikeButton(props: {
           setOpen={setModalOpen}
         />
       )}
-      {showTotalLikesUnder && (
+      {showTotalLikesUnder && totalLikes > 0 && (
         <div
           className={clsx(
-            size === 'xl' ? '-mt-3 text-lg' : '-mt-1.5 text-xs',
-            'mx-auto h-6 text-white disabled:opacity-50'
+            'h-5 disabled:opacity-50',
+            size === 'xl' ? '-mt-3 text-lg' : 'text-sm',
+            color === 'white' ? 'text-white' : 'text-gray-500'
           )}
         >
           {totalLikes > 0 ? totalLikes : ''}

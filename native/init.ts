@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
-import { CONFIGS } from 'common/envs/constants'
+import { CONFIGS } from 'common/src/envs/constants'
 import { getAuth } from 'firebase/auth'
 import * as Device from 'expo-device'
 import * as Sentry from 'sentry-expo'

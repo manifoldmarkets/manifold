@@ -15,8 +15,9 @@ export type ColorType =
   | 'gradient'
   | 'gradient-pink'
   | 'gray-white'
+  | 'yellow-outline'
 
-const sizeClasses = {
+export const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
   xs: 'px-2.5 py-1.5 text-sm',
   sm: 'px-3 py-2 text-sm',
@@ -26,9 +27,12 @@ const sizeClasses = {
   '2xl': 'px-6 py-3 text-xl font-semibold',
 }
 
+export const baseButtonClasses =
+  'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed text-center'
+
 export function buttonClass(size: SizeType, color: ColorType | 'override') {
   return clsx(
-    'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed text-center',
+    baseButtonClasses,
     sizeClasses[size],
     color === 'green' &&
       'disabled:bg-gray-300 bg-teal-500 text-white hover:bg-teal-600',
@@ -51,7 +55,9 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'gradient-pink' &&
       'disabled:bg-gray-300 enabled:bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white',
     color === 'gray-white' &&
-      'text-gray-600 hover:bg-gray-200 shadow-none disabled:opacity-50'
+      'text-gray-600 hover:bg-gray-200 shadow-none disabled:opacity-50',
+    color === 'yellow-outline' &&
+      'ring-2 ring-yellow-500 text-yellow-500 enabled:hover:bg-yellow-500 enabled:hover:text-white disabled:opacity-50'
   )
 }
 

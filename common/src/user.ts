@@ -80,14 +80,6 @@ export type PrivateUser = {
   installedAppPlatforms?: string[]
 }
 
-export type PortfolioMetrics = {
-  investmentValue: number
-  balance: number
-  totalDeposits: number
-  timestamp: number
-  userId: string
-}
-
 export const MANIFOLD_USER_USERNAME = 'ManifoldMarkets'
 export const MANIFOLD_USER_NAME = 'ManifoldMarkets'
 export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'

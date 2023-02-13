@@ -15,7 +15,12 @@ import {
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
 
 export const useComments = (contractId: string) => {
-  const [comments, setComments] = useState<ContractComment[] | undefined>()
+  const [comments, setComments] = usePersistentState<
+    ContractComment[] | undefined
+  >(undefined, {
+    key: 'comments-' + contractId,
+    store: inMemoryStore(),
+  })
 
   useEffect(() => {
     if (contractId) return listenForCommentsOnContract(contractId, setComments)
