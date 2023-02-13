@@ -160,6 +160,7 @@ export async function getTotalContractMetrics(
       .from('user_contract_metrics')
       .select('*', { head: true, count: 'exact' })
       .eq('contract_id', contractId)
+      .gt('data->invested', 0)
   )
   return count
 }
