@@ -7,6 +7,12 @@
 /* allow our backend to have a long statement timeout */
 alter role service_role set statement_timeout = '120s';
 
+/* for clustering without locks */
+create extension if not exists pg_repack;
+
+/* for fancy machine learning stuff */
+create extension if not exists vector;
+
 /* GIN trigram indexes */
 create extension if not exists pg_trgm;
 
@@ -831,4 +837,3 @@ as $$
     and (data->>'createdTime')::bigint > created_time
     group by creator_id;
 $$;
-
