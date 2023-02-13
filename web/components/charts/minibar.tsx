@@ -8,6 +8,7 @@ export const Minibar = (props: { probs: number[] }) => {
     <div className="my-0.5 inline-flex h-5 w-[34px] bg-gray-200">
       {props.probs.map((p, i) => (
         <span
+          key={i}
           style={{
             width: p * 100 + '%',
             backgroundColor: CHOICE_ANSWER_COLORS[i],
