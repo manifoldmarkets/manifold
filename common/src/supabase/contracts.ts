@@ -1,4 +1,4 @@
-import { chunk, groupBy } from 'lodash'
+import { chunk } from 'lodash'
 import { run, selectJson, SupabaseClient } from './utils'
 import { Contract } from '../contract'
 
@@ -42,7 +42,7 @@ export const getContractsByUsers = async (
   if (userIds.length === 0) {
     return null
   }
-  const chunks = chunk(userIds, 500)
+  const chunks = chunk(userIds, 300)
   const promises = chunks.map(async (chunk) => {
     const { data } = await run(
       db.rpc('get_contracts_by_creator_ids', {
@@ -53,14 +53,12 @@ export const getContractsByUsers = async (
     return data
   })
   try {
+    const usersToContracts = {} as { [userId: string]: Contract[] }
     const results = (await Promise.all(promises)).flat().flat()
-    return groupBy(
-      results.map((r) => ({
-        userId: r.creator_id,
-        contracts: r.contracts as Contract[],
-      })),
-      'userId'
-    )
+    results.forEach((r) => {
+      usersToContracts[r.creator_id] = r.contracts as Contract[]
+    })
+    return usersToContracts
   } catch (e) {
     console.log(e)
   }

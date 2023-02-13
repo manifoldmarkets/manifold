@@ -1,8 +1,8 @@
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
-import { sendPortfolioUpdateEmailsToAllUsers } from 'functions/weekly-portfolio-emails'
 import { getAllPrivateUsers } from 'shared/utils'
 import * as admin from 'firebase-admin'
+import { sendPortfolioUpdateEmailsToAllUsers } from 'functions/scheduled/weekly-portfolio-emails'
 
 async function testScheduledFunction() {
   await sendPortfolioUpdateEmailsToAllUsers()
