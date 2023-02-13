@@ -58,9 +58,7 @@ export function CreateGroupButton(props: {
   const [name, setName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
-  const [privacy, setPrivacy] = useState<PrivacyStatusType | undefined>(
-    undefined
-  )
+  const [privacy, setPrivacy] = useState<PrivacyStatusType>('public')
 
   const router = useRouter()
 
@@ -165,8 +163,8 @@ export function CreateGroupButton(props: {
           <Col>
             <PrivacyStatusView
               viewStatus={'public'}
-              isSelected={!privacy}
-              onClick={() => setPrivacy(undefined)}
+              isSelected={privacy == 'public'}
+              onClick={() => setPrivacy('public')}
               size="sm"
             />
             <PrivacyStatusView

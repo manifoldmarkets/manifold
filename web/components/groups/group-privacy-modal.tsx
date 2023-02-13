@@ -90,6 +90,7 @@ function SelectGroupPrivacyModal(props: {
             disabled={selectedStatus == group.privacyStatus}
             group={group}
             selectedStatus={selectedStatus}
+            setOpen={setOpen}
           />
         </Row>
       </Col>
@@ -153,8 +154,9 @@ export function ChangePrivacyStatusButton(props: {
   disabled: boolean
   group: Group
   selectedStatus: 'public' | 'curated'
+  setOpen: (open: boolean) => void
 }) {
-  const { disabled, group, selectedStatus } = props
+  const { disabled, group, selectedStatus, setOpen } = props
   const [loading, setLoading] = useState(false)
   return (
     <Button
@@ -173,7 +175,10 @@ export function ChangePrivacyStatusButton(props: {
               error: `Unable to update group privacy. Try again?`,
             }
           )
-          .finally(() => setLoading(false))
+          .then(() => setOpen(false))
+          .finally(() => {
+            setLoading(false)
+          })
       }}
       loading={loading}
     >
