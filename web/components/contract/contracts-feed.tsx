@@ -3,7 +3,7 @@ import { useUser } from '../../hooks/use-user'
 import { Col } from '../layout/col'
 import { SiteLink } from '../widgets/site-link'
 import { VisibilityObserver } from '../widgets/visibility-observer'
-import { ContractCardSingleColumn } from './contract-card'
+import { ContractCardNew } from './contract-card'
 
 export function ContractsFeed() {
   const user = useUser()
@@ -14,9 +14,9 @@ export function ContractsFeed() {
 
   return (
     <Col>
-      <Col className="divide-y first:border-t max-w-[600px]">
+      <Col className="max-w-[600px] divide-y first:border-t">
         {contracts.map((contract) => (
-          <ContractCardSingleColumn key={contract.id} contract={contract} />
+          <ContractCardNew key={contract.id} contract={contract} />
         ))}
       </Col>
 

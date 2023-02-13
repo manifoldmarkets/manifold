@@ -549,7 +549,7 @@ export function FeaturedPill(props: { label?: string }) {
   )
 }
 
-export function ContractCardSingleColumn(props: {
+export function ContractCardNew(props: {
   contract: Contract
   className?: string
 }) {
@@ -623,7 +623,7 @@ export function ContractCardSingleColumn(props: {
       >
         {question}
       </div>
-      <div className="relative h-36">
+      <div className="relative h-36 lg:h-48">
         <Image
           fill
           alt={question}
