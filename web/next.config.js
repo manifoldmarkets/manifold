@@ -5,7 +5,6 @@ const ABOUT_PAGE_URL = 'https://help.manifold.markets/'
 /** @type {import('next').NextConfig} */
 module.exports = {
   productionBrowserSourceMaps: true,
-  staticPageGenerationTimeout: 600, // e.g. stats page
   reactStrictMode: true,
   optimizeFonts: false,
   modularizeImports: {
