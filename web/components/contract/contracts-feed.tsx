@@ -24,8 +24,8 @@ export function ContractsFeed() {
         onVisibilityUpdated={(visible) => visible && loadMore()}
       />
 
-      {!contracts.length && (
-        <div className="flex w-full flex-col items-center justify-center">
+      {contracts !== undefined && contracts.length === 0 && (
+        <div className="m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
           <SiteLink href="/markets?s=newest&f=open" className="text-indigo-700">
             Browse new markets
