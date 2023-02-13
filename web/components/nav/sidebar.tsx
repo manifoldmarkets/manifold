@@ -9,7 +9,6 @@ import {
   HeartIcon,
   LightningBoltIcon,
   DeviceMobileIcon,
-  TableIcon,
   ScaleIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
@@ -176,7 +175,6 @@ const getMobileNav = () => {
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
-    { name: 'Dashboard', href: '/dashboard', icon: TableIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     {
       name: 'Groups',

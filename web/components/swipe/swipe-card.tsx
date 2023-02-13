@@ -212,7 +212,12 @@ function CardActions(props: {
         <SwipeSharer contract={contract} user={user} />
       )}
 
-      <SwipeComments contract={contract} setIsModalOpen={setIsModalOpen} />
+      <SwipeComments
+        contract={contract}
+        setIsModalOpen={setIsModalOpen}
+        color="white"
+        size="xl"
+      />
     </Col>
   )
 }

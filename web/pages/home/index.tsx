@@ -33,7 +33,6 @@ import { Row } from 'web/components/layout/row'
 import { PostCard } from 'web/components/posts/post-card'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useAdmin } from 'web/hooks/use-admin'
 import {
   useContractsByDailyScore,
@@ -74,7 +73,7 @@ import {
 } from 'web/components/nav/search-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
-import Swipe from '../swipe'
+import { ContractsFeed } from '../../components/contract/contracts-feed'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -96,8 +95,9 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
         <LoadingIndicator className="mt-6" />
       </Page>
     )
+
   if (isMobile) {
-    return <Swipe />
+    return <MobileHome />
   }
   return <HomeDashboard globalConfig={props.globalConfig} />
 }
@@ -178,7 +178,7 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
 
   return (
     <Page>
-      <Col className="gap-4 p-2 pb-8">
+      <Col className="gap-4 py-2 pb-8 sm:px-2">
         <Row className={'mb-2 w-full items-center justify-between gap-4'}>
           <Title children="Home" className="!my-0 hidden sm:block" />
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />
@@ -204,8 +204,6 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
               globalConfig,
               pinned
             )}
-
-            <YourFeedSection user={user} />
           </>
         )}
       </Col>
@@ -307,27 +305,6 @@ export function renderSections(
         )
       })}
     </>
-  )
-}
-
-const YourFeedSection = (props: { user: User }) => {
-  const { user } = props
-
-  const [hasViewedBottom, setHasViewedBottom] = usePersistentState(false, {
-    key: 'has-viewed-bottom',
-    store: inMemoryStore(),
-  })
-
-  return (
-    <Col>
-      <HomeSectionHeader label="Discover" href="/discover" icon={'✨'} />
-      <VisibilityObserver
-        className="relative -top-[300px] h-1"
-        onVisibilityUpdated={(visible) => visible && setHasViewedBottom(true)}
-      />
-
-      {hasViewedBottom ? <DiscoverFeed user={user} /> : <LoadingIndicator />}
-    </Col>
   )
 }
 
@@ -619,4 +596,34 @@ const useGlobalPinned = (
     setPinned,
   ])
   return pinned
+}
+
+function MobileHome() {
+  const user = useUser()
+
+  return (
+    <Page>
+      <Col className="gap-4 py-2 pb-8 sm:px-2">
+        <Row className="mx-4 mb-2 items-center justify-between gap-4">
+          <MobileSearchButton className="flex-1" />
+          <Row className="items-center gap-4">
+            <DailyStats user={user} />
+          </Row>
+        </Row>
+
+        <ContractsFeed />
+      </Col>
+
+      <button
+        type="button"
+        className="fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-4 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
+        onClick={() => {
+          Router.push('/create')
+          track('mobile create button')
+        }}
+      >
+        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
+      </button>
+    </Page>
+  )
 }
