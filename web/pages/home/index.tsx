@@ -613,6 +613,17 @@ function MobileHome() {
 
         <ContractsFeed />
       </Col>
+
+      <button
+        type="button"
+        className="fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-4 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
+        onClick={() => {
+          Router.push('/create')
+          track('mobile create button')
+        }}
+      >
+        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
+      </button>
     </Page>
   )
 }
