@@ -81,7 +81,7 @@ export type OgCardProps = {
   numericValue?: string
   resolution?: string
   topAnswer?: string
-  points: string // jsonified points
+  points?: string // jsonified points
 }
 
 export function getSeoDescription(contract: Contract, ogProps: OgCardProps) {

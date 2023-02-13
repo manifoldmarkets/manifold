@@ -254,10 +254,10 @@ export function ContractPageContent(
 
   const allowTrade = tradingAllowed(contract)
 
-  const ogCardProps = {
+  const ogCardProps = removeUndefinedProps({
     ...getOpenGraphProps(contract),
-    points: pointsString ?? '',
-  }
+    points: pointsString,
+  })
   const seoDesc = getSeoDescription(contract, ogCardProps)
 
   useSaveReferral(user, {

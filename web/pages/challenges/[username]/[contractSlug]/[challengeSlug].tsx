@@ -8,11 +8,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { Spacer } from 'web/components/layout/spacer'
 import { Row } from 'web/components/layout/row'
 import { Challenge } from 'common/challenge'
-import {
-  getChallenge,
-  getChallengeUrl,
-  useChallenge,
-} from 'web/lib/firebase/challenges'
+import { getChallenge, useChallenge } from 'web/lib/firebase/challenges'
 import { getUserByUsername } from 'web/lib/firebase/users'
 import { User } from 'common/user'
 import { Page } from 'web/components/layout/page'

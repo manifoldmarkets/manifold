@@ -1,12 +1,11 @@
 import { DOMAIN } from 'common/envs/constants'
-import { removeUndefinedProps } from 'common/util/object'
 
-export function buildOgUrl<P extends Record<string, string | undefined>>(
+export function buildOgUrl<P extends Record<string, string>>(
   props: P,
   endpoint: string
 ) {
   const generateUrlParams = (params: P) =>
-    new URLSearchParams(removeUndefinedProps(params) as any).toString()
+    new URLSearchParams(params).toString()
 
   // Change to localhost:3000 for local testing
   const url =

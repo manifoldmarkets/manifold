@@ -19,7 +19,7 @@ export function OgMarket(props: OgCardProps) {
     topAnswer,
     points,
   } = props
-  const data = base64toPoints(points) as ogPoint[]
+  const data = points ? (base64toPoints(points) as ogPoint[]) : []
 
   return (
     <div className="flex h-full w-full flex-col justify-between bg-white py-8">
