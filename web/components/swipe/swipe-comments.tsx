@@ -92,15 +92,17 @@ export function CommentsButton(props: {
       >
         <Row className="items-center gap-2 p-2">
           <ChatIcon className={clsx(size === 'lg' ? 'h-8 w-8' : 'h-5 w-5')} />
-          <div
-            className={clsx(
-              'h-5 align-middle disabled:opacity-50',
-              size === 'md' ? 'text-sm' : '',
-              color === 'white' ? 'text-white' : 'text-gray-500'
-            )}
-          >
-            {comments.length > 0 && comments.length}
-          </div>
+          {comments.length > 0 && (
+            <div
+              className={clsx(
+                'h-5 align-middle disabled:opacity-50',
+                size === 'md' ? 'text-sm' : '',
+                color === 'white' ? 'text-white' : 'text-gray-500'
+              )}
+            >
+              {comments.length}
+            </div>
+          )}
         </Row>
 
         <CommentsDialog

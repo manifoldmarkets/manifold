@@ -63,6 +63,7 @@ import { ContractStatusLabel } from './contracts-list-entry'
 import { LikeButton } from './like-button'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { BetRow } from '../bet/bet-row'
+import { MoreInfoButton } from '../swipe/more-swipe-info'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -662,6 +663,7 @@ export function ContractCardNew(props: {
         {isBinaryCpmm && <BetRow buttonClassName="z-10" contract={contract} />}
 
         <Row className="z-20 ml-auto items-center gap-2">
+          <MoreInfoButton contract={contract as any} color="gray" size="md" />
           <CommentsButton contract={contract} color="gray" size="md" />
           <LikeButton
             contentId={contract.id}

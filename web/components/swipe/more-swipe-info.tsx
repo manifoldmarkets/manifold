@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import clsx from 'clsx'
+import { InformationCircleIcon } from '@heroicons/react/outline'
+
 import { BinaryContract } from 'common/contract'
 import { richTextToString } from 'common/util/parse'
-import { useState } from 'react'
 import { useRecentBets } from 'web/hooks/use-bets'
 import { BinaryContractChart } from '../charts/contract'
 import { Col } from '../layout/col'
@@ -12,6 +14,7 @@ import { Content } from '../widgets/editor'
 import { Stats } from '../contract/contract-info-dialog'
 import { Spacer } from '../layout/spacer'
 import { UserBetsSummary } from '../bet/bet-summary'
+import { track } from 'web/lib/service/analytics'
 
 export function MoreSwipeInfo(props: {
   contract: BinaryContract
@@ -57,6 +60,45 @@ export function MoreSwipeInfo(props: {
         />
       )}
     </Col>
+  )
+}
+
+export function MoreInfoButton(props: {
+  contract: BinaryContract
+  color: 'gray' | 'white'
+  size?: 'md' | 'lg' | 'xl'
+}) {
+  const { contract, color, size } = props
+  const [open, setOpen] = useState(false)
+
+  return (
+    <button
+      className={clsx(
+        'hover:text-gray-600 disabled:opacity-50',
+        color === 'white' ? 'text-white' : 'text-gray-500'
+      )}
+      onClick={(e) => {
+        e.preventDefault()
+        setOpen(true)
+        track('click feed more info', { contractId: contract.id })
+      }}
+    >
+      <Col className="relative gap-1">
+        <InformationCircleIcon
+          className={clsx(
+            size === 'xl' ? 'h-12 w-12' : size === 'lg' ? 'h-8 w-8' : 'h-5 w-5'
+          )}
+        />
+      </Col>
+
+      {open && (
+        <MoreSwipeInfoDialog
+          contract={contract}
+          setOpen={setOpen}
+          open={open}
+        />
+      )}
+    </button>
   )
 }
 
