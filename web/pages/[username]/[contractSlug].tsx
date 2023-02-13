@@ -64,7 +64,7 @@ import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { OgMarket } from 'web/components/og/og-market'
-import { buildOgUrl } from 'common/util/og'
+import { buildOgUrl, pointsToBase64 } from 'common/util/og'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -121,6 +121,8 @@ export async function getStaticPropz(ctx: {
       ? await getTotalContractMetrics(contractId, db)
       : 0
 
+  const pointsString = pointsToBase64(betPoints.slice(0, 800).reverse())
+
   return {
     props: {
       contract,
@@ -128,6 +130,7 @@ export async function getStaticPropz(ctx: {
         bets: useBetPoints ? bets.slice(0, 100) : bets,
         points: betPoints,
       },
+      pointsString,
       comments,
       userPositionsByOutcome,
       totalPositions,
@@ -144,6 +147,7 @@ export async function getStaticPaths() {
 export default function ContractPage(props: {
   contract: Contract | null
   historyData: HistoryData
+  pointsString?: string
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
@@ -153,6 +157,7 @@ export default function ContractPage(props: {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
     historyData: { bets: [], points: [] },
+    pointsString: '',
     comments: [],
     userPositionsByOutcome: {},
     totalBets: 0,
@@ -179,7 +184,8 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositionsByOutcome, comments, totalPositions } = props
+  const { userPositionsByOutcome, comments, totalPositions, pointsString } =
+    props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
@@ -250,12 +256,7 @@ export function ContractPageContent(
 
   const ogCardProps = {
     ...getOpenGraphProps(contract),
-    points: JSON.stringify(
-      betPoints
-        .map(({ x, y }) => ({ x, y })) // remove the avatars
-        .slice(0, 50)
-        .reverse()
-    ),
+    points: pointsString ?? '',
   }
   const seoDesc = getSeoDescription(contract, ogCardProps)
 
