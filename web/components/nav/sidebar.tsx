@@ -9,7 +9,6 @@ import {
   HeartIcon,
   LightningBoltIcon,
   DeviceMobileIcon,
-  TableIcon,
   ScaleIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
