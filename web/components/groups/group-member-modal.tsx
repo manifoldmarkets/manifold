@@ -121,7 +121,7 @@ export function MemberRoleSection(props: {
       <MemberRoleHeader
         headerText={`${role.toLocaleUpperCase()}S`}
         description={
-          group.privacyStatus === 'restricted' && role === 'member'
+          group.privacyStatus === 'curated' && role === 'member'
             ? undefined
             : roleDescription[role]
         }

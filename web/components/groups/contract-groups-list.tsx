@@ -40,7 +40,6 @@ export function ContractGroupsList(props: {
         setAdminGroups(g.map((gp: { group_data: any }) => gp.group_data))
       )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   useEffect(() => {
@@ -148,7 +147,7 @@ export function ContractGroupsList(props: {
                         .filter(
                           (g) =>
                             g.privacyStatus == 'private' ||
-                            g.privacyStatus == 'restricted'
+                            g.privacyStatus == 'curated'
                         )
                         .concat(publicGroups)
                         .filter((g) => !contract.groupSlugs?.includes(g.slug))

@@ -179,8 +179,8 @@ export default function GroupPage(props: {
       )}
       {user &&
         !isManifoldAdmin &&
-        (!group.privacyStatus ||
-          (group.privacyStatus == 'restricted' &&
+        (group.privacyStatus == 'public' ||
+          (group.privacyStatus == 'curated' &&
             (userRole == 'admin' || userRole == 'moderator'))) && (
           <AddContractButton
             group={group}

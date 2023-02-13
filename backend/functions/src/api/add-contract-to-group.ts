@@ -104,6 +104,6 @@ export function canUserAddGroupToMarket(props: {
     // if user is creator of group
     group.creatorId === userId ||
     // if user owns the contract and is a public group
-    (isMarketCreator && !group.privacyStatus)
+    (isMarketCreator && group.privacyStatus == 'public')
   )
 }

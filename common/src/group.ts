@@ -26,10 +26,10 @@ export type Group = {
   }
   pinnedItems: { itemId: string; type: 'post' | 'contract' }[]
   bannerUrl?: string
-  privacyStatus?: PrivacyStatusType
+  privacyStatus: PrivacyStatusType
 }
 
-export type PrivacyStatusType = 'restricted' | 'private'
+export type PrivacyStatusType = 'public' | 'curated' | 'private'
 export const MAX_GROUP_NAME_LENGTH = 75
 export const MAX_ABOUT_LENGTH = 140
 export const MAX_ID_LENGTH = 60

@@ -32,7 +32,7 @@ export function AddMarketToGroupModal(props: {
         <div className="fixed inset-x-0 top-0 z-40 w-full rounded-t-md bg-indigo-100 py-2 px-8 text-indigo-800">
           {group.name}
         </div>
-        {!group.privacyStatus &&
+        {group.privacyStatus == 'public' &&
           userRole != 'admin' &&
           userRole != 'moderator' && (
             <Col className="w-full pt-4">

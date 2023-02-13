@@ -7,7 +7,6 @@ import { Row } from '../layout/row'
 import { GroupMemberModalContent } from './group-member-modal'
 import GroupPrivacyStatusModal, {
   AdminGroupPrivacyStatusModal,
-  getTranslatedPrivacyStatus,
   PRIVACY_STATUS_ITEMS,
 } from './group-privacy-modal'
 
@@ -16,8 +15,7 @@ export default function GroupPrivacyStatusWidget(props: {
   canEdit: boolean
 }) {
   const { group, canEdit } = props
-  const translatedStatus = getTranslatedPrivacyStatus(group.privacyStatus)
-  const { icon, status } = PRIVACY_STATUS_ITEMS[translatedStatus]
+  const { icon, status } = PRIVACY_STATUS_ITEMS[group.privacyStatus]
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -32,7 +30,7 @@ export default function GroupPrivacyStatusWidget(props: {
         <GroupPrivacyStatusModal
           open={open}
           setOpen={setOpen}
-          status={translatedStatus}
+          status={group.privacyStatus}
         />
       )}
       {canEdit && (

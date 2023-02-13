@@ -5,7 +5,7 @@ import {
   ShieldCheckIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Group } from 'common/group'
+import { Group, PrivacyStatusType } from 'common/group'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { updateGroupPrivacy } from 'web/lib/firebase/api'
@@ -14,12 +14,10 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 
-export type TranslatedPrivacyStatusType = 'public' | 'restricted' | 'private'
-
 export default function GroupPrivacyStatusModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
-  status: TranslatedPrivacyStatusType
+  status: PrivacyStatusType
 }) {
   const { open, setOpen, status } = props
   return (
@@ -33,16 +31,15 @@ export default function GroupPrivacyStatusModal(props: {
   )
 }
 
-// should only appear for public/restricted groups
+// should only appear for public/curated groups
 export function AdminGroupPrivacyStatusModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   group: Group
 }) {
   const { open, setOpen, group } = props
-  const groupPrivacyStatus = getTranslatedPrivacyStatus(group.privacyStatus)
   // can't change if group if private
-  if (groupPrivacyStatus == 'private') {
+  if (group.privacyStatus == 'private') {
     return (
       <GroupPrivacyStatusModal
         open={open}
@@ -56,7 +53,7 @@ export function AdminGroupPrivacyStatusModal(props: {
     <SelectGroupPrivacyModal
       open={open}
       setOpen={setOpen}
-      groupPrivacyStatus={groupPrivacyStatus}
+      groupPrivacyStatus={group.privacyStatus}
       group={group}
     />
   )
@@ -65,11 +62,11 @@ export function AdminGroupPrivacyStatusModal(props: {
 function SelectGroupPrivacyModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
-  groupPrivacyStatus: 'public' | 'restricted'
+  groupPrivacyStatus: 'public' | 'curated'
   group: Group
 }) {
   const { open, setOpen, groupPrivacyStatus, group } = props
-  const [selectedStatus, setSelectedStatus] = useState<'public' | 'restricted'>(
+  const [selectedStatus, setSelectedStatus] = useState<'public' | 'curated'>(
     groupPrivacyStatus
   )
   return (
@@ -81,7 +78,7 @@ function SelectGroupPrivacyModal(props: {
           setSelectedStatus={setSelectedStatus}
         />
         <PrivacyStatusSelect
-          snippetStatus="restricted"
+          snippetStatus="curated"
           selectedStatus={selectedStatus}
           setSelectedStatus={setSelectedStatus}
         />
@@ -90,10 +87,7 @@ function SelectGroupPrivacyModal(props: {
             Cancel
           </Button>
           <ChangePrivacyStatusButton
-            disabled={
-              selectedStatus == group.privacyStatus ||
-              (selectedStatus == 'public' && !group.privacyStatus)
-            }
+            disabled={selectedStatus == group.privacyStatus}
             group={group}
             selectedStatus={selectedStatus}
           />
@@ -103,19 +97,10 @@ function SelectGroupPrivacyModal(props: {
   )
 }
 
-export function getTranslatedPrivacyStatus(
-  groupPrivacyStatus?: 'private' | 'restricted'
-) {
-  if (!groupPrivacyStatus) {
-    return 'public'
-  }
-  return groupPrivacyStatus
-}
-
 export function PrivacyStatusSelect(props: {
-  snippetStatus: 'public' | 'restricted'
-  selectedStatus: 'public' | 'restricted'
-  setSelectedStatus: (selectedStatus: 'public' | 'restricted') => void
+  snippetStatus: 'public' | 'curated'
+  selectedStatus: 'public' | 'curated'
+  setSelectedStatus: (selectedStatus: 'public' | 'curated') => void
 }) {
   const { snippetStatus, selectedStatus, setSelectedStatus } = props
   return (
@@ -129,7 +114,7 @@ export function PrivacyStatusSelect(props: {
 }
 
 export function PrivacyStatusView(props: {
-  viewStatus: 'public' | 'restricted' | 'private'
+  viewStatus: PrivacyStatusType
   isSelected: boolean
   size: 'sm' | 'md'
   onClick?: () => void
@@ -167,7 +152,7 @@ export function PrivacyStatusView(props: {
 export function ChangePrivacyStatusButton(props: {
   disabled: boolean
   group: Group
-  selectedStatus: 'public' | 'restricted'
+  selectedStatus: 'public' | 'curated'
 }) {
   const { disabled, group, selectedStatus } = props
   const [loading, setLoading] = useState(false)
@@ -208,10 +193,10 @@ export const PRIVACY_STATUS_ITEMS = {
     descriptor:
       'Anyone can view, join, and add their own markets to your group.',
   },
-  restricted: {
+  curated: {
     icon: <ShieldCheckIcon className="h-4 w-4" />,
     bigIcon: <ShieldCheckIcon className="h-6 w-6" />,
-    status: 'Restricted',
+    status: 'Curated',
     descriptor:
       'Anyone can view and join your group, but only admins and moderators can add/remove markets',
   },

@@ -54,18 +54,14 @@ export const updategroupprivacy = newEndpoint({}, async (req, auth) => {
       throw new APIError(400, 'You can not retroactively make a group private')
     }
 
-    if (
-      (privacy == 'public' && !group.privacyStatus) ||
-      privacy == group.privacyStatus
-    ) {
+    if (privacy == group.privacyStatus) {
       throw new APIError(400, 'Group privacy is already set to this!')
     }
 
-    if (privacy == 'public' && group.privacyStatus == 'restricted') {
-      transaction.update(groupDoc, {
-        privacyStatus: admin.firestore.FieldValue.delete(),
-      })
-    } else if (privacy == 'restricted' && !group.privacyStatus) {
+    if (
+      (privacy == 'curated' && group.privacyStatus == 'public') ||
+      (privacy == 'public' && group.privacyStatus == 'curated')
+    ) {
       transaction.update(groupDoc, { privacyStatus: privacy })
     } else {
       throw new APIError(400, 'This privacy change is not allowed')

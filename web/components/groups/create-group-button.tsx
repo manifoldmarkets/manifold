@@ -170,9 +170,9 @@ export function CreateGroupButton(props: {
               size="sm"
             />
             <PrivacyStatusView
-              viewStatus={'restricted'}
-              isSelected={privacy == 'restricted'}
-              onClick={() => setPrivacy('restricted')}
+              viewStatus={'curated'}
+              isSelected={privacy == 'curated'}
+              onClick={() => setPrivacy('curated')}
               size="sm"
             />
           </Col>

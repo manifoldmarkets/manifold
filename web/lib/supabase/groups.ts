@@ -100,7 +100,7 @@ export async function getNonPublicGroupsWhereUserHasRole(userId: string) {
       .select('group_data')
       .eq('member_id', userId)
       .or(
-        'group_data->>privacyStatus.eq.private,group_data->>privacyStatus.eq.restricted'
+        'group_data->>privacyStatus.eq.private,group_data->>privacyStatus.eq.curated'
       )
       .or('role.eq.admin,role.eq.moderator')
       .order('name')
@@ -115,7 +115,7 @@ export async function getPublicGroups() {
     db
       .from('groups')
       .select('data')
-      .is('data->>privacyStatus', null)
+      .eq('data->>privacyStatus', 'public')
       .order('data->>name')
   )
 
