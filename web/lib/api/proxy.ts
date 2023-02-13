@@ -35,7 +35,6 @@ export const fetchBackend = (req: NextApiRequest, name: string) => {
   const url = getFunctionUrl(name)
   const headers = getProxiedRequestHeaders(req, [
     'Authorization',
-    'Content-Length',
     'Content-Type',
     'Origin',
   ])
