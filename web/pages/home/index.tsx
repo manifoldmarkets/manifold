@@ -606,18 +606,7 @@ const useGlobalPinned = (
 
 function MobileHome() {
   const user = useUser()
-
-  const defaultShowSwipe = useABTest('show swipe', { swipe: true, feed: false })
-
-  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
-    key: 'show-swipe',
-    store: inMemoryStore(),
-  })
-
-  const toggleView = (showSwipe: boolean) => () => {
-    setShowSwipe(showSwipe)
-    track('toggle swipe', { showSwipe })
-  }
+  const { showSwipe, toggleView } = useViewToggle()
 
   if (showSwipe) return <Swipe toggleView={toggleView(false)} />
 
@@ -650,4 +639,28 @@ function MobileHome() {
       </button>
     </Page>
   )
+}
+
+const useViewToggle = () => {
+  const defaultShowSwipe = useABTest('show swipe', {
+    swipeDefault: true,
+    feedDefault: false,
+  })
+
+  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
+    key: 'show-swipe',
+    store: inMemoryStore(),
+  })
+
+  useEffect(() => {
+    if (defaultShowSwipe !== undefined && showSwipe === undefined) {
+      setShowSwipe(defaultShowSwipe)
+    }
+  }, [showSwipe, defaultShowSwipe])
+
+  const toggleView = (showSwipe: boolean) => () => {
+    setShowSwipe(showSwipe)
+    track('toggle swipe', { showSwipe })
+  }
+  return { showSwipe, toggleView }
 }
