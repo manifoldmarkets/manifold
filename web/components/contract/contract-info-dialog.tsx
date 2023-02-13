@@ -371,6 +371,8 @@ export function ContractInfoDialog(props: {
               />
 
               <TweetButton tweetText={getShareUrl(contract, user?.username)} />
+            </Row>
+            <Row className={'mt-2 gap-2'}>
               <ReportButton
                 report={{
                   contentId: contract.id,

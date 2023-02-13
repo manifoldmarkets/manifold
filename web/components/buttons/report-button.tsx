@@ -27,7 +27,7 @@ export function ReportButton(props: {
     <>
       <Button
         size={'xs'}
-        color={'gray-outline'}
+        color={'yellow-outline'}
         onClick={() => {
           setIsModalOpen(true)
         }}
