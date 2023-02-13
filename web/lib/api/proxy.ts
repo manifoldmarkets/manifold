@@ -39,10 +39,13 @@ export const fetchBackend = (req: NextApiRequest, name: string) => {
     'Origin',
   ])
   const hasBody = req.method != 'HEAD' && req.method != 'GET'
-  const body = req.body ? JSON.stringify(req.body) : null
+  const body = req.body
+    ? JSON.stringify(req.body)
+    : (req as unknown as ReadableStream)
   const opts = {
     headers,
     method: req.method,
+    duplex: 'half',
     body: hasBody ? body : null,
   }
   return fetch(url, opts)
