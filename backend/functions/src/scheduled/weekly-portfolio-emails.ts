@@ -2,14 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
-import {
-  getAllPrivateUsers,
-  getPrivateUser,
-  getUser,
-  getValues,
-  isProd,
-  log,
-} from 'shared/utils'
+import { getPrivateUser, getUser, getValues, isProd, log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { DAY_MS } from 'common/util/time'
 import { partition, sortBy, sum, uniq, uniqBy } from 'lodash'
@@ -50,12 +43,12 @@ const firestore = admin.firestore()
 export async function sendPortfolioUpdateEmailsToAllUsers() {
   const privateUsers = isProd()
     ? // ian & stephen's ids
-      // filterDefined([
-      // await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
-      // await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
-      // ])
-      await getAllPrivateUsers()
-    : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
+      filterDefined([
+        await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
+        // await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
+      ])
+    : // await getAllPrivateUsers()
+      filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers
     .filter((user) => {
@@ -80,13 +73,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     'users'
   )
 
-  await Promise.all(
-    privateUsersToSendEmailsTo.map(async (privateUser) => {
-      await firestore.collection('private-users').doc(privateUser.id).update({
-        weeklyPortfolioUpdateEmailSent: true,
-      })
-    })
-  )
+  // await Promise.all(
+  //   privateUsersToSendEmailsTo.map(async (privateUser) => {
+  //     await firestore.collection('private-users').doc(privateUser.id).update({
+  //       weeklyPortfolioUpdateEmailSent: true,
+  //     })
+  //   })
+  // )
   const db = createSupabaseClient()
 
   const userIds = privateUsersToSendEmailsTo.map((user) => user.id)

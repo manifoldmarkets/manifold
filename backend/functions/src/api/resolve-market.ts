@@ -64,9 +64,10 @@ export const payUsersTransactions = async (
           toId: userId,
           amount: payout,
           token: 'M$',
+          data: { deposit: deposit ?? 0 },
           description: 'Contract payout for resolution: ' + contractId,
         } as ContractResolutionPayoutTxn
-        runContractPayoutTxn(transaction, payoutTxn, deposit ?? 0)
+        runContractPayoutTxn(transaction, payoutTxn)
       })
     })
   }

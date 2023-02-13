@@ -48,20 +48,43 @@ export async function runTxn(
 
 export function runContractPayoutTxn(
   fbTransaction: admin.firestore.Transaction,
-  data: Omit<ContractResolutionPayoutTxn, 'id' | 'createdTime'>,
-  deposit: number
+  txnData: Omit<ContractResolutionPayoutTxn, 'id' | 'createdTime'>
 ) {
-  const { amount, toId } = data
+  const { amount, toId, data } = txnData
+  const { deposit } = data
   const toDoc = firestore.doc(`users/${toId}`)
   fbTransaction.update(toDoc, {
     balance: FieldValue.increment(amount),
-    totalDeposits: FieldValue.increment(deposit),
+    totalDeposits: FieldValue.increment(deposit ?? 0),
   })
 
   const newTxnDoc = firestore.collection(`txns/`).doc()
-  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...data }
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
   fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
 
   return { status: 'success', txn }
+}
+
+export function undoContractPayoutTxn(
+  fbTransaction: admin.firestore.Transaction,
+  txnData: ContractResolutionPayoutTxn
+) {
+  const { amount, toId, id, data } = txnData
+  const { deposit } = data ?? {}
+  const toDoc = firestore.doc(`users/${toId}`)
+  fbTransaction.update(toDoc, {
+    balance: FieldValue.increment(-amount),
+    totalDeposits: FieldValue.increment(-(deposit ?? 0)),
+  })
+  const txnDoc = firestore.doc(`txns/${id}`)
+
+  fbTransaction.update(txnDoc, {
+    data: {
+      ...(data ?? {}),
+      reverted: true,
+    },
+  })
+
+  return { status: 'success', data: txnData }
 }
 const firestore = admin.firestore()
