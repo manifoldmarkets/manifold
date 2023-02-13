@@ -1,5 +1,9 @@
 import { PlusCircleIcon } from '@heroicons/react/outline'
-import { DotsVerticalIcon, PencilAltIcon } from '@heroicons/react/solid'
+import {
+  DotsVerticalIcon,
+  PencilAltIcon,
+  SwitchVerticalIcon,
+} from '@heroicons/react/solid'
 import { difference, isArray, keyBy } from 'lodash'
 import clsx from 'clsx'
 
@@ -74,6 +78,8 @@ import {
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
+import { Swipe } from 'web/components/swipe/swipe'
+import { useABTest } from 'web/hooks/use-ab-test'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -601,6 +607,20 @@ const useGlobalPinned = (
 function MobileHome() {
   const user = useUser()
 
+  const defaultShowSwipe = useABTest('show swipe', { swipe: true, feed: false })
+
+  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
+    key: 'show-swipe',
+    store: inMemoryStore(),
+  })
+
+  const toggleView = (showSwipe: boolean) => () => {
+    setShowSwipe(showSwipe)
+    track('toggle swipe', { showSwipe })
+  }
+
+  if (showSwipe) return <Swipe toggleView={toggleView(false)} />
+
   return (
     <Page>
       <Col className="gap-4 py-2 pb-8 sm:px-2">
@@ -608,6 +628,10 @@ function MobileHome() {
           <MobileSearchButton className="flex-1" />
           <Row className="items-center gap-4">
             <DailyStats user={user} />
+            <SwitchVerticalIcon
+              className="h-5 w-5"
+              onClick={toggleView(true)}
+            />
           </Row>
         </Row>
 
