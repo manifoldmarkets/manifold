@@ -10,7 +10,7 @@ import {
   DeviceMobileIcon,
   ScaleIcon,
   UserGroupIcon,
-  TicketIcon
+  TicketIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
