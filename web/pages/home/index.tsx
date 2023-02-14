@@ -629,7 +629,10 @@ function MobileHome() {
 
       <button
         type="button"
-        className="fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-4 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
+        className={clsx(
+          'fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent  p-4  shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden',
+          'from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r disabled:bg-gray-300'
+        )}
         onClick={() => {
           Router.push('/create')
           track('mobile create button')
