@@ -5,12 +5,12 @@ import {
   SearchIcon,
   BookOpenIcon,
   LogoutIcon,
-  BeakerIcon,
   HeartIcon,
   LightningBoltIcon,
   DeviceMobileIcon,
   ScaleIcon,
   UserGroupIcon,
+  TicketIcon
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -176,14 +176,14 @@ const getMobileNav = () => {
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
+    { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     {
       name: 'Groups',
       href: '/groups',
       icon: UserGroupIcon,
     },
-    { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
-    { name: 'Labs', href: '/labs', icon: BeakerIcon }
+    { name: 'Referrals', href: '/referrals', icon: TicketIcon }
   )
 }
 
