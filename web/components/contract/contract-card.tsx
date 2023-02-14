@@ -661,7 +661,13 @@ export function ContractCardNew(props: {
 
         {isBinaryCpmm && <BetRow buttonClassName="z-10" contract={contract} />}
 
-        <Row className="z-20 ml-auto items-center gap-2">
+        <Row
+          className="z-20 ml-auto items-center gap-2"
+          onClick={(e) => {
+            // Don't navigate to the contract page when clicking buttons.
+            e.preventDefault()
+          }}
+        >
           <CommentsButton contract={contract} color="gray" size="md" />
           <LikeButton
             contentId={contract.id}
