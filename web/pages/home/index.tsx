@@ -50,7 +50,6 @@ import {
 } from 'web/hooks/use-group'
 import {
   inMemoryStore,
-  storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { useAllPosts } from 'web/hooks/use-post'
@@ -654,7 +653,7 @@ const useViewToggle = () => {
 
   const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
     key: 'show-swipe',
-    store: storageStore(safeLocalStorage),
+    store: inMemoryStore(),
   })
 
   useEffect(() => {
