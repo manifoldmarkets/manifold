@@ -85,29 +85,31 @@ export default function Home() {
         title="Manifold Markets"
         description="Ask any question. Bet mana vs 100+ players. Unfold the future together."
       />
-      <Col className="mx-auto mb-8 w-full gap-4 px-4">
-        <LandingPagePanel />
-        <Row className="w-full gap-2 sm:gap-4">
-          <InfoCard
-            link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
-            icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
-            text="What is a prediction market?"
-            modal={<PredictionMarketExplainer />}
-          />
+      <Col className="mx-auto mb-8 w-full gap-8 px-4">
+        <Col className="gap-4">
+          <LandingPagePanel />
+          <Row className="w-full gap-2 sm:gap-4">
+            <InfoCard
+              link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
+              icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
+              text="What is a prediction market?"
+              modal={<PredictionMarketExplainer />}
+            />
 
-          <InfoCard
-            link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
-            icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
-            text="What is mana?"
-            modal={<ManaExplainer />}
-          />
+            <InfoCard
+              link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
+              icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
+              text="What is mana?"
+              modal={<ManaExplainer />}
+            />
 
-          <ExternalInfoCard
-            link="https://help.manifold.markets/"
-            icon={<div className="text-2xl">?</div>}
-            text="Learn more"
-          />
-        </Row>
+            <ExternalInfoCard
+              link="https://help.manifold.markets/"
+              icon={<div className="text-2xl">?</div>}
+              text="Learn more"
+            />
+          </Row>
+        </Col>
         {isLoading ? (
           <LoadingIndicator />
         ) : (
