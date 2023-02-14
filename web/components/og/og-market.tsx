@@ -1,7 +1,7 @@
 import { OgCardProps } from 'common/contract-details'
 import clsx from 'clsx'
-import { Sparkline, ogPoint } from './graph'
-import { base64toPoints } from 'common/edge/og'
+import { Sparkline } from './graph'
+import { base64toPoints, Point } from 'common/edge/og'
 
 // Notes for working with this:
 // - Some css elements are missing or broken (e.g. 'gap' and 'text-ellipsis' and 'line-clamp')
@@ -19,7 +19,7 @@ export function OgMarket(props: OgCardProps) {
     topAnswer,
     points,
   } = props
-  const data = points ? (base64toPoints(points) as ogPoint[]) : []
+  const data = points ? (base64toPoints(points) as Point[]) : []
 
   return (
     <div className="flex h-full w-full flex-col justify-between bg-white py-8">

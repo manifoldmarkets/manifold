@@ -1,5 +1,7 @@
 // see https://vercel.com/docs/concepts/functions/edge-functions/edge-functions-api for restrictions
 
+export type Point = { x: number; y: number }
+
 export function base64toPoints(base64urlString: string) {
   const b64 = base64urlString.replace(/-/g, '+').replace(/_/g, '/')
   const bin = atob(b64)

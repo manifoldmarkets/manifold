@@ -1,3 +1,4 @@
+import { Point } from 'common/edge/og'
 import { DOMAIN } from 'common/envs/constants'
 
 export function buildOgUrl<P extends Record<string, string>>(
@@ -16,7 +17,7 @@ export function buildOgUrl<P extends Record<string, string>>(
 }
 
 // nodejs only
-export function pointsToBase64(points: { x: number; y: number }[]) {
+export function pointsToBase64(points: Point[]) {
   const floats = new Float32Array(points.flatMap(({ x, y }) => [x, y]))
   return Buffer.from(floats.buffer).toString('base64url')
 }

@@ -1,5 +1,6 @@
 import { WeeklyPortfolioUpdateOGCardProps } from 'common/weekly-portfolio-update'
-import { ogPoint, ProfitLossGraph } from 'web/components/og/graph'
+import { ProfitLossGraph } from 'web/components/og/graph'
+import { Point } from 'common/edge/og'
 // Notes for working with this:
 // - Some css elements are missing or broken (e.g. 'gap' and 'text-ellipsis' and 'line-clamp')
 // - I also can't make things overflow hidden in only one direction
@@ -12,7 +13,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
     weeklyProfit,
     points,
   } = props
-  const data = JSON.parse(points) as ogPoint[]
+  const data = JSON.parse(points) as Point[]
   const date =
     new Date(data[0].x).toLocaleDateString('en-US', {
       month: 'short',

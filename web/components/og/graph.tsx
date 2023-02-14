@@ -1,9 +1,9 @@
 import { area, curveStepBefore, line } from 'd3-shape'
 import { scaleLinear, scaleTime } from 'd3-scale'
-export type ogPoint = { x: number; y: number }
+import { Point } from 'common/edge/og'
 
 export function ProfitLossGraph(props: {
-  data: ogPoint[]
+  data: Point[]
   height: number
   /** scaled width / height */
   aspectRatio?: number
@@ -18,16 +18,16 @@ export function ProfitLossGraph(props: {
 
   const xScale = scaleTime(visibleRange, [0, w])
   const yScale = scaleLinear([minY, maxY], [h, 0])
-  const px = (p: ogPoint) => xScale(p.x)
+  const px = (p: Point) => xScale(p.x)
   const py0 = yScale(0)
-  const py1 = (p: ogPoint) => yScale(p.y)
+  const py1 = (p: Point) => yScale(p.y)
   // const clipId = ':rnm:'
   const gradientId = ':rnc:'
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const da = area(px, py0, py1).curve(curve)(data)!
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const dl = line(px, py1).curve(curve)(data)!
-  const color = (p: ogPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
+  const color = (p: Point) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
   const stops = computeColorStops(data, color, px)
 
   return (
@@ -54,9 +54,9 @@ export function ProfitLossGraph(props: {
 }
 
 const computeColorStops = (
-  data: ogPoint[],
-  pc: (p: ogPoint) => string,
-  px: (p: ogPoint) => number
+  data: Point[],
+  pc: (p: Point) => string,
+  px: (p: Point) => number
 ) => {
   const segments: { x: number; color: string }[] = []
   let currOffset = px(data[0])
@@ -81,7 +81,7 @@ const computeColorStops = (
 }
 
 export function Sparkline(props: {
-  data: ogPoint[]
+  data: Point[]
   height: number
   /** width / height */
   aspectRatio?: number
@@ -95,8 +95,8 @@ export function Sparkline(props: {
 
   const xScale = scaleTime(visibleRange, [4, w - 4])
   const yScale = scaleLinear([min, max], [h, 0])
-  const px = (p: ogPoint) => xScale(p.x)
-  const py1 = (p: ogPoint) => yScale(p.y)
+  const px = (p: Point) => xScale(p.x)
+  const py1 = (p: Point) => yScale(p.y)
 
   const color = '#14b8a6'
 
