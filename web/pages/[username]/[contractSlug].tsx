@@ -239,6 +239,7 @@ export function ContractPageContent(
 
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
+  const isClosed = closeTime && closeTime < Date.now()
 
   const [showResolver, setShowResolver] = useState(
     (isCreator || isAdmin) && !isResolved && (closeTime ?? 0) < Date.now()
@@ -344,7 +345,7 @@ export function ContractPageContent(
           />
         )}
 
-        {isCreator && !isResolved && (
+        {isCreator && !isResolved && !isClosed && (
           <>
             {showResolver && <Spacer h={4} />}
             <CreatorSharePanel contract={contract} />
