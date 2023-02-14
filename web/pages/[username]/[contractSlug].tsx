@@ -62,7 +62,7 @@ import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
-import { pointsToBase64 } from 'common/util/og'
+import { compressPoints, pointsToBase64 } from 'common/util/og'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -119,7 +119,7 @@ export async function getStaticPropz(ctx: {
       ? await getTotalContractMetrics(contractId, db)
       : 0
 
-  const pointsString = pointsToBase64(betPoints.slice(0, 800).reverse())
+  const pointsString = pointsToBase64(compressPoints(betPoints.reverse()))
 
   return {
     props: {

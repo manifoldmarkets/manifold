@@ -1,4 +1,4 @@
-import { area, curveStepBefore, line } from 'd3-shape'
+import { area, curveStepBefore, curveLinear, line } from 'd3-shape'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { Point } from 'common/edge/og'
 
@@ -91,7 +91,7 @@ export function Sparkline(props: {
   const { data, height: h, aspectRatio = 1, min, max } = props
   const w = h * aspectRatio
   const visibleRange = [data[0].x, data[data.length - 1].x]
-  const curve = curveStepBefore
+  const curve = data.length > 50 ? curveLinear : curveStepBefore
 
   const xScale = scaleTime(visibleRange, [4, w - 4])
   const yScale = scaleLinear([min, max], [h, 0])
