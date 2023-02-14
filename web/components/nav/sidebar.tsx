@@ -68,7 +68,7 @@ export default function Sidebar(props: {
           {logoSubheading}
         </Row>
       )}
-      <Spacer h={6} />
+      {/* <Spacer h={6} /> */}
 
       {user === undefined && <div className="h-[56px]" />}
 

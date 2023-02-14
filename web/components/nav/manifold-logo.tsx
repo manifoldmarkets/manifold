@@ -2,7 +2,7 @@ import Link from 'next/link'
 import clsx from 'clsx'
 
 import { useUser } from 'web/hooks/use-user'
-import { ENV_CONFIG } from 'common/envs/constants'
+import Image from 'next/image'
 
 export function ManifoldLogo(props: {
   className?: string
@@ -11,15 +11,21 @@ export function ManifoldLogo(props: {
   twoLine?: boolean
 }) {
   const { darkBackground, className, hideText, twoLine } = props
-
   const user = useUser()
 
   return (
     <Link
-      href={user ? '/home' : '/'}
+      href={'/date-docs'}
       className={clsx('group flex flex-shrink-0 flex-row gap-4', className)}
     >
-      <img
+      <Image
+        src="/foldy-kiss.png"
+        width={200}
+        height={200}
+        alt="Two origami cranes kissing"
+        className="-translate-x-2 transition-all hover:translate-x-4 hover:rotate-12"
+      />
+      {/* <img
         className="transition-all group-hover:rotate-12"
         src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
         width={45}
@@ -49,7 +55,7 @@ export function ManifoldLogo(props: {
           >
             Manifold Markets
           </div>
-        ))}
+        ))} */}
     </Link>
   )
 }
