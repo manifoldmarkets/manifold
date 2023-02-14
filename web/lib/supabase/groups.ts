@@ -1,6 +1,6 @@
-import { db } from './db'
-import { run, selectFrom } from 'common/supabase/utils'
 import { Group } from 'common/group'
+import { run, selectFrom } from 'common/supabase/utils'
+import { db } from './db'
 export type SearchGroupInfo = Pick<
   Group,
   | 'id'
@@ -88,6 +88,35 @@ export async function getGroupsWhereUserIsMember(userId: string) {
       .select('group_data')
       .eq('member_id', userId)
       .order('name')
+  )
+
+  return groupThings.data
+}
+
+export async function getNonPublicGroupsWhereUserHasRole(userId: string) {
+  const groupThings = await run(
+    db
+      .from('group_role')
+      .select('group_data')
+      .eq('member_id', userId)
+      .or(
+        'group_data->>privacyStatus.eq.private,group_data->>privacyStatus.eq.curated'
+      )
+      .or('role.eq.admin,role.eq.moderator')
+      .order('name')
+  )
+
+  return groupThings.data
+}
+
+// gets all public groups
+export async function getPublicGroups() {
+  const groupThings = await run(
+    db
+      .from('groups')
+      .select('data')
+      .eq('data->>privacyStatus', 'public')
+      .order('data->>name')
   )
 
   return groupThings.data

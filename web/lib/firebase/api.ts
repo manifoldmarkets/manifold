@@ -5,6 +5,7 @@ import { QfAnswerReq } from 'web/pages/api/v0/qf/answer'
 import { QfPayReq } from 'web/pages/api/v0/qf/pay'
 import { QfAddPoolReq } from 'web/pages/api/v0/qf/add-pool'
 import { QfResolveReq } from 'web/pages/api/v0/qf/resolve'
+import { PrivacyStatusType } from 'common/group'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -155,4 +156,11 @@ export function addQfAddPool(params: QfAddPoolReq) {
 
 export function resolveQf(params: QfResolveReq) {
   return call('/api/v0/qf/resolve', 'POST', params)
+}
+
+export function updateGroupPrivacy(params: {
+  groupId: string
+  privacy: PrivacyStatusType
+}) {
+  return call(getFunctionUrl('updategroupprivacy'), 'POST', params)
 }

@@ -1,24 +1,20 @@
-import * as admin from 'firebase-admin'
-import { z } from 'zod'
-import { uniq } from 'lodash'
-
-import { getUser, getUserByUsername } from 'shared/utils'
+import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
+import { Comment } from 'common/comment'
 import {
   Contract,
   FreeResponseContract,
   MultipleChoiceContract,
 } from 'common/contract'
-import { Comment } from 'common/comment'
-import { User } from 'common/user'
-import {
-  cleanUsername,
-  cleanDisplayName,
-} from 'common/util/clean-username'
-import { removeUndefinedProps } from 'common/util/object'
-import { Answer } from 'common/answer'
-import { APIError, newEndpoint, validate } from './helpers'
 import { ContractMetric } from 'common/contract-metric'
+import { User } from 'common/user'
+import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
+import { removeUndefinedProps } from 'common/util/object'
+import * as admin from 'firebase-admin'
+import { uniq } from 'lodash'
+import { getUser, getUserByUsername } from 'shared/utils'
+import { z } from 'zod'
+import { APIError, newEndpoint, validate } from './helpers'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 

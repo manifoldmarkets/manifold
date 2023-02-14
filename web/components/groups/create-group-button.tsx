@@ -1,6 +1,10 @@
 import { Editor } from '@tiptap/core'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { groupPath, MAX_GROUP_NAME_LENGTH } from 'common/group'
+import {
+  groupPath,
+  MAX_GROUP_NAME_LENGTH,
+  PrivacyStatusType,
+} from 'common/group'
 import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -12,6 +16,7 @@ import { TextEditor, useTextEditor } from '../widgets/editor'
 import { Input } from '../widgets/input'
 import { Title } from '../widgets/title'
 import { savePost } from './group-about-section'
+import { PrivacyStatusView } from './group-privacy-modal'
 
 export function editorHasContent(editor: Editor | null) {
   if (!editor) {
@@ -53,6 +58,7 @@ export function CreateGroupButton(props: {
   const [name, setName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
+  const [privacy, setPrivacy] = useState<PrivacyStatusType>('public')
 
   const router = useRouter()
 
@@ -69,7 +75,7 @@ export function CreateGroupButton(props: {
     const newGroup = {
       name,
       memberIds: [],
-      anyoneCanJoin: true,
+      privacyStatus: privacy,
     }
     const result = await createGroup(newGroup).catch((e) => {
       const errorDetails = e.details[0]
@@ -150,6 +156,24 @@ export function CreateGroupButton(props: {
             maxLength={MAX_GROUP_NAME_LENGTH}
             onChange={(e) => setName(e.target.value || '')}
           />
+        </div>
+
+        <div className="flex w-full flex-col">
+          <label className="mb-2 ml-1 mt-0">Privacy</label>
+          <Col>
+            <PrivacyStatusView
+              viewStatus={'public'}
+              isSelected={privacy == 'public'}
+              onClick={() => setPrivacy('public')}
+              size="sm"
+            />
+            <PrivacyStatusView
+              viewStatus={'curated'}
+              isSelected={privacy == 'curated'}
+              onClick={() => setPrivacy('curated')}
+              size="sm"
+            />
+          </Col>
         </div>
 
         <div className="flex w-full flex-col">

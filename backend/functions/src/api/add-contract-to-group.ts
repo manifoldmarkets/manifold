@@ -42,35 +42,32 @@ export const addcontracttogroup = newEndpoint({}, async (req, auth) => {
     const contract = contractSnap.data() as Contract
     const firebaseUser = await admin.auth().getUser(auth.uid)
 
-    // checks if have permission to add a contract to the group
-    if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email)) {
-      if (!groupMember) {
-        // checks if is manifold admin (therefore does not have to be a group member)
-        throw new APIError(
-          400,
-          'User is not a member of the group, therefore can not add any markets'
-        )
-      } else {
-        // must either be admin, moderator or owner of contract to add to group
-        if (
-          group.creatorId !== auth.uid &&
-          groupMember.role !== 'admin' &&
-          groupMember.role !== 'moderator' &&
-          contract.creatorId !== auth.uid
-        )
-          throw new APIError(
-            400,
-            'User does not have permission to add this market to group'
-          )
-        if (
-          contract.groupLinks &&
-          contract.groupLinks
-            .map((gl) => gl.groupId)
-            .some((gid) => gid === group.id)
-        )
-          throw new APIError(400, 'This market already exists in this group')
-      }
+    // check if contract already exists in group
+    if (
+      contract.groupLinks &&
+      contract.groupLinks
+        .map((gl) => gl.groupId)
+        .some((gid) => gid === group.id)
+    )
+      throw new APIError(400, 'This market already exists in this group')
+
+    if (
+      !canUserAddGroupToMarket({
+        userId: auth.uid,
+        group: group,
+        isMarketCreator: contract.creatorId === auth.uid,
+        isManifoldAdmin: isManifoldId(auth.uid) || isAdmin(firebaseUser.email),
+        userGroupRole: groupMember
+          ? (groupMember.role as 'admin' | 'moderator')
+          : undefined,
+      })
+    ) {
+      throw new APIError(
+        400,
+        `User does not have permission to add this market to group "${group.name}".`
+      )
     }
+
     const newGroupLinks = [
       ...(contract.groupLinks ?? []),
       {
@@ -90,3 +87,23 @@ export const addcontracttogroup = newEndpoint({}, async (req, auth) => {
 })
 
 const firestore = admin.firestore()
+
+export function canUserAddGroupToMarket(props: {
+  userId: string
+  group: Group
+  isMarketCreator: boolean
+  isManifoldAdmin: boolean
+  userGroupRole?: 'admin' | 'moderator'
+}) {
+  const { userId, group, isMarketCreator, isManifoldAdmin, userGroupRole } =
+    props
+  return (
+    isManifoldAdmin ||
+    //if user is admin or moderator of group
+    userGroupRole ||
+    // if user is creator of group
+    group.creatorId === userId ||
+    // if user owns the contract and is a public group
+    (isMarketCreator && group.privacyStatus == 'public')
+  )
+}

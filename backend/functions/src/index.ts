@@ -45,6 +45,7 @@ export * from './scheduled/drizzle-liquidity'
 export * from './scheduled/check-push-notification-receipts'
 export * from './scheduled/increment-streak-forgiveness'
 
+// v2
 // HTTP endpoints
 import { updatecontractmetrics } from './scheduled/update-contract-metrics'
 import { updateusermetrics } from './scheduled/update-user-metrics'
@@ -101,6 +102,7 @@ const updateMemberRoleFunction = toCloudFunction(endpoints.updatememberrole)
 const removeContractFromGroupFunction = toCloudFunction(
   endpoints.removecontractfromgroup
 )
+const updateGroupPrivacyFunction = toCloudFunction(endpoints.updategroupprivacy)
 
 export {
   healthFunction as health,
@@ -140,4 +142,5 @@ export {
   addContractToGroupFunction as addcontracttogroup,
   updateMemberRoleFunction as updatememberrole,
   removeContractFromGroupFunction as removecontractfromgroup,
+  updateGroupPrivacyFunction as updategroupprivacy,
 }
