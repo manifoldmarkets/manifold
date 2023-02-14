@@ -23,6 +23,7 @@ $ firebase use dev
 Use [ts-node](https://www.npmjs.com/package/ts-node) to run whatever you want:
 
 ```shell
+$ cd backend/scripts
 $ ts-node script.ts
 ```
 
@@ -30,4 +31,18 @@ Or if you don't want to use `ts-node` you can compile and run them with Node:
 
 ```shell
 $ yarn build && node lib/script.js
+```
+
+## Environment variables
+
+First, print them out using the firebase command line tool:
+
+```shell
+$ firebase functions:secrets:access SUPABASE_KEY
+```
+
+Then, save them locally in e.g. `~/.zshrc` or `~/.bashrc`:
+
+```
+export SUPABASE_KEY=ABCDE12345
 ```
