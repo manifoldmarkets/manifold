@@ -1,7 +1,7 @@
 import { ImageResponse, ImageResponseOptions } from '@vercel/og'
 import { NextRequest } from 'next/server'
 import React from 'react'
-import { OgMarket } from 'web/pages/og/og-market'
+import { OgMarket } from 'web/components/og/og-market'
 import { OgCardProps } from 'common/contract-details'
 
 export const config = { runtime: 'edge' }

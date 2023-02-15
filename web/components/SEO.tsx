@@ -1,57 +1,20 @@
-import { ReactNode } from 'react'
+import { removeUndefinedProps } from 'common/util/object'
+import { buildOgUrl } from 'common/util/og'
 import Head from 'next/head'
-import { buildCardUrl, OgCardProps } from 'common/contract-details'
-import { filterDefined } from 'common/util/array'
-import { DOMAIN } from 'common/envs/constants'
 
-export function buildBasicOgUrl(
-  props: Record<string, string | undefined>,
-  endpoint: string
-) {
-  const generateUrlParams = (params: Record<string, string | undefined>) =>
-    filterDefined(
-      Object.entries(params).map(([key, value]) =>
-        value ? `${key}=${encodeURIComponent(value)}` : null
-      )
-    ).join('&')
-
-  // Change to localhost:3000 for local testing
-  const url =
-    // `http://localhost:3000/api/og/${endpoint}?` +
-    `https://${DOMAIN}/api/og/${endpoint}?` + generateUrlParams(props)
-
-  return url
-}
-
-export function SEO(props: {
+export function SEO<P extends Record<string, string | undefined>>(props: {
   title: string
   description: string
   url?: string
-  children?: ReactNode
-  ogCardProps?: OgCardProps
-  basicOgProps?: {
-    props: Record<string, string | undefined>
-    endpoint: string
-  }
+  ogProps?: { props: P; endpoint: string }
   image?: string
 }) {
-  const {
-    title,
-    description,
-    url,
-    children,
-    image,
-    ogCardProps,
-    basicOgProps,
-  } = props
+  const { title, description, url, image, ogProps } = props
 
-  const imageUrl = image
-    ? image
-    : ogCardProps
-    ? buildCardUrl(ogCardProps)
-    : basicOgProps
-    ? buildBasicOgUrl(basicOgProps.props, basicOgProps.endpoint)
-    : undefined
+  const imageUrl =
+    image ??
+    (ogProps &&
+      buildOgUrl(removeUndefinedProps(ogProps.props) as any, ogProps.endpoint))
 
   const absUrl = 'https://manifold.markets' + url
 
@@ -72,6 +35,7 @@ export function SEO(props: {
         content={description}
         key="description2"
       />
+      <meta property="og:site_name" content="Manifold Markets" />
 
       {url && <meta property="og:url" content={absUrl} key="url" />}
 
@@ -89,8 +53,6 @@ export function SEO(props: {
           <meta name="twitter:image" content={imageUrl} key="image2" />
         </>
       )}
-
-      {children}
     </Head>
   )
 }
