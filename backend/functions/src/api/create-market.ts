@@ -174,14 +174,23 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
         doc.data() as { userId: string; createdTime: number; role?: string }
     )
 
+    const userGroupMemberDoc = groupMemberDocs.filter(
+      (m) => m.userId === userId
+    )
+    const groupMemberRole =
+      userGroupMemberDoc.length >= 1
+        ? userGroupMemberDoc[0].role
+          ? (userGroupMemberDoc[0].role as 'admin' | 'moderator')
+          : undefined
+        : undefined
+
     if (
       !canUserAddGroupToMarket({
         userId: auth.uid,
         group: group,
         isMarketCreator: true,
         isManifoldAdmin: isManifoldId(auth.uid) || isAdmin(firebaseUser.email),
-        userGroupRole: groupMemberDocs.filter((m) => m.userId === userId)[0]
-          .role as 'admin' | 'moderator' | undefined,
+        userGroupRole: groupMemberRole,
       })
     ) {
       throw new APIError(
