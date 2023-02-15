@@ -19,7 +19,6 @@ import { MoreSwipeInfo } from './more-swipe-info'
 import { DailyStats } from '../daily-stats'
 import { SwipeComments } from './swipe-comments'
 import { Percent } from './percent'
-import { SwipeSharer } from './swipe-sharer'
 import { SwitchVerticalIcon } from '@heroicons/react/solid'
 
 export const SwipeCard = memo(
@@ -200,7 +199,7 @@ function CardActions(props: {
   setIsModalOpen: (open: boolean) => void
   cardHeight: number
 }) {
-  const { user, contract, setIsModalOpen, cardHeight } = props
+  const { user, contract, setIsModalOpen } = props
 
   return (
     <Col className="flex flex-col items-center justify-end gap-2">
@@ -218,10 +217,6 @@ function CardActions(props: {
         className={'flex-col gap-2 drop-shadow-sm'}
         isSwipe
       />
-
-      {(cardHeight ?? 400) >= 700 && (
-        <SwipeSharer contract={contract} user={user} />
-      )}
 
       <SwipeComments
         contract={contract}
