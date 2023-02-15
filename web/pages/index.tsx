@@ -6,39 +6,45 @@ import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
-import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { useGlobalConfig } from 'web/hooks/use-global-config'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SearchSection } from './home'
 import { Sort } from 'web/components/contract-search'
-import { useTrendingContracts } from 'web/hooks/use-contracts'
-import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
+import {
+  DESTINY_GROUP_SLUGS,
+  ENV_CONFIG,
+  HOME_BLOCKED_GROUP_SLUGS,
+} from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import TestimonialsPanel from './testimonials-panel'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
+import { CPMMBinaryContract } from 'common/contract'
+import { getTrendingContracts } from 'web/lib/firebase/contracts'
 
-export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
+const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
+
+export const getStaticProps = async () => {
+  const contracts = await getTrendingContracts(20)
+
+  const trendingContracts = contracts.filter(
+    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug))
+  )
+
   return {
-    props: {},
+    props: { trendingContracts },
+    revalidate: 10 * 60, // every 10 minutes
   }
-})
+}
 
-export default function Home() {
+export default function Home(props: {
+  trendingContracts: CPMMBinaryContract[]
+}) {
   useSaveReferral()
   useRedirectAfterLogin()
 
-  const blockedFacetFilters = DESTINY_GROUP_SLUGS.map(
-    (slug) => `groupSlugs:-${slug}`
-  )
-
-  const globalConfig = useGlobalConfig()
-  const trendingContracts = useTrendingContracts(10, blockedFacetFilters)
-
-  const isLoading = !trendingContracts || !globalConfig
+  const { trendingContracts } = props
 
   return (
     <Page>
@@ -67,21 +73,16 @@ export default function Home() {
             />
           </Row>
         </Col>
-        {isLoading ? (
-          <LoadingIndicator />
-        ) : (
-          <>
-            <SearchSection
-              key={'score'}
-              label={'Trending'}
-              contracts={trendingContracts}
-              sort={'score' as Sort}
-              icon={'🔥'}
-            />
 
-            <TestimonialsPanel />
-          </>
-        )}
+        <SearchSection
+          key={'score'}
+          label={'Trending'}
+          contracts={trendingContracts}
+          sort={'score' as Sort}
+          icon={'🔥'}
+        />
+
+        <TestimonialsPanel />
       </Col>
     </Page>
   )
