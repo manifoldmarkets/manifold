@@ -64,7 +64,7 @@ export function AuthProvider(props: {
 
   useEffect(() => {
     if (serverUser === undefined) {
-      const cachedUser = localStorage.getItem(CACHED_USER_KEY)
+      const cachedUser = safeLocalStorage?.getItem(CACHED_USER_KEY)
       const parsed = cachedUser ? JSON.parse(cachedUser) : undefined
       setAuthUser(parsed)
     }
@@ -74,9 +74,9 @@ export function AuthProvider(props: {
     if (authUser) {
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
-      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
+      safeLocalStorage?.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
     } else if (authUser === null) {
-      localStorage.removeItem(CACHED_USER_KEY)
+      safeLocalStorage?.removeItem(CACHED_USER_KEY)
     }
   }, [authUser])
 

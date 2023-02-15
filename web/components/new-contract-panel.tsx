@@ -40,6 +40,7 @@ import {
 } from 'web/lib/supabase/groups'
 import { GroupsInfoBlob } from './groups/contract-groups-list'
 import { QfExplainer } from './contract/qf-overview'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -209,7 +210,7 @@ export function NewContractPanel(props: {
       })
       editor?.commands.clearContent(true)
       // force clear save, because it can fail if editor unrenders
-      localStorage.removeItem(`text create market`)
+      safeLocalStorage?.removeItem(`text create market`)
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
