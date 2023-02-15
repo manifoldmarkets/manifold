@@ -61,14 +61,14 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         <meta name="twitter:card" content="summary" key="card" />
         <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
-          property="og:image"
-          content="https://manifold.markets/logo-block.png"
-          key="image1"
+          name="twitter:image"
+          content="https://manifold.markets/logo-bg-white.png"
+          key="image2"
         />
         <meta
-          name="twitter:image"
-          content="https://manifold.markets/logo-block.png"
-          key="image2"
+          property="og:image"
+          content="https://manifold.markets/logo-cover.png"
+          key="image1"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="apple-itunes-app" content="app-id=6444136749" />
