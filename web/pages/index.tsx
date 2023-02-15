@@ -11,25 +11,30 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { SearchSection } from './home'
 import { Sort } from 'web/components/contract-search'
-import { getTrendingContracts } from 'web/hooks/use-contracts'
-import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
+import {
+  DESTINY_GROUP_SLUGS,
+  ENV_CONFIG,
+  HOME_BLOCKED_GROUP_SLUGS,
+} from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import TestimonialsPanel from './testimonials-panel'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
 import { CPMMBinaryContract } from 'common/contract'
+import { getTrendingContracts } from 'web/lib/firebase/contracts'
+
+const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
-  const blockedFacetFilters = DESTINY_GROUP_SLUGS.map(
-    (slug) => `groupSlugs:-${slug}`
-  )
+  const contracts = await getTrendingContracts(20)
 
-  const trendingContracts = await getTrendingContracts(10, blockedFacetFilters)
+  const trendingContracts = contracts.filter(
+    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug))
+  )
 
   return {
     props: { trendingContracts },
-    revalidate: 10 * 60, // revalidate every 10 minutes
   }
 })
 
