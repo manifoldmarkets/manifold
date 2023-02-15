@@ -1,5 +1,4 @@
 import CharacterCount from '@tiptap/extension-character-count'
-import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import {
@@ -35,7 +34,7 @@ import { generateReact, insertContent } from '../editor/utils'
 import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { DisplaySpoiler } from '../editor/spoiler'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
-import { DisplayImage } from '../editor/image'
+import { BasicImage, DisplayImage } from '../editor/image'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
@@ -50,7 +49,7 @@ export const editorExtensions = (simple = false): Extensions =>
       heading: simple ? false : { levels: [1, 2, 3] },
       horizontalRule: simple ? false : {},
     }),
-    simple ? DisplayImage : Image,
+    simple ? DisplayImage : BasicImage,
     EmojiExtension,
     DisplayLink,
     DisplayMention,
@@ -195,7 +194,7 @@ function RichContent(props: {
     () =>
       generateReact(content, [
         StarterKit,
-        size === 'sm' ? DisplayImage : Image,
+        size === 'sm' ? DisplayImage : BasicImage,
         DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
         DisplayMention,
         DisplayContractMention,

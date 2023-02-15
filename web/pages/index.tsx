@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { Page } from 'web/components/layout/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
-import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { SearchSection } from './home'
@@ -75,15 +74,13 @@ export default function Home(props: {
           </Row>
         </Col>
 
-        {trendingContracts && (
-          <SearchSection
-            key={'score'}
-            label={'Trending'}
-            contracts={trendingContracts}
-            sort={'score' as Sort}
-            icon={'🔥'}
-          />
-        )}
+        <SearchSection
+          key={'score'}
+          label={'Trending'}
+          contracts={trendingContracts}
+          sort={'score' as Sort}
+          icon={'🔥'}
+        />
 
         <TestimonialsPanel />
       </Col>
