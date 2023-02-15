@@ -31,14 +31,13 @@ export function OgMarket(props: OgCardProps) {
       >
         {question}
       </div>
-      <div className="relative flex w-full flex-row justify-center">
+      <div className="relative flex w-full flex-row pr-24">
         {data.length ? (
           <>
-            {TimeProb({ date: data[0].x, prob: data[0].y })}
             <Sparkline
               data={data}
               height={300}
-              aspectRatio={2.5}
+              aspectRatio={3.2}
               min={0}
               max={1}
             />
@@ -159,9 +158,9 @@ function TimeProb(props: { date: number; prob: number }) {
   const { date, prob } = props
 
   return (
-    <div className="flex w-32">
+    <div className="relative ml-4 flex w-32">
       <div
-        className="absolute flex flex-col items-center"
+        className="absolute right-0 flex flex-col items-center"
         style={{ top: `${(1 - prob) * 100 - 20}%` }}
       >
         <span className="text-6xl">{formatPercent(prob)}</span>

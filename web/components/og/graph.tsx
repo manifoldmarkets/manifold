@@ -93,7 +93,7 @@ export function Sparkline(props: {
   const visibleRange = [data[0].x, data[data.length - 1].x]
   const curve = data.length > 50 ? curveLinear : curveStepBefore
 
-  const xScale = scaleTime(visibleRange, [4, w - 4])
+  const xScale = scaleTime(visibleRange, [0, w - 4])
   const yScale = scaleLinear([min, max], [h, 0])
   const px = (p: Point) => xScale(p.x)
   const py1 = (p: Point) => yScale(p.y)

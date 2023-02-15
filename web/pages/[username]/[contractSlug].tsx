@@ -63,6 +63,7 @@ import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
+import { getInitialProbability } from 'common/calculate'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -119,7 +120,15 @@ export async function getStaticPropz(ctx: {
       ? await getTotalContractMetrics(contractId, db)
       : 0
 
-  const pointsString = pointsToBase64(compressPoints(betPoints.reverse()))
+  if (useBetPoints && contract) {
+    const firstPoint = {
+      x: contract.createdTime,
+      y: getInitialProbability(contract),
+    }
+    betPoints.push(firstPoint)
+    betPoints.reverse()
+  }
+  const pointsString = pointsToBase64(compressPoints(betPoints))
 
   return {
     props: {
