@@ -26,7 +26,7 @@ import { getTrendingContracts } from 'web/lib/firebase/contracts'
 
 const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
-export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
+export const getStaticProps = async () => {
   const contracts = await getTrendingContracts(20)
 
   const trendingContracts = contracts.filter(
@@ -35,8 +35,9 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
 
   return {
     props: { trendingContracts },
+    revalidate: 10 * 60, // every 10 minutes
   }
-})
+}
 
 export default function Home(props: {
   trendingContracts: CPMMBinaryContract[]
