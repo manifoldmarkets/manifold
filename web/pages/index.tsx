@@ -22,6 +22,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
 import { CPMMBinaryContract } from 'common/contract'
 import { getTrendingContracts } from 'web/lib/firebase/contracts'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 
 const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
@@ -47,10 +48,18 @@ export default function Home(props: {
   const { trendingContracts } = props
 
   return (
-    <Page>
+    <Page hideSidebar>
       <Col className="mx-auto mb-8 w-full gap-8 px-4">
         <Col className="gap-4">
+          <Row className="items-center justify-between">
+            <ManifoldLogo />
+            <div className="hidden sm:flex">
+              {/* TODO: put login, sign up button, get app here*/}
+            </div>
+          </Row>
+
           <LandingPagePanel />
+
           <Row className="w-full gap-2 sm:gap-4">
             <InfoCard
               link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
