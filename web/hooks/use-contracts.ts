@@ -56,6 +56,18 @@ export const useTrendingContracts = (
   return data.hits
 }
 
+export const getTrendingContracts = async (
+  maxContracts: number,
+  additionalFilters?: (string | string[])[]
+) => {
+  const data = await trendingIndex.search<CPMMBinaryContract>('', {
+    facetFilters: defaultFilters.concat(additionalFilters ?? []),
+    hitsPerPage: maxContracts,
+  })
+  if (!data) return undefined
+  return data.hits
+}
+
 export const useNewContracts = (
   maxContracts: number,
   additionalFilters?: (string | string[])[],
