@@ -222,6 +222,13 @@ export function NewContractPanel(props: {
     }
   }
 
+  const BONUS_OUTCOME_TYPES = [
+    'BINARY',
+    'FREE_RESPONSE',
+    'MULTIPLE_CHOICE',
+    'PSEUDO_NUMERIC',
+  ]
+
   const [hideOptions, setHideOptions] = useState(true)
 
   const [adminGroups, setAdminGroups] = useState<Group[]>([])
@@ -496,13 +503,21 @@ export function NewContractPanel(props: {
           </label>
 
           <div className="pl-1 text-sm text-gray-700">
-            {formatMoney(ante)} or <span className=" text-teal-500">FREE </span>
-            if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
-            <InfoTooltip
-              text={`You'll earn a bonus of ${formatMoney(
-                UNIQUE_BETTOR_BONUS_AMOUNT
-              )} for each unique trader you get on your market.`}
-            />
+            {formatMoney(ante)}
+            {BONUS_OUTCOME_TYPES.includes(outcomeType) ? (
+              <span>
+                {' '}
+                or <span className=" text-teal-500">FREE </span>
+                if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
+                <InfoTooltip
+                  text={`You'll earn a bonus of ${formatMoney(
+                    UNIQUE_BETTOR_BONUS_AMOUNT
+                  )} for each unique trader you get on your market.`}
+                />
+              </span>
+            ) : (
+              <span className="text-red-500"> - no unique trader bonus</span>
+            )}
           </div>
           <div className="pl-1 text-gray-500"></div>
 
