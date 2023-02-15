@@ -210,6 +210,9 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
               globalConfig,
               pinned
             )}
+
+            <HomeSectionHeader label={'Your feed'} icon={'📖'} />
+            <ContractsFeed />
           </>
         )}
       </Col>
