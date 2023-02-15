@@ -9,37 +9,36 @@ import { Col } from 'web/components/layout/col'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
+import { useGlobalConfig } from 'web/hooks/use-global-config'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SearchSection } from './home'
 import { Sort } from 'web/components/contract-search'
-import { getTrendingContracts } from 'web/hooks/use-contracts'
+import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import TestimonialsPanel from './testimonials-panel'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
-import { CPMMBinaryContract } from 'common/contract'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
+  return {
+    props: {},
+  }
+})
+
+export default function Home() {
+  useSaveReferral()
+  useRedirectAfterLogin()
+
   const blockedFacetFilters = DESTINY_GROUP_SLUGS.map(
     (slug) => `groupSlugs:-${slug}`
   )
 
-  const trendingContracts = await getTrendingContracts(10, blockedFacetFilters)
+  const globalConfig = useGlobalConfig()
+  const trendingContracts = useTrendingContracts(10, blockedFacetFilters)
 
-  return {
-    props: { trendingContracts },
-    revalidate: 10 * 60, // revalidate every 10 minutes
-  }
-})
-
-export default function Home(props: {
-  trendingContracts: CPMMBinaryContract[]
-}) {
-  useSaveReferral()
-  useRedirectAfterLogin()
-
-  const { trendingContracts } = props
+  const isLoading = !trendingContracts || !globalConfig
 
   return (
     <Page>
@@ -68,18 +67,21 @@ export default function Home(props: {
             />
           </Row>
         </Col>
+        {isLoading ? (
+          <LoadingIndicator />
+        ) : (
+          <>
+            <SearchSection
+              key={'score'}
+              label={'Trending'}
+              contracts={trendingContracts}
+              sort={'score' as Sort}
+              icon={'🔥'}
+            />
 
-        {trendingContracts && (
-          <SearchSection
-            key={'score'}
-            label={'Trending'}
-            contracts={trendingContracts}
-            sort={'score' as Sort}
-            icon={'🔥'}
-          />
+            <TestimonialsPanel />
+          </>
         )}
-
-        <TestimonialsPanel />
       </Col>
     </Page>
   )
