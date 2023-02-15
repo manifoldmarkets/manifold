@@ -6,13 +6,20 @@ import { Contract } from 'common/contract'
 import { loadPaginated, log } from 'shared/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getRecentContractLikes } from 'shared/supabase/likes'
-import { run } from 'common/supabase/utils'
 import { logit } from 'common/util/math'
+import { bulkUpdate } from 'shared/supabase/utils'
 
 export const scoreContracts = functions
-  .runWith({ memory: '4GB', timeoutSeconds: 540, secrets: ['SUPABASE_KEY'] })
+  .runWith({
+    memory: '4GB',
+    timeoutSeconds: 540,
+    secrets: ['SUPABASE_KEY', 'SUPABASE_PASSWORD'],
+  })
   .pubsub.schedule('every 1 hours')
   .onRun(async () => {
     await scoreContractsInternal()
@@ -43,6 +50,12 @@ export async function scoreContractsInternal() {
   log(`Found ${contracts.length} contracts to score`)
 
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
+  const contractScoreUpdates: {
+    contract_id: string
+    freshness_score: number
+  }[] = []
+
   const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
 
@@ -71,27 +84,30 @@ export async function scoreContractsInternal() {
       dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
     }
 
-    let firebaseUpdate: Promise<any> = Promise.resolve()
     if (
       contract.popularityScore !== popularityScore ||
       contract.dailyScore !== dailyScore
     ) {
-      firebaseUpdate = firestore
+      await firestore
         .collection('contracts')
         .doc(contract.id)
         .update(removeUndefinedProps({ popularityScore, dailyScore }))
     }
 
-    await Promise.all([
-      firebaseUpdate,
-      run(
-        db
-          .from('contract_recommendation_features')
-          .update({
-            freshness_score: freshnessScore,
-          })
-          .eq('contract_id', contract.id)
-      ).catch((e) => console.error(e)),
-    ])
+    contractScoreUpdates.push({
+      contract_id: contract.id,
+      freshness_score: freshnessScore,
+    })
   }
+
+  console.log(
+    'performing bulk update of freshness scores',
+    contractScoreUpdates.length
+  )
+  return await bulkUpdate(
+    pg,
+    'contract_recommendation_features',
+    'contract_id',
+    contractScoreUpdates
+  )
 }
