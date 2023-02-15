@@ -14,7 +14,7 @@ import { PortfolioGraph } from 'web/components/portfolio/portfolio-value-graph'
 import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
 import { coll, getValues } from 'web/lib/firebase/utils'
 import { Row } from 'web/components/layout/row'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyNumber } from 'common/util/format'
 import { getContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { CPMMBinaryContract } from 'common/contract'
@@ -156,19 +156,13 @@ export default function RangePerformancePage(props: {
     <Page>
       <SEO
         title={date + ' profit for ' + user.name}
-        description={`${user.name} made ${formatMoney(
+        description={`${user.name} made M$${formatMoneyNumber(
           weeklyProfit
         )} in the past week. See how they did it.`}
-        url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDateSlug}`.replace(
-          'https://',
-          ''
-        )}
-        ogProps={{
-          props: ogProps,
-          endpoint: 'update',
-        }}
+        url={`/week/${user.username}/${rangeEndDateSlug}`}
+        ogProps={{ props: ogProps, endpoint: 'update' }}
       />
-      <Col className={' p-2'}>
+      <Col className={'p-2'}>
         <Row className={'w-full items-start justify-between pb-6'}>
           <Title>
             <UserLink
