@@ -81,10 +81,6 @@ export default function Home() {
     !trendingContracts || !globalConfig || !pinned || !dailyTrendingContracts
   return (
     <Page>
-      <SEO
-        title="Manifold Markets"
-        description="Ask any question. Bet mana vs 100+ players. Unfold the future together."
-      />
       <Col className="mx-auto mb-8 w-full gap-8 px-4">
         <Col className="gap-4">
           <LandingPagePanel />
