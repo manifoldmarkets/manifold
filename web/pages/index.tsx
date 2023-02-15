@@ -6,7 +6,6 @@ import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
 import {
   inMemoryStore,
