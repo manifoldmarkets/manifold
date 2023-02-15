@@ -18,8 +18,5 @@
     "pg-promise": "11.0.2",
     "dayjs": "1.11.4",
     "openai": "3.0.1"
-  },
-  "devDependencies": {
-    "tsc-alias": "1.8.2"
   }
 }

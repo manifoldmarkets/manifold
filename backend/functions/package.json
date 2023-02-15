@@ -57,9 +57,7 @@
   "devDependencies": {
     "@types/mailgun-js": "0.22.12",
     "@types/marked": "4.0.7",
-    "puppeteer": "18.0.5",
-    "tsc-alias": "1.8.2",
-    "tsconfig-paths": "4.1.2"
+    "puppeteer": "18.0.5"
   },
   "private": true
 }

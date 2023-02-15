@@ -33,8 +33,5 @@
     "pg-promise": "11.0.2",
     "lodash": "4.17.21",
     "typescript": "4.9.3"
-  },
-  "devDependencies": {
-    "tsc-alias": "1.8.2"
   }
 }
