@@ -14,6 +14,7 @@ export function OgMarket(props: OgCardProps) {
     volume,
     creatorName,
     creatorAvatarUrl,
+    probability,
     numericValue,
     resolution,
     topAnswer,
@@ -31,7 +32,7 @@ export function OgMarket(props: OgCardProps) {
       >
         {question}
       </div>
-      <div className="relative flex w-full flex-row pr-24">
+      <div className="flex w-full flex-row pr-24">
         {data.length ? (
           <>
             <Sparkline
@@ -40,23 +41,30 @@ export function OgMarket(props: OgCardProps) {
               aspectRatio={3.2}
               min={0}
               max={1}
+              className="mr-4"
             />
-            {resolution
-              ? ResolutionDiv(props)
-              : TimeProb({
-                  date: data[data.length - 1].x,
-                  prob: data[data.length - 1].y,
-                })}
+            {resolution ? (
+              <Resolution
+                resolution={resolution}
+                label={probability ?? numericValue}
+              />
+            ) : (
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              <TimeProb date={data.at(-1)!.x} prob={data.at(-1)!.y} />
+            )}
           </>
         ) : (
           <div className="flex w-full flex-row items-center justify-end px-24">
-            {resolution && !topAnswer
-              ? ResolutionDiv(props)
-              : numericValue
-              ? NumericValueDiv(props)
-              : topAnswer
-              ? AnswerDiv(props)
-              : null}
+            {resolution && !topAnswer ? (
+              <Resolution
+                resolution={resolution}
+                label={probability ?? numericValue}
+              />
+            ) : numericValue ? (
+              <NumericValue number={numericValue} />
+            ) : topAnswer ? (
+              <Answer {...props} />
+            ) : null}
           </div>
         )}
       </div>
@@ -101,41 +109,39 @@ export function OgMarket(props: OgCardProps) {
   )
 }
 
-function AnswerDiv(props: OgCardProps) {
+function Answer(props: OgCardProps) {
   const { probability, topAnswer, resolution } = props
   return (
     <>
-      <div className="flex max-h-[9rem] w-full justify-start overflow-hidden pr-8 text-5xl">
+      <span className="max-h-[9rem] w-full overflow-hidden pr-8 text-start text-5xl">
         {topAnswer}
-      </div>
+      </span>
       {!resolution && (
-        <div className="flex flex-col">
-          <div className="flex text-6xl">{probability}</div>
-          <div className="flex w-full justify-center text-4xl">chance</div>
+        <div className="flex h-full flex-col items-center justify-center">
+          <span className="text-6xl">{probability}</span>
+          <span className="text-4xl">chance</span>
         </div>
       )}
     </>
   )
 }
 
-function NumericValueDiv(props: OgCardProps) {
+function NumericValue(props: { number: string }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="text-6xl">{props.numericValue}</span>
+      <span className="text-6xl">{props.number}</span>
       <span className="text-4xl">expected</span>
     </div>
   )
 }
 
-function ResolutionDiv(props: OgCardProps) {
-  const { resolution, probability, numericValue } = props
-  if (!resolution) {
-    return <div className={'hidden'} />
-  }
+function Resolution(props: { resolution: string; label?: string }) {
+  const { resolution, label } = props
+
   const text = {
     YES: 'YES',
     NO: 'NO',
-    MKT: probability ?? numericValue ?? 'MANY',
+    MKT: label ?? 'MANY',
     CANCEL: 'N/A',
   }[resolution]
 
@@ -147,7 +153,7 @@ function ResolutionDiv(props: OgCardProps) {
   }[resolution]
 
   return (
-    <div className={`flex flex-col ${color} items-center`}>
+    <div className={`flex flex-col ${color} justify-center`}>
       <span className="text-4xl">resolved</span>
       <span className="text-6xl">{text}</span>
     </div>
@@ -158,7 +164,7 @@ function TimeProb(props: { date: number; prob: number }) {
   const { date, prob } = props
 
   return (
-    <div className="relative ml-4 flex w-32">
+    <div className="relative flex w-32">
       <div
         className="absolute right-0 flex flex-col items-center"
         style={{ top: `${(1 - prob) * 100 - 20}%` }}

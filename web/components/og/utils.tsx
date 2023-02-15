@@ -1,9 +1,31 @@
-import React from 'react'
+import React, { ReactElement, ReactNode, ReactPortal } from 'react'
 
-export function replaceTw(element: JSX.Element | string): JSX.Element {
-  // Base case
-  if (typeof element === 'string' || !element?.props) {
-    return element as JSX.Element
+/** Traverse react element's tree, replacing className prop with tw for satori engine */
+export function replaceTw(element: Exclude<ReactNode, ReactPortal>): ReactNode {
+  // base case
+  if (!element || typeof element !== 'object') {
+    return element
+  }
+
+  // fragment
+  if (!('type' in element)) {
+    return <>{Array.from(element).map(replaceTw)}</>
+  }
+
+  // component
+  if (typeof element.type === 'function') {
+    if (element.type.prototype?.isReactComponent) {
+      throw Error(
+        'React class component not supported in classname to tw middleware because Sinclair is lazy.'
+      )
+      // new component; component.render() etc ???
+    }
+
+    // functional component
+    const component = element.type as (props: any) => ReactElement
+
+    const newType = (props: any) => replaceTw(component(props)) as ReactElement
+    return React.createElement(newType, element.props)
   }
 
   // Replace `className` with `tw` for this element
@@ -16,7 +38,7 @@ export function replaceTw(element: JSX.Element | string): JSX.Element {
 
   // Recursively replace children, whether we have many, one, or no children
   const { children } = props
-  const newChildren: (JSX.Element | string)[] = children
+  const newChildren = children
     ? Array.isArray(children)
       ? children.map(replaceTw)
       : [replaceTw(children)]
