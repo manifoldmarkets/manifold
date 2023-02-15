@@ -14,9 +14,10 @@ import { useDateDocs } from 'web/hooks/use-post'
 import { useTracking } from 'web/hooks/use-tracking'
 import Link from 'next/link'
 import clsx from 'clsx'
+import { sortBy } from 'lodash'
 
 export async function getStaticProps() {
-  const dateDocs = await getDateDocs()
+  const dateDocs = sortBy(await getDateDocs(), 'createdTime').reverse()
   const docCreators = await Promise.all(
     dateDocs.map((d) => getUser(d.creatorId))
   )
@@ -39,6 +40,7 @@ export default function DatePage(props: {
   const user = useUser()
 
   const dateDocs = useDateDocs() ?? props.dateDocs
+
   const hasDoc = dateDocs.some((d) => d.creatorId === user?.id)
   useTracking('view date docs page')
 
