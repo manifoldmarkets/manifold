@@ -33,6 +33,7 @@ import { SearchButton } from './search-button'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import DiscordOutlineIcon from 'web/lib/icons/discord-outline-icon'
+import { Spacer } from '../layout/spacer'
 
 export default function Sidebar(props: {
   className?: string
@@ -67,7 +68,7 @@ export default function Sidebar(props: {
           {logoSubheading}
         </Row>
       )}
-      {/* <Spacer h={6} /> */}
+      <Spacer h={6} />
 
       {user === undefined && <div className="h-[56px]" />}
 
