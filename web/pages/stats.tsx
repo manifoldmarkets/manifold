@@ -9,8 +9,6 @@ import { Spacer } from 'web/components/layout/spacer'
 import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { SiteLink } from 'web/components/site-link'
-import { Linkify } from 'web/components/linkify'
 import { getStats } from 'web/lib/firebase/stats'
 import { Stats } from 'common/stats'
 
@@ -30,10 +28,6 @@ export default function Analytics() {
           {
             title: 'Activity',
             content: <CustomAnalytics {...stats} />,
-          },
-          {
-            title: 'Market Stats',
-            content: <WasabiCharts />,
           },
           {
             title: 'Google Analytics',
@@ -279,48 +273,6 @@ export function CustomAnalytics(props: {
           },
         ]}
       />
-      <Spacer h={8} />
-
-      <Title text="Action count of top tenth" />
-      <p className="text-gray-500">
-        Number of actions (bets, comments, markets created) taken by the tenth
-        percentile of top users.
-      </p>
-      <Tabs
-        defaultIndex={1}
-        tabs={[
-          {
-            title: 'Daily',
-            content: (
-              <DailyCountChart
-                dailyCounts={topTenthActions.daily}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-          {
-            title: 'Weekly',
-            content: (
-              <DailyCountChart
-                dailyCounts={topTenthActions.weekly}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-          {
-            title: 'Monthly',
-            content: (
-              <DailyCountChart
-                dailyCounts={topTenthActions.monthly}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-        ]}
-      />
 
       <Title text="Total mana bet" />
       <p className="text-gray-500">
@@ -334,16 +286,6 @@ export function CustomAnalytics(props: {
             content: (
               <DailyCountChart
                 dailyCounts={manaBet.daily}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-          {
-            title: 'Weekly',
-            content: (
-              <DailyCountChart
-                dailyCounts={manaBet.weekly}
                 startDate={startDate}
                 small
               />
@@ -378,31 +320,6 @@ export function FirebaseAnalytics() {
         className="w-full"
         height={2200}
         src="https://datastudio.google.com/embed/reporting/faeaf3a4-c8da-4275-b157-98dad017d305/page/Gg3"
-        frameBorder="0"
-        style={{ border: 0 }}
-        allowFullScreen
-      />
-    </>
-  )
-}
-
-export function WasabiCharts() {
-  return (
-    <>
-      <p className="text-gray-500">
-        Courtesy of <Linkify text="@wasabipesto" />; originally found{' '}
-        <SiteLink
-          className="font-bold"
-          href="https://wasabipesto.com/jupyter/manifold/"
-        >
-          here.
-        </SiteLink>
-      </p>
-      <Spacer h={4} />
-      <iframe
-        className="w-full"
-        height={21000}
-        src="https://wasabipesto.com/jupyter/manifold/"
         frameBorder="0"
         style={{ border: 0 }}
         allowFullScreen
