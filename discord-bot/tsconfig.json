@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+        "rootDir": "src",
+        "composite": true,
+        "target": "es2021",
+        "module": "es2022",
+        "lib": ["es2021"],
+        "noImplicitReturns": true,
+        "moduleResolution": "node",
+        "outDir": "./lib",
+        "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
+        "sourceMap": true,
+        "baseUrl": "./src",
+        "strict": true,
+        "paths": {
+            "common/*": ["../common/src/*", "../../common/lib/*"]
+        }
+    },
+    "ts-node": {
+        "require": ["tsconfig-paths/register"],
+        "esm": true
+    },
+    "references": [
+        {
+            "path": "../common"
+        },
+    ],
+    "compileOnSave": true,
+    "include": ["src/**/*.ts"]
+}
