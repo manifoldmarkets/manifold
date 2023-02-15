@@ -1,5 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react'
 import Router from 'next/router'
+import { ChartBarIcon } from '@heroicons/react/solid'
+import Link from 'next/link'
 
 import { Page } from 'web/components/layout/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
@@ -7,26 +9,13 @@ import { Col } from 'web/components/layout/col'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
 import { useGlobalConfig } from 'web/hooks/use-global-config'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Post } from 'common/post'
-import { ActivitySection, FeaturedSection, SearchSection } from './home'
+import { SearchSection } from './home'
 import { Sort } from 'web/components/contract-search'
-import { ContractCard } from 'web/components/contract/contract-card'
-import { PostCard } from 'web/components/posts/post-card'
-import {
-  useContractsByDailyScore,
-  useTrendingContracts,
-} from 'web/hooks/use-contracts'
-import { Contract } from 'common/contract'
+import { useTrendingContracts } from 'web/hooks/use-contracts'
 import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
-import Link from 'next/link'
-import { ChartBarIcon } from '@heroicons/react/solid'
 import TestimonialsPanel from './testimonials-panel'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
@@ -47,37 +36,10 @@ export default function Home() {
   )
 
   const globalConfig = useGlobalConfig()
-  const trendingContracts = useTrendingContracts(6, blockedFacetFilters)
-  const dailyTrendingContracts = useContractsByDailyScore(
-    6,
-    blockedFacetFilters
-  )
-  const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
-    store: inMemoryStore(),
-    key: 'home-pinned',
-  })
+  const trendingContracts = useTrendingContracts(10, blockedFacetFilters)
 
-  useEffect(() => {
-    const pinnedItems = globalConfig?.pinnedItems
-    if (pinnedItems) {
-      const itemComponents = pinnedItems.map((element) => {
-        if (element.type === 'post') {
-          const post = element.item as Post
-          return <PostCard post={post} pinned={true} />
-        } else if (element.type === 'contract') {
-          const contract = element.item as Contract
-          return <ContractCard contract={contract} pinned={true} />
-        }
-      })
-      setPinned(
-        itemComponents.filter(
-          (element) => element != undefined
-        ) as JSX.Element[]
-      )
-    }
-  }, [globalConfig, setPinned])
-  const isLoading =
-    !trendingContracts || !globalConfig || !pinned || !dailyTrendingContracts
+  const isLoading = !trendingContracts || !globalConfig
+
   return (
     <Page>
       <Col className="mx-auto mb-8 w-full gap-8 px-4">
@@ -116,20 +78,7 @@ export default function Home() {
               sort={'score' as Sort}
               icon={'🔥'}
             />
-            <SearchSection
-              key={'daily-trending'}
-              label={'Daily changed'}
-              contracts={dailyTrendingContracts}
-              sort={'daily-score'}
-              icon={'📈'}
-            />
-            <ActivitySection key={'live-feed'} />
-            <FeaturedSection
-              key={'featured'}
-              globalConfig={globalConfig}
-              pinned={pinned}
-              isAdmin={false}
-            />
+
             <TestimonialsPanel />
           </>
         )}
