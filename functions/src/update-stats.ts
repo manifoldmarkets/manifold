@@ -11,8 +11,6 @@ import { average } from '../../common/util/math'
 
 const firestore = admin.firestore()
 
-const numberOfDays = 90
-
 const getBetsQuery = (startTime: number, endTime: number) =>
   firestore
     .collectionGroup('bets')
@@ -103,7 +101,9 @@ export async function getDailyNewUsers(
 }
 
 export const updateStatsCore = async () => {
-  const startDate = new Date('2022-08-01').getTime()
+  const startDate = new Date('2022-08-07').getTime()
+  const today = Date.now()
+  const numberOfDays = Math.floor((today - startDate) / DAY_MS)
 
   log('Fetching data for stats update...')
   const [dailyBets, dailyContracts, dailyComments, dailyNewUsers] =
