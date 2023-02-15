@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "yarn compile && yarn --cwd=../shared alias && yarn alias && yarn dist",
+    "build": "yarn compile && yarn --cwd=../../common alias && yarn --cwd=../shared alias && yarn alias && yarn dist",
     "dist": "yarn dist:prepare && yarn dist:copy",
     "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib dist/backend/shared/lib dist/backend/replicator/lib",
     "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ../shared/lib/* dist/backend/shared/lib && cp -R ./lib/* dist/backend/replicator/lib && cp ../../yarn.lock dist && cp package.json dist",
