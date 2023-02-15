@@ -103,8 +103,7 @@ export async function getDailyNewUsers(
 }
 
 export const updateStatsCore = async () => {
-  const today = Date.now()
-  const startDate = today - numberOfDays * DAY_MS
+  const startDate = new Date('2022-08-01').getTime()
 
   log('Fetching data for stats update...')
   const [dailyBets, dailyContracts, dailyComments, dailyNewUsers] =
@@ -312,5 +311,5 @@ export const updateStatsCore = async () => {
 
 export const updateStats = functions
   .runWith({ memory: '1GB', timeoutSeconds: 540 })
-  .pubsub.schedule('every 60 minutes')
+  .pubsub.schedule('every 12 hours')
   .onRun(updateStatsCore)
