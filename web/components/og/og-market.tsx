@@ -54,10 +54,9 @@ export function OgMarket(props: OgCardProps) {
               label={numericValue ?? probability}
             />
           ) : (
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             <TimeProb
-              date={data.at(-1)!.x}
-              prob={data.at(-1)!.y}
+              date={data[data.length - 1].x}
+              prob={data[data.length - 1].y}
               label={numericValue}
             />
           )}
