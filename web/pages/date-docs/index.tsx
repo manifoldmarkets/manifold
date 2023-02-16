@@ -62,7 +62,7 @@ export default function DatePage(props: {
             </Link>
           )}
         </Row>
-        <Col className="gap-4">
+        <Col className="gap-6">
           {dateDocs.map((dateDoc, i) => (
             <DateDocPost
               key={dateDoc.id}
