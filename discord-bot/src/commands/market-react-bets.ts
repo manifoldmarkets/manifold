@@ -78,6 +78,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await handleBet(reaction, user, channel, message, market)
   })
 
+  // Removed the un react action for now
   // collector.on('remove', async (reaction, user) => {
   //   const message = reaction.message.partial
   //     ? await reaction.message.fetch()
@@ -109,19 +110,15 @@ const sendMarketIntro = async (
   }
 
   let content = `**[${market.question}](${link})**\n\nReact to this message to bet in the market:\n\n`
-  let yesBets = 'To bet YES:'
-  let noBets = 'To bet NO:'
+  let yesBetsLine = 'Bet YES (in M):'
+  let noBetsLine = 'Bet NO (in M):'
   for (const emoji in bettingEmojis) {
-    const { outcome, amount } = bettingEmojis[emoji]
-    if (outcome === 'YES')
-      yesBets += `   M${amount}:  ${getEmoji(interaction.guild, emoji)}   or`
-    else noBets += `   M${amount}:  ${getEmoji(interaction.guild, emoji)}   or`
+    const { outcome } = bettingEmojis[emoji]
+    const emojiText = ` ${getEmoji(interaction.guild, emoji)}  `
+    outcome === 'YES' ? (yesBetsLine += emojiText) : (noBetsLine += emojiText)
   }
-  content += yesBets.slice(0, -3) + '\n\n' + noBets.slice(0, -3) + '\n\n'
-  // for (const emoji in otherEmojis) {
-  //   const text = otherEmojis[emoji]
-  //   content += `${emoji} - ${text}\n`
-  // }
+  content += yesBetsLine + '  ' + noBetsLine + '\n\n'
+
   content += `Current Probability: ${Math.round(market.probability * 100)}%`
   await message.suppressEmbeds(true)
   message = await interaction.editReply({

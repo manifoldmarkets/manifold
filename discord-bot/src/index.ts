@@ -189,6 +189,7 @@ const handleOldReaction = async (
 
 client.on(Events.MessageReactionAdd, handleOldReaction)
 
+// Removed the un react action for now
 // client.on(
 //   Events.MessageReactionRemove,
 //   (
@@ -196,8 +197,8 @@ client.on(Events.MessageReactionAdd, handleOldReaction)
 //     user: User | PartialUser
 //   ) => handleOldReaction(reaction, user, true)
 // )
-// Subscribe to the messages creation event
-client.on('messageCreate', async (message) => {
+
+client.on(Events.MessageCreate, async (message) => {
   // Here you check for channel type
   // We only need direct messages here, so skip other messages
   if (!message.channel.isDMBased()) return

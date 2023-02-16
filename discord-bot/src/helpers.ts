@@ -45,6 +45,7 @@ export const handleBet = async (
       } catch (error) {
         console.error('Failed to remove reactions.')
       }
+      return
     }
 
     const outcome = sale ? (buyOutcome === 'YES' ? 'NO' : 'YES') : buyOutcome
