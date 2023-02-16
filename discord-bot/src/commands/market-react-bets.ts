@@ -10,13 +10,7 @@ import {
   messagesHandledViaInteraction,
   registerHelpMessage,
 } from '../common.js'
-import {
-  bettingEmojis,
-  customEmojis,
-  emojis,
-  getEmoji,
-  otherEmojis,
-} from '../emojis.js'
+import { bettingEmojis, customEmojis, emojis, getEmoji } from '../emojis.js'
 import {
   getMarketFromSlug,
   getSlug,
@@ -44,7 +38,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     )
     return
   }
-  const market = await getMarketFromSlug(link, (error) =>
+  const market = await getMarketFromSlug(slug, (error) =>
     interaction.reply(error)
   )
   if (!market) return
@@ -90,22 +84,8 @@ const sendMarketIntro = async (
   interaction: ChatInputCommandInteraction,
   link: string
 ) => {
-  let content = `React to this message to bet in the market: ${link}\n`
-  let yesBets = 'To bet YES:'
-  let noBets = 'To bet NO:'
-  for (const emoji in bettingEmojis) {
-    const { outcome, amount } = bettingEmojis[emoji]
-    if (outcome === 'YES')
-      yesBets += `   M${amount}:  ${getEmoji(interaction.guild, emoji)}   or`
-    else noBets += `   M${amount}:  ${getEmoji(interaction.guild, emoji)}   or`
-  }
-  content += yesBets.slice(0, -3) + '\n' + noBets.slice(0, -3) + '\n'
-  for (const emoji in otherEmojis) {
-    const text = otherEmojis[emoji]
-    content += `${emoji} - ${text}\n`
-  }
-  const message = await interaction.reply({
-    content,
+  let message = await interaction.reply({
+    content: 'Loading market...',
     fetchReply: true,
   })
   messagesHandledViaInteraction.add(message.id)
@@ -119,5 +99,23 @@ const sendMarketIntro = async (
       if (reactionEmoji) await message.react(reactionEmoji)
     } else await message.react(emoji)
   }
+
+  let content = `React to this message to bet in the market: ${link}\n\n`
+  let yesBets = 'To bet YES:'
+  let noBets = 'To bet NO:'
+  for (const emoji in bettingEmojis) {
+    const { outcome, amount } = bettingEmojis[emoji]
+    if (outcome === 'YES')
+      yesBets += `   M${amount}:  ${getEmoji(interaction.guild, emoji)}   or`
+    else noBets += `   M${amount}:  ${getEmoji(interaction.guild, emoji)}   or`
+  }
+  content += yesBets.slice(0, -3) + '\n\n' + noBets.slice(0, -3) + '\n'
+  // for (const emoji in otherEmojis) {
+  //   const text = otherEmojis[emoji]
+  //   content += `${emoji} - ${text}\n`
+  // }
+  message = await interaction.editReply({
+    content,
+  })
   return message
 }

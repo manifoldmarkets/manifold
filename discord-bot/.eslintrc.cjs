@@ -1,5 +1,5 @@
 module.exports = {
-    plugins: ['lodash',"@typescript-eslint", 'unused-imports','import'],
+    plugins: ["@typescript-eslint", 'unused-imports','import'],
     extends: ['eslint:recommended',"plugin:import/typescript"],
     ignorePatterns: [ 'lib'],
     env: {
@@ -35,7 +35,6 @@ module.exports = {
             'error',
             process.platform === 'win32' ? 'windows' : 'unix',
         ],
-        'lodash/import-scope': [2, 'member'],
         "import/extensions": ["error", "ignorePackages"],
     },
 }

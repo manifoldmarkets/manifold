@@ -73,7 +73,7 @@ export const handleBet = async (
 }
 
 const getThread = async (channel: TextChannel, marketSlug: string) => {
-  const name = `market-bot-bets-${marketSlug}`
+  const name = `${marketSlug}-activity`
   if (discordThreads[name]) return discordThreads[name]
   let thread = channel.threads.cache.find((x) => x.name === name)
   if (thread) return thread
