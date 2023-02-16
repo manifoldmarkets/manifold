@@ -27,7 +27,7 @@ import {
   getMarketFromSlug,
   getSlug,
   handleBet,
-  sendThreadMessage,
+  sendThreadErrorMessage,
 } from './helpers.js'
 import { registerApiKey } from './register-api-key.js'
 
@@ -157,16 +157,36 @@ const handleOldReaction = async (
   const { channelId } = message
   const channel = await client.channels.fetch(channelId)
   if (!channel || !channel.isTextBased()) return
-  // find the market link in the message - will start with https://manifold.markets
   const { content } = message
   if (!content) return
   const index = content.indexOf('https://manifold.markets/')
-  if (index === -1) return
-  const link = content.substring(index).split('\n')[0]
+  if (index === -1) {
+    await sendThreadErrorMessage(
+      channel as TextChannel,
+      'Link-not-found-error',
+      'Could not find market link in message',
+      user as User
+    )
+    return
+  }
+  const link = content.substring(index).split(')')[0]
   const slug = getSlug(link)
-  if (!slug) return
+  if (!slug) {
+    await sendThreadErrorMessage(
+      channel as TextChannel,
+      `Slug-not-found-error-${link}`,
+      'Could not find market slug in message',
+      user as User
+    )
+    return
+  }
   const market = await getMarketFromSlug(slug, (error) =>
-    sendThreadMessage(channel as TextChannel, slug, error, user as User)
+    sendThreadErrorMessage(
+      channel as TextChannel,
+      `Error-${slug}`,
+      error,
+      user as User
+    )
   )
   if (!market) return
   await handleBet(

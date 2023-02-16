@@ -1,3 +1,4 @@
+import * as console from 'console'
 import {
   Message,
   MessageReaction,
@@ -59,34 +60,58 @@ export const handleBet = async (
     })
     if (!resp.ok) {
       const content = `Error: ${resp.statusText}`
-      await sendThreadMessage(channel, slug, content, user)
+      await sendThreadMessage(channel, market, content, user)
       return
     }
     const content = `${user.tag} ${
       sale ? 'sold' : 'bet'
-    } M$${amount} on ${buyOutcome} in "${market.question}"!`
-    await sendThreadMessage(channel, slug, content, user)
+    } M$${amount} on ${buyOutcome}.`
+    await sendThreadMessage(channel, market, content, user)
+    const bet = await resp.json()
+    console.log(message.content)
+    await message.edit({
+      content: getNewMessageContent(message.content, bet.probAfter),
+    })
   } catch (e) {
     const content = `Error: ${e}`
-    await sendThreadMessage(channel, slug, content, user)
+    await sendThreadMessage(channel, market, content, user)
   }
 }
 
-const getThread = async (channel: TextChannel, marketSlug: string) => {
-  const name = `${marketSlug}-activity`
+const getNewMessageContent = (content: string, newProb: number) => {
+  const probString = content.split('Current Probability: ')[1]
+  const newProbString = Math.round(newProb * 100) + '%'
+  return content.replace(probString, newProbString)
+}
+
+const getThread = async (
+  channel: TextChannel,
+  name: string,
+  title?: string
+) => {
   if (discordThreads[name]) return discordThreads[name]
   let thread = channel.threads.cache.find((x) => x.name === name)
   if (thread) return thread
   thread = await channel.threads.create({
     name,
     autoArchiveDuration: 60,
-    reason: 'Activity feed for market at ' + marketSlug,
+    reason: 'Activity feed for market: ' + title ?? name,
   })
   discordThreads[name] = thread
   return thread
 }
 
 export const sendThreadMessage = async (
+  channel: TextChannel,
+  market: FullMarket,
+  content: string,
+  user: User
+) => {
+  const thread = await getThread(channel, market.question)
+  await Promise.all([thread.members.add(user), thread.send(content)])
+}
+
+export const sendThreadErrorMessage = async (
   channel: TextChannel,
   marketSlug: string,
   content: string,
@@ -104,14 +129,12 @@ export const getMarketFromSlug = async (
   slug: string,
   errorCallback?: (message: string) => void
 ) => {
-  const market: FullMarket = await fetch(
-    `https://manifold.markets/api/v0/slug/${slug}`
-  ).then((res) => res.json())
-
-  if (!market) {
+  const resp = await fetch(`https://manifold.markets/api/v0/slug/${slug}`)
+  if (!resp.ok) {
     await errorCallback?.('Market not found with slug: ' + slug)
     return
   }
+  const market = await resp.json()
   if (market.isResolved || (market.closeTime ?? 0) < Date.now()) {
     await errorCallback?.('Market is resolved, no longer accepting bets')
     return

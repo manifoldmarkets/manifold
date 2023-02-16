@@ -6,6 +6,7 @@ import {
   TextChannel,
   User,
 } from 'discord.js'
+import { FullMarket } from 'manifold-sdk'
 import {
   messagesHandledViaInteraction,
   registerHelpMessage,
@@ -43,7 +44,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )
   if (!market) return
 
-  const message = await sendMarketIntro(interaction, link)
+  const message = await sendMarketIntro(interaction, market, link)
 
   const filter = (reaction: MessageReaction, user: User) => {
     if (user.id === message.author.id) return false
@@ -59,14 +60,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     // Market description
     if (name === 'ℹ️') {
       const content = `Market details: ${market.textDescription}`
-      await sendThreadMessage(channel, slug, content, user)
+      await sendThreadMessage(channel, market, content, user)
       return
     }
 
     // Help
     if (name === '❓') {
       const content = `This is a market for the question: ${market.question}. You can bet on the outcome of the market by reacting to my previous message with the bet you want to make. ${registerHelpMessage}`
-      await sendThreadMessage(channel, slug, content, user)
+      await sendThreadMessage(channel, market, content, user)
       return
     }
 
@@ -82,6 +83,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
 const sendMarketIntro = async (
   interaction: ChatInputCommandInteraction,
+  market: FullMarket,
   link: string
 ) => {
   let message = await interaction.reply({
@@ -100,7 +102,7 @@ const sendMarketIntro = async (
     } else await message.react(emoji)
   }
 
-  let content = `React to this message to bet in the market: ${link}\n\n`
+  let content = `**[${market.question}](${link})**\n\nReact to this message to bet in the market:\n\n`
   let yesBets = 'To bet YES:'
   let noBets = 'To bet NO:'
   for (const emoji in bettingEmojis) {
@@ -109,11 +111,13 @@ const sendMarketIntro = async (
       yesBets += `   M${amount}:  ${getEmoji(interaction.guild, emoji)}   or`
     else noBets += `   M${amount}:  ${getEmoji(interaction.guild, emoji)}   or`
   }
-  content += yesBets.slice(0, -3) + '\n\n' + noBets.slice(0, -3) + '\n'
+  content += yesBets.slice(0, -3) + '\n\n' + noBets.slice(0, -3) + '\n\n'
   // for (const emoji in otherEmojis) {
   //   const text = otherEmojis[emoji]
   //   content += `${emoji} - ${text}\n`
   // }
+  content += `Current Probability: ${Math.round(market.probability * 100)}%`
+  await message.suppressEmbeds(true)
   message = await interaction.editReply({
     content,
   })
