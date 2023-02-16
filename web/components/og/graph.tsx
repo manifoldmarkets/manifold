@@ -87,8 +87,9 @@ export function Sparkline(props: {
   aspectRatio?: number
   min: number
   max: number
+  className?: string
 }) {
-  const { data, height: h, aspectRatio = 1, min, max } = props
+  const { data, height: h, aspectRatio = 1, min, max, className } = props
   const w = h * aspectRatio
   const visibleRange = [data[0].x, data[data.length - 1].x]
   const curve = data.length > 50 ? curveLinear : curveStepBefore
@@ -104,7 +105,7 @@ export function Sparkline(props: {
   const dl = line(px, py1).curve(curve)(data)!
 
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className={className}>
       <path
         d={dl}
         stroke={color}
