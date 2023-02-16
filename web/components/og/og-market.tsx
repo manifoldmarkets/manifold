@@ -3,10 +3,7 @@ import clsx from 'clsx'
 import { Sparkline } from './graph'
 import { base64toPoints, Point } from 'common/edge/og'
 
-// Notes for working with this:
-// - Some css elements are missing or broken (e.g. 'gap' and 'text-ellipsis' and 'line-clamp')
-// - I also can't make things overflow hidden in only one direction
-// - Every element should have `flex` set
+// See https://github.com/vercel/satori#documentation for styling restrictions
 export function OgMarket(props: OgCardProps) {
   const {
     question,
@@ -23,7 +20,7 @@ export function OgMarket(props: OgCardProps) {
   const data = points ? (base64toPoints(points) as Point[]) : []
 
   return (
-    <div className="flex h-full w-full flex-col justify-between bg-white py-8">
+    <div className="flex h-full w-full flex-col items-stretch justify-between bg-white py-8">
       <div
         className={clsx(
           'flex overflow-hidden px-24 text-5xl leading-tight text-indigo-700',
@@ -32,45 +29,45 @@ export function OgMarket(props: OgCardProps) {
       >
         {question}
       </div>
-      <div className="flex w-full flex-row pr-24">
-        {data.length ? (
-          <>
-            <Sparkline
-              data={data}
-              height={300}
-              aspectRatio={3.2}
-              min={0}
-              max={1}
-              className="mr-4"
+      {data.length ? (
+        <div className="flex w-full pr-24">
+          <Sparkline
+            data={data}
+            height={300}
+            aspectRatio={3.2}
+            min={0}
+            max={1}
+            className="mr-4"
+          />
+          {resolution ? (
+            <Resolution
+              resolution={resolution}
+              label={probability ?? numericValue}
             />
-            {resolution ? (
-              <Resolution
-                resolution={resolution}
-                label={probability ?? numericValue}
-              />
-            ) : (
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              <TimeProb date={data.at(-1)!.x} prob={data.at(-1)!.y} />
-            )}
-          </>
-        ) : (
-          <div className="flex w-full flex-row items-center justify-end px-24">
-            {resolution && !topAnswer ? (
-              <Resolution
-                resolution={resolution}
-                label={probability ?? numericValue}
-              />
-            ) : numericValue ? (
-              <NumericValue number={numericValue} />
-            ) : topAnswer ? (
-              <Answer {...props} />
-            ) : null}
-          </div>
-        )}
-      </div>
+          ) : (
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            <TimeProb date={data.at(-1)!.x} prob={data.at(-1)!.y} />
+          )}
+        </div>
+      ) : topAnswer ? (
+        <div className="flex w-full flex-row items-center justify-between px-24">
+          <Answer {...props} />
+        </div>
+      ) : (
+        <div className="flex w-full flex-row items-center justify-end px-24">
+          {resolution && !topAnswer ? (
+            <Resolution
+              resolution={resolution}
+              label={probability ?? numericValue}
+            />
+          ) : numericValue ? (
+            <NumericValue number={numericValue} />
+          ) : null}
+        </div>
+      )}
 
       {/* Bottom row */}
-      <div className="flex w-full flex-row items-center justify-between self-stretch px-24 text-3xl text-gray-600">
+      <div className="flex w-full flex-row items-center justify-between px-24 text-3xl text-gray-600">
         {/* Details */}
         <div className="flex items-center">
           <div className="mr-6 flex items-center">
@@ -113,11 +110,11 @@ function Answer(props: OgCardProps) {
   const { probability, topAnswer, resolution } = props
   return (
     <>
-      <span className="max-h-[9rem] w-full overflow-hidden pr-8 text-start text-5xl">
+      <span className="max-h-[9rem] w-[880px] overflow-hidden text-5xl">
         {topAnswer}
       </span>
       {!resolution && (
-        <div className="flex h-full flex-col items-center justify-center">
+        <div className="flex flex-col items-center">
           <span className="text-6xl">{probability}</span>
           <span className="text-4xl">chance</span>
         </div>
@@ -128,7 +125,7 @@ function Answer(props: OgCardProps) {
 
 function NumericValue(props: { number: string }) {
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center justify-center">
       <span className="text-6xl">{props.number}</span>
       <span className="text-4xl">expected</span>
     </div>
@@ -153,7 +150,7 @@ function Resolution(props: { resolution: string; label?: string }) {
   }[resolution]
 
   return (
-    <div className={`flex flex-col ${color} justify-center`}>
+    <div className={`flex flex-col ${color} items-center justify-center`}>
       <span className="text-4xl">resolved</span>
       <span className="text-6xl">{text}</span>
     </div>
