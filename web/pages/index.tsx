@@ -217,12 +217,12 @@ export function PredictionMarketExplainer() {
   return (
     <>
       <p>
-        Prediction markets allow you to bet on the outcome of future events. On
-        Manifold, anyone can create their own prediction market about any
-        question they want!
+        Prediction markets let you bet on the outcome of future events. On
+        Manifold, you can create your own prediction market on any question you
+        want!
       </p>
       <div className="mt-4 font-semibold text-gray-400">EXAMPLE</div>
-      <div className="mb-4 border-l-2 border-indigo-700 bg-indigo-50 py-2 px-2">
+      <div className="mb-4 border-l-2 border-indigo-700 bg-indigo-50 py-2 px-2 text-sm">
         <p className="mt-2">
           <span className="font-semibold text-indigo-700">
             "Will Democrats win the 2024 US presidential election?"
