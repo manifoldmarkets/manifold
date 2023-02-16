@@ -29,6 +29,7 @@ import {
   handleBet,
   sendThreadMessage,
 } from './helpers.js'
+import { registerApiKey } from './register-api-key.js'
 
 const require = createRequire(import.meta.url)
 const Config = require('../config.json')
@@ -73,6 +74,7 @@ export const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.DirectMessages,
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 })
@@ -186,3 +188,11 @@ client.on(
     user: User | PartialUser
   ) => handleOldReaction(reaction, user, true)
 )
+// Subscribe to the messages creation event
+client.on('messageCreate', async (message) => {
+  // Here you check for channel type
+  // We only need direct messages here, so skip other messages
+  if (!message.channel.isDMBased()) return
+  if (message.author.id === client.user?.id) return
+  await registerApiKey(message)
+})

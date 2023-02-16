@@ -6,7 +6,7 @@ import {
   User,
 } from 'discord.js'
 import { FullMarket } from 'manifold-sdk'
-import { getAPIInstance } from './common.js'
+import { getAPIInstance, registerHelpMessage } from './common.js'
 import { bettingEmojis, customEmojis } from './emojis.js'
 
 const discordThreads: { [key: string]: ThreadChannel } = {}
@@ -27,8 +27,9 @@ export const handleBet = async (
   const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
   const slug = getSlug(market.url) ?? 'error'
   try {
-    const api = await getAPIInstance(user, !sale)
-    if (!api) {
+    const api = await getAPIInstance(user, async () => {
+      if (sale) return
+      user.send(registerHelpMessage)
       const userReactions = message.reactions.cache.filter((reaction) =>
         reaction.users.cache.has(user.id)
       )
@@ -39,8 +40,9 @@ export const handleBet = async (
       } catch (error) {
         console.error('Failed to remove reactions.')
       }
-      return
-    }
+    })
+    if (!api) return
+
     const outcome = sale ? (buyOutcome === 'YES' ? 'NO' : 'YES') : buyOutcome
     // send json post request to api
     const resp = await fetch('https://manifold.markets/api/v0/bet', {
