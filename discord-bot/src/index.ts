@@ -8,15 +8,27 @@ import {
   Collection,
   Events,
   GatewayIntentBits,
+  MessageReaction,
+  PartialMessageReaction,
   Partials,
+  PartialUser,
   Routes,
   SlashCommandBuilder,
+  TextChannel,
+  User,
 } from 'discord.js'
 import { REST } from '@discordjs/rest'
 import { createRequire } from 'node:module'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import * as fs from 'fs'
+import { messagesHandledViaInteraction } from './common.js'
+import {
+  getMarketFromSlug,
+  getSlug,
+  handleBet,
+  sendThreadMessage,
+} from './helpers.js'
 
 const require = createRequire(import.meta.url)
 const Config = require('../config.json')
@@ -86,7 +98,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 })
 
 client.login(token)
-console.log('OK')
+console.log('Logged in')
 
 process.stdout.write('Refreshing slash commands... ')
 try {
@@ -101,25 +113,76 @@ try {
   console.log('ERROR')
   console.error(error)
 }
+const handleOldReaction = async (
+  reaction: MessageReaction | PartialMessageReaction,
+  user: User | PartialUser,
+  removal?: boolean
+) => {
+  const ignore = messagesHandledViaInteraction.has(reaction.message.id)
+  console.log(`ignoring reaction:${ignore}`)
+  if (ignore) return
 
-client.on(Events.MessageReactionAdd, async (reaction, user) => {
-  // When a reaction is received, check if the structure is partial
-  if (reaction.partial) {
+  console.log('handling old reaction')
+
+  if (!reaction.partial) {
     // If the message this reaction belongs to was removed, the fetching might result in an API error which should be handled
     try {
-      await reaction.fetch()
+      reaction = await reaction.fetch()
     } catch (error) {
       console.error('Something went wrong when fetching the message:', error)
-      // Return as `reaction.message.author` may be undefined/null
       return
     }
   }
-  // Now the message has been cached and is fully available
-  console.log(
-    `${reaction.message.author}'s message "${reaction.message.content}" gained a reaction!`
+
+  if (user.partial) {
+    try {
+      user = await user.fetch()
+    } catch (error) {
+      console.error('Something went wrong when fetching the user:', error)
+      return
+    }
+  }
+
+  let { message } = reaction
+  if (message.partial) {
+    try {
+      message = await message.fetch()
+    } catch (error) {
+      console.error('Something went wrong when fetching the message:', error)
+      return
+    }
+  }
+  const { channelId } = message
+  const channel = await client.channels.fetch(channelId)
+  if (!channel || !channel.isTextBased()) return
+  // find the market link in the message - will start with https://manifold.markets
+  const { content } = message
+  if (!content) return
+  const index = content.indexOf('https://manifold.markets/')
+  if (index === -1) return
+  const link = content.substring(index).split('\n')[0]
+  const slug = getSlug(link)
+  if (!slug) return
+  const market = await getMarketFromSlug(slug, (error) =>
+    sendThreadMessage(channel as TextChannel, slug, error, user as User)
   )
-  // The reaction is now also fully available and the properties will be reflected accurately:
-  console.log(
-    `${reaction.count} user(s) have given the same reaction to this message!`
+  if (!market) return
+  await handleBet(
+    reaction as MessageReaction,
+    user,
+    channel as TextChannel,
+    message,
+    market,
+    removal
   )
-})
+}
+
+client.on(Events.MessageReactionAdd, handleOldReaction)
+
+client.on(
+  Events.MessageReactionRemove,
+  (
+    reaction: PartialMessageReaction | MessageReaction,
+    user: User | PartialUser
+  ) => handleOldReaction(reaction, user, true)
+)

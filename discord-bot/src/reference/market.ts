@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js'
-import { FullMarket } from 'manifold-sdk'
-import { channelMarkets, getMarketByID, getMarketByTitle } from '../common.js'
+import { FullMarket, LiteMarket, Manifold } from 'manifold-sdk'
+import { channelMarkets } from '../common.js'
 
 export const data = new SlashCommandBuilder()
   .setName('market')
@@ -12,6 +12,61 @@ export const data = new SlashCommandBuilder()
         'name of the market; required if not in a channel with a default market'
       )
   )
+
+const api = new Manifold()
+const marketsCache = {
+  // No guarantees about order except that the newest market is always in markets[0]
+  markets: [] as LiteMarket[], //     markets: await api.getAllMarkets(),
+  updateTime: Date.now(),
+}
+
+export async function allMarkets() {
+  // cache still valid for 60 seconds
+  if (Date.now() - marketsCache.updateTime < 1000 * 60)
+    return marketsCache.markets
+
+  const newestInCacheID = marketsCache.markets[0].id
+  infloop: for (;;) {
+    const newest1000Markets = await api.getMarkets({})
+    if (!newest1000Markets.length) {
+      marketsCache.updateTime = Date.now()
+      return marketsCache.markets
+    }
+
+    for (const market of newest1000Markets) {
+      if (market.id === newestInCacheID) break infloop
+      marketsCache.markets.unshift(market)
+    }
+  }
+
+  marketsCache.updateTime = Date.now()
+  return marketsCache.markets
+}
+
+export async function getMarketByTitle(
+  query: string,
+  options?: { exact: boolean }
+) {
+  query = query.toLowerCase().trim()
+  for (const m of await allMarkets()) {
+    if (options?.exact) {
+      if (m.question.toLowerCase().trim() === query)
+        return api.getMarket({ id: m.id })
+    } else {
+      if (m.question.toLowerCase().includes(query))
+        return api.getMarket({ id: m.id })
+    }
+  }
+  return null
+}
+
+export async function getMarketByID(id: string) {
+  try {
+    return api.getMarket({ id })
+  } catch (e) {
+    return null
+  }
+}
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   const query = interaction.options.getString('query')!

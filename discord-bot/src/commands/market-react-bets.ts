@@ -4,11 +4,12 @@ import {
   MessageReaction,
   SlashCommandBuilder,
   TextChannel,
-  ThreadChannel,
   User,
 } from 'discord.js'
-import { FullMarket } from 'manifold-sdk'
-import { getAPIInstance, registerHelpMessage } from '../common.js'
+import {
+  messagesHandledViaInteraction,
+  registerHelpMessage,
+} from '../common.js'
 import {
   bettingEmojis,
   customEmojis,
@@ -16,6 +17,12 @@ import {
   getEmoji,
   otherEmojis,
 } from '../emojis.js'
+import {
+  getMarketFromSlug,
+  getSlug,
+  handleBet,
+  sendThreadMessage,
+} from '../helpers.js'
 
 export const data = new SlashCommandBuilder()
   .setName('market')
@@ -24,16 +31,22 @@ export const data = new SlashCommandBuilder()
     option.setName('link').setDescription('The link to the market to bet on')
   )
 
-const channels: { [key: string]: ThreadChannel } = {}
-
 export async function execute(interaction: ChatInputCommandInteraction) {
   const link = interaction.options.getString('link')
   if (!link) {
     await interaction.reply('You must specify a market link')
     return
   }
-
-  const market = await getMarketFromLink(interaction, link)
+  const slug = getSlug(link)
+  if (!slug) {
+    await interaction.reply(
+      'Invalid market link, could not find slug from link'
+    )
+    return
+  }
+  const market = await getMarketFromSlug(link, (error) =>
+    interaction.reply(error)
+  )
   if (!market) return
 
   const message = await sendMarketIntro(interaction, link)
@@ -44,7 +57,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   const collector = message.createReactionCollector({ filter, dispose: true })
-
+  const channel = interaction.channel as TextChannel
   collector.on('collect', async (reaction, user) => {
     const { name } = reaction.emoji
     console.log(`Collected ${name} from user id: ${user.id}`)
@@ -52,112 +65,25 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     // Market description
     if (name === 'ℹ️') {
       const content = `Market details: ${market.textDescription}`
-      await sendThreadMessage(
-        interaction.channel as TextChannel,
-        market,
-        content,
-        user
-      )
+      await sendThreadMessage(channel, slug, content, user)
       return
     }
 
     // Help
     if (name === '❓') {
       const content = `This is a market for the question: ${market.question}. You can bet on the outcome of the market by reacting to my previous message with the bet you want to make. ${registerHelpMessage}`
-      await sendThreadMessage(
-        interaction.channel as TextChannel,
-        market,
-        content,
-        user
-      )
+      await sendThreadMessage(channel, slug, content, user)
       return
     }
 
     // Attempt to place a bet
-    await handleBet(reaction, user)
+    await handleBet(reaction, user, channel, message, market)
   })
 
   collector.on('remove', async (reaction, user) => {
     console.log(`${user.id} removed the reaction ${reaction.emoji.name}`)
-    await handleBet(reaction, user, true)
+    await handleBet(reaction, user, channel, message, market, true)
   })
-
-  const handleBet = async (
-    reaction: MessageReaction,
-    user: User,
-    sale?: boolean
-  ) => {
-    const emojiKey = customEmojis.includes(reaction.emoji.id ?? '_')
-      ? reaction.emoji.id
-      : reaction.emoji.name
-    if (!emojiKey || !Object.keys(bettingEmojis).includes(emojiKey)) return
-
-    const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
-    try {
-      const api = await getAPIInstance(user, !sale)
-      if (!api) {
-        const userReactions = message.reactions.cache.filter((reaction) =>
-          reaction.users.cache.has(user.id)
-        )
-        try {
-          for (const reaction of userReactions.values()) {
-            await reaction.users.remove(user.id)
-          }
-        } catch (error) {
-          console.error('Failed to remove reactions.')
-        }
-        return
-      }
-      const outcome = sale ? (buyOutcome === 'YES' ? 'NO' : 'YES') : buyOutcome
-      await api.createBet({
-        amount,
-        marketId: market.id,
-        outcome,
-      })
-      const content = `${user.tag} ${
-        sale ? 'sold' : 'bet'
-      } M$${amount} on ${buyOutcome} in "${market.question}"!`
-      await sendThreadMessage(
-        interaction.channel as TextChannel,
-        market,
-        content,
-        user
-      )
-    } catch (e) {
-      const content = `Error: ${e}`
-      await sendThreadMessage(
-        interaction.channel as TextChannel,
-        market,
-        content,
-        user
-      )
-    }
-  }
-}
-
-const getThread = async (channel: TextChannel, market: FullMarket) => {
-  const slug = market.url.split('/').pop()
-  const name = `market-bot-bets-${slug}`
-  if (channels[name]) return channels[name]
-  let thread = channel.threads.cache.find((x) => x.name === name)
-  if (thread) return thread
-  thread = await channel.threads.create({
-    name,
-    autoArchiveDuration: 60,
-    reason: 'Bet status for market' + market.question,
-  })
-  channels[name] = thread
-  return thread
-}
-
-const sendThreadMessage = async (
-  channel: TextChannel,
-  market: FullMarket,
-  content: string,
-  user: User
-) => {
-  const thread = await getThread(channel, market)
-  await Promise.all([thread.members.add(user), thread.send(content)])
 }
 
 const sendMarketIntro = async (
@@ -182,6 +108,7 @@ const sendMarketIntro = async (
     content,
     fetchReply: true,
   })
+  messagesHandledViaInteraction.add(message.id)
 
   for (const emoji of emojis) {
     if (customEmojis.includes(emoji)) {
@@ -193,29 +120,4 @@ const sendMarketIntro = async (
     } else await message.react(emoji)
   }
   return message
-}
-
-const getMarketFromLink = async (
-  interaction: ChatInputCommandInteraction,
-  link: string
-) => {
-  // get the last part of the link, which is the slug, filtering out qeuries and #
-  const slug = link.split('/').pop()?.split('?')[0].split('#')[0]
-  console.log('found market with slug:', slug)
-  if (!slug) {
-    await interaction.reply(
-      'Invalid market link, could not find slug from link'
-    )
-    return
-  }
-
-  const market: FullMarket = await fetch(
-    `https://manifold.markets/api/v0/slug/${slug}`
-  ).then((res) => res.json())
-
-  if (!market) {
-    await interaction.reply('Market not found with slug: ' + slug)
-    return
-  }
-  return market
 }
