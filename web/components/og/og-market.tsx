@@ -7,8 +7,6 @@ import { base64toPoints, Point } from 'common/edge/og'
 export function OgMarket(props: OgCardProps) {
   const {
     question,
-    numTraders,
-    volume,
     creatorName,
     creatorAvatarUrl,
     probability,
@@ -17,19 +15,28 @@ export function OgMarket(props: OgCardProps) {
     topAnswer,
     points,
   } = props
+
   const data = points ? (base64toPoints(points) as Point[]) : []
+  const volume = Number(props.volume ?? 0)
+  const numTraders = Number(props.numTraders ?? 0)
+
+  const showGraph = data && data.length > 5
 
   return (
     <div className="flex h-full w-full flex-col items-stretch justify-between bg-white py-8">
       <div
         className={clsx(
-          'flex overflow-hidden px-24 text-5xl leading-tight text-indigo-700',
-          topAnswer ? 'max-h-56' : 'max-h-[20rem]'
+          'flex overflow-hidden px-24 leading-tight text-indigo-700',
+          showGraph ? 'text-5xl' : 'max-h-[300px] text-6xl'
         )}
       >
         {question}
       </div>
-      {data.length ? (
+      {topAnswer ? (
+        <div className="flex w-full flex-row items-center justify-between px-24">
+          <Answer {...props} />
+        </div>
+      ) : showGraph ? (
         <div className="flex w-full pr-24">
           <Sparkline
             data={data}
@@ -42,26 +49,24 @@ export function OgMarket(props: OgCardProps) {
           {resolution ? (
             <Resolution
               resolution={resolution}
-              label={probability ?? numericValue}
+              label={numericValue ?? probability}
             />
           ) : (
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             <TimeProb date={data.at(-1)!.x} prob={data.at(-1)!.y} />
           )}
         </div>
-      ) : topAnswer ? (
-        <div className="flex w-full flex-row items-center justify-between px-24">
-          <Answer {...props} />
-        </div>
       ) : (
         <div className="flex w-full flex-row items-center justify-end px-24">
-          {resolution && !topAnswer ? (
+          {resolution ? (
             <Resolution
               resolution={resolution}
-              label={probability ?? numericValue}
+              label={numericValue ?? probability}
             />
           ) : numericValue ? (
-            <NumericValue number={numericValue} />
+            <EndValue value={numericValue} label="expected" />
+          ) : probability ? (
+            <EndValue value={probability} label="chance" />
           ) : null}
         </div>
       )}
@@ -81,9 +86,15 @@ export function OgMarket(props: OgCardProps) {
             <span>{creatorName}</span>
           </div>
 
-          <span className="mr-6">$M{volume} bet</span>
+          {!!volume && (
+            <span className="mr-6">$M{volume.toLocaleString('en-US')} bet</span>
+          )}
 
-          <span className="mr-6">{numTraders} traders</span>
+          {!!numTraders && (
+            <span className="mr-6">
+              {numTraders.toLocaleString('en-US')} traders
+            </span>
+          )}
         </div>
 
         {/* Manifold logo */}
@@ -113,21 +124,18 @@ function Answer(props: OgCardProps) {
       <span className="max-h-[9rem] w-[880px] overflow-hidden text-5xl">
         {topAnswer}
       </span>
-      {!resolution && (
-        <div className="flex flex-col items-center">
-          <span className="text-6xl">{probability}</span>
-          <span className="text-4xl">chance</span>
-        </div>
+      {!resolution && probability && (
+        <EndValue value={probability} label="chance" />
       )}
     </>
   )
 }
 
-function NumericValue(props: { number: string }) {
+function EndValue(props: { value: string; label: string }) {
   return (
     <div className="flex flex-col items-center justify-center">
-      <span className="text-6xl">{props.number}</span>
-      <span className="text-4xl">expected</span>
+      <span className="text-6xl">{props.value}</span>
+      <span className="text-4xl">{props.label}</span>
     </div>
   )
 }

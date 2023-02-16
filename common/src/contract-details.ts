@@ -60,8 +60,8 @@ export const getOpenGraphProps = (
 
   return {
     question,
-    numTraders: formatWithCommas(uniqueBettorCount ?? 0),
-    volume: formatWithCommas(volume),
+    numTraders: (uniqueBettorCount ?? 0).toString(),
+    volume: Math.floor(volume).toString(),
     probability: probPercent,
     creatorName,
     creatorAvatarUrl,
@@ -73,15 +73,15 @@ export const getOpenGraphProps = (
 
 export type OgCardProps = {
   question: string
-  numTraders: string
-  volume: string
+  numTraders: string // number
+  volume: string // number
   probability?: string
   creatorName: string
   creatorAvatarUrl?: string
   numericValue?: string
   resolution?: string
   topAnswer?: string
-  points?: string // jsonified points
+  points?: string // base64ified points
 }
 
 export function getSeoDescription(contract: Contract, ogProps: OgCardProps) {
