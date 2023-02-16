@@ -1,6 +1,5 @@
 import { Message } from 'discord.js'
-import { Manifold } from 'manifold-sdk'
-import { manifoldMap, saveManifoldMap } from './storage.js'
+import { userIdsToApiKeys, saveManifoldMap } from './storage.js'
 
 export const registerApiKey = async (message: Message) => {
   const key = message.content.trim()
@@ -16,11 +15,10 @@ export const registerApiKey = async (message: Message) => {
   })
   let failed = false
   try {
-    const api = new Manifold(key)
     me = await fetch('https://manifold.markets/api/v0/me', {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Key ${api.apiKey}`,
+        Authorization: `Key ${key}`,
       },
     }).then((r) => r.json())
   } catch (e) {
@@ -33,7 +31,7 @@ export const registerApiKey = async (message: Message) => {
     return
   }
 
-  manifoldMap[message.author.id] = key
+  userIdsToApiKeys[message.author.id] = key
   saveManifoldMap()
   await message.reply(
     `Registered Manifold account ${me.name} to user <@!${message.author.id}>`

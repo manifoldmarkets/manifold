@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js'
 import { Manifold } from 'manifold-sdk'
-import { manifoldMap, saveManifoldMap } from '../storage.js'
+import { userIdsToApiKeys, saveManifoldMap } from '../storage.js'
 
 export const data = new SlashCommandBuilder()
   .setName('register')
@@ -39,7 +39,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return
   }
 
-  manifoldMap[interaction.user.id] = key
+  userIdsToApiKeys[interaction.user.id] = key
   saveManifoldMap()
   await interaction.editReply(
     `Registered Manifold account ${me.name} to user <@!${interaction.user.id}>`

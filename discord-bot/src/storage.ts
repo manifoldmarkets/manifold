@@ -1,8 +1,8 @@
 import * as fs from 'fs'
-export const manifoldMap: { [k: string]: string } = loadManifoldMap()
+export const userIdsToApiKeys: { [k: string]: string } = loadManifoldMap()
 
 export function saveManifoldMap() {
-  fs.writeFileSync('keys.json', JSON.stringify(manifoldMap))
+  fs.writeFileSync('keys.json', JSON.stringify(userIdsToApiKeys))
 }
 
 export function loadManifoldMap() {
