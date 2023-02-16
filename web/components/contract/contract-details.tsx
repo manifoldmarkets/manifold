@@ -268,6 +268,7 @@ function EditableCloseDate(props: {
   let newCloseTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
+
   function onSave(customTime?: number) {
     if (customTime) {
       newCloseTime = customTime
@@ -279,14 +280,14 @@ function EditableCloseDate(props: {
     if (newCloseTime === closeTime) setIsEditingCloseTime(false)
     else {
       const content = contract.description
-      const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
-
       const editor = new Editor({ content, extensions: editorExtensions() })
       editor.commands.focus('end')
-      insertContent(
-        editor,
-        `<p></p><p>Close date updated to ${formattedCloseDate}</p>`
-      )
+
+      // const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
+      // insertContent(
+      //   editor,
+      //   `<p></p><p>Close date updated to ${formattedCloseDate}</p>`
+      // )
 
       updateContract(contract.id, {
         closeTime: newCloseTime,
