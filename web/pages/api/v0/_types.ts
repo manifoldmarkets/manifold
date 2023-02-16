@@ -54,6 +54,7 @@ export type FullMarket = LiteMarket & {
   answers?: ApiAnswer[]
   description: string | JSONContent
   textDescription: string // string version of description
+  coverImageUrl?: string
 }
 
 export type ApiError = {
@@ -149,7 +150,7 @@ export function toFullMarket(contract: Contract): FullMarket {
         )
       : undefined
 
-  const { description } = contract
+  const { description, coverImageUrl } = contract
 
   return {
     ...liteMarket,
@@ -159,6 +160,7 @@ export function toFullMarket(contract: Contract): FullMarket {
       typeof description === 'string'
         ? description
         : richTextToString(description),
+    coverImageUrl,
   }
 }
 
