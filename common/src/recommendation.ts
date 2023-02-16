@@ -54,6 +54,9 @@ export function getMarketRecommendations(
     const userIndex = userIdToIndex[userId]
 
     const viewedCardsOrSwipes = uniq([...viewedCardIds, ...swipedIds])
+    const yourViewedContractsSet = new Set(
+      viewedCardsOrSwipes.concat(viewedPageIds)
+    )
     const likedOrBetOnIds = uniq([...likedIds, ...betOnIds])
 
     for (const contractId of viewedCardsOrSwipes) {
@@ -87,7 +90,7 @@ export function getMarketRecommendations(
     for (const contractId of likedOrBetOnIds) {
       // Don't include contracts bet on before we recorded views.
       // If there are no views, then algorithm can just predict 1 always.
-      if (contractIdSet.has(contractId)) {
+      if (yourViewedContractsSet.has(contractId)) {
         // Predicting these bets and likes is the goal!
         sparseMatrix[userIndex][contractId] = 1
       }
