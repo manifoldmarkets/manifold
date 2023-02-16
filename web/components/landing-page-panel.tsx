@@ -66,7 +66,6 @@ export function LandingPagePanel() {
         )}
       >
         <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
-          {isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}
           {pageNumber === 0 && <LandingPage0 isMobile={isMobile} />}
           {pageNumber === 1 && <LandingPage1 isMobile={isMobile} />}
           {pageNumber === 2 && <LandingPage2 isMobile={isMobile} />}
