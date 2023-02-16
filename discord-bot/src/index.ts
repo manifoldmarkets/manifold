@@ -189,13 +189,13 @@ const handleOldReaction = async (
 
 client.on(Events.MessageReactionAdd, handleOldReaction)
 
-client.on(
-  Events.MessageReactionRemove,
-  (
-    reaction: PartialMessageReaction | MessageReaction,
-    user: User | PartialUser
-  ) => handleOldReaction(reaction, user, true)
-)
+// client.on(
+//   Events.MessageReactionRemove,
+//   (
+//     reaction: PartialMessageReaction | MessageReaction,
+//     user: User | PartialUser
+//   ) => handleOldReaction(reaction, user, true)
+// )
 // Subscribe to the messages creation event
 client.on('messageCreate', async (message) => {
   // Here you check for channel type

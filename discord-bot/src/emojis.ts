@@ -22,8 +22,8 @@ export const customEmojis = [
 ]
 
 export const otherEmojis: { [key: string]: string } = {
-  '❓': 'What is this?',
   ℹ️: 'Get the market details sent to you',
+  '❓': 'What is this?',
 }
 
 export const getEmoji = (guild: Guild | null, emojiKey: string) => {

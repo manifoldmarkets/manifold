@@ -78,13 +78,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await handleBet(reaction, user, channel, message, market)
   })
 
-  collector.on('remove', async (reaction, user) => {
-    const message = reaction.message.partial
-      ? await reaction.message.fetch()
-      : reaction.message
-
-    await handleBet(reaction, user, channel, message, market, true)
-  })
+  // collector.on('remove', async (reaction, user) => {
+  //   const message = reaction.message.partial
+  //     ? await reaction.message.fetch()
+  //     : reaction.message
+  //
+  //   await handleBet(reaction, user, channel, message, market, true)
+  // })
 }
 
 const sendMarketIntro = async (
