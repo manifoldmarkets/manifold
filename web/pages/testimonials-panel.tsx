@@ -74,7 +74,7 @@ export default function TestimonialsPanel() {
                 {STARTING_BALANCE}
               </span>
               {'   '}
-              to start predicting!
+              to start trading!
             </div>
           </div>
         </div>

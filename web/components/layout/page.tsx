@@ -12,9 +12,16 @@ export function Page(props: {
   children?: ReactNode
   logoSubheading?: string
   touchesTop?: boolean
+  hideSidebar?: boolean
 }) {
-  const { children, rightSidebar, className, logoSubheading, touchesTop } =
-    props
+  const {
+    children,
+    rightSidebar,
+    className,
+    logoSubheading,
+    touchesTop,
+    hideSidebar,
+  } = props
 
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
@@ -34,10 +41,14 @@ export function Page(props: {
             bottom: TOAST_BOTTOM_PADDING,
           }}
         />
-        <Sidebar
-          logoSubheading={logoSubheading}
-          className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex "
-        />
+        {hideSidebar ? (
+          <div className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex" />
+        ) : (
+          <Sidebar
+            logoSubheading={logoSubheading}
+            className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex"
+          />
+        )}
         {/* put right sidebar below main content on small or medium screens */}
         <Col className="flex-1 lg:col-span-8 xl:contents">
           <main

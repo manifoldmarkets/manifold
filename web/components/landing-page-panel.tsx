@@ -62,7 +62,6 @@ export function LandingPagePanel() {
     <>
       <div className="mt-8 flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-60 sm:flex-row">
         <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
-          {isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}
           {pageNumber === 0 && <LandingPage0 isMobile={isMobile} />}
           {pageNumber === 1 && <LandingPage1 isMobile={isMobile} />}
           {pageNumber === 2 && <LandingPage2 isMobile={isMobile} />}
@@ -108,8 +107,11 @@ export function LandingPagePanel() {
             </div>
           </div>
         </div>
-        <div className="relative z-30 h-1/5 w-full rounded-b-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-r-xl sm:rounded-l-none">
-          {!isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}
+        <div
+          className={clsx(
+            'relative z-30 h-1/5 w-full rounded-b-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-r-xl sm:rounded-l-none'
+          )}
+        >
           <div className="group absolute bottom-16 right-8 z-30 md:right-12">
             <Button
               className="absolute bottom-1.5 -left-1.5 z-10 transition-all ease-in-out focus:bottom-0.5 focus:-left-0.5 group-hover:bottom-2 group-hover:-left-2 focus:group-hover:bottom-0.5 focus:group-hover:-left-0.5"
@@ -138,7 +140,7 @@ export function LandingPagePanel() {
                 {STARTING_BALANCE}
               </span>
               {'   '}
-              in play money to start trading!
+              to start trading!
             </div>
           </div>
         </div>

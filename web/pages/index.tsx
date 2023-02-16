@@ -22,6 +22,10 @@ import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
 import { CPMMBinaryContract } from 'common/contract'
 import { getTrendingContracts } from 'web/lib/firebase/contracts'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { Button } from 'web/components/buttons/button'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 
 const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
@@ -44,13 +48,41 @@ export default function Home(props: {
   useSaveReferral()
   useRedirectAfterLogin()
 
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
   const { trendingContracts } = props
 
   return (
-    <Page>
+    <Page hideSidebar>
       <Col className="mx-auto mb-8 w-full gap-8 px-4">
         <Col className="gap-4">
+          <Row className="items-center justify-between">
+            <ManifoldLogo />
+
+            <div className="hidden items-center gap-2 lg:flex">
+              <Button
+                color="gray-white"
+                size="xs"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Get app
+              </Button>
+              <Button color="gray-white" size="xs" onClick={firebaseLogin}>
+                Sign in
+              </Button>
+              <Button color="indigo" size="xs" onClick={firebaseLogin}>
+                Sign up
+              </Button>
+
+              <MobileAppsQRCodeDialog
+                isModalOpen={isModalOpen}
+                setIsModalOpen={setIsModalOpen}
+              />
+            </div>
+          </Row>
+
           <LandingPagePanel />
+
           <Row className="w-full gap-2 sm:gap-4">
             <InfoCard
               link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
@@ -125,7 +157,7 @@ export function InfoCard(props: {
   return (
     <>
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="rounded-md bg-white px-8 pb-6 pt-0 text-sm font-light md:text-lg">
+        <Col className="rounded-md bg-white px-8 py-6 text-sm font-light md:text-lg">
           <Title children={text} />
           {modal}
           <Link
