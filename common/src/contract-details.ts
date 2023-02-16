@@ -8,7 +8,7 @@ import {
 import { richTextToString } from './util/parse'
 import { getCpmmProbability } from './calculate-cpmm'
 import { getDpmProbability } from './calculate-dpm'
-import { formatPercent, formatWithCommas } from './util/format'
+import { formatPercent } from './util/format'
 
 export function getBinaryProb(contract: BinaryContract) {
   const { pool, resolutionProbability, mechanism } = contract
