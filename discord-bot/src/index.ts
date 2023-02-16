@@ -7,6 +7,7 @@ import {
   ChatInputCommandInteraction,
   Client,
   Collection,
+  EmbedBuilder,
   Events,
   GatewayIntentBits,
   MessageReaction,
@@ -144,19 +145,10 @@ const handleOldReaction = async (
   const { channelId } = message
   const channel = await client.channels.fetch(channelId)
   if (!channel || !channel.isTextBased()) return
-  const { content } = message
-  if (!content) return
-  const index = content.indexOf('https://manifold.markets/')
-  if (index === -1) {
-    await sendThreadErrorMessage(
-      channel as TextChannel,
-      'Link-not-found-error',
-      'Could not find market link in message',
-      user as User
-    )
-    return
-  }
-  const link = content.substring(index).split(')')[0]
+  const previousEmbed = message.embeds[0]
+  const marketEmbed = EmbedBuilder.from(previousEmbed)
+  const link = marketEmbed.toJSON().url
+  if (!link) return
   const slug = getSlug(link)
   if (!slug) {
     await sendThreadErrorMessage(

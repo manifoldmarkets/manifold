@@ -1,6 +1,7 @@
 import * as console from 'console'
 import {
   ChatInputCommandInteraction,
+  EmbedBuilder,
   MessageReaction,
   SlashCommandBuilder,
   TextChannel,
@@ -13,6 +14,7 @@ import {
 } from '../common.js'
 import { bettingEmojis, customEmojis, emojis, getEmoji } from '../emojis.js'
 import {
+  currentProbText,
   getMarketFromSlug,
   getSlug,
   handleBet,
@@ -44,7 +46,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   )
   if (!market) return
 
-  const message = await sendMarketIntro(interaction, market, link)
+  const message = await sendMarketIntro(interaction, market)
 
   const filter = (reaction: MessageReaction, user: User) => {
     if (user.id === message.author.id) return false
@@ -90,15 +92,20 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
 const sendMarketIntro = async (
   interaction: ChatInputCommandInteraction,
-  market: FullMarket,
-  link: string
+  market: FullMarket
 ) => {
+  const placeHolderEmbed = new EmbedBuilder()
+    .setColor(0x0099ff)
+    .setTitle('Loading market...')
   let message = await interaction.reply({
-    content: 'Loading market...',
+    embeds: [placeHolderEmbed],
     fetchReply: true,
   })
+
+  // Let client listener know we've this message in memory
   messagesHandledViaInteraction.add(message.id)
 
+  // Add emoji reactions
   for (const emoji of emojis) {
     if (customEmojis.includes(emoji)) {
       // TODO: this only works on my guild rn
@@ -109,20 +116,44 @@ const sendMarketIntro = async (
     } else await message.react(emoji)
   }
 
-  let content = `**[${market.question}](${link})**\n\nReact to this message to bet in the market:\n\n`
-  let yesBetsLine = 'Bet YES (in M):'
-  let noBetsLine = 'Bet NO (in M):'
+  let yesBetsEmojis = ''
+  let noBetsEmojis = ''
   for (const emoji in bettingEmojis) {
-    const { outcome } = bettingEmojis[emoji]
     const emojiText = ` ${getEmoji(interaction.guild, emoji)}  `
-    outcome === 'YES' ? (yesBetsLine += emojiText) : (noBetsLine += emojiText)
+    bettingEmojis[emoji].outcome === 'YES'
+      ? (yesBetsEmojis += emojiText)
+      : (noBetsEmojis += emojiText)
   }
-  content += yesBetsLine + '  ' + noBetsLine + '\n\n'
 
-  content += `Current Probability: ${Math.round(market.probability * 100)}%`
-  await message.suppressEmbeds(true)
-  message = await interaction.editReply({
-    content,
+  const previousEmbed = message.embeds[0]
+  const marketEmbed = EmbedBuilder.from(previousEmbed)
+  marketEmbed
+    .setColor(0x0099ff)
+    .setTitle(market.question)
+    .setURL(market.url)
+    .setDescription(currentProbText(market.probability))
+    .setThumbnail('https://manifold.markets/logo-cover.png')
+    .addFields(
+      {
+        name: 'Bet YES',
+        value: `${yesBetsEmojis} Mana`,
+        inline: true,
+      },
+      {
+        name: 'Bet NO',
+        value: `${noBetsEmojis} Mana`,
+        inline: true,
+      }
+    )
+    // .setImage('https://i.imgur.com/AfFp7pu.png')
+    .setTimestamp(market.closeTime)
+    .setFooter({
+      text: `A market by ${market.creatorName}`,
+      iconURL: market.creatorAvatarUrl,
+    })
+
+  message = await message.edit({
+    embeds: [marketEmbed],
   })
   return message
 }

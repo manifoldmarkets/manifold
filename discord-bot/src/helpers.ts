@@ -1,5 +1,6 @@
 import * as console from 'console'
 import {
+  EmbedBuilder,
   Message,
   MessageReaction,
   TextChannel,
@@ -67,24 +68,27 @@ export const handleBet = async (
       await sendThreadMessage(channel, market, content, user)
       return
     }
+    const bet = await resp.json()
     const content = `${user.tag} ${
       sale ? 'sold' : 'bet'
-    } M$${amount} on ${buyOutcome}.`
+    } M$${amount} on ${buyOutcome}. New probability: ${Math.round(
+      bet.probAfter * 100
+    )}%`
     await sendThreadMessage(channel, market, content, user)
-    const bet = await resp.json()
-    await message.edit({
-      content: getNewMessageContent(message.content, bet.probAfter),
-    })
+    await editMessageWithNewProb(message, bet.probAfter)
   } catch (e) {
     const content = `Error: ${e}`
     await sendThreadMessage(channel, market, content, user)
   }
 }
+export const currentProbText = (prob: number) =>
+  `Current Probability: **${Math.round(prob * 100)}%**`
 
-const getNewMessageContent = (content: string, newProb: number) => {
-  const probString = content.split('Current Probability: ')[1]
-  const newProbString = Math.round(newProb * 100) + '%'
-  return content.replace(probString, newProbString)
+const editMessageWithNewProb = async (message: Message, newProb: number) => {
+  const previousEmbed = message.embeds[0]
+  const marketEmbed = EmbedBuilder.from(previousEmbed)
+  marketEmbed.setDescription(currentProbText(newProb))
+  await message.edit({ embeds: [marketEmbed] })
 }
 
 const getThread = async (
