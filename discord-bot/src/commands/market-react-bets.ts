@@ -70,13 +70,19 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       await sendThreadMessage(channel, market, content, user)
       return
     }
+    const message = reaction.message.partial
+      ? await reaction.message.fetch()
+      : reaction.message
 
     // Attempt to place a bet
     await handleBet(reaction, user, channel, message, market)
   })
 
   collector.on('remove', async (reaction, user) => {
-    console.log(`${user.id} removed the reaction ${reaction.emoji.name}`)
+    const message = reaction.message.partial
+      ? await reaction.message.fetch()
+      : reaction.message
+
     await handleBet(reaction, user, channel, message, market, true)
   })
 }

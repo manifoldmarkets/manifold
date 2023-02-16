@@ -18,7 +18,8 @@ export const handleBet = async (
   channel: TextChannel,
   message: Message,
   market: FullMarket,
-  sale?: boolean
+  sale?: boolean,
+  refreshUsersCache?: boolean
 ) => {
   const emojiKey = customEmojis.includes(reaction.emoji.id ?? '_')
     ? reaction.emoji.id
@@ -31,6 +32,9 @@ export const handleBet = async (
     if (!apiKey) {
       if (sale) return
       user.send(registerHelpMessage)
+      if (refreshUsersCache) {
+        await Promise.all(message.reactions.cache?.map((r) => r.users.fetch()))
+      }
       const userReactions = message.reactions.cache.filter((reaction) =>
         reaction.users.cache.has(user.id)
       )
@@ -67,7 +71,6 @@ export const handleBet = async (
     } M$${amount} on ${buyOutcome}.`
     await sendThreadMessage(channel, market, content, user)
     const bet = await resp.json()
-    console.log(message.content)
     await message.edit({
       content: getNewMessageContent(message.content, bet.probAfter),
     })

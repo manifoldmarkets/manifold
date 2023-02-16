@@ -1,6 +1,7 @@
 // For Manifold SDK
 process.env.NODE_ENV = 'production'
 
+import { REST } from '@discordjs/rest'
 import * as console from 'console'
 import {
   ChatInputCommandInteraction,
@@ -17,11 +18,10 @@ import {
   TextChannel,
   User,
 } from 'discord.js'
-import { REST } from '@discordjs/rest'
+import * as fs from 'fs'
 import { createRequire } from 'node:module'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
-import * as fs from 'fs'
 import { messagesHandledViaInteraction } from './common.js'
 import {
   getMarketFromSlug,
@@ -76,7 +76,12 @@ export const client = new Client({
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.DirectMessages,
   ],
-  partials: [Partials.Message, Partials.Channel, Partials.Reaction],
+  partials: [
+    Partials.Message,
+    Partials.Channel,
+    Partials.Reaction,
+    Partials.User,
+  ],
 })
 client.once(Events.ClientReady, () => {
   console.log('Ready!')
@@ -116,44 +121,26 @@ try {
   console.error(error)
 }
 const handleOldReaction = async (
-  reaction: MessageReaction | PartialMessageReaction,
-  user: User | PartialUser,
+  pReaction: MessageReaction | PartialMessageReaction,
+  pUser: User | PartialUser,
   removal?: boolean
 ) => {
-  const ignore = messagesHandledViaInteraction.has(reaction.message.id)
+  const ignore = messagesHandledViaInteraction.has(pReaction.message.id)
   console.log(`ignoring reaction:${ignore}`)
   if (ignore) return
 
   console.log('handling old reaction')
 
-  if (!reaction.partial) {
-    // If the message this reaction belongs to was removed, the fetching might result in an API error which should be handled
-    try {
-      reaction = await reaction.fetch()
-    } catch (error) {
-      console.error('Something went wrong when fetching the message:', error)
-      return
-    }
-  }
+  const reaction = pReaction.partial ? await pReaction.fetch() : pReaction
+  if (!reaction) return
 
-  if (user.partial) {
-    try {
-      user = await user.fetch()
-    } catch (error) {
-      console.error('Something went wrong when fetching the user:', error)
-      return
-    }
-  }
+  const user = pUser.partial ? await pUser.fetch() : pUser
+  if (!user) return
 
-  let { message } = reaction
-  if (message.partial) {
-    try {
-      message = await message.fetch()
-    } catch (error) {
-      console.error('Something went wrong when fetching the message:', error)
-      return
-    }
-  }
+  const message = reaction.message.partial
+    ? await reaction.message.fetch()
+    : reaction.message
+  if (!message) return
   const { channelId } = message
   const channel = await client.channels.fetch(channelId)
   if (!channel || !channel.isTextBased()) return
@@ -190,12 +177,13 @@ const handleOldReaction = async (
   )
   if (!market) return
   await handleBet(
-    reaction as MessageReaction,
+    reaction,
     user,
     channel as TextChannel,
     message,
     market,
-    removal
+    removal,
+    true
   )
 }
 
