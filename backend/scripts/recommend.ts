@@ -49,11 +49,11 @@ async function debug(
   console.log('Destiny user scores')
   await printUserScores('PKj937RvUZYUbnG7IU8sVPN7XYr1', getUserContractScores)
 
-  // console.log('Bembo scores')
-  // await printUserScores('G3S3nhcGWhPU3WEtlUYbAH4tv7f1', getUserContractScores)
+  console.log('Bembo scores')
+  await printUserScores('G3S3nhcGWhPU3WEtlUYbAH4tv7f1', getUserContractScores)
 
-  // console.log('Stephen scores')
-  // await printUserScores('tlmGNz9kjXc2EteizMORes4qvWl2', getUserContractScores)
+  console.log('Stephen scores')
+  await printUserScores('tlmGNz9kjXc2EteizMORes4qvWl2', getUserContractScores)
 
   console.log('James scores')
   const jamesId = '5LZ4LgYuySdL1huCWe7bti02ghx2'

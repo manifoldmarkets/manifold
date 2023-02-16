@@ -78,9 +78,9 @@ export function getMarketRecommendations(
     for (const groupId of groupIds) {
       // If you follow a group, count that as interest in random subset of group markets.
       const contractIds = Object.keys(groupsToContracts[groupId] ?? {})
-      const contractIdSubset = chooseRandomSubset(contractIds, 25)
+      const contractIdSubset = chooseRandomSubset(contractIds, 5)
       for (const contractId of contractIdSubset) {
-        sparseMatrix[userIndex][contractId] = 0.5
+        sparseMatrix[userIndex][contractId] = 1
         contractIdSet.add(contractId)
       }
     }
@@ -103,7 +103,7 @@ export function getMarketRecommendations(
   // which is bad for the algorithm to distinguish between good and bad contracts:
   // it will just predict 1 for all contracts.
   for (const row of sparseMatrix) {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       const randContractId =
         contractIds[Math.floor(Math.random() * contractIds.length)]
       if (row[randContractId] === undefined) row[randContractId] = 0
