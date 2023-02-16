@@ -67,7 +67,7 @@ export function LandingPagePanel() {
           {pageNumber === 2 && <LandingPage2 isMobile={isMobile} />}
           {!isMobile && (
             <div className="absolute -right-0.5 bottom-0 z-20 h-full">
-              <SquiggleVerticalIcon className="text-indigo-200" />
+              <SquiggleVerticalIcon className="h-full text-indigo-200" />
             </div>
           )}
           {isMobile && (

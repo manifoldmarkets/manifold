@@ -128,17 +128,17 @@ export function ExternalInfoCard(props: {
   const { link, icon, text } = props
   return (
     <Link
-      className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-700 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all hover:drop-shadow-lg"
+      className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-300 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all hover:border-indigo-700"
       href={link}
       target="_blank"
     >
-      <div className="text-indigo-400 transition-colors group-hover:text-indigo-700">
+      <div className="text-indigo-300 transition-colors group-hover:text-indigo-700">
         {icon}
       </div>
       <div>
-        {text}
+        <span className="text-gray-700">{text}</span>
         <span>
-          <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-400" />
+          <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-300" />
         </span>
       </div>
     </Link>
@@ -173,17 +173,17 @@ export function InfoCard(props: {
         </Col>
       </Modal>
       <button
-        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-700 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all hover:drop-shadow-lg"
+        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-300 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all transition-colors hover:border-indigo-700"
         onClick={() => setOpen(true)}
       >
-        <div className="text-indigo-400 transition-colors group-hover:text-indigo-700">
+        <div className="text-indigo-300 transition-colors group-hover:text-indigo-700">
           {icon}
         </div>
         <div>
-          <div>{text}</div>
+          <div className="text-gray-700">{text}</div>
           {externalLink && (
             <span>
-              <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-400" />
+              <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-300" />
             </span>
           )}
         </div>
