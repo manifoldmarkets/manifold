@@ -22,16 +22,16 @@ const recommend = async () => {
   } else {
     console.log('Loading view data from Firestore...')
     userData = await loadUserDataForRecommendations()
-    await writeJson('user-data5.json', userData)
+    await writeJson('user-data1.json', userData)
   }
 
-  let contracts = await readJson<Contract[]>('contracts.json')
+  let contracts = await readJson<Contract[]>('contracts1.json')
   if (contracts) {
     console.log('Loaded contracts from file.')
   } else {
     console.log('Loading contracts...')
     contracts = await loadContracts()
-    await writeJson('contracts.json', contracts)
+    await writeJson('contracts1.json', contracts)
   }
 
   console.log('Computing recommendations...')

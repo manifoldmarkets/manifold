@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { Query } from 'firebase-admin/firestore'
+import { Query, CollectionReference } from 'firebase-admin/firestore'
 import { uniq } from 'lodash'
 
 import { invokeFunction, loadPaginated } from 'shared/utils'
@@ -172,11 +172,9 @@ export const loadUserDataForRecommendations = async () => {
 }
 
 export const loadContracts = async () => {
-  const db = createSupabaseClient()
-
-  const { data } = await run(db.from('contracts').select('*'))
-  const contracts = data.map(({ data }) => data) as Contract[]
-
+  const contracts = await loadPaginated(
+    firestore.collection('contracts') as CollectionReference<Contract>
+  )
   console.log('Loaded', contracts.length, 'contracts')
   return contracts
 }
