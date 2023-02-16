@@ -6,6 +6,7 @@ const ABOUT_PAGE_URL = 'https://help.manifold.markets/'
 module.exports = {
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
+  optimizeFonts: false,
   modularizeImports: {
     '@heroicons/react/solid/?(((\\w*)?/?)*)': {
       transform: '@heroicons/react/solid/{{ matches.[1] }}/{{member}}',
