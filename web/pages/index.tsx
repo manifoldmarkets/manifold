@@ -23,6 +23,9 @@ import { Title } from 'web/components/widgets/title'
 import { CPMMBinaryContract } from 'common/contract'
 import { getTrendingContracts } from 'web/lib/firebase/contracts'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { Button } from 'web/components/buttons/button'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 
 const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
@@ -45,6 +48,8 @@ export default function Home(props: {
   useSaveReferral()
   useRedirectAfterLogin()
 
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
   const { trendingContracts } = props
 
   return (
@@ -53,8 +58,26 @@ export default function Home(props: {
         <Col className="gap-4">
           <Row className="items-center justify-between">
             <ManifoldLogo />
-            <div className="hidden sm:flex">
-              {/* TODO: put login, sign up button, get app here*/}
+
+            <div className="hidden items-center gap-2 lg:flex">
+              <Button
+                color="gray-white"
+                size="xs"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Get app
+              </Button>
+              <Button color="gray-white" size="xs" onClick={firebaseLogin}>
+                Sign in
+              </Button>
+              <Button color="indigo" size="xs" onClick={firebaseLogin}>
+                Sign up
+              </Button>
+
+              <MobileAppsQRCodeDialog
+                isModalOpen={isModalOpen}
+                setIsModalOpen={setIsModalOpen}
+              />
             </div>
           </Row>
 
