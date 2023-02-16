@@ -87,9 +87,10 @@ export function Sparkline(props: {
   aspectRatio?: number
   min: number
   max: number
+  color?: string
   className?: string
 }) {
-  const { data, height: h, aspectRatio = 1, min, max, className } = props
+  const { data, height: h, aspectRatio = 1, min, max, color, className } = props
   const w = h * aspectRatio
   const visibleRange = [data[0].x, data[data.length - 1].x]
   const curve = data.length > 50 ? curveLinear : curveStepBefore
@@ -98,8 +99,6 @@ export function Sparkline(props: {
   const yScale = scaleLinear([min, max], [h, 0])
   const px = (p: Point) => xScale(p.x)
   const py1 = (p: Point) => yScale(p.y)
-
-  const color = '#14b8a6'
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const dl = line(px, py1).curve(curve)(data)!

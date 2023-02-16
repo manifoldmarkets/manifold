@@ -2,6 +2,7 @@ import { OgCardProps } from 'common/contract-details'
 import clsx from 'clsx'
 import { Sparkline } from './graph'
 import { base64toPoints, Point } from 'common/edge/og'
+import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 
 // See https://github.com/vercel/satori#documentation for styling restrictions
 export function OgMarket(props: OgCardProps) {
@@ -45,6 +46,7 @@ export function OgMarket(props: OgCardProps) {
             min={0}
             max={1}
             className="mr-4"
+            color={numericValue ? NUMERIC_GRAPH_COLOR : '#14b8a6'}
           />
           {resolution ? (
             <Resolution
@@ -53,7 +55,11 @@ export function OgMarket(props: OgCardProps) {
             />
           ) : (
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            <TimeProb date={data.at(-1)!.x} prob={data.at(-1)!.y} />
+            <TimeProb
+              date={data.at(-1)!.x}
+              prob={data.at(-1)!.y}
+              label={numericValue}
+            />
           )}
         </div>
       ) : (
@@ -165,8 +171,8 @@ function Resolution(props: { resolution: string; label?: string }) {
   )
 }
 
-function TimeProb(props: { date: number; prob: number }) {
-  const { date, prob } = props
+function TimeProb(props: { date: number; prob: number; label?: string }) {
+  const { date, prob, label } = props
 
   return (
     <div className="relative flex w-32">
@@ -174,7 +180,7 @@ function TimeProb(props: { date: number; prob: number }) {
         className="absolute right-0 flex flex-col items-center"
         style={{ top: `${(1 - prob) * 100 - 20}%` }}
       >
-        <span className="text-6xl">{formatPercent(prob)}</span>
+        <span className="text-6xl">{label ?? formatPercent(prob)}</span>
         <span className="text-2xl">{dateFormat(date)}</span>
       </div>
     </div>
