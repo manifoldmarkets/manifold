@@ -136,7 +136,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
     )
 
   return buildArray(
-    { name: 'Home', href: '/home', icon: HomeIcon },
+    { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
     {
       name: 'About',
