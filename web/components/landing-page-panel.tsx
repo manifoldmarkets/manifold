@@ -116,8 +116,6 @@ export function LandingPagePanel() {
             'relative z-30 h-1/5 w-full rounded-b-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-r-xl sm:rounded-l-none'
           )}
         >
-          {/* {!isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />} */}
-
           <div className="group absolute bottom-16 right-8 z-30 md:right-12">
             <Button
               className="absolute bottom-1.5 -left-1.5 z-10 transition-all ease-in-out focus:bottom-0.5 focus:-left-0.5 group-hover:bottom-2 group-hover:-left-2 focus:group-hover:bottom-0.5 focus:group-hover:-left-0.5"
@@ -146,7 +144,7 @@ export function LandingPagePanel() {
                 {STARTING_BALANCE}
               </span>
               {'   '}
-              in play money to start trading!
+              to start trading!
             </div>
           </div>
         </div>
