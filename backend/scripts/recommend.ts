@@ -6,12 +6,16 @@ import { getContract } from 'shared/utils'
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
-import { loadUserDataForRecommendations } from 'functions/update-recommended'
+import {
+  loadContracts,
+  loadUserDataForRecommendations,
+} from 'functions/scheduled/update-recommended'
+import { Contract } from 'common/contract'
 
 const recommend = async () => {
   console.log('Recommend script')
 
-  let userData = await readJson<user_data[]>('user-data5.json')
+  let userData = await readJson<user_data[]>('user-data1.json')
 
   if (userData) {
     console.log('Loaded view data from file.')
@@ -21,8 +25,20 @@ const recommend = async () => {
     await writeJson('user-data5.json', userData)
   }
 
+  let contracts = await readJson<Contract[]>('contracts.json')
+  if (contracts) {
+    console.log('Loaded contracts from file.')
+  } else {
+    console.log('Loading contracts...')
+    contracts = await loadContracts()
+    await writeJson('contracts.json', contracts)
+  }
+
   console.log('Computing recommendations...')
-  const { getUserContractScores } = getMarketRecommendations(userData)
+  const { getUserContractScores } = getMarketRecommendations(
+    contracts,
+    userData
+  )
 
   await debug(getUserContractScores)
 }
@@ -33,11 +49,11 @@ async function debug(
   console.log('Destiny user scores')
   await printUserScores('PKj937RvUZYUbnG7IU8sVPN7XYr1', getUserContractScores)
 
-  console.log('Bembo scores')
-  await printUserScores('G3S3nhcGWhPU3WEtlUYbAH4tv7f1', getUserContractScores)
+  // console.log('Bembo scores')
+  // await printUserScores('G3S3nhcGWhPU3WEtlUYbAH4tv7f1', getUserContractScores)
 
-  console.log('Stephen scores')
-  await printUserScores('tlmGNz9kjXc2EteizMORes4qvWl2', getUserContractScores)
+  // console.log('Stephen scores')
+  // await printUserScores('tlmGNz9kjXc2EteizMORes4qvWl2', getUserContractScores)
 
   console.log('James scores')
   const jamesId = '5LZ4LgYuySdL1huCWe7bti02ghx2'

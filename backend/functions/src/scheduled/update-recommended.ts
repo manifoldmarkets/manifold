@@ -9,9 +9,8 @@ import { getMarketRecommendations } from 'common/recommendation'
 import { run } from 'common/supabase/utils'
 import { mapAsync } from 'common/util/promise'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { buildArray, filterDefined } from 'common/util/array'
+import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
-import { chooseRandomSubset } from 'common/util/random'
 
 const firestore = admin.firestore()
 
@@ -36,13 +35,16 @@ export const updaterecommended = newEndpointNoAuth(
 )
 
 export const updateRecommendedMarkets = async () => {
+  console.log('Loading contracts...')
+  const contracts = await loadContracts()
+
   console.log('Loading user data...')
   const userData = await loadUserDataForRecommendations()
 
   console.log('Computing recommendations...')
 
   const { userIds, userFeatures, contractIds, contractFeatures } =
-    getMarketRecommendations(userData, 2500)
+    getMarketRecommendations(contracts, userData, 2500)
 
   const userFeatureRows = userFeatures.map((features, i) => ({
     user_id: userIds[i],
@@ -81,19 +83,6 @@ export const loadUserDataForRecommendations = async () => {
 
   console.log('Loaded', userIds.length, 'users')
 
-  const db = createSupabaseClient()
-  const { data } = await run(
-    db.rpc('search_contracts_by_group_slugs', {
-      group_slugs: ['destinygg'],
-      lim: 200,
-      start: 0,
-    })
-  )
-  const destinyContracts = data as any as Contract[]
-  const destinyContractIds = destinyContracts.map((c) => c.id)
-
-  console.log('Loaded Destiny contracts', destinyContractIds.length)
-
   return await mapAsync(
     userIds,
     async (userId) => {
@@ -107,7 +96,6 @@ export const loadUserDataForRecommendations = async () => {
         )
       ).map(({ contractId }) => contractId)
 
-      const destinyContractIdSubset = chooseRandomSubset(destinyContractIds, 25)
       const swipeData = await loadPaginated(
         admin
           .firestore()
@@ -116,13 +104,7 @@ export const loadUserDataForRecommendations = async () => {
           .collection('seenMarkets')
           .select('id') as Query<{ id: string }>
       )
-      const swipedIds = uniq(
-        buildArray(
-          swipeData.map(({ id }) => id),
-          // Pretend you swiped and skipped a subset of Destiny markets so it's prior is you don't like Destiny markets.
-          destinyContractIdSubset
-        )
-      )
+      const swipedIds = uniq(swipeData.map(({ id }) => id))
 
       const viewedCardIds = uniq(
         (
@@ -187,4 +169,14 @@ export const loadUserDataForRecommendations = async () => {
     },
     10
   )
+}
+
+export const loadContracts = async () => {
+  const db = createSupabaseClient()
+
+  const { data } = await run(db.from('contracts').select('*'))
+  const contracts = data.map(({ data }) => data) as Contract[]
+
+  console.log('Loaded', contracts.length, 'contracts')
+  return contracts
 }
