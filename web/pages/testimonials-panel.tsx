@@ -88,7 +88,7 @@ export default function TestimonialsPanel() {
           {!isMobile && (
             <div className="absolute -left-0.5 bottom-0 z-10 h-full">
               <SquiggleVerticalFlippedIcon
-                className={clsx('text-indigo-200')}
+                className={clsx('h-full text-indigo-200')}
               />
             </div>
           )}
