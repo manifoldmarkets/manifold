@@ -26,7 +26,6 @@ import {
   getGroupLinksToDisplay,
   getGroupLinkToDisplay,
 } from 'web/lib/firebase/groups'
-import { insertContent } from '../editor/utils'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
