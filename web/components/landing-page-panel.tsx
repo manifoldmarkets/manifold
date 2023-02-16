@@ -60,7 +60,7 @@ export function LandingPagePanel() {
 
   return (
     <>
-      <div className="mt-8 flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-60 sm:flex-row">
+      <div className="flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-60 sm:flex-row">
         <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
           {pageNumber === 0 && <LandingPage0 isMobile={isMobile} />}
           {pageNumber === 1 && <LandingPage1 isMobile={isMobile} />}
