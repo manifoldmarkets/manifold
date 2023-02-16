@@ -128,17 +128,17 @@ export function ExternalInfoCard(props: {
   const { link, icon, text } = props
   return (
     <Link
-      className="group flex w-1/3 flex-col items-center gap-1 rounded-xl bg-indigo-700 px-4 py-2 text-center text-sm text-white drop-shadow-sm transition-all hover:drop-shadow-lg"
+      className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-700 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all hover:drop-shadow-lg"
       href={link}
       target="_blank"
     >
-      <div className="text-indigo-400 transition-colors group-hover:text-white">
+      <div className="text-indigo-400 transition-colors group-hover:text-indigo-700">
         {icon}
       </div>
       <div>
         {text}
         <span>
-          <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-white" />
+          <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-400" />
         </span>
       </div>
     </Link>
@@ -173,10 +173,10 @@ export function InfoCard(props: {
         </Col>
       </Modal>
       <button
-        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl bg-indigo-700 px-4 py-2 text-center text-sm text-white drop-shadow-sm transition-all hover:drop-shadow-lg"
+        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-700 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all hover:drop-shadow-lg"
         onClick={() => setOpen(true)}
       >
-        <div className="text-indigo-400 transition-colors group-hover:text-white">
+        <div className="text-indigo-400 transition-colors group-hover:text-indigo-700">
           {icon}
         </div>
         <div>
