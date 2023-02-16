@@ -1,7 +1,7 @@
 import { ImageResponse, ImageResponseOptions } from '@vercel/og'
 import { NextRequest } from 'next/server'
 import { OgMarket } from 'web/components/og/og-market'
-import { replaceTw } from 'web/components/og/utils'
+import { classToTw } from 'web/components/og/utils'
 import { OgCardProps } from 'common/contract-details'
 
 export const config = { runtime: 'edge' }
@@ -42,7 +42,7 @@ export default async function handler(req: NextRequest) {
     ) as OgCardProps
     const image = OgMarket(OgMarketProps)
 
-    return new ImageResponse(replaceTw(image), options as ImageResponseOptions)
+    return new ImageResponse(classToTw(image), options as ImageResponseOptions)
   } catch (e: any) {
     console.log(`${e.message}`)
     return new Response(`Failed to generate the image`, {

@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 import { OgWeeklyUpdate } from 'web/components/og/og-weekly-update'
 import { WeeklyPortfolioUpdateOGCardProps } from 'common/weekly-portfolio-update'
 import { getCardOptions } from 'web/pages/api/og/market'
-import { replaceTw } from 'web/components/og/utils'
+import { classToTw } from 'web/components/og/utils'
 
 export const config = { runtime: 'edge' }
 export default async function handler(req: NextRequest) {
@@ -15,7 +15,7 @@ export default async function handler(req: NextRequest) {
     ) as WeeklyPortfolioUpdateOGCardProps
     const image = OgWeeklyUpdate(ogWeeklyProps)
 
-    return new ImageResponse(replaceTw(image), options as ImageResponseOptions)
+    return new ImageResponse(classToTw(image), options as ImageResponseOptions)
   } catch (e: any) {
     console.log(`${e.message}`)
     return new Response(`Failed to generate the image`, {
