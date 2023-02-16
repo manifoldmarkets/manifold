@@ -2,8 +2,6 @@ export default function EndQuoteIcon(props: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="inherit"
-      height="inherit"
       fill="currentColor"
       className={props.className}
       viewBox="0 0 18 18"

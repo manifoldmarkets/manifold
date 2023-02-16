@@ -3,10 +3,7 @@ import clsx from 'clsx'
 import { Sparkline } from './graph'
 import { base64toPoints, Point } from 'common/edge/og'
 
-// Notes for working with this:
-// - Some css elements are missing or broken (e.g. 'gap' and 'text-ellipsis' and 'line-clamp')
-// - I also can't make things overflow hidden in only one direction
-// - Every element should have `flex` set
+// See https://github.com/vercel/satori#documentation for styling restrictions
 export function OgMarket(props: OgCardProps) {
   const {
     question,
@@ -14,6 +11,7 @@ export function OgMarket(props: OgCardProps) {
     volume,
     creatorName,
     creatorAvatarUrl,
+    probability,
     numericValue,
     resolution,
     topAnswer,
@@ -22,7 +20,7 @@ export function OgMarket(props: OgCardProps) {
   const data = points ? (base64toPoints(points) as Point[]) : []
 
   return (
-    <div className="flex h-full w-full flex-col justify-between bg-white py-8">
+    <div className="flex h-full w-full flex-col items-stretch justify-between bg-white py-8">
       <div
         className={clsx(
           'flex overflow-hidden px-24 text-5xl leading-tight text-indigo-700',
@@ -31,38 +29,45 @@ export function OgMarket(props: OgCardProps) {
       >
         {question}
       </div>
-      <div className="relative flex w-full flex-row pr-24">
-        {data.length ? (
-          <>
-            <Sparkline
-              data={data}
-              height={300}
-              aspectRatio={3.2}
-              min={0}
-              max={1}
+      {data.length ? (
+        <div className="flex w-full pr-24">
+          <Sparkline
+            data={data}
+            height={300}
+            aspectRatio={3.2}
+            min={0}
+            max={1}
+            className="mr-4"
+          />
+          {resolution ? (
+            <Resolution
+              resolution={resolution}
+              label={probability ?? numericValue}
             />
-            {resolution
-              ? ResolutionDiv(props)
-              : TimeProb({
-                  date: data[data.length - 1].x,
-                  prob: data[data.length - 1].y,
-                })}
-          </>
-        ) : (
-          <div className="flex w-full flex-row items-center justify-end px-24">
-            {resolution && !topAnswer
-              ? ResolutionDiv(props)
-              : numericValue
-              ? NumericValueDiv(props)
-              : topAnswer
-              ? AnswerDiv(props)
-              : null}
-          </div>
-        )}
-      </div>
+          ) : (
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            <TimeProb date={data.at(-1)!.x} prob={data.at(-1)!.y} />
+          )}
+        </div>
+      ) : topAnswer ? (
+        <div className="flex w-full flex-row items-center justify-between px-24">
+          <Answer {...props} />
+        </div>
+      ) : (
+        <div className="flex w-full flex-row items-center justify-end px-24">
+          {resolution && !topAnswer ? (
+            <Resolution
+              resolution={resolution}
+              label={probability ?? numericValue}
+            />
+          ) : numericValue ? (
+            <NumericValue number={numericValue} />
+          ) : null}
+        </div>
+      )}
 
       {/* Bottom row */}
-      <div className="flex w-full flex-row items-center justify-between self-stretch px-24 text-3xl text-gray-600">
+      <div className="flex w-full flex-row items-center justify-between px-24 text-3xl text-gray-600">
         {/* Details */}
         <div className="flex items-center">
           <div className="mr-6 flex items-center">
@@ -101,41 +106,39 @@ export function OgMarket(props: OgCardProps) {
   )
 }
 
-function AnswerDiv(props: OgCardProps) {
+function Answer(props: OgCardProps) {
   const { probability, topAnswer, resolution } = props
   return (
     <>
-      <div className="flex max-h-[9rem] w-full justify-start overflow-hidden pr-8 text-5xl">
+      <span className="max-h-[9rem] w-[880px] overflow-hidden text-5xl">
         {topAnswer}
-      </div>
+      </span>
       {!resolution && (
-        <div className="flex flex-col">
-          <div className="flex text-6xl">{probability}</div>
-          <div className="flex w-full justify-center text-4xl">chance</div>
+        <div className="flex flex-col items-center">
+          <span className="text-6xl">{probability}</span>
+          <span className="text-4xl">chance</span>
         </div>
       )}
     </>
   )
 }
 
-function NumericValueDiv(props: OgCardProps) {
+function NumericValue(props: { number: string }) {
   return (
-    <div className="flex flex-col items-center">
-      <span className="text-6xl">{props.numericValue}</span>
+    <div className="flex flex-col items-center justify-center">
+      <span className="text-6xl">{props.number}</span>
       <span className="text-4xl">expected</span>
     </div>
   )
 }
 
-function ResolutionDiv(props: OgCardProps) {
-  const { resolution, probability, numericValue } = props
-  if (!resolution) {
-    return <div className={'hidden'} />
-  }
+function Resolution(props: { resolution: string; label?: string }) {
+  const { resolution, label } = props
+
   const text = {
     YES: 'YES',
     NO: 'NO',
-    MKT: probability ?? numericValue ?? 'MANY',
+    MKT: label ?? 'MANY',
     CANCEL: 'N/A',
   }[resolution]
 
@@ -147,7 +150,7 @@ function ResolutionDiv(props: OgCardProps) {
   }[resolution]
 
   return (
-    <div className={`flex flex-col ${color} items-center`}>
+    <div className={`flex flex-col ${color} items-center justify-center`}>
       <span className="text-4xl">resolved</span>
       <span className="text-6xl">{text}</span>
     </div>
@@ -158,7 +161,7 @@ function TimeProb(props: { date: number; prob: number }) {
   const { date, prob } = props
 
   return (
-    <div className="relative ml-4 flex w-32">
+    <div className="relative flex w-32">
       <div
         className="absolute right-0 flex flex-col items-center"
         style={{ top: `${(1 - prob) * 100 - 20}%` }}

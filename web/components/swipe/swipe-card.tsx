@@ -108,32 +108,32 @@ export const SwipeCard = memo(
             </SiteLink>
           </div>
 
-          <div className="mt-2 self-center">
-            <Percent
-              className="mt-4"
-              currPercent={currPercent}
-              yesPercent={yesPercent}
-              noPercent={noPercent}
-              outcome={
-                betDirection === 'YES'
-                  ? 'YES'
-                  : betDirection === 'NO'
-                  ? 'NO'
-                  : undefined
-              }
-            />
-          </div>
-
-          <Row className="mx-auto w-full grow items-center" />
-
-          <Row className="justify-end">
+          <div className="grid grow grid-cols-[1fr_auto_1fr]">
+            {/* center */}
+            <div className="col-start-2">
+              <Percent
+                className="mt-6"
+                currPercent={currPercent}
+                yesPercent={yesPercent}
+                noPercent={noPercent}
+                outcome={
+                  betDirection === 'YES'
+                    ? 'YES'
+                    : betDirection === 'NO'
+                    ? 'NO'
+                    : undefined
+                }
+              />
+            </div>
+            {/* right */}
             <CardActions
+              className="col-start-3 justify-self-end"
               user={user}
               contract={contract}
               setIsModalOpen={setIsModalOpen}
-              cardHeight={cardHeight}
             />
-          </Row>
+          </div>
+
           <Col className="mt-2 gap-6">
             <Col className="h-20 w-full justify-end">
               <MoreSwipeInfo
@@ -197,12 +197,17 @@ function CardActions(props: {
   user?: User
   contract: BinaryContract
   setIsModalOpen: (open: boolean) => void
-  cardHeight: number
+  className?: string
 }) {
-  const { user, contract, setIsModalOpen } = props
+  const { user, contract, setIsModalOpen, className } = props
 
   return (
-    <Col className="flex flex-col items-center justify-end gap-2">
+    <Col
+      className={clsx(
+        'flex flex-col items-center justify-end gap-2',
+        className
+      )}
+    >
       <LikeButton
         contentId={contract.id}
         contentCreatorId={contract.creatorId}

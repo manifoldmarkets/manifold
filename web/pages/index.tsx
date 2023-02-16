@@ -26,10 +26,11 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 
 const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
-export const getStaticProps = async () => {
+export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const contracts = await getTrendingContracts(20)
 
   const trendingContracts = contracts.filter(
@@ -38,9 +39,8 @@ export const getStaticProps = async () => {
 
   return {
     props: { trendingContracts },
-    revalidate: 10 * 60, // every 10 minutes
   }
-}
+})
 
 export default function Home(props: {
   trendingContracts: CPMMBinaryContract[]
