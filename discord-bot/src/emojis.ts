@@ -8,12 +8,18 @@ type emojiDetails = {
 // Custom emojis use id, not name
 export const bettingEmojis: { [key: string]: emojiDetails } = {
   '👍': { outcome: 'YES', amount: 10 },
+  '1075828981720416296': { outcome: 'YES', amount: 50 }, // green 50
   '1029761176336334918': { outcome: 'YES', amount: 100 }, // green 100
   '👎': { outcome: 'NO', amount: 10 },
+  '1075829025093722146': { outcome: 'NO', amount: 50 }, // red 50
   '💯': { outcome: 'NO', amount: 100 },
 }
 
-export const customEmojis = ['1029761176336334918']
+export const customEmojis = [
+  '1075828981720416296',
+  '1029761176336334918',
+  '1075829025093722146',
+]
 
 export const otherEmojis: { [key: string]: string } = {
   '❓': 'What is this?',

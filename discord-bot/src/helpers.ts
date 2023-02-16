@@ -26,7 +26,6 @@ export const handleBet = async (
   if (!emojiKey || !Object.keys(bettingEmojis).includes(emojiKey)) return
 
   const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
-  const slug = getSlug(market.url) ?? 'error'
   try {
     const apiKey = userApiKey(user.id)
     if (!apiKey) {
