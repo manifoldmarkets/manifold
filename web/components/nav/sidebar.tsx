@@ -11,6 +11,7 @@ import {
   ScaleIcon,
   UserGroupIcon,
   TicketIcon,
+  BeakerIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -153,8 +154,8 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
   }
 
   return buildArray(
-    { name: 'Groups', href: '/groups' },
     { name: 'Referrals', href: '/referrals' },
+    { name: 'Groups', href: '/groups' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
     // { name: 'Blog', href: 'https://news.manifold.markets' },
@@ -183,6 +184,7 @@ const getMobileNav = () => {
       icon: UserGroupIcon,
     },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
+    { name: 'Labs', href: '/labs', icon: BeakerIcon },
     { name: 'Referrals', href: '/referrals', icon: TicketIcon }
   )
 }
