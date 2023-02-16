@@ -5,7 +5,7 @@ import { userIdsToApiKeys } from './storage.js'
 export const messagesHandledViaInteraction: Set<string> = new Set()
 export const channelMarkets: { [k: string]: string } = {}
 export const registerHelpMessage =
-  'You must first register your Manifold Markets API key with /register. Go to https://manifold.markets/my-api-key to get your API key.'
+  'In order to bet with me go to https://manifold.markets/my-api-key to copy your API key and respond here with it.'
 export async function getAPIInstance(user: User, errorCallback?: () => void) {
   if (!user?.id || !userIdsToApiKeys[user.id]) {
     errorCallback?.()
