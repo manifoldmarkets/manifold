@@ -119,7 +119,7 @@ export function LandingPagePanel() {
               color="gradient-pink"
               size={isMobile ? 'xl' : '2xl'}
             >
-              Get started
+              Start trading
             </Button>
             <div
               className={clsx(
@@ -129,7 +129,7 @@ export function LandingPagePanel() {
                   : 'px-6 py-3 text-xl font-semibold'
               )}
             >
-              Get started
+              Start trading
             </div>
           </div>
           <div className="absolute top-6 right-8 sm:top-48 md:right-12">
@@ -140,7 +140,7 @@ export function LandingPagePanel() {
                 {STARTING_BALANCE}
               </span>
               {'   '}
-              to start trading!
+              in play money!
             </div>
           </div>
         </div>
@@ -151,7 +151,7 @@ export function LandingPagePanel() {
 
 export function LandingPage0(props: { isMobile: boolean }) {
   const { isMobile } = props
-  const text = '1. Ask any question'
+  const text = '1. Create a market'
   return (
     <>
       <div
