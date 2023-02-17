@@ -10,7 +10,6 @@ import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -19,18 +18,20 @@ import GroupSelectorDialog from './group-selector-dialog'
 
 export default function Welcome() {
   const user = useUser()
+  const isTwitch = useIsTwitch(user)
+
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
+
   const [showSignedOutUser, setShowSignedOutUser] = useState(false)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
-  const isTwitch = useIsTwitch(user)
-  const { isNative, platform } = getNativePlatform()
+
   const router = useRouter()
+
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
     <PredictionMarketPage />,
     <WhatIsManaPage />,
-    isNative && platform === 'ios' ? null : <CharityPage />,
     user && <ThankYouPage />,
   ])
 
