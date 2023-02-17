@@ -132,7 +132,7 @@ const sendMarketIntro = async (
   const previousEmbed = message.embeds[0]
   const marketEmbed = EmbedBuilder.from(previousEmbed)
   const { coverImageUrl } = market
-  const attachToEmbed = async (url: string, name: string) => {
+  const getAttachment = async (url: string, name: string) => {
     const blob = await fetch(url).then((r) => r.blob())
     const arrayBuffer = await blob.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
@@ -140,8 +140,8 @@ const sendMarketIntro = async (
   }
   const fallbackImage = 'https://manifold.markets/logo-cover.png'
   const [cover, author] = await Promise.all([
-    attachToEmbed(coverImageUrl ?? fallbackImage, 'cover.png'),
-    attachToEmbed(market.creatorAvatarUrl ?? fallbackImage, 'author.png'),
+    getAttachment(coverImageUrl ?? fallbackImage, 'cover.png'),
+    getAttachment(market.creatorAvatarUrl ?? fallbackImage, 'author.png'),
   ])
   marketEmbed
     .setColor(0x0099ff)
