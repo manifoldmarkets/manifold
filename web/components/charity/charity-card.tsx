@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/legacy/image'
 import { Charity } from 'common/charity'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
-import { manaToUSD } from 'common/util/format'
+import { formatMoneyUSD } from 'common/util/format'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { Card } from '../widgets/card'
@@ -36,7 +36,7 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
               <Row className="mt-4 flex-1 items-end justify-center gap-6 text-gray-900">
                 <Row className="items-baseline gap-1">
                   <span className="text-3xl font-semibold">
-                    {formatUsd(raised)}
+                    {formatMoneyUSD(raised / 100)}
                   </span>
                   raised
                 </Row>
@@ -53,10 +53,6 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
       </Card>
     </Link>
   )
-}
-
-function formatUsd(mana: number) {
-  return mana < 100 ? manaToUSD(mana) : '$' + Math.floor(mana / 100)
 }
 
 function NewBadge() {

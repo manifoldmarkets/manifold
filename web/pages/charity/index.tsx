@@ -25,6 +25,7 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -35,7 +36,6 @@ export async function getStaticProps() {
   )
   const totalRaised = sum(Object.values(totals))
   const sortedCharities = sortBy(charities, [
-    (charity) => (charity.tags?.includes('New') ? 0 : 1),
     (charity) => -totals[charity.id],
   ])
   const matches = quadraticMatches(txns, totalRaised, 'toId')
@@ -136,15 +136,20 @@ export default function Charity(props: {
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
           <Title>Manifold for Charity</Title>
-          <span className="text-gray-600">
+
+          <AlertBox title="Charity program ending" text="">
+            Please make your final donations before March 1st, 2023.
+            <SiteLink
+              href="https://manifoldmarkets.notion.site/Charity-program-ending-March-1st-ac5da2d66e9d4306a917e3dd653b9cea"
+              className="ml-2 text-indigo-700"
+            >
+              Read more here.
+            </SiteLink>
+          </AlertBox>
+
+          <span className="mt-8 text-gray-600">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations.{' '}
-            <SiteLink
-              href="https://help.manifold.markets/manifold-charitable-donation-program"
-              className="text-indigo-700"
-            >
-              Learn more...
-            </SiteLink>
           </span>
           <DonatedStats
             stats={[
