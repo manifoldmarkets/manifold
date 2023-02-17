@@ -26,7 +26,6 @@ import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { AlertBox } from 'web/components/widgets/alert-box'
-import Link from 'next/link'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -37,7 +36,6 @@ export async function getStaticProps() {
   )
   const totalRaised = sum(Object.values(totals))
   const sortedCharities = sortBy(charities, [
-    (charity) => (charity.tags?.includes('New') ? 0 : 1),
     (charity) => -totals[charity.id],
   ])
   const matches = quadraticMatches(txns, totalRaised, 'toId')
