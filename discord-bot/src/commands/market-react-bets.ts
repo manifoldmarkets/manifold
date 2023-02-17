@@ -1,5 +1,6 @@
 import * as console from 'console'
 import {
+  AttachmentBuilder,
   ChatInputCommandInteraction,
   EmbedBuilder,
   MessageReaction,
@@ -89,10 +90,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   //   await handleBet(reaction, user, channel, message, market, true)
   // })
 }
+type ExtraMarketProps = {
+  coverImageUrl?: string
+}
 
 const sendMarketIntro = async (
   interaction: ChatInputCommandInteraction,
-  market: FullMarket
+  market: FullMarket & ExtraMarketProps
 ) => {
   const placeHolderEmbed = new EmbedBuilder()
     .setColor(0x0099ff)
@@ -127,33 +131,45 @@ const sendMarketIntro = async (
 
   const previousEmbed = message.embeds[0]
   const marketEmbed = EmbedBuilder.from(previousEmbed)
+  const { coverImageUrl } = market
+  const attachToEmbed = async (url: string, name: string) => {
+    const blob = await fetch(url).then((r) => r.blob())
+    const arrayBuffer = await blob.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    return new AttachmentBuilder(buffer, { name })
+  }
+  const fallbackImage = 'https://manifold.markets/logo-cover.png'
+  const [cover, author] = await Promise.all([
+    attachToEmbed(coverImageUrl ?? fallbackImage, 'cover.png'),
+    attachToEmbed(market.creatorAvatarUrl ?? fallbackImage, 'author.png'),
+  ])
   marketEmbed
     .setColor(0x0099ff)
     .setTitle(market.question)
     .setURL(market.url)
     .setDescription(currentProbText(market.probability))
-    .setThumbnail('https://manifold.markets/logo-cover.png')
+    .setThumbnail(`attachment://cover.png`)
     .addFields(
       {
         name: 'Bet YES',
-        value: `${yesBetsEmojis} Mana`,
+        value: `${yesBetsEmojis}`,
         inline: true,
       },
       {
         name: 'Bet NO',
-        value: `${noBetsEmojis} Mana`,
+        value: `${noBetsEmojis}`,
         inline: true,
       }
     )
-    // .setImage('https://i.imgur.com/AfFp7pu.png')
     .setTimestamp(market.closeTime)
     .setFooter({
       text: `A market by ${market.creatorName}`,
-      iconURL: market.creatorAvatarUrl,
+      iconURL: `attachment://author.png`,
     })
 
   message = await message.edit({
     embeds: [marketEmbed],
+    files: [cover, author],
   })
   return message
 }

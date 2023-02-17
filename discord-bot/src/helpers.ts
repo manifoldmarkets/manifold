@@ -82,7 +82,7 @@ export const handleBet = async (
   }
 }
 export const currentProbText = (prob: number) =>
-  `Current Probability: **${Math.round(prob * 100)}%**`
+  `**${Math.round(prob * 100)}%** chance`
 
 const editMessageWithNewProb = async (message: Message, newProb: number) => {
   const previousEmbed = message.embeds[0]
@@ -100,7 +100,7 @@ const getThread = async (
   let thread = channel.threads.cache.find((x) => x.name === name)
   if (thread) return thread
   thread = await channel.threads.create({
-    name,
+    name: name.slice(0, 95) + '...',
     autoArchiveDuration: 60,
     reason: 'Activity feed for market: ' + title ?? name,
   })
