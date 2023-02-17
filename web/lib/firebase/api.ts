@@ -158,6 +158,11 @@ export function resolveQf(params: QfResolveReq) {
   return call('/api/v0/qf/resolve', 'POST', params)
 }
 
+export function unresolveMarket(params: { marketId: string }) {
+  const { marketId } = params
+  return call(`/api/v0/market/${marketId}/unresolve`, 'POST', params)
+}
+
 export function updateGroupPrivacy(params: {
   groupId: string
   privacy: PrivacyStatusType
