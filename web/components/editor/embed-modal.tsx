@@ -1,5 +1,5 @@
 import { Editor } from '@tiptap/react'
-import { DOMAIN } from 'common/envs/constants'
+import { LIVE_DOMAIN } from 'common/envs/constants'
 import { useState } from 'react'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -61,13 +61,13 @@ const embedPatterns: EmbedPattern[] = [
     // Twitch: https://www.twitch.tv/videos/1445087149
     regex: /^https?:\/\/www\.twitch\.tv\/videos\/(\d+)/,
     rewrite: (id) =>
-      `<iframe src="https://player.twitch.tv/?video=${id}&parent=${DOMAIN}"></iframe>`,
+      `<iframe src="https://player.twitch.tv/?video=${id}&parent=${LIVE_DOMAIN}"></iframe>`,
   },
   {
     // Twitch: https://www.twitch.tv/sirsalty
     regex: /^https?:\/\/www\.twitch\.tv\/([^\/]+)/,
     rewrite: (channel) =>
-      `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${DOMAIN}"></iframe>`,
+      `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${LIVE_DOMAIN}"></iframe>`,
   },
   {
     // Strawpoll: https://strawpoll.com/polls/PbZqoPJelnN

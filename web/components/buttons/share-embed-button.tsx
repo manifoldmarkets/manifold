@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 
 import { Contract } from 'common/contract'
 import { contractPath } from 'web/lib/firebase/contracts'
-import { DOMAIN } from 'common/envs/constants'
+import { BASE_URL } from 'common/envs/constants'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 import { Button } from './button'
@@ -12,17 +12,8 @@ import clsx from 'clsx'
 
 export function embedContractCode(contract: Contract) {
   const title = contract.question
-  const src = `https://${DOMAIN}/embed${contractPath(contract)}`
+  const src = `${BASE_URL}/embed${contractPath(contract)}`
   return `<iframe src="${src}" title="${title}" frameborder="0" width="600" height="300"></iframe>`
-}
-
-// TODO: move this function elsewhere
-export function embedContractGridCode(contracts: Contract[]) {
-  const height = (contracts.length - (contracts.length % 2)) * 100 + 'px'
-  const src = `https://${DOMAIN}/embed/grid/${contracts
-    .map((c) => c.slug)
-    .join('/')}`
-  return `<iframe height="${height}" src="${src}" title="Grid of contracts" frameborder="0"></iframe>`
 }
 
 export function ShareEmbedButton(props: {

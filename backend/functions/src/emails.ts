@@ -1,4 +1,4 @@
-import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
+import { LIVE_DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import { Contract } from 'common/contract'
@@ -92,7 +92,7 @@ export const sendMarketResolutionEmail = async (
     outcome,
     investment: displayedInvestment,
     payout: displayedPayout + creatorPayoutText,
-    url: `https://${DOMAIN}/${creator.username}/${contract.slug}`,
+    url: `https://${LIVE_DOMAIN}/${creator.username}/${contract.slug}`,
     unsubscribeUrl,
   }
 
@@ -302,7 +302,7 @@ export const sendMarketCloseEmail = async (
 
   const { question, slug, volume } = contract
 
-  const url = `https://${DOMAIN}/${username}/${slug}`
+  const url = `https://${LIVE_DOMAIN}/${username}/${slug}`
 
   // We ignore if they were able to unsubscribe from market close emails, this is a necessary email
   return await sendTemplateEmail(
@@ -338,7 +338,7 @@ export const sendNewCommentEmail = async (
   if (!privateUser || !privateUser.email || !sendToEmail) return
 
   const { question } = contract
-  const marketUrl = `https://${DOMAIN}/${contract.creatorUsername}/${contract.slug}#${commentId}`
+  const marketUrl = `https://${LIVE_DOMAIN}/${contract.creatorUsername}/${contract.slug}#${commentId}`
 
   const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
 
@@ -416,7 +416,7 @@ export const sendNewAnswerEmail = async (
 
   const { question, creatorUsername, slug } = contract
 
-  const marketUrl = `https://${DOMAIN}/${creatorUsername}/${slug}`
+  const marketUrl = `https://${LIVE_DOMAIN}/${creatorUsername}/${slug}`
 
   const subject = `New answer on ${question}`
   const from = `${name} <info@manifold.markets>`

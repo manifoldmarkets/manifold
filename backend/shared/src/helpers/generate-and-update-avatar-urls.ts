@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 
 import { getStorage, Storage } from 'firebase-admin/storage'
 import { User } from 'common/user'
-import { DOMAIN } from 'common/envs/constants'
+import { LIVE_DOMAIN } from 'common/envs/constants'
 
 type Bucket = ReturnType<InstanceType<typeof Storage>['bucket']>
 
@@ -47,7 +47,7 @@ export const generateAvatarUrl = async (
     return await upload(userId, Buffer.from(buffer), bucket)
   } catch (e) {
     console.log('error generating avatar', e)
-    return `https://${DOMAIN}/images/default-avatar.png`
+    return `https://${LIVE_DOMAIN}/images/default-avatar.png`
   }
 }
 

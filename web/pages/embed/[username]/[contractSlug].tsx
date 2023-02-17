@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { DOMAIN } from 'common/envs/constants'
+import { BASE_URL } from 'common/envs/constants'
 import { useEffect } from 'react'
 import {
   BinaryResolutionOrChance,
@@ -189,7 +189,7 @@ function ContractSmolView(props: {
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
-  const href = `https://${DOMAIN}${contractPath(contract)}`
+  const href = `${BASE_URL}${contractPath(contract)}`
 
   const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
   const questionColor = textColor ?? 'rgb(67, 56, 202)' // text-indigo-700
