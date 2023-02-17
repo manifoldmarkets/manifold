@@ -35,9 +35,7 @@ export async function getStaticProps() {
     sumBy(txns, (txn) => txn.amount)
   )
   const totalRaised = sum(Object.values(totals))
-  const sortedCharities = sortBy(charities, [
-    (charity) => -totals[charity.id],
-  ])
+  const sortedCharities = sortBy(charities, [(charity) => -totals[charity.id]])
   const matches = quadraticMatches(txns, totalRaised, 'toId')
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
   const mostRecentDonor = txns[0] ? await getUser(txns[0].fromId) : null
