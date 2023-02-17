@@ -1,5 +1,5 @@
 import { Point } from 'common/edge/og'
-import { BASE_URL } from 'common/envs/constants'
+import { DOMAIN } from 'common/envs/constants'
 
 // opengraph functions that run in static props or client-side, but not in the edge (in image creation)
 
@@ -7,8 +7,13 @@ export function buildOgUrl<P extends Record<string, string>>(
   props: P,
   endpoint: string
 ) {
+  const generateUrlParams = (params: P) =>
+    new URLSearchParams(params).toString()
+
+  // Change to localhost:3000 for local testing
   const url =
-    `${BASE_URL}/api/og/${endpoint}?` + new URLSearchParams(props).toString()
+    // `http://localhost:3000/api/og/${endpoint}?` +
+    `https://${DOMAIN}/api/og/${endpoint}?` + generateUrlParams(props)
 
   return url
 }

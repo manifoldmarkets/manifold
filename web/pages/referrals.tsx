@@ -6,7 +6,7 @@ import { Page } from 'web/components/layout/page'
 import { useTracking } from 'web/hooks/use-tracking'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import { BASE_URL } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoBox } from 'web/components/widgets/info-box'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { REFERRAL_AMOUNT } from 'common/economy'
@@ -19,7 +19,7 @@ export default function ReferralsPage() {
 
   useTracking('view referrals')
 
-  const url = `${BASE_URL}?referrer=${user?.username}`
+  const url = `https://${ENV_CONFIG.domain}?referrer=${user?.username}`
 
   return (
     <Page>

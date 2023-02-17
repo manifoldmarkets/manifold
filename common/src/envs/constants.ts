@@ -33,10 +33,7 @@ export function isManifoldId(userId: string) {
   return userId === 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2'
 }
 
-/**  @deprecated Domain without protocol */
-export const LIVE_DOMAIN = ENV_CONFIG.domain
-// like http://localhost:3000 https://manifold.markets or https://prod-420gg69xd-mantic.vercel.app
-export const BASE_URL = process.env.NEXT_PUBLIC_URL ?? 'https://' + LIVE_DOMAIN
+export const DOMAIN = ENV_CONFIG.domain
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId
 export const IS_PRIVATE_MANIFOLD = ENV_CONFIG.visibility === 'PRIVATE'

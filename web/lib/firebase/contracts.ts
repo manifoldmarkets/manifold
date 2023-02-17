@@ -19,7 +19,7 @@ import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract } from 'common/contract'
 import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { BASE_URL } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { getBinaryProb } from 'common/contract-details'
 import { getLiquidity } from 'common/calculate-cpmm-multi'
 
@@ -43,7 +43,7 @@ export function homeContractPath(contract: Contract) {
 }
 
 export function contractUrl(contract: Contract) {
-  return `${BASE_URL}${contractPath(contract)}`
+  return `https://${ENV_CONFIG.domain}${contractPath(contract)}`
 }
 
 export function contractPool(contract: Contract) {

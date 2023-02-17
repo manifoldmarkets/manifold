@@ -27,7 +27,7 @@ import {
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { GroupComment } from 'common/comment'
-import { BASE_URL, HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
 import toast from 'react-hot-toast'
@@ -159,7 +159,7 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   const maxLeaderboardSize = 50
-  const groupUrl = `${BASE_URL}${groupPath(group.slug)}`
+  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
 
   const chatEmbed = <ChatEmbed group={group} />
   return (

@@ -13,7 +13,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
-import { BASE_URL, ENV_CONFIG, PROJECT_ID } from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG, PROJECT_ID } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import Custom404 from 'web/pages/404'
@@ -154,7 +154,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
     }
   }, [])
 
-  const referralUrl = `${BASE_URL}?referrer=${user?.username}`
+  const referralUrl = `https://${DOMAIN}?referrer=${user?.username}`
 
   return (
     <Page key={user.id}>

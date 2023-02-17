@@ -10,7 +10,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { User } from 'web/lib/firebase/users'
-import { BASE_URL } from 'common/envs/constants'
+import { DOMAIN } from 'common/envs/constants'
 import Custom404 from '../404'
 import { ShareIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
@@ -93,8 +93,8 @@ export function DateDocPost(props: {
   const post = usePost(dateDoc.id) ?? dateDoc
 
   const age = dayjs().diff(birthday, 'year')
-  const shareUrl = `${BASE_URL}/date-docs/${username}`
-  const marketUrl = `${BASE_URL}/${username}/${contractSlug}`
+  const shareUrl = `https://${DOMAIN}/date-docs/${username}`
+  const marketUrl = `https://${DOMAIN}/${username}/${contractSlug}`
 
   return (
     <Col className="gap-6 rounded-lg bg-white px-6 py-6">

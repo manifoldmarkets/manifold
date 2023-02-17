@@ -1,7 +1,7 @@
 import { filterDefined } from './util/array'
 import { notification_reason_types } from './notification'
 import { getFunctionUrl } from './api'
-import { LIVE_DOMAIN } from './envs/constants'
+import { DOMAIN } from './envs/constants'
 import { PrivateUser } from './user'
 
 export type notification_destination_types = 'email' | 'browser' | 'mobile'
@@ -240,7 +240,7 @@ export const getNotificationDestinationsForUser = (
       sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
       sendToMobile: destinations.includes('mobile') && !optedOutOfPush,
       unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${notificationPreference}`,
-      urlToManageThisNotification: `${LIVE_DOMAIN}/notifications?tab=settings&section=${notificationPreference}`,
+      urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${notificationPreference}`,
       notificationPreference,
     }
   } catch (e) {

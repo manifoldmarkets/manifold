@@ -28,7 +28,7 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SEO } from 'web/components/SEO'
-import { BASE_URL } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { DAY_MS } from 'common/util/time'
 
@@ -173,7 +173,7 @@ export default function RangePerformancePage(props: {
             {date} Profit
           </Title>
           <CopyLinkButton
-            url={`${BASE_URL}/week/${user.username}/${rangeEndDateSlug}`}
+            url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDateSlug}`}
             linkIconOnlyProps={{ tooltip: 'Copy link to this week' }}
           />
         </Row>

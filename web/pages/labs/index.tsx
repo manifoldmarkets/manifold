@@ -1,4 +1,4 @@
-import { BASE_URL, ENV_CONFIG } from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import Link from 'next/link'
 import Masonry from 'react-masonry-css'
 import { Col } from 'web/components/layout/col'
@@ -78,7 +78,7 @@ export default function LabsPage() {
           <LabCard
             title="🎲 Magic the Guessering"
             description="Match MTG card names to their art"
-            href={`${BASE_URL}/mtg/index.html`}
+            href={`https://${DOMAIN}/mtg/index.html`}
           />
 
           <LabCard

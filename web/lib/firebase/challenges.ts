@@ -14,13 +14,13 @@ import { useEffect, useState } from 'react'
 import { User } from 'common/user'
 import { db } from './init'
 import { Contract } from 'common/contract'
-import { BASE_URL } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const challenges = (contractId: string) =>
   coll<Challenge>(`contracts/${contractId}/challenges`)
 
 export function getChallengeUrl(challenge: Challenge) {
-  return `${BASE_URL}/challenges/${challenge.creatorUsername}/${challenge.contractSlug}/${challenge.slug}`
+  return `https://${ENV_CONFIG.domain}/challenges/${challenge.creatorUsername}/${challenge.contractSlug}/${challenge.slug}`
 }
 export async function createChallenge(data: {
   creator: User
