@@ -73,9 +73,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       await sendThreadMessage(channel, market, content, user)
       return
     }
-    const message = reaction.message.partial
-      ? await reaction.message.fetch()
-      : reaction.message
+    // The embeds don't load unless we fetch the message every time even though the message is not marked as partial
+    // seems related to: https://github.com/discordjs/discord.js/issues/7697#issuecomment-1073432737
+    const message = await reaction.message.fetch()
 
     // Attempt to place a bet
     await handleBet(reaction, user, channel, message, market)

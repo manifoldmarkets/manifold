@@ -19,8 +19,7 @@ export const handleBet = async (
   channel: TextChannel,
   message: Message,
   market: FullMarket,
-  sale?: boolean,
-  refreshUsersCache?: boolean
+  sale?: boolean
 ) => {
   const emojiKey = customEmojis.includes(reaction.emoji.id ?? '_')
     ? reaction.emoji.id
@@ -28,14 +27,12 @@ export const handleBet = async (
   if (!emojiKey || !Object.keys(bettingEmojis).includes(emojiKey)) return
 
   const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
+  console.log('betting', amount, buyOutcome, 'on', market.id, 'for', user.tag)
   try {
     const apiKey = userApiKey(user.id)
     if (!apiKey) {
       if (sale) return
       user.send(registerHelpMessage)
-      if (refreshUsersCache) {
-        await Promise.all(message.reactions.cache?.map((r) => r.users.fetch()))
-      }
       const userReactions = message.reactions.cache.filter((reaction) =>
         reaction.users.cache.has(user.id)
       )
@@ -88,19 +85,20 @@ const editMessageWithNewProb = async (message: Message, newProb: number) => {
   const previousEmbed = message.embeds[0]
   const marketEmbed = EmbedBuilder.from(previousEmbed)
   marketEmbed.setDescription(currentProbText(newProb))
-  await message.edit({ embeds: [marketEmbed] })
+  await message.edit({ embeds: [marketEmbed], files: [] })
 }
 
 const getThread = async (
   channel: TextChannel,
-  name: string,
+  marketName: string,
   title?: string
 ) => {
+  const name = marketName.slice(0, 95) + '...'
   if (discordThreads[name]) return discordThreads[name]
   let thread = channel.threads.cache.find((x) => x.name === name)
   if (thread) return thread
   thread = await channel.threads.create({
-    name: name.slice(0, 95) + '...',
+    name,
     autoArchiveDuration: 60,
     reason: 'Activity feed for market: ' + title ?? name,
   })

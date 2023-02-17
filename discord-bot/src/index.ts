@@ -23,7 +23,7 @@ import * as fs from 'fs'
 import { createRequire } from 'node:module'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
-import { messagesHandledViaInteraction } from './common.js'
+import { messagesHandledViaInteraction, userApiKey } from './common.js'
 import {
   getMarketFromSlug,
   getSlug,
@@ -168,14 +168,15 @@ const handleOldReaction = async (
     )
   )
   if (!market) return
+  if (!userApiKey(user.id))
+    await Promise.all(message.reactions.cache?.map((r) => r.users.fetch()))
   await handleBet(
     reaction,
     user,
     channel as TextChannel,
     message,
     market,
-    removal,
-    true
+    removal
   )
 }
 
