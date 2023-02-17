@@ -221,6 +221,7 @@ export const Stats = (props: {
               <tr className="bg-scarlet-50">
                 <td>Unresolve</td>
                 <td>
+                  {/* To prevent accidental unresolve, users must type in 'UNRESOLVE' first */}
                   <Input
                     className="w-40 text-xs"
                     type="text"

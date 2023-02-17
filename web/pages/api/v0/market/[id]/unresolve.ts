@@ -31,7 +31,8 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query
   const contractId = id as string
 
-  // Get the private-user to verify if user has admin email
+  // Get the private-user to verify if user has an admin email
+  // Should we allow letting market creators unresolve their own markets?
   const userId = await getUserId(req, res)
   const privateDoc = await firestore.doc(`private-users/${userId}`).get()
   const privateUser = privateDoc.data() as PrivateUser
