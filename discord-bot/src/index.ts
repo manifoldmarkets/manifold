@@ -22,6 +22,7 @@ import {
 import * as fs from 'fs'
 import { createRequire } from 'node:module'
 import * as path from 'path'
+import * as process from 'process'
 import { fileURLToPath } from 'url'
 import { messagesHandledViaInteraction, userApiKey } from './common.js'
 import {
@@ -31,6 +32,7 @@ import {
   sendThreadErrorMessage,
 } from './helpers.js'
 import { registerApiKey } from './register-api-key.js'
+import { startListener } from './server.js'
 
 const require = createRequire(import.meta.url)
 const Config = require('../config.json')
@@ -51,10 +53,11 @@ const readCommandsFromFiles = async () => {
     path.dirname(fileURLToPath(import.meta.url)),
     'commands'
   )
+  const extension = commandsPath.includes('lib') ? '.js' : '.ts'
   console.log('Commands path: ', commandsPath)
   const commandFiles = fs
     .readdirSync(commandsPath)
-    .filter((file: string) => file.endsWith('ts'))
+    .filter((file: string) => file.endsWith(extension))
 
   for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file)
@@ -198,3 +201,6 @@ client.on(Events.MessageCreate, async (message) => {
   if (message.author.id === client.user?.id) return
   await registerApiKey(message)
 })
+
+// If we're running on GCP, start the server to let the cloud function know we're ready
+if (process.env.GOOGLE_CLOUD_PROJECT) startListener()

@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "compile": "tsc --project tsconfig.json",
-    "start": "yarn run compile && nodemon --watch src --exec ts-node src/index.ts"
+    "build": "tsc --project tsconfig.json",
+    "start": "yarn run build && nodemon --watch src --exec ts-node src/index.ts"
   },
   "type": "module",
   "dependencies": {

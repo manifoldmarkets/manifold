@@ -12,19 +12,11 @@
         "sourceMap": true,
         "baseUrl": "./src",
         "strict": true,
-        "paths": {
-            "common/*": ["../common/src/*", "../../common/lib/*"]
-        }
     },
     "ts-node": {
         "require": ["tsconfig-paths/register"],
         "esm": true
     },
-    "references": [
-        {
-            "path": "../common"
-        },
-    ],
     "compileOnSave": true,
     "include": ["src/**/*.ts"]
 }
