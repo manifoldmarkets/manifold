@@ -1,4 +1,4 @@
-import { DOMAIN } from 'common/envs/constants'
+import { LIVE_DOMAIN } from 'common/envs/constants'
 
 export const dreamWithDefaultParams = async (input: string) => {
   try {
@@ -10,7 +10,7 @@ export const dreamWithDefaultParams = async (input: string) => {
       prompt: input + ', ' + MODIFIERS,
       apiKey: API_KEY,
     }
-    const response = await fetch(`https://${DOMAIN}/api/v0/dream`, {
+    const response = await fetch(`https://${LIVE_DOMAIN}/api/v0/dream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),

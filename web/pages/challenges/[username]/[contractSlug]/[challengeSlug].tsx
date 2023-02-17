@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Confetti from 'react-confetti'
 
 import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
-import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
+import { BASE_URL, ENV_CONFIG } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Spacer } from 'web/components/layout/spacer'
@@ -179,7 +179,7 @@ function ClosedChallengeContent(props: {
 
   const creatorWon = resolution === creatorOutcome
 
-  const href = `https://${DOMAIN}${contractPath(contract)}`
+  const href = `${BASE_URL}${contractPath(contract)}`
 
   if (!user) return <LoadingIndicator />
 
@@ -263,7 +263,7 @@ function OpenChallengeContent(props: {
     acceptorOutcome,
   } = challenge
 
-  const href = `https://${DOMAIN}${contractPath(contract)}`
+  const href = `${BASE_URL}${contractPath(contract)}`
 
   return (
     <Col className="items-center">

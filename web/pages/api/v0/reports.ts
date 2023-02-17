@@ -10,7 +10,7 @@ import {
   listAllComments,
   listAllCommentsOnPost,
 } from 'web/lib/firebase/comments'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { BASE_URL } from 'common/envs/constants'
 import { getPost, postPath } from 'web/lib/firebase/posts'
 import { richTextToString } from 'common/util/parse'
 import { getUser } from 'web/lib/firebase/users'
@@ -95,7 +95,7 @@ export default async function handler(
               comments.length > 0
                 ? {
                     slug:
-                      `https://${ENV_CONFIG.domain}${postPath(post.slug)}` +
+                      `${BASE_URL}${postPath(post.slug)}` +
                       '#' +
                       comments[0].id,
                     text: richTextToString(comments[0].content),
@@ -106,7 +106,7 @@ export default async function handler(
         } else if (contentType === 'user') {
           const reportedUser = await getUser(contentId)
           partialReport = {
-            slug: `https://${ENV_CONFIG.domain}/${reportedUser.username}`,
+            slug: `${BASE_URL}/${reportedUser.username}`,
             text: reportedUser.name,
           }
         }

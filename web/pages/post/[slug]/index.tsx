@@ -15,7 +15,7 @@ import { Button } from 'web/components/buttons/button'
 import React, { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { BASE_URL } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/widgets/user-link'
 import { listAllCommentsOnPost } from 'web/lib/firebase/comments'
@@ -73,7 +73,7 @@ export default function PostPage(props: {
   if (!post) {
     return <Custom404 />
   }
-  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(post.slug)}`
+  const shareUrl = `${BASE_URL}${postPath(post.slug)}`
 
   const canEdit = !!user && user.id === post.creatorId
 
