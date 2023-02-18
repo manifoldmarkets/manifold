@@ -80,7 +80,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { Swipe } from 'web/components/swipe/swipe'
-import { useABTest } from 'web/hooks/use-ab-test'
 import { getIsNative } from 'web/lib/native/is-native'
 import { safeLocalStorage } from 'web/lib/util/local'
 
