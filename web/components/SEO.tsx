@@ -35,7 +35,6 @@ export function SEO<P extends Record<string, string | undefined>>(props: {
         content={description}
         key="description2"
       />
-      <meta property="og:site_name" content="Manifold Markets" />
 
       {url && <meta property="og:url" content={absUrl} key="url" />}
 
