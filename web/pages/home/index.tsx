@@ -21,7 +21,7 @@ import { buildArray, filterDefined } from 'common/util/array'
 import { chooseRandomSubset } from 'common/util/random'
 import { MINUTE_MS } from 'common/util/time'
 import Router, { SingletonRouter } from 'next/router'
-import { memo, ReactNode, useEffect, useMemo, useState } from 'react'
+import { memo, ReactNode, useEffect, useMemo } from 'react'
 import { toast } from 'react-hot-toast'
 import { ActivityLog } from 'web/components/activity-log'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -651,42 +651,15 @@ function MobileHome() {
 }
 
 const useViewToggle = () => {
-  const savedShowSwipe =
-    typeof window === 'undefined'
-      ? undefined
-      : safeLocalStorage?.getItem('show-swipe') === 'true'
+  const isNative = getIsNative()
 
-  const [showSwipe, setShowSwipe] = useState(!!savedShowSwipe)
-
-  const savedIsNative =
-    typeof window === 'undefined'
-      ? undefined
-      : window.location.search.includes('native') || getIsNative()
-
-  const [isNative, setIsNative] = useState(!!savedShowSwipe || !!savedIsNative)
-
-  const update = (value: boolean) => {
-    setShowSwipe(value)
-    safeLocalStorage?.setItem('show-swipe', value.toString())
-  }
-
-  useEffect(() => {
-    const isNative = window.location.search.includes('native') || getIsNative()
-    if (savedIsNative === undefined) setIsNative(isNative)
-
-    if (savedShowSwipe === undefined) {
-      const loadedShowSwipe = safeLocalStorage?.getItem('show-swipe')
-
-      if (loadedShowSwipe === 'true' || loadedShowSwipe === 'false') {
-        update(loadedShowSwipe === 'true')
-      } else {
-        update(isNative)
-      }
-    }
-  }, [])
+  const [showSwipe, setShowSwipe] = usePersistentState(isNative, {
+    key: 'show-swipe',
+    store: inMemoryStore(),
+  })
 
   const toggleView = (showSwipe: boolean) => () => {
-    update(showSwipe)
+    setShowSwipe(showSwipe)
     track('toggle swipe', { showSwipe })
   }
   return { showSwipe, toggleView, isNative }
