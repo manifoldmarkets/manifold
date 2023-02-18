@@ -134,7 +134,7 @@ export async function getStaticPropz(ctx: {
   const creator = contract && (await getUser(contract.creatorId))
 
   return {
-    props: {
+    props: removeUndefinedProps({
       contract,
       historyData: {
         bets: useBetPoints ? bets.slice(0, 100) : bets,
@@ -147,7 +147,7 @@ export async function getStaticPropz(ctx: {
       totalBets,
       topContractMetrics,
       creatorTwitter: creator?.twitterHandle,
-    },
+    }),
   }
 }
 
