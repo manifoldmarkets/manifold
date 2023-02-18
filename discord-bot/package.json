@@ -1,10 +1,12 @@
 {
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "start": "yarn run build && nodemon --watch src --exec ts-node src/index.ts"
+    "start": "NODE_ENV=production yarn run build && nodemon --watch src --exec ts-node src/index.ts",
+    "dev": "NODE_ENV=development yarn run build && nodemon --watch src --exec ts-node src/index.ts"
   },
   "type": "module",
   "dependencies": {
+    "@supabase/supabase-js": "2.8.0",
     "discord.js": "^14.3.0",
     "manifold-sdk": "2.0.1"
   },

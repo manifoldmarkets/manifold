@@ -30,6 +30,7 @@ yarn build && \
          --set-env-vars ENVIRONMENT=${ENVIRONMENT} \
          --set-env-vars GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
          --set-secrets SUPABASE_PASSWORD=SUPABASE_PASSWORD:latest \
+         --set-secrets DISCORD_BOT_TOKEN=DISCORD_BOT_TOKEN:latest \
          --execution-environment gen2 \
          --cpu ${GCLOUD_CPU} \
          --memory 2Gi \

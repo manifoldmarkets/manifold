@@ -1,5 +1,5 @@
 import { Message } from 'discord.js'
-import { userIdsToApiKeys, saveManifoldMap } from './storage.js'
+import { writeApiKeyToDiscordUserId } from './storage.js'
 
 export const registerApiKey = async (message: Message) => {
   const key = message.content.trim()
@@ -30,9 +30,7 @@ export const registerApiKey = async (message: Message) => {
     )
     return
   }
-
-  userIdsToApiKeys[message.author.id] = key
-  saveManifoldMap()
+  await writeApiKeyToDiscordUserId(key, message.author.id)
   await message.reply(
     `Registered Manifold account ${me.name} to user <@!${message.author.id}>`
   )

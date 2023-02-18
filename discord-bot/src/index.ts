@@ -1,5 +1,5 @@
-// For Manifold SDK
-process.env.NODE_ENV = 'production'
+// // For Manifold SDK
+// process.env.NODE_ENV = 'production'
 
 import { REST } from '@discordjs/rest'
 import * as console from 'console'
@@ -20,11 +20,10 @@ import {
   User,
 } from 'discord.js'
 import * as fs from 'fs'
-import { createRequire } from 'node:module'
 import * as path from 'path'
 import * as process from 'process'
 import { fileURLToPath } from 'url'
-import { messagesHandledViaInteraction, userApiKey } from './common.js'
+import { config } from './constants/config.js'
 import {
   getMarketFromSlug,
   getSlug,
@@ -33,12 +32,11 @@ import {
 } from './helpers.js'
 import { registerApiKey } from './register-api-key.js'
 import { startListener } from './server.js'
+import { messagesHandledViaInteraction, userApiKey } from './storage.js'
 
-const require = createRequire(import.meta.url)
-const Config = require('../config.json')
-const clientId = Config.client.id
-const token = Config.client.token
-
+const { id: clientId } = config.client
+const token = process.env.DISCORD_BOT_TOKEN
+if (!token) throw new Error('No DISCORD_BOT_TOKEN env var set.')
 export const commands = new Collection<
   string,
   {
@@ -72,7 +70,7 @@ await readCommandsFromFiles()
 
 const rest = new REST({ version: '10' }).setToken(token)
 
-process.stdout.write('Logging in... ')
+console.log('Logging in... with client id: ', clientId)
 export const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -171,7 +169,7 @@ const handleOldReaction = async (
     )
   )
   if (!market) return
-  if (!userApiKey(user.id))
+  if (!(await userApiKey(user.id)))
     await Promise.all(message.reactions.cache?.map((r) => r.users.fetch()))
   await handleBet(
     reaction,

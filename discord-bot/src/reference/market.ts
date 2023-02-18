@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js'
 import { FullMarket, LiteMarket, Manifold } from 'manifold-sdk'
-import { channelMarkets } from '../common.js'
+import { channelMarkets } from '../storage.js'
 
 export const data = new SlashCommandBuilder()
   .setName('market')

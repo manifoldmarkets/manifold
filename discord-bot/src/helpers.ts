@@ -8,8 +8,8 @@ import {
   User,
 } from 'discord.js'
 import { FullMarket } from 'manifold-sdk'
-import { registerHelpMessage, userApiKey } from './common.js'
 import { bettingEmojis, customEmojis } from './emojis.js'
+import { registerHelpMessage, userApiKey } from './storage.js'
 
 const discordThreads: { [key: string]: ThreadChannel } = {}
 
@@ -29,7 +29,7 @@ export const handleBet = async (
   const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
   console.log('betting', amount, buyOutcome, 'on', market.id, 'for', user.tag)
   try {
-    const apiKey = userApiKey(user.id)
+    const apiKey = await userApiKey(user.id)
     if (!apiKey) {
       if (sale) return
       user.send(registerHelpMessage)

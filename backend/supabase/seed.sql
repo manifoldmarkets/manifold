@@ -837,3 +837,10 @@ as $$
     and (data->>'createdTime')::bigint > created_time
     group by creator_id;
 $$;
+
+create table if not exists discord_users (
+    discord_user_id text not null,
+    api_key text not null,
+    primary key(discord_user_id)
+);
+alter table discord_users enable row level security;

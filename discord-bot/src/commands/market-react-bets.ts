@@ -9,10 +9,6 @@ import {
   User,
 } from 'discord.js'
 import { FullMarket } from 'manifold-sdk'
-import {
-  messagesHandledViaInteraction,
-  registerHelpMessage,
-} from '../common.js'
 import { bettingEmojis, customEmojis, emojis, getEmoji } from '../emojis.js'
 import {
   currentProbText,
@@ -21,6 +17,10 @@ import {
   handleBet,
   sendThreadMessage,
 } from '../helpers.js'
+import {
+  messagesHandledViaInteraction,
+  registerHelpMessage,
+} from '../storage.js'
 
 export const data = new SlashCommandBuilder()
   .setName('market')
