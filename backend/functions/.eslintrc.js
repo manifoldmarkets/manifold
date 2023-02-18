@@ -27,6 +27,7 @@ module.exports = {
           },
         ],
         'unused-imports/no-unused-imports': 'warn',
+        'no-constant-condition': 'off',
       },
     },
   ],
