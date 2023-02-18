@@ -1,6 +1,5 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { first } from 'lodash'
-
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
@@ -64,6 +63,8 @@ import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
 import { getInitialProbability } from 'common/calculate'
+import { getUser } from 'web/lib/firebase/users'
+import Head from 'next/head'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -130,6 +131,8 @@ export async function getStaticPropz(ctx: {
   }
   const pointsString = pointsToBase64(compressPoints(betPoints))
 
+  const creator = contract && (await getUser(contract.creatorId))
+
   return {
     props: {
       contract,
@@ -143,6 +146,7 @@ export async function getStaticPropz(ctx: {
       totalPositions,
       totalBets,
       topContractMetrics,
+      creatorTwitter: creator?.twitterHandle,
     },
   }
 }
@@ -160,6 +164,7 @@ export default function ContractPage(props: {
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
+  creatorTwitter?: string
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -191,8 +196,13 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositionsByOutcome, comments, totalPositions, pointsString } =
-    props
+  const {
+    userPositionsByOutcome,
+    comments,
+    totalPositions,
+    pointsString,
+    creatorTwitter,
+  } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
@@ -306,6 +316,11 @@ export function ContractPageContent(
           url={`/${contract.creatorUsername}/${contract.slug}`}
           ogProps={{ props: ogCardProps, endpoint: 'market' }}
         />
+      )}
+      {creatorTwitter && (
+        <Head>
+          <meta name="twitter:creator" content={`@${creatorTwitter}`} />
+        </Head>
       )}
 
       {user && <BackRow />}
