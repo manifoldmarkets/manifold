@@ -658,7 +658,7 @@ const useViewToggle = () => {
 
   const [showSwipe, setShowSwipe] = useState(!!savedShowSwipe)
 
-  const [isNative, setIsNative] = useState(getIsNative())
+  const [isNative, setIsNative] = useState(!!savedShowSwipe || getIsNative())
 
   const update = (value: boolean) => {
     setShowSwipe(value)
