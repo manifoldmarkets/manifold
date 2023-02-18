@@ -50,6 +50,7 @@ import {
 } from 'web/hooks/use-group'
 import {
   inMemoryStore,
+  storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { useAllPosts } from 'web/hooks/use-post'
@@ -80,6 +81,8 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { Swipe } from 'web/components/swipe/swipe'
 import { useABTest } from 'web/hooks/use-ab-test'
+import { getIsNative } from 'web/lib/native/is-native'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -609,7 +612,7 @@ const useGlobalPinned = (
 
 function MobileHome() {
   const user = useUser()
-  const { showSwipe, toggleView } = useViewToggle()
+  const { showSwipe, toggleView, isNative } = useViewToggle()
 
   if (showSwipe) return <Swipe toggleView={toggleView(false)} />
 
@@ -620,10 +623,12 @@ function MobileHome() {
           <MobileSearchButton className="flex-1" />
           <Row className="items-center gap-4">
             <DailyStats user={user} />
-            <SwitchVerticalIcon
-              className="h-5 w-5"
-              onClick={toggleView(true)}
-            />
+            {isNative && (
+              <SwitchVerticalIcon
+                className="h-5 w-5"
+                onClick={toggleView(true)}
+              />
+            )}
           </Row>
         </Row>
 
@@ -648,25 +653,16 @@ function MobileHome() {
 }
 
 const useViewToggle = () => {
-  const defaultShowSwipe = useABTest('show swipe', {
-    swipeDefault: true,
-    feedDefault: false,
-  })
+  const isNative = getIsNative()
 
-  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
+  const [showSwipe, setShowSwipe] = usePersistentState(isNative, {
     key: 'show-swipe',
-    store: inMemoryStore(),
+    store: storageStore(safeLocalStorage),
   })
-
-  useEffect(() => {
-    if (defaultShowSwipe !== undefined && showSwipe === undefined) {
-      setShowSwipe(defaultShowSwipe)
-    }
-  }, [showSwipe, defaultShowSwipe])
 
   const toggleView = (showSwipe: boolean) => () => {
     setShowSwipe(showSwipe)
     track('toggle swipe', { showSwipe })
   }
-  return { showSwipe, toggleView }
+  return { showSwipe, toggleView, isNative }
 }
