@@ -15,7 +15,7 @@ import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { Row } from '../layout/row'
 import { BETTORS, User } from 'common/user'
-import { IconButton } from '../buttons/button'
+import { Button, IconButton } from '../buttons/button'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { Tooltip } from '../widgets/tooltip'
 import { Table } from '../widgets/table'
@@ -38,6 +38,8 @@ import { CopyLinkButton } from '../buttons/copy-link-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { ReportButton } from '../buttons/report-button'
+import { Input } from '../widgets/input'
+import { unresolveMarket } from 'web/lib/firebase/api'
 
 export const Stats = (props: {
   contract: Contract
@@ -53,6 +55,8 @@ export const Stats = (props: {
   const wasUnlistedByCreator = contract.unlistedById
     ? contract.unlistedById === contract.creatorId
     : false
+
+  const [unresolveText, setUnresolveText] = useState('')
 
   const {
     createdTime,
@@ -200,18 +204,45 @@ export const Stats = (props: {
 
         {/* Show a path to Firebase if user is an admin, or we're on localhost */}
         {!hideAdvanced && (isAdmin || isDev) && (
-          <tr className="bg-scarlet-50">
-            <td>Firestore link</td>
-            <td>
-              <a
-                href={firestoreConsolePath(id)}
-                target="_blank"
-                className="text-indigo-400"
-              >
-                {id}
-              </a>
-            </td>
-          </tr>
+          <>
+            <tr className="bg-scarlet-50">
+              <td>Firestore link</td>
+              <td>
+                <a
+                  href={firestoreConsolePath(id)}
+                  target="_blank"
+                  className="text-indigo-400"
+                >
+                  {id}
+                </a>
+              </td>
+            </tr>
+            {contract.isResolved && (
+              <tr className="bg-scarlet-50">
+                <td>Unresolve</td>
+                <td>
+                  {/* To prevent accidental unresolve, users must type in 'UNRESOLVE' first */}
+                  <Input
+                    className="w-40 text-xs"
+                    type="text"
+                    placeholder="UNRESOLVE"
+                    value={unresolveText}
+                    onChange={(e) => setUnresolveText(e.target.value)}
+                  />
+                  <Button
+                    onClick={() => {
+                      unresolveMarket({ marketId: id })
+                    }}
+                    disabled={unresolveText !== 'UNRESOLVE'}
+                    size="2xs"
+                    color="red"
+                  >
+                    ✔️
+                  </Button>
+                </td>
+              </tr>
+            )}
+          </>
         )}
 
         {!hideAdvanced && (
