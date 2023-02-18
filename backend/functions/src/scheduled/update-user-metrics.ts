@@ -45,7 +45,7 @@ export async function updateUserMetrics() {
   log('Loading users...')
   const db = createSupabaseClient()
 
-  const limit = 1000
+  const limit = 500
 
   const { data: newUserData } = await run(
     db
@@ -187,13 +187,24 @@ const loadUserContractBets = async (
   const contractIdChunks = chunk(contractIds, 100)
   const bets: Bet[] = []
   for (const contractIdChunk of contractIdChunks) {
-    const query = db
-      .from('contract_bets')
-      .select('data')
-      .eq('data->>userId', userId)
-      .in('contract_id', contractIdChunk)
-    const { data } = (await run(query)) as any as { data: JsonData<Bet>[] }
-    bets.push(...data.map((d) => d.data))
+    let i = 0
+    while (true) {
+      const query = db
+        .from('contract_bets')
+        .select('data')
+        .eq('data->>userId', userId)
+        .in('contract_id', contractIdChunk)
+        .range(i, i + 1000)
+
+      const { data } = (await run(query)) as any as { data: JsonData<Bet>[] }
+      bets.push(...data.map((d) => d.data))
+
+      if (data.length < 1000) {
+        break
+      } else {
+        i += 1000
+      }
+    }
   }
   return sortBy(bets, (bet) => bet.createdTime)
 }
