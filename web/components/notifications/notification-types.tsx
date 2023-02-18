@@ -171,7 +171,6 @@ export function NotificationItem(props: {
       )
     }
     return (
-      // not appearing?
       <GroupAddNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
@@ -919,10 +918,12 @@ function GroupAddNotification(props: {
           username={sourceUserUsername || ''}
           className={'relative flex-shrink-0 hover:text-indigo-500'}
         />{' '}
-        added you to the group{' '}
-        <span>
-          <PrimaryNotificationLink text={sourceTitle} />
-        </span>
+        added you{' '}
+        {!isChildOfGroup && (
+          <span>
+            to <PrimaryNotificationLink text={sourceTitle} />
+          </span>
+        )}
       </div>
     </NotificationFrame>
   )
