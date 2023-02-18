@@ -166,8 +166,12 @@ export default function GroupPage(props: {
     <Page rightSidebar={chatEmbed} touchesTop={true}>
       <SEO
         title={group.name}
-        description={`Created by ${creator.name}. ${group.about}`}
+        description={
+          group.about ||
+          `Manifold ${group.privacyStatus} group with ${group.totalMembers} members`
+        }
         url={groupPath(group.slug)}
+        image={group.bannerUrl}
       />
       {user && isManifoldAdmin && (
         <AddContractButton
