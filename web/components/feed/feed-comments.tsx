@@ -29,10 +29,12 @@ import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { toast } from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon'
-import { FlagIcon } from '@heroicons/react/outline'
+import { EyeOffIcon, FlagIcon, TrashIcon } from '@heroicons/react/outline'
 import { LikeButton } from 'web/components/contract/like-button'
 import { richTextToString } from 'common/util/parse'
 import { buildArray } from 'common/util/array'
+import { hideComment } from 'web/lib/firebase/api'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -122,7 +124,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     seeReplies,
     numComments,
   } = props
-  const { text, content, userUsername, userAvatarUrl } = comment
+  const { userUsername, userAvatarUrl } = comment
   const commentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -146,7 +148,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        <Content size="sm" content={content || text} />
+        <HideableContent comment={comment} />
         <Row className="justify-between">
           <ReplyToggle
             seeReplies={seeReplies}
@@ -165,6 +167,24 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   )
 })
 
+function HideableContent(props: { comment: ContractComment }) {
+  const { comment } = props
+  const { text, content } = comment
+  const [showHidden, setShowHidden] = useState(false)
+  return comment.hidden && !showHidden ? (
+    <div
+      className="hover text-sm font-thin italic text-gray-600 hover:cursor-pointer"
+      onClick={() => {
+        setShowHidden(!showHidden)
+      }}
+    >
+      Comment hidden
+    </div>
+  ) : (
+    <Content size="sm" className="mt-1 grow" content={content || text} />
+  )
+}
+
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
   comment: ContractComment
@@ -175,6 +195,7 @@ export function CommentActions(props: {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
+  const isAdmin = useAdmin()
 
   return (
     <Row className="grow items-center justify-end">
@@ -230,6 +251,18 @@ export function CommentActions(props: {
               if (user?.id !== comment.userId) setIsModalOpen(true)
               else toast.error(`You can't report your own comment`)
             },
+          },
+          isAdmin && {
+            name: comment.hidden ? 'Unhide' : 'Hide',
+            icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
+            onClick: async () => {
+              const commentPath = `contracts/${contract.id}/comments/${comment.id}`
+              try {
+                await hideComment({ commentPath })
+              } catch (e: any) {
+                toast.error(`Error hiding comment: ${e}`)
+              }
+            },
           }
         )}
       />
@@ -245,7 +278,7 @@ export const FeedComment = memo(function FeedComment(props: {
   onReplyClick?: (comment: ContractComment) => void
 }) {
   const { contract, comment, highlighted, showLike, onReplyClick } = props
-  const { text, content, userUsername, userAvatarUrl } = comment
+  const { userUsername, userAvatarUrl } = comment
   const commentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -266,7 +299,7 @@ export const FeedComment = memo(function FeedComment(props: {
       <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        <Content className="mt-2 grow" size="sm" content={content || text} />
+        <HideableContent comment={comment} />
         <CommentActions
           onReplyClick={onReplyClick}
           comment={comment}

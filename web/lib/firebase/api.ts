@@ -6,6 +6,7 @@ import { QfPayReq } from 'web/pages/api/v0/qf/pay'
 import { QfAddPoolReq } from 'web/pages/api/v0/qf/add-pool'
 import { QfResolveReq } from 'web/pages/api/v0/qf/resolve'
 import { PrivacyStatusType } from 'common/group'
+import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -161,6 +162,10 @@ export function resolveQf(params: QfResolveReq) {
 export function unresolveMarket(params: { marketId: string }) {
   const { marketId } = params
   return call(`/api/v0/market/${marketId}/unresolve`, 'POST', params)
+}
+
+export function hideComment(params: HideCommentReq) {
+  return call(`/api/v0/hide-comment`, 'POST', params)
 }
 
 export function updateGroupPrivacy(params: {
