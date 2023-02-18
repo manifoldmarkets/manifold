@@ -39,8 +39,6 @@ export const updatememberrole = newEndpoint({}, async (req, auth) => {
       throw new APIError(400, 'Member cannot be found in group')
     if (!requesterUserSnap.exists)
       throw new APIError(400, 'You cannot be found')
-
-    // const requester = requesterSnap?.data() as GroupMember
     const requesterUser = requesterUserSnap.data() as User
     const affectedMember = affectedMemberSnap.data() as GroupMember
     const group = groupSnap.data() as Group
