@@ -1,4 +1,4 @@
-import { PlusIcon, UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
+import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { User } from 'common/user'

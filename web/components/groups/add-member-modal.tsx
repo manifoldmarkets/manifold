@@ -5,9 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useRealtimeGroupMemberIds } from 'web/hooks/use-group-supabase'
 import { addGroupMember } from 'web/lib/firebase/api'
-import { getGroupMemberIds } from 'web/lib/supabase/group'
 import {
-  searchUsers,
   searchUsersExcludingArray,
   UserSearchResult,
 } from 'web/lib/supabase/users'
