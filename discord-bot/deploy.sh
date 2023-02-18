@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVICE_NAME="manifold-discord-bot"
+SERVICE_NAME="discord-bot"
 
 ENV=${1:-dev}
 case $ENV in
@@ -29,8 +29,8 @@ yarn build && \
          --region us-east4 \
          --set-env-vars ENVIRONMENT=${ENVIRONMENT} \
          --set-env-vars GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
-         --set-secrets SUPABASE_PASSWORD=SUPABASE_PASSWORD:latest \
          --set-secrets DISCORD_BOT_TOKEN=DISCORD_BOT_TOKEN:latest \
+         --set-secrets SUPABASE_KEY=SUPABASE_KEY:latest \
          --execution-environment gen2 \
          --cpu ${GCLOUD_CPU} \
          --memory 2Gi \

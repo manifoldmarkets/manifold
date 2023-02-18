@@ -1,8 +1,8 @@
 {
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "start": "NODE_ENV=production yarn run build && nodemon --watch src --exec ts-node src/index.ts",
-    "dev": "NODE_ENV=development yarn run build && nodemon --watch src --exec ts-node src/index.ts"
+    "start": "ENVIRONMENT=PROD yarn run build && nodemon --watch src --exec ts-node src/index.ts",
+    "dev": "ENVIRONMENT=DEV yarn run build && nodemon --watch src --exec ts-node src/index.ts"
   },
   "type": "module",
   "dependencies": {

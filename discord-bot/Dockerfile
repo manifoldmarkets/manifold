@@ -1,6 +1,6 @@
 # prereq: first do `yarn build` to compile typescript & etc.
 
-FROM node:19-slim
+FROM node:19
 WORKDIR /usr/src/app
 
 COPY package.json yarn.lock ./
