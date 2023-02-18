@@ -194,7 +194,7 @@ export default function Charity(props: {
         <div className="mt-10 w-full rounded-xl bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-5">
           <iframe
             height="405"
-            src="https://manifold.markets/embed/SG/will-manifold-have-200k-in-donation"
+            src="https://manifold.markets/embed/SG/will-manifold-have-100k-in-donation"
             title="How many $ will be donated through Manifold's Giving Tuesday?"
             frameBorder="0"
             className="w-full rounded-xl bg-white p-4"
