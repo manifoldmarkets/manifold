@@ -49,6 +49,7 @@ export type User = {
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
   userDeleted?: boolean
+  metricsLastUpdated?: number
 }
 
 export type PrivateUser = {
