@@ -39,7 +39,7 @@ export function AddMemberModal(props: {
     searchUsersExcludingArray(
       query,
       QUERY_SIZE,
-      groupMemberIds.filter((member) => member !== null)
+      groupMemberIds.filter((member) => member !== null) as string[]
     )
       .then((results) => {
         // if there's a more recent request, forget about this one

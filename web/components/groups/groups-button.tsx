@@ -178,8 +178,8 @@ export function AddMembersButton(props: { group: Group; className?: string }) {
         onClick={() => setOpen(true)}
       >
         <Row className="gap-1">
-          <PlusIcon className="h-5 w-5" />
-          Add members
+          <UserAddIcon className="h-5 w-5" />
+          Add
         </Row>
       </Button>
       <AddMemberModal open={open} setOpen={setOpen} group={group} />
