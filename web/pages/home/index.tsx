@@ -658,7 +658,12 @@ const useViewToggle = () => {
 
   const [showSwipe, setShowSwipe] = useState(!!savedShowSwipe)
 
-  const [isNative, setIsNative] = useState(!!savedShowSwipe || getIsNative())
+  const savedIsNative =
+    typeof window === 'undefined'
+      ? undefined
+      : window.location.search.includes('native') || getIsNative()
+
+  const [isNative, setIsNative] = useState(!!savedShowSwipe || !!savedIsNative)
 
   const update = (value: boolean) => {
     setShowSwipe(value)
@@ -666,17 +671,17 @@ const useViewToggle = () => {
   }
 
   useEffect(() => {
-    setIsNative(getIsNative())
+    const isNative = window.location.search.includes('native') || getIsNative()
+    if (savedIsNative === undefined) setIsNative(isNative)
 
     if (savedShowSwipe === undefined) {
       const loadedShowSwipe = safeLocalStorage?.getItem('show-swipe')
+
       if (loadedShowSwipe === 'true' || loadedShowSwipe === 'false') {
         update(loadedShowSwipe === 'true')
-        return
+      } else {
+        update(isNative)
       }
-
-      const isNative = getIsNative()
-      update(isNative)
     }
   }, [])
 
