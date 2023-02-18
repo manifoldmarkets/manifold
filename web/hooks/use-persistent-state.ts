@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useStateCheckEquality } from './use-state-check-equality'
 import { NextRouter, useRouter } from 'next/router'
 import { useHasLoaded } from './use-has-loaded'
@@ -146,6 +146,41 @@ export const usePersistentState = <T>(
   }
 
   return [state, setState] as const
+}
+
+export const useBetterPersistentState = <T>(
+  initial: T,
+  persist?: PersistenceOptions<T>
+) => {
+  const store = persist?.store
+  const key = persist?.key
+
+  const hasLoaded = useHasLoaded()
+
+  // Note that it's important in some cases to get the state correct during the
+  // first render, or scroll restoration won't take into account the saved state.
+  // However, if this is the first server render, we don't want to read from the store,
+  // because it could cause a hydration error.
+  const savedValue =
+    typeof window !== 'undefined' && key && store ? store.get(key) : undefined
+
+  const [state, setState] = useState(savedValue ?? initial)
+
+  const update = (value: T) => {
+    if (key && store) {
+      store.set(key, value)
+    }
+    setState(value)
+  }
+
+  useEffect(() => {
+    if (savedValue === undefined && hasLoaded && key && store) {
+      const newValue = store.get(key)
+      update(newValue ?? initial)
+    }
+  }, [key, state, hasLoaded])
+
+  return [state, update, savedValue !== undefined || hasLoaded] as const
 }
 
 export const usePersistentRevalidatedState = <T>(

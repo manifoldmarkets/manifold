@@ -51,6 +51,7 @@ import {
 import {
   inMemoryStore,
   storageStore,
+  useBetterPersistentState,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { useAllPosts } from 'web/hooks/use-post'
@@ -654,7 +655,7 @@ function MobileHome() {
 const useViewToggle = () => {
   const isNative = getIsNative()
 
-  const [showSwipe, setShowSwipe] = usePersistentState(isNative, {
+  const [showSwipe, setShowSwipe] = useBetterPersistentState(isNative, {
     key: 'show-swipe',
     store: storageStore(safeLocalStorage),
   })
