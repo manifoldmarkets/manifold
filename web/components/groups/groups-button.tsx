@@ -21,6 +21,7 @@ import {
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { GroupLinkItem } from 'web/pages/groups'
 import { Button } from '../buttons/button'
+import { AddMemberModal } from './add-member-modal'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -167,17 +168,21 @@ export function JoinOrLeaveGroupButton(props: {
 }
 
 export function AddMembersButton(props: { group: Group; className?: string }) {
-  const {
-    // group,
-    className,
-  } = props
-  const [_open, setOpen] = useState(false)
+  const { group, className } = props
+  const [open, setOpen] = useState(false)
   return (
-    <Button color="indigo" className={className} onClick={() => setOpen(true)}>
-      <Row className="gap-1">
-        <PlusIcon className="h-5 w-5" />
-        Add members
-      </Row>
-    </Button>
+    <>
+      <Button
+        color="indigo"
+        className={className}
+        onClick={() => setOpen(true)}
+      >
+        <Row className="gap-1">
+          <PlusIcon className="h-5 w-5" />
+          Add members
+        </Row>
+      </Button>
+      <AddMemberModal open={open} setOpen={setOpen} group={group} />
+    </>
   )
 }

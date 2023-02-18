@@ -101,6 +101,7 @@ export type notification_reason_types =
   | 'your_contract_closed'
   | 'subsidized_your_market'
   | 'group_role_changed'
+  | 'added_to_group'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -263,6 +264,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   group_role_changed: {
     simple: 'Changes in group roles',
     detailed: 'Changes to your role in groups you are a member of',
+  },
+  added_to_group: {
+    simple: 'Getting added to new groups',
+    detailed: 'When an admin adds you to their group',
   },
 }
 

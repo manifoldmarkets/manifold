@@ -164,3 +164,7 @@ export function updateGroupPrivacy(params: {
 }) {
   return call(getFunctionUrl('updategroupprivacy'), 'POST', params)
 }
+
+export function addGroupMember(params: { groupId: string; userId: string }) {
+  return call(getFunctionUrl('addgroupmember'), 'POST', params)
+}
