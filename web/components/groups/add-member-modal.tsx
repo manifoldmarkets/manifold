@@ -46,6 +46,7 @@ export function AddMemberModal(props: {
         }
       })
       .finally(() => setLoading(false))
+    console.log(groupMemberIds, searchMemberResult)
   }, [query, groupMemberIds])
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -64,7 +65,14 @@ export function AddMemberModal(props: {
             <div className="text-gray-500">No members found</div>
           )}
           {searchMemberResult.map((user) => (
-            <AddMemberWidget key={user.id} user={user} group={group} />
+            <AddMemberWidget
+              key={user.id}
+              user={user}
+              group={group}
+              isDisabled={groupMemberIds.some(
+                (memberId) => memberId == user.id
+              )}
+            />
           ))}
         </Col>
       </Col>
@@ -75,9 +83,10 @@ export function AddMemberModal(props: {
 export function AddMemberWidget(props: {
   user: Pick<User, 'id' | 'name' | 'username' | 'avatarUrl'>
   group: Group
+  isDisabled?: boolean
 }) {
-  const { user, group } = props
-  const [disabled, setDisabled] = useState(false)
+  const { user, group, isDisabled } = props
+  const [disabled, setDisabled] = useState(isDisabled ?? false)
   return (
     <Row className="w-full items-center justify-between gap-4">
       <Row className="w-3/4 gap-2">
