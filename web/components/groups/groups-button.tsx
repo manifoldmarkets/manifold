@@ -166,23 +166,3 @@ export function JoinOrLeaveGroupButton(props: {
     </Button>
   )
 }
-
-export function AddMembersButton(props: { group: Group; className?: string }) {
-  const { group, className } = props
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <Button
-        color="indigo"
-        className={className}
-        onClick={() => setOpen(true)}
-      >
-        <Row className="gap-1">
-          <UserAddIcon className="h-5 w-5" />
-          Add
-        </Row>
-      </Button>
-      <AddMemberModal open={open} setOpen={setOpen} group={group} />
-    </>
-  )
-}
