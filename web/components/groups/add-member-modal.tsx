@@ -46,7 +46,6 @@ export function AddMemberModal(props: {
         }
       })
       .finally(() => setLoading(false))
-    console.log(groupMemberIds, searchMemberResult)
   }, [query, groupMemberIds])
   return (
     <Modal open={open} setOpen={setOpen}>
