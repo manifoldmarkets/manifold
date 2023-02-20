@@ -1,6 +1,5 @@
 import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -21,7 +20,6 @@ import {
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { GroupLinkItem } from 'web/pages/groups'
 import { Button } from '../buttons/button'
-import { AddMemberModal } from './add-member-modal'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
