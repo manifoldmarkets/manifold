@@ -101,6 +101,7 @@ const removeContractFromGroupFunction = toCloudFunction(
   endpoints.removecontractfromgroup
 )
 const updateGroupPrivacyFunction = toCloudFunction(endpoints.updategroupprivacy)
+const addGroupMemberFunction = toCloudFunction(endpoints.addgroupmember)
 
 export {
   healthFunction as health,
@@ -140,4 +141,5 @@ export {
   updateMemberRoleFunction as updatememberrole,
   removeContractFromGroupFunction as removecontractfromgroup,
   updateGroupPrivacyFunction as updategroupprivacy,
+  addGroupMemberFunction as addgroupmember,
 }

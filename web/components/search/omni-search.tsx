@@ -220,7 +220,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
             />
             {name}
             {username !== name && (
-              <span className="font-light">@{username}</span>
+              <span className="font-light text-gray-400">@{username}</span>
             )}
           </div>
         </ResultOption>

@@ -45,8 +45,11 @@ export type notification_preferences = {
   tips_on_your_markets: notification_destination_types[]
   limit_order_fills: notification_destination_types[]
 
-  // General
+  // Groups
   group_role_changed: notification_destination_types[]
+  added_to_group: notification_destination_types[]
+
+  // General
   tagged_user: notification_destination_types[]
   user_liked_your_content: notification_destination_types[]
   on_new_follow: notification_destination_types[]
@@ -148,8 +151,11 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     tips_on_your_markets: constructPref(true, true, false),
     limit_order_fills: constructPref(true, false, false),
 
-    // General
+    // Groups
     group_role_changed: constructPref(true, false, false),
+    added_to_group: constructPref(true, false, false),
+
+    // General
     tagged_user: constructPref(true, true, false),
     on_new_follow: constructPref(true, true, false),
     contract_from_followed_user: constructPref(true, true, false),

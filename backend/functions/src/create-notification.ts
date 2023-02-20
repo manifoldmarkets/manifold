@@ -1204,3 +1204,33 @@ export const createGroupStatusChangeNotification = async (
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }
+
+export const createAddedToGroupNotification = async (
+  initiator: User,
+  userId: string,
+  group: Group
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const notificationRef = firestore
+    .collection(`/users/${userId}/notifications`)
+    .doc()
+  const notification: Notification = {
+    id: notificationRef.id,
+    userId: userId,
+    reason: 'added_to_group',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: group.id,
+    sourceType: 'group',
+    sourceUpdateType: 'updated',
+    sourceUserName: initiator.name,
+    sourceUserUsername: initiator.username,
+    sourceUserAvatarUrl: initiator.avatarUrl,
+    sourceText: group.name,
+    sourceSlug: group.slug,
+    sourceTitle: group.name,
+    sourceContractId: 'group' + group.id,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}

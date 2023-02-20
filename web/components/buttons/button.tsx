@@ -8,6 +8,7 @@ export type ColorType =
   | 'red'
   | 'blue'
   | 'indigo'
+  | 'indigo-outline'
   | 'yellow'
   | 'gray'
   | 'dark-gray'
@@ -44,6 +45,8 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
       'disabled:bg-gray-300 bg-blue-400 text-white hover:bg-blue-500',
     color === 'indigo' &&
       'disabled:bg-gray-300 bg-indigo-500 text-white hover:bg-indigo-600',
+    color === 'indigo-outline' &&
+      'border-2 border-indigo-500 disabled:border-gray-300 disabled:text-gray-300 text-indigo-500 hover:bg-indigo-500 hover:text-white disabled:focus:bg-inherit disabled:hover:bg-inherit',
     color === 'gray' &&
       'bg-gray-200 text-gray-600 enabled:hover:bg-gray-300 enabled:hover:text-gray-700 disabled:opacity-50',
     color === 'dark-gray' &&

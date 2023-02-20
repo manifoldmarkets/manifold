@@ -165,7 +165,7 @@ export function NotificationSettings(props: {
   }
   const groups: SectionData = {
     label: 'Groups',
-    subscriptionTypes: ['group_role_changed'],
+    subscriptionTypes: ['group_role_changed', 'added_to_group'],
   }
   const generalOther: SectionData = {
     label: 'Other',
