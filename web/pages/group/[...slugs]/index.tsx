@@ -42,10 +42,7 @@ import GroupPrivacyStatusWidget, {
   GroupMembersWidget,
 } from 'web/components/groups/group-page-items'
 import { GroupPostSection } from 'web/components/groups/group-post-section'
-import {
-  AddMembersButton,
-  JoinOrLeaveGroupButton,
-} from 'web/components/groups/groups-button'
+import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -223,9 +220,6 @@ export default function GroupPage(props: {
             </div>
             <Col className="justify-end">
               <Row className="items-center gap-2">
-                {user?.id === group.creatorId && (
-                  <AddMembersButton group={group} />
-                )}
                 {user?.id != group.creatorId && (
                   <JoinOrLeaveGroupButton
                     group={group}
