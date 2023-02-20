@@ -85,7 +85,7 @@ export function AddMemberWidget(props: {
   isDisabled?: boolean
 }) {
   const { user, group, isDisabled } = props
-  const [disabled, setDisabled] = useState(isDisabled ?? false)
+  const [disabled, setDisabled] = useState(isDisabled)
   return (
     <Row className="w-full items-center justify-between gap-4">
       <Row className="w-3/4 gap-2">
