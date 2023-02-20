@@ -1,4 +1,7 @@
 {
+  "name": "manifold-discord-bot",
+  "description": "Discord bot that uses reactions to place bets on Manifold Markets.",
+  "version": "0.1.0",
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "start": "ENVIRONMENT=PROD yarn run build && nodemon --watch src --exec ts-node src/index.ts",

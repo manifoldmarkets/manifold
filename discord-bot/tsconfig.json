@@ -9,7 +9,6 @@
         "moduleResolution": "node",
         "outDir": "./lib",
         "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
-        "sourceMap": true,
         "baseUrl": "./src",
         "strict": true,
     },

@@ -10,7 +10,7 @@ case $ENV in
       GCLOUD_PROJECT=dev-mantic-markets ;;
     prod)
       ENVIRONMENT=PROD
-      GCLOUD_CPU=4
+      GCLOUD_CPU=1
       GCLOUD_PROJECT=mantic-markets ;;
     *)
       echo "Invalid environment; must be dev or prod."
@@ -26,7 +26,7 @@ yarn build && \
   gcloud beta run deploy ${SERVICE_NAME} \
          --image gcr.io/${GCLOUD_PROJECT}/${SERVICE_NAME} \
          --project ${GCLOUD_PROJECT} \
-         --region us-east4 \
+         --region us-central \
          --set-env-vars ENVIRONMENT=${ENVIRONMENT} \
          --set-env-vars GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
          --set-secrets DISCORD_BOT_TOKEN=DISCORD_BOT_TOKEN:latest \
@@ -38,7 +38,3 @@ yarn build && \
          --min-instances 1 \
          --no-allow-unauthenticated \
          --no-cpu-throttling
-
-# to establish subscription to service, e.g.:
-# gcloud pubsub subscriptions create supabaseReplicationSubscription --topic firestoreWrite --ack-deadline 600 --push-endpoint https://supabase-replicator-w3txbmd3ba-uc.a.run.app
-# and make sure subscription push service account is authed to call service
