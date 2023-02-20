@@ -94,7 +94,10 @@ export const DailyProfit = memo(function DailyProfit(props: {
               dailyProfit > 0 && seen && 'text-teal-500'
             )}
           >
-            <span>💰{formatMoney(dailyProfit)}</span>
+            <span>
+              {dailyProfit >= 0 ? '+' : ''}
+              {formatMoney(dailyProfit)}
+            </span>
           </Row>
         </Tooltip>
       </button>

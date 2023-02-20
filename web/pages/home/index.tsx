@@ -190,7 +190,7 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />
           <MobileSearchButton className="flex-1 md:hidden" />
           <Row className="items-center gap-4">
-            <DailyStats user={user} showLoans />
+            <DailyStats user={user} />
             <CustomizeButton router={Router} />
           </Row>
         </Row>
