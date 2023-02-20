@@ -70,3 +70,15 @@ export const getAnyHandledEmojiKey = (reaction: MessageReaction) => {
     return
   return emojiKey
 }
+
+export const getBettingEmojisAsStrings = (guild: Guild | null) => {
+  let yesBetsEmojis = ''
+  let noBetsEmojis = ''
+  for (const emoji in bettingEmojis) {
+    const emojiText = `${getEmoji(guild, emoji)}`
+    bettingEmojis[emoji].outcome === 'YES'
+      ? (yesBetsEmojis += emojiText)
+      : (noBetsEmojis += emojiText)
+  }
+  return { yesBetsEmojis, noBetsEmojis }
+}

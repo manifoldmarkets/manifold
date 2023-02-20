@@ -10,8 +10,9 @@ import {
 import { FullMarket } from 'manifold-sdk'
 import {
   bettingEmojis,
-  getBetEmojiKey,
   getAnyHandledEmojiKey,
+  getBetEmojiKey,
+  getBettingEmojisAsStrings,
 } from './emojis.js'
 import { registerHelpMessage, userApiKey } from './storage.js'
 
@@ -32,14 +33,17 @@ export const handleReaction = async (
   // Market description
   if (name === 'ℹ️') {
     const content = `Market details: ${market.textDescription}`
-    await sendThreadMessage(channel, market, content, user)
+    await sendThreadMessage(channel, market, content, user, true)
     return
   }
 
   // Help
   if (name === '❓') {
-    const content = `This is a market for the question: ${market.question}. You can bet on the outcome of the market by reacting to my previous message with the bet you want to make.`
-    await sendThreadMessage(channel, market, content, user)
+    const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings(
+      channel.guild
+    )
+    const content = `This is a market for the question "${market.question}". You can bet YES by reacting with these emojis: ${yesBetsEmojis} and NO with these: ${noBetsEmojis}. The emoji numbers correspond to the amount of mana used per bet.`
+    await user.send(content)
     return
   }
   // The embeds don't load unless we fetch the message every time even though the message is not marked as partial
@@ -49,6 +53,17 @@ export const handleReaction = async (
       ? await reaction.message.fetch()
       : reaction.message
 
+  const closed = (market.closeTime ?? 0) <= Date.now()
+  if (closed) {
+    await sendThreadMessage(
+      channel,
+      market,
+      getCurrentMarketDescription(market),
+      user
+    )
+    await updateMarketStatus(message, market)
+    return
+  }
   // Attempt to place a bet
   await handleBet(reaction, user, channel, message, market)
 }
@@ -69,7 +84,7 @@ export const handleBet = async (
     const apiKey = await userApiKey(user.id)
     if (!apiKey) {
       if (sale) return
-      user.send(registerHelpMessage)
+      await user.send(registerHelpMessage)
       const userReactions = message.reactions.cache.filter((reaction) =>
         reaction.users.cache.has(user.id)
       )
@@ -109,19 +124,30 @@ export const handleBet = async (
       bet.probAfter * 100
     )}%`
     await sendThreadMessage(channel, market, content, user)
-    await editMessageWithNewProb(message, bet.probAfter)
+    await updateMarketStatus(message, market)
   } catch (e) {
     const content = `Error: ${e}`
     await sendThreadMessage(channel, market, content, user)
   }
 }
-export const currentProbText = (prob: number) =>
+const currentProbText = (prob: number) =>
   `**${Math.round(prob * 100)}%** chance`
 
-const editMessageWithNewProb = async (message: Message, newProb: number) => {
+export const getCurrentMarketDescription = (market: FullMarket) => {
+  const closed = (market.closeTime ?? 0) <= Date.now()
+  let content = currentProbText(market.probability)
+  if (closed) {
+    content = market.isResolved
+      ? `Market resolved ${market.resolution}`
+      : `Market closed at ${Math.round(market.probability * 100)}% chance.`
+  }
+  return content
+}
+
+const updateMarketStatus = async (message: Message, market: FullMarket) => {
   const previousEmbed = message.embeds[0]
   const marketEmbed = EmbedBuilder.from(previousEmbed)
-  marketEmbed.setDescription(currentProbText(newProb))
+  marketEmbed.setDescription(getCurrentMarketDescription(market))
   await message.edit({ embeds: [marketEmbed], files: [] })
 }
 
@@ -147,11 +173,14 @@ export const sendThreadMessage = async (
   channel: TextChannel,
   market: FullMarket,
   content: string,
-  user: User
+  user: User,
+  addUserToThread?: boolean
 ) => {
   const thread = await getThread(channel, market.question)
-  console.log('logging user bet', user.tag, 'to thread', thread.name)
-  await Promise.all([thread.send(content)])
+  await Promise.all([
+    thread.send(content),
+    addUserToThread ? thread.members.add(user) : Promise.resolve(),
+  ])
 }
 
 export const sendThreadErrorMessage = async (
@@ -177,11 +206,23 @@ export const getMarketFromSlug = async (
     await errorCallback?.('Market not found with slug: ' + slug)
     return
   }
-  const market = await resp.json()
+  return await resp.json()
+}
+
+export const getOpenBinaryMarketFromSlug = async (
+  slug: string,
+  errorCallback?: (message: string) => void
+) => {
+  const market = await getMarketFromSlug(slug, errorCallback)
+  if (!market) return
+
   if (market.isResolved || (market.closeTime ?? 0) < Date.now()) {
-    await errorCallback?.('Market is resolved, no longer accepting bets')
+    const status = market.isResolved ? 'resolved' : 'closed'
+    await errorCallback?.(`Market is ${status}, no longer accepting bets`)
     return
   }
+  const isClosed = (market.closeTime ?? 0) < Date.now()
+  console.log('market', market.id, 'is closed?', isClosed)
   if (market.outcomeType !== 'BINARY') {
     await errorCallback?.('Only Yes/No markets are supported')
     return

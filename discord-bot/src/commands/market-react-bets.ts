@@ -8,10 +8,10 @@ import {
   User,
 } from 'discord.js'
 import { FullMarket } from 'manifold-sdk'
-import { bettingEmojis, customEmojis, emojis, getEmoji } from '../emojis.js'
+import { customEmojis, emojis, getBettingEmojisAsStrings } from '../emojis.js'
 import {
-  currentProbText,
-  getMarketFromSlug,
+  getCurrentMarketDescription,
+  getOpenBinaryMarketFromSlug,
   getSlug,
   handleReaction,
 } from '../helpers.js'
@@ -42,7 +42,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     )
     return
   }
-  const market = await getMarketFromSlug(slug, (error) =>
+  const market = await getOpenBinaryMarketFromSlug(slug, (error) =>
     interaction.reply(error)
   )
   if (!market) return
@@ -99,14 +99,9 @@ const sendMarketIntro = async (
     } else await message.react(emoji)
   }
 
-  let yesBetsEmojis = ''
-  let noBetsEmojis = ''
-  for (const emoji in bettingEmojis) {
-    const emojiText = `${getEmoji(interaction.guild, emoji)}`
-    bettingEmojis[emoji].outcome === 'YES'
-      ? (yesBetsEmojis += emojiText)
-      : (noBetsEmojis += emojiText)
-  }
+  const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings(
+    interaction.guild
+  )
 
   const previousEmbed = message.embeds[0]
   const marketEmbed = EmbedBuilder.from(previousEmbed)
@@ -126,7 +121,7 @@ const sendMarketIntro = async (
     .setColor(0x0099ff)
     .setTitle(market.question)
     .setURL(market.url)
-    .setDescription(currentProbText(market.probability))
+    .setDescription(getCurrentMarketDescription(market))
     .setThumbnail(`attachment://cover.png`)
     .addFields(
       {
