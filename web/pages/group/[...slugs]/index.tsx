@@ -213,6 +213,7 @@ export default function GroupPage(props: {
             group={group}
             user={user}
             canEdit={isManifoldAdmin || userRole === 'admin'}
+            key={group.id}
           />
         </div>
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
