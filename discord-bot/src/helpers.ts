@@ -8,10 +8,50 @@ import {
   User,
 } from 'discord.js'
 import { FullMarket } from 'manifold-sdk'
-import { bettingEmojis, customEmojis } from './emojis.js'
+import {
+  bettingEmojis,
+  getBetEmojiKey,
+  getAnyHandledEmojiKey,
+} from './emojis.js'
 import { registerHelpMessage, userApiKey } from './storage.js'
 
 const discordThreads: { [key: string]: ThreadChannel } = {}
+
+export const handleReaction = async (
+  reaction: MessageReaction,
+  user: User,
+  channel: TextChannel,
+  market: FullMarket
+) => {
+  const { name } = reaction.emoji
+  console.log(`Collected ${name} from user id: ${user.id}`)
+  if (!getAnyHandledEmojiKey(reaction)) {
+    console.log('Not a handled emoji')
+    return
+  }
+  // Market description
+  if (name === 'ℹ️') {
+    const content = `Market details: ${market.textDescription}`
+    await sendThreadMessage(channel, market, content, user)
+    return
+  }
+
+  // Help
+  if (name === '❓') {
+    const content = `This is a market for the question: ${market.question}. You can bet on the outcome of the market by reacting to my previous message with the bet you want to make.`
+    await sendThreadMessage(channel, market, content, user)
+    return
+  }
+  // The embeds don't load unless we fetch the message every time even though the message is not marked as partial
+  // seems related to: https://github.com/discordjs/discord.js/issues/7697#issuecomment-1073432737
+  const message =
+    reaction.message.embeds.length === 0 || reaction.message.partial
+      ? await reaction.message.fetch()
+      : reaction.message
+
+  // Attempt to place a bet
+  await handleBet(reaction, user, channel, message, market)
+}
 
 export const handleBet = async (
   reaction: MessageReaction,
@@ -21,11 +61,8 @@ export const handleBet = async (
   market: FullMarket,
   sale?: boolean
 ) => {
-  const emojiKey = customEmojis.includes(reaction.emoji.id ?? '_')
-    ? reaction.emoji.id
-    : reaction.emoji.name
-  if (!emojiKey || !Object.keys(bettingEmojis).includes(emojiKey)) return
-
+  const emojiKey = getBetEmojiKey(reaction)
+  if (!emojiKey) return
   const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
   console.log('betting', amount, buyOutcome, 'on', market.id, 'for', user.tag)
   try {
@@ -93,7 +130,7 @@ const getThread = async (
   marketName: string,
   title?: string
 ) => {
-  const name = marketName.slice(0, 95) + '...'
+  const name = marketName.slice(0, 40) + '...'
   if (discordThreads[name]) return discordThreads[name]
   let thread = channel.threads.cache.find((x) => x.name === name)
   if (thread) return thread
@@ -113,7 +150,8 @@ export const sendThreadMessage = async (
   user: User
 ) => {
   const thread = await getThread(channel, market.question)
-  await Promise.all([thread.members.add(user), thread.send(content)])
+  console.log('logging user bet', user.tag, 'to thread', thread.name)
+  await Promise.all([thread.send(content)])
 }
 
 export const sendThreadErrorMessage = async (

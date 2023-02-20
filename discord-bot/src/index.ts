@@ -24,10 +24,11 @@ import * as path from 'path'
 import * as process from 'process'
 import { fileURLToPath } from 'url'
 import { config } from './constants/config.js'
+import { getAnyHandledEmojiKey } from './emojis.js'
 import {
   getMarketFromSlug,
   getSlug,
-  handleBet,
+  handleReaction,
   sendThreadErrorMessage,
 } from './helpers.js'
 import { registerApiKey } from './register-api-key.js'
@@ -124,32 +125,31 @@ try {
 }
 const handleOldReaction = async (
   pReaction: MessageReaction | PartialMessageReaction,
-  pUser: User | PartialUser,
-  removal?: boolean
+  pUser: User | PartialUser
 ) => {
   const ignore = messagesHandledViaInteraction.has(pReaction.message.id)
   console.log(`ignoring reaction:${ignore}`)
   if (ignore) return
 
-  console.log('handling old reaction')
+  console.log('checking old reaction for proper details')
 
   const reaction = pReaction.partial ? await pReaction.fetch() : pReaction
-  if (!reaction) return
-
-  const user = pUser.partial ? await pUser.fetch() : pUser
-  if (!user) return
-
   const message = reaction.message.partial
     ? await reaction.message.fetch()
     : reaction.message
-  if (!message) return
-  const { channelId } = message
-  const channel = await client.channels.fetch(channelId)
+
+  const emojiKey = getAnyHandledEmojiKey(reaction)
+  if (!emojiKey) return
+
+  const user = pUser.partial ? await pUser.fetch() : pUser
+
+  const channel = await client.channels.fetch(message.channelId)
   if (!channel || !channel.isTextBased()) return
-  const previousEmbed = message.embeds[0]
-  const marketEmbed = EmbedBuilder.from(previousEmbed)
+
+  const marketEmbed = EmbedBuilder.from(message.embeds[0])
   const link = marketEmbed.toJSON().url
-  if (!link) return
+  if (!link || !link.startsWith('https://manifold.markets/')) return
+
   const slug = getSlug(link)
   if (!slug) {
     await sendThreadErrorMessage(
@@ -160,6 +160,7 @@ const handleOldReaction = async (
     )
     return
   }
+
   const market = await getMarketFromSlug(slug, (error) =>
     sendThreadErrorMessage(
       channel as TextChannel,
@@ -171,26 +172,11 @@ const handleOldReaction = async (
   if (!market) return
   if (!(await userApiKey(user.id)))
     await Promise.all(message.reactions.cache?.map((r) => r.users.fetch()))
-  await handleBet(
-    reaction,
-    user,
-    channel as TextChannel,
-    message,
-    market,
-    removal
-  )
+
+  await handleReaction(reaction, user, channel as TextChannel, market)
 }
 
 client.on(Events.MessageReactionAdd, handleOldReaction)
-
-// Removed the un react action for now
-// client.on(
-//   Events.MessageReactionRemove,
-//   (
-//     reaction: PartialMessageReaction | MessageReaction,
-//     user: User | PartialUser
-//   ) => handleOldReaction(reaction, user, true)
-// )
 
 client.on(Events.MessageCreate, async (message) => {
   // Here you check for channel type

@@ -1,4 +1,4 @@
-import { Guild } from 'discord.js'
+import { Guild, MessageReaction } from 'discord.js'
 
 type emojiDetails = {
   outcome: 'YES' | 'NO'
@@ -6,14 +6,24 @@ type emojiDetails = {
 }
 
 // Custom emojis use id, not name
-export const bettingEmojis: { [key: string]: emojiDetails } = {
-  '1075904553758756914': { outcome: 'YES', amount: 10 },
-  '1075828981720416296': { outcome: 'YES', amount: 50 },
-  '1029761176336334918': { outcome: 'YES', amount: 100 },
-  '1075904582909165720': { outcome: 'NO', amount: 10 },
-  '1075829025093722146': { outcome: 'NO', amount: 50 },
-  '💯': { outcome: 'NO', amount: 100 },
-}
+export const bettingEmojis: { [key: string]: emojiDetails } =
+  process.env.ENVIRONMENT === 'PROD'
+    ? {
+        '1075904553758756914': { outcome: 'YES', amount: 10 },
+        '1075828981720416296': { outcome: 'YES', amount: 50 },
+        '1029761176336334918': { outcome: 'YES', amount: 100 },
+        '1075904582909165720': { outcome: 'NO', amount: 10 },
+        '1075829025093722146': { outcome: 'NO', amount: 50 },
+        '💯': { outcome: 'NO', amount: 100 },
+      }
+    : {
+        '👍': { outcome: 'YES', amount: 10 },
+        '😀': { outcome: 'YES', amount: 50 },
+        '🔥': { outcome: 'YES', amount: 100 },
+        '👎': { outcome: 'NO', amount: 10 },
+        '😞': { outcome: 'NO', amount: 50 },
+        '💯': { outcome: 'NO', amount: 100 },
+      }
 
 export const customEmojis = [
   '1075828981720416296',
@@ -38,3 +48,25 @@ export const getEmoji = (guild: Guild | null, emojiKey: string) => {
 export const emojis = Object.keys(bettingEmojis).concat(
   Object.keys(otherEmojis)
 )
+
+export const getBetEmojiKey = (reaction: MessageReaction) => {
+  const emojiKey = customEmojis.includes(reaction.emoji.id ?? '_')
+    ? reaction.emoji.id
+    : reaction.emoji.name
+  if (!emojiKey || !Object.keys(bettingEmojis).includes(emojiKey)) return
+  return emojiKey
+}
+
+export const getAnyHandledEmojiKey = (reaction: MessageReaction) => {
+  const emojiKey = customEmojis.includes(reaction.emoji.id ?? '_')
+    ? reaction.emoji.id
+    : reaction.emoji.name
+  if (
+    !emojiKey ||
+    !Object.keys(bettingEmojis)
+      .concat(Object.keys(otherEmojis))
+      .includes(emojiKey)
+  )
+    return
+  return emojiKey
+}

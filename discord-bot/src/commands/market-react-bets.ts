@@ -1,4 +1,3 @@
-import * as console from 'console'
 import {
   AttachmentBuilder,
   ChatInputCommandInteraction,
@@ -14,25 +13,26 @@ import {
   currentProbText,
   getMarketFromSlug,
   getSlug,
-  handleBet,
-  sendThreadMessage,
+  handleReaction,
 } from '../helpers.js'
-import {
-  messagesHandledViaInteraction,
-  registerHelpMessage,
-} from '../storage.js'
+import { messagesHandledViaInteraction } from '../storage.js'
 
 export const data = new SlashCommandBuilder()
   .setName('market')
   .setDescription('Link to a market that other users can bet on with reactions')
   .addStringOption((option) =>
-    option.setName('link').setDescription('The link to the market to bet on')
+    option
+      .setName('link')
+      .setDescription('The link to the market to bet on')
+      .setRequired(true)
   )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   const link = interaction.options.getString('link')
-  if (!link) {
-    await interaction.reply('You must specify a market link')
+  if (!link || !link.startsWith('https://manifold.markets/')) {
+    await interaction.reply(
+      'You must specify a market link starting with https://manifold.markets/'
+    )
     return
   }
   const slug = getSlug(link)
@@ -57,28 +57,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const collector = message.createReactionCollector({ filter, dispose: true })
   const channel = interaction.channel as TextChannel
   collector.on('collect', async (reaction, user) => {
-    const { name } = reaction.emoji
-    console.log(`Collected ${name} from user id: ${user.id}`)
-
-    // Market description
-    if (name === 'ℹ️') {
-      const content = `Market details: ${market.textDescription}`
-      await sendThreadMessage(channel, market, content, user)
-      return
-    }
-
-    // Help
-    if (name === '❓') {
-      const content = `This is a market for the question: ${market.question}. You can bet on the outcome of the market by reacting to my previous message with the bet you want to make. ${registerHelpMessage}`
-      await sendThreadMessage(channel, market, content, user)
-      return
-    }
-    // The embeds don't load unless we fetch the message every time even though the message is not marked as partial
-    // seems related to: https://github.com/discordjs/discord.js/issues/7697#issuecomment-1073432737
-    const message = await reaction.message.fetch()
-
-    // Attempt to place a bet
-    await handleBet(reaction, user, channel, message, market)
+    await handleReaction(reaction, user, channel, market)
   })
 
   // Removed the un react action for now
@@ -123,7 +102,7 @@ const sendMarketIntro = async (
   let yesBetsEmojis = ''
   let noBetsEmojis = ''
   for (const emoji in bettingEmojis) {
-    const emojiText = ` ${getEmoji(interaction.guild, emoji)}  `
+    const emojiText = `${getEmoji(interaction.guild, emoji)}`
     bettingEmojis[emoji].outcome === 'YES'
       ? (yesBetsEmojis += emojiText)
       : (noBetsEmojis += emojiText)
@@ -151,19 +130,20 @@ const sendMarketIntro = async (
     .setThumbnail(`attachment://cover.png`)
     .addFields(
       {
-        name: 'Bet YES',
-        value: `${yesBetsEmojis}`,
-        inline: true,
-      },
-      {
-        name: 'Bet NO',
-        value: `${noBetsEmojis}`,
+        name: `React to bet`,
+        value: `YES: ${yesBetsEmojis}   NO: ${noBetsEmojis}`,
         inline: true,
       }
+      // {
+      //   name: 'Bet NO',
+      //   value: `${noBetsEmojis}`,
+      // value: `test`,
+      // inline: true,
+      // }
     )
     .setTimestamp(market.closeTime)
     .setFooter({
-      text: `A market by ${market.creatorName}`,
+      text: `${market.creatorName}`,
       iconURL: `attachment://author.png`,
     })
 
