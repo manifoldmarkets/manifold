@@ -50,6 +50,7 @@ import {
 } from 'web/hooks/use-group'
 import {
   inMemoryStore,
+  storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { useAllPosts } from 'web/hooks/use-post'
@@ -80,6 +81,7 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { Swipe } from 'web/components/swipe/swipe'
 import { getIsNative } from 'web/lib/native/is-native'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -652,9 +654,16 @@ function MobileHome() {
 const useViewToggle = () => {
   const isNative = getIsNative()
 
-  const [showSwipe, setShowSwipe] = usePersistentState(isNative, {
+  const defaultShowSwipe =
+    typeof window === 'undefined'
+      ? false
+      : safeLocalStorage?.getItem('show-swipe')
+      ? safeLocalStorage?.getItem('show-swipe') === 'true'
+      : isNative
+
+  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
     key: 'show-swipe',
-    store: inMemoryStore(),
+    store: storageStore(safeLocalStorage),
   })
 
   const toggleView = (showSwipe: boolean) => () => {
