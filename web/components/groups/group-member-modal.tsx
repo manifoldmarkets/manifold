@@ -3,21 +3,113 @@ import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { buildArray } from 'common/util/array'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useRealtimeGroupMembers } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useUser } from 'web/hooks/use-user'
 import { updateMemberRole } from 'web/lib/firebase/api'
+import { searchUserInGroup } from 'web/lib/supabase/group'
 import DropdownMenu from '../comments/dropdown-menu'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
+import { Input } from '../widgets/input'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
 
+const SEARCH_MEMBER_QUERY_SIZE = 50
+
 export function GroupMemberModalContent(props: {
+  group: Group
+  canEdit: boolean
+  numMembers: number | undefined
+}) {
+  const { group, canEdit, numMembers } = props
+  const [query, setQuery] = useState('')
+  return (
+    <Col className={clsx(MODAL_CLASS, 'h-[85vh]')}>
+      {/* <Row className="w-full justify-start text-xl">👥 Members</Row> */}
+      {numMembers && numMembers >= 100 && (
+        <Input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search members"
+          className={clsx('w-full placeholder:text-gray-400')}
+        />
+      )}
+      {numMembers && numMembers >= 100 && query !== '' && (
+        <SearchGroupMemberModalContent
+          group={group}
+          canEdit={canEdit}
+          query={query}
+        />
+      )}
+
+      <div
+        className={clsx(
+          numMembers && numMembers >= 100 && query !== '' ? 'hidden' : ''
+        )}
+      >
+        <NonSearchGroupMemberModalContent
+          group={group}
+          canEdit={canEdit}
+          numMembers={numMembers}
+        />
+      </div>
+    </Col>
+  )
+}
+
+export function SearchGroupMemberModalContent(props: {
+  group: Group
+  canEdit: boolean
+  query: string
+}) {
+  const { group, canEdit, query } = props
+  const requestId = useRef(0)
+  const [loading, setLoading] = useState(false)
+  const [searchMemberResult, setSearchMemberResult] = useState<JSONContent[]>(
+    []
+  )
+  useEffect(() => {
+    const id = ++requestId.current
+    setLoading(true)
+    searchUserInGroup(group.id, query, SEARCH_MEMBER_QUERY_SIZE)
+      .then((results) => {
+        // if there's a more recent request, forget about this one
+        if (id === requestId.current) {
+          setSearchMemberResult(results)
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [query])
+  if (searchMemberResult.length == 0) {
+    return <div>No results...</div>
+  }
+  return (
+    <div
+      className={clsx(
+        'flex w-full flex-col gap-3',
+        SCROLLABLE_MODAL_CLASS,
+        loading ? 'animate-pulse' : ''
+      )}
+    >
+      {searchMemberResult.map((member) => (
+        <Member
+          key={member.member_id}
+          group={group}
+          member={member}
+          canEdit={canEdit}
+        />
+      ))}
+    </div>
+  )
+}
+
+export function NonSearchGroupMemberModalContent(props: {
   group: Group
   canEdit: boolean
   numMembers: number | undefined
@@ -26,7 +118,6 @@ export function GroupMemberModalContent(props: {
   const modalRootRef = useRef<HTMLDivElement | null>(null)
   const loadingRef = useRef<HTMLDivElement | null>(null)
   const hitBottom = useIntersection(loadingRef, '0px', modalRootRef)
-
   const { admins, moderators, members, loadMore } = useRealtimeGroupMembers(
     group.id,
     hitBottom,
@@ -34,47 +125,44 @@ export function GroupMemberModalContent(props: {
   )
 
   return (
-    <Col className={clsx(MODAL_CLASS, 'px-0')}>
+    <div
+      ref={modalRootRef}
+      className={clsx('flex w-full flex-col', SCROLLABLE_MODAL_CLASS)}
+    >
+      <MemberRoleSection
+        group={group}
+        members={admins}
+        role={'admin'}
+        canEdit={canEdit}
+      />
+      <MemberRoleSection
+        group={group}
+        members={moderators}
+        role={'moderator'}
+        canEdit={canEdit}
+      />
+      <MemberRoleSection
+        group={group}
+        members={members}
+        role={'member'}
+        canEdit={canEdit}
+      />
       <div
-        ref={modalRootRef}
-        className={clsx('flex w-full flex-col px-8', SCROLLABLE_MODAL_CLASS)}
+        ref={loadingRef}
+        className={
+          numMembers &&
+          admins &&
+          moderators &&
+          members &&
+          numMembers > admins.length + moderators.length + members.length &&
+          !loadMore
+            ? ''
+            : 'hidden'
+        }
       >
-        <span className="text-xl">👥 Members</span>
-        <MemberRoleSection
-          group={group}
-          members={admins}
-          role={'admin'}
-          canEdit={canEdit}
-        />
-        <MemberRoleSection
-          group={group}
-          members={moderators}
-          role={'moderator'}
-          canEdit={canEdit}
-        />
-        <MemberRoleSection
-          group={group}
-          members={members}
-          role={'member'}
-          canEdit={canEdit}
-        />
-        <div
-          ref={loadingRef}
-          className={
-            numMembers &&
-            admins &&
-            moderators &&
-            members &&
-            numMembers > admins.length + moderators.length + members.length &&
-            !loadMore
-              ? ''
-              : 'hidden'
-          }
-        >
-          <LoadingMember />
-        </div>
+        <LoadingMember />
       </div>
-    </Col>
+    </div>
   )
 }
 
