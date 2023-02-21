@@ -1,3 +1,4 @@
+import { FullMarket } from 'common/api-market-types'
 import {
   AttachmentBuilder,
   ChatInputCommandInteraction,
@@ -7,7 +8,6 @@ import {
   TextChannel,
   User,
 } from 'discord.js'
-import { FullMarket } from 'manifold-sdk'
 import { customEmojis, emojis, getBettingEmojisAsStrings } from '../emojis.js'
 import {
   getCurrentMarketDescription,
@@ -69,13 +69,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   //   await handleBet(reaction, user, channel, message, market, true)
   // })
 }
-type ExtraMarketProps = {
-  coverImageUrl?: string
-}
 
 const sendMarketIntro = async (
   interaction: ChatInputCommandInteraction,
-  market: FullMarket & ExtraMarketProps
+  market: FullMarket
 ) => {
   const placeHolderEmbed = new EmbedBuilder()
     .setColor(0x0099ff)

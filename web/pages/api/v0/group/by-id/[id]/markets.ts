@@ -1,7 +1,7 @@
+import { toLiteMarket } from 'common/api-market-types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { listGroupContracts } from 'web/lib/firebase/groups'
-import { toLiteMarket } from 'web/pages/api/v0/_types'
 
 export default async function handler(
   req: NextApiRequest,

@@ -1,3 +1,4 @@
+import { FullMarket } from 'common/api-market-types'
 import * as console from 'console'
 import {
   EmbedBuilder,
@@ -7,7 +8,6 @@ import {
   ThreadChannel,
   User,
 } from 'discord.js'
-import { FullMarket } from 'manifold-sdk'
 import {
   bettingEmojis,
   getAnyHandledEmojiKey,
@@ -135,11 +135,13 @@ const currentProbText = (prob: number) =>
 
 export const getCurrentMarketDescription = (market: FullMarket) => {
   const closed = (market.closeTime ?? 0) <= Date.now()
-  let content = currentProbText(market.probability)
+  let content = currentProbText(market.probability ?? 0)
   if (closed) {
     content = market.isResolved
       ? `Market resolved ${market.resolution}`
-      : `Market closed at ${Math.round(market.probability * 100)}% chance.`
+      : `Market closed at ${Math.round(
+          (market.probability ?? 0) * 100
+        )}% chance.`
   }
   return content
 }

@@ -1,8 +1,9 @@
 // Next.js API route support: https://vercel.com/docs/concepts/functions/serverless-functions
+import { toLiteMarket } from 'common/api-market-types'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { listAllContracts } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { toLiteMarket, ValidationError } from './_types'
+import { ValidationError } from './_types'
 import { z } from 'zod'
 import { validate } from './_validate'
 
