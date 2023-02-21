@@ -76,7 +76,6 @@ export async function searchUserInGroup(
   prompt: string,
   limit: number
 ) {
-  console.log(limit, prompt)
   if (prompt === '') {
     const { data } = await run(
       db

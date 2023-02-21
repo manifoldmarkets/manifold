@@ -30,7 +30,10 @@ export function GroupMemberModalContent(props: {
   const [query, setQuery] = useState('')
   return (
     <Col className={clsx(MODAL_CLASS, 'h-[85vh]')}>
-      {/* <Row className="w-full justify-start text-xl">👥 Members</Row> */}
+      {!numMembers ||
+        (numMembers < 100 && (
+          <Row className="w-full justify-start text-xl">👥 Members</Row>
+        ))}
       {numMembers && numMembers >= 100 && (
         <Input
           autoFocus
@@ -86,7 +89,7 @@ export function SearchGroupMemberModalContent(props: {
       })
       .finally(() => setLoading(false))
   }, [query])
-  if (searchMemberResult.length == 0) {
+  if (searchMemberResult.length == 0 && !loading) {
     return <div>No results...</div>
   }
   return (
@@ -285,7 +288,7 @@ export function Member(props: {
         />
         <UserLink name={member.name} username={member.username} />
       </Row>
-      <Row className="items-center gap-1">
+      <Row className="mr-4 items-center gap-1">
         {tag}
         <AdminRoleDropdown group={group} member={member} canEdit={canEdit} />
       </Row>
