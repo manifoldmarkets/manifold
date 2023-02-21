@@ -30,3 +30,6 @@ export type webToNativeMessageType =
   | 'error'
   | 'onPageVisit'
   | 'share'
+
+export const IS_NATIVE_KEY = 'is-native'
+export const PLATFORM_KEY = 'native-platform'

@@ -1,10 +1,8 @@
-import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
+import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/native-message'
 import { PrivateUser } from 'common/user'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { uniq } from 'lodash'
-
-const IS_NATIVE_KEY = 'is-native'
-const PLATFORM_KEY = 'native-platform'
+import { updatePrivateUser } from 'web/lib/firebase/users'
+import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 
 export const getIsNative = () => {
   // TODO cache the result of this in memory
