@@ -26,7 +26,7 @@ yarn build && \
   gcloud beta run deploy ${SERVICE_NAME} \
          --image gcr.io/${GCLOUD_PROJECT}/${SERVICE_NAME} \
          --project ${GCLOUD_PROJECT} \
-         --region us-central \
+         --region us-central1 \
          --set-env-vars ENVIRONMENT=${ENVIRONMENT} \
          --set-env-vars GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
          --set-secrets DISCORD_BOT_TOKEN=DISCORD_BOT_TOKEN:latest \
@@ -36,5 +36,6 @@ yarn build && \
          --memory 2Gi \
          --concurrency 1000 \
          --min-instances 1 \
+         --max-instances 1 \
          --no-allow-unauthenticated \
          --no-cpu-throttling

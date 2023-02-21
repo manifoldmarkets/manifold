@@ -3,7 +3,7 @@
 FROM node:19
 WORKDIR /usr/src/app
 
-COPY package.json yarn.lock ./
+COPY package.json dist/yarn.lock ./
 RUN yarn install --frozen-lockfile --production
 
 # Will have to rewrite this if we bring in outside dependencies

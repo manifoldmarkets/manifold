@@ -16,3 +16,4 @@ node_modules/
 
 lib/
 secrets.sh
+dist/
