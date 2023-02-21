@@ -20,6 +20,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
 
 const SEARCH_MEMBER_QUERY_SIZE = 15
+const SEARCH_MEMBER_THRESHOLD = 100
 
 export function GroupMemberModalContent(props: {
   group: Group
@@ -31,10 +32,10 @@ export function GroupMemberModalContent(props: {
   return (
     <Col className={clsx(MODAL_CLASS, 'h-[85vh]')}>
       {!numMembers ||
-        (numMembers < 100 && (
+        (numMembers < SEARCH_MEMBER_THRESHOLD && (
           <Row className="w-full justify-start text-xl">👥 Members</Row>
         ))}
-      {numMembers && numMembers >= 100 && (
+      {numMembers && numMembers >= SEARCH_MEMBER_THRESHOLD && (
         <Input
           autoFocus
           value={query}
@@ -43,7 +44,7 @@ export function GroupMemberModalContent(props: {
           className={clsx('w-full placeholder:text-gray-400')}
         />
       )}
-      {numMembers && numMembers >= 100 && query !== '' && (
+      {numMembers && numMembers >= SEARCH_MEMBER_THRESHOLD && query !== '' && (
         <SearchGroupMemberModalContent
           group={group}
           canEdit={canEdit}
@@ -53,7 +54,9 @@ export function GroupMemberModalContent(props: {
 
       <div
         className={clsx(
-          numMembers && numMembers >= 100 && query !== '' ? 'hidden' : ''
+          numMembers && numMembers >= SEARCH_MEMBER_THRESHOLD && query !== ''
+            ? 'hidden'
+            : ''
         )}
       >
         <NonSearchGroupMemberModalContent
