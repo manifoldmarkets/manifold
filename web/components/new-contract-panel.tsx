@@ -40,6 +40,7 @@ import {
 } from 'web/lib/supabase/groups'
 import { GroupsInfoBlob } from './groups/contract-groups-list'
 import { QfExplainer } from './contract/qf-overview'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -209,7 +210,7 @@ export function NewContractPanel(props: {
       })
       editor?.commands.clearContent(true)
       // force clear save, because it can fail if editor unrenders
-      localStorage.removeItem(`text create market`)
+      safeLocalStorage?.removeItem(`text create market`)
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
@@ -221,6 +222,13 @@ export function NewContractPanel(props: {
       setIsSubmitting(false)
     }
   }
+
+  const BONUS_OUTCOME_TYPES = [
+    'BINARY',
+    'FREE_RESPONSE',
+    'MULTIPLE_CHOICE',
+    'PSEUDO_NUMERIC',
+  ]
 
   const [hideOptions, setHideOptions] = useState(true)
 
@@ -496,13 +504,21 @@ export function NewContractPanel(props: {
           </label>
 
           <div className="pl-1 text-sm text-gray-700">
-            {formatMoney(ante)} or <span className=" text-teal-500">FREE </span>
-            if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
-            <InfoTooltip
-              text={`You'll earn a bonus of ${formatMoney(
-                UNIQUE_BETTOR_BONUS_AMOUNT
-              )} for each unique trader you get on your market.`}
-            />
+            {formatMoney(ante)}
+            {BONUS_OUTCOME_TYPES.includes(outcomeType) ? (
+              <span>
+                {' '}
+                or <span className=" text-teal-500">FREE </span>
+                if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
+                <InfoTooltip
+                  text={`You'll earn a bonus of ${formatMoney(
+                    UNIQUE_BETTOR_BONUS_AMOUNT
+                  )} for each unique trader you get on your market.`}
+                />
+              </span>
+            ) : (
+              <span className="text-red-500"> - no unique trader bonus</span>
+            )}
           </div>
           <div className="pl-1 text-gray-500"></div>
 

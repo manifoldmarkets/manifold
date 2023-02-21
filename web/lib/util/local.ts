@@ -1,7 +1,10 @@
 function getStorageProxy(store: Storage) {
   try {
+    store.setItem('test', '')
     store.getItem('test')
+    store.removeItem('test')
   } catch (e) {
+    console.warn(e)
     return undefined
   }
   return {
@@ -19,12 +22,13 @@ function getStorageProxy(store: Storage) {
   }
 }
 
-export const safeLocalStorage =
-  typeof localStorage !== 'undefined'
-    ? getStorageProxy(localStorage)
-    : undefined
+export let safeLocalStorage: ReturnType<typeof getStorageProxy> | undefined
+export let safeSessionStorage: ReturnType<typeof getStorageProxy> | undefined
 
-export const safeSessionStorage =
-  typeof sessionStorage !== 'undefined'
-    ? getStorageProxy(sessionStorage)
-    : undefined
+try {
+  safeLocalStorage = getStorageProxy(localStorage)
+} catch {}
+
+try {
+  safeSessionStorage = getStorageProxy(sessionStorage)
+} catch {}

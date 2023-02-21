@@ -1,6 +1,5 @@
-import { PlusIcon, UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
+import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -161,22 +160,6 @@ export function JoinOrLeaveGroupButton(props: {
       <Row className="gap-1">
         <UserAddIcon className="h-5 w-5" />
         Join
-      </Row>
-    </Button>
-  )
-}
-
-export function AddMembersButton(props: { group: Group; className?: string }) {
-  const {
-    // group,
-    className,
-  } = props
-  const [_open, setOpen] = useState(false)
-  return (
-    <Button color="indigo" className={className} onClick={() => setOpen(true)}>
-      <Row className="gap-1">
-        <PlusIcon className="h-5 w-5" />
-        Add members
       </Row>
     </Button>
   )

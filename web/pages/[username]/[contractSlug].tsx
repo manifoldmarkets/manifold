@@ -1,6 +1,5 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { first } from 'lodash'
-
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
@@ -31,7 +30,7 @@ import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { getOpenGraphProps } from 'common/contract-details'
+import { getOpenGraphProps, getSeoDescription } from 'common/contract-details'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -49,7 +48,6 @@ import {
   ContractMetricsByOutcome,
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
-import { OrderByDirection } from 'firebase/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
@@ -63,6 +61,10 @@ import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
+import { compressPoints, pointsToBase64 } from 'common/util/og'
+import { getInitialProbability } from 'common/calculate'
+import { getUser } from 'web/lib/firebase/users'
+import Head from 'next/head'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -89,7 +91,7 @@ export async function getStaticPropz(ctx: {
         contractId,
         ...CONTRACT_BET_FILTER,
         limit: useBetPoints ? 10000 : 4000,
-        order: 'desc' as OrderByDirection,
+        order: 'desc',
       })
     : []
   const includeAvatar = totalBets < 1000
@@ -119,19 +121,33 @@ export async function getStaticPropz(ctx: {
       ? await getTotalContractMetrics(contractId, db)
       : 0
 
+  if (useBetPoints && contract) {
+    const firstPoint = {
+      x: contract.createdTime,
+      y: getInitialProbability(contract),
+    }
+    betPoints.push(firstPoint)
+    betPoints.reverse()
+  }
+  const pointsString = pointsToBase64(compressPoints(betPoints))
+
+  const creator = contract && (await getUser(contract.creatorId))
+
   return {
-    props: {
+    props: removeUndefinedProps({
       contract,
       historyData: {
         bets: useBetPoints ? bets.slice(0, 100) : bets,
         points: betPoints,
       },
+      pointsString,
       comments,
       userPositionsByOutcome,
       totalPositions,
       totalBets,
       topContractMetrics,
-    },
+      creatorTwitter: creator?.twitterHandle,
+    }),
   }
 }
 
@@ -142,15 +158,18 @@ export async function getStaticPaths() {
 export default function ContractPage(props: {
   contract: Contract | null
   historyData: HistoryData
+  pointsString?: string
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
+  creatorTwitter?: string
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
     historyData: { bets: [], points: [] },
+    pointsString: '',
     comments: [],
     userPositionsByOutcome: {},
     totalBets: 0,
@@ -177,7 +196,13 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { userPositionsByOutcome, comments, totalPositions } = props
+  const {
+    userPositionsByOutcome,
+    comments,
+    totalPositions,
+    pointsString,
+    creatorTwitter,
+  } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
@@ -239,6 +264,7 @@ export function ContractPageContent(
 
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
+  const isClosed = closeTime && closeTime < Date.now()
 
   const [showResolver, setShowResolver] = useState(
     (isCreator || isAdmin) && !isResolved && (closeTime ?? 0) < Date.now()
@@ -246,7 +272,11 @@ export function ContractPageContent(
 
   const allowTrade = tradingAllowed(contract)
 
-  const ogCardProps = getOpenGraphProps(contract)
+  const ogCardProps = removeUndefinedProps({
+    ...getOpenGraphProps(contract),
+    points: pointsString,
+  })
+  const seoDesc = getSeoDescription(contract, ogCardProps)
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
@@ -282,10 +312,15 @@ export function ContractPageContent(
       {ogCardProps && (
         <SEO
           title={question}
-          description={ogCardProps.description}
+          description={seoDesc}
           url={`/${contract.creatorUsername}/${contract.slug}`}
-          ogCardProps={ogCardProps}
+          ogProps={{ props: ogCardProps, endpoint: 'market' }}
         />
+      )}
+      {creatorTwitter && (
+        <Head>
+          <meta name="twitter:creator" content={`@${creatorTwitter}`} />
+        </Head>
       )}
 
       {user && <BackRow />}
@@ -344,7 +379,7 @@ export function ContractPageContent(
           />
         )}
 
-        {isCreator && !isResolved && (
+        {isCreator && !isResolved && !isClosed && (
           <>
             {showResolver && <Spacer h={4} />}
             <CreatorSharePanel contract={contract} />

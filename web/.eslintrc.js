@@ -27,6 +27,7 @@ module.exports = {
     'lodash/import-scope': [2, 'member'],
     'unused-imports/no-unused-imports': 'warn',
     'react-hooks/exhaustive-deps': 'off',
+    'no-constant-condition': 'off',
   },
   ignorePatterns: ['/public/mtg/*'],
   env: {

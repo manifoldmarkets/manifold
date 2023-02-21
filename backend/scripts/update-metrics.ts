@@ -2,9 +2,9 @@ import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
 import { log } from 'shared/utils'
-import { updateUserMetrics } from 'functions/update-user-metrics'
-import { updateContractMetrics } from 'functions/update-contract-metrics'
-import { updateGroupMetrics } from 'functions/update-group-metrics'
+import { updateUserMetrics } from 'functions/scheduled/update-user-metrics'
+import { updateContractMetrics } from 'functions/scheduled/update-contract-metrics'
+import { updateGroupMetrics } from 'functions/scheduled/update-group-metrics'
 
 async function updateMetrics() {
   log('Updating user metrics...')

@@ -16,6 +16,7 @@ import { ContractCommentInput } from '../feed/feed-comments'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export function CommentInput(props: {
   replyTo?: { id: string; username: string }
@@ -70,7 +71,7 @@ export function CommentInput(props: {
     setIsSubmitting(false)
     editor.commands.clearContent(true)
     // force clear save, because it can fail if editor unrenders
-    localStorage.removeItem(`text ${key}`)
+    safeLocalStorage?.removeItem(`text ${key}`)
   }
 
   if (user?.isBannedFromPosting) return <></>

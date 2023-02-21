@@ -6,23 +6,39 @@ import { getContract } from 'shared/utils'
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
-import { loadUserDataForRecommendations } from 'functions/update-recommended'
+import {
+  loadContracts,
+  loadUserDataForRecommendations,
+} from 'functions/scheduled/update-recommended'
+import { Contract } from 'common/contract'
 
 const recommend = async () => {
   console.log('Recommend script')
 
-  let userData = await readJson<user_data[]>('user-data5.json')
+  let userData = await readJson<user_data[]>('user-data1.json')
 
   if (userData) {
     console.log('Loaded view data from file.')
   } else {
     console.log('Loading view data from Firestore...')
     userData = await loadUserDataForRecommendations()
-    await writeJson('user-data5.json', userData)
+    await writeJson('user-data1.json', userData)
+  }
+
+  let contracts = await readJson<Contract[]>('contracts1.json')
+  if (contracts) {
+    console.log('Loaded contracts from file.')
+  } else {
+    console.log('Loading contracts...')
+    contracts = await loadContracts()
+    await writeJson('contracts1.json', contracts)
   }
 
   console.log('Computing recommendations...')
-  const { getUserContractScores } = getMarketRecommendations(userData)
+  const { getUserContractScores } = getMarketRecommendations(
+    contracts,
+    userData
+  )
 
   await debug(getUserContractScores)
 }

@@ -79,7 +79,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { Swipe } from 'web/components/swipe/swipe'
-import { useABTest } from 'web/hooks/use-ab-test'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -190,7 +190,7 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />
           <MobileSearchButton className="flex-1 md:hidden" />
           <Row className="items-center gap-4">
-            <DailyStats user={user} showLoans />
+            <DailyStats user={user} />
             <CustomizeButton router={Router} />
           </Row>
         </Row>
@@ -210,6 +210,9 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
               globalConfig,
               pinned
             )}
+
+            <HomeSectionHeader label={'Your feed'} icon={'📖'} />
+            <ContractsFeed />
           </>
         )}
       </Col>
@@ -606,7 +609,7 @@ const useGlobalPinned = (
 
 function MobileHome() {
   const user = useUser()
-  const { showSwipe, toggleView } = useViewToggle()
+  const { showSwipe, toggleView, isNative } = useViewToggle()
 
   if (showSwipe) return <Swipe toggleView={toggleView(false)} />
 
@@ -617,10 +620,12 @@ function MobileHome() {
           <MobileSearchButton className="flex-1" />
           <Row className="items-center gap-4">
             <DailyStats user={user} />
-            <SwitchVerticalIcon
-              className="h-5 w-5"
-              onClick={toggleView(true)}
-            />
+            {isNative && (
+              <SwitchVerticalIcon
+                className="h-5 w-5"
+                onClick={toggleView(true)}
+              />
+            )}
           </Row>
         </Row>
 
@@ -629,7 +634,10 @@ function MobileHome() {
 
       <button
         type="button"
-        className="fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-4 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
+        className={clsx(
+          'fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent  p-4  shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden',
+          'from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r disabled:bg-gray-300'
+        )}
         onClick={() => {
           Router.push('/create')
           track('mobile create button')
@@ -642,25 +650,16 @@ function MobileHome() {
 }
 
 const useViewToggle = () => {
-  const defaultShowSwipe = useABTest('show swipe', {
-    swipeDefault: true,
-    feedDefault: false,
-  })
+  const isNative = getIsNative()
 
-  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
+  const [showSwipe, setShowSwipe] = usePersistentState(isNative, {
     key: 'show-swipe',
     store: inMemoryStore(),
   })
-
-  useEffect(() => {
-    if (defaultShowSwipe !== undefined && showSwipe === undefined) {
-      setShowSwipe(defaultShowSwipe)
-    }
-  }, [showSwipe, defaultShowSwipe])
 
   const toggleView = (showSwipe: boolean) => () => {
     setShowSwipe(showSwipe)
     track('toggle swipe', { showSwipe })
   }
-  return { showSwipe, toggleView }
+  return { showSwipe, toggleView, isNative }
 }

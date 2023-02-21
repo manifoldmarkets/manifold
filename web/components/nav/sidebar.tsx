@@ -5,12 +5,13 @@ import {
   SearchIcon,
   BookOpenIcon,
   LogoutIcon,
-  BeakerIcon,
   HeartIcon,
   LightningBoltIcon,
   DeviceMobileIcon,
   ScaleIcon,
   UserGroupIcon,
+  TicketIcon,
+  BeakerIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -28,12 +29,12 @@ import { SignInButton } from '../buttons/sign-in-button'
 import { SidebarItem } from './sidebar-item'
 import { MoreButton } from './more-button'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { SearchButton } from './search-button'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import DiscordOutlineIcon from 'web/lib/icons/discord-outline-icon'
+import { Spacer } from '../layout/spacer'
 
 export default function Sidebar(props: {
   className?: string
@@ -136,7 +137,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
     )
 
   return buildArray(
-    { name: 'Home', href: '/home', icon: HomeIcon },
+    { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
     {
       name: 'About',
@@ -153,8 +154,8 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
   }
 
   return buildArray(
-    { name: 'Groups', href: '/groups' },
     { name: 'Referrals', href: '/referrals' },
+    { name: 'Groups', href: '/groups' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
     // { name: 'Blog', href: 'https://news.manifold.markets' },
@@ -176,14 +177,15 @@ const getMobileNav = () => {
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
+    { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     {
       name: 'Groups',
       href: '/groups',
       icon: UserGroupIcon,
     },
-    { name: 'Get mana', href: '/add-funds', icon: CashIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
-    { name: 'Labs', href: '/labs', icon: BeakerIcon }
+    { name: 'Labs', href: '/labs', icon: BeakerIcon },
+    { name: 'Referrals', href: '/referrals', icon: TicketIcon }
   )
 }
 

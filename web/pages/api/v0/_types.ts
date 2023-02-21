@@ -2,6 +2,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 
+
 export type ApiError = {
   error: string
 }

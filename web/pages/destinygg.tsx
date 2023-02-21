@@ -27,6 +27,7 @@ import { ManaExplainer } from '.'
 import { Modal } from 'web/components/layout/modal'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { getTotalSubs } from 'web/lib/firebase/utils'
+import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
   const subCount = await getTotalSubs()
@@ -118,6 +119,11 @@ export default function DestinyLandingPage(props: { subCount: number }) {
         <div className="mt-4 pt-6 sm:mt-0">
           Total subs claimed: {subCount + (isSuccess ? 1 : 0)} / 1,000
         </div>
+
+        <Spacer h={2} />
+        <AlertBox title="Sub redemption ending" text="">
+          Claim your sub before March 1st, 2023.
+        </AlertBox>
 
         <Spacer h={2} />
         <Subtitle>New to Manifold Markets?</Subtitle>

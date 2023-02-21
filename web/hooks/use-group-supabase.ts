@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { db } from 'web/lib/supabase/db'
 import {
+  getGroupMemberIds,
   getGroupMembers,
   getGroupOfRole,
   getMemberRole,
@@ -42,6 +43,43 @@ export function useRealtimeRole(groupId: string | undefined) {
     }
   }, [db, user])
   return userRole
+}
+
+export function useRealtimeGroupMemberIds(groupId: string) {
+  const [members, setMembers] = useState<(string | null)[]>([])
+  function fetchGroupMembers() {
+    getGroupMemberIds(groupId)
+      .then((result) => {
+        const members = result
+        setMembers(members)
+      })
+      .catch((e) => console.log(e))
+  }
+
+  useEffect(() => {
+    fetchGroupMembers()
+  }, [])
+
+  useEffect(() => {
+    const channel = db.channel('group-members-ids-realtime')
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'group_members',
+        filter: `group_id=eq.${groupId}`,
+      },
+      (payload) => {
+        fetchGroupMembers()
+      }
+    )
+    channel.subscribe(async (status) => {})
+    return () => {
+      db.removeChannel(channel)
+    }
+  }, [db])
+  return { members }
 }
 
 export function useRealtimeGroupMembers(

@@ -25,6 +25,7 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -34,10 +35,7 @@ export async function getStaticProps() {
     sumBy(txns, (txn) => txn.amount)
   )
   const totalRaised = sum(Object.values(totals))
-  const sortedCharities = sortBy(charities, [
-    (charity) => (charity.tags?.includes('New') ? 0 : 1),
-    (charity) => -totals[charity.id],
-  ])
+  const sortedCharities = sortBy(charities, [(charity) => -totals[charity.id]])
   const matches = quadraticMatches(txns, totalRaised, 'toId')
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
   const mostRecentDonor = txns[0] ? await getUser(txns[0].fromId) : null
@@ -136,15 +134,20 @@ export default function Charity(props: {
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
           <Title>Manifold for Charity</Title>
-          <span className="text-gray-600">
+
+          <AlertBox title="Charity program ending" text="">
+            Please make your final donations before March 1st, 2023.
+            <SiteLink
+              href="https://manifoldmarkets.notion.site/Charity-program-ending-March-1st-ac5da2d66e9d4306a917e3dd653b9cea"
+              className="ml-2 text-indigo-700"
+            >
+              Read more here.
+            </SiteLink>
+          </AlertBox>
+
+          <span className="mt-8 text-gray-600">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations.{' '}
-            <SiteLink
-              href="https://help.manifold.markets/manifold-charitable-donation-program"
-              className="text-indigo-700"
-            >
-              Learn more...
-            </SiteLink>
           </span>
           <DonatedStats
             stats={[
@@ -191,10 +194,10 @@ export default function Charity(props: {
         <div className="mt-10 w-full rounded-xl bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-5">
           <iframe
             height="405"
-            src="https://manifold.markets/Austin/how-many-will-be-donated-through-ma"
+            src="https://manifold.markets/embed/SG/will-manifold-have-100k-in-donation"
             title="How many $ will be donated through Manifold's Giving Tuesday?"
             frameBorder="0"
-            className="w-full rounded-xl bg-white p-10"
+            className="w-full rounded-xl bg-white p-4"
           />
         </div>
 

@@ -1,93 +1,88 @@
 import { ReactNode, useEffect, useState } from 'react'
 import Router from 'next/router'
+import { ChartBarIcon } from '@heroicons/react/solid'
+import Link from 'next/link'
 
 import { Page } from 'web/components/layout/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
-import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
-import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { useGlobalConfig } from 'web/hooks/use-global-config'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Post } from 'common/post'
-import { ActivitySection, FeaturedSection, SearchSection } from './home'
+import { SearchSection } from './home'
 import { Sort } from 'web/components/contract-search'
-import { ContractCard } from 'web/components/contract/contract-card'
-import { PostCard } from 'web/components/posts/post-card'
 import {
-  useContractsByDailyScore,
-  useTrendingContracts,
-} from 'web/hooks/use-contracts'
-import { Contract } from 'common/contract'
-import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
+  DESTINY_GROUP_SLUGS,
+  ENV_CONFIG,
+  HOME_BLOCKED_GROUP_SLUGS,
+} from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
-import Link from 'next/link'
-import { ChartBarIcon } from '@heroicons/react/solid'
 import TestimonialsPanel from './testimonials-panel'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
+import { CPMMBinaryContract } from 'common/contract'
+import { getTrendingContracts } from 'web/lib/firebase/contracts'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { Button } from 'web/components/buttons/button'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
+
+const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
+  const contracts = await getTrendingContracts(20)
+
+  const trendingContracts = contracts.filter(
+    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug))
+  )
+
   return {
-    props: {},
+    props: { trendingContracts },
   }
 })
 
-export default function Home() {
+export default function Home(props: {
+  trendingContracts: CPMMBinaryContract[]
+}) {
   useSaveReferral()
   useRedirectAfterLogin()
 
-  const blockedFacetFilters = DESTINY_GROUP_SLUGS.map(
-    (slug) => `groupSlugs:-${slug}`
-  )
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const globalConfig = useGlobalConfig()
-  const trendingContracts = useTrendingContracts(6, blockedFacetFilters)
-  const dailyTrendingContracts = useContractsByDailyScore(
-    6,
-    blockedFacetFilters
-  )
-  const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
-    store: inMemoryStore(),
-    key: 'home-pinned',
-  })
+  const { trendingContracts } = props
 
-  useEffect(() => {
-    const pinnedItems = globalConfig?.pinnedItems
-    if (pinnedItems) {
-      const itemComponents = pinnedItems.map((element) => {
-        if (element.type === 'post') {
-          const post = element.item as Post
-          return <PostCard post={post} pinned={true} />
-        } else if (element.type === 'contract') {
-          const contract = element.item as Contract
-          return <ContractCard contract={contract} pinned={true} />
-        }
-      })
-      setPinned(
-        itemComponents.filter(
-          (element) => element != undefined
-        ) as JSX.Element[]
-      )
-    }
-  }, [globalConfig, setPinned])
-  const isLoading =
-    !trendingContracts || !globalConfig || !pinned || !dailyTrendingContracts
   return (
-    <Page>
-      <SEO
-        title="Manifold Markets"
-        description="Ask any question. Bet mana vs 100+ players. Unfold the future together."
-      />
+    <Page hideSidebar>
       <Col className="mx-auto mb-8 w-full gap-8 px-4">
         <Col className="gap-4">
+          <Row className="items-center justify-between">
+            <ManifoldLogo />
+
+            <div className="hidden items-center gap-2 lg:flex">
+              <Button
+                color="gray-white"
+                size="xs"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Get app
+              </Button>
+              <Button color="gray-white" size="xs" onClick={firebaseLogin}>
+                Sign in
+              </Button>
+              <Button color="indigo" size="xs" onClick={firebaseLogin}>
+                Sign up
+              </Button>
+
+              <MobileAppsQRCodeDialog
+                isModalOpen={isModalOpen}
+                setIsModalOpen={setIsModalOpen}
+              />
+            </div>
+          </Row>
+
           <LandingPagePanel />
+
           <Row className="w-full gap-2 sm:gap-4">
             <InfoCard
               link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
@@ -110,34 +105,16 @@ export default function Home() {
             />
           </Row>
         </Col>
-        {isLoading ? (
-          <LoadingIndicator />
-        ) : (
-          <>
-            <SearchSection
-              key={'score'}
-              label={'Trending'}
-              contracts={trendingContracts}
-              sort={'score' as Sort}
-              icon={'🔥'}
-            />
-            <SearchSection
-              key={'daily-trending'}
-              label={'Daily changed'}
-              contracts={dailyTrendingContracts}
-              sort={'daily-score'}
-              icon={'📈'}
-            />
-            <ActivitySection key={'live-feed'} />
-            <FeaturedSection
-              key={'featured'}
-              globalConfig={globalConfig}
-              pinned={pinned}
-              isAdmin={false}
-            />
-            <TestimonialsPanel />
-          </>
-        )}
+
+        <SearchSection
+          key={'score'}
+          label={'Trending'}
+          contracts={trendingContracts}
+          sort={'score' as Sort}
+          icon={'🔥'}
+        />
+
+        <TestimonialsPanel />
       </Col>
     </Page>
   )
@@ -151,17 +128,17 @@ export function ExternalInfoCard(props: {
   const { link, icon, text } = props
   return (
     <Link
-      className="group flex w-1/3 flex-col items-center gap-1 rounded-xl bg-indigo-700 px-4 py-2 text-center text-sm text-white drop-shadow-sm transition-all hover:drop-shadow-lg"
+      className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-300 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all hover:border-indigo-700"
       href={link}
       target="_blank"
     >
-      <div className="text-indigo-400 transition-colors group-hover:text-white">
+      <div className="text-indigo-300 transition-colors group-hover:text-indigo-700">
         {icon}
       </div>
       <div>
-        {text}
+        <span className="text-gray-700">{text}</span>
         <span>
-          <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-white" />
+          <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-300" />
         </span>
       </div>
     </Link>
@@ -180,7 +157,7 @@ export function InfoCard(props: {
   return (
     <>
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="rounded-md bg-white px-8 pb-6 pt-0 text-sm font-light md:text-lg">
+        <Col className="rounded-md bg-white px-8 py-6 text-sm font-light md:text-lg">
           <Title children={text} />
           {modal}
           <Link
@@ -196,17 +173,17 @@ export function InfoCard(props: {
         </Col>
       </Modal>
       <button
-        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl bg-indigo-700 px-4 py-2 text-center text-sm text-white drop-shadow-sm transition-all hover:drop-shadow-lg"
+        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-300 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all transition-colors hover:border-indigo-700"
         onClick={() => setOpen(true)}
       >
-        <div className="text-indigo-400 transition-colors group-hover:text-white">
+        <div className="text-indigo-300 transition-colors group-hover:text-indigo-700">
           {icon}
         </div>
         <div>
-          <div>{text}</div>
+          <div className="text-gray-700">{text}</div>
           {externalLink && (
             <span>
-              <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-400" />
+              <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-300" />
             </span>
           )}
         </div>
@@ -240,12 +217,12 @@ export function PredictionMarketExplainer() {
   return (
     <>
       <p>
-        Prediction markets allow you to bet on the outcome of future events. On
-        Manifold, anyone can create their own prediction market about any
-        question they want!
+        Prediction markets let you bet on the outcome of future events. On
+        Manifold, you can create your own prediction market on any question you
+        want!
       </p>
       <div className="mt-4 font-semibold text-gray-400">EXAMPLE</div>
-      <div className="mb-4 border-l-2 border-indigo-700 bg-indigo-50 py-2 px-2">
+      <div className="mb-4 border-l-2 border-indigo-700 bg-indigo-50 py-2 px-2 text-sm">
         <p className="mt-2">
           <span className="font-semibold text-indigo-700">
             "Will Democrats win the 2024 US presidential election?"

@@ -82,8 +82,7 @@ export function CommentsButton(props: {
           'hover:text-gray-600 disabled:opacity-50',
           color === 'white' ? 'text-white' : 'text-gray-500'
         )}
-        onClick={(e) => {
-          e.preventDefault()
+        onClick={() => {
           setOpen(true)
           track('view comments', {
             contractId: contract.id,

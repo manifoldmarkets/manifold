@@ -60,24 +60,19 @@ export function LandingPagePanel() {
 
   return (
     <>
-      <div
-        className={clsx(
-          'mt-8 flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-60 sm:flex-row'
-        )}
-      >
+      <div className="flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-60 sm:flex-row">
         <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
-          {isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}
           {pageNumber === 0 && <LandingPage0 isMobile={isMobile} />}
           {pageNumber === 1 && <LandingPage1 isMobile={isMobile} />}
           {pageNumber === 2 && <LandingPage2 isMobile={isMobile} />}
           {!isMobile && (
             <div className="absolute -right-0.5 bottom-0 z-20 h-full">
-              <SquiggleVerticalIcon className={clsx('text-indigo-200')} />
+              <SquiggleVerticalIcon className="h-full text-indigo-200" />
             </div>
           )}
           {isMobile && (
             <div className="absolute right-0 -bottom-0.5 z-20 w-full items-center">
-              <SquiggleHorizontalIcon className={clsx('text-indigo-200')} />
+              <SquiggleHorizontalIcon className="text-indigo-200" />
             </div>
           )}
           <div
@@ -117,7 +112,6 @@ export function LandingPagePanel() {
             'relative z-30 h-1/5 w-full rounded-b-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-r-xl sm:rounded-l-none'
           )}
         >
-          {!isMobile && <LandingPageManifoldMarketsLogo isMobile={isMobile} />}
           <div className="group absolute bottom-16 right-8 z-30 md:right-12">
             <Button
               className="absolute bottom-1.5 -left-1.5 z-10 transition-all ease-in-out focus:bottom-0.5 focus:-left-0.5 group-hover:bottom-2 group-hover:-left-2 focus:group-hover:bottom-0.5 focus:group-hover:-left-0.5"
@@ -125,7 +119,7 @@ export function LandingPagePanel() {
               color="gradient-pink"
               size={isMobile ? 'xl' : '2xl'}
             >
-              Get started
+              Start trading
             </Button>
             <div
               className={clsx(
@@ -135,7 +129,7 @@ export function LandingPagePanel() {
                   : 'px-6 py-3 text-xl font-semibold'
               )}
             >
-              Get started
+              Start trading
             </div>
           </div>
           <div className="absolute top-6 right-8 sm:top-48 md:right-12">
@@ -146,7 +140,7 @@ export function LandingPagePanel() {
                 {STARTING_BALANCE}
               </span>
               {'   '}
-              in play money to start trading!
+              in play money!
             </div>
           </div>
         </div>
@@ -157,7 +151,7 @@ export function LandingPagePanel() {
 
 export function LandingPage0(props: { isMobile: boolean }) {
   const { isMobile } = props
-  const text = '1. Ask any question'
+  const text = '1. Create a market'
   return (
     <>
       <div
@@ -308,16 +302,8 @@ export function LandingPage1(props: { isMobile: boolean }) {
             shouldPercentChange ? 'w-48' : 'w-[120px]'
           )}
         />
-        <EquilateralLeftTriangle
-          className={clsx(
-            'absolute left-[8px] top-[7px] z-10 h-6 w-6 text-indigo-400'
-          )}
-        />
-        <EquilateralLeftTriangle
-          className={clsx(
-            'absolute left-[11px] top-[11px] z-0 h-6 w-6 text-gray-900 opacity-20'
-          )}
-        />
+        <EquilateralLeftTriangle className="absolute left-[8px] top-[7px] z-10 h-6 w-6 text-indigo-400" />
+        <EquilateralLeftTriangle className="absolute left-[11px] top-[11px] z-0 h-6 w-6 text-gray-900 opacity-20" />
         <div className="absolute top-[6px] left-[100px] z-30 text-xl font-semibold">
           {shouldPercentChange && (
             <CountUp start={50} end={75} duration={1.3} suffix="%" />
@@ -330,11 +316,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
             shouldButtonHighlight ? 'text-indigo-600' : 'text-indigo-400'
           )}
         />
-        <EquilateralRightTriangle
-          className={clsx(
-            'absolute right-[6px] top-[11px] z-0 h-6 w-6 text-gray-900 opacity-20'
-          )}
-        />
+        <EquilateralRightTriangle className="absolute right-[6px] top-[11px] z-0 h-6 w-6 text-gray-900 opacity-20" />
         <div
           className={clsx(
             'animate-float-and-fade-1 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',

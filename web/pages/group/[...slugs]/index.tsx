@@ -166,8 +166,12 @@ export default function GroupPage(props: {
     <Page rightSidebar={chatEmbed} touchesTop={true}>
       <SEO
         title={group.name}
-        description={`Created by ${creator.name}. ${group.about}`}
+        description={
+          group.about ||
+          `Manifold ${group.privacyStatus} group with ${group.totalMembers} members`
+        }
         url={groupPath(group.slug)}
+        image={group.bannerUrl}
       />
       {user && isManifoldAdmin && (
         <AddContractButton
@@ -206,6 +210,7 @@ export default function GroupPage(props: {
             group={group}
             user={user}
             canEdit={isManifoldAdmin || userRole === 'admin'}
+            key={group.id}
           />
         </div>
         <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
@@ -215,11 +220,6 @@ export default function GroupPage(props: {
             </div>
             <Col className="justify-end">
               <Row className="items-center gap-2">
-                {user?.id === group.creatorId && (
-                  // TODO: inga flush this out
-                  // <AddMembersButton group={group} />
-                  <></>
-                )}
                 {user?.id != group.creatorId && (
                   <JoinOrLeaveGroupButton
                     group={group}

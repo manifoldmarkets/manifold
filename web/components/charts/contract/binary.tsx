@@ -4,7 +4,7 @@ import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
 import { Bet } from 'common/bet'
-import { getProbability, getInitialProbability } from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -65,19 +65,14 @@ export const BinaryContractChart = (props: {
   } = props
   const [start, end] = getDateRange(contract)
   const rangeStart = controlledStart ?? start
-  const startP = getInitialProbability(contract)
   const endP = getProbability(contract)
   const betPoints = useMemo(
     () => sortBy(props.betPoints, (p) => p.x),
     [props.betPoints]
   )
   const data = useMemo(() => {
-    return [
-      { x: start, y: startP },
-      ...betPoints,
-      { x: end ?? Date.now() + DAY_MS, y: endP },
-    ]
-  }, [start, startP, end, endP, betPoints])
+    return [...betPoints, { x: end ?? Date.now() + DAY_MS, y: endP }]
+  }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(
     end,

@@ -11,7 +11,7 @@
     "strict": true,
     "target": "es2017",
     "paths": {
-      "common/*": ["./src/*"]
+      "common/*": ["./src/*", "../lib/*"]
     }
   },
   "include": ["src/**/*.ts"]

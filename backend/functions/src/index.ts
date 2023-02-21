@@ -48,7 +48,6 @@ export * from './scheduled/increment-streak-forgiveness'
 // v2
 // HTTP endpoints
 import { updatecontractmetrics } from './scheduled/update-contract-metrics'
-import { updateusermetrics } from './scheduled/update-user-metrics'
 import { updategroupmetrics } from './scheduled/update-group-metrics'
 import { updateloans } from './scheduled/update-loans'
 import { updaterecommended } from './scheduled/update-recommended'
@@ -57,7 +56,6 @@ const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
 }
 const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
-const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 const updateLoansFunction = toCloudFunction(updateloans)
 const updateRecommendedFunction = toCloudFunction(updaterecommended)
@@ -103,6 +101,7 @@ const removeContractFromGroupFunction = toCloudFunction(
   endpoints.removecontractfromgroup
 )
 const updateGroupPrivacyFunction = toCloudFunction(endpoints.updategroupprivacy)
+const addGroupMemberFunction = toCloudFunction(endpoints.addgroupmember)
 
 export {
   healthFunction as health,
@@ -130,7 +129,6 @@ export {
   createCommentFunction as createcomment,
   testScheduledFunction as testscheduledfunction,
   updateContractMetricsFunction as updatecontractmetrics,
-  updateUserMetricsFunction as updateusermetrics,
   updateGroupMetricsFunction as updategroupmetrics,
   updateLoansFunction as updateloans,
   updateRecommendedFunction as updaterecommended,
@@ -143,4 +141,5 @@ export {
   updateMemberRoleFunction as updatememberrole,
   removeContractFromGroupFunction as removecontractfromgroup,
   updateGroupPrivacyFunction as updategroupprivacy,
+  addGroupMemberFunction as addgroupmember,
 }

@@ -52,7 +52,7 @@ export function DailyStats(props: {
                 user && !hasCompletedStreakToday(user) && 'grayscale'
               )}
             >
-              <span>🔥{user?.currentBettingStreak ?? 0}</span>
+              <span>🔥 {user?.currentBettingStreak ?? 0}</span>
             </Row>
           </Tooltip>
         </Col>

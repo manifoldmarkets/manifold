@@ -38,37 +38,38 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   return (
     <>
       <Head>
-        <title>{'Manifold Markets — A market for every question'}</title>
+        <title>Manifold Markets</title>
 
         <meta
           property="og:title"
           name="twitter:title"
-          content="Manifold Markets — A market for every question"
+          content="Manifold Markets"
           key="title"
         />
         <meta
           name="description"
-          content="Manifold Markets lets you create a market on any question. Sign up in 30 seconds and start trading on politics, sports, or anything that interests you."
+          content="Create your own prediction market. Unfold the future."
           key="description1"
         />
         <meta
           property="og:description"
           name="twitter:description"
-          content="Manifold Markets lets you create a market on any question. Sign up in 30 seconds and start trading on politics, sports, or anything that interests you."
+          content="Create your own prediction market. Unfold the future."
           key="description2"
         />
         <meta property="og:url" content="https://manifold.markets" key="url" />
+        <meta property="og:site_name" content="Manifold Markets" />
         <meta name="twitter:card" content="summary" key="card" />
         <meta name="twitter:site" content="@manifoldmarkets" />
-        <meta
-          property="og:image"
-          content="https://manifold.markets/logo-cover.png"
-          key="image1"
-        />
         <meta
           name="twitter:image"
           content="https://manifold.markets/logo-bg-white.png"
           key="image2"
+        />
+        <meta
+          property="og:image"
+          content="https://manifold.markets/logo-cover.png"
+          key="image1"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="apple-itunes-app" content="app-id=6444136749" />

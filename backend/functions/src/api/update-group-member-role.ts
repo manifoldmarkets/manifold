@@ -35,27 +35,28 @@ export const updatememberrole = newEndpoint({}, async (req, auth) => {
         requesterUserDoc
       )
     if (!groupSnap.exists) throw new APIError(400, 'Group cannot be found')
-    if (!requesterSnap.exists)
-      throw new APIError(400, 'You cannot be found in group')
     if (!affectedMemberSnap.exists)
       throw new APIError(400, 'Member cannot be found in group')
     if (!requesterUserSnap.exists)
       throw new APIError(400, 'You cannot be found')
-
-    const requester = requesterSnap.data() as GroupMember
     const requesterUser = requesterUserSnap.data() as User
     const affectedMember = affectedMemberSnap.data() as GroupMember
     const group = groupSnap.data() as Group
     const firebaseUser = await admin.auth().getUser(auth.uid)
 
-    if (
-      requester.role !== 'admin' &&
-      requester.userId !== group.creatorId &&
-      !isManifoldId(auth.uid) &&
-      !isAdmin(firebaseUser.email) &&
-      auth.uid != affectedMember.userId
-    )
-      throw new APIError(400, 'User does not have permission to change roles')
+    if (!requesterSnap.exists) {
+      if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email)) {
+        throw new APIError(400, 'User does not have permission to change roles')
+      }
+    } else {
+      const requester = requesterSnap?.data() as GroupMember
+      if (
+        requester.role !== 'admin' &&
+        requester.userId !== group.creatorId &&
+        auth.uid != affectedMember.userId
+      )
+        throw new APIError(400, 'User does not have permission to change roles')
+    }
 
     if (auth.uid == affectedMember.userId && role !== 'member')
       throw new APIError(400, 'User can only change their role to a lower role')
