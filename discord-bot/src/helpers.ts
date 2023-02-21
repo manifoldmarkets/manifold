@@ -118,11 +118,13 @@ export const handleBet = async (
       return
     }
     const bet = await resp.json()
+    const newProb = bet.probAfter
     const content = `${user.tag} ${
       sale ? 'sold' : 'bet'
     } M$${amount} on ${buyOutcome}. New probability: ${Math.round(
-      bet.probAfter * 100
+      newProb * 100
     )}%`
+    market.probability = newProb
     await sendThreadMessage(channel, market, content, user)
     await updateMarketStatus(message, market)
   } catch (e) {
