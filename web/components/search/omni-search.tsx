@@ -25,10 +25,11 @@ export interface Option {
 export const OmniSearch = (props: {
   className?: string
   inputClassName?: string
+  query: string
+  setQuery: (query: string) => void
+  onSelect?: () => void
 }) => {
-  const { className, inputClassName } = props
-
-  const [query, setQuery] = useState('')
+  const { className, inputClassName, query, setQuery, onSelect } = props
 
   const { setOpen } = useSearchContext() ?? {}
   const router = useRouter()
@@ -39,6 +40,7 @@ export const OmniSearch = (props: {
       onChange={({ slug }: Option) => {
         setOpen?.(false)
         router.push(slug)
+        onSelect?.()
       }}
       className={clsx('relative flex flex-col bg-white', className)}
     >
