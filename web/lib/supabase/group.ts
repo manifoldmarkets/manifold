@@ -2,6 +2,7 @@ import { db } from './db'
 import { run } from 'common/supabase/utils'
 import { User } from '../firebase/users'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
+import { uniqBy } from 'lodash'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
@@ -68,4 +69,54 @@ export async function getGroupContractIds(groupId: string) {
     db.from('group_contracts').select('contract_id').eq('group_id', groupId)
   )
   return groupContractIds.data
+}
+
+export async function searchUserInGroup(
+  groupId: string,
+  prompt: string,
+  limit: number
+) {
+  if (prompt === '') {
+    const { data } = await run(
+      db
+        .from('group_role')
+        .select('*')
+        .eq('group_id', groupId)
+        .order('name')
+        .limit(limit)
+    )
+    return data
+  }
+
+  const [{ data: exactData }, { data: prefixData }, { data: containsData }] =
+    await Promise.all([
+      run(
+        db
+          .from('group_role')
+          .select('*')
+          .eq('group_id', groupId)
+          .or(`username.ilike.${prompt},name.ilike.${prompt}`)
+          .limit(limit)
+      ),
+      run(
+        db
+          .from('group_role')
+          .select('*')
+          .eq('group_id', groupId)
+          .or(`username.ilike.${prompt}%,name.ilike.${prompt}%`)
+          .limit(limit)
+      ),
+      run(
+        db
+          .from('group_role')
+          .select('*')
+          .eq('group_id', groupId)
+          .or(`username.ilike.%${prompt}%,name.ilike.%${prompt}%`)
+          .limit(limit)
+      ),
+    ])
+  return uniqBy(
+    [...exactData, ...prefixData, ...containsData],
+    'member_id'
+  ).slice(0, limit)
 }
