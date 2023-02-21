@@ -19,7 +19,7 @@ import { Input } from '../widgets/input'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
 
-const SEARCH_MEMBER_QUERY_SIZE = 50
+const SEARCH_MEMBER_QUERY_SIZE = 15
 
 export function GroupMemberModalContent(props: {
   group: Group
