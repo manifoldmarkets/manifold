@@ -135,6 +135,7 @@ const handleOldReaction = async (
 
   const reaction = pReaction.partial ? await pReaction.fetch() : pReaction
   console.log('got reaction emoji id', reaction.emoji.id)
+  console.log('message is partial:', reaction.message.partial)
   const message = reaction.message.partial
     ? await reaction.message.fetch()
     : reaction.message
@@ -149,8 +150,12 @@ const handleOldReaction = async (
   const channel = await client.channels.fetch(message.channelId)
   console.log('got channel', channel?.id)
   if (!channel || !channel.isTextBased()) return
+  console.log('message embeds: ', message.embeds.length)
+  const fetchedMessage = await reaction.message.fetch()
+  console.log('fetched message embeds:', fetchedMessage.embeds.length)
 
   const marketEmbed = EmbedBuilder.from(message.embeds[0])
+  console.log('got market embed json:', marketEmbed.toJSON())
   const link = marketEmbed.toJSON().url
   console.log('got link', link)
   if (!link || !link.startsWith('https://manifold.markets/')) return
