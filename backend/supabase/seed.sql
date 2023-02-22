@@ -837,3 +837,45 @@ as $$
     and (data->>'createdTime')::bigint > created_time
     group by creator_id;
 $$;
+
+create or replace function get_your_contract_ids(uid text)
+returns table (contract_id text)
+immutable parallel safe
+language sql
+as $$
+  with your_bet_on_contracts as (
+    select contract_id
+    from user_contract_metrics
+    where user_id = uid
+    and (data->'hasShares')::boolean = true
+  ), your_liked_contracts as (
+    select (data->>'contentId') as contract_id
+    from user_reactions
+    where user_id = uid
+  ), your_followed_contracts as (
+    select contract_id
+    from contract_follows
+    where follow_id = uid
+  )
+  select contract_id from your_bet_on_contracts
+  union
+  select contract_id from your_liked_contracts
+  union
+  select contract_id from your_followed_contracts
+$$;
+
+create or replace function get_your_daily_changed_contracts(uid text, n int, start int)
+returns table (data jsonb, daily_score real)
+immutable parallel safe
+language sql
+as $$
+  select data, coalesce((data->>'dailyScore')::real, 0.0) as daily_score
+  from get_your_contract_ids(uid)
+  left join contracts
+  on contracts.id = contract_id
+  where is_valid_contract(data)
+  and data->>'outcomeType' = 'BINARY'
+  order by daily_score desc
+  limit n
+  offset start
+$$;

@@ -536,7 +536,6 @@ export interface Database {
             Args: {
               uid: string
               count: number
-              start: number
             }
             Returns: {
               contract_id: string
@@ -548,6 +547,7 @@ export interface Database {
             Args: {
               uid: string
               count: number
+              start: number
             }
             Returns: {
               contract_id: string
@@ -594,7 +594,7 @@ export interface Database {
         }
         Returns: {
           contract_id: string
-          score: number
+          rec_score: number
         }[]
       }
       get_recommended_contract_scores_unseen: {
@@ -623,18 +623,6 @@ export interface Database {
           score: number
         }[]
       }
-      get_recommended_daily_changed_contracts: {
-        Args: {
-          uid: string
-          c_limit: number
-          c_offset: number
-        }
-        Returns: {
-          data: Json
-          score: number
-          daily_score: number
-        }[]
-      }
       get_related_contract_ids: {
         Args: {
           source_id: string
@@ -655,6 +643,36 @@ export interface Database {
       get_time: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_your_contract_ids:
+        | {
+            Args: {
+              uid: string
+              n: number
+              start: number
+            }
+            Returns: {
+              contract_id: string
+            }[]
+          }
+        | {
+            Args: {
+              uid: string
+            }
+            Returns: {
+              contract_id: string
+            }[]
+          }
+      get_your_daily_changed_contracts: {
+        Args: {
+          uid: string
+          n: number
+          start: number
+        }
+        Returns: {
+          data: Json
+          daily_score: number
+        }[]
       }
       gtrgm_compress: {
         Args: {

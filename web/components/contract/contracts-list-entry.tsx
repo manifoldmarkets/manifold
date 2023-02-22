@@ -11,6 +11,7 @@ import { Avatar } from '../widgets/avatar'
 import clsx from 'clsx'
 import { ContractMinibar } from '../charts/minibar'
 import { useContract } from 'web/hooks/use-contracts'
+import { formatPercent } from 'common/util/format'
 
 export function ContractStatusLabel(props: {
   contract: Contract
@@ -72,11 +73,12 @@ export const ContractsListEntry = forwardRef(
     props: {
       contract: Contract
       onContractClick?: (contract: Contract) => void
+      showProbChange?: boolean
       className?: string
     },
     ref: React.Ref<HTMLAnchorElement>
   ) => {
-    const { onContractClick, className } = props
+    const { onContractClick, showProbChange, className } = props
     const contract = useContract(props.contract.id) ?? props.contract
 
     const isClosed = contract.closeTime && contract.closeTime < Date.now()
@@ -102,9 +104,22 @@ export const ContractsListEntry = forwardRef(
           avatarUrl={contract.creatorAvatarUrl}
           size="xs"
         />
-        <div className="font-semibold">
+        <div className="min-w-[2rem] font-semibold">
           <ContractStatusLabel contract={contract} />
         </div>
+        {showProbChange && contract.mechanism === 'cpmm-1' && (
+          <div
+            className={clsx(
+              'min-w-[2rem]',
+              contract.probChanges.day >= 0
+                ? 'text-teal-500'
+                : 'text-scarlet-500'
+            )}
+          >
+            {contract.probChanges.day >= 0 ? '+' : ''}
+            {formatPercent(contract.probChanges.day, true)}
+          </div>
+        )}
         <div
           className={clsx(
             'break-anywhere mr-0.5 whitespace-normal font-medium',

@@ -6,7 +6,7 @@ import {
 import { difference, isArray, keyBy } from 'lodash'
 import clsx from 'clsx'
 
-import { Contract, CPMMBinaryContract } from 'common/contract'
+import { Contract, CPMMBinaryContract, CPMMContract } from 'common/contract'
 import {
   BACKGROUND_COLOR,
   DESTINY_GROUP_SLUGS,
@@ -78,6 +78,9 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { Swipe } from 'web/components/swipe/swipe'
 import { getIsNative } from 'web/lib/native/is-native'
+import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
+import { db } from '../../lib/supabase/db'
+import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { safeLocalStorage } from 'web/lib/util/local'
 
 export async function getStaticProps() {
@@ -236,6 +239,7 @@ const HOME_SECTIONS = [
   { label: 'Featured', id: 'featured', icon: '📌' },
   { label: 'New', id: 'newest', icon: '🗞️' },
   { label: 'Live feed', id: 'live-feed', icon: '🔴' },
+  { label: 'Daily movers', id: 'daily-movers', icon: '📊' },
 ] as const
 
 export const getHomeItems = (sections: string[]) => {
@@ -288,6 +292,7 @@ export function renderSections(
           )
 
         if (id === 'live-feed') return <ActivitySection key={id} />
+        if (id === 'daily-movers') return <DailyMoversSection key={id} />
 
         const contracts = sectionContracts[id]
 
@@ -342,7 +347,7 @@ function HomeSectionHeader(props: {
   return (
     <Row
       className={clsx(
-        'sticky top-0 z-20 my-1 -ml-1 items-center justify-between pb-2 pl-1 text-gray-900',
+        'sticky top-0 z-20 my-1 mx-2 items-center justify-between pb-2 pl-1 text-gray-900 lg:-ml-1',
         BACKGROUND_COLOR
       )}
     >
@@ -463,6 +468,18 @@ export const ActivitySection = memo(function ActivitySection() {
   )
 })
 
+export const DailyMoversSection = memo(function DailyMoversSection() {
+  const user = useUser()
+  const contracts = useYourDailyChangedContracts(db, user?.id)
+
+  return (
+    <Col>
+      <HomeSectionHeader label="Today's updates" icon="📊" />
+      <ProbChangeTable changes={contracts as CPMMContract[]} />
+    </Col>
+  )
+})
+
 function CustomizeButton(props: {
   router: SingletonRouter
   className?: string
@@ -560,6 +577,7 @@ function MobileHome() {
           </Row>
         </Row>
 
+        <DailyMoversSection />
         <ContractsFeed />
       </Col>
 

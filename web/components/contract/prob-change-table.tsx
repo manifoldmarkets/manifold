@@ -6,6 +6,7 @@ import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractCardWithPosition } from './contract-card'
 import { User } from 'common/user'
+import { ContractsListEntry } from './contracts-list-entry'
 
 export function ProfitChangeCardsTable(props: {
   contracts: CPMMBinaryContract[]
@@ -69,51 +70,33 @@ export function ProbChangeTable(props: {
   changes: CPMMContract[] | undefined
   full?: boolean
 }) {
-  const { changes, full } = props
+  const { changes } = props
 
-  if (!changes) return <LoadingIndicator />
+  if (!changes) return <></>
 
-  const descendingChanges = sortBy(changes, (c) => c.probChanges.day).reverse()
-  const ascendingChanges = sortBy(changes, (c) => c.probChanges.day)
+  const biggestChanges = sortBy(changes, (c) =>
+    Math.abs(c.probChanges.day)
+  ).reverse()
 
-  const threshold = 0.01
-  const positiveAboveThreshold = descendingChanges.filter(
-    (c) => c.probChanges.day > threshold
-  )
-  const negativeAboveThreshold = ascendingChanges.filter(
-    (c) => c.probChanges.day < threshold
-  )
-  const maxRows = Math.min(
-    positiveAboveThreshold.length,
-    negativeAboveThreshold.length
-  )
-  const rows = full ? maxRows : Math.min(3, maxRows)
+  const contracts = [
+    ...biggestChanges.slice(0, 3),
+    ...biggestChanges
+      .slice(3)
+      .filter((c) => Math.abs(c.probChanges.day) >= 0.01),
+  ]
 
-  const filteredPositiveChanges = positiveAboveThreshold.slice(0, rows)
-  const filteredNegativeChanges = negativeAboveThreshold.slice(0, rows)
-
-  if (rows === 0) return <div className="px-4 text-gray-500">None</div>
+  if (contracts.length === 0)
+    return <div className="px-4 text-gray-500">None</div>
 
   return (
-    <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
-      <Col className="flex-1 gap-4">
-        {filteredPositiveChanges.map((contract) => (
-          <ContractCardWithPosition
-            key={contract.id}
-            contract={contract}
-            showDailyProfit
-          />
-        ))}
-      </Col>
-      <Col className="flex-1 gap-4">
-        {filteredNegativeChanges.map((contract) => (
-          <ContractCardWithPosition
-            key={contract.id}
-            contract={contract}
-            showDailyProfit
-          />
-        ))}
-      </Col>
+    <Col className="mb-4 w-full rounded-lg">
+      {contracts.map((contract) => (
+        <ContractsListEntry
+          key={contract.id}
+          contract={contract}
+          showProbChange
+        />
+      ))}
     </Col>
   )
 }
