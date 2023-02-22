@@ -1,7 +1,7 @@
 import {
   DotsVerticalIcon,
   PencilAltIcon,
-  SwitchVerticalIcon,
+  SwitchHorizontalIcon,
 } from '@heroicons/react/solid'
 import { difference, isArray, keyBy } from 'lodash'
 import clsx from 'clsx'
@@ -571,7 +571,7 @@ function MobileHome() {
           <Row className="items-center gap-4">
             <DailyStats user={user} />
             {isNative && (
-              <SwitchVerticalIcon
+              <SwitchHorizontalIcon
                 className="h-5 w-5"
                 onClick={toggleView(true)}
               />
