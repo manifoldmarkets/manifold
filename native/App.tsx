@@ -55,7 +55,6 @@ const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
   const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
-  const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const [lastNotificationInMemory, setLastNotificationInMemory] = useState<
     Notification | undefined
   >()
@@ -280,7 +279,6 @@ const App = () => {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
     log('Received message from webview: ', type)
-    setHasSetNativeFlag(true)
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
     } else if (type === 'loginClicked') {
@@ -367,11 +365,6 @@ const App = () => {
     }
   }
 
-  const tellWebviewToSetNativeFlag = () => {
-    if (hasSetNativeFlag) return
-    communicateWithWebview('setIsNative', { platform: Platform.OS })
-  }
-
   const communicateWithWebview = (
     type: nativeToWebMessageType,
     data: object
@@ -450,7 +443,6 @@ const App = () => {
               handleWebviewError(e, () => setUrlWithNativeQuery())
             }
             renderError={(e) => handleRenderError(e, width, height)}
-            onTouchStart={tellWebviewToSetNativeFlag}
             // On navigation state change changes on every url change
             onNavigationStateChange={(navState) => {
               const { url } = navState
@@ -462,7 +454,6 @@ const App = () => {
                 webview.current?.stopLoading()
               } else {
                 setExternalUrl(undefined)
-                tellWebviewToSetNativeFlag()
               }
             }}
             onRenderProcessGone={(e) =>
