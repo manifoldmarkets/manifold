@@ -129,6 +129,33 @@ export default function Groups(props: { groups: SearchGroupInfo[] }) {
   )
 }
 
+// export function MyGroups(props: {}) {
+//   return (
+//     <Col>
+//       <Input
+//         type="text"
+//         value={query}
+//         onChange={(e) => setQuery(e.target.value)}
+//         placeholder="Search your groups"
+//         className="mb-4 w-full"
+//       />
+
+//       <div className="grid grid-cols-1 flex-wrap justify-center gap-4 sm:grid-cols-2">
+//         {groups
+//           .filter((match) => memberGroupIds.includes(match.id))
+//           .map((group) => (
+//             <GroupCard
+//               key={group.id}
+//               group={group as Group}
+//               user={user}
+//               isMember={memberGroupIds.includes(group.id)}
+//             />
+//           ))}
+//       </div>
+//     </Col>
+//   )
+// }
+
 export function GroupCard(props: {
   group: Group
   creator?: User | null | undefined
@@ -196,7 +223,6 @@ export function GroupCard(props: {
             </Row>
           )}
         </Row>
-        <Row>{totalContracts} questions</Row>
         <Row className="text-sm text-gray-500">
           <GroupMembersList group={group} />
         </Row>
@@ -205,14 +231,14 @@ export function GroupCard(props: {
         </Row>
       </Link>
       {isMember != null && user != null && (
-        <div className={'z-10 mt-2 h-full items-start justify-end'}>
+        <Row className={'z-10 mt-2 w-full justify-end'}>
           <JoinOrLeaveGroupButton
             group={group}
             className={'z-10 w-24'}
             user={user}
             isMember={isMember}
           />
-        </div>
+        </Row>
       )}
     </Card>
   )
