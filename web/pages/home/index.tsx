@@ -472,6 +472,8 @@ export const DailyMoversSection = memo(function DailyMoversSection() {
   const user = useUser()
   const contracts = useYourDailyChangedContracts(db, user?.id)
 
+  if (contracts?.length === 0) return <></>
+
   return (
     <Col>
       <HomeSectionHeader label="Today's updates" icon="📊" />
