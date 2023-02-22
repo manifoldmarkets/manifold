@@ -3,50 +3,30 @@ import {
   PencilAltIcon,
   SwitchVerticalIcon,
 } from '@heroicons/react/solid'
-import { difference, isArray, keyBy } from 'lodash'
+import { isArray, keyBy } from 'lodash'
 import clsx from 'clsx'
 
 import { Contract, CPMMBinaryContract, CPMMContract } from 'common/contract'
-import {
-  BACKGROUND_COLOR,
-  DESTINY_GROUP_SLUGS,
-  HOME_BLOCKED_GROUP_SLUGS,
-} from 'common/envs/constants'
+import { BACKGROUND_COLOR } from 'common/envs/constants'
 import { GlobalConfig } from 'common/globalConfig'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
-import { PrivateUser, User } from 'common/user'
-import { buildArray, filterDefined } from 'common/util/array'
-import { chooseRandomSubset } from 'common/util/random'
-import { MINUTE_MS } from 'common/util/time'
+import { User } from 'common/user'
 import Router, { SingletonRouter } from 'next/router'
-import { memo, ReactNode, useEffect, useMemo } from 'react'
+import { memo, ReactNode, useEffect } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Sort } from 'web/components/contract-search'
-import { ContractCard } from 'web/components/contract/contract-card'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { DailyStats } from 'web/components/daily-stats'
 import { PinnedItems } from 'web/components/groups/group-post-section'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { PostCard } from 'web/components/posts/post-card'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useTrendingGroups } from 'web/hooks/use-group'
 import {
-  useContractsByDailyScore,
-  useNewContracts,
-  useTrendingContracts,
-} from 'web/hooks/use-contracts'
-import { useGlobalConfig } from 'web/hooks/use-global-config'
-import {
-  useMemberGroupsIdsAndSlugs,
-  useTrendingGroups,
-} from 'web/hooks/use-group'
-import {
-  inMemoryStore,
   storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
@@ -56,17 +36,13 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getContractFromId } from 'web/lib/firebase/contracts'
-import {
-  getGlobalConfig,
-  updateGlobalConfig,
-} from 'web/lib/firebase/globalConfig'
+import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
 import { getGroup } from 'web/lib/firebase/groups'
 import { getPost } from 'web/lib/firebase/posts'
-import { getUsersBlockFacetFilters, updateUser } from 'web/lib/firebase/users'
+import { updateUser } from 'web/lib/firebase/users'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { track } from 'web/lib/service/analytics'
-import { GroupCard } from '../groups'
 import { useFeed } from 'web/hooks/use-feed'
 import { Title } from 'web/components/widgets/title'
 import {
@@ -82,17 +58,9 @@ import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-c
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { filterDefined } from 'common/util/array'
 
-export async function getStaticProps() {
-  const globalConfig = await getGlobalConfig()
-
-  return {
-    props: { globalConfig },
-    revalidate: 60, // regenerate after a minute
-  }
-}
-
-export default function Home(props: { globalConfig: GlobalConfig }) {
+export default function Home() {
   const isClient = useIsClient()
   const isMobile = useIsMobile()
   useTracking('view home', { kind: isMobile ? 'swipe' : 'desktop' })
@@ -107,38 +75,13 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   if (isMobile) {
     return <MobileHome />
   }
-  return <HomeDashboard globalConfig={props.globalConfig} />
+  return <HomeDashboard />
 }
 
-export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
+export function HomeDashboard() {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const followedGroupIds = useMemberGroupsIdsAndSlugs(user?.id)
-  const shouldFilterDestiny = !followedGroupIds?.find((g) =>
-    DESTINY_GROUP_SLUGS.includes(g.slug)
-  )
-  const userBlockFacetFilters = useMemo(() => {
-    if (!privateUser) return undefined
-    const followedGroupSlugs = followedGroupIds?.map((g) => g.slug) ?? []
-
-    const destinyFilters = shouldFilterDestiny
-      ? DESTINY_GROUP_SLUGS.map((slug) => `groupSlugs:-${slug}`)
-      : []
-    const homeBlockedFilters = difference(
-      HOME_BLOCKED_GROUP_SLUGS,
-      followedGroupSlugs
-    ).map((slug) => `groupSlugs:-${slug}`)
-    return buildArray(
-      getUsersBlockFacetFilters(privateUser),
-      destinyFilters,
-      homeBlockedFilters
-    )
-  }, [privateUser, followedGroupIds, shouldFilterDestiny])
-
-  const isAdmin = useAdmin()
-  const globalConfig = useGlobalConfig() ?? props.globalConfig
   useRedirectIfSignedOut()
-
   useSaveReferral()
 
   const { sections } = getHomeItems(user?.homeSections ?? [])
@@ -150,39 +93,7 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
     }
   }, [user, sections])
 
-  const trending = useTrendingContracts(
-    12,
-    userBlockFacetFilters,
-    !!userBlockFacetFilters
-  )
-
-  // Change seed every 15 minutes.
-  const seed = Math.round(Date.now() / (15 * MINUTE_MS)).toString()
-  const trendingContracts = trending
-    ? chooseRandomSubset(trending, 6, seed)
-    : undefined
-
-  const newContracts = useNewContracts(
-    6,
-    userBlockFacetFilters,
-    !!userBlockFacetFilters
-  )
-  const dailyTrendingContracts = useContractsByDailyScore(
-    6,
-    userBlockFacetFilters,
-    !!userBlockFacetFilters
-  )
-
-  const pinned = useGlobalPinned(globalConfig, privateUser)
-
-  const isLoading =
-    !user ||
-    !privateUser ||
-    !trendingContracts ||
-    !newContracts ||
-    !dailyTrendingContracts ||
-    !globalConfig ||
-    !pinned
+  const isLoading = !user || !privateUser
 
   return (
     <Page>
@@ -201,17 +112,7 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
           <LoadingIndicator />
         ) : (
           <>
-            {renderSections(
-              sections,
-              {
-                score: trendingContracts,
-                newest: newContracts,
-                'daily-trending': dailyTrendingContracts,
-              },
-              isAdmin,
-              globalConfig,
-              pinned
-            )}
+            {renderSections(sections)}
 
             <HomeSectionHeader label={'Your feed'} icon={'📖'} />
             <ContractsFeed />
@@ -234,12 +135,12 @@ export function HomeDashboard(props: { globalConfig: GlobalConfig }) {
 }
 
 const HOME_SECTIONS = [
-  { label: 'Trending', id: 'score', icon: '🔥' },
-  { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
-  { label: 'Featured', id: 'featured', icon: '📌' },
-  { label: 'New', id: 'newest', icon: '🗞️' },
-  { label: 'Live feed', id: 'live-feed', icon: '🔴' },
   { label: "Today's updates", id: 'daily-movers', icon: '📊' },
+  // { label: 'Trending', id: 'score', icon: '🔥' },
+  // { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
+  // { label: 'Featured', id: 'featured', icon: '📌' },
+  // { label: 'New', id: 'newest', icon: '🗞️' },
+  { label: 'Live feed', id: 'live-feed', icon: '🔴' },
 ] as const
 
 export const getHomeItems = (sections: string[]) => {
@@ -261,61 +162,21 @@ export const getHomeItems = (sections: string[]) => {
 }
 
 export function renderSections(
-  sections: { id: string; label: string; icon?: string }[],
-  sectionContracts: {
-    'daily-trending': CPMMBinaryContract[]
-    newest: CPMMBinaryContract[]
-    score: CPMMBinaryContract[]
-  },
-  isAdmin: boolean,
-  globalConfig: GlobalConfig,
-  pinned: JSX.Element[]
+  sections: { id: string; label: string; icon?: string }[]
 ) {
   type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
   return (
     <>
       {sections.map((s) => {
-        const { id, label, icon } = s as {
+        const { id } = s as {
           id: sectionTypes
           label: string
           icon: string | undefined
         }
-        if (id === 'featured')
-          return (
-            <FeaturedSection
-              key={id}
-              globalConfig={globalConfig}
-              pinned={pinned}
-              isAdmin={isAdmin}
-            />
-          )
 
         if (id === 'live-feed') return <ActivitySection key={id} />
         if (id === 'daily-movers') return <DailyMoversSection key={id} />
-
-        const contracts = sectionContracts[id]
-
-        if (id === 'daily-trending') {
-          return (
-            <SearchSection
-              key={id}
-              label={label}
-              contracts={contracts}
-              sort="daily-score"
-              icon={icon}
-            />
-          )
-        }
-        return (
-          <SearchSection
-            key={id}
-            label={label}
-            contracts={contracts}
-            sort={id as Sort}
-            icon={icon}
-          />
-        )
       })}
     </>
   )
@@ -500,59 +361,6 @@ function CustomizeButton(props: {
       menuWidth="w-44"
     />
   )
-}
-
-const useGlobalPinned = (
-  globalConfig: GlobalConfig,
-  privateUser: PrivateUser | null | undefined
-) => {
-  const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
-    store: inMemoryStore(),
-    key: 'home-pinned',
-  })
-
-  useEffect(() => {
-    const pinnedItems = globalConfig?.pinnedItems
-    const userIsBlocked = (userId: string) =>
-      privateUser?.blockedUserIds.includes(userId) ||
-      privateUser?.blockedByUserIds.includes(userId)
-    if (pinnedItems) {
-      const itemComponents = pinnedItems.map((element) => {
-        if (element?.type === 'post') {
-          const post = element.item as Post
-          if (!userIsBlocked(post.creatorId))
-            return <PostCard post={post} pinned={true} />
-        } else if (element?.type == 'group') {
-          const group = element.item as Group
-          if (!userIsBlocked(group.creatorId))
-            return <GroupCard group={group} pinned={true} />
-        } else if (element?.type === 'contract') {
-          const contract = element.item as Contract
-          if (
-            !userIsBlocked(contract.creatorId) &&
-            !privateUser?.blockedContractIds.includes(contract.id) &&
-            !privateUser?.blockedGroupSlugs.some((slug) =>
-              contract.groupSlugs?.includes(slug)
-            )
-          )
-            return <ContractCard contract={contract} pinned={true} />
-        }
-      })
-      setPinned(
-        itemComponents.filter(
-          (element) => element != undefined
-        ) as JSX.Element[]
-      )
-    }
-  }, [
-    globalConfig,
-    privateUser?.blockedByUserIds,
-    privateUser?.blockedContractIds,
-    privateUser?.blockedGroupSlugs,
-    privateUser?.blockedUserIds,
-    setPinned,
-  ])
-  return pinned
 }
 
 function MobileHome() {
