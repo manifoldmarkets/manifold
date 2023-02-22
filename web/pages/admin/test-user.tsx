@@ -2,27 +2,27 @@ import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+import { randomString } from 'common/util/random'
 
 export default function TestUser() {
   useRedirectIfSignedIn()
+
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [baseEmail, setBaseEmail] = useState('')
-  const [submitting, setSubmitting] = useState(false)
   useEffect(() => {
-    setBaseEmail(
-      'manifoldTestNewUser+' +
-        Math.random().toString(36).substring(2, 15) +
-        '@gmail.com'
-    )
+    setEmail('manifoldTestNewUser+' + randomString() + '@gmail.com')
+    setPassword(randomString())
   }, [])
+
+  const [submitting, setSubmitting] = useState(false)
+
   const create = () => {
     setSubmitting(true)
     const auth = getAuth()
-    createUserWithEmailAndPassword(auth, baseEmail, password)
+    createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         setSubmitting(false)
         console.log('SUCCESS creating firebase user', userCredential)
@@ -51,15 +51,9 @@ export default function TestUser() {
         in local storage
       </Row>
       Email
-      <Row className={'text-gray-600'}>{baseEmail}</Row>
+      <Row className={'text-gray-600'}>{email}</Row>
       Password
-      <Row>
-        <Input
-          type={'password'}
-          value={password}
-          onChange={(e) => setPassword(e.target.value || '')}
-        />
-      </Row>
+      <Row className={'text-gray-600'}>{password}</Row>
       <Button loading={submitting} className={'mt-2'} onClick={create}>
         Submit
       </Button>
