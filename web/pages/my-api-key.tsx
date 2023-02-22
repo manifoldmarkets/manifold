@@ -26,21 +26,18 @@ export default function MyApiKey() {
   return (
     <Page>
       <Col className={'p-2'}>
-        <Title>Discord Bot</Title>
+        <Title>Sign in to Discord Bot</Title>
         {!privateUser ? (
           <Button color={'gradient'} onClick={firebaseLogin}>
             Sign in
           </Button>
         ) : apiKey ? (
           <Col className="gap-4 p-1 text-xl">
-            <Row className={'gap-2'}>
-              1. Copy your key:
-              <CopyLinkButton
-                url={apiKey}
-                displayUrl={apiKey.slice(0, 20) + '...'}
-              />
+            1. Copy your API key:
+            <Row>
+              <CopyLinkButton url={apiKey} displayUrl={apiKey} />
             </Row>
-            2. Respond to our discord bot with it.
+            2. Respond to our Discord bot with your key.
           </Col>
         ) : (
           <LoadingIndicator />
