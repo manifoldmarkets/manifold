@@ -22,12 +22,26 @@ import { getStorage } from 'firebase-admin/storage'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
+  adminToken: z.string().optional(),
 })
 
-const opts = { secrets: ['MAILGUN_KEY'] }
+const opts = { secrets: ['MAILGUN_KEY', 'TEST_CREATE_USER_KEY'] }
 
 export const createuser = newEndpoint(opts, async (req, auth) => {
-  const { deviceToken } = validate(bodySchema, req.body)
+  const { deviceToken: preDeviceToken, adminToken } = validate(
+    bodySchema,
+    req.body
+  )
+  const firebaseUser = await admin.auth().getUser(auth.uid)
+  const isTestUser = firebaseUser.providerData[0].providerId === 'password'
+  if (isTestUser && adminToken !== process.env.TEST_CREATE_USER_KEY) {
+    throw new APIError(
+      400,
+      'Must use correct TEST_CREATE_USER_KEY to create user with email/password'
+    )
+  }
+  const deviceToken = isTestUser ? randomString(20) : preDeviceToken
+
   const preexistingUser = await getUser(auth.uid)
   if (preexistingUser)
     throw new APIError(400, 'User already exists', { user: preexistingUser })
