@@ -62,7 +62,7 @@ export const setFirebaseUserViaJson = async (
     if (typeof window !== 'undefined') {
       if (isNative) {
         // eslint-disable-next-line @typescript-eslint/no-extra-semi
-        ;(window as any).ReactNativeWebView.postMessage(
+        ;(window as any).ReactNativeWebView?.postMessage(
           JSON.stringify({
             type: 'error',
             data: `Error setting Firebase user: ${e}`,

@@ -86,7 +86,7 @@ export const postMessageToNative = (
 ) => {
   const isNative = getIsNative()
   if (!isNative) return
-  ;(window as any).ReactNativeWebView.postMessage(
+  ;(window as any).ReactNativeWebView?.postMessage(
     JSON.stringify({
       type,
       data,
