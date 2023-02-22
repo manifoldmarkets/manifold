@@ -60,7 +60,7 @@ import {
   getGlobalConfig,
   updateGlobalConfig,
 } from 'web/lib/firebase/globalConfig'
-import { getGroup, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import { getGroup } from 'web/lib/firebase/groups'
 import { getPost } from 'web/lib/firebase/posts'
 import { getUsersBlockFacetFilters, updateUser } from 'web/lib/firebase/users'
 import GoToIcon from 'web/lib/icons/go-to-icon'
