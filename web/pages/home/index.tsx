@@ -1,4 +1,3 @@
-import { PlusCircleIcon } from '@heroicons/react/outline'
 import {
   DotsVerticalIcon,
   PencilAltIcon,
@@ -22,9 +21,7 @@ import { chooseRandomSubset } from 'common/util/random'
 import { MINUTE_MS } from 'common/util/time'
 import Router, { SingletonRouter } from 'next/router'
 import { memo, ReactNode, useEffect, useMemo } from 'react'
-import { toast } from 'react-hot-toast'
 import { ActivityLog } from 'web/components/activity-log'
-import { PillButton } from 'web/components/buttons/pill-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Sort } from 'web/components/contract-search'
 import { ContractCard } from 'web/components/contract/contract-card'
@@ -465,74 +462,6 @@ export const ActivitySection = memo(function ActivitySection() {
     </Col>
   )
 })
-
-export const TrendingGroupsSection = memo(
-  function TrendingGroupsSection(props: {
-    user: User
-    followedGroupIds: { id: string; slug: string }[]
-    className?: string
-  }) {
-    const { user, followedGroupIds, className } = props
-
-    const trendingGroups = useTrendingGroups()
-
-    const myGroupIds = new Set(followedGroupIds.map((g) => g.id))
-
-    const groups = trendingGroups.filter((g) => !myGroupIds.has(g.id))
-    const count = 20
-    const chosenGroups = groups.slice(0, count)
-
-    if (chosenGroups.length === 0) {
-      return null
-    }
-
-    return (
-      <Col className={className}>
-        <HomeSectionHeader
-          label="Trending groups"
-          href="/explore-groups"
-          icon="👥"
-        />
-        <div className="mb-4 text-gray-500">
-          Follow groups you are interested in.
-        </div>
-        <Row className="flex-wrap gap-2">
-          {chosenGroups.map((g) => (
-            <PillButton
-              className="flex flex-row items-center gap-1"
-              key={g.id}
-              selected={myGroupIds.has(g.id)}
-              onSelect={() => {
-                if (myGroupIds.has(g.id)) leaveGroup(g.id, user.id)
-                else {
-                  const homeSections = (user.homeSections ?? [])
-                    .filter((id) => id !== g.id)
-                    .concat(g.id)
-                  updateUser(user.id, { homeSections })
-
-                  toast.promise(joinGroup(g.id, user.id), {
-                    loading: 'Following group...',
-                    success: `Followed ${g.name}`,
-                    error: "Couldn't follow group, try again?",
-                  })
-
-                  track('home follow group', { group: g.slug })
-                }
-              }}
-            >
-              <PlusCircleIcon
-                className={'h-5 w-5 flex-shrink-0 text-gray-500'}
-                aria-hidden="true"
-              />
-
-              {g.name}
-            </PillButton>
-          ))}
-        </Row>
-      </Col>
-    )
-  }
-)
 
 function CustomizeButton(props: {
   router: SingletonRouter
