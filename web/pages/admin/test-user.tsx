@@ -43,7 +43,7 @@ export default function TestUser() {
         <a
           className={'mx-1 text-indigo-700'}
           href={
-            'https://console.cloud.google.com/security/secret-manager/secret/TEST_CREATE_USER_KEY/versions?project=dev-mantic-markets'
+            'https://www.notion.so/manifoldmarkets/Passwords-f460a845ed6d47fc9ea353699adf7c5f?pvs=4#8a11d580b85449a2bba6e400cda8a4c6'
           }
         >
           proper value
