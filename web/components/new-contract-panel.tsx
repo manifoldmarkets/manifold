@@ -38,9 +38,8 @@ import {
   getNonPublicGroupsWhereUserHasRole,
   getPublicGroups,
 } from 'web/lib/supabase/groups'
-import { GroupsInfoBlob } from './groups/contract-groups-list'
-import { QfExplainer } from './contract/qf-overview'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { QfExplainer } from './contract/qf-overview'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -418,8 +417,6 @@ export function NewContractPanel(props: {
                   </a>
                 )}
               </Row>
-              <Spacer h={2} />
-              <GroupsInfoBlob isCreator={true} />
               <Spacer h={6} />
             </>
           )}

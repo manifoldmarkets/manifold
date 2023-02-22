@@ -20,7 +20,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from '../widgets/user-link'
 
 const SEARCH_MEMBER_QUERY_SIZE = 15
-const SEARCH_MEMBER_THRESHOLD = 100
+const SEARCH_MEMBER_THRESHOLD = 10
 
 export function GroupMemberModalContent(props: {
   group: Group
