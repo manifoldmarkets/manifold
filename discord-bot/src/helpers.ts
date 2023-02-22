@@ -210,7 +210,7 @@ export const getMarketFromSlug = async (
     await errorCallback?.('Market not found with slug: ' + slug)
     return
   }
-  return await resp.json()
+  return (await resp.json()) as FullMarket
 }
 
 export const getOpenBinaryMarketFromSlug = async (

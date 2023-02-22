@@ -63,6 +63,6 @@ export const getApiKeyFromDiscordId = async (discordUserId: string) => {
     .from('discord_users')
     .select('api_key')
     .eq('discord_user_id', discordUserId)
-  console.log('got api key for user from supabase', data, error)
+  console.log('got api key for user from supabase', data, 'error:', error)
   return error ? null : (data[0]?.api_key as string) ?? null
 }

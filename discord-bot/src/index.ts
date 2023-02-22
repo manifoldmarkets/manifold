@@ -134,23 +134,29 @@ const handleOldReaction = async (
   console.log('checking old reaction for proper details')
 
   const reaction = pReaction.partial ? await pReaction.fetch() : pReaction
+  console.log('got reaction emoji id', reaction.emoji.id)
   const message = reaction.message.partial
     ? await reaction.message.fetch()
     : reaction.message
 
+  console.log('got old message id', message.id)
   const emojiKey = getAnyHandledEmojiKey(reaction)
+  console.log('got emoji key', emojiKey)
   if (!emojiKey) return
 
   const user = pUser.partial ? await pUser.fetch() : pUser
 
   const channel = await client.channels.fetch(message.channelId)
+  console.log('got channel', channel?.id)
   if (!channel || !channel.isTextBased()) return
 
   const marketEmbed = EmbedBuilder.from(message.embeds[0])
   const link = marketEmbed.toJSON().url
+  console.log('got link', link)
   if (!link || !link.startsWith('https://manifold.markets/')) return
 
   const slug = getSlug(link)
+  console.log('got slug', slug)
   if (!slug) {
     await sendThreadErrorMessage(
       channel as TextChannel,
@@ -169,6 +175,7 @@ const handleOldReaction = async (
       user as User
     )
   )
+  console.log('got market url', market?.url)
   if (!market) return
   if (!(await userApiKey(user.id)))
     await Promise.all(message.reactions.cache?.map((r) => r.users.fetch()))
