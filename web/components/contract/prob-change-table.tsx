@@ -1,11 +1,19 @@
 import { sortBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { CPMMBinaryContract, CPMMContract } from 'common/contract'
+import { Contract, CPMMBinaryContract, CPMMContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { ContractCardWithPosition } from './contract-card'
 import { User } from 'common/user'
-import { ContractsListEntry } from './contracts-list-entry'
+import { ContractStatusLabel } from './contracts-list-entry'
+import clsx from 'clsx'
+import Link from 'next/link'
+import { forwardRef } from 'react'
+import { useContract } from 'web/hooks/use-contracts'
+import { contractPath } from 'web/lib/firebase/contracts'
+import { Avatar } from '../widgets/avatar'
+import { Row } from '../layout/row'
+import { formatPercent } from 'common/util/format'
 
 export function ProfitChangeCardsTable(props: {
   contracts: CPMMBinaryContract[]
@@ -88,9 +96,9 @@ export function ProbChangeTable(props: {
     return <div className="px-4 text-gray-500">None</div>
 
   return (
-    <Col className="mb-4 w-full rounded-lg">
+    <Col className="mb-4 w-full max-w-2xl gap-1 rounded-lg">
       {contracts.map((contract) => (
-        <ContractsListEntry
+        <ContractWithProbChange
           key={contract.id}
           contract={contract}
           showProbChange
@@ -119,3 +127,70 @@ export function ProbOrNumericChange(props: {
   }
   return <></>
 }
+
+const ContractWithProbChange = forwardRef(
+  (
+    props: {
+      contract: Contract
+      onContractClick?: (contract: Contract) => void
+      showProbChange?: boolean
+      className?: string
+    },
+    ref: React.Ref<HTMLAnchorElement>
+  ) => {
+    const { onContractClick, showProbChange, className } = props
+    const contract = useContract(props.contract.id) ?? props.contract
+
+    const isClosed = contract.closeTime && contract.closeTime < Date.now()
+    const textColor =
+      isClosed && !contract.isResolved ? 'text-gray-500' : 'text-gray-900'
+
+    return (
+      <Link
+        onClick={(e) => {
+          if (!onContractClick) return
+          onContractClick(contract)
+          e.preventDefault()
+        }}
+        ref={ref}
+        href={contractPath(contract)}
+        className={clsx(
+          'group flex flex-col gap-1 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 lg:flex-row lg:gap-2',
+          className
+        )}
+      >
+        <div
+          className={clsx(
+            'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto',
+            textColor
+          )}
+        >
+          {contract.question}
+        </div>
+        <Row className="gap-2">
+          <Avatar
+            username={contract.creatorUsername}
+            avatarUrl={contract.creatorAvatarUrl}
+            size="xs"
+          />
+          <div className="min-w-[2rem] font-semibold">
+            <ContractStatusLabel contract={contract} />
+          </div>
+          {showProbChange && contract.mechanism === 'cpmm-1' && (
+            <div
+              className={clsx(
+                'min-w-[2rem]',
+                contract.probChanges.day >= 0
+                  ? 'text-teal-500'
+                  : 'text-scarlet-500'
+              )}
+            >
+              {contract.probChanges.day >= 0 ? '+' : ''}
+              {formatPercent(contract.probChanges.day, true)}
+            </div>
+          )}
+        </Row>
+      </Link>
+    )
+  }
+)

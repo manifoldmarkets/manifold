@@ -239,7 +239,7 @@ const HOME_SECTIONS = [
   { label: 'Featured', id: 'featured', icon: '📌' },
   { label: 'New', id: 'newest', icon: '🗞️' },
   { label: 'Live feed', id: 'live-feed', icon: '🔴' },
-  { label: 'Daily movers', id: 'daily-movers', icon: '📊' },
+  { label: "Today's updates", id: 'daily-movers', icon: '📊' },
 ] as const
 
 export const getHomeItems = (sections: string[]) => {
