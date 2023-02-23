@@ -74,11 +74,12 @@ export const ContractsListEntry = forwardRef(
       contract: Contract
       onContractClick?: (contract: Contract) => void
       showProbChange?: boolean
+      skinny?: boolean
       className?: string
     },
     ref: React.Ref<HTMLAnchorElement>
   ) => {
-    const { onContractClick, showProbChange, className } = props
+    const { onContractClick, showProbChange, skinny, className } = props
     const contract = useContract(props.contract.id) ?? props.contract
 
     const isClosed = contract.closeTime && contract.closeTime < Date.now()
@@ -104,9 +105,11 @@ export const ContractsListEntry = forwardRef(
           avatarUrl={contract.creatorAvatarUrl}
           size="xs"
         />
-        <div className="min-w-[2rem] font-semibold">
-          <ContractStatusLabel contract={contract} />
-        </div>
+        {!skinny && (
+          <div className="hidden min-w-[2rem] font-semibold lg:flex">
+            <ContractStatusLabel contract={contract} />
+          </div>
+        )}
         {showProbChange && contract.mechanism === 'cpmm-1' && (
           <div
             className={clsx(
@@ -128,6 +131,11 @@ export const ContractsListEntry = forwardRef(
         >
           {contract.question}
         </div>
+        {skinny && (
+          <div className="ml-auto min-w-[2rem] font-semibold">
+            <ContractStatusLabel contract={contract} />
+          </div>
+        )}
       </Link>
     )
   }

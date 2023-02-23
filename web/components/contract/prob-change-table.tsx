@@ -97,7 +97,7 @@ export function ProbChangeTable(props: {
     return <div className="px-4 text-gray-500">None</div>
 
   return (
-    <Col className="mb-4 w-full gap-1 rounded-lg">
+    <Col className="4 w-full gap-1 rounded-lg">
       {contracts.map((contract) => (
         <ContractWithProbChange
           key={contract.id}

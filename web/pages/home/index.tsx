@@ -218,17 +218,6 @@ function HomeSectionHeader(props: {
   )
 }
 
-export const YourTrendingSection = memo(function YourTrendingSection() {
-  const user = useUser()
-  const contracts = useYourTrendingContracts(db, user?.id, 6)
-  return (
-    <Col>
-      <HomeSectionHeader label={'Your trending'} icon={'🔥'} />
-      <ContractsList contracts={contracts} />
-    </Col>
-  )
-})
-
 export const SearchSection = memo(function SearchSection(props: {
   label: string
   contracts: CPMMBinaryContract[]
@@ -336,6 +325,17 @@ export const DailyMoversSection = memo(function DailyMoversSection() {
     <Col>
       <HomeSectionHeader label="Today's updates" icon="📊" />
       <ProbChangeTable changes={contracts as CPMMContract[]} />
+    </Col>
+  )
+})
+
+export const YourTrendingSection = memo(function YourTrendingSection() {
+  const user = useUser()
+  const contracts = useYourTrendingContracts(db, user?.id, 6)
+  return (
+    <Col>
+      <HomeSectionHeader label={'Your trending'} icon={'🔥'} />
+      <ContractsList contracts={contracts} skinny />
     </Col>
   )
 })

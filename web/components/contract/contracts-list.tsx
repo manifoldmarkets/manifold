@@ -21,8 +21,10 @@ export function ContractsList(props: {
   loadMore?: () => void
   onContractClick?: (contract: Contract) => void
   highlightContractIds?: string[]
+  skinny?: boolean
 }) {
-  const { contracts, loadMore, onContractClick, highlightContractIds } = props
+  const { contracts, loadMore, onContractClick, highlightContractIds, skinny } =
+    props
   const onVisibilityUpdated = useCallback(
     (visible: boolean) => {
       if (visible && loadMore) {
@@ -46,6 +48,7 @@ export function ContractsList(props: {
             contract={contract}
             key={contract.id}
             onContractClick={onContractClick}
+            skinny={skinny}
             className={
               highlightContractIds?.includes(contract.id)
                 ? contractListEntryHighlightClass
@@ -58,7 +61,8 @@ export function ContractsList(props: {
             key={contract.id}
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
-          ></DesktopPopover>
+            skinny={skinny}
+          />
         )
       )}
 
@@ -76,8 +80,9 @@ function DesktopPopover(props: {
   contract: Contract
   onContractClick?: (contract: Contract) => void
   highlightContractIds?: string[]
+  skinny?: boolean
 }) {
-  const { contract, onContractClick, highlightContractIds } = props
+  const { contract, onContractClick, highlightContractIds, skinny } = props
   const [isOpen, setIsOpen] = useState(false)
   const { x, y, strategy, refs, context } = useFloating({
     open: isOpen,
@@ -96,6 +101,7 @@ function DesktopPopover(props: {
         ref={refs.setReference}
         contract={contract}
         onContractClick={onContractClick}
+        skinny={skinny}
         className={
           highlightContractIds?.includes(contract.id)
             ? contractListEntryHighlightClass
