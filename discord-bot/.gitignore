@@ -8,12 +8,6 @@ node_modules/
 # TypeScript cache
 *.tsbuildinfo
 
-# Optional eslint cache
-.eslintcache
-
-# Yarn Integrity file
-.yarn-integrity
-
 lib/
 secrets.sh
 dist/
