@@ -133,21 +133,47 @@ const handleOldReaction = async (
 
   console.log('checking old reaction for proper details')
 
-  const reaction = pReaction.partial ? await pReaction.fetch() : pReaction
+  const reaction = pReaction.partial
+    ? await pReaction
+        .fetch()
+        .then((r) => r)
+        .catch((e) => {
+          console.log('Failed to fetch reaction', e)
+        })
+    : pReaction
+  if (!reaction) return
   console.log('got reaction emoji id', reaction.emoji.id)
   console.log('message is partial:', reaction.message.partial)
   const message = reaction.message.partial
-    ? await reaction.message.fetch()
+    ? await reaction.message
+        .fetch()
+        .then((m) => m)
+        .catch((e) => {
+          console.log('Failed to fetch message', e)
+        })
     : reaction.message
-
+  if (!message) return
   console.log('got old message id', message.id)
   const emojiKey = getAnyHandledEmojiKey(reaction)
   console.log('got emoji key', emojiKey)
   if (!emojiKey) return
 
-  const user = pUser.partial ? await pUser.fetch() : pUser
+  const user = pUser.partial
+    ? await pUser
+        .fetch()
+        .then((u) => u)
+        .catch((e) => {
+          console.log('Failed to fetch user', e)
+        })
+    : pUser
+  if (!user) return
 
-  const channel = await client.channels.fetch(message.channelId)
+  const channel = await client.channels
+    .fetch(message.channelId)
+    .then((c) => c)
+    .catch((e) => {
+      console.log('Failed to fetch channel', e)
+    })
   console.log('got channel', channel?.id)
   if (!channel || !channel.isTextBased()) return
   console.log('message embeds: ', message.embeds.length)

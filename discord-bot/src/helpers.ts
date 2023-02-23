@@ -50,8 +50,14 @@ export const handleReaction = async (
   // seems related to: https://github.com/discordjs/discord.js/issues/7697#issuecomment-1073432737
   const message =
     reaction.message.embeds.length === 0 || reaction.message.partial
-      ? await reaction.message.fetch()
+      ? await reaction.message
+          .fetch()
+          .then((m) => m)
+          .catch((e) => {
+            console.log('Failed to fetch message', e)
+          })
       : reaction.message
+  if (!message) return
 
   const closed = (market.closeTime ?? 0) <= Date.now()
   if (closed) {
@@ -81,7 +87,11 @@ export const handleBet = async (
   const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
   console.log('betting', amount, buyOutcome, 'on', market.id, 'for', user.tag)
   try {
-    const apiKey = await userApiKey(user.id)
+    const apiKey = await userApiKey(user.id).catch((e) => {
+      console.log('Failed to get user api key', e)
+      return null
+    })
+
     if (!apiKey) {
       if (sale) return
       await user.send(registerHelpMessage)
