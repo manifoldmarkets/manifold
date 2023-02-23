@@ -11,7 +11,6 @@ import { BACKGROUND_COLOR } from 'common/envs/constants'
 import { GlobalConfig } from 'common/globalConfig'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
-import { User } from 'common/user'
 import Router, { SingletonRouter } from 'next/router'
 import { memo, ReactNode, useEffect } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
@@ -43,7 +42,6 @@ import { updateUser } from 'web/lib/firebase/users'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { track } from 'web/lib/service/analytics'
-import { useFeed } from 'web/hooks/use-feed'
 import { Title } from 'web/components/widgets/title'
 import {
   MobileSearchButton,
@@ -54,11 +52,15 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { Swipe } from 'web/components/swipe/swipe'
 import { getIsNative } from 'web/lib/native/is-native'
-import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
+import {
+  useYourDailyChangedContracts,
+  useYourTrendingContracts,
+} from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { filterDefined } from 'common/util/array'
+import { ContractsList } from 'web/components/contract/contracts-list'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -136,7 +138,7 @@ export function HomeDashboard() {
 
 const HOME_SECTIONS = [
   { label: "Today's updates", id: 'daily-movers', icon: '📊' },
-  // { label: 'Trending', id: 'score', icon: '🔥' },
+  { label: 'Trending', id: 'score', icon: '🔥' },
   // { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   // { label: 'Featured', id: 'featured', icon: '📌' },
   // { label: 'New', id: 'newest', icon: '🗞️' },
@@ -175,25 +177,11 @@ export function renderSections(
           icon: string | undefined
         }
 
-        if (id === 'live-feed') return <ActivitySection key={id} />
         if (id === 'daily-movers') return <DailyMoversSection key={id} />
+        if (id === 'score') return <YourTrendingSection key={id} />
+        if (id === 'live-feed') return <ActivitySection key={id} />
       })}
     </>
-  )
-}
-
-export const DiscoverFeed = (props: { user: User }) => {
-  const { user } = props
-  const { contracts, loadMore } = useFeed(user, 'home')
-
-  if (!contracts) return <LoadingIndicator />
-  return (
-    <ContractsGrid
-      contracts={contracts}
-      showImageOnTopContract
-      trackCardViews={true}
-      loadMore={loadMore}
-    />
   )
 }
 
@@ -229,6 +217,17 @@ function HomeSectionHeader(props: {
     </Row>
   )
 }
+
+export const YourTrendingSection = memo(function YourTrendingSection() {
+  const user = useUser()
+  const contracts = useYourTrendingContracts(db, user?.id, 6)
+  return (
+    <Col>
+      <HomeSectionHeader label={'Your trending'} icon={'🔥'} />
+      <ContractsList contracts={contracts} />
+    </Col>
+  )
+})
 
 export const SearchSection = memo(function SearchSection(props: {
   label: string
