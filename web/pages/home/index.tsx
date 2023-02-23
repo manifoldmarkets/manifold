@@ -99,7 +99,7 @@ export function HomeDashboard() {
 
   return (
     <Page>
-      <Col className="gap-4 py-2 pb-8 sm:px-2">
+      <Col className="w-full max-w-2xl gap-4 py-2 pb-8 sm:px-2">
         <Row className={'mb-2 w-full items-center justify-between gap-4'}>
           <Title children="Home" className="!my-0 hidden sm:block" />
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />

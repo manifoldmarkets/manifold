@@ -14,6 +14,7 @@ import { contractPath } from 'web/lib/firebase/contracts'
 import { Avatar } from '../widgets/avatar'
 import { Row } from '../layout/row'
 import { formatPercent } from 'common/util/format'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function ProfitChangeCardsTable(props: {
   contracts: CPMMBinaryContract[]
@@ -79,7 +80,7 @@ export function ProbChangeTable(props: {
 }) {
   const { changes } = props
 
-  if (!changes) return <></>
+  if (!changes) return <LoadingIndicator />
 
   const biggestChanges = sortBy(changes, (c) =>
     Math.abs(c.probChanges.day)
@@ -96,7 +97,7 @@ export function ProbChangeTable(props: {
     return <div className="px-4 text-gray-500">None</div>
 
   return (
-    <Col className="mb-4 w-full max-w-2xl gap-1 rounded-lg">
+    <Col className="mb-4 w-full gap-1 rounded-lg">
       {contracts.map((contract) => (
         <ContractWithProbChange
           key={contract.id}
@@ -159,6 +160,12 @@ const ContractWithProbChange = forwardRef(
           className
         )}
       >
+        <Avatar
+          className="hidden lg:flex"
+          username={contract.creatorUsername}
+          avatarUrl={contract.creatorAvatarUrl}
+          size="xs"
+        />
         <div
           className={clsx(
             'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto',
@@ -169,6 +176,7 @@ const ContractWithProbChange = forwardRef(
         </div>
         <Row className="gap-2">
           <Avatar
+            className="lg:hidden"
             username={contract.creatorUsername}
             avatarUrl={contract.creatorAvatarUrl}
             size="xs"
