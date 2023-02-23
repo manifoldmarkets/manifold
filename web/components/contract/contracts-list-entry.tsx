@@ -1,6 +1,7 @@
 import { forwardRef } from 'react'
 import { Contract } from 'common/contract'
 import Link from 'next/link'
+import clsx from 'clsx'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
@@ -8,10 +9,8 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { Avatar } from '../widgets/avatar'
-import clsx from 'clsx'
 import { ContractMinibar } from '../charts/minibar'
 import { useContract } from 'web/hooks/use-contracts'
-import { formatPercent } from 'common/util/format'
 
 export function ContractStatusLabel(props: {
   contract: Contract
@@ -73,13 +72,12 @@ export const ContractsListEntry = forwardRef(
     props: {
       contract: Contract
       onContractClick?: (contract: Contract) => void
-      showProbChange?: boolean
       skinny?: boolean
       className?: string
     },
     ref: React.Ref<HTMLAnchorElement>
   ) => {
-    const { onContractClick, showProbChange, skinny, className } = props
+    const { onContractClick, skinny, className } = props
     const contract = useContract(props.contract.id) ?? props.contract
 
     const isClosed = contract.closeTime && contract.closeTime < Date.now()
@@ -106,21 +104,8 @@ export const ContractsListEntry = forwardRef(
           size="xs"
         />
         {!skinny && (
-          <div className="hidden min-w-[2rem] font-semibold lg:flex">
+          <div className="hidden min-w-[2rem] text-right font-semibold lg:flex">
             <ContractStatusLabel contract={contract} />
-          </div>
-        )}
-        {showProbChange && contract.mechanism === 'cpmm-1' && (
-          <div
-            className={clsx(
-              'min-w-[2rem]',
-              contract.probChanges.day >= 0
-                ? 'text-teal-500'
-                : 'text-scarlet-500'
-            )}
-          >
-            {contract.probChanges.day >= 0 ? '+' : ''}
-            {formatPercent(contract.probChanges.day, true)}
           </div>
         )}
         <div
