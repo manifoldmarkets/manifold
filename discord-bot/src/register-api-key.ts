@@ -1,3 +1,4 @@
+import { User } from 'common/user'
 import { Message } from 'discord.js'
 import { writeApiKeyToDiscordUserId } from './storage.js'
 
@@ -9,27 +10,28 @@ export const registerApiKey = async (message: Message) => {
     )
     return
   }
-  let me
-  await message.reply({
+  const p1 = message.reply({
     content: 'Checking API key...',
   })
-  let failed = false
-  try {
-    me = await fetch('https://manifold.markets/api/v0/me', {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Key ${key}`,
-      },
-    }).then((r) => r.json())
-  } catch (e) {
-    failed = true
-  }
-  if (failed || !me) {
+  const p2 = fetch('https://manifold.markets/api/v0/me', {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Key ${key}`,
+    },
+  })
+    .then((r) => r.json().then((j) => j as User))
+    .catch(() => {
+      console.log('Failed to fetch api key', key)
+      return
+    })
+  const [_, me] = await Promise.all([p1, p2])
+  if (!me || !me.name) {
     await message.reply(
       `Encountered an error using that API key to connect to Manifold -- find yours at https://manifold.markets/my-api-key`
     )
     return
   }
+
   await writeApiKeyToDiscordUserId(key, message.author.id)
   await message.reply(
     `Registered Manifold account ${me.name} to user <@!${message.author.id}>`
