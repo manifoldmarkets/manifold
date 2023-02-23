@@ -74,12 +74,44 @@ const sendMarketIntro = async (
   interaction: ChatInputCommandInteraction,
   market: FullMarket
 ) => {
-  const placeHolderEmbed = new EmbedBuilder()
+  await interaction.deferReply()
+  const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings(
+    interaction.guild
+  )
+
+  const { coverImageUrl } = market
+  const getAttachment = async (url: string, name: string) => {
+    const blob = await fetch(url).then((r) => r.blob())
+    const arrayBuffer = await blob.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    return new AttachmentBuilder(buffer, { name })
+  }
+  const fallbackImage = 'https://manifold.markets/logo-cover.png'
+  const [cover, author] = await Promise.all([
+    getAttachment(coverImageUrl ?? fallbackImage, 'cover.png'),
+    getAttachment(market.creatorAvatarUrl ?? fallbackImage, 'author.png'),
+  ])
+
+  const marketEmbed = new EmbedBuilder()
+  marketEmbed
     .setColor(0x0099ff)
-    .setTitle('Loading market...')
-  let message = await interaction.reply({
-    embeds: [placeHolderEmbed],
-    fetchReply: true,
+    .setTitle(market.question)
+    .setURL(market.url)
+    .setDescription(getCurrentMarketDescription(market))
+    .setThumbnail(`attachment://cover.png`)
+    .addFields({
+      name: `React to bet`,
+      value: `YES: ${yesBetsEmojis}   NO: ${noBetsEmojis}`,
+    })
+    .setTimestamp(market.closeTime)
+    .setFooter({
+      text: `${market.creatorName}`,
+      iconURL: `attachment://author.png`,
+    })
+
+  const message = await interaction.editReply({
+    embeds: [marketEmbed],
+    files: [cover, author],
   })
 
   // Let client listener know we've this message in memory
@@ -96,52 +128,5 @@ const sendMarketIntro = async (
     } else await message.react(emoji)
   }
 
-  const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings(
-    interaction.guild
-  )
-
-  const previousEmbed = message.embeds[0]
-  const marketEmbed = EmbedBuilder.from(previousEmbed)
-  const { coverImageUrl } = market
-  const getAttachment = async (url: string, name: string) => {
-    const blob = await fetch(url).then((r) => r.blob())
-    const arrayBuffer = await blob.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    return new AttachmentBuilder(buffer, { name })
-  }
-  const fallbackImage = 'https://manifold.markets/logo-cover.png'
-  const [cover, author] = await Promise.all([
-    getAttachment(coverImageUrl ?? fallbackImage, 'cover.png'),
-    getAttachment(market.creatorAvatarUrl ?? fallbackImage, 'author.png'),
-  ])
-  marketEmbed
-    .setColor(0x0099ff)
-    .setTitle(market.question)
-    .setURL(market.url)
-    .setDescription(getCurrentMarketDescription(market))
-    .setThumbnail(`attachment://cover.png`)
-    .addFields(
-      {
-        name: `React to bet`,
-        value: `YES: ${yesBetsEmojis}   NO: ${noBetsEmojis}`,
-        inline: true,
-      }
-      // {
-      //   name: 'Bet NO',
-      //   value: `${noBetsEmojis}`,
-      // value: `test`,
-      // inline: true,
-      // }
-    )
-    .setTimestamp(market.closeTime)
-    .setFooter({
-      text: `${market.creatorName}`,
-      iconURL: `attachment://author.png`,
-    })
-
-  message = await message.edit({
-    embeds: [marketEmbed],
-    files: [cover, author],
-  })
   return message
 }
