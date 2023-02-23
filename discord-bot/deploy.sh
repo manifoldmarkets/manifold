@@ -17,8 +17,6 @@ case $ENV in
       exit 1
 esac
 
-# note that we deploy this onto us-east-4, nearest to supabase, not us-central like most stuff
-
 yarn build && \
   gcloud builds submit . \
          --tag gcr.io/${GCLOUD_PROJECT}/${SERVICE_NAME} \
