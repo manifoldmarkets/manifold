@@ -3,7 +3,7 @@ import * as process from 'process'
 
 const hostname = '0.0.0.0'
 const port = process.env.PORT ?? '8080'
-
+// This server is just to let the GCP Cloud Run service know we're ready, we don't need it if we move off Cloud Run
 const server = http.createServer((req, res) => {
   res.statusCode = 200
   res.setHeader('Content-Type', 'text/plain')
