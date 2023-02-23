@@ -97,7 +97,7 @@ export function ProbChangeTable(props: {
     return <div className="px-4 text-gray-500">None</div>
 
   return (
-    <Col className="4 w-full gap-1 rounded-lg">
+    <Col className="w-full divide-y-[0.5px] rounded border bg-white">
       {contracts.map((contract) => (
         <ContractWithProbChange
           key={contract.id}
@@ -156,12 +156,12 @@ const ContractWithProbChange = forwardRef(
         ref={ref}
         href={contractPath(contract)}
         className={clsx(
-          'group flex flex-col gap-1 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 lg:flex-row lg:gap-2',
+          'group flex flex-col gap-1 whitespace-nowrap px-3 py-2.5 hover:bg-indigo-50 focus:bg-indigo-50 lg:flex-row lg:gap-2',
           className
         )}
       >
         <Avatar
-          className="hidden lg:flex"
+          className="hidden lg:mr-1 lg:flex"
           username={contract.creatorUsername}
           avatarUrl={contract.creatorAvatarUrl}
           size="xs"

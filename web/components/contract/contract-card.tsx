@@ -597,7 +597,7 @@ export function ContractCardNew(props: {
       href={contractPath(contract)}
       className={clsx(
         'group flex flex-col gap-2 whitespace-nowrap rounded-sm bg-white focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
-        'max-w-[600px] border-l border-r py-3 px-4',
+        'max-w-[600px] py-3 px-4',
         className
       )}
     >

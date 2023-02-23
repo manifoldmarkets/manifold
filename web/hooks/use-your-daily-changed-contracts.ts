@@ -22,7 +22,7 @@ export function useYourDailyChangedContracts(
   useEffect(() => {
     if (!userId) return
 
-    getYourDailyChangedContracts(db, userId, 10).then((contracts) => {
+    getYourDailyChangedContracts(db, userId, 7).then((contracts) => {
       setContracts(contracts)
     })
   }, [userId])

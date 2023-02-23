@@ -877,7 +877,6 @@ as $$
   from get_your_contract_ids(uid)
   left join contracts
   on contracts.id = contract_id
-  where is_valid_contract(data)
   and data->>'outcomeType' = 'BINARY'
   order by daily_score desc
   limit n

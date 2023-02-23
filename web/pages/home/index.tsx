@@ -33,7 +33,7 @@ import { useAllPosts } from 'web/hooks/use-post'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
 import { getGroup } from 'web/lib/firebase/groups'
@@ -82,7 +82,6 @@ export default function Home() {
 
 export function HomeDashboard() {
   const user = useUser()
-  const privateUser = usePrivateUser()
   useRedirectIfSignedOut()
   useSaveReferral()
 
@@ -95,11 +94,9 @@ export function HomeDashboard() {
     }
   }, [user, sections])
 
-  const isLoading = !user || !privateUser
-
   return (
     <Page>
-      <Col className="w-full max-w-2xl gap-4 py-2 pb-8 sm:px-2">
+      <Col className="w-full max-w-2xl gap-4 py-2 pb-8 sm:px-2 lg:pr-4">
         <Row className={'mb-2 w-full items-center justify-between gap-4'}>
           <Title children="Home" className="!my-0 hidden sm:block" />
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />
@@ -110,16 +107,9 @@ export function HomeDashboard() {
           </Row>
         </Row>
 
-        {isLoading ? (
-          <LoadingIndicator />
-        ) : (
-          <>
-            {renderSections(sections)}
-
-            <HomeSectionHeader label={'Your feed'} icon={'📖'} />
-            <ContractsFeed />
-          </>
-        )}
+        <DailyMoversSection />
+        <HomeSectionHeader label={'Your feed'} icon={'📖'} />
+        <ContractsFeed />
       </Col>
 
       <button
@@ -331,7 +321,7 @@ export const DailyMoversSection = memo(function DailyMoversSection() {
 
 export const YourTrendingSection = memo(function YourTrendingSection() {
   const user = useUser()
-  const contracts = useYourTrendingContracts(db, user?.id, 6)
+  const contracts = useYourTrendingContracts(db, user?.id, 7)
   return (
     <Col>
       <HomeSectionHeader label={'Your trending'} icon={'🔥'} />
