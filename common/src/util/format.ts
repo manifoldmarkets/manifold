@@ -18,7 +18,6 @@ export function formatMoneyUSD(amount: number) {
   return formatter.format(newAmount)
 }
 
-
 export function formatMoneyNumber(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', '')
@@ -47,14 +46,18 @@ export function manaToUSD(mana: number) {
   })
 }
 
+export function formatPercentShort(zeroToOne: number) {
+  return Math.min(zeroToOne * 100, 99).toFixed(0) + '%'
+}
+
 function getPercentDecimalPlaces(zeroToOne: number) {
   return zeroToOne < 0.02 || zeroToOne > 0.98 ? 1 : 0
 }
 
-export function formatPercent(zeroToOne: number, shortFormat = false) {
+export function formatPercent(zeroToOne: number) {
   // Show 1 decimal place if <2% or >98%, giving more resolution on the tails
-  const decimalPlaces = shortFormat ? 0 : getPercentDecimalPlaces(zeroToOne)
-  const percent = shortFormat ? Math.min(zeroToOne * 100, 99) : zeroToOne * 100
+  const decimalPlaces = getPercentDecimalPlaces(zeroToOne)
+  const percent = zeroToOne * 100
   return percent.toFixed(decimalPlaces) + '%'
 }
 
