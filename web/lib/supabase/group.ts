@@ -6,10 +6,13 @@ import { uniqBy } from 'lodash'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
-  const { data } = await run(
-    db.from('group_role').select('count').eq('group_id', groupId)
+  const { count } = await run(
+    db
+      .from('group_members')
+      .select('*', { head: true, count: 'exact' })
+      .eq('group_id', groupId)
   )
-  return data[0].count as number
+  return count as number
 }
 
 export async function getGroupOfRole(groupId: string, role: GroupRoleType) {
