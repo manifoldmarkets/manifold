@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "scripts": {
     "build": "tsc --project tsconfig.json && cp ../yarn.lock ./dist/yarn.lock",
-    "start": "ENVIRONMENT=PROD yarn run build && nodemon --watch src --exec ts-node src/index.ts",
-    "dev": "ENVIRONMENT=DEV yarn run build && nodemon --watch src --exec ts-node src/index.ts"
+    "start": "ENVIRONMENT=PROD nodemon --watch src --exec ts-node src/index.ts",
+    "dev": "ENVIRONMENT=DEV nodemon --watch src --exec ts-node src/index.ts"
   },
   "type": "module",
   "dependencies": {
