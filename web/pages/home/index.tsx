@@ -1,8 +1,4 @@
-import {
-  DotsVerticalIcon,
-  PencilAltIcon,
-  SwitchVerticalIcon,
-} from '@heroicons/react/solid'
+import { PencilAltIcon, SwitchVerticalIcon } from '@heroicons/react/solid'
 import { isArray, keyBy } from 'lodash'
 import clsx from 'clsx'
 
@@ -11,10 +7,9 @@ import { BACKGROUND_COLOR } from 'common/envs/constants'
 import { GlobalConfig } from 'common/globalConfig'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
-import Router, { SingletonRouter } from 'next/router'
+import Router from 'next/router'
 import { memo, ReactNode, useEffect } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Sort } from 'web/components/contract-search'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { DailyStats } from 'web/components/daily-stats'
@@ -101,15 +96,16 @@ export function HomeDashboard() {
           <Title children="Home" className="!my-0 hidden sm:block" />
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />
           <MobileSearchButton className="flex-1 md:hidden" />
-          <Row className="items-center gap-4">
-            <DailyStats user={user} />
-            <CustomizeButton router={Router} />
-          </Row>
+          <DailyStats user={user} />
         </Row>
 
         <DailyMoversSection />
-        <HomeSectionHeader label={'Your feed'} icon={'📖'} />
-        <ContractsFeed />
+        <ActivitySection />
+
+        <Col>
+          <HomeSectionHeader label={'Your feed'} icon={'📖'} />
+          <ContractsFeed />
+        </Col>
       </Col>
 
       <button
@@ -329,28 +325,6 @@ export const YourTrendingSection = memo(function YourTrendingSection() {
     </Col>
   )
 })
-
-function CustomizeButton(props: {
-  router: SingletonRouter
-  className?: string
-}) {
-  const { router, className } = props
-  return (
-    <DropdownMenu
-      Items={[
-        {
-          name: 'Customize Home',
-          icon: <HomeSettingsIcon className="h-5 w-5" />,
-          onClick: () => {
-            router.push('/home/edit')
-          },
-        },
-      ]}
-      Icon={<DotsVerticalIcon className={clsx('my-1 h-4 w-4', className)} />}
-      menuWidth="w-44"
-    />
-  )
-}
 
 function MobileHome() {
   const user = useUser()

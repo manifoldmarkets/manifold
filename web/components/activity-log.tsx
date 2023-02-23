@@ -173,7 +173,7 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
           </PillButton>
         </Row>
       )}
-      <Col className="divide-y border">
+      <Col className="divide-y-[0.5px] border-[0.5px]">
         {groups.map(({ contractId, items }) => {
           const contract = contractsById[contractId] as Contract
           return (
