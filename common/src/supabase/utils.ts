@@ -41,6 +41,8 @@ export const subcollectionTables: SubcollectionTableMapping = {
     follows: 'user_follows',
     reactions: 'user_reactions',
     events: 'user_events',
+  },
+  'private-users': {
     seenMarkets: 'user_seen_markets',
   },
   contracts: {
