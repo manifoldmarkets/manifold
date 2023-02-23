@@ -95,12 +95,15 @@ export const handleBet = async (
     if (!apiKey) {
       if (sale) return
       await user.send(registerHelpMessage)
-      const userReactions = message.reactions.cache.filter((reaction) =>
-        reaction.users.cache.has(user.id)
+      const userReactions = message.reactions.cache.filter(
+        (r) =>
+          (r.emoji.id ?? r.emoji.name) ===
+          (reaction.emoji.id ?? reaction.emoji.name)
       )
       try {
-        for (const reaction of userReactions.values()) {
-          await reaction.users.remove(user.id)
+        for (const react of userReactions.values()) {
+          await react.users.fetch()
+          if (react.users.cache.has(user.id)) await react.users.remove(user.id)
         }
       } catch (error) {
         console.error('Failed to remove reactions.')

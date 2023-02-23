@@ -33,7 +33,7 @@ import {
 } from './helpers.js'
 import { registerApiKey } from './register-api-key.js'
 import { startListener } from './server.js'
-import { messagesHandledViaInteraction, userApiKey } from './storage.js'
+import { messagesHandledViaInteraction } from './storage.js'
 
 const { id: clientId } = config.client
 const token = process.env.DISCORD_BOT_TOKEN
@@ -208,8 +208,6 @@ const handleOldReaction = async (
   })
   console.log('got market url', market?.url)
   if (!market) return
-  if (!(await userApiKey(user.id)))
-    await Promise.all(message.reactions.cache?.map((r) => r.users.fetch()))
 
   await handleReaction(reaction, user, channel as TextChannel, market)
 }
