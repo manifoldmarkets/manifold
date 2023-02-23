@@ -1,31 +1,13 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from 'common/lib/supabase/utils.js'
 import { config } from './constants/config.js'
 import { User } from 'discord.js'
 import { Manifold } from 'manifold-sdk'
 
 const discordIdsToApiKeys: { [k: string]: string } = {}
 
-const { supabaseInstanceId } = config
-function getInstanceHostname(instanceId: string) {
-  return `${instanceId}.supabase.co`
-}
-
-function createSupabaseClient() {
-  const instanceId = supabaseInstanceId
-  if (!instanceId) {
-    throw new Error(
-      "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."
-    )
-  }
-  const key = process.env.SUPABASE_KEY
-  if (!key) {
-    throw new Error("Can't connect to Supabase; no process.env.SUPABASE_KEY.")
-  }
-  const url = `https://${getInstanceHostname(instanceId)}`
-  return createClient(url, key)
-}
-
-export const supabase = createSupabaseClient()
+const key = process.env.SUPABASE_KEY
+if (!key) throw new Error('No SUPABASE_KEY env var set.')
+export const supabase = createClient(config.supabaseInstanceId, key)
 export const messagesHandledViaInteraction: Set<string> = new Set()
 export const channelMarkets: { [k: string]: string } = {}
 export const registerHelpMessage =
