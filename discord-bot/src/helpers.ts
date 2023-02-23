@@ -211,35 +211,25 @@ export const getSlug = (link: string) => {
   return link.split('/').pop()?.split('?')[0].split('#')[0]
 }
 
-export const getMarketFromSlug = async (
-  slug: string,
-  errorCallback?: (message: string) => void
-) => {
+export const getMarketFromSlug = async (slug: string) => {
   const resp = await fetch(`https://manifold.markets/api/v0/slug/${slug}`)
   if (!resp.ok) {
-    await errorCallback?.('Market not found with slug: ' + slug)
-    return
+    throw new Error('Market not found with slug: ' + slug)
   }
   return (await resp.json()) as FullMarket
 }
 
-export const getOpenBinaryMarketFromSlug = async (
-  slug: string,
-  errorCallback?: (message: string) => void
-) => {
-  const market = await getMarketFromSlug(slug, errorCallback)
-  if (!market) return
+export const getOpenBinaryMarketFromSlug = async (slug: string) => {
+  const market = await getMarketFromSlug(slug)
 
   if (market.isResolved || (market.closeTime ?? 0) < Date.now()) {
     const status = market.isResolved ? 'resolved' : 'closed'
-    await errorCallback?.(`Market is ${status}, no longer accepting bets`)
-    return
+    throw new Error(`Market is ${status}, no longer accepting bets`)
   }
   const isClosed = (market.closeTime ?? 0) < Date.now()
   console.log('market', market.id, 'is closed?', isClosed)
   if (market.outcomeType !== 'BINARY') {
-    await errorCallback?.('Only Yes/No markets are supported')
-    return
+    throw new Error('Only Yes/No markets are supported')
   }
   return market
 }

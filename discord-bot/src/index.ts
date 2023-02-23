@@ -198,14 +198,14 @@ const handleOldReaction = async (
     return
   }
 
-  const market = await getMarketFromSlug(slug, (error) =>
+  const market = await getMarketFromSlug(slug).catch((error) => {
     sendThreadErrorMessage(
       channel as TextChannel,
       `Error-${slug}`,
-      error,
+      error.message,
       user as User
     )
-  )
+  })
   console.log('got market url', market?.url)
   if (!market) return
   if (!(await userApiKey(user.id)))

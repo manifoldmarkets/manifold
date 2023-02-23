@@ -42,8 +42,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     )
     return
   }
-  const market = await getOpenBinaryMarketFromSlug(slug, (error) =>
-    interaction.reply(error)
+  const market = await getOpenBinaryMarketFromSlug(slug).catch(
+    async (error) => {
+      console.log('Failed to get market', error)
+      await interaction.reply({ content: error.message })
+      return
+    }
   )
   if (!market) return
 
