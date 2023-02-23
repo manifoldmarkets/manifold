@@ -159,10 +159,7 @@ const ChoiceOverview = (props: {
   bets: Bet[]
 }) => {
   const { contract, bets } = props
-  const { question, resolution, slug } = contract
-
-  // TODO(James): Remove hideGraph once market is resolved.
-  const hideGraph = slug === 'which-team-will-win-the-2022-fifa-w'
+  const { question, resolution } = contract
 
   return (
     <Col className="gap-1 md:gap-2">
@@ -178,18 +175,17 @@ const ChoiceOverview = (props: {
           </Row>
         )}
       </Col>
-      {!hideGraph && (
-        <SizedContainer fullHeight={350} mobileHeight={250}>
-          {(w, h) => (
-            <ChoiceContractChart
+
+      <SizedContainer fullHeight={350} mobileHeight={250}>
+        {(w, h) => (
+          <ChoiceContractChart
               width={w}
               height={h}
               bets={bets}
               contract={contract}
-            />
-          )}
-        </SizedContainer>
-      )}
+          />
+        )}
+      </SizedContainer>
     </Col>
   )
 }
