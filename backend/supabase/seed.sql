@@ -854,12 +854,7 @@ returns table (contract_id text)
 immutable parallel safe
 language sql
 as $$
-  with your_bet_on_contracts as (
-    select contract_id
-    from user_contract_metrics
-    where user_id = uid
-    and (data->'hasShares')::boolean = true
-  ), your_liked_contracts as (
+  with your_liked_contracts as (
     select (data->>'contentId') as contract_id
     from user_reactions
     where user_id = uid
@@ -868,8 +863,6 @@ as $$
     from contract_follows
     where follow_id = uid
   )
-  select contract_id from your_bet_on_contracts
-  union
   select contract_id from your_liked_contracts
   union
   select contract_id from your_followed_contracts
@@ -896,11 +889,12 @@ returns table (data jsonb, score real)
 immutable parallel safe
 language sql
 as $$
-  select data, log(1 + coalesce((data->>'popularityScore')::real, 0.0)) * score as score
-  from get_recommended_contract_scores(uid)
+  select data, coalesce((data->>'popularityScore')::real, 0.0) as score
+  from get_your_contract_ids(uid)
   left join contracts
   on contracts.id = contract_id
   where is_valid_contract(data)
+  and data->>'outcomeType' = 'BINARY'
   order by score desc
   limit n
   offset start
