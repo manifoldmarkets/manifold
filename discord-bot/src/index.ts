@@ -107,7 +107,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 })
 
-client.login(token)
+await client.login(token)
 console.log('Logged in')
 
 process.stdout.write('Refreshing slash commands... ')
