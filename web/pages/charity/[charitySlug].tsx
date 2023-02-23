@@ -54,19 +54,14 @@ function CharityPage(props: { charity: Charity }) {
 
   const [showConfetti, setShowConfetti] = useState(false)
 
-  // check if before March 1st, 2023
-  const isActive = Date.now() < 1677650400000
-
   return (
     <Page
       rightSidebar={
-        isActive ? (
-          <DonationBox
-            user={user}
-            charity={charity}
-            setShowConfetti={setShowConfetti}
-          />
-        ) : undefined
+        <DonationBox
+          user={user}
+          charity={charity}
+          setShowConfetti={setShowConfetti}
+        />
       }
     >
       <SEO title={name} description={description} url="/groups" />
