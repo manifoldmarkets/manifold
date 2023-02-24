@@ -11,13 +11,12 @@ export function useYourDailyChangedContracts(
   db: SupabaseClient,
   userId: string | null | undefined
 ) {
-  const [contracts, setContracts] = usePersistentState<CPMMContract[] | undefined>(
-    undefined,
-    {
-      key: 'your-daily-changed-contracts',
-      store: inMemoryStore(),
-    }
-  )
+  const [contracts, setContracts] = usePersistentState<
+    CPMMContract[] | undefined
+  >(undefined, {
+    key: 'your-daily-changed-contracts',
+    store: inMemoryStore(),
+  })
 
   useEffect(() => {
     if (!userId) return
