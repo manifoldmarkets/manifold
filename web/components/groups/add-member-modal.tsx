@@ -24,9 +24,9 @@ export function AddMemberModal(props: {
 }) {
   const { open, setOpen, group } = props
   const [query, setQuery] = useState('')
-  const [searchMemberResult, setSearchMemberResult] = useState<
-    UserSearchResult[]
-  >([])
+  const [searchMemberResult, setSearchMemberResult] = useState<JSONContent[]>(
+    []
+  )
   const requestId = useRef(0)
   const [loading, setLoading] = useState(false)
   const groupMemberIds = useRealtimeGroupMemberIds(group.id).members
