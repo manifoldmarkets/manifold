@@ -47,8 +47,8 @@ export const SORTS = [
   { label: 'Total traders', value: 'most-popular' },
   { label: 'High stakes', value: 'liquidity' },
   { label: 'Last activity', value: 'last-updated' },
-  { label: 'Close date', value: 'close-date' },
-  { label: 'Resolve date', value: 'resolve-date' },
+  { label: 'Closing soon', value: 'close-date' },
+  { label: 'Just resolved', value: 'resolve-date' },
   { label: 'Highest %', value: 'prob-descending' },
   { label: 'Lowest %', value: 'prob-ascending' },
 ] as const
@@ -336,7 +336,7 @@ function ContractSearchControls(props: {
           store: urlParamStore(router),
         }
   )
-  const [filter, setFilter] = usePersistentState(
+  const [filterState, setFilter] = usePersistentState(
     defaultFilter,
     !useQueryUrlParam
       ? undefined
@@ -345,6 +345,13 @@ function ContractSearchControls(props: {
           store: urlParamStore(router),
         }
   )
+
+  const filter =
+    sort === 'close-date'
+      ? 'open'
+      : sort === 'resolve-date'
+      ? 'resolved'
+      : filterState
 
   useEffect(() => {
     if (persistPrefix && sort) {
@@ -382,7 +389,7 @@ function ContractSearchControls(props: {
   }
 
   const selectFilter = (newFilter: filter) => {
-    if (newFilter === filter) return
+    if (newFilter === filterState) return
     setFilter(newFilter)
     track('select search filter', { filter: newFilter })
   }
@@ -460,18 +467,22 @@ function SearchFilters(props: {
     ? SORTS
     : SORTS.filter((sort) => !PROB_SORTS.includes(sort.value))
 
+  const hideFilter = sort === 'resolve-date' || sort === 'close-date'
+
   return (
     <div className={className}>
-      <Select
-        value={filter}
-        onChange={(e) => selectFilter(e.target.value as filter)}
-        className={clsx('!h-full grow py-1')}
-      >
-        <option value="open">Open</option>
-        <option value="closed">Closed</option>
-        <option value="resolved">Resolved</option>
-        <option value="all">All</option>
-      </Select>
+      {!hideFilter && (
+        <Select
+          value={filter}
+          onChange={(e) => selectFilter(e.target.value as filter)}
+          className="!h-full grow py-1"
+        >
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+          <option value="resolved">Resolved</option>
+          <option value="all">All</option>
+        </Select>
+      )}
       {!hideOrderSelector && (
         <Select
           value={sort}
