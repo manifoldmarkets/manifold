@@ -8,6 +8,7 @@ import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import { useABTest } from 'web/hooks/use-ab-test'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
@@ -75,7 +76,12 @@ export default function Welcome() {
     (user && !user.shouldShowWelcome && groupSelectorOpen) ||
     showSignedOutUser
 
-  if (!shouldShowWelcomeModals) return <></>
+  const skipWelcome = useABTest('welcome-flow', {
+    skip: true,
+    show: false,
+  })
+
+  if (skipWelcome || !shouldShowWelcomeModals) return <></>
 
   if (groupSelectorOpen)
     return (
@@ -137,13 +143,11 @@ function WhatIsManifoldPage() {
         className="h-1/3 w-1/3 place-self-center object-contain sm:h-1/2 sm:w-1/2 "
         src="/welcome/manipurple.png"
       />
-      <div
-        className="mt-3 mb-6 text-center text-xl text-indigo-700"
-        children="Welcome to Manifold Markets!"
-      />
-      <p className={'mb-4 text-lg'}>
-        Trade with play money. Help people predict the future and make better
-        informed decisions!
+      <div className="mt-3 mb-6 to-white text-center text-xl font-normal text-indigo-700">
+        Welcome to Manifold Markets
+      </div>
+      <p className="mb-4 text-lg">
+        Bet on anything and help people predict the future!
       </p>
       <p> </p>
     </>
@@ -153,11 +157,10 @@ function WhatIsManifoldPage() {
 function PredictionMarketPage() {
   return (
     <>
-      <div
-        className="mt-3 mb-6 text-center text-xl text-indigo-700"
-        children="How it works"
-      />
-      <div className="mt-2">
+      <div className="mt-3 mb-6 text-center text-xl font-normal text-indigo-700">
+        How it works
+      </div>
+      <div className="mt-2 text-lg">
         Create a market on any question. Bet on the right answer. The
         probability is the market's best estimate.
       </div>
@@ -177,15 +180,15 @@ function ThankYouPage() {
         src={'/welcome/treasure.png'}
       />
       <div
-        className=" mb-6 text-center text-xl text-indigo-700"
+        className="mb-6 text-center text-xl font-normal text-indigo-700"
         children="Start trading"
-      />{' '}
-      <p className="">
+      />
+      <p className="text-lg">
         As a thank you for signing up, we sent you{' '}
         {formatMoney(STARTING_BALANCE)} in play money!
       </p>
       <Row className={'my-3 text-sm text-gray-600'}>
-        Mana ({ENV_CONFIG.moneyMoniker}) can't be converted into real cash
+        Note that mana ({ENV_CONFIG.moneyMoniker}) can't be converted into cash.
       </Row>
     </>
   )
