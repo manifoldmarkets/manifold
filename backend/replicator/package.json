@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "supa": "supabase",
     "dev": "nodemon src/index.ts",
     "build": "yarn compile && yarn --cwd=../../common alias && yarn --cwd=../shared alias && yarn alias && yarn dist",
     "dist": "yarn dist:prepare && yarn dist:copy",
@@ -19,8 +20,8 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.2.0",
     "@google-cloud/pubsub": "3.2.1",
+    "@supabase/supabase-js": "2.2.0",
     "@tiptap/core": "2.0.0-beta.204",
     "@tiptap/extension-image": "2.0.0-beta.204",
     "@tiptap/extension-link": "2.0.0-beta.204",
@@ -30,8 +31,9 @@
     "@tiptap/suggestion": "2.0.0-beta.204",
     "express": "4.18.1",
     "firebase-admin": "11.2.0",
-    "pg-promise": "11.0.2",
     "lodash": "4.17.21",
+    "pg-promise": "11.0.2",
+    "supabase": "1.38.7",
     "typescript": "4.9.3"
   }
 }

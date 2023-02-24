@@ -73,7 +73,7 @@ export async function searchUsersNotInGroup(
           .select('*')
           .not('groups', 'cs', `{${groupId}}`)
           .or(`username.ilike.${prompt},name.ilike.${prompt}`)
-          .order('follower_count')
+          .order('follower_count', { ascending: false })
           .limit(limit)
       ),
       run(
@@ -82,7 +82,7 @@ export async function searchUsersNotInGroup(
           .select('*')
           .not('groups', 'cs', `{${groupId}}`)
           .or(`username.ilike.${prompt}%,name.ilike.${prompt}%`)
-          .order('follower_count')
+          .order('follower_count', { ascending: false })
           .limit(limit)
       ),
       run(
@@ -91,7 +91,7 @@ export async function searchUsersNotInGroup(
           .select('*')
           .not('groups', 'cs', `{${groupId}}`)
           .or(`username.ilike.%${prompt}%,name.ilike.%${prompt}%`)
-          .order('follower_count')
+          .order('follower_count', { ascending: false })
           .limit(limit)
       ),
     ])

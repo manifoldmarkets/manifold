@@ -155,6 +155,20 @@ export interface Database {
           id?: string
         }
       }
+      discord_users: {
+        Row: {
+          api_key: string
+          discord_user_id: string
+        }
+        Insert: {
+          api_key: string
+          discord_user_id: string
+        }
+        Update: {
+          api_key?: string
+          discord_user_id?: string
+        }
+      }
       group_contracts: {
         Row: {
           contract_id: string
@@ -502,17 +516,27 @@ export interface Database {
     Views: {
       group_role: {
         Row: {
-          avatar_url: Json | null
-          createdtime: Json | null
-          creator_id: Json | null
+          avatar_url: string | null
+          createdtime: number | null
+          creator_id: string | null
           group_data: Json | null
           group_id: string | null
-          group_name: Json | null
-          group_slug: Json | null
+          group_name: string | null
+          group_slug: string | null
           member_id: string | null
-          name: Json | null
+          name: string | null
           role: string | null
-          username: Json | null
+          username: string | null
+        }
+      }
+      user_groups: {
+        Row: {
+          avatarurl: string | null
+          follower_count: number | null
+          groups: string[] | null
+          id: string | null
+          name: string | null
+          username: string | null
         }
       }
     }
@@ -725,6 +749,12 @@ export interface Database {
         }
         Returns: boolean
       }
+      ivfflathandler: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
       recently_liked_contract_counts: {
         Args: {
           since: number
@@ -794,6 +824,42 @@ export interface Database {
           "": Json
         }
         Returns: Json
+      }
+      vector_avg: {
+        Args: {
+          "": number[]
+        }
+        Returns: unknown
+      }
+      vector_dims: {
+        Args: {
+          "": unknown
+        }
+        Returns: number
+      }
+      vector_norm: {
+        Args: {
+          "": unknown
+        }
+        Returns: number
+      }
+      vector_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: {
+          "": unknown
+        }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: {
+          "": unknown[]
+        }
+        Returns: number
       }
     }
     Enums: {
