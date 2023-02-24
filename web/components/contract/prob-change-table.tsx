@@ -25,14 +25,14 @@ export function ProbChangeTable(props: {
   if (!changes) return <LoadingIndicator />
 
   const biggestChanges = sortBy(changes, (c) =>
-    Math.abs(c.probChanges.day)
+    Math.abs(c.probChanges?.day ?? 0)
   ).reverse()
 
   const contracts = [
     ...biggestChanges.slice(0, 3),
     ...biggestChanges
       .slice(3)
-      .filter((c) => Math.abs(c.probChanges.day) >= 0.01),
+      .filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01),
   ]
 
   if (contracts.length === 0)
@@ -49,18 +49,29 @@ export function ProbChangeTable(props: {
 const ContractWithProbChange = forwardRef(
   (
     props: {
-      contract: Contract
+      contract: CPMMContract
       onContractClick?: (contract: Contract) => void
       className?: string
     },
     ref: React.Ref<HTMLAnchorElement>
   ) => {
     const { onContractClick, className } = props
-    const contract = useContract(props.contract.id) ?? props.contract
+    const contract = (useContract(props.contract.id) ??
+      props.contract) as CPMMContract
+    const {
+      creatorUsername,
+      creatorAvatarUrl,
+      closeTime,
+      isResolved,
+      question,
+      probChanges,
+    } = contract
 
-    const isClosed = contract.closeTime && contract.closeTime < Date.now()
+    const isClosed = closeTime && closeTime < Date.now()
     const textColor =
-      isClosed && !contract.isResolved ? 'text-gray-500' : 'text-gray-900'
+      isClosed && !isResolved ? 'text-gray-500' : 'text-gray-900'
+
+    const probChangeToday = probChanges?.day ?? 0
 
     return (
       <Link
@@ -79,8 +90,8 @@ const ContractWithProbChange = forwardRef(
       >
         <Avatar
           className="hidden lg:mr-1 lg:flex"
-          username={contract.creatorUsername}
-          avatarUrl={contract.creatorAvatarUrl}
+          username={creatorUsername}
+          avatarUrl={creatorAvatarUrl}
           size="xs"
         />
         <div
@@ -89,31 +100,27 @@ const ContractWithProbChange = forwardRef(
             textColor
           )}
         >
-          {contract.question}
+          {question}
         </div>
         <Row className="gap-3">
           <Avatar
             className="lg:hidden"
-            username={contract.creatorUsername}
-            avatarUrl={contract.creatorAvatarUrl}
+            username={creatorUsername}
+            avatarUrl={creatorAvatarUrl}
             size="xs"
           />
           <div className="min-w-[2rem] text-right font-semibold">
             <ContractStatusLabel contract={contract} />
           </div>
-          {contract.mechanism === 'cpmm-1' && (
-            <div
-              className={clsx(
-                'min-w-[2rem] text-right',
-                contract.probChanges.day >= 0
-                  ? 'text-teal-500'
-                  : 'text-scarlet-500'
-              )}
-            >
-              {contract.probChanges.day >= 0 ? '+' : ''}
-              {formatPercentShort(contract.probChanges.day)}
-            </div>
-          )}
+          <div
+            className={clsx(
+              'min-w-[2rem] text-right',
+              probChangeToday >= 0 ? 'text-teal-500' : 'text-scarlet-500'
+            )}
+          >
+            {probChangeToday >= 0 ? '+' : ''}
+            {formatPercentShort(probChangeToday)}
+          </div>
         </Row>
       </Link>
     )
