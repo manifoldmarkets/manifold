@@ -11,7 +11,6 @@ import {
   payQfAnswer,
   resolveQf,
 } from 'web/lib/firebase/api'
-import { ContractDetails } from './contract-details'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Answer } from 'common/answer'
 import { Row } from '../layout/row'

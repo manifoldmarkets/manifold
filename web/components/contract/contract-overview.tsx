@@ -14,7 +14,6 @@ import {
 } from 'web/components/charts/generic-charts'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
-import { Linkify } from '../widgets/linkify'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
@@ -31,7 +30,6 @@ import {
   PseudoNumericContract,
   BinaryContract,
 } from 'common/contract'
-import { ContractDetails } from './contract-details'
 import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
 import { BetSignUpPrompt } from '../sign-up-prompt'

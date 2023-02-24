@@ -9,7 +9,6 @@ import { Row } from '../layout/row'
 import {
   formatLargeNumber,
   formatMoney,
-  formatPercent,
   formatWithCommas,
 } from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
@@ -30,12 +29,10 @@ import {
   NumericValueLabel,
 } from '../outcome-label'
 import {
-  getOutcomeProbability,
   getProbability,
-  getTopAnswer,
 } from 'common/calculate'
 import { MiscDetails, ShowTime } from './contract-details'
-import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
+import { getValueFromBucket } from 'common/calculate-dpm'
 import { getTextColor, QuickBet, QuickOutcomeView } from '../bet/quick-bet'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
