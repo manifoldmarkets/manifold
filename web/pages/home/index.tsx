@@ -1,17 +1,14 @@
 import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
-import { isArray, keyBy } from 'lodash'
 import clsx from 'clsx'
 
-import { Contract, CPMMBinaryContract, CPMMContract } from 'common/contract'
+import { Contract, CPMMContract } from 'common/contract'
 import { BACKGROUND_COLOR } from 'common/envs/constants'
 import { GlobalConfig } from 'common/globalConfig'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
 import Router from 'next/router'
-import { memo, ReactNode, useEffect } from 'react'
+import { memo, ReactNode } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
-import { Sort } from 'web/components/contract-search'
-import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { DailyStats } from 'web/components/daily-stats'
 import { PinnedItems } from 'web/components/groups/group-post-section'
 import { Col } from 'web/components/layout/col'
@@ -33,7 +30,6 @@ import { getContractFromId } from 'web/lib/firebase/contracts'
 import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
 import { getGroup } from 'web/lib/firebase/groups'
 import { getPost } from 'web/lib/firebase/posts'
-import { updateUser } from 'web/lib/firebase/users'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { track } from 'web/lib/service/analytics'
 import { Title } from 'web/components/widgets/title'
@@ -46,15 +42,10 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { Swipe } from 'web/components/swipe/swipe'
 import { getIsNative } from 'web/lib/native/is-native'
-import {
-  useYourDailyChangedContracts,
-  useYourTrendingContracts,
-} from 'web/hooks/use-your-daily-changed-contracts'
+import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { filterDefined } from 'common/util/array'
-import { ContractsList } from 'web/components/contract/contracts-list'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -74,19 +65,10 @@ export default function Home() {
   return <HomeDashboard />
 }
 
-export function HomeDashboard() {
+function HomeDashboard() {
   const user = useUser()
   useRedirectIfSignedOut()
   useSaveReferral()
-
-  const { sections } = getHomeItems(user?.homeSections ?? [])
-
-  useEffect(() => {
-    if (user && !user.homeSections && sections.length > 0) {
-      // Save initial home sections.
-      updateUser(user.id, { homeSections: sections.map((s) => s.id) })
-    }
-  }, [user, sections])
 
   return (
     <Page>
@@ -98,76 +80,77 @@ export function HomeDashboard() {
           <DailyStats user={user} />
         </Row>
 
-        <DailyMoversSection />
-        <ActivitySection />
+        <YourDailyUpdates />
+        <LiveSection />
+        <YourFeedSection />
+      </Col>
+    </Page>
+  )
+}
 
-        <Col>
-          <HomeSectionHeader label={'Your feed'} icon={'📖'} />
-          <ContractsFeed />
-        </Col>
+function MobileHome() {
+  const user = useUser()
+  const { showSwipe, toggleView, isNative } = useViewToggle()
+
+  if (showSwipe) return <Swipe toggleView={toggleView(false)} />
+
+  return (
+    <Page>
+      <Col className="gap-4 py-2 pb-8 sm:px-2">
+        <Row className="mx-4 mb-2 items-center justify-between gap-4">
+          <MobileSearchButton className="flex-1" />
+          <Row className="items-center gap-4">
+            <DailyStats user={user} />
+            {isNative && (
+              <SwitchHorizontalIcon
+                className="h-5 w-5"
+                onClick={toggleView(true)}
+              />
+            )}
+          </Row>
+        </Row>
+
+        <YourDailyUpdates />
+        <ContractsFeed />
       </Col>
 
       <button
         type="button"
-        className="fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-4 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
+        className={clsx(
+          'fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent  p-4  shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden',
+          'from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r disabled:bg-gray-300'
+        )}
         onClick={() => {
           Router.push('/create')
           track('mobile create button')
         }}
       >
-        <PencilAltIcon className="h-7 w-7" aria-hidden="true" />
+        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
       </button>
     </Page>
   )
 }
 
-const HOME_SECTIONS = [
-  { label: "Today's updates", id: 'daily-movers', icon: '📊' },
-  { label: 'Trending', id: 'score', icon: '🔥' },
-  // { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
-  // { label: 'Featured', id: 'featured', icon: '📌' },
-  // { label: 'New', id: 'newest', icon: '🗞️' },
-  { label: 'Live feed', id: 'live-feed', icon: '🔴' },
-] as const
+const useViewToggle = () => {
+  const isNative = getIsNative()
 
-export const getHomeItems = (sections: string[]) => {
-  // Accommodate old home sections.
-  if (!isArray(sections)) sections = []
+  const defaultShowSwipe =
+    typeof window === 'undefined'
+      ? false
+      : safeLocalStorage?.getItem('show-swipe')
+      ? safeLocalStorage?.getItem('show-swipe') === 'true'
+      : isNative
 
-  const itemsById = keyBy(HOME_SECTIONS, 'id')
-  const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
+  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
+    key: 'show-swipe',
+    store: storageStore(safeLocalStorage),
+  })
 
-  // Add unmentioned items to the start.
-  sectionItems.unshift(
-    ...HOME_SECTIONS.filter((item) => !sectionItems.includes(item))
-  )
-
-  return {
-    sections: sectionItems,
-    itemsById,
+  const toggleView = (showSwipe: boolean) => () => {
+    setShowSwipe(showSwipe)
+    track('toggle swipe', { showSwipe })
   }
-}
-
-export function renderSections(
-  sections: { id: string; label: string; icon?: string }[]
-) {
-  type sectionTypes = typeof HOME_SECTIONS[number]['id']
-
-  return (
-    <>
-      {sections.map((s) => {
-        const { id } = s as {
-          id: sectionTypes
-          label: string
-          icon: string | undefined
-        }
-
-        if (id === 'daily-movers') return <DailyMoversSection key={id} />
-        if (id === 'score') return <YourTrendingSection key={id} />
-        if (id === 'live-feed') return <ActivitySection key={id} />
-      })}
-    </>
-  )
+  return { showSwipe, toggleView, isNative }
 }
 
 function HomeSectionHeader(props: {
@@ -203,23 +186,36 @@ function HomeSectionHeader(props: {
   )
 }
 
-export const SearchSection = memo(function SearchSection(props: {
-  label: string
-  contracts: CPMMBinaryContract[]
-  sort: Sort
-  pill?: string
-  icon?: string
-}) {
-  const { label, contracts, sort, pill, icon } = props
+const LiveSection = memo(function LiveSection() {
+  return (
+    <Col>
+      <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
+      <div className="relative h-[700px] flex-none overflow-hidden">
+        <ActivityLog count={10} showPills className="absolute" />
+      </div>
+    </Col>
+  )
+})
+
+const YourDailyUpdates = memo(function DailyMoversSection() {
+  const user = useUser()
+  const contracts = useYourDailyChangedContracts(db, user?.id)
+
+  if (contracts?.length === 0) return <></>
 
   return (
     <Col>
-      <HomeSectionHeader
-        label={label}
-        href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
-        icon={icon}
-      />
-      <ContractsGrid contracts={contracts} showImageOnTopContract={true} />
+      <HomeSectionHeader label="Today's updates" icon="📊" />
+      <ProbChangeTable changes={contracts as CPMMContract[]} />
+    </Col>
+  )
+})
+
+const YourFeedSection = memo(function YourFeedSection() {
+  return (
+    <Col>
+      <HomeSectionHeader label={'Your feed'} icon={'📖'} />
+      <ContractsFeed />
     </Col>
   )
 })
@@ -289,105 +285,4 @@ export function FeaturedSection(props: {
       />
     </Col>
   )
-}
-
-export const ActivitySection = memo(function ActivitySection() {
-  return (
-    <Col>
-      <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
-      <div className="relative h-[700px] flex-none overflow-hidden">
-        <ActivityLog count={10} showPills className="absolute" />
-      </div>
-    </Col>
-  )
-})
-
-export const DailyMoversSection = memo(function DailyMoversSection() {
-  const user = useUser()
-  const contracts = useYourDailyChangedContracts(db, user?.id)
-
-  if (contracts?.length === 0) return <></>
-
-  return (
-    <Col>
-      <HomeSectionHeader label="Today's updates" icon="📊" />
-      <ProbChangeTable changes={contracts as CPMMContract[]} />
-    </Col>
-  )
-})
-
-export const YourTrendingSection = memo(function YourTrendingSection() {
-  const user = useUser()
-  const contracts = useYourTrendingContracts(db, user?.id, 7)
-  return (
-    <Col>
-      <HomeSectionHeader label={'Your trending'} icon={'🔥'} />
-      <ContractsList contracts={contracts} skinny />
-    </Col>
-  )
-})
-
-function MobileHome() {
-  const user = useUser()
-  const { showSwipe, toggleView, isNative } = useViewToggle()
-
-  if (showSwipe) return <Swipe toggleView={toggleView(false)} />
-
-  return (
-    <Page>
-      <Col className="gap-4 py-2 pb-8 sm:px-2">
-        <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <MobileSearchButton className="flex-1" />
-          <Row className="items-center gap-4">
-            <DailyStats user={user} />
-            {isNative && (
-              <SwitchHorizontalIcon
-                className="h-5 w-5"
-                onClick={toggleView(true)}
-              />
-            )}
-          </Row>
-        </Row>
-
-        <DailyMoversSection />
-        <ContractsFeed />
-      </Col>
-
-      <button
-        type="button"
-        className={clsx(
-          'fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent  p-4  shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden',
-          'from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r disabled:bg-gray-300'
-        )}
-        onClick={() => {
-          Router.push('/create')
-          track('mobile create button')
-        }}
-      >
-        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
-      </button>
-    </Page>
-  )
-}
-
-const useViewToggle = () => {
-  const isNative = getIsNative()
-
-  const defaultShowSwipe =
-    typeof window === 'undefined'
-      ? false
-      : safeLocalStorage?.getItem('show-swipe')
-      ? safeLocalStorage?.getItem('show-swipe') === 'true'
-      : isNative
-
-  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
-    key: 'show-swipe',
-    store: storageStore(safeLocalStorage),
-  })
-
-  const toggleView = (showSwipe: boolean) => () => {
-    setShowSwipe(showSwipe)
-    track('toggle swipe', { showSwipe })
-  }
-  return { showSwipe, toggleView, isNative }
 }
