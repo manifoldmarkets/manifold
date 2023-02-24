@@ -1,4 +1,4 @@
-import { OgCardProps } from 'common/contract-details'
+import { OgCardProps } from 'common/contract-seo'
 import clsx from 'clsx'
 import { Sparkline } from './graph'
 import { base64toPoints, Point } from 'common/edge/og'

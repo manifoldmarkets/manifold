@@ -10,10 +10,9 @@ import {
 } from 'common/util/format'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import { formatNumericProbability } from 'common/pseudo-numeric'
-
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getUser, log } from 'shared/utils'
-import { getOpenGraphProps } from 'common/contract-details'
+import { getContractOGProps } from 'common/contract-seo'
 import { notification_reason_types } from 'common/notification'
 import { Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
@@ -485,7 +484,7 @@ export const sendInterestingMarketsEmail = async (
 }
 
 function imageSourceUrl(contract: Contract) {
-  return buildOgUrl(getOpenGraphProps(contract), 'market')
+  return buildOgUrl(getContractOGProps(contract), 'market')
 }
 
 export const sendNewFollowedMarketEmail = async (

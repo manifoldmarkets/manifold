@@ -1,27 +1,14 @@
-import { BinaryContract, Contract } from './contract'
+import { Contract } from './contract'
 import { getFormattedMappedValue } from './pseudo-numeric'
 import {
+  getDisplayProbability,
   getOutcomeProbability,
-  getProbability,
   getTopAnswer,
 } from './calculate'
 import { richTextToString } from './util/parse'
-import { getCpmmProbability } from './calculate-cpmm'
-import { getDpmProbability } from './calculate-dpm'
 import { formatPercent } from './util/format'
 
-export function getBinaryProb(contract: BinaryContract) {
-  const { pool, resolutionProbability, mechanism } = contract
-
-  return (
-    resolutionProbability ??
-    (mechanism === 'cpmm-1'
-      ? getCpmmProbability(pool, contract.p)
-      : getDpmProbability(contract.totalShares))
-  )
-}
-
-export const getOpenGraphProps = (
+export const getContractOGProps = (
   contract: Contract
 ): Omit<OgCardProps, 'points'> => {
   const {
@@ -43,17 +30,14 @@ export const getOpenGraphProps = (
 
   const probPercent =
     outcomeType === 'BINARY'
-      ? formatPercent(getBinaryProb(contract))
+      ? formatPercent(getDisplayProbability(contract))
       : topAnswer
       ? formatPercent(getOutcomeProbability(contract, topAnswer.id))
       : undefined
 
   const numericValue =
     outcomeType === 'PSEUDO_NUMERIC'
-      ? getFormattedMappedValue(
-          contract,
-          contract.resolutionProbability ?? getProbability(contract)
-        )
+      ? getFormattedMappedValue(contract, getDisplayProbability(contract))
       : undefined
 
   return {
@@ -90,11 +74,11 @@ export function getSeoDescription(contract: Contract) {
   const prefix = resolution
     ? `Resolved ${resolution}. `
     : contract.outcomeType === 'BINARY'
-    ? `${formatPercent(getBinaryProb(contract))} chance. `
+    ? `${formatPercent(getDisplayProbability(contract))} chance. `
     : contract.outcomeType === 'PSEUDO_NUMERIC'
     ? `${getFormattedMappedValue(
         contract,
-        contract.resolutionProbability ?? getProbability(contract)
+        getDisplayProbability(contract)
       )} expected. `
     : ''
 

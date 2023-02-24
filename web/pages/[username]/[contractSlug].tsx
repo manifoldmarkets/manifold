@@ -30,7 +30,7 @@ import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { getOpenGraphProps, getSeoDescription } from 'common/contract-details'
+import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -434,7 +434,7 @@ export function ContractSEO(props: {
 
   const seoDesc = getSeoDescription(contract)
   const ogCardProps = removeUndefinedProps({
-    ...getOpenGraphProps(contract),
+    ...getContractOGProps(contract),
     points,
   })
 

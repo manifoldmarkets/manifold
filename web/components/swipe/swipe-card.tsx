@@ -1,8 +1,10 @@
 import clsx from 'clsx'
 
-import { getOutcomeProbabilityAfterBet } from 'common/calculate'
+import {
+  getDisplayProbability,
+  getOutcomeProbabilityAfterBet,
+} from 'common/calculate'
 import { BinaryContract, Contract } from 'common/contract'
-import { getBinaryProb } from 'common/contract-details'
 import { User } from 'common/user'
 import { Dispatch, memo, SetStateAction, useEffect, useState } from 'react'
 import { LikeButton } from 'web/components/contract/like-button'
@@ -57,7 +59,7 @@ export const SwipeCard = memo(
       coverImageUrl ??
       `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
 
-    const [currPercent, _setCurrPercent] = useState(getBinaryProb(contract))
+    const [currPercent] = useState(getDisplayProbability(contract))
     const [noPercent, setNoPercent] = useState(
       1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount)
     )

@@ -2,7 +2,7 @@ import { ImageResponse, ImageResponseOptions } from '@vercel/og'
 import { NextRequest } from 'next/server'
 import { OgMarket } from 'web/components/og/og-market'
 import { classToTw } from 'web/components/og/utils'
-import { OgCardProps } from 'common/contract-details'
+import { OgCardProps } from 'common/contract-seo'
 
 export const config = { runtime: 'edge' }
 export const getCardOptions = async () => {

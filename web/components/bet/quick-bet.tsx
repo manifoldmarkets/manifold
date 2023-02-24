@@ -41,7 +41,6 @@ import {
   getFormattedMappedValue,
 } from 'common/pseudo-numeric'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { getBinaryProb } from 'common/contract-details'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { Answer } from 'common/answer'
@@ -586,7 +585,7 @@ function getProb(contract: Contract) {
     : resolution
     ? 1
     : outcomeType === 'BINARY'
-    ? getBinaryProb(contract)
+    ? getProbability(contract)
     : outcomeType === 'PSEUDO_NUMERIC'
     ? getProbability(contract)
     : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
