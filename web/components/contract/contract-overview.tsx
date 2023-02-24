@@ -138,16 +138,10 @@ const ChoiceOverview = (props: {
   bets: Bet[]
 }) => {
   const { contract, bets } = props
-  const { resolution } = contract
 
   return (
     <>
-      {resolution && (
-        <Row>
-          <FreeResponseResolutionOrChance contract={contract} truncate="none" />
-        </Row>
-      )}
-
+      <FreeResponseResolutionOrChance contract={contract} />
       <SizedContainer fullHeight={350} mobileHeight={250}>
         {(w, h) => (
           <ChoiceContractChart

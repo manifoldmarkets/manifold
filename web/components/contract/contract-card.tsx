@@ -341,44 +341,21 @@ export function BinaryResolutionOrChance(props: {
 
 export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract | MultipleChoiceContract
-  truncate: 'short' | 'long' | 'none'
-  className?: string
 }) {
-  const { contract, truncate, className } = props
+  const { contract } = props
   const { resolution } = contract
-
-  const topAnswer = getTopAnswer(contract)
-  const textColor = getTextColor(contract)
+  if (!(resolution === 'CANCEL' || resolution === 'MKT')) return null
 
   return (
-    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
-      {resolution ? (
-        <>
-          <div className={clsx('text-base text-gray-500 sm:hidden')}>
-            Resolved
-          </div>
-          {(resolution === 'CANCEL' || resolution === 'MKT') && (
-            <FreeResponseOutcomeLabel
-              contract={contract}
-              resolution={resolution}
-              truncate={truncate}
-              answerClassName="text-3xl uppercase text-blue-500"
-            />
-          )}
-        </>
-      ) : (
-        topAnswer && (
-          <Row className="items-center gap-6">
-            <Col className={clsx('text-3xl', textColor)}>
-              <div>
-                {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
-              </div>
-              <div className="text-base">chance</div>
-            </Col>
-          </Row>
-        )
-      )}
-    </Col>
+    <Row className="gap-2 text-3xl">
+      <div className={clsx('text-base font-light')}>Resolved</div>
+
+      <FreeResponseOutcomeLabel
+        contract={contract}
+        resolution={resolution}
+        truncate="none"
+      />
+    </Row>
   )
 }
 
