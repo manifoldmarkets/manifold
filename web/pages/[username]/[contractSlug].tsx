@@ -67,6 +67,7 @@ import { getUser } from 'web/lib/firebase/users'
 import Head from 'next/head'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ContractDetails } from 'web/components/contract/contract-details'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -221,6 +222,7 @@ export function ContractPageContent(
     }
   }, [contract.resolution, contract.id, topContractMetrics.length])
 
+  useSaveCampaign()
   useTracking(
     'view market',
     {
