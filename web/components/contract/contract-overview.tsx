@@ -80,17 +80,8 @@ const NumericOverview = (props: { contract: NumericContract }) => {
     <Col className="gap-1 md:gap-2">
       <Col className="gap-3 px-2 sm:gap-4">
         <ContractDetails contract={contract} />
-        <Row className="justify-between gap-4">
-          <OverviewQuestion text={contract.question} />
-          <NumericResolutionOrExpectation
-            contract={contract}
-            className="hidden items-end xl:flex"
-          />
-        </Row>
-        <NumericResolutionOrExpectation
-          className="items-center justify-between gap-4 xl:hidden"
-          contract={contract}
-        />
+        <OverviewQuestion text={contract.question} />
+        <NumericResolutionOrExpectation contract={contract} />
       </Col>
       <SizedContainer fullHeight={250} mobileHeight={150}>
         {(w, h) => (
@@ -179,10 +170,10 @@ const ChoiceOverview = (props: {
       <SizedContainer fullHeight={350} mobileHeight={250}>
         {(w, h) => (
           <ChoiceContractChart
-              width={w}
-              height={h}
-              bets={bets}
-              contract={contract}
+            width={w}
+            height={h}
+            bets={bets}
+            contract={contract}
           />
         )}
       </SizedContainer>

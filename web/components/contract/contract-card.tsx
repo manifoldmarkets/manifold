@@ -384,38 +384,23 @@ export function FreeResponseResolutionOrChance(props: {
 
 export function NumericResolutionOrExpectation(props: {
   contract: NumericContract
-  className?: string
 }) {
-  const { contract, className } = props
+  const { contract } = props
   const { resolution } = contract
-  const textColor = getTextColor(contract)
 
   const resolutionValue =
     contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
 
+  // All distributional numeric markets are resolved now
   return (
-    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
-      {resolution ? (
-        <>
-          <div className={clsx('text-base text-gray-500')}>Resolved</div>
-
-          {resolution === 'CANCEL' ? (
-            <CancelLabel />
-          ) : (
-            <div className="text-blue-400">
-              {formatLargeNumber(resolutionValue)}
-            </div>
-          )}
-        </>
+    <Row className="items-baseline gap-2 text-3xl">
+      <div className={clsx('text-base font-light')}>Resolved</div>
+      {resolution === 'CANCEL' ? (
+        <CancelLabel />
       ) : (
-        <>
-          <div className={clsx('text-3xl', textColor)}>
-            {formatLargeNumber(getExpectedValue(contract))}
-          </div>
-          <div className={clsx('text-base', textColor)}>expected</div>
-        </>
+        <NumericValueLabel value={resolutionValue} />
       )}
-    </Col>
+    </Row>
   )
 }
 
