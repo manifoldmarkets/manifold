@@ -160,12 +160,7 @@ export function AnswersPanel(props: {
       {resolution && answerItemComponents}
 
       {!resolveOption && (
-        <Col
-          className={clsx(
-            'gap-2 pr-2 md:pr-0',
-            tradingAllowed(contract) ? '' : '-mb-6'
-          )}
-        >
+        <Col className="gap-3">
           {answerItems.map((item) => (
             <OpenAnswer
               key={item.id}
@@ -220,7 +215,7 @@ function OpenAnswer(props: {
   const isFreeResponse = contract.outcomeType === 'FREE_RESPONSE'
 
   return (
-    <Col className="my-1 px-2">
+    <div>
       <Modal
         open={!!betMode}
         setOpen={(open) => setBetMode(open ? 'buy' : undefined)}
@@ -237,7 +232,7 @@ function OpenAnswer(props: {
         )}
       </Modal>
 
-      <Col
+      <div
         className={clsx(
           'relative w-full rounded-lg transition-all',
           tradingAllowed(contract) ? 'text-gray-900' : 'text-gray-500'
@@ -297,7 +292,7 @@ function OpenAnswer(props: {
             )}
           </Row>
         </Row>
-      </Col>
-    </Col>
+      </div>
+    </div>
   )
 }

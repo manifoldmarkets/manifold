@@ -5,7 +5,6 @@ import { useEffect } from 'react'
 import {
   BinaryResolutionOrChance,
   ContractCard,
-  FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
@@ -219,10 +218,6 @@ function ContractSmolView(props: {
             contract={contract}
             className="!flex-col !gap-0"
           />
-        )}
-
-        {outcomeType === 'FREE_RESPONSE' && (
-          <FreeResponseResolutionOrChance contract={contract} truncate="long" />
         )}
 
         {outcomeType === 'NUMERIC' && (

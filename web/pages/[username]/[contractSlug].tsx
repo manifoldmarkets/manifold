@@ -65,6 +65,8 @@ import { compressPoints, pointsToBase64 } from 'common/util/og'
 import { getInitialProbability } from 'common/calculate'
 import { getUser } from 'web/lib/firebase/users'
 import Head from 'next/head'
+import { Linkify } from 'web/components/widgets/linkify'
+import { ContractDetails } from 'web/components/contract/contract-details'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -325,15 +327,22 @@ export function ContractPageContent(
 
       {user && <BackRow />}
 
-      <Col className="w-full justify-between rounded bg-white pb-6 pt-4 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
-        <ContractOverview
-          contract={contract}
-          bets={bets}
-          betPoints={betPoints}
-        />
+      <Col className="w-full justify-between rounded bg-white px-4 py-4 md:px-8 md:py-8">
+        <Col className="gap-3 sm:gap-4">
+          <ContractDetails contract={contract} />
+          <Linkify
+            className="text-lg text-indigo-700 sm:text-2xl"
+            text={contract.question}
+          />
+          <ContractOverview
+            contract={contract}
+            bets={bets}
+            betPoints={betPoints}
+          />
+        </Col>
 
         <ContractDescription
-          className="mt-2 px-2 xl:mt-6"
+          className="mt-2 xl:mt-6"
           contract={contract}
           toggleResolver={() => setShowResolver(!showResolver)}
         />

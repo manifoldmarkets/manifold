@@ -14,7 +14,6 @@ import {
   where,
 } from 'firebase/firestore'
 import { partition, sortBy, sum, uniqBy } from 'lodash'
-
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract } from 'common/contract'
 import { chooseRandomSubset } from 'common/util/random'
@@ -56,11 +55,8 @@ export function contractPool(contract: Contract) {
     : 'Empty pool'
 }
 
-export function getBinaryProbPercent(
-  contract: BinaryContract,
-  shortFormat = false
-) {
-  return formatPercent(getBinaryProb(contract), shortFormat)
+export function getBinaryProbPercent(contract: BinaryContract) {
+  return formatPercent(getBinaryProb(contract))
 }
 
 export function tradingAllowed(contract: Contract) {

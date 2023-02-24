@@ -13,7 +13,7 @@ import { useContract } from 'web/hooks/use-contracts'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { Avatar } from '../widgets/avatar'
 import { Row } from '../layout/row'
-import { formatPercent } from 'common/util/format'
+import { formatPercentShort } from 'common/util/format'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function ProbChangeTable(props: {
@@ -111,7 +111,7 @@ const ContractWithProbChange = forwardRef(
               )}
             >
               {contract.probChanges.day >= 0 ? '+' : ''}
-              {formatPercent(contract.probChanges.day, true)}
+              {formatPercentShort(contract.probChanges.day)}
             </div>
           )}
         </Row>

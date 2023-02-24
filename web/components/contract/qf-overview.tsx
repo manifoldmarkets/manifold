@@ -47,9 +47,7 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
 
   return (
     <Col className="gap-6">
-      <ContractDetails contract={contract} />
-
-      <div className="flex gap-2">
+      <div className="flex justify-between gap-2">
         {contract.coverImageUrl && (
           <Image
             alt=""
@@ -59,21 +57,16 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
             src={contract.coverImageUrl}
           />
         )}
-        <Col className="gap-2">
-          <h1 className="break-anywhere text-lg text-indigo-700 sm:text-2xl">
-            {contract.question}
-          </h1>
-          <Row className="items-end gap-4">
-            <div className="text-2xl">{raised} raised</div>
-            <div className="text-xl text-green-800">+{match} match</div>
-            <Button
-              color="gray-white"
-              size="2xs"
-              onClick={() => setPoolPanel(!poolPanel)}
-            >
-              (contribute)
-            </Button>
-          </Row>
+        <Col className="gap-2 text-right">
+          <div className="text-2xl">{raised} raised</div>
+          <div className="mb-auto text-xl text-green-800">+{match} match</div>
+          <Button
+            color="gray-outline"
+            size="xs"
+            onClick={() => setPoolPanel(!poolPanel)}
+          >
+            contribute
+          </Button>
         </Col>
       </div>
       {poolPanel && <QfAddPoolPanel contract={contract} />}

@@ -4,13 +4,15 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
-import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import { contractPath } from 'web/lib/firebase/contracts'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { Avatar } from '../widgets/avatar'
 import { ContractMinibar } from '../charts/minibar'
 import { useContract } from 'web/hooks/use-contracts'
+import { formatPercentShort } from 'common/util/format'
+import { getBinaryProb } from 'common/contract-details'
 
 export function ContractStatusLabel(props: {
   contract: Contract
@@ -28,7 +30,7 @@ export function ContractStatusLabel(props: {
         />
       ) : (
         <span className={probTextColor}>
-          {getBinaryProbPercent(contract, true)}
+          {formatPercentShort(getBinaryProb(contract))}
           {chanceLabel && (
             <span className="text-sm font-normal text-gray-500"> chance</span>
           )}
