@@ -84,6 +84,7 @@ export function Swipe(props: { toggleView?: () => void }) {
 
   useEffect(() => {
     if (user && contract) {
+      console.log('log view')
       logView({ contractId: contract.id, userId: user.id })
       setAmount(STARTING_BET_AMOUNT)
     }

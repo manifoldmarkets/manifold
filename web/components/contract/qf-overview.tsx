@@ -11,16 +11,13 @@ import {
   payQfAnswer,
   resolveQf,
 } from 'web/lib/firebase/api'
-import { ContractDetails } from './contract-details'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Answer } from 'common/answer'
 import { Row } from '../layout/row'
-import { ChatIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Avatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
-import { getAnswerColor } from '../answers/answers-panel'
 import { Modal } from '../layout/modal'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { UserAvatarAndBadge } from '../widgets/user-link'
@@ -36,6 +33,8 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import QfTradesTable from './qf-trades-table'
 import { AlertBox } from '../widgets/alert-box'
 import { SiteLink } from '../widgets/site-link'
+import { sortBy } from 'lodash'
+import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 
 export function QfOverview(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
@@ -47,9 +46,7 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
 
   return (
     <Col className="gap-6">
-      <ContractDetails contract={contract} />
-
-      <div className="flex gap-2">
+      <div className="flex justify-between gap-2">
         {contract.coverImageUrl && (
           <Image
             alt=""
@@ -59,21 +56,16 @@ export function QfOverview(props: { contract: QuadraticFundingContract }) {
             src={contract.coverImageUrl}
           />
         )}
-        <Col className="gap-2">
-          <h1 className="break-anywhere text-lg text-indigo-700 sm:text-2xl">
-            {contract.question}
-          </h1>
-          <Row className="items-end gap-4">
-            <div className="text-2xl">{raised} raised</div>
-            <div className="text-xl text-green-800">+{match} match</div>
-            <Button
-              color="gray-white"
-              size="2xs"
-              onClick={() => setPoolPanel(!poolPanel)}
-            >
-              (contribute)
-            </Button>
-          </Row>
+        <Col className="gap-2 text-right">
+          <div className="text-2xl">{raised} raised</div>
+          <div className="mb-auto text-xl text-green-800">+{match} match</div>
+          <Button
+            color="gray-outline"
+            size="xs"
+            onClick={() => setPoolPanel(!poolPanel)}
+          >
+            contribute
+          </Button>
         </Col>
       </div>
       {poolPanel && <QfAddPoolPanel contract={contract} />}
@@ -116,16 +108,23 @@ export function QfExplainer() {
 function QfAnswersPanel(props: { contract: QuadraticFundingContract }) {
   const { contract } = props
   const { answers } = contract
+  const matchingPool = contract.pool.M$
   const qfTxns = useQfTxns(contract.id)
+  const totals = calculateTotals(qfTxns)
+  const matches = calculateMatches(qfTxns, matchingPool)
+  const sortedAns = sortBy(answers, (a) => -totals[a.id] - matches[a.id])
 
   return (
     <Col className="flex-1 gap-4">
       <div className="flex justify-between">{answers.length} entries</div>
       <Col className="gap-4">
-        {answers.map((answer) => (
+        {sortedAns.map((answer, i) => (
           <QfAnswer
             contract={contract}
             answer={answer}
+            total={totals[answer.id]}
+            match={matches[answer.id]}
+            color={CHOICE_ANSWER_COLORS[i] ?? '#B1B1C7'}
             txns={qfTxns}
             key={answer.id}
           />
@@ -220,20 +219,17 @@ function QfAnswer(props: {
   contract: QuadraticFundingContract
   answer: Answer
   txns: QfTxn[]
+  total?: number
+  match?: number
+  color: string
 }) {
-  const { contract, answer, txns } = props
+  const { contract, answer, txns, total = 0, match = 0, color } = props
   const { username, avatarUrl, text } = answer
-  const color = getAnswerColor(
-    answer,
-    contract.answers.map((a) => a.text)
-  )
   const user = useUser()
   const canFund = tradingAllowed(contract) && user && user?.id !== answer.userId
   const [showModal, setShowModal] = useState(false)
   const matchingPool = contract.pool.M$
 
-  const total = calculateTotals(txns)[answer.id] ?? 0
-  const match = calculateMatches(txns, matchingPool)[answer.id] ?? 0
   const fraction = (total + match) / (totalPaid(txns) + matchingPool)
   const colorWidth = 100 * Math.max(fraction, 0.01)
   return (
@@ -249,24 +245,22 @@ function QfAnswer(props: {
       <Modal open={showModal} setOpen={setShowModal} position="center">
         <QfPayPanel contract={contract} answer={answer} txns={txns} />
       </Modal>
-      <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
+      <Row className="z-20 items-center justify-between gap-2 py-2 px-3">
         <Row>
           <Avatar
-            className="mt-0.5 mr-2 inline h-5 w-5 border border-transparent transition-transform hover:border-none"
+            className="mt-0.5 mr-2 h-5 w-5 self-start border border-transparent transition-transform hover:border-none"
             username={username}
             avatarUrl={avatarUrl}
           />
           <Linkify className="text-md whitespace-pre-line" text={text} />
         </Row>
-        <Row className="gap-2">
-          <div className="my-auto text-xl">
-            {formatMoney(total)}{' '}
-            {match ? (
-              <span className="text-sm text-green-800">
-                +{formatMoney(match)}
-              </span>
-            ) : null}
-          </div>
+        <Row className="items-end gap-2">
+          <div className="text-xl">{formatMoney(total)}</div>
+          {match ? (
+            <span className="text-sm text-green-800">
+              +{formatMoney(match)}
+            </span>
+          ) : null}
           {canFund && (
             <Button
               size="2xs"
@@ -277,9 +271,9 @@ function QfAnswer(props: {
               Fund
             </Button>
           )}
-          <button className="p-1" onClick={() => {}}>
+          {/* <button className="p-1" onClick={() => {}}>
             <ChatIcon className="h-5 w-5 text-gray-400 transition-colors hover:text-gray-600" />
-          </button>
+          </button> */}
         </Row>
       </Row>
     </Col>

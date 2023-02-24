@@ -34,10 +34,7 @@ export async function searchGroups(prompt: string, limit: number) {
 }
 
 export async function getMemberGroups(userId: string) {
-  const { data: groupIds } = await run(
-    db.from('group_members').select('group_id').eq('member_id', userId)
-  )
-
+  const groupIds = await getMemberGroupIds(userId)
   const query = selectFrom(
     db,
     'groups',
@@ -54,6 +51,14 @@ export async function getMemberGroups(userId: string) {
   )
 
   return (await run(query)).data
+}
+
+export async function getMemberGroupIds(userId: string) {
+  const { data: groupIds } = await run(
+    db.from('group_members').select('group_id').eq('member_id', userId)
+  )
+
+  return groupIds
 }
 
 export async function getMemberGroupsCount(userId: string) {

@@ -155,6 +155,20 @@ export interface Database {
           id?: string
         }
       }
+      discord_users: {
+        Row: {
+          api_key: string
+          discord_user_id: string
+        }
+        Insert: {
+          api_key: string
+          discord_user_id: string
+        }
+        Update: {
+          api_key?: string
+          discord_user_id?: string
+        }
+      }
       group_contracts: {
         Row: {
           contract_id: string
@@ -502,17 +516,27 @@ export interface Database {
     Views: {
       group_role: {
         Row: {
-          avatar_url: Json | null
-          createdtime: Json | null
-          creator_id: Json | null
+          avatar_url: string | null
+          createdtime: number | null
+          creator_id: string | null
           group_data: Json | null
           group_id: string | null
-          group_name: Json | null
-          group_slug: Json | null
+          group_name: string | null
+          group_slug: string | null
           member_id: string | null
-          name: Json | null
+          name: string | null
           role: string | null
-          username: Json | null
+          username: string | null
+        }
+      }
+      user_groups: {
+        Row: {
+          avatarurl: string | null
+          follower_count: number | null
+          groups: string[] | null
+          id: string | null
+          name: string | null
+          username: string | null
         }
       }
     }
@@ -536,7 +560,6 @@ export interface Database {
             Args: {
               uid: string
               count: number
-              start: number
             }
             Returns: {
               contract_id: string
@@ -548,6 +571,7 @@ export interface Database {
             Args: {
               uid: string
               count: number
+              start: number
             }
             Returns: {
               contract_id: string
@@ -603,7 +627,7 @@ export interface Database {
         }
         Returns: {
           contract_id: string
-          rec_score: number
+          score: number
         }[]
       }
       get_recommended_contract_set: {
@@ -621,18 +645,6 @@ export interface Database {
         Returns: {
           data: Json
           score: number
-        }[]
-      }
-      get_recommended_daily_changed_contracts: {
-        Args: {
-          uid: string
-          c_limit: number
-          c_offset: number
-        }
-        Returns: {
-          data: Json
-          score: number
-          daily_score: number
         }[]
       }
       get_related_contract_ids: {
@@ -655,6 +667,47 @@ export interface Database {
       get_time: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_your_contract_ids:
+        | {
+            Args: {
+              uid: string
+              n: number
+              start: number
+            }
+            Returns: {
+              contract_id: string
+            }[]
+          }
+        | {
+            Args: {
+              uid: string
+            }
+            Returns: {
+              contract_id: string
+            }[]
+          }
+      get_your_daily_changed_contracts: {
+        Args: {
+          uid: string
+          n: number
+          start: number
+        }
+        Returns: {
+          data: Json
+          daily_score: number
+        }[]
+      }
+      get_your_trending_contracts: {
+        Args: {
+          uid: string
+          n: number
+          start: number
+        }
+        Returns: {
+          data: Json
+          score: number
+        }[]
       }
       gtrgm_compress: {
         Args: {
@@ -695,6 +748,12 @@ export interface Database {
           data: Json
         }
         Returns: boolean
+      }
+      ivfflathandler: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
       }
       recently_liked_contract_counts: {
         Args: {
@@ -765,6 +824,42 @@ export interface Database {
           "": Json
         }
         Returns: Json
+      }
+      vector_avg: {
+        Args: {
+          "": number[]
+        }
+        Returns: unknown
+      }
+      vector_dims: {
+        Args: {
+          "": unknown
+        }
+        Returns: number
+      }
+      vector_norm: {
+        Args: {
+          "": unknown
+        }
+        Returns: number
+      }
+      vector_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: {
+          "": unknown
+        }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: {
+          "": unknown[]
+        }
+        Returns: number
       }
     }
     Enums: {

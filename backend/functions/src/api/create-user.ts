@@ -2,18 +2,13 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { PrivateUser, User } from 'common/user'
-import { getUser, getUserByUsername, getValues } from 'shared/utils'
+import { getUser, getUserByUsername } from 'shared/utils'
 import { randomString } from 'common/util/random'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { isWhitelisted } from 'common/envs/constants'
-import {
-  CATEGORIES_GROUP_SLUG_POSTFIX,
-  DEFAULT_CATEGORIES,
-} from 'common/categories'
 
 import { track } from '../analytics'
 import { APIError, newEndpoint, validate } from './helpers'
-import { Group } from 'common/group'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
 import { removeUndefinedProps } from 'common/util/object'
@@ -22,12 +17,26 @@ import { getStorage } from 'firebase-admin/storage'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
+  adminToken: z.string().optional(),
 })
 
-const opts = { secrets: ['MAILGUN_KEY'] }
+const opts = { secrets: ['MAILGUN_KEY', 'TEST_CREATE_USER_KEY'] }
 
 export const createuser = newEndpoint(opts, async (req, auth) => {
-  const { deviceToken } = validate(bodySchema, req.body)
+  const { deviceToken: preDeviceToken, adminToken } = validate(
+    bodySchema,
+    req.body
+  )
+  const firebaseUser = await admin.auth().getUser(auth.uid)
+  const isTestUser = firebaseUser.providerData[0].providerId === 'password'
+  if (isTestUser && adminToken !== process.env.TEST_CREATE_USER_KEY) {
+    throw new APIError(
+      400,
+      'Must use correct TEST_CREATE_USER_KEY to create user with email/password'
+    )
+  }
+  const deviceToken = isTestUser ? randomString(20) : preDeviceToken
+
   const preexistingUser = await getUser(auth.uid)
   if (preexistingUser)
     throw new APIError(400, 'User already exists', { user: preexistingUser })
@@ -93,7 +102,6 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
   }
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)
-  await addUserToDefaultGroups(user)
 
   await track(auth.uid, 'create user', { username }, { ip: req.ip })
 
@@ -118,17 +126,4 @@ export const numberUsersWithIp = async (ipAddress: string) => {
     .get()
 
   return snap.docs.length
-}
-
-const addUserToDefaultGroups = async (user: User) => {
-  for (const category of Object.values(DEFAULT_CATEGORIES)) {
-    const slug = category.toLowerCase() + CATEGORIES_GROUP_SLUG_POSTFIX
-    const groups = await getValues<Group>(
-      firestore.collection('groups').where('slug', '==', slug)
-    )
-    await firestore
-      .collection(`groups/${groups[0].id}/groupMembers`)
-      .doc(user.id)
-      .set({ userId: user.id, createdTime: Date.now() })
-  }
 }

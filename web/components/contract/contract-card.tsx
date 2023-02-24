@@ -9,7 +9,6 @@ import { Row } from '../layout/row'
 import {
   formatLargeNumber,
   formatMoney,
-  formatPercent,
   formatWithCommas,
 } from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
@@ -29,13 +28,9 @@ import {
   FreeResponseOutcomeLabel,
   NumericValueLabel,
 } from '../outcome-label'
-import {
-  getOutcomeProbability,
-  getProbability,
-  getTopAnswer,
-} from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { MiscDetails, ShowTime } from './contract-details'
-import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
+import { getValueFromBucket } from 'common/calculate-dpm'
 import { getTextColor, QuickBet, QuickOutcomeView } from '../bet/quick-bet'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -341,81 +336,43 @@ export function BinaryResolutionOrChance(props: {
 
 export function FreeResponseResolutionOrChance(props: {
   contract: FreeResponseContract | MultipleChoiceContract
-  truncate: 'short' | 'long' | 'none'
-  className?: string
 }) {
-  const { contract, truncate, className } = props
+  const { contract } = props
   const { resolution } = contract
-
-  const topAnswer = getTopAnswer(contract)
-  const textColor = getTextColor(contract)
+  if (!(resolution === 'CANCEL' || resolution === 'MKT')) return null
 
   return (
-    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
-      {resolution ? (
-        <>
-          <div className={clsx('text-base text-gray-500 sm:hidden')}>
-            Resolved
-          </div>
-          {(resolution === 'CANCEL' || resolution === 'MKT') && (
-            <FreeResponseOutcomeLabel
-              contract={contract}
-              resolution={resolution}
-              truncate={truncate}
-              answerClassName="text-3xl uppercase text-blue-500"
-            />
-          )}
-        </>
-      ) : (
-        topAnswer && (
-          <Row className="items-center gap-6">
-            <Col className={clsx('text-3xl', textColor)}>
-              <div>
-                {formatPercent(getOutcomeProbability(contract, topAnswer.id))}
-              </div>
-              <div className="text-base">chance</div>
-            </Col>
-          </Row>
-        )
-      )}
-    </Col>
+    <Row className="gap-2 text-3xl">
+      <div className={clsx('text-base font-light')}>Resolved</div>
+
+      <FreeResponseOutcomeLabel
+        contract={contract}
+        resolution={resolution}
+        truncate="none"
+      />
+    </Row>
   )
 }
 
 export function NumericResolutionOrExpectation(props: {
   contract: NumericContract
-  className?: string
 }) {
-  const { contract, className } = props
+  const { contract } = props
   const { resolution } = contract
-  const textColor = getTextColor(contract)
 
   const resolutionValue =
     contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
 
+  // All distributional numeric markets are resolved now
   return (
-    <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
-      {resolution ? (
-        <>
-          <div className={clsx('text-base text-gray-500')}>Resolved</div>
-
-          {resolution === 'CANCEL' ? (
-            <CancelLabel />
-          ) : (
-            <div className="text-blue-400">
-              {formatLargeNumber(resolutionValue)}
-            </div>
-          )}
-        </>
+    <Row className="items-baseline gap-2 text-3xl">
+      <div className={clsx('text-base font-light')}>Resolved</div>
+      {resolution === 'CANCEL' ? (
+        <CancelLabel />
       ) : (
-        <>
-          <div className={clsx('text-3xl', textColor)}>
-            {formatLargeNumber(getExpectedValue(contract))}
-          </div>
-          <div className={clsx('text-base', textColor)}>expected</div>
-        </>
+        <NumericValueLabel value={resolutionValue} />
       )}
-    </Col>
+    </Row>
   )
 }
 
@@ -551,9 +508,10 @@ export function FeaturedPill(props: { label?: string }) {
 
 export function ContractCardNew(props: {
   contract: Contract
+  hideImage?: boolean
   className?: string
 }) {
-  const { className } = props
+  const { hideImage, className } = props
   const user = useUser()
 
   const contract = useContract(props.contract.id) ?? props.contract
@@ -596,8 +554,8 @@ export function ContractCardNew(props: {
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'group flex flex-col gap-2 whitespace-nowrap rounded-sm bg-white focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
-        'max-w-[600px] border-l border-r py-3 px-4',
+        'group flex flex-col gap-2 whitespace-nowrap rounded-sm py-3 px-4',
+        'bg-white focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
         className
       )}
     >
@@ -642,7 +600,7 @@ export function ContractCardNew(props: {
         {question}
       </div>
 
-      {coverImageUrl && (
+      {!hideImage && coverImageUrl && (
         <div className="relative h-36 lg:h-48">
           <Image
             fill
@@ -659,7 +617,9 @@ export function ContractCardNew(props: {
           <ContractStatusLabel contract={contract} chanceLabel />
         </div>
 
-        {isBinaryCpmm && <BetRow buttonClassName="z-10" contract={contract} />}
+        {user !== null && isBinaryCpmm && (
+          <BetRow buttonClassName="z-10" contract={contract} />
+        )}
 
         <Row
           className="z-20 ml-auto items-center gap-2"

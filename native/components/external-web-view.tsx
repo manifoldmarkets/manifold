@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native'
 import { AntDesign, Feather } from '@expo/vector-icons'
-import React, { MutableRefObject, RefObject, useRef, useState } from 'react'
+import React, { RefObject, useRef, useState } from 'react'
 import {
   WebViewErrorEvent,
   WebViewRenderProcessGoneEvent,
@@ -18,9 +18,15 @@ import {
 import * as Sentry from 'sentry-expo'
 import { SplashLoading } from 'components/splash-loading'
 import { log } from 'components/logger'
+import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/src/native-message'
 const isIOS = Platform.OS === 'ios'
-const JAVASCRIPT_PREVENT_ZOOM = `(function() {
-  const meta = document.createElement('meta'); meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'); meta.setAttribute('name', 'viewport'); document.getElementsByTagName('head')[0].appendChild(meta);
+const PREVENT_ZOOM_SET_NATIVE = `(function() {
+  const meta = document.createElement('meta'); 
+  meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'); 
+  meta.setAttribute('name', 'viewport'); 
+  document.getElementsByTagName('head')[0].appendChild(meta);
+  window.localStorage.setItem('${IS_NATIVE_KEY}', 'true');
+  window.localStorage.setItem('${PLATFORM_KEY}', '${Platform.OS}');
 })();`
 export const sharedWebViewProps: WebViewProps = {
   allowsInlineMediaPlayback: true,
@@ -34,7 +40,7 @@ export const sharedWebViewProps: WebViewProps = {
   mediaPlaybackRequiresUserAction: true,
   allowsFullscreenVideo: true,
   autoManageStatusBarEnabled: false,
-  injectedJavaScript: JAVASCRIPT_PREVENT_ZOOM,
+  injectedJavaScript: PREVENT_ZOOM_SET_NATIVE,
 }
 
 export const handleWebviewCrash = (

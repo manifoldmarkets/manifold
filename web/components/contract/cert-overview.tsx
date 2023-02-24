@@ -137,7 +137,7 @@ export function CertOverview(props: { contract: CertContract }) {
 
   return (
     <Col>
-      <div className="flex gap-2">
+      <div className="flex justify-between gap-2">
         <Image
           alt=""
           width={100}
@@ -145,10 +145,7 @@ export function CertOverview(props: { contract: CertContract }) {
           src={contract.coverImageUrl ?? ''}
           className="rounded-md"
         />
-        <div className="flex grow justify-between gap-4">
-          <Title className="!my-0">{contract.question}</Title>
-          <span className="text-4xl">{price}</span>
-        </div>
+        <span className="text-4xl">{price}</span>
       </div>
 
       {/* Show a graph for the trades */}

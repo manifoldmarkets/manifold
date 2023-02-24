@@ -5,7 +5,6 @@ import { useEffect } from 'react'
 import {
   BinaryResolutionOrChance,
   ContractCard,
-  FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
@@ -33,6 +32,8 @@ import {
   useSingleValueHistoryChartViewScale,
 } from 'web/components/charts/generic-charts'
 import { listBets } from 'web/lib/firebase/bets'
+import { NoSEO } from 'web/components/NoSEO'
+import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 
 type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
@@ -114,6 +115,8 @@ export default function ContractEmbedPage(props: {
   // return (height < 250px) ? Card : SmolView
   return (
     <>
+      <NoSEO />
+      <ContractSEO contract={contract} />
       <div className="contents [@media(min-height:250px)]:hidden">
         <ContractCard
           contract={contract}
@@ -219,10 +222,6 @@ function ContractSmolView(props: {
             contract={contract}
             className="!flex-col !gap-0"
           />
-        )}
-
-        {outcomeType === 'FREE_RESPONSE' && (
-          <FreeResponseResolutionOrChance contract={contract} truncate="long" />
         )}
 
         {outcomeType === 'NUMERIC' && (

@@ -14,15 +14,18 @@ export function ContractsFeed() {
 
   return (
     <Col>
-      <Col className="max-w-[600px] divide-y first:border-t">
+      <Col className="divide-y-[0.5px] border-[0.5px]">
         {contracts.map((contract) => (
           <ContractCardNew key={contract.id} contract={contract} />
         ))}
       </Col>
 
       <VisibilityObserver
+        className="relative -top-96"
         onVisibilityUpdated={(visible) => visible && loadMore()}
       />
+
+      <LoadingIndicator className="mt-4" />
 
       {contracts !== undefined && contracts.length === 0 && (
         <div className="m-4 flex w-full flex-col items-center justify-center">

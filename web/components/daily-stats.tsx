@@ -36,6 +36,12 @@ export function DailyStats(props: {
 
   const [showStreakModal, setShowStreakModal] = useState(false)
 
+  // hide daily stats if user created in last 24 hours
+  const justCreated =
+    (user?.createdTime ?? 0) > Date.now() - 1000 * 60 * 60 * 24
+
+  if (justCreated) return <></>
+
   return (
     <Row className={'flex-shrink-0 items-center gap-4'}>
       <DailyProfit user={user} />

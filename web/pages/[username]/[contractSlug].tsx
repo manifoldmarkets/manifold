@@ -65,6 +65,9 @@ import { compressPoints, pointsToBase64 } from 'common/util/og'
 import { getInitialProbability } from 'common/calculate'
 import { getUser } from 'web/lib/firebase/users'
 import Head from 'next/head'
+import { Linkify } from 'web/components/widgets/linkify'
+import { ContractDetails } from 'web/components/contract/contract-details'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -219,6 +222,7 @@ export function ContractPageContent(
     }
   }, [contract.resolution, contract.id, topContractMetrics.length])
 
+  useSaveCampaign()
   useTracking(
     'view market',
     {
@@ -253,14 +257,7 @@ export function ContractPageContent(
     [props.historyData.points, newBets]
   )
 
-  const {
-    isResolved,
-    question,
-    outcomeType,
-    resolution,
-    closeTime,
-    creatorId,
-  } = contract
+  const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
 
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
@@ -271,12 +268,6 @@ export function ContractPageContent(
   )
 
   const allowTrade = tradingAllowed(contract)
-
-  const ogCardProps = removeUndefinedProps({
-    ...getOpenGraphProps(contract),
-    points: pointsString,
-  })
-  const seoDesc = getSeoDescription(contract, ogCardProps)
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
@@ -309,14 +300,7 @@ export function ContractPageContent(
         )
       }
     >
-      {ogCardProps && (
-        <SEO
-          title={question}
-          description={seoDesc}
-          url={`/${contract.creatorUsername}/${contract.slug}`}
-          ogProps={{ props: ogCardProps, endpoint: 'market' }}
-        />
-      )}
+      <ContractSEO contract={contract} points={pointsString} />
       {creatorTwitter && (
         <Head>
           <meta name="twitter:creator" content={`@${creatorTwitter}`} />
@@ -325,15 +309,22 @@ export function ContractPageContent(
 
       {user && <BackRow />}
 
-      <Col className="w-full justify-between rounded bg-white pb-6 pt-4 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
-        <ContractOverview
-          contract={contract}
-          bets={bets}
-          betPoints={betPoints}
-        />
+      <Col className="w-full justify-between rounded bg-white px-4 py-4 md:px-8 md:py-8">
+        <Col className="gap-3 sm:gap-4">
+          <ContractDetails contract={contract} />
+          <Linkify
+            className="text-lg text-indigo-700 sm:text-2xl"
+            text={contract.question}
+          />
+          <ContractOverview
+            contract={contract}
+            bets={bets}
+            betPoints={betPoints}
+          />
+        </Col>
 
         <ContractDescription
-          className="mt-2 px-2 xl:mt-6"
+          className="mt-2 xl:mt-6"
           contract={contract}
           toggleResolver={() => setShowResolver(!showResolver)}
         />
@@ -430,6 +421,30 @@ export function ContractPageContent(
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
+  )
+}
+
+export function ContractSEO(props: {
+  contract: Contract
+  /** Base64 encoded points */
+  points?: string
+}) {
+  const { contract, points } = props
+  const { question, creatorUsername, slug } = contract
+
+  const seoDesc = getSeoDescription(contract)
+  const ogCardProps = removeUndefinedProps({
+    ...getOpenGraphProps(contract),
+    points,
+  })
+
+  return (
+    <SEO
+      title={question}
+      description={seoDesc}
+      url={`/${creatorUsername}/${slug}`}
+      ogProps={{ props: ogCardProps, endpoint: 'market' }}
+    />
   )
 }
 

@@ -135,19 +135,23 @@ export default function Charity(props: {
         <Col className="">
           <Title>Manifold for Charity</Title>
 
-          <AlertBox title="Charity program ending" text="">
-            Please make your final donations before March 1st, 2023.
-            <SiteLink
-              href="https://manifoldmarkets.notion.site/Charity-program-ending-March-1st-ac5da2d66e9d4306a917e3dd653b9cea"
-              className="ml-2 text-indigo-700"
-            >
-              Read more here.
-            </SiteLink>
-          </AlertBox>
+          <div className="max-w-xl">
+            <AlertBox title="Charity program is not ending!" text="">
+              After clarifying several details with Stripe, we are happy to
+              announce that we will be able to continue our charitable donation
+              program after all!
+            </AlertBox>
+          </div>
 
           <span className="mt-8 text-gray-600">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations.{' '}
+            <SiteLink
+              href="https://help.manifold.markets/manifold-charitable-donation-program"
+              className="ml-2 text-indigo-700"
+            >
+              Read more here.
+            </SiteLink>
           </span>
           <DonatedStats
             stats={[

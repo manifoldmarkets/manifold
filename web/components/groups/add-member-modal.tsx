@@ -1,20 +1,18 @@
+import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { Group } from 'common/group'
-import { User } from 'common/user'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useRealtimeGroupMemberIds } from 'web/hooks/use-group-supabase'
 import { addGroupMember } from 'web/lib/firebase/api'
-import {
-  searchUsersExcludingArray,
-  UserSearchResult,
-} from 'web/lib/supabase/users'
+import { searchUsersNotInGroup } from 'web/lib/supabase/users'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
+import { UserLink } from '../widgets/user-link'
 
 const QUERY_SIZE = 7
 
@@ -25,20 +23,16 @@ export function AddMemberModal(props: {
 }) {
   const { open, setOpen, group } = props
   const [query, setQuery] = useState('')
-  const [searchMemberResult, setSearchMemberResult] = useState<
-    UserSearchResult[]
-  >([])
+  const [searchMemberResult, setSearchMemberResult] = useState<JSONContent[]>(
+    []
+  )
   const requestId = useRef(0)
   const [loading, setLoading] = useState(false)
   const groupMemberIds = useRealtimeGroupMemberIds(group.id).members
   useEffect(() => {
     const id = ++requestId.current
     setLoading(true)
-    searchUsersExcludingArray(
-      query,
-      QUERY_SIZE,
-      groupMemberIds.filter((member) => member !== null) as string[]
-    )
+    searchUsersNotInGroup(query, QUERY_SIZE, group.id)
       .then((results) => {
         // if there's a more recent request, forget about this one
         if (id === requestId.current) {
@@ -46,7 +40,8 @@ export function AddMemberModal(props: {
         }
       })
       .finally(() => setLoading(false))
-  }, [query, groupMemberIds])
+  }, [query])
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS, 'h-[30rem]')}>
@@ -80,7 +75,7 @@ export function AddMemberModal(props: {
 }
 
 export function AddMemberWidget(props: {
-  user: Pick<User, 'id' | 'name' | 'username' | 'avatarUrl'>
+  user: JSONContent
   group: Group
   isDisabled?: boolean
 }) {
@@ -91,15 +86,12 @@ export function AddMemberWidget(props: {
       <Row className="w-3/4 gap-2">
         <Avatar
           username={user.username}
-          avatarUrl={user.avatarUrl}
+          avatarUrl={user.avatarurl}
           size="xs"
           noLink
         />
         <span className="line-clamp-1 overflow-hidden">
-          {user.name}{' '}
-          {user.username !== user.name && (
-            <span className="font-light text-gray-400">@{user.username}</span>
-          )}
+          <UserLink name={user.name} username={user.username} />
         </span>
       </Row>
       <Button

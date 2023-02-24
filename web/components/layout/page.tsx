@@ -13,6 +13,7 @@ export function Page(props: {
   logoSubheading?: string
   touchesTop?: boolean
   hideSidebar?: boolean
+  fullWidth?: boolean
 }) {
   const {
     children,
@@ -21,6 +22,7 @@ export function Page(props: {
     logoSubheading,
     touchesTop,
     hideSidebar,
+    fullWidth,
   } = props
 
   const isMobile = useIsMobile()
@@ -32,7 +34,8 @@ export function Page(props: {
         className={clsx(
           className,
           bottomBarPadding,
-          'mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:max-w-7xl xl:gap-x-8'
+          'mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:gap-x-8',
+          fullWidth ? 'w-full !max-w-none' : 'xl:max-w-7xl'
         )}
       >
         <Toaster
@@ -55,7 +58,8 @@ export function Page(props: {
             className={clsx(
               'flex flex-1 flex-col',
               touchesTop ? '' : 'lg:mt-6',
-              rightSidebar ? 'col-span-7' : 'col-span-8'
+              rightSidebar ? 'col-span-7' : 'col-span-8',
+              fullWidth && 'col-span-10'
             )}
           >
             {children}

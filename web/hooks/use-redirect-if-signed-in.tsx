@@ -1,11 +1,11 @@
-import Router from 'next/router'
+import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { useUser } from './use-user'
 
-export const useRedirectIfSignedIn = (query?: string) => {
+export const useRedirectIfSignedIn = () => {
+  const router = useRouter()
   const user = useUser()
   useEffect(() => {
-    // Go to landing page if not logged in.
-    if (user) Router.push('/home' + query ? `?${query}` : '')
+    if (user) router.push('/home')
   }, [user])
 }

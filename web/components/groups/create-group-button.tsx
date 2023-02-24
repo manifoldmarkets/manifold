@@ -173,6 +173,13 @@ export function CreateGroupButton(props: {
               onClick={() => setPrivacy('curated')}
               size="sm"
             />
+            {/* TODO: INGA add private groups */}
+            {/* <PrivacyStatusView
+              viewStatus={'private'}
+              isSelected={privacy == 'private'}
+              onClick={() => setPrivacy('private')}
+              size="sm"
+            /> */}
           </Col>
         </div>
 

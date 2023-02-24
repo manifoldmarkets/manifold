@@ -31,6 +31,10 @@ const ensureDeviceToken = () => {
   }
   return deviceToken
 }
+const getAdminToken = () => {
+  const deviceToken = safeLocalStorage?.getItem('TEST_CREATE_USER_KEY')
+  return deviceToken ?? ''
+}
 
 const stripUserData = (user: object) => {
   // there's some risk that this cookie could be too big for some clients,
@@ -55,6 +59,7 @@ export const setUserCookie = (data: object | undefined) => {
 }
 
 export const AuthContext = createContext<AuthUser>(undefined)
+
 export function AuthProvider(props: {
   children: ReactNode
   serverUser?: AuthUser
@@ -89,7 +94,11 @@ export function AuthProvider(props: {
           let current = await getUserAndPrivateUser(fbUser.uid)
           if (!current.user || !current.privateUser) {
             const deviceToken = ensureDeviceToken()
-            current = (await createUser({ deviceToken })) as UserAndPrivateUser
+            const adminToken = getAdminToken()
+            current = (await createUser({
+              deviceToken,
+              adminToken,
+            })) as UserAndPrivateUser
             setCachedReferralInfoForUser(current.user)
           }
           setAuthUser(current)

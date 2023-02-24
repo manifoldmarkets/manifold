@@ -627,11 +627,23 @@ $$;
 -- Use cached tables of user and contract features to computed the top scoring
 -- markets for a user.
 create or replace function get_recommended_contract_scores(uid text)
-returns table (contract_id text, rec_score real)
+returns table (contract_id text, score real)
 immutable parallel safe
 language sql
 as $$
-  select crf.contract_id, dot(urf, crf) * crf.freshness_score as rec_score
+  select crf.contract_id, dot(urf, crf) as score
+  from user_recommendation_features as urf
+  cross join contract_recommendation_features as crf
+  where user_id = uid
+  order by score desc
+$$;
+
+create or replace function get_recommended_contract_scores_unseen(uid text)
+returns table (contract_id text, score real)
+immutable parallel safe
+language sql
+as $$
+  select crf.contract_id, coalesce(dot(urf, crf) * crf.freshness_score, 0.0) as score
   from user_recommendation_features as urf
   cross join contract_recommendation_features as crf
   where user_id = uid
@@ -656,7 +668,7 @@ as $$
     and user_events.data->>'contractId' = crf.contract_id
     and (user_events.data->'timestamp')::bigint > (extract(epoch from (now() - interval '1 day')) * 1000)::bigint
   )
-  order by rec_score desc
+  order by score desc
 $$;
 
 create or replace function get_recommended_contracts_by_score(uid text, count int)
@@ -664,15 +676,14 @@ returns table (data jsonb, score real)
 immutable parallel safe
 language sql
 as $$
-  select data, rec_score as score
-  from get_recommended_contract_scores(uid)
+  select data, score
+  from get_recommended_contract_scores_unseen(uid)
   left join contracts
   on contracts.id = contract_id
   where is_valid_contract(data)
   and data->>'outcomeType' = 'BINARY'
   limit count
 $$;
-
 create or replace function get_recommended_contract_set(uid text, n int)
   returns setof jsonb
   language plpgsql
@@ -807,24 +818,36 @@ $$;
 
 
 create or replace view group_role as(
-  select member_id,
+  select member_id, 
     gp.id as group_id,
     gp.data as group_data,
-    gp.data -> 'name' as group_name,
-    gp.data -> 'slug' as group_slug,
-    gp.data -> 'creatorId' as creator_id,
-    users.data -> 'name' as name,
-    users.data -> 'username' as username,
-    users.data -> 'avatarUrl' as avatar_url,
-    (select
+    gp.data ->> 'name' as group_name,
+    gp.data ->> 'slug' as group_slug,
+    gp.data ->> 'creatorId' as creator_id,
+    users.data ->> 'name' as name,
+    users.data ->> 'username' as username,
+    users.data ->> 'avatarUrl' as avatar_url,
+    (select 
       CASE
       WHEN (gp.data ->> 'creatorId')::text = member_id THEN 'admin'
       ELSE (gm.data ->> 'role')
       END
     ) as role,
-    gm.data -> 'createdTime' as createdTime
+    (gm.data ->> 'createdTime')::bigint as createdTime
   from (group_members gm join groups gp on gp.id = gm.group_id) join users on users.id = gm.member_id
-)
+) 
+
+create or replace view user_groups as(
+select 
+users.id as id, 
+users.data->>'name' as name, 
+users.data->>'username' as username, 
+users.data->>'avatarUrl' as avatarurl, 
+(users.data->>'followerCountCached')::integer as follower_count,
+user_groups.groups as groups 
+from (users left join
+(select member_id, array_agg(group_id) as groups from group_members group by member_id) user_groups 
+on users.id=user_groups.member_id))
 
 create or replace function get_contracts_by_creator_ids(creator_ids text[], created_time bigint)
 returns table(creator_id text, contracts jsonb)
@@ -837,6 +860,7 @@ as $$
     and (data->>'createdTime')::bigint > created_time
     group by creator_id;
 $$;
+
 
 create table if not exists discord_users (
     discord_user_id text not null,
@@ -855,3 +879,54 @@ create table if not exists discord_messages_markets (
     primary key(message_id)
 );
 alter table discord_messages_markets enable row level security;
+
+create or replace function get_your_contract_ids(uid text)
+returns table (contract_id text)
+immutable parallel safe
+language sql
+as $$
+  with your_liked_contracts as (
+    select (data->>'contentId') as contract_id
+    from user_reactions
+    where user_id = uid
+  ), your_followed_contracts as (
+    select contract_id
+    from contract_follows
+    where follow_id = uid
+  )
+  select contract_id from your_liked_contracts
+  union
+  select contract_id from your_followed_contracts
+$$;
+
+create or replace function get_your_daily_changed_contracts(uid text, n int, start int)
+returns table (data jsonb, daily_score real)
+immutable parallel safe
+language sql
+as $$
+  select data, coalesce((data->>'dailyScore')::real, 0.0) as daily_score
+  from get_your_contract_ids(uid)
+  left join contracts
+  on contracts.id = contract_id
+  and data->>'outcomeType' = 'BINARY'
+  order by daily_score desc
+  limit n
+  offset start
+$$;
+
+create or replace function get_your_trending_contracts(uid text, n int, start int)
+returns table (data jsonb, score real)
+immutable parallel safe
+language sql
+as $$
+  select data, coalesce((data->>'popularityScore')::real, 0.0) as score
+  from get_your_contract_ids(uid)
+  left join contracts
+  on contracts.id = contract_id
+  where is_valid_contract(data)
+  and data->>'outcomeType' = 'BINARY'
+  order by score desc
+  limit n
+  offset start
+$$;
+

@@ -1,11 +1,131 @@
 import { sortBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { CPMMBinaryContract, CPMMContract } from 'common/contract'
+import { Contract, CPMMBinaryContract, CPMMContract } from 'common/contract'
 import { Col } from '../layout/col'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractCardWithPosition } from './contract-card'
 import { User } from 'common/user'
+import { ContractStatusLabel } from './contracts-list-entry'
+import clsx from 'clsx'
+import Link from 'next/link'
+import { forwardRef } from 'react'
+import { useContract } from 'web/hooks/use-contracts'
+import { contractPath } from 'web/lib/firebase/contracts'
+import { Avatar } from '../widgets/avatar'
+import { Row } from '../layout/row'
+import { formatPercentShort } from 'common/util/format'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+
+export function ProbChangeTable(props: {
+  changes: CPMMContract[] | undefined
+  full?: boolean
+}) {
+  const { changes } = props
+
+  if (!changes) return <LoadingIndicator />
+
+  const biggestChanges = sortBy(changes, (c) =>
+    Math.abs(c.probChanges?.day ?? 0)
+  ).reverse()
+
+  const contracts = [
+    ...biggestChanges.slice(0, 3),
+    ...biggestChanges
+      .slice(3)
+      .filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01),
+  ]
+
+  if (contracts.length === 0)
+    return <div className="px-4 text-gray-500">None</div>
+
+  return (
+    <Col className="w-full divide-y-[0.5px] rounded-sm border-[0.5px] bg-white">
+      {contracts.map((contract) => (
+        <ContractWithProbChange key={contract.id} contract={contract} />
+      ))}
+    </Col>
+  )
+}
+const ContractWithProbChange = forwardRef(
+  (
+    props: {
+      contract: CPMMContract
+      onContractClick?: (contract: Contract) => void
+      className?: string
+    },
+    ref: React.Ref<HTMLAnchorElement>
+  ) => {
+    const { onContractClick, className } = props
+    const contract = (useContract(props.contract.id) ??
+      props.contract) as CPMMContract
+    const {
+      creatorUsername,
+      creatorAvatarUrl,
+      closeTime,
+      isResolved,
+      question,
+      probChanges,
+    } = contract
+
+    const isClosed = closeTime && closeTime < Date.now()
+    const textColor =
+      isClosed && !isResolved ? 'text-gray-500' : 'text-gray-900'
+
+    const probChangeToday = probChanges?.day ?? 0
+
+    return (
+      <Link
+        onClick={(e) => {
+          if (!onContractClick) return
+          onContractClick(contract)
+          e.preventDefault()
+        }}
+        ref={ref}
+        href={contractPath(contract)}
+        className={clsx(
+          'group flex flex-col gap-1 whitespace-nowrap px-4 py-3 hover:bg-indigo-50 focus:bg-indigo-50 lg:flex-row lg:gap-2',
+          'focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
+          className
+        )}
+      >
+        <Avatar
+          className="hidden lg:mr-1 lg:flex"
+          username={creatorUsername}
+          avatarUrl={creatorAvatarUrl}
+          size="xs"
+        />
+        <div
+          className={clsx(
+            'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto',
+            textColor
+          )}
+        >
+          {question}
+        </div>
+        <Row className="gap-3">
+          <Avatar
+            className="lg:hidden"
+            username={creatorUsername}
+            avatarUrl={creatorAvatarUrl}
+            size="xs"
+          />
+          <div className="min-w-[2rem] text-right font-semibold">
+            <ContractStatusLabel contract={contract} />
+          </div>
+          <div
+            className={clsx(
+              'min-w-[2rem] text-right',
+              probChangeToday >= 0 ? 'text-teal-500' : 'text-scarlet-500'
+            )}
+          >
+            {probChangeToday >= 0 ? '+' : ''}
+            {formatPercentShort(probChangeToday)}
+          </div>
+        </Row>
+      </Link>
+    )
+  }
+)
 
 export function ProfitChangeCardsTable(props: {
   contracts: CPMMBinaryContract[]
@@ -54,59 +174,6 @@ export function ProfitChangeCardsTable(props: {
       </Col>
       <Col className="flex-1 gap-4">
         {negative.map((contract) => (
-          <ContractCardWithPosition
-            key={contract.id}
-            contract={contract}
-            showDailyProfit
-          />
-        ))}
-      </Col>
-    </Col>
-  )
-}
-
-export function ProbChangeTable(props: {
-  changes: CPMMContract[] | undefined
-  full?: boolean
-}) {
-  const { changes, full } = props
-
-  if (!changes) return <LoadingIndicator />
-
-  const descendingChanges = sortBy(changes, (c) => c.probChanges.day).reverse()
-  const ascendingChanges = sortBy(changes, (c) => c.probChanges.day)
-
-  const threshold = 0.01
-  const positiveAboveThreshold = descendingChanges.filter(
-    (c) => c.probChanges.day > threshold
-  )
-  const negativeAboveThreshold = ascendingChanges.filter(
-    (c) => c.probChanges.day < threshold
-  )
-  const maxRows = Math.min(
-    positiveAboveThreshold.length,
-    negativeAboveThreshold.length
-  )
-  const rows = full ? maxRows : Math.min(3, maxRows)
-
-  const filteredPositiveChanges = positiveAboveThreshold.slice(0, rows)
-  const filteredNegativeChanges = negativeAboveThreshold.slice(0, rows)
-
-  if (rows === 0) return <div className="px-4 text-gray-500">None</div>
-
-  return (
-    <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
-      <Col className="flex-1 gap-4">
-        {filteredPositiveChanges.map((contract) => (
-          <ContractCardWithPosition
-            key={contract.id}
-            contract={contract}
-            showDailyProfit
-          />
-        ))}
-      </Col>
-      <Col className="flex-1 gap-4">
-        {filteredNegativeChanges.map((contract) => (
           <ContractCardWithPosition
             key={contract.id}
             contract={contract}

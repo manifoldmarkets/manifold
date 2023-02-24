@@ -3,7 +3,7 @@ import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 export default function SignInWaiting() {
-  useRedirectIfSignedIn('native')
+  useRedirectIfSignedIn()
   // Flappy is too small during an android native client side resizing, so we use dynamic sizing
   const { width, height } = useWindowSize()
   return (
