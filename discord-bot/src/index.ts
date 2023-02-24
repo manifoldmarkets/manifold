@@ -156,13 +156,17 @@ const handleOldReaction = async (
         })
     : pUser
   if (!user) return
+  const channelId = marketInfo.channel_id ?? reaction.message.channelId
+  const hasCachedChannel = client.channels.cache.has(channelId)
+  const channel = hasCachedChannel
+    ? client.channels.cache.get(channelId)
+    : await client.channels
+        .fetch(channelId)
+        .then((c) => c)
+        .catch((e) => {
+          console.log('Failed to fetch channel', e)
+        })
 
-  const channel = await client.channels
-    .fetch(marketInfo.channel_id)
-    .then((c) => c)
-    .catch((e) => {
-      console.log('Failed to fetch channel', e)
-    })
   console.log('got channel', channel?.id)
   if (!channel || !channel.isTextBased()) return
 

@@ -8,8 +8,8 @@ type DiscordMessageMarketInfo = {
   market_id: string
   market_slug: string
   message_id: string
-  thread_id: string
-  channel_id: string
+  thread_id?: string
+  channel_id?: string
 }
 const key = process.env.SUPABASE_KEY
 if (!key) throw new Error('No SUPABASE_KEY env var set.')
