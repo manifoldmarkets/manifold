@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { setUserProperty } from 'web/lib/service/analytics'
+import { setOnceUserProperty, track } from 'web/lib/service/analytics'
 
 export const useSaveCampaign = () => {
   useEffect(() => {
@@ -7,6 +7,7 @@ export const useSaveCampaign = () => {
     const campaign = urlParams.get('c')
     if (!campaign) return
 
-    setUserProperty('campaign', campaign)
+    setOnceUserProperty('campaign', campaign)
+    track('view campaign', { campaign })
   }, [])
 }
