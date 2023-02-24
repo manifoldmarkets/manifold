@@ -14,3 +14,17 @@ export async function getYourDailyChangedContracts(
 
   return data?.map((d) => (d as any).data as Contract)
 }
+
+export async function getYourTrendingContracts(
+  db: SupabaseClient,
+  userId: string,
+  count: number
+) {
+  const { data } = await db.rpc('get_your_trending_contracts', {
+    uid: userId,
+    n: count,
+    start: 0,
+  })
+
+  return data?.map((d) => (d as any).data as Contract)
+}

@@ -594,7 +594,7 @@ export interface Database {
         }
         Returns: {
           contract_id: string
-          rec_score: number
+          score: number
         }[]
       }
       get_recommended_contract_scores_unseen: {
@@ -603,7 +603,7 @@ export interface Database {
         }
         Returns: {
           contract_id: string
-          rec_score: number
+          score: number
         }[]
       }
       get_recommended_contract_set: {
@@ -672,6 +672,17 @@ export interface Database {
         Returns: {
           data: Json
           daily_score: number
+        }[]
+      }
+      get_your_trending_contracts: {
+        Args: {
+          uid: string
+          n: number
+          start: number
+        }
+        Returns: {
+          data: Json
+          score: number
         }[]
       }
       gtrgm_compress: {

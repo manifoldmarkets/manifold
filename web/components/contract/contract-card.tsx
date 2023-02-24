@@ -551,9 +551,10 @@ export function FeaturedPill(props: { label?: string }) {
 
 export function ContractCardNew(props: {
   contract: Contract
+  hideImage?: boolean
   className?: string
 }) {
-  const { className } = props
+  const { hideImage, className } = props
   const user = useUser()
 
   const contract = useContract(props.contract.id) ?? props.contract
@@ -596,8 +597,8 @@ export function ContractCardNew(props: {
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'group flex flex-col gap-2 whitespace-nowrap rounded-sm bg-white focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
-        'max-w-[600px] border-l border-r py-3 px-4',
+        'group flex flex-col gap-2 whitespace-nowrap rounded-sm py-3 px-4',
+        'bg-white focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
         className
       )}
     >
@@ -642,7 +643,7 @@ export function ContractCardNew(props: {
         {question}
       </div>
 
-      {coverImageUrl && (
+      {!hideImage && coverImageUrl && (
         <div className="relative h-36 lg:h-48">
           <Image
             fill
@@ -659,7 +660,9 @@ export function ContractCardNew(props: {
           <ContractStatusLabel contract={contract} chanceLabel />
         </div>
 
-        {isBinaryCpmm && <BetRow buttonClassName="z-10" contract={contract} />}
+        {user !== null && isBinaryCpmm && (
+          <BetRow buttonClassName="z-10" contract={contract} />
+        )}
 
         <Row
           className="z-20 ml-auto items-center gap-2"
