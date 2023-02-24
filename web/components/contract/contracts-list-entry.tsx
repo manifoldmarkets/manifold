@@ -104,13 +104,13 @@ export const ContractsListEntry = forwardRef(
           size="xs"
         />
         {!skinny && (
-          <div className="hidden min-w-[2rem] text-right font-semibold lg:flex">
+          <div className="min-w-[2rem] text-right font-semibold">
             <ContractStatusLabel contract={contract} />
           </div>
         )}
         <div
           className={clsx(
-            'break-anywhere mr-0.5 whitespace-normal font-medium',
+            'break-anywhere whitespace-normal font-medium',
             textColor
           )}
         >

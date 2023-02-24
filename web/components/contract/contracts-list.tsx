@@ -48,7 +48,7 @@ export function ContractsList(props: {
             contract={contract}
             key={contract.id}
             onContractClick={onContractClick}
-            skinny={skinny}
+            skinny={true}
             className={
               highlightContractIds?.includes(contract.id)
                 ? contractListEntryHighlightClass
