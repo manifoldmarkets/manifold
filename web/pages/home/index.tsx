@@ -1,4 +1,4 @@
-import { PencilAltIcon, SwitchVerticalIcon } from '@heroicons/react/solid'
+import { PencilAltIcon, SwitchHorizontalIcon } from '@heroicons/react/solid'
 import { isArray, keyBy } from 'lodash'
 import clsx from 'clsx'
 
@@ -35,7 +35,6 @@ import { getGroup } from 'web/lib/firebase/groups'
 import { getPost } from 'web/lib/firebase/posts'
 import { updateUser } from 'web/lib/firebase/users'
 import GoToIcon from 'web/lib/icons/go-to-icon'
-import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 import { track } from 'web/lib/service/analytics'
 import { Title } from 'web/components/widgets/title'
 import {
@@ -296,7 +295,7 @@ export const ActivitySection = memo(function ActivitySection() {
   return (
     <Col>
       <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
-      <div className="h-[700px] flex-none overflow-hidden relative">
+      <div className="relative h-[700px] flex-none overflow-hidden">
         <ActivityLog count={10} showPills className="absolute" />
       </div>
     </Col>
@@ -306,6 +305,8 @@ export const ActivitySection = memo(function ActivitySection() {
 export const DailyMoversSection = memo(function DailyMoversSection() {
   const user = useUser()
   const contracts = useYourDailyChangedContracts(db, user?.id)
+
+  if (contracts?.length === 0) return <></>
 
   return (
     <Col>
@@ -340,7 +341,7 @@ function MobileHome() {
           <Row className="items-center gap-4">
             <DailyStats user={user} />
             {isNative && (
-              <SwitchVerticalIcon
+              <SwitchHorizontalIcon
                 className="h-5 w-5"
                 onClick={toggleView(true)}
               />

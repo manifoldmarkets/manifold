@@ -35,8 +35,8 @@ export default function GroupSelectorDialog(props: {
       <Col className="h-[32rem] rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
         <Title children="What interests you?" />
         <p className="mb-4">
-          Choose among the categories below to personalize your Manifold
-          experience. We've already selected {memberGroupIds.length} for you.
+          Select the topics you're interested in to personalize your Manifold
+          experience.
         </p>
 
         <div className="scrollbar-hide items-start gap-2 overflow-x-auto">

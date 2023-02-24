@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
-import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -9,6 +9,7 @@ import { Title } from 'web/components/widgets/title'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { copyToClipboard } from 'web/lib/util/copy'
 
 export default function MyApiKey() {
   const privateUser = usePrivateUser()
@@ -26,21 +27,30 @@ export default function MyApiKey() {
   return (
     <Page>
       <Col className={'p-2'}>
-        <Title>Discord Bot</Title>
+        <Title>Sign in to Discord Bot</Title>
         {!privateUser ? (
           <Button color={'gradient'} onClick={firebaseLogin}>
             Sign in
           </Button>
         ) : apiKey ? (
           <Col className="gap-4 p-1 text-xl">
-            <Row className={'gap-2'}>
-              1. Copy your key:
-              <CopyLinkButton
-                url={apiKey}
-                displayUrl={apiKey.slice(0, 20) + '...'}
-              />
+            <Row className={'items-center gap-2'}>
+              1.
+              <Button
+                color={'green'}
+                onClick={() => {
+                  copyToClipboard(apiKey)
+                  toast.success('Link copied!')
+                }}
+              >
+                Copy API key
+              </Button>
             </Row>
-            2. Respond to our discord bot with it.
+            2. Paste your key in the direct message with our Discord bot.
+            <Row className={'text-xs text-gray-600'}>
+              Your API key gives access to your account - only share with
+              bots/people that you trust!
+            </Row>
           </Col>
         ) : (
           <LoadingIndicator />

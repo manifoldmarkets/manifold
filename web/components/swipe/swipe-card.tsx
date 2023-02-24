@@ -19,7 +19,7 @@ import { MoreSwipeInfo } from './more-swipe-info'
 import { DailyStats } from '../daily-stats'
 import { SwipeComments } from './swipe-comments'
 import { Percent } from './percent'
-import { SwitchVerticalIcon } from '@heroicons/react/solid'
+import { SwitchHorizontalIcon } from '@heroicons/react/solid'
 
 export const SwipeCard = memo(
   (props: {
@@ -186,7 +186,7 @@ const CornerDetails = (props: {
       <div className="flex items-center rounded-full text-gray-400">
         <DailyStats user={user} showLoans={false} />
         {toggleView && (
-          <SwitchVerticalIcon className="ml-2 h-6 w-6" onClick={toggleView} />
+          <SwitchHorizontalIcon className="ml-2 h-6 w-6" onClick={toggleView} />
         )}
       </div>
     </div>
