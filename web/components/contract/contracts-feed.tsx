@@ -21,8 +21,11 @@ export function ContractsFeed() {
       </Col>
 
       <VisibilityObserver
+        className="relative -top-96"
         onVisibilityUpdated={(visible) => visible && loadMore()}
       />
+
+      <LoadingIndicator className="mt-4" />
 
       {contracts !== undefined && contracts.length === 0 && (
         <div className="m-4 flex w-full flex-col items-center justify-center">
