@@ -76,10 +76,8 @@ export async function setUserProperty(property: string, value: string) {
   Sprig.setAttributes({ [property]: value })
 }
 
-
 export async function setOnceUserProperty(property: string, value: string) {
   const identifyObj = new Identify()
   identifyObj.setOnce(property, value)
   await identify(identifyObj)
 }
-
