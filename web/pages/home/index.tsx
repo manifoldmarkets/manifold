@@ -202,8 +202,8 @@ const LiveSection = memo(function LiveSection() {
   return (
     <Col>
       <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
-      <div className="relative h-[700px] flex-none overflow-hidden">
-        <ActivityLog count={10} showPills className="absolute" />
+      <div className="relative block h-[370px] overflow-hidden">
+        <ActivityLog count={10} showPills={false} className="absolute" />
       </div>
     </Col>
   )
