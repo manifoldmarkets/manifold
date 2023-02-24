@@ -1,7 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
 import { Group } from 'common/group'
-import { User } from 'common/user'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useRealtimeGroupMemberIds } from 'web/hooks/use-group-supabase'
