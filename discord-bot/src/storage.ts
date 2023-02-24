@@ -1,7 +1,5 @@
 import { createClient } from 'common/lib/supabase/utils.js'
 import { config } from './constants/config.js'
-import { User } from 'discord.js'
-import { Manifold } from 'manifold-sdk'
 
 const discordIdsToApiKeys: { [k: string]: string } = {}
 type DiscordMessageMarketInfo = {
@@ -17,15 +15,6 @@ export const supabase = createClient(config.supabaseInstanceId, key)
 export const messagesHandledViaInteraction: Set<string> = new Set()
 export const channelMarkets: { [k: string]: string } = {}
 export const registerHelpMessage = `In order to bet with me go to ${config.domain}my-api-key to copy your API key and respond here with it.`
-
-export async function getAPIInstance(user: User, errorCallback?: () => void) {
-  if (!user?.id || !discordIdsToApiKeys[user.id]) {
-    errorCallback?.()
-    return null
-  }
-  const key = discordIdsToApiKeys[user.id]
-  return new Manifold(key)
-}
 
 export const userApiKey = async (discordUserId: string) => {
   const storedKey = discordIdsToApiKeys[discordUserId] ?? null
