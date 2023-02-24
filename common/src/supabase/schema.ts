@@ -637,10 +637,29 @@ export interface Database {
         }
         Returns: Json[]
       }
+      get_recommended_contracts: {
+        Args: {
+          uid: string
+          n: number
+          excluded_contract_ids: string[]
+        }
+        Returns: Json[]
+      }
       get_recommended_contracts_by_score: {
         Args: {
           uid: string
           count: number
+        }
+        Returns: {
+          data: Json
+          score: number
+        }[]
+      }
+      get_recommended_contracts_by_score_excluding: {
+        Args: {
+          uid: string
+          count: number
+          excluded_contract_ids: string[]
         }
         Returns: {
           data: Json

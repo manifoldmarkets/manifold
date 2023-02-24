@@ -671,7 +671,7 @@ as $$
   order by score desc
 $$;
 
-create or replace function get_recommended_contracts_by_score(uid text, count int)
+create or replace function get_recommended_contracts_by_score_excluding(uid text, count int, excluded_contract_ids text[])
 returns table (data jsonb, score real)
 immutable parallel safe
 language sql
@@ -682,14 +682,19 @@ as $$
   on contracts.id = contract_id
   where is_valid_contract(data)
   and data->>'outcomeType' = 'BINARY'
+  -- Not in the list of contracts to exclude.
+  and not exists (
+    select 1 from unnest(excluded_contract_ids) as w
+    where w = contract_id
+  )
   limit count
 $$;
-create or replace function get_recommended_contract_set(uid text, n int)
+create or replace function get_recommended_contracts(uid text, n int, excluded_contract_ids text[])
   returns setof jsonb
   language plpgsql
 as $$ begin
   create temp table your_recs on commit drop as (
-    select * from get_recommended_contracts_by_score(uid, n)
+    select * from get_recommended_contracts_by_score_excluding(uid, n, excluded_contract_ids)
   );
   if (select count(*) from your_recs) = n then
     return query select data from your_recs;
@@ -697,7 +702,7 @@ as $$ begin
     -- Default recommendations from this particular user if none for you.
     return query (
       select data from your_recs union all
-      select data from get_recommended_contracts_by_score('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', n)
+      select data from get_recommended_contracts_by_score_excluding('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', n, excluded_contract_ids)
       limit n
     );
   end if;
