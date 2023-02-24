@@ -17,12 +17,13 @@ import { useRouter } from 'next/router'
 import Custom404 from '../404'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { Donation } from 'web/components/charity/feed-items'
-import { manaToUSD } from 'common/util/format'
+import { formatMoney, manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
@@ -136,7 +137,7 @@ function DonationBox(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
 
-  const donateDisabled = isSubmitting || !amount || !!error
+  const donateDisabled = isSubmitting || !amount || !!error || amount < 100
 
   const onSubmit: React.FormEventHandler = async (e) => {
     if (!user || donateDisabled) return
@@ -170,7 +171,8 @@ function DonationBox(props: {
           className="mb-2 block text-sm text-gray-500"
           htmlFor="donate-input"
         >
-          Amount
+          Amount{' '}
+          <InfoTooltip text={`Minimum donation is ${formatMoney(100)}`} />
         </label>
         <BuyAmountInput
           inputClassName="w-full max-w-none donate-input"
