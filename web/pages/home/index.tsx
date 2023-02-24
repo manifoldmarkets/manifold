@@ -71,6 +71,8 @@ function HomeDashboard() {
   useRedirectIfSignedOut()
   useSaveReferral()
 
+  const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
+
   return (
     <Page>
       <Col className="w-full max-w-2xl gap-6 py-2 pb-8 sm:px-2 lg:pr-4">
@@ -81,9 +83,13 @@ function HomeDashboard() {
           <DailyStats user={user} />
         </Row>
 
-        <YourDailyUpdates />
-        <LiveSection />
-        <YourFeedSection />
+        {!dailyChangedContracts && <LoadingIndicator />}
+
+        <Col className={clsx('gap-6', !dailyChangedContracts && 'hidden')}>
+          <YourDailyUpdates contracts={dailyChangedContracts} />
+          <LiveSection />
+          <YourFeedSection />
+        </Col>
       </Col>
     </Page>
   )
@@ -93,11 +99,13 @@ function MobileHome() {
   const user = useUser()
   const { showSwipe, toggleView, isNative } = useViewToggle()
 
+  const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
+
   if (showSwipe) return <Swipe toggleView={toggleView(false)} />
 
   return (
     <Page>
-      <Col className="gap-4 py-2 pb-8 sm:px-2">
+      <Col className="gap-6 py-2 pb-8 sm:px-2">
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
           <MobileSearchButton className="flex-1" />
           <Row className="items-center gap-4">
@@ -111,8 +119,11 @@ function MobileHome() {
           </Row>
         </Row>
 
-        <YourDailyUpdates />
-        <ContractsFeed />
+        {!dailyChangedContracts && <LoadingIndicator />}
+        <Col className={clsx('gap-6', !dailyChangedContracts && 'hidden')}>
+          <YourDailyUpdates contracts={dailyChangedContracts} />
+          <ContractsFeed />
+        </Col>
       </Col>
 
       <button
@@ -198,10 +209,10 @@ const LiveSection = memo(function LiveSection() {
   )
 })
 
-const YourDailyUpdates = memo(function DailyMoversSection() {
-  const user = useUser()
-  const contracts = useYourDailyChangedContracts(db, user?.id)
-
+const YourDailyUpdates = memo(function YourDailyUpdates(props: {
+  contracts: CPMMContract[] | undefined
+}) {
+  const { contracts } = props
   if (contracts?.length === 0) return <></>
 
   return (

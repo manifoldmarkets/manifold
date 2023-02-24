@@ -1,4 +1,6 @@
+import { CPMMContract } from 'common/contract'
 import { SupabaseClient } from 'common/supabase/utils'
+import { filterDefined } from 'common/util/array'
 import { Contract } from '../firebase/contracts'
 
 export async function getYourDailyChangedContracts(
@@ -12,7 +14,12 @@ export async function getYourDailyChangedContracts(
     start: 0,
   })
 
-  return data?.map((d) => (d as any).data as Contract)
+  if (!data) return null
+
+  const contracts = filterDefined(
+    data.map((d) => (d as any).data)
+  ) as CPMMContract[]
+  return contracts
 }
 
 export async function getYourTrendingContracts(

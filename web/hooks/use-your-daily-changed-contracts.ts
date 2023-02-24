@@ -1,18 +1,17 @@
 import { useEffect } from 'react'
-import { Contract } from 'common/contract'
+import { Contract, CPMMContract } from 'common/contract'
 import {
   getYourDailyChangedContracts,
   getYourTrendingContracts,
 } from 'web/lib/supabase/contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
-import { filterDefined } from 'common/util/array'
 
 export function useYourDailyChangedContracts(
   db: SupabaseClient,
   userId: string | null | undefined
 ) {
-  const [contracts, setContracts] = usePersistentState<Contract[] | undefined>(
+  const [contracts, setContracts] = usePersistentState<CPMMContract[] | undefined>(
     undefined,
     {
       key: 'your-daily-changed-contracts',
@@ -25,7 +24,7 @@ export function useYourDailyChangedContracts(
 
     getYourDailyChangedContracts(db, userId, 7).then((contracts) => {
       if (!contracts) setContracts([])
-      else setContracts(filterDefined(contracts))
+      else setContracts(contracts)
     })
   }, [userId])
 
