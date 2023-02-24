@@ -46,6 +46,7 @@ import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-c
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { ContractCardNew } from 'web/components/contract/contract-card'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -216,6 +217,25 @@ const YourFeedSection = memo(function YourFeedSection() {
     <Col>
       <HomeSectionHeader label={'Your feed'} icon={'📖'} />
       <ContractsFeed />
+    </Col>
+  )
+})
+
+export const ContractsSection = memo(function ContractsSection(props: {
+  contracts: Contract[]
+  label: string
+  icon: string
+  className?: string
+}) {
+  const { contracts, label, icon, className } = props
+  return (
+    <Col className={className}>
+      <HomeSectionHeader label={label} icon={icon} />
+      <Col className="max-w-2xl divide-y-[0.5px] border-[0.5px]">
+        {contracts.map((contract) => (
+          <ContractCardNew key={contract.id} contract={contract} hideImage />
+        ))}
+      </Col>
     </Col>
   )
 })

@@ -551,9 +551,10 @@ export function FeaturedPill(props: { label?: string }) {
 
 export function ContractCardNew(props: {
   contract: Contract
+  hideImage?: boolean
   className?: string
 }) {
-  const { className } = props
+  const { hideImage, className } = props
   const user = useUser()
 
   const contract = useContract(props.contract.id) ?? props.contract
@@ -642,7 +643,7 @@ export function ContractCardNew(props: {
         {question}
       </div>
 
-      {coverImageUrl && (
+      {!hideImage && coverImageUrl && (
         <div className="relative h-36 lg:h-48">
           <Image
             fill
