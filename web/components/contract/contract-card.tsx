@@ -28,9 +28,7 @@ import {
   FreeResponseOutcomeLabel,
   NumericValueLabel,
 } from '../outcome-label'
-import {
-  getProbability,
-} from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { MiscDetails, ShowTime } from './contract-details'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import { getTextColor, QuickBet, QuickOutcomeView } from '../bet/quick-bet'
