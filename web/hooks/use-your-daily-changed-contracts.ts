@@ -6,6 +6,7 @@ import {
 } from 'web/lib/supabase/contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
+import { filterDefined } from 'common/util/array'
 
 export function useYourDailyChangedContracts(
   db: SupabaseClient,
@@ -23,7 +24,8 @@ export function useYourDailyChangedContracts(
     if (!userId) return
 
     getYourDailyChangedContracts(db, userId, 7).then((contracts) => {
-      setContracts(contracts)
+      if (!contracts) setContracts([])
+      else setContracts(filterDefined(contracts))
     })
   }, [userId])
 
