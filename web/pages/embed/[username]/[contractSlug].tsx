@@ -32,7 +32,6 @@ import {
   useSingleValueHistoryChartViewScale,
 } from 'web/components/charts/generic-charts'
 import { listBets } from 'web/lib/firebase/bets'
-import { SEO } from 'web/components/SEO'
 import { NoSEO } from 'web/components/NoSEO'
 import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 
