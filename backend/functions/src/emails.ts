@@ -1,6 +1,6 @@
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Bet } from 'common/bet'
-import { getProbability } from 'common/calculate'
+import { getDisplayProbability } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import {
@@ -10,10 +10,9 @@ import {
 } from 'common/util/format'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import { formatNumericProbability } from 'common/pseudo-numeric'
-
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getUser, log } from 'shared/utils'
-import { getOpenGraphProps } from 'common/contract-details'
+import { getContractOGProps } from 'common/contract-details'
 import { notification_reason_types } from 'common/notification'
 import { Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
@@ -129,7 +128,7 @@ const toDisplayResolution = (
     return resolution + ' (CERT)'
   }
   if (contract.outcomeType === 'BINARY') {
-    const prob = resolutionProbability ?? getProbability(contract)
+    const prob = getDisplayProbability(contract)
 
     const display = {
       YES: 'YES',
@@ -148,10 +147,7 @@ const toDisplayResolution = (
 
     return resolutionValue
       ? formatLargeNumber(resolutionValue)
-      : formatNumericProbability(
-          resolutionProbability ?? getProbability(contract),
-          contract
-        )
+      : formatNumericProbability(getDisplayProbability(contract), contract)
   }
 
   if (resolution === 'MKT' && resolutions) return 'MULTI'
@@ -485,7 +481,7 @@ export const sendInterestingMarketsEmail = async (
 }
 
 function imageSourceUrl(contract: Contract) {
-  return buildOgUrl(getOpenGraphProps(contract), 'market')
+  return buildOgUrl(getContractOGProps(contract), 'market')
 }
 
 export const sendNewFollowedMarketEmail = async (

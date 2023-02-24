@@ -32,6 +32,12 @@ export function getProbability(
     : getDpmProbability(contract.totalShares)
 }
 
+export function getDisplayProbability(
+  contract: BinaryContract | PseudoNumericContract
+) {
+  return contract.resolutionProbability ?? getProbability(contract)
+}
+
 export function getInitialProbability(
   contract: BinaryContract | PseudoNumericContract
 ) {

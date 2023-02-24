@@ -19,8 +19,8 @@ import { BinaryContract, Contract } from 'common/contract'
 import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { getBinaryProb } from 'common/contract-details'
 import { getLiquidity } from 'common/calculate-cpmm-multi'
+import { getDisplayProbability } from 'common/calculate'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -56,7 +56,7 @@ export function contractPool(contract: Contract) {
 }
 
 export function getBinaryProbPercent(contract: BinaryContract) {
-  return formatPercent(getBinaryProb(contract))
+  return formatPercent(getDisplayProbability(contract))
 }
 
 export function tradingAllowed(contract: Contract) {
