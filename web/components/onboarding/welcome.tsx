@@ -1,19 +1,19 @@
 import clsx from 'clsx'
-import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
 
 import { STARTING_BALANCE } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import { useABTest } from 'web/hooks/use-ab-test'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
 
 export default function Welcome() {
@@ -31,7 +31,6 @@ export default function Welcome() {
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
     <PredictionMarketPage />,
-    <WhatIsManaPage />,
     user && <ThankYouPage />,
   ])
 
@@ -77,7 +76,12 @@ export default function Welcome() {
     (user && !user.shouldShowWelcome && groupSelectorOpen) ||
     showSignedOutUser
 
-  if (!shouldShowWelcomeModals) return <></>
+  const skipWelcome = useABTest('welcome-flow', {
+    skip: true,
+    show: false,
+  })
+
+  if (skipWelcome || !shouldShowWelcomeModals) return <></>
 
   if (groupSelectorOpen)
     return (
@@ -92,9 +96,9 @@ export default function Welcome() {
       <Col className="place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:text-lg">
         {availablePages[page]}
         <Col>
-          <Row className="justify-between">
+          <Row className="mt-2 justify-between">
             <Button
-              color={'gray'}
+              color={'gray-white'}
               className={page === 0 ? 'invisible' : ''}
               onClick={decreasePage}
             >
@@ -106,7 +110,7 @@ export default function Welcome() {
           </Row>
           <span
             className={clsx(
-              'cursor-pointer self-center text-xs text-gray-500 hover:underline',
+              'mt-2 cursor-pointer self-center text-xs text-gray-500 hover:underline',
               isLastPage && 'invisible'
             )}
             onClick={close}
@@ -136,18 +140,16 @@ function WhatIsManifoldPage() {
   return (
     <>
       <img
-        className="h-2/3 w-2/3 place-self-center object-contain"
+        className="h-1/3 w-1/3 place-self-center object-contain sm:h-1/2 sm:w-1/2 "
         src="/welcome/manipurple.png"
       />
-      <Title className="text-center" children="Welcome to Manifold Markets!" />
-      <p>
-        Manifold Markets is a place where anyone can ask a question about the
-        future.
-      </p>
-      <div className="mt-4">For example,</div>
-      <div className="mt-2 font-normal text-indigo-700">
-        “Will Michelle Obama be the next president of the United States?”
+      <div className="mt-3 mb-6 to-white text-center text-xl font-normal text-indigo-700">
+        Welcome to Manifold Markets
       </div>
+      <p className="mb-4 text-lg">
+        Bet on anything and help people predict the future!
+      </p>
+      <p> </p>
     </>
   )
 }
@@ -155,62 +157,15 @@ function WhatIsManifoldPage() {
 function PredictionMarketPage() {
   return (
     <>
-      <p>
-        Your question becomes a prediction market that people can bet{' '}
-        <span className="font-normal text-indigo-700">
-          mana ({ENV_CONFIG.moneyMoniker})
-        </span>{' '}
-        on.
-      </p>
-      <div className="mt-8 font-semibold">The core idea</div>
-      <div className="mt-2">
-        If people have to put their mana where their mouth is, you’ll get a
-        pretty accurate answer!
+      <div className="mt-3 mb-6 text-center text-xl font-normal text-indigo-700">
+        How it works
+      </div>
+      <div className="mt-2 text-lg">
+        Create a market on any question. Bet on the right answer. The
+        probability is the market's best estimate.
       </div>
       <img
         src="/welcome/manifold-example.gif"
-        className="my-4 h-full w-full object-contain"
-      />
-    </>
-  )
-}
-
-export function WhatIsManaPage() {
-  return (
-    <>
-      <Title className="">What is mana ({ENV_CONFIG.moneyMoniker})?</Title>
-      <p>
-        <span className="mt-4 font-normal text-indigo-700">
-          Mana ({ENV_CONFIG.moneyMoniker})
-        </span>{' '}
-        is Manifold's play money. Use it to create and bet in markets. The more
-        mana you have, the more you can bet and move the market.
-      </p>
-      <p>
-        Mana <strong>can't be converted to real money</strong>.
-      </p>
-      <img
-        src="/logo-flapping-with-money.gif"
-        height={200}
-        width={200}
-        className="place-self-center object-contain"
-      />
-    </>
-  )
-}
-
-export function CharityPage() {
-  return (
-    <>
-      <Title children="Donate" />
-      <p className="mt-2">
-        You can turn your mana earnings into a real donation to charity, at a
-        100:1 ratio. When you donate{' '}
-        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
-        Manifold sends them <span className="font-semibold">$10 USD</span>.
-      </p>
-      <img
-        src="/welcome/charity.gif"
         className="my-4 h-full w-full object-contain"
       />
     </>
@@ -221,14 +176,20 @@ function ThankYouPage() {
   return (
     <>
       <img
-        className="mx-auto mb-8 w-[60%] object-contain"
+        className="mx-auto mb-6 h-1/2 w-1/2 object-contain"
         src={'/welcome/treasure.png'}
       />
-      <Title className="mx-auto" children="Start predicting!" />
-      <p className="text-center">As a thank you for signing up, we sent you </p>
-      <div className="mx-auto mt-2 mb-8 text-2xl font-normal text-indigo-700">
-        {formatMoney(STARTING_BALANCE)}
-      </div>
+      <div
+        className="mb-6 text-center text-xl font-normal text-indigo-700"
+        children="Start trading"
+      />
+      <p className="text-lg">
+        As a thank you for signing up, we sent you{' '}
+        {formatMoney(STARTING_BALANCE)} in play money!
+      </p>
+      <Row className={'my-3 text-sm text-gray-600'}>
+        Note that mana ({ENV_CONFIG.moneyMoniker}) can't be converted into cash.
+      </Row>
     </>
   )
 }

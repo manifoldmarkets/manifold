@@ -1,6 +1,7 @@
 import { forwardRef } from 'react'
 import { Contract } from 'common/contract'
 import Link from 'next/link'
+import clsx from 'clsx'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import { contractPath } from 'web/lib/firebase/contracts'
@@ -8,7 +9,6 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getTextColor } from '../bet/quick-bet'
 import { Avatar } from '../widgets/avatar'
-import clsx from 'clsx'
 import { ContractMinibar } from '../charts/minibar'
 import { useContract } from 'web/hooks/use-contracts'
 import { formatPercentShort } from 'common/util/format'
@@ -74,12 +74,12 @@ export const ContractsListEntry = forwardRef(
     props: {
       contract: Contract
       onContractClick?: (contract: Contract) => void
-      showProbChange?: boolean
+      skinny?: boolean
       className?: string
     },
     ref: React.Ref<HTMLAnchorElement>
   ) => {
-    const { onContractClick, showProbChange, className } = props
+    const { onContractClick, skinny, className } = props
     const contract = useContract(props.contract.id) ?? props.contract
 
     const isClosed = contract.closeTime && contract.closeTime < Date.now()
@@ -105,30 +105,24 @@ export const ContractsListEntry = forwardRef(
           avatarUrl={contract.creatorAvatarUrl}
           size="xs"
         />
-        <div className="min-w-[2rem] font-semibold">
-          <ContractStatusLabel contract={contract} />
-        </div>
-        {showProbChange && contract.mechanism === 'cpmm-1' && (
-          <div
-            className={clsx(
-              'min-w-[2rem]',
-              contract.probChanges.day >= 0
-                ? 'text-teal-500'
-                : 'text-scarlet-500'
-            )}
-          >
-            {contract.probChanges.day >= 0 ? '+' : ''}
-            {formatPercentShort(contract.probChanges.day)}
+        {!skinny && (
+          <div className="min-w-[2rem] text-right font-semibold">
+            <ContractStatusLabel contract={contract} />
           </div>
         )}
         <div
           className={clsx(
-            'break-anywhere mr-0.5 whitespace-normal font-medium',
+            'break-anywhere whitespace-normal font-medium',
             textColor
           )}
         >
           {contract.question}
         </div>
+        {skinny && (
+          <div className="ml-auto min-w-[2rem] font-semibold">
+            <ContractStatusLabel contract={contract} />
+          </div>
+        )}
       </Link>
     )
   }

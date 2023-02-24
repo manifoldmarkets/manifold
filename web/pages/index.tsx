@@ -8,8 +8,7 @@ import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { SearchSection } from './home'
-import { Sort } from 'web/components/contract-search'
+import { ContractsSection } from './home'
 import {
   DESTINY_GROUP_SLUGS,
   ENV_CONFIG,
@@ -106,11 +105,10 @@ export default function Home(props: {
           </Row>
         </Col>
 
-        <SearchSection
-          key={'score'}
+        <ContractsSection
+          className="self-center"
           label={'Trending'}
           contracts={trendingContracts}
-          sort={'score' as Sort}
           icon={'🔥'}
         />
 
@@ -173,7 +171,7 @@ export function InfoCard(props: {
         </Col>
       </Modal>
       <button
-        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-300 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all transition-colors hover:border-indigo-700"
+        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-300 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-colors hover:border-indigo-700"
         onClick={() => setOpen(true)}
       >
         <div className="text-indigo-300 transition-colors group-hover:text-indigo-700">
