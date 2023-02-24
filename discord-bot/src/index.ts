@@ -1,8 +1,7 @@
-// // For Manifold SDK
-// process.env.NODE_ENV = 'production'
-
 import { REST } from '@discordjs/rest'
 import * as console from 'console'
+import { commands } from './commands/index.js'
+
 import {
   ChatInputCommandInteraction,
   Client,
@@ -18,10 +17,7 @@ import {
   TextChannel,
   User,
 } from 'discord.js'
-import * as fs from 'fs'
-import * as path from 'path'
 import * as process from 'process'
-import { fileURLToPath } from 'url'
 import { config } from './constants/config.js'
 import { getAnyHandledEmojiKey } from './emojis.js'
 import { getOpenBinaryMarketFromSlug, handleReaction } from './helpers.js'
@@ -31,40 +27,19 @@ import {
   getMarketInfoFromMessageId,
   messagesHandledViaInteraction,
 } from './storage.js'
-
 const { id: clientId } = config.client
 const token = process.env.DISCORD_BOT_TOKEN
 if (!token) throw new Error('No DISCORD_BOT_TOKEN env var set.')
-export const commands = new Collection<
+export const commandsCollection = new Collection<
   string,
   {
     data: SlashCommandBuilder
     execute: (interaction: ChatInputCommandInteraction) => Promise<any>
   }
 >()
-const readCommandsFromFiles = async () => {
-  // Load commands
-  console.log('Loading commands... ')
-  const commandsPath = path.join(
-    path.dirname(fileURLToPath(import.meta.url)),
-    'commands'
-  )
-  const extension = commandsPath.includes('lib') ? '.js' : '.ts'
-  console.log('Commands path: ', commandsPath)
-  const commandFiles = fs
-    .readdirSync(commandsPath)
-    .filter((file: string) => file.endsWith(extension))
-
-  for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file)
-    const command = await import(filePath)
-    // Set a new item in the Collection
-    // With the key as the command name and the value as the exported module
-    commands.set(command.data.name, command)
-  }
-  console.log('Read commands from files')
-}
-await readCommandsFromFiles()
+await Promise.all(
+  commands.map(async (c) => commandsCollection.set(c.data.name, c))
+)
 
 const rest = new REST({ version: '10' }).setToken(token)
 
@@ -90,7 +65,7 @@ client.once(Events.ClientReady, () => {
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return
 
-  const command = commands.get(interaction.commandName)
+  const command = commandsCollection.get(interaction.commandName)
   if (!command) return
 
   try {
@@ -110,11 +85,13 @@ console.log('Logged in')
 process.stdout.write('Refreshing slash commands... ')
 try {
   await rest.put(Routes.applicationCommands(clientId), {
-    body: commands.mapValues((c) => c.data.toJSON()),
+    body: commandsCollection.mapValues((c) => c.data.toJSON()),
   })
 
   console.log(
-    `${[...commands.values()].map((x) => '/' + x.data.name).join(', ')}`
+    `${[...commandsCollection.values()]
+      .map((x) => '/' + x.data.name)
+      .join(', ')}`
   )
 } catch (error) {
   console.log('ERROR')

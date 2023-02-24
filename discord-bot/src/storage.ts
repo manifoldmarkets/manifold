@@ -16,8 +16,7 @@ if (!key) throw new Error('No SUPABASE_KEY env var set.')
 export const supabase = createClient(config.supabaseInstanceId, key)
 export const messagesHandledViaInteraction: Set<string> = new Set()
 export const channelMarkets: { [k: string]: string } = {}
-export const registerHelpMessage =
-  'In order to bet with me go to https://manifold.markets/my-api-key to copy your API key and respond here with it.'
+export const registerHelpMessage = `In order to bet with me go to ${config.domain}my-api-key to copy your API key and respond here with it.`
 
 export async function getAPIInstance(user: User, errorCallback?: () => void) {
   if (!user?.id || !discordIdsToApiKeys[user.id]) {

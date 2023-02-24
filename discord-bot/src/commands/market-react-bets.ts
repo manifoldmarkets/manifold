@@ -1,4 +1,5 @@
 import { FullMarket } from 'common/api-market-types'
+import { config } from '../constants/config.js'
 import {
   AttachmentBuilder,
   ChatInputCommandInteraction,
@@ -20,7 +21,7 @@ import {
   saveMarketToMessageId,
 } from '../storage.js'
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
   .setName('market')
   .setDescription('Link to a market that other users can bet on with reactions')
   .addStringOption((option) =>
@@ -28,13 +29,13 @@ export const data = new SlashCommandBuilder()
       .setName('link')
       .setDescription('The link to the market to bet on')
       .setRequired(true)
-  )
+  ) as SlashCommandBuilder
 
-export async function execute(interaction: ChatInputCommandInteraction) {
+async function execute(interaction: ChatInputCommandInteraction) {
   const link = interaction.options.getString('link')
-  if (!link || !link.startsWith('https://manifold.markets/')) {
+  if (!link || !link.startsWith(config.domain)) {
     await interaction.reply(
-      'You must specify a market link starting with https://manifold.markets/'
+      `You must specify a market link starting with ${config.domain}`
     )
     return
   }
@@ -137,4 +138,9 @@ const sendMarketIntro = async (
   }
 
   return message
+}
+
+export const marketCommand = {
+  data,
+  execute,
 }

@@ -1,6 +1,7 @@
 import { FullMarket } from 'common/api-market-types'
 import { randomString } from 'common/lib/util/random.js'
 import * as console from 'console'
+import { config } from './constants/config.js'
 import {
   EmbedBuilder,
   Message,
@@ -120,7 +121,7 @@ export const handleBet = async (
 
     const outcome = sale ? (buyOutcome === 'YES' ? 'NO' : 'YES') : buyOutcome
     // send json post request to api
-    const resp = await fetch('https://manifold.markets/api/v0/bet', {
+    const resp = await fetch(`${config.domain}api/v0/bet`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -235,7 +236,7 @@ export const getSlug = (link: string) => {
 }
 
 export const getMarketFromSlug = async (slug: string) => {
-  const resp = await fetch(`https://manifold.markets/api/v0/slug/${slug}`)
+  const resp = await fetch(`${config.domain}api/v0/slug/${slug}`)
   if (!resp.ok) {
     throw new Error('Market not found with slug: ' + slug)
   }

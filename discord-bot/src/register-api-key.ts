@@ -1,4 +1,5 @@
 import { User } from 'common/user'
+import { config } from './constants/config.js'
 import { Message } from 'discord.js'
 import { writeApiKeyToDiscordUserId } from './storage.js'
 
@@ -6,14 +7,14 @@ export const registerApiKey = async (message: Message) => {
   const key = message.content.trim()
   if (key.length !== 36) {
     await message.reply(
-      'API key should be 36 characters long, find it at https://manifold.markets/my-api-key'
+      `API key should be 36 characters long, find it at ${config.domain}my-api-key`
     )
     return
   }
   const p1 = message.reply({
     content: 'Checking API key...',
   })
-  const p2 = fetch('https://manifold.markets/api/v0/me', {
+  const p2 = fetch(`${config.domain}api/v0/me`, {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Key ${key}`,
@@ -27,7 +28,7 @@ export const registerApiKey = async (message: Message) => {
   const [_, me] = await Promise.all([p1, p2])
   if (!me || !me.name) {
     await message.reply(
-      `Encountered an error using that API key to connect to Manifold -- find yours at https://manifold.markets/my-api-key`
+      `Encountered an error using that API key to connect to Manifold -- find yours at ${config.domain}my-api-key`
     )
     return
   }

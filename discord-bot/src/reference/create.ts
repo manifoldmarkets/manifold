@@ -1,3 +1,4 @@
+import { config } from 'discord-bot/constants/config'
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js'
 import { CreateMarketArgs } from 'manifold-sdk'
 import { channelMarkets, getAPIInstance } from '../storage.js'
@@ -117,7 +118,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (channel) channelMarkets[channel] = market.id
     await interaction.editReply(
       `Successfully created the market ${market.question} with ID ${market.id}.` +
-        `\n<https://manifold.markets/${market.creatorName}/${market.slug}>` +
+        `\n<${config.domain}${market.creatorName}/${market.slug}>` +
         (channel ? `\nThis market is now the default for <#${channel}>.` : '')
     )
   } catch (e) {
