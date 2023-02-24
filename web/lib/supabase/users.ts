@@ -48,18 +48,18 @@ export async function searchUsers(prompt: string, limit: number) {
   )
 }
 
-export async function searchUsersExcludingArray(
+export async function searchUsersNotInGroup(
   prompt: string,
   limit: number,
-  excludingArray: string[]
+  groupId: string
 ) {
-  const excludingArrayString =
-    '(' + excludingArray.map((item) => `${item},`) + ')'
   if (prompt === '') {
     const { data } = await run(
-      selectFrom(db, 'users', 'id', 'name', 'username', 'avatarUrl')
-        .not('id', 'in', excludingArrayString)
-        .order('data->followerCountCached', { ascending: false } as any)
+      db
+        .from('user_groups')
+        .select('*')
+        .not('groups', 'cs', `{${groupId}}`)
+        .order('follower_count', { ascending: false })
         .limit(limit)
     )
     return data
@@ -68,30 +68,30 @@ export async function searchUsersExcludingArray(
   const [{ data: exactData }, { data: prefixData }, { data: containsData }] =
     await Promise.all([
       run(
-        selectFrom(db, 'users', 'id', 'name', 'username', 'avatarUrl')
-          .not('id', 'in', excludingArrayString)
-          .or(`data->>username.ilike.${prompt},data->>name.ilike.${prompt}`)
-          .order('data->followerCountCached', { ascending: false } as any)
+        db
+          .from('user_groups')
+          .select('*')
+          .not('groups', 'cs', `{${groupId}}`)
+          .or(`username.ilike.${prompt},name.ilike.${prompt}`)
+          .order('follower_count')
           .limit(limit)
       ),
       run(
-        selectFrom(db, 'users', 'id', 'name', 'username', 'avatarUrl')
-          .not('id', 'in', excludingArrayString)
-          .or(`data->>username.ilike.${prompt}%,data->>name.ilike.${prompt}%`)
-          .order('data->lastBetTime', {
-            ascending: false,
-            nullsFirst: false,
-          } as any)
+        db
+          .from('user_groups')
+          .select('*')
+          .not('groups', 'cs', `{${groupId}}`)
+          .or(`username.ilike.${prompt}%,name.ilike.${prompt}%`)
+          .order('follower_count')
           .limit(limit)
       ),
       run(
-        selectFrom(db, 'users', 'id', 'name', 'username', 'avatarUrl')
-          .not('id', 'in', excludingArrayString)
-          .or(`data->>username.ilike.%${prompt}%,data->>name.ilike.%${prompt}%`)
-          .order('data->lastBetTime', {
-            ascending: false,
-            nullsFirst: false,
-          } as any)
+        db
+          .from('user_groups')
+          .select('*')
+          .not('groups', 'cs', `{${groupId}}`)
+          .or(`username.ilike.%${prompt}%,name.ilike.%${prompt}%`)
+          .order('follower_count')
           .limit(limit)
       ),
     ])
