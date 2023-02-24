@@ -70,25 +70,17 @@ export const ContractOverview = memo(
   }
 )
 
-const OverviewQuestion = (props: { text: string }) => (
-  <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
-)
-
 const NumericOverview = (props: { contract: NumericContract }) => {
   const { contract } = props
   return (
-    <Col className="gap-1 md:gap-2">
-      <Col className="gap-3 px-2 sm:gap-4">
-        <ContractDetails contract={contract} />
-        <OverviewQuestion text={contract.question} />
-        <NumericResolutionOrExpectation contract={contract} />
-      </Col>
+    <>
+      <NumericResolutionOrExpectation contract={contract} />
       <SizedContainer fullHeight={250} mobileHeight={150}>
         {(w, h) => (
           <NumericContractChart width={w} height={h} contract={contract} />
         )}
       </SizedContainer>
-    </Col>
+    </>
   )
 }
 
@@ -103,20 +95,16 @@ const BinaryOverview = (props: {
     useTimePicker(contract)
 
   return (
-    <Col className="gap-1 md:gap-2">
-      <Col className="gap-3 px-2 sm:gap-4">
-        <ContractDetails contract={contract} />
-        <OverviewQuestion text={contract.question} />
-        <Row className="items-end justify-between gap-4">
-          <BinaryResolutionOrChance contract={contract} />
-          <TimeRangePicker
-            currentTimePeriod={currentTimePeriod}
-            setCurrentTimePeriod={setTimePeriod}
-            maxRange={maxRange}
-            color="green"
-          />
-        </Row>
-      </Col>
+    <>
+      <Row className="items-end justify-between gap-4">
+        <BinaryResolutionOrChance contract={contract} />
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={setTimePeriod}
+          maxRange={maxRange}
+          color="green"
+        />
+      </Row>
       <SizedContainer fullHeight={250} mobileHeight={150}>
         {(w, h) => (
           <BinaryContractChart
@@ -141,7 +129,7 @@ const BinaryOverview = (props: {
         </Col>
       )}
       {user === undefined && <div className="h-[72px] w-full" />}
-    </Col>
+    </>
   )
 }
 
@@ -150,22 +138,15 @@ const ChoiceOverview = (props: {
   bets: Bet[]
 }) => {
   const { contract, bets } = props
-  const { question, resolution } = contract
+  const { resolution } = contract
 
   return (
-    <Col className="gap-1 md:gap-2">
-      <Col className="gap-3 px-2 sm:gap-4">
-        <ContractDetails contract={contract} />
-        <OverviewQuestion text={question} />
-        {resolution && (
-          <Row>
-            <FreeResponseResolutionOrChance
-              contract={contract}
-              truncate="none"
-            />
-          </Row>
-        )}
-      </Col>
+    <>
+      {resolution && (
+        <Row>
+          <FreeResponseResolutionOrChance contract={contract} truncate="none" />
+        </Row>
+      )}
 
       <SizedContainer fullHeight={350} mobileHeight={250}>
         {(w, h) => (
@@ -177,7 +158,7 @@ const ChoiceOverview = (props: {
           />
         )}
       </SizedContainer>
-    </Col>
+    </>
   )
 }
 
@@ -191,20 +172,16 @@ const PseudoNumericOverview = (props: {
   const user = useUser()
 
   return (
-    <Col className="gap-1 md:gap-2">
-      <Col className="gap-3 px-2 sm:gap-4">
-        <ContractDetails contract={contract} />
-        <OverviewQuestion text={contract.question} />
-        <Row className="items-end justify-between gap-4">
-          <PseudoNumericResolutionOrExpectation contract={contract} />
-          <TimeRangePicker
-            currentTimePeriod={currentTimePeriod}
-            setCurrentTimePeriod={setTimePeriod}
-            maxRange={maxRange}
-            color="indigo"
-          />
-        </Row>
-      </Col>
+    <>
+      <Row className="items-end justify-between gap-4">
+        <PseudoNumericResolutionOrExpectation contract={contract} />
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={setTimePeriod}
+          maxRange={maxRange}
+          color="indigo"
+        />
+      </Row>
       <SizedContainer fullHeight={250} mobileHeight={150}>
         {(w, h) => (
           <PseudoNumericContractChart
@@ -229,7 +206,7 @@ const PseudoNumericOverview = (props: {
         </Col>
       )}
       {user === undefined && <div className="h-[72px] w-full" />}
-    </Col>
+    </>
   )
 }
 
