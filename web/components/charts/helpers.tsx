@@ -241,13 +241,7 @@ export const SVGChart = <X, TT>(props: {
   }
 
   return (
-    <div
-      className="relative overflow-hidden"
-      style={{
-        marginRight: -margin.right,
-        marginLeft: -margin.left,
-      }}
-    >
+    <div className="relative overflow-hidden">
       {ttParams && Tooltip && (
         <TooltipContainer
           setElem={tooltipMeasure.setElem}
