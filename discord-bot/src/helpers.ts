@@ -1,4 +1,5 @@
 import { FullMarket } from 'common/api-market-types'
+import { randomString } from 'common/lib/util/random.js'
 import * as console from 'console'
 import {
   EmbedBuilder,
@@ -14,17 +15,24 @@ import {
   getBetEmojiKey,
   getBettingEmojisAsStrings,
 } from './emojis.js'
-import { registerHelpMessage, userApiKey } from './storage.js'
+import {
+  registerHelpMessage,
+  saveThreadIdToMessageId,
+  updateThreadLastUpdatedTime,
+  userApiKey,
+} from './storage.js'
 
-const discordThreads: { [key: string]: ThreadChannel } = {}
+const discordMessageIdsToThreads: { [key: string]: ThreadChannel } = {}
 
 export const handleReaction = async (
   reaction: MessageReaction,
   user: User,
   channel: TextChannel,
-  market: FullMarket
+  market: FullMarket,
+  threadId?: string
 ) => {
   const { name } = reaction.emoji
+  const messageId = reaction.message.id
   console.log(`Collected ${name} from user id: ${user.id}`)
   if (!getAnyHandledEmojiKey(reaction)) {
     console.log('Not a handled emoji')
@@ -33,7 +41,15 @@ export const handleReaction = async (
   // Market description
   if (name === 'ℹ️') {
     const content = `Market details: ${market.textDescription}`
-    await sendThreadMessage(channel, market, content, user, true)
+    await sendThreadMessage(
+      channel,
+      market,
+      content,
+      user,
+      messageId,
+      threadId,
+      true
+    )
     return
   }
 
@@ -59,19 +75,8 @@ export const handleReaction = async (
       : reaction.message
   if (!message) return
 
-  const closed = (market.closeTime ?? 0) <= Date.now()
-  if (closed) {
-    await sendThreadMessage(
-      channel,
-      market,
-      getCurrentMarketDescription(market),
-      user
-    )
-    await updateMarketStatus(message, market)
-    return
-  }
   // Attempt to place a bet
-  await handleBet(reaction, user, channel, message, market)
+  await handleBet(reaction, user, channel, message, market, threadId)
 }
 
 export const handleBet = async (
@@ -80,10 +85,12 @@ export const handleBet = async (
   channel: TextChannel,
   message: Message,
   market: FullMarket,
+  threadId?: string,
   sale?: boolean
 ) => {
   const emojiKey = getBetEmojiKey(reaction)
   if (!emojiKey) return
+  const messageId = reaction.message.id
   const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
   console.log('betting', amount, buyOutcome, 'on', market.id, 'for', user.tag)
   try {
@@ -127,7 +134,14 @@ export const handleBet = async (
     })
     if (!resp.ok) {
       const content = `Error: ${resp.statusText}`
-      await sendThreadMessage(channel, market, content, user)
+      await sendThreadMessage(
+        channel,
+        market,
+        content,
+        user,
+        messageId,
+        threadId
+      )
       return
     }
     const bet = await resp.json()
@@ -138,11 +152,11 @@ export const handleBet = async (
       newProb * 100
     )}%`
     market.probability = newProb
-    await sendThreadMessage(channel, market, content, user)
+    await sendThreadMessage(channel, market, content, user, messageId, threadId)
     await updateMarketStatus(message, market)
   } catch (e) {
     const content = `Error: ${e}`
-    await sendThreadMessage(channel, market, content, user)
+    await sendThreadMessage(channel, market, content, user, messageId, threadId)
   }
 }
 const currentProbText = (prob: number) =>
@@ -168,21 +182,28 @@ const updateMarketStatus = async (message: Message, market: FullMarket) => {
   await message.edit({ embeds: [marketEmbed], files: [] })
 }
 
-const getThread = async (
+const getOrCreateThread = async (
   channel: TextChannel,
   marketName: string,
-  title?: string
+  messageId: string,
+  threadId?: string
 ) => {
-  const name = marketName.slice(0, 40) + '...'
-  if (discordThreads[name]) return discordThreads[name]
-  let thread = channel.threads.cache.find((x) => x.name === name)
-  if (thread) return thread
-  thread = await channel.threads.create({
+  const name = marketName.slice(0, 40) + '-' + randomString(5)
+  if (discordMessageIdsToThreads[messageId])
+    return discordMessageIdsToThreads[messageId]
+  if (threadId) {
+    await channel.threads.fetch({ active: true }, { cache: true })
+    const thread = channel.threads.cache.find((t) => t.id === threadId)
+    if (thread) return thread
+  }
+
+  const thread = await channel.threads.create({
     name,
     autoArchiveDuration: 60,
-    reason: 'Activity feed for market: ' + title ?? name,
+    reason: 'Activity feed for market: ' + name,
   })
-  discordThreads[name] = thread
+  discordMessageIdsToThreads[messageId] = thread
+  await saveThreadIdToMessageId(messageId, thread.id)
   return thread
 }
 
@@ -191,23 +212,22 @@ export const sendThreadMessage = async (
   market: FullMarket,
   content: string,
   user: User,
+  messageId: string,
+  threadId?: string,
   addUserToThread?: boolean
 ) => {
-  const thread = await getThread(channel, market.question)
+  // get the thread id from supabase if we have one
+  const thread = await getOrCreateThread(
+    channel,
+    market.question,
+    messageId,
+    threadId
+  )
   await Promise.all([
     thread.send(content),
     addUserToThread ? thread.members.add(user) : Promise.resolve(),
+    updateThreadLastUpdatedTime(messageId),
   ])
-}
-
-export const sendThreadErrorMessage = async (
-  channel: TextChannel,
-  marketSlug: string,
-  content: string,
-  user: User
-) => {
-  const thread = await getThread(channel, marketSlug)
-  await Promise.all([thread.members.add(user), thread.send(content)])
 }
 
 export const getSlug = (link: string) => {

@@ -15,7 +15,10 @@ import {
   getSlug,
   handleReaction,
 } from '../helpers.js'
-import { messagesHandledViaInteraction } from '../storage.js'
+import {
+  messagesHandledViaInteraction,
+  saveMarketToMessageId,
+} from '../storage.js'
 
 export const data = new SlashCommandBuilder()
   .setName('market')
@@ -52,6 +55,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (!market) return
 
   const message = await sendMarketIntro(interaction, market)
+  const channel = interaction.channel as TextChannel
+  await saveMarketToMessageId(message.id, market.id, slug, channel.id)
 
   const filter = (reaction: MessageReaction, user: User) => {
     if (user.id === message.author.id) return false
@@ -59,7 +64,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   const collector = message.createReactionCollector({ filter, dispose: true })
-  const channel = interaction.channel as TextChannel
   collector.on('collect', async (reaction, user) => {
     await handleReaction(reaction, user, channel, market)
   })

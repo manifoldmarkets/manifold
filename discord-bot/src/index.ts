@@ -7,7 +7,6 @@ import {
   ChatInputCommandInteraction,
   Client,
   Collection,
-  EmbedBuilder,
   Events,
   GatewayIntentBits,
   MessageReaction,
@@ -25,15 +24,13 @@ import * as process from 'process'
 import { fileURLToPath } from 'url'
 import { config } from './constants/config.js'
 import { getAnyHandledEmojiKey } from './emojis.js'
-import {
-  getMarketFromSlug,
-  getSlug,
-  handleReaction,
-  sendThreadErrorMessage,
-} from './helpers.js'
+import { getOpenBinaryMarketFromSlug, handleReaction } from './helpers.js'
 import { registerApiKey } from './register-api-key.js'
 import { startListener } from './server.js'
-import { messagesHandledViaInteraction } from './storage.js'
+import {
+  getMarketInfoFromMessageId,
+  messagesHandledViaInteraction,
+} from './storage.js'
 
 const { id: clientId } = config.client
 const token = process.env.DISCORD_BOT_TOKEN
@@ -130,6 +127,9 @@ const handleOldReaction = async (
   const ignore = messagesHandledViaInteraction.has(pReaction.message.id)
   console.log(`ignoring reaction:${ignore}`)
   if (ignore) return
+  const marketInfo = await getMarketInfoFromMessageId(pReaction.message.id)
+  console.log('got market info from supabase', marketInfo)
+  if (!marketInfo) return
 
   console.log('checking old reaction for proper details')
 
@@ -143,17 +143,6 @@ const handleOldReaction = async (
     : pReaction
   if (!reaction) return
   console.log('got reaction emoji id', reaction.emoji.id)
-  console.log('message is partial:', reaction.message.partial)
-  const message = reaction.message.partial
-    ? await reaction.message
-        .fetch()
-        .then((m) => m)
-        .catch((e) => {
-          console.log('Failed to fetch message', e)
-        })
-    : reaction.message
-  if (!message) return
-  console.log('got old message id', message.id)
   const emojiKey = getAnyHandledEmojiKey(reaction)
   console.log('got emoji key', emojiKey)
   if (!emojiKey) return
@@ -169,47 +158,29 @@ const handleOldReaction = async (
   if (!user) return
 
   const channel = await client.channels
-    .fetch(message.channelId)
+    .fetch(marketInfo.channel_id)
     .then((c) => c)
     .catch((e) => {
       console.log('Failed to fetch channel', e)
     })
   console.log('got channel', channel?.id)
   if (!channel || !channel.isTextBased()) return
-  console.log('message embeds: ', message.embeds.length)
-  const fetchedMessage = await reaction.message.fetch()
-  console.log('fetched message embeds:', fetchedMessage.embeds.length)
 
-  const marketEmbed = EmbedBuilder.from(message.embeds[0])
-  console.log('got market embed json:', marketEmbed.toJSON())
-  const link = marketEmbed.toJSON().url
-  console.log('got link', link)
-  if (!link || !link.startsWith('https://manifold.markets/')) return
-
-  const slug = getSlug(link)
-  console.log('got slug', slug)
-  if (!slug) {
-    await sendThreadErrorMessage(
-      channel as TextChannel,
-      `Slug-not-found-error-${link}`,
-      'Could not find market slug in message',
-      user as User
-    )
-    return
-  }
-
-  const market = await getMarketFromSlug(slug).catch((error) => {
-    sendThreadErrorMessage(
-      channel as TextChannel,
-      `Error-${slug}`,
-      error.message,
-      user as User
-    )
+  const market = await getOpenBinaryMarketFromSlug(
+    marketInfo.market_slug
+  ).catch((e) => {
+    console.log('Failed to fetch market', e)
   })
-  console.log('got market url', market?.url)
   if (!market) return
+  console.log('got market', market.url)
 
-  await handleReaction(reaction, user, channel as TextChannel, market)
+  await handleReaction(
+    reaction,
+    user,
+    channel as TextChannel,
+    market,
+    marketInfo.thread_id
+  )
 }
 
 client.on(Events.MessageReactionAdd, handleOldReaction)
