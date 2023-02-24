@@ -32,6 +32,9 @@ import {
   useSingleValueHistoryChartViewScale,
 } from 'web/components/charts/generic-charts'
 import { listBets } from 'web/lib/firebase/bets'
+import { SEO } from 'web/components/SEO'
+import { NoSEO } from 'web/components/NoSEO'
+import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 
 type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
@@ -113,6 +116,8 @@ export default function ContractEmbedPage(props: {
   // return (height < 250px) ? Card : SmolView
   return (
     <>
+      <NoSEO />
+      <ContractSEO contract={contract} />
       <div className="contents [@media(min-height:250px)]:hidden">
         <ContractCard
           contract={contract}

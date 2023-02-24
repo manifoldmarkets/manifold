@@ -52,9 +52,7 @@ export const getOpenGraphProps = (
     outcomeType === 'PSEUDO_NUMERIC'
       ? getFormattedMappedValue(
           contract,
-          contract.resolutionProbability
-            ? contract.resolutionProbability
-            : getProbability(contract)
+          contract.resolutionProbability ?? getProbability(contract)
         )
       : undefined
 
@@ -84,18 +82,20 @@ export type OgCardProps = {
   points?: string // base64ified points
 }
 
-export function getSeoDescription(contract: Contract, ogProps: OgCardProps) {
+export function getSeoDescription(contract: Contract) {
   const { description: desc, resolution } = contract
-  const { probability, numericValue } = ogProps
 
   const stringDesc = typeof desc === 'string' ? desc : richTextToString(desc)
 
   const prefix = resolution
     ? `Resolved ${resolution}. `
-    : probability
-    ? `${probability} chance. `
-    : numericValue
-    ? `${numericValue} expected. `
+    : contract.outcomeType === 'BINARY'
+    ? `${formatPercent(getBinaryProb(contract))} chance. `
+    : contract.outcomeType === 'PSEUDO_NUMERIC'
+    ? `${getFormattedMappedValue(
+        contract,
+        contract.resolutionProbability ?? getProbability(contract)
+      )} expected. `
     : ''
 
   return prefix + stringDesc

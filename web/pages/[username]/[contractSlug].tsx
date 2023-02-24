@@ -257,14 +257,7 @@ export function ContractPageContent(
     [props.historyData.points, newBets]
   )
 
-  const {
-    isResolved,
-    question,
-    outcomeType,
-    resolution,
-    closeTime,
-    creatorId,
-  } = contract
+  const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
 
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
@@ -275,12 +268,6 @@ export function ContractPageContent(
   )
 
   const allowTrade = tradingAllowed(contract)
-
-  const ogCardProps = removeUndefinedProps({
-    ...getOpenGraphProps(contract),
-    points: pointsString,
-  })
-  const seoDesc = getSeoDescription(contract, ogCardProps)
 
   useSaveReferral(user, {
     defaultReferrerUsername: contract.creatorUsername,
@@ -313,14 +300,7 @@ export function ContractPageContent(
         )
       }
     >
-      {ogCardProps && (
-        <SEO
-          title={question}
-          description={seoDesc}
-          url={`/${contract.creatorUsername}/${contract.slug}`}
-          ogProps={{ props: ogCardProps, endpoint: 'market' }}
-        />
-      )}
+      <ContractSEO contract={contract} points={pointsString} />
       {creatorTwitter && (
         <Head>
           <meta name="twitter:creator" content={`@${creatorTwitter}`} />
@@ -441,6 +421,30 @@ export function ContractPageContent(
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
+  )
+}
+
+export function ContractSEO(props: {
+  contract: Contract
+  /** Base64 encoded points */
+  points?: string
+}) {
+  const { contract, points } = props
+  const { question, creatorUsername, slug } = contract
+
+  const seoDesc = getSeoDescription(contract)
+  const ogCardProps = removeUndefinedProps({
+    ...getOpenGraphProps(contract),
+    points,
+  })
+
+  return (
+    <SEO
+      title={question}
+      description={seoDesc}
+      url={`/${creatorUsername}/${slug}`}
+      ogProps={{ props: ogCardProps, endpoint: 'market' }}
+    />
   )
 }
 
