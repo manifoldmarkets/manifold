@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
@@ -27,7 +28,13 @@ import { UserLink } from './widgets/user-link'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie']
 
-export function ActivityLog(props: { count: number; showPills: boolean }) {
+export function ActivityLog(props: {
+  count: number
+  showPills: boolean
+  className?: string
+}) {
+  const { count, showPills, className } = props
+
   const privateUser = usePrivateUser()
   const user = useUser()
 
@@ -64,7 +71,6 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
   )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
-  const { count, showPills } = props
   const rawBets = useLiveBets(count * 3 + 20, {
     filterRedemptions: true,
     filterAntes: true,
@@ -147,27 +153,34 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
   if (!allLoaded) return <LoadingIndicator />
 
   return (
-    <Col className="gap-4">
+    <Col className={clsx('gap-4', className)}>
       {showPills && (
         <Row className="mx-2 gap-2 sm:mx-0">
-          <PillButton selected={pill === 'all'} onSelect={() => setPill('all')}>
+          <PillButton
+            selected={pill === 'all'}
+            onSelect={() => setPill('all')}
+            xs
+          >
             All
           </PillButton>
           <PillButton
             selected={pill === 'markets'}
             onSelect={() => setPill('markets')}
+            xs
           >
             Markets
           </PillButton>
           <PillButton
             selected={pill === 'comments'}
             onSelect={() => setPill('comments')}
+            xs
           >
             Comments
           </PillButton>
           <PillButton
             selected={pill === 'trades'}
             onSelect={() => setPill('trades')}
+            xs
           >
             Trades
           </PillButton>
