@@ -1,12 +1,13 @@
 import { uniqBy } from 'lodash'
 import { CPMMBinaryContract } from 'common/contract'
 import { User } from 'common/user'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
 import { db } from 'web/lib/supabase/db'
 import { buildArray } from 'common/util/array'
 import { usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
+import { useEvent } from './use-event'
 
 const PAGE_SIZE = 20
 
@@ -21,7 +22,7 @@ export const useFeed = (user: User | null | undefined, key: string) => {
   const privateUser = usePrivateUser()
   const userId = user?.id
 
-  const loadMore = useCallback(() => {
+  const loadMore = useEvent(() => {
     if (userId) {
       db.rpc('get_recommended_contracts' as any, {
         uid: userId,
@@ -36,7 +37,7 @@ export const useFeed = (user: User | null | undefined, key: string) => {
         )
       })
     }
-  }, [userId, setSavedContracts, privateUser])
+  })
 
   useEffect(() => {
     loadMore()
