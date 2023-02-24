@@ -7,7 +7,7 @@ import { invokeFunction, loadPaginated } from 'shared/utils'
 import { newEndpointNoAuth } from '../api/helpers'
 import { getMarketRecommendations } from 'common/recommendation'
 import { run } from 'common/supabase/utils'
-import { mapAsync } from 'common/util/promise'
+import { mapAsyncChunked } from 'common/util/promise'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
@@ -83,7 +83,7 @@ export const loadUserDataForRecommendations = async () => {
 
   console.log('Loaded', userIds.length, 'users')
 
-  return await mapAsync(
+  return await mapAsyncChunked(
     userIds,
     async (userId) => {
       const betOnIds = (
