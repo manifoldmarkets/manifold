@@ -1,6 +1,6 @@
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Bet } from 'common/bet'
-import { getDisplayProbability } from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import {
@@ -128,7 +128,7 @@ const toDisplayResolution = (
     return resolution + ' (CERT)'
   }
   if (contract.outcomeType === 'BINARY') {
-    const prob = getDisplayProbability(contract)
+    const prob = resolutionProbability ?? getProbability(contract)
 
     const display = {
       YES: 'YES',
@@ -147,7 +147,10 @@ const toDisplayResolution = (
 
     return resolutionValue
       ? formatLargeNumber(resolutionValue)
-      : formatNumericProbability(getDisplayProbability(contract), contract)
+      : formatNumericProbability(
+          resolutionProbability ?? getProbability(contract),
+          contract
+        )
   }
 
   if (resolution === 'MKT' && resolutions) return 'MULTI'
