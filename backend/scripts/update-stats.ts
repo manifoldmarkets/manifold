@@ -2,7 +2,7 @@ import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
 import { log, logMemory } from 'shared/utils'
-import { updateStatsCore } from 'functions/update-stats'
+import { updateStatsCore } from 'functions/scheduled/update-stats'
 
 async function updateStats() {
   logMemory()

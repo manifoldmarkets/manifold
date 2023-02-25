@@ -7,11 +7,16 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 import { range, zip, uniq, sum, sumBy, countBy } from 'lodash'
-import { log, logMemory } from 'shared/utils'
+import { loadPaginated, log, logMemory } from 'shared/utils'
 import { Stats } from 'common/stats'
 import { DAY_MS } from 'common/util/time'
 import { average, median } from 'common/util/math'
 import { mapAsync } from 'common/util/promise'
+import { User } from 'common/user'
+import { Query } from 'firebase-admin/firestore'
+import { Contract } from 'common/contract'
+import { Comment } from 'common/comment'
+import { Bet } from 'common/bet'
 
 const firestore = admin.firestore()
 
@@ -29,7 +34,7 @@ const getBetsQuery = (startTime: number, endTime: number) =>
     .where('createdTime', '>=', startTime)
     .where('createdTime', '<', endTime)
     .orderBy('createdTime', 'asc')
-    .select('createdTime', 'userId', 'amount')
+    .select('createdTime', 'userId', 'amount') as Query<Bet>
 
 export async function getDailyBets(startTime: number, numberOfDays: number) {
   const queries = range(0, numberOfDays).map((days) => {
@@ -38,11 +43,11 @@ export async function getDailyBets(startTime: number, numberOfDays: number) {
   })
 
   const betsByDay = await mapAsync(queries, async (q) => {
-    return (await q.get()).docs.map((d) => ({
-      id: d.id,
-      userId: d.get('userId'),
-      ts: d.get('createdTime'),
-      amount: d.get('amount'),
+    return (await loadPaginated(q)).map((b) => ({
+      id: b.id,
+      userId: b.userId,
+      ts: b.createdTime,
+      amount: b.amount,
     }))
   })
   return betsByDay
@@ -54,19 +59,19 @@ const getCommentsQuery = (startTime: number, endTime: number) =>
     .where('createdTime', '>=', startTime)
     .where('createdTime', '<', endTime)
     .orderBy('createdTime', 'asc')
-    .select('createdTime', 'userId')
+    .select('createdTime', 'userId') as Query<Comment>
 
 export async function getDailyComments(
   startTime: number,
   numberOfDays: number
 ) {
   const query = getCommentsQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const comments = (await query.get()).docs
+  const comments = await loadPaginated(query)
 
   const commentsByDay = range(0, numberOfDays).map(() => [] as StatEvent[])
   for (const comment of comments) {
-    const ts = comment.get('createdTime')
-    const userId = comment.get('userId')
+    const ts = comment.createdTime
+    const userId = comment.userId
     const dayIndex = Math.floor((ts - startTime) / DAY_MS)
     commentsByDay[dayIndex].push({ id: comment.id, userId, ts })
   }
@@ -80,19 +85,19 @@ const getContractsQuery = (startTime: number, endTime: number) =>
     .where('createdTime', '>=', startTime)
     .where('createdTime', '<', endTime)
     .orderBy('createdTime', 'asc')
-    .select('createdTime', 'creatorId')
+    .select('createdTime', 'creatorId') as Query<Contract>
 
 export async function getDailyContracts(
   startTime: number,
   numberOfDays: number
 ) {
   const query = getContractsQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const contracts = (await query.get()).docs
+  const contracts = await loadPaginated(query)
 
   const contractsByDay = range(0, numberOfDays).map(() => [] as StatEvent[])
   for (const contract of contracts) {
-    const ts = contract.get('createdTime')
-    const userId = contract.get('creatorId')
+    const ts = contract.createdTime
+    const userId = contract.creatorId
     const dayIndex = Math.floor((ts - startTime) / DAY_MS)
     contractsByDay[dayIndex].push({ id: contract.id, userId, ts })
   }
@@ -134,18 +139,18 @@ const getUsersQuery = (startTime: number, endTime: number) =>
     .where('createdTime', '>=', startTime)
     .where('createdTime', '<', endTime)
     .orderBy('createdTime', 'asc')
-    .select('createdTime')
+    .select('createdTime') as Query<User>
 
 export async function getDailyNewUsers(
   startTime: number,
   numberOfDays: number
 ) {
   const query = getUsersQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const users = (await query.get()).docs
+  const users = await loadPaginated(query)
 
   const usersByDay = range(0, numberOfDays).map(() => [] as StatEvent[])
   for (const user of users) {
-    const ts = user.get('createdTime')
+    const ts = user.createdTime
     const dayIndex = Math.floor((ts - startTime) / DAY_MS)
     usersByDay[dayIndex].push({ id: user.id, userId: user.id, ts })
   }
