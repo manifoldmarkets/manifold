@@ -6,7 +6,7 @@ import { useUser } from '../../hooks/use-user'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { binaryOutcomes, BuyPanel } from './bet-panel'
-import { Title } from '../widgets/title'
+import { Subtitle } from '../widgets/subtitle'
 
 export function BetDialog(props: {
   contract: CPMMBinaryContract
@@ -32,7 +32,7 @@ export function BetDialog(props: {
       )}
     >
       <Col>
-        <Title>{question}</Title>
+        <Subtitle className="!mt-0">{question}</Subtitle>
         <BuyPanel
           contract={contract}
           user={user}
