@@ -41,7 +41,8 @@ export const MobileAppsQRCodeDialog = (props: {
           Get the Manifold app
         </span>
         <span className={'py-2 '}>
-          Scan this QR code to download the app now
+          Scan this QR code to download the app. (Or search "Manifold" in the
+          app store.)
         </span>
         <Tabs
           tabs={[
