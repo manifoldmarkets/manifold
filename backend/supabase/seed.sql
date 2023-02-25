@@ -866,6 +866,25 @@ as $$
     group by creator_id;
 $$;
 
+
+create table if not exists discord_users (
+    discord_user_id text not null,
+    api_key text not null,
+    primary key(discord_user_id)
+);
+alter table discord_users enable row level security;
+
+create table if not exists discord_messages_markets (
+    message_id text not null,
+    market_id text not null,
+    market_slug text not null,
+    channel_id text not null,
+    last_updated_thread_time bigint,
+    thread_id text,
+    primary key(message_id)
+);
+alter table discord_messages_markets enable row level security;
+
 create or replace function get_your_contract_ids(uid text)
 returns table (contract_id text)
 immutable parallel safe
@@ -915,3 +934,4 @@ as $$
   limit n
   offset start
 $$;
+

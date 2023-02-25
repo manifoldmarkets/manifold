@@ -7,7 +7,8 @@
     "backend/replicator",
     "backend/scripts",
     "backend/shared",
-    "web"
+    "web",
+    "discord-bot"
   ],
   "scripts": {
     "verify": "yarn --cwd=common verify:dir; yarn --cwd=web verify:dir; yarn --cwd=backend/functions verify:dir; yarn --cwd=backend/shared verify:dir",

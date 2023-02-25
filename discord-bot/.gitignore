@@ -1,0 +1,13 @@
+# Logs
+logs
+*.log
+
+# Dependency directories
+node_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+lib/
+secrets.sh
+dist/
