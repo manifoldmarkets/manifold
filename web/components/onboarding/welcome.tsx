@@ -8,7 +8,6 @@ import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { useABTest } from 'web/hooks/use-ab-test'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
@@ -76,12 +75,7 @@ export default function Welcome() {
     (user && !user.shouldShowWelcome && groupSelectorOpen) ||
     showSignedOutUser
 
-  const skipWelcome = useABTest('welcome-flow', {
-    skip: true,
-    show: false,
-  })
-
-  if (skipWelcome || !shouldShowWelcomeModals) return <></>
+  if (!shouldShowWelcomeModals) return <></>
 
   if (groupSelectorOpen)
     return (
