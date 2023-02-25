@@ -166,3 +166,17 @@ export async function getTotalContractMetrics(
   )
   return count
 }
+
+export async function getContractMetricsForContractId(
+  contractId: string,
+  db: SupabaseClient
+) {
+  const { data } = await run(
+    db
+      .from('user_contract_metrics')
+      .select('*')
+      .eq('contract_id', contractId)
+      .gt('data->invested', 0)
+  )
+  return data.map((d) => d.data) as ContractMetrics[]
+}
