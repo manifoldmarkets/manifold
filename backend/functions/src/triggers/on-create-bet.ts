@@ -83,8 +83,13 @@ export const onCreateBet = functions
     if (bet.amount >= 0 && !bet.isSold)
       await addUserToContractFollowers(contractId, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
-    await notifyFills(bet, contract, eventId, bettor)
-    await updateContractMetrics(contract, bettor)
+    const notifiedUsers = await notifyUsersOfLimitFills(
+      bet,
+      contract,
+      eventId,
+      bettor
+    )
+    await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
     // Referrals should always be handled before the betting streak bc they both use lastBetTime
     handleReferral(bettor, eventId).then(async () => {
       await updateBettingStreak(bettor, bet, contract, eventId)
@@ -271,7 +276,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   }
 }
 
-const notifyFills = async (
+const notifyUsersOfLimitFills = async (
   bet: Bet,
   contract: Contract,
   eventId: string,
@@ -295,20 +300,23 @@ const notifyFills = async (
   )
   const betUsersById = keyBy(filterDefined(betUsers), 'id')
 
-  await Promise.all(
-    matchedBets.map((matchedBet) => {
-      const matchedUser = betUsersById[matchedBet.userId]
-      if (!matchedUser) return
+  return filterDefined(
+    await Promise.all(
+      matchedBets.map((matchedBet) => {
+        const matchedUser = betUsersById[matchedBet.userId]
+        if (!matchedUser) return
 
-      return createBetFillNotification(
-        user,
-        matchedUser,
-        bet,
-        matchedBet,
-        contract,
-        eventId
-      )
-    })
+        createBetFillNotification(
+          user,
+          matchedUser,
+          bet,
+          matchedBet,
+          contract,
+          eventId
+        )
+        return matchedUser
+      })
+    )
   )
 }
 
@@ -316,19 +324,23 @@ const currentDateBettingStreakResetTime = () => {
   return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
 }
 
-const updateContractMetrics = async (contract: Contract, user: User) => {
-  const betSnap = await firestore
-    .collection(`contracts/${contract.id}/bets`)
-    .where('userId', '==', user.id)
-    .get()
+const updateContractMetrics = async (contract: Contract, users: User[]) => {
+  await Promise.all(
+    users.map(async (user) => {
+      const betSnap = await firestore
+        .collection(`contracts/${contract.id}/bets`)
+        .where('userId', '==', user.id)
+        .get()
 
-  const bets = betSnap.docs.map((doc) => doc.data() as Bet)
-  const newMetrics = calculateUserMetrics(contract, bets, user)
+      const bets = betSnap.docs.map((doc) => doc.data() as Bet)
+      const newMetrics = calculateUserMetrics(contract, bets, user)
 
-  await firestore
-    .collection(`users/${user.id}/contract-metrics`)
-    .doc(contract.id)
-    .set(newMetrics)
+      await firestore
+        .collection(`users/${user.id}/contract-metrics`)
+        .doc(contract.id)
+        .set(newMetrics)
+    })
+  )
 }
 
 async function handleReferral(staleUser: User, eventId: string) {
