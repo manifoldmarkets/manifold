@@ -32,7 +32,10 @@ import {
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
 import { track } from 'web/lib/service/analytics'
-import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
+import {
+  ContractMetricsByOutcome,
+  getTotalContractMetricsCount,
+} from 'web/lib/firebase/contract-metrics'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -46,8 +49,6 @@ import { CertTrades, CertInfo } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
 import { QfTrades } from './qf-overview'
-import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -135,7 +136,7 @@ export function ContractTabs(props: {
           ),
         },
 
-        totalPositions > 0 &&
+        totalBets > 0 &&
           contract.outcomeType === 'BINARY' && {
             title: positionsTitle,
             content: (
@@ -193,7 +194,8 @@ const BinaryUserPositionsTabContent = memo(
     const yesPositionsSorted = positions.YES ?? []
     const noPositionsSorted = positions.NO ?? []
     useEffect(() => {
-      getTotalContractMetrics(contractId, db).then(setTotalPositions)
+      // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
+      getTotalContractMetricsCount(contractId).then(setTotalPositions)
     }, [positions, setTotalPositions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
