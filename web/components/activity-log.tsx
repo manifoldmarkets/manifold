@@ -150,8 +150,6 @@ export function ActivityLog(props: {
     items,
   }))
 
-  if (!allLoaded) return <LoadingIndicator />
-
   return (
     <Col className={clsx('gap-4', className)}>
       {showPills && (
@@ -186,34 +184,37 @@ export function ActivityLog(props: {
           </PillButton>
         </Row>
       )}
-      <Col className="divide-y-[0.5px] rounded-sm border-[0.5px]">
-        {groups.map(({ contractId, items }) => {
-          const contract = contractsById[contractId] as Contract
-          return (
-            <Col
-              key={contractId}
-              className="gap-2 bg-white px-4 py-3 focus:bg-[#fafaff] lg:hover:bg-[#fafaff]"
-            >
-              <ContractMention contract={contract} />
-              {items.map((item) =>
-                'amount' in item ? (
-                  <FeedBet
-                    className="!pt-0"
-                    key={item.id}
-                    contract={contract}
-                    bet={item}
-                    avatarSize="xs"
-                  />
-                ) : 'question' in item ? (
-                  <MarketCreatedLog key={item.id} contract={item} />
-                ) : (
-                  <CommentLog key={item.id} comment={item} />
-                )
-              )}
-            </Col>
-          )
-        })}
-      </Col>
+      {!allLoaded && <LoadingIndicator />}
+      {allLoaded && (
+        <Col className="divide-y-[0.5px] rounded-sm border-[0.5px]">
+          {groups.map(({ contractId, items }) => {
+            const contract = contractsById[contractId] as Contract
+            return (
+              <Col
+                key={contractId}
+                className="gap-2 bg-white px-4 py-3 focus:bg-[#fafaff] lg:hover:bg-[#fafaff]"
+              >
+                <ContractMention contract={contract} />
+                {items.map((item) =>
+                  'amount' in item ? (
+                    <FeedBet
+                      className="!pt-0"
+                      key={item.id}
+                      contract={contract}
+                      bet={item}
+                      avatarSize="xs"
+                    />
+                  ) : 'question' in item ? (
+                    <MarketCreatedLog key={item.id} contract={item} />
+                  ) : (
+                    <CommentLog key={item.id} comment={item} />
+                  )
+                )}
+              </Col>
+            )
+          })}
+        </Col>
+      )}
     </Col>
   )
 }
