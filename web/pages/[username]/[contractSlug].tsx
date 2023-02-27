@@ -291,15 +291,7 @@ export function ContractPageContent(
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
   return (
-    <Page
-      rightSidebar={
-        user || user === null ? (
-          <ContractPageSidebar contract={contract} />
-        ) : (
-          <div />
-        )
-      }
-    >
+    <Page rightSidebar={<div />}>
       <ContractSEO contract={contract} points={pointsString} />
       {creatorTwitter && (
         <Head>

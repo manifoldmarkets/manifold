@@ -19,7 +19,7 @@ export function SignedInBinaryMobileBetting(props: {
   )
 
   return (
-    <Col className="my-3 w-full gap-2 px-1 xl:hidden">
+    <Col className="my-3 w-full gap-2 px-1">
       <BuyPanel
         hidden={false}
         contract={contract as CPMMBinaryContract}
