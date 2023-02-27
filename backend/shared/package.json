@@ -13,10 +13,16 @@
   "dependencies": {
     "@tiptap/core": "2.0.0-beta.204",
     "@tiptap/html": "2.0.0-beta.204",
+    "dayjs": "1.11.4",
+    "eventsource-parser": "0.1.0",
     "firebase-admin": "11.2.0",
     "lodash": "4.17.21",
+    "openai": "3.0.1",
+    "p-timeout": "6.1.1",
     "pg-promise": "11.0.2",
-    "dayjs": "1.11.4",
-    "openai": "3.0.1"
+    "uuid": "9.0.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "9.0.1"
   }
 }

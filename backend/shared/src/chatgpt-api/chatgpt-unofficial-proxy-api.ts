@@ -1,7 +1,8 @@
-import { randomString } from 'common/util/random'
+import { v4 as uuidv4 } from 'uuid'
 
 import * as types from './types'
 import { fetch as globalFetch } from './fetch'
+import { fetchSSE } from './fetch-sse'
 
 export class ChatGPTUnofficialProxyAPI {
   protected _accessToken: string
@@ -99,8 +100,8 @@ export class ChatGPTUnofficialProxyAPI {
   ): Promise<types.ChatMessage> {
     const {
       conversationId,
-      parentMessageId = randomString(16),
-      messageId = randomString(16),
+      parentMessageId = uuidv4(),
+      messageId = uuidv4(),
       action = 'next',
       timeoutMs,
       onProgress,
@@ -137,7 +138,7 @@ export class ChatGPTUnofficialProxyAPI {
 
     const result: types.ChatMessage = {
       role: 'assistant',
-      id: randomString(16),
+      id: uuidv4(),
       parentMessageId: messageId,
       conversationId,
       text: '',
@@ -156,12 +157,51 @@ export class ChatGPTUnofficialProxyAPI {
         console.log('POST', url, { body, headers })
       }
 
-      fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-        signal: abortSignal,
-      }).catch((err) => {
+      fetchSSE(
+        url,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+          signal: abortSignal,
+          onMessage: (data: string) => {
+            if (data === '[DONE]') {
+              return resolve(result)
+            }
+
+            try {
+              const convoResponseEvent: types.ConversationResponseEvent =
+                JSON.parse(data)
+              if (convoResponseEvent.conversation_id) {
+                result.conversationId = convoResponseEvent.conversation_id
+              }
+
+              if (convoResponseEvent.message?.id) {
+                result.id = convoResponseEvent.message.id
+              }
+
+              const message = convoResponseEvent.message
+              // console.log('event', JSON.stringify(convoResponseEvent, null, 2))
+
+              if (message) {
+                const text = message?.content?.parts?.[0]
+
+                if (text) {
+                  result.text = text
+
+                  if (onProgress) {
+                    onProgress(result)
+                  }
+                }
+              }
+            } catch (err) {
+              // ignore for now; there seem to be some non-json messages
+              // console.warn('fetchSSE onMessage unexpected error', err)
+            }
+          },
+        },
+        this._fetch
+      ).catch((err) => {
         const errMessageL = err.toString().toLowerCase()
 
         if (
@@ -180,6 +220,23 @@ export class ChatGPTUnofficialProxyAPI {
       })
     })
 
-    return responseP
+    if (timeoutMs) {
+      if (abortController) {
+        // This will be called when a timeout occurs in order for us to forcibly
+        // ensure that the underlying HTTP request is aborted.
+        ;(responseP as any).cancel = () => {
+          abortController.abort()
+        }
+      }
+      // time out after `timeoutMs` milliseconds
+      console.log('TODO: timeout not implemented yet')
+      return responseP
+      // return ptimeout.default(responseP, {
+      //   milliseconds: timeoutMs,
+      //   message: 'ChatGPT timed out waiting for response',
+      // })
+    } else {
+      return responseP
+    }
   }
 }
