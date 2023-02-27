@@ -11,7 +11,7 @@
         "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
         "strict": true,
         "paths": {
-            "common/*": ["../common/src/*", "../../common/lib/*"],
+            "common/*": ["../common/lib/*", "../../common/lib/*"],
             "discord-bot/*": ["./src/*"]
         }
          },
@@ -24,7 +24,9 @@
             "path": "../common"
         },
     ],
-
+    "tsc-alias": {
+        "resolveFullPaths": true
+    },
     "compileOnSave": true,
     "include": ["src/**/*.ts"]
 }

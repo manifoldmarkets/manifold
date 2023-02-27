@@ -1,7 +1,8 @@
-import { createClient } from 'common/supabase/utils.js'
+import { createClient } from 'common/supabase/utils'
 import { config } from './constants/config.js'
 
 const discordIdsToApiKeys: { [k: string]: string } = {}
+
 type DiscordMessageMarketInfo = {
   market_id: string
   market_slug: string
