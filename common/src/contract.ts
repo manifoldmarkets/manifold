@@ -76,6 +76,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isTwitchContract?: boolean
 
   coverImageUrl?: string
+  aiDescription?: string
 } & T
 
 export type DPMContract = Contract & DPM

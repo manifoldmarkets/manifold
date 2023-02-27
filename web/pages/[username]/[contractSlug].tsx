@@ -3,6 +3,7 @@ import { first } from 'lodash'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Spacer } from 'web/components/layout/spacer'
 import {
@@ -328,6 +329,8 @@ export function ContractPageContent(
           contract={contract}
           toggleResolver={() => setShowResolver(!showResolver)}
         />
+
+        {contract.aiDescription && <Row>{contract.aiDescription}</Row>}
 
         {showResolver &&
           user &&

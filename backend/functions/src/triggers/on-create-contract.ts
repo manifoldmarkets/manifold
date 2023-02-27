@@ -1,3 +1,4 @@
+import { removeUndefinedProps } from 'common/util/object'
 import * as functions from 'firebase-functions'
 
 import { getUser } from 'shared/utils'
@@ -8,10 +9,16 @@ import { JSONContent } from '@tiptap/core'
 import { addUserToContractFollowers } from '../follow-market'
 
 import { dreamWithDefaultParams } from 'shared/dream-utils'
-import { getImagePrompt } from 'shared/helpers/openai-utils'
+import {
+  getDescriptionForQuestion,
+  getImagePrompt,
+} from 'shared/helpers/openai-utils'
 
 export const onCreateContract = functions
-  .runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY', 'OPENAI_API_KEY'] })
+  .runWith({
+    secrets: ['MAILGUN_KEY', 'DREAM_KEY', 'OPENAI_API_KEY'],
+    timeoutSeconds: 540,
+  })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
     const contract = snapshot.data() as Contract
@@ -32,10 +39,14 @@ export const onCreateContract = functions
       mentioned
     )
     const imagePrompt = await getImagePrompt(contract.question)
-    const coverImageUrl = await dreamWithDefaultParams(
-      imagePrompt ?? contract.question
+    const [coverImageUrl, aiDescription] = await Promise.all([
+      dreamWithDefaultParams(imagePrompt ?? contract.question),
+      getDescriptionForQuestion(contract.question),
+    ])
+    await snapshot.ref.update(
+      removeUndefinedProps({
+        coverImageUrl,
+        aiDescription,
+      })
     )
-    await snapshot.ref.update({
-      coverImageUrl,
-    })
   })

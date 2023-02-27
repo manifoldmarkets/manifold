@@ -1,5 +1,6 @@
 import * as dayjs from 'dayjs'
 import * as admin from 'firebase-admin'
+import { ChatGPTUnofficialProxyAPI } from '../chatgpt-api'
 import { Configuration, OpenAIApi } from 'openai'
 
 import { filterTopGroups, Group } from 'common/group'
@@ -123,6 +124,20 @@ export const getImagePrompt = async (question: string) => {
   console.log('AI-selected image prompt for question', question, ':', text)
 
   return text
+}
+export const getDescriptionForQuestion = async (question: string) => {
+  console.log('Generating ai description for question', question)
+  const api = new ChatGPTUnofficialProxyAPI({
+    accessToken:
+      'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik1UaEVOVUpHTkVNMVFURTRNMEZCTWpkQ05UZzVNRFUxUlRVd1FVSkRNRU13UmtGRVFrRXpSZyJ9.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL3Byb2ZpbGUiOnsiZW1haWwiOiJpYW5zcGhpbGlwc0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ2VvaXBfY291bnRyeSI6IlVTIn0sImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6eyJ1c2VyX2lkIjoidXNlci10MmVrVkdVcWxPRXlrZkRKTEp3M3J0THAifSwiaXNzIjoiaHR0cHM6Ly9hdXRoMC5vcGVuYWkuY29tLyIsInN1YiI6ImF1dGgwfDYwYzExZDIyNjZlNDBiMDA2ODk4NWQ2ZiIsImF1ZCI6WyJodHRwczovL2FwaS5vcGVuYWkuY29tL3YxIiwiaHR0cHM6Ly9vcGVuYWkub3BlbmFpLmF1dGgwYXBwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE2NzcyODgwMTksImV4cCI6MTY3ODQ5NzYxOSwiYXpwIjoiVGRKSWNiZTE2V29USHROOTVueXl3aDVFNHlPbzZJdEciLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIG1vZGVsLnJlYWQgbW9kZWwucmVxdWVzdCBvcmdhbml6YXRpb24ucmVhZCBvZmZsaW5lX2FjY2VzcyJ9.2KRdXK083_6kC1Qqgv05JMJDkpqS-IBVhS8B418xYPSMIRKJW49A_ebJcY2FpMnS0IepDc2_DRIMDUH-r_X_ugE5SCTNyVKBDIhJfoXqky2YXkAaDoO5SWtUXf64ma37EXNUxnR95lqNWa5-tFHB6zojLgVkn_gkSP82FMY8rqG0xpnKHDCU97XLkUCn93VSPhqe6tHD2lFIgXLuomS2viWfhh_D144VDq6XPjsiXrI-o83-w_hCbGpnnafbXk0gcU4NrpnxB-5E3DK1UAzWQPgdYRa8jmDV9NgX3_eydQVNSUHm4MrJQVofzIWzalTHGWQdrcH2ML3HxHzhYHXalA',
+    apiReverseProxyUrl: 'https://chat.duti.tech/api/conversation',
+  })
+  const content = `Consider this question from a crowd-sourced question and answer site: "${question}"
+Now, please describe any background or other relevant information that would be of use to someone interested in answering the question and/or just learning more about the topic.`
+  // send a message and wait for the response
+  const res = await api.sendMessage(content)
+  console.log('ai description response:', res.text)
+  return res.text
 }
 
 const firestore = admin.firestore()
