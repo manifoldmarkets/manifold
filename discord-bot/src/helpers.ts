@@ -1,5 +1,5 @@
 import { FullMarket } from 'common/api-market-types'
-import { randomString } from 'common/lib/util/random.js'
+import { randomString } from 'common/util/random'
 import * as console from 'console'
 import { config } from './constants/config.js'
 import {

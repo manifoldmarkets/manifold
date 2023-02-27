@@ -3,9 +3,14 @@
   "description": "Discord bot that uses reactions to place bets on Manifold Markets.",
   "version": "0.1.0",
   "scripts": {
-    "build": "tsc --project tsconfig.json && cp ../yarn.lock ./dist/yarn.lock",
     "start": "ENVIRONMENT=PROD nodemon --watch src --exec ts-node src/index.ts",
-    "dev": "ENVIRONMENT=DEV nodemon --watch src --exec ts-node src/index.ts"
+    "dev": "ENVIRONMENT=DEV nodemon --watch src --exec ts-node src/index.ts",
+    "alias": "tsc-alias",
+    "compile": "tsc -b",
+    "build": "yarn compile && yarn --cwd=../common alias && yarn alias && yarn dist",
+    "dist": "yarn dist:prepare && yarn dist:copy",
+    "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib  dist/discord-bot/lib",
+    "dist:copy": "cp -R ../common/lib/* dist/common/lib && cp -R ./lib/* dist/discord-bot/lib && cp ../yarn.lock dist && cp package.json dist"
   },
   "type": "module",
   "dependencies": {

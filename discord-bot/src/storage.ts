@@ -1,4 +1,4 @@
-import { createClient } from 'common/lib/supabase/utils.js'
+import { createClient } from 'common/supabase/utils.js'
 import { config } from './constants/config.js'
 
 const discordIdsToApiKeys: { [k: string]: string } = {}

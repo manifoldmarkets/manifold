@@ -3,10 +3,10 @@
 FROM node:19
 WORKDIR /usr/src/app
 
-COPY package.json dist/yarn.lock ./
+COPY dist/package.json dist/yarn.lock ./
 RUN yarn install --frozen-lockfile --production
 
-# Will have to rewrite this if we bring in outside dependencies
-COPY . ./
+# then copy over typescript payload
+COPY dist ./
 
-CMD ["node", "lib/index.js"]
+CMD ["node", "discord-bot/lib/index.js"]
