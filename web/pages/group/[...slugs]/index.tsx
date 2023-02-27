@@ -54,6 +54,10 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { addContractToGroup } from 'web/lib/firebase/api'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
+import {
+  AddContractButton,
+  AddPrivateContractButton,
+} from 'web/components/groups/add-contract-to-group-button'
 
 export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -173,7 +177,7 @@ export default function GroupPage(props: {
         url={groupPath(group.slug)}
         image={group.bannerUrl}
       />
-      {user && isManifoldAdmin && (
+      {user && isManifoldAdmin && group.privacyStatus != 'private' && (
         <AddContractButton
           group={group}
           user={user}
@@ -193,6 +197,14 @@ export default function GroupPage(props: {
             className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
           />
         )}
+      {user && group.privacyStatus == 'private' && (
+        <AddPrivateContractButton
+          group={group}
+          user={user}
+          userRole={'admin'}
+          className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
+        />
+      )}
       {isMobile && (
         <TopGroupNavBar
           group={group}
@@ -453,59 +465,6 @@ function GroupLeaderboard(props: {
       ]}
       maxToShow={maxToShow}
     />
-  )
-}
-
-function AddContractButton(props: {
-  group: Group
-  user: User
-  userRole?: groupRoleType
-  className?: string
-}) {
-  const { group, user, className, userRole } = props
-  const [open, setOpen] = useState(false)
-
-  async function onSubmit(contracts: Contract[]) {
-    await Promise.all(
-      contracts.map((contract) =>
-        addContractToGroup({
-          groupId: group.id,
-          contractId: contract.id,
-        }).catch((e) => console.log(e))
-      )
-    )
-      .then(() =>
-        toast('Succesfully added markets!', {
-          icon: <CheckCircleIcon className={'h-5 w-5 text-green-500'} />,
-        })
-      )
-      .catch(() =>
-        toast('Error adding markets. Try again?', {
-          icon: <XCircleIcon className={'h-5 w-5 text-red-500'} />,
-        })
-      )
-  }
-
-  return (
-    <div className={className}>
-      <IconButton
-        size="md"
-        onClick={() => setOpen(true)}
-        className="drop-shadow hover:drop-shadow-lg"
-      >
-        <div className="relative h-12 w-12 rounded-full bg-white">
-          <PlusCircleIcon className="absolute -left-2 -top-2 h-16 w-16 text-indigo-700 drop-shadow" />
-        </div>
-      </IconButton>
-      <AddMarketToGroupModal
-        group={group}
-        user={user}
-        open={open}
-        setOpen={setOpen}
-        onAddMarkets={onSubmit}
-        userRole={userRole}
-      />
-    </div>
   )
 }
 
