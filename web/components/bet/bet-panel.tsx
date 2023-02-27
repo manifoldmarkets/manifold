@@ -179,6 +179,7 @@ export function BuyPanel(props: {
   mobileView?: boolean
   initialOutcome?: binaryOutcomes
   location?: string
+  className?: string
 }) {
   const {
     contract,
@@ -190,6 +191,7 @@ export function BuyPanel(props: {
     mobileView,
     initialOutcome,
     location = 'bet panel',
+    className,
   } = props
 
   const initialProb = getProbability(contract)
@@ -326,31 +328,42 @@ export function BuyPanel(props: {
   const displayError = !!outcome
 
   return (
-    <Col className={hidden ? 'hidden' : ''}>
-      <YesNoSelector
-        className="mb-2"
-        btnClassName="flex-1"
-        selected={outcome}
-        onSelect={(choice) => {
-          if (mobileView) {
-            mobileOnBetChoice(choice)
-          } else {
-            onBetChoice(choice)
-          }
-        }}
-        isPseudoNumeric={isPseudoNumeric}
-      />
+    <Col className={clsx(className, hidden ? 'hidden' : '')}>
+      <Row className="mb-2 w-full items-center gap-3">
+        <YesNoSelector
+          className="flex-1"
+          btnClassName="flex-1"
+          selected={outcome}
+          onSelect={(choice) => {
+            if (mobileView) {
+              mobileOnBetChoice(choice)
+            } else {
+              onBetChoice(choice)
+            }
+          }}
+          isPseudoNumeric={isPseudoNumeric}
+        />
+        <button
+          className={clsx(
+            'inline-flex items-center justify-center rounded-3xl border-2 py-2 px-4',
+            seeLimit
+              ? 'border-indigo-500 bg-indigo-500 text-white'
+              : 'border-indigo-500 bg-white text-indigo-500 hover:border-indigo-500 hover:text-indigo-500'
+          )}
+          onClick={() => setSeeLimit(true)}
+        >
+          %
+        </button>
+      </Row>
 
       <Col
         className={clsx(
-          mobileView
-            ? outcome === 'NO'
-              ? 'bg-red-25'
-              : outcome === 'YES'
-              ? 'bg-teal-50'
-              : 'hidden'
-            : 'bg-white',
-          mobileView ? 'rounded-lg px-4 py-2' : 'px-0'
+          outcome === 'NO'
+            ? 'bg-red-25'
+            : outcome === 'YES'
+            ? 'bg-teal-50'
+            : 'hidden',
+          'rounded-lg px-4 py-2'
         )}
       >
         <Row className="mt-2 mb-1 justify-between text-left text-sm text-gray-500">
@@ -450,12 +463,6 @@ export function BuyPanel(props: {
             }
           />
         )}
-        <button
-          className="mx-auto mt-3 select-none text-sm text-gray-600 underline"
-          onClick={() => setSeeLimit(true)}
-        >
-          Advanced
-        </button>
         <Modal
           open={seeLimit}
           setOpen={setSeeLimit}
