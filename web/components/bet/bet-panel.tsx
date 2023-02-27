@@ -1,6 +1,8 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 import { clamp } from 'lodash'
+import toast from 'react-hot-toast'
+import { CheckIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
@@ -41,10 +43,6 @@ import { PillButton } from '../buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { Modal } from '../layout/modal'
-import { Title } from '../widgets/title'
-import toast from 'react-hot-toast'
-import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
@@ -196,7 +194,11 @@ export function BuyPanel(props: {
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const [outcome, setOutcome] = useState<binaryOutcomes>(initialOutcome)
+  const [option, setOption] = useState<binaryOutcomes | 'limit'>(initialOutcome)
+
+  const outcome = option === 'limit' ? undefined : option
+  const seeLimit = option === 'limit'
+
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -205,12 +207,12 @@ export function BuyPanel(props: {
 
   useEffect(() => {
     if (initialOutcome) {
-      setOutcome(initialOutcome)
+      setOption(initialOutcome)
     }
   }, [initialOutcome])
 
   function onBetChoice(choice: 'YES' | 'NO') {
-    setOutcome(choice)
+    setOption(choice)
 
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
@@ -219,9 +221,9 @@ export function BuyPanel(props: {
 
   function mobileOnBetChoice(choice: 'YES' | 'NO' | undefined) {
     if (outcome === choice) {
-      setOutcome(undefined)
+      setOption(undefined)
     } else {
-      setOutcome(choice)
+      setOption(choice)
     }
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
@@ -231,7 +233,7 @@ export function BuyPanel(props: {
   function onBetChange(newAmount: number | undefined) {
     setBetAmount(newAmount)
     if (!outcome) {
-      setOutcome('YES')
+      setOption('YES')
     }
   }
 
@@ -290,7 +292,6 @@ export function BuyPanel(props: {
     balanceByUserId
   )
 
-  const [seeLimit, setSeeLimit] = useState(false)
   const resultProb = getCpmmProbability(newPool, newP)
   const probStayedSame =
     formatPercent(resultProb) === formatPercent(initialProb)
@@ -350,7 +351,7 @@ export function BuyPanel(props: {
               ? 'border-indigo-500 bg-indigo-500 text-white'
               : 'border-indigo-500 bg-white text-indigo-500 hover:border-indigo-500 hover:text-indigo-500'
           )}
-          onClick={() => setSeeLimit(true)}
+          onClick={() => setOption('limit')}
         >
           %
         </button>
@@ -463,12 +464,9 @@ export function BuyPanel(props: {
             }
           />
         )}
-        <Modal
-          open={seeLimit}
-          setOpen={setSeeLimit}
-          className="rounded-lg bg-white p-4"
-        >
-          <Title children="Limit Order" />
+      </Col>
+      {option === 'limit' && (
+        <Col className="bg-indigo-25 rounded-lg px-4 py-2">
           <LimitOrderPanel
             hidden={!seeLimit}
             contract={contract}
@@ -482,8 +480,8 @@ export function BuyPanel(props: {
             bets={unfilledBets as LimitBet[]}
             className="mt-4"
           />
-        </Modal>
-      </Col>
+        </Col>
+      )}
     </Col>
   )
 }
