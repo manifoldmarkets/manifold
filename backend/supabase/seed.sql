@@ -935,3 +935,35 @@ as $$
   offset start
 $$;
 
+-- Your most recent contracts by bets or likes.
+create or replace function get_your_recent_contracts(uid text, n int, start int)
+returns table (data jsonb, max_ts bigint)
+immutable parallel safe
+language sql
+as $$
+  with your_bet_on_contracts as (
+    select contract_id, (data->>'lastBetTime')::bigint as ts
+    from user_contract_metrics
+    where user_id = uid
+    and (data->>'lastBetTime')::bigint is not null
+  ), your_liked_contracts as (
+    select (data->>'contentId') as contract_id, (data->>'createdTime')::bigint as ts
+    from user_reactions
+    where user_id = uid
+  ), recent_contract_ids as (
+    select contract_id, ts from your_bet_on_contracts
+    union all
+    select contract_id, ts from your_liked_contracts
+  ), recent_unique_contract_ids as (
+    select contract_id, max(ts) AS max_ts
+    from recent_contract_ids
+    group by contract_id
+  )
+  select data, max_ts from recent_unique_contract_ids
+  left join contracts
+  on contracts.id = contract_id
+  where data is not null
+  order by max_ts desc
+  limit n
+  offset start
+$$;

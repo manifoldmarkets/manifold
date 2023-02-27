@@ -42,11 +42,16 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
 import { Swipe } from 'web/components/swipe/swipe'
 import { getIsNative } from 'web/lib/native/is-native'
-import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
+import {
+  useYourRecentContracts,
+  useYourDailyChangedContracts,
+} from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ContractCardNew } from 'web/components/contract/contract-card'
+import { differenceBy } from 'lodash'
+import { SimpleContractList } from 'web/components/contract/contracts-list'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -71,7 +76,15 @@ function HomeDashboard() {
   useRedirectIfSignedOut()
   useSaveReferral()
 
+  const recentContracts = useYourRecentContracts(db, user?.id)
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
+  const dailyChangedUniqueContracts = differenceBy(
+    dailyChangedContracts ?? [],
+    recentContracts ?? [],
+    'id'
+  )
+
+  const isLoading = !recentContracts || !dailyChangedContracts
 
   return (
     <Page>
@@ -83,10 +96,11 @@ function HomeDashboard() {
           <DailyStats user={user} />
         </Row>
 
-        {!dailyChangedContracts && <LoadingIndicator />}
+        {isLoading && <LoadingIndicator />}
 
-        <Col className={clsx('gap-6', !dailyChangedContracts && 'hidden')}>
-          <YourDailyUpdates contracts={dailyChangedContracts} />
+        <Col className={clsx('gap-6', isLoading && 'hidden')}>
+          <YourRecentContracts contracts={recentContracts} />
+          <YourDailyUpdates contracts={dailyChangedUniqueContracts} />
           <LiveSection />
           <YourFeedSection />
         </Col>
@@ -99,7 +113,15 @@ function MobileHome() {
   const user = useUser()
   const { showSwipe, toggleView, isNative } = useViewToggle()
 
+  const recentContracts = useYourRecentContracts(db, user?.id)
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
+  const dailyChangedUniqueContracts = differenceBy(
+    dailyChangedContracts ?? [],
+    recentContracts ?? [],
+    'id'
+  )
+
+  const isLoading = !recentContracts || !dailyChangedContracts
 
   if (showSwipe) return <Swipe toggleView={toggleView(false)} />
 
@@ -119,9 +141,10 @@ function MobileHome() {
           </Row>
         </Row>
 
-        {!dailyChangedContracts && <LoadingIndicator />}
-        <Col className={clsx('gap-6', !dailyChangedContracts && 'hidden')}>
-          <YourDailyUpdates contracts={dailyChangedContracts} />
+        {isLoading && <LoadingIndicator />}
+        <Col className={clsx('gap-6', isLoading && 'hidden')}>
+          <YourRecentContracts contracts={recentContracts} />
+          <YourDailyUpdates contracts={dailyChangedUniqueContracts} />
           <ContractsFeed />
         </Col>
       </Col>
@@ -197,16 +220,22 @@ function HomeSectionHeader(props: {
     </Row>
   )
 }
+const YourRecentContracts = memo(function YourRecentContracts(props: {
+  contracts: Contract[] | undefined
+}) {
+  const user = useUser()
 
-const LiveSection = memo(function LiveSection() {
+  const { contracts } = props
+  if (contracts?.length === 0) return <></>
+
   return (
     <Col>
-      <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
-      <ActivityLog
-        count={10}
-        showPills={false}
-        className="h-[370px] overflow-hidden"
+      <HomeSectionHeader
+        label="Recent markets"
+        icon="🕔"
+        href={user ? `/${user?.username}?tab=portfolio` : undefined}
       />
+      <SimpleContractList contracts={contracts} />
     </Col>
   )
 })
@@ -221,6 +250,19 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
     <Col>
       <HomeSectionHeader label="Today's updates" icon="📊" />
       <ProbChangeTable changes={contracts as CPMMContract[]} />
+    </Col>
+  )
+})
+
+const LiveSection = memo(function LiveSection() {
+  return (
+    <Col>
+      <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
+      <ActivityLog
+        count={10}
+        showPills={false}
+        className="h-[370px] overflow-hidden"
+      />
     </Col>
   )
 })

@@ -717,6 +717,17 @@ export interface Database {
           daily_score: number
         }[]
       }
+      get_your_recent_contracts: {
+        Args: {
+          uid: string
+          n: number
+          start: number
+        }
+        Returns: {
+          data: Json
+          max_ts: number
+        }[]
+      }
       get_your_trending_contracts: {
         Args: {
           uid: string

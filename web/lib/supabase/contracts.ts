@@ -3,6 +3,23 @@ import { SupabaseClient } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { Contract } from '../firebase/contracts'
 
+export async function getYourRecentContracts(
+  db: SupabaseClient,
+  userId: string,
+  count: number
+) {
+  const { data } = await db.rpc('get_your_recent_contracts', {
+    uid: userId,
+    n: count,
+    start: 0,
+  })
+
+  if (!data) return null
+
+  const contracts = filterDefined(data.map((d) => (d as any).data))
+  return contracts
+}
+
 export async function getYourDailyChangedContracts(
   db: SupabaseClient,
   userId: string,
