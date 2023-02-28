@@ -17,10 +17,8 @@ export * from './triggers/on-follow-user'
 export * from './triggers/on-unfollow-user'
 export * from './triggers/on-create-liquidity-provision'
 export * from './triggers/on-update-group'
-export * from './triggers/on-create-txn'
 export * from './triggers/on-delete-group'
 export * from './triggers/on-update-reaction'
-export * from './triggers/on-update-contract-follow'
 
 // scheduled functions
 export { scheduleUpdateContractMetrics } from './scheduled/update-contract-metrics'
