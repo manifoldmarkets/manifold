@@ -1,43 +1,41 @@
-import React, { useState } from 'react'
 import {
-  CashIcon,
-  HomeIcon,
-  SearchIcon,
-  BookOpenIcon,
-  LogoutIcon,
-  HeartIcon,
-  LightningBoltIcon,
-  DeviceMobileIcon,
-  ScaleIcon,
-  UserGroupIcon,
-  TicketIcon,
   BeakerIcon,
+  BookOpenIcon,
+  CashIcon,
+  DeviceMobileIcon,
+  HeartIcon,
+  HomeIcon,
+  LightningBoltIcon,
+  LogoutIcon,
+  ScaleIcon,
+  SearchIcon,
+  TicketIcon,
+  UserGroupIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { buildArray } from 'common/util/array'
 import Router, { useRouter } from 'next/router'
+import { useState } from 'react'
+import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
+import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
+import NotificationsIcon from 'web/components/notifications-icon'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout } from 'web/lib/firebase/users'
+import DiscordOutlineIcon from 'web/lib/icons/discord-outline-icon'
+import TrophyIcon from 'web/lib/icons/trophy-icon'
+import { withTracking } from 'web/lib/service/analytics'
+import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
+import { SignInButton } from '../buttons/sign-in-button'
+import { DarkModeSwitch } from '../dark-mode-switch'
+import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
-import { ProfileSummary } from './profile-menu'
-import NotificationsIcon from 'web/components/notifications-icon'
-import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
-import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
-import { withTracking } from 'web/lib/service/analytics'
-import { buildArray } from 'common/util/array'
-import { SignInButton } from '../buttons/sign-in-button'
-import { SidebarItem } from './sidebar-item'
 import { MoreButton } from './more-button'
-import { Row } from '../layout/row'
-import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
+import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
-import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
-import TrophyIcon from 'web/lib/icons/trophy-icon'
-import DiscordOutlineIcon from 'web/lib/icons/discord-outline-icon'
-import { Spacer } from '../layout/spacer'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { Switch } from '@headlessui/react'
-import { DarkModeSwitch } from '../dark-mode-switch'
+import { SidebarItem } from './sidebar-item'
 
 export default function Sidebar(props: {
   className?: string

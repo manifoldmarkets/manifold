@@ -1,25 +1,25 @@
-import Link from 'next/link'
-import React, { useState } from 'react'
-import { Group, groupPath } from 'common/group'
-import { CreateGroupButton } from 'web/components/groups/create-group-button'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/layout/page'
-import { useMemberGroupIds } from 'web/hooks/use-group'
-import { User } from 'web/lib/firebase/users'
-import { Tabs } from 'web/components/layout/tabs'
-import { SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
-import { Avatar } from 'web/components/widgets/avatar'
-import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
-import { SEO } from 'web/components/SEO'
-import { useUser } from 'web/hooks/use-user'
-import { Input } from 'web/components/widgets/input'
-import { track } from 'web/lib/service/analytics'
-import { Card } from 'web/components/widgets/card'
+import { Group, groupPath } from 'common/group'
+import Link from 'next/link'
+import { useState } from 'react'
 import { FeaturedPill } from 'web/components/contract/contract-card'
-import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
+import { CreateGroupButton } from 'web/components/groups/create-group-button'
+import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { Tabs } from 'web/components/layout/tabs'
 import { useGroupSearchResults } from 'web/components/search/query-groups'
+import { SEO } from 'web/components/SEO'
+import { Avatar } from 'web/components/widgets/avatar'
+import { Card } from 'web/components/widgets/card'
+import { Input } from 'web/components/widgets/input'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { useMemberGroupIds } from 'web/hooks/use-group'
+import { useUser } from 'web/hooks/use-user'
+import { User } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
+import { SearchGroupInfo, searchGroups } from 'web/lib/supabase/groups'
 
 export const getStaticProps = async () => {
   const groups = await searchGroups('', 100).catch((_) => [])
@@ -149,7 +149,6 @@ export function GroupCard(props: {
     highlightCards,
     pinned,
   } = props
-  const { totalContracts } = group
   return (
     <Card
       className={clsx(

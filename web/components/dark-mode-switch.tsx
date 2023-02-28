@@ -1,7 +1,6 @@
 import { Switch } from '@headlessui/react'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
 import { Row } from './layout/row'
 
 export function DarkModeSwitch(props: { disabled?: boolean }) {
