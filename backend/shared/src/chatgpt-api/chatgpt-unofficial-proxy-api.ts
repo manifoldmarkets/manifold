@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
-
 import * as types from './types'
+// p-timeout can't even be added via yarn if you want the local emulator to run
 import { fetch as globalFetch } from './fetch'
 import { fetchSSE } from './fetch-sse'
 
@@ -231,7 +231,7 @@ export class ChatGPTUnofficialProxyAPI {
       // time out after `timeoutMs` milliseconds
       console.log('TODO: timeout not implemented yet')
       return responseP
-      // return ptimeout.default(responseP, {
+      // return pTimeout(responseP, {
       //   milliseconds: timeoutMs,
       //   message: 'ChatGPT timed out waiting for response',
       // })

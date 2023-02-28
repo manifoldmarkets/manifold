@@ -1,5 +1,7 @@
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { first } from 'lodash'
+import { Button } from 'web/components/buttons/button'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
@@ -215,6 +217,7 @@ export function ContractPageContent(
   const [topContractMetrics, setTopContractMetrics] = useState<
     ContractMetric[]
   >(props.topContractMetrics)
+  const [seeWhatTheAiSays, setSeeWhatTheAiSays] = useState(false)
 
   useEffect(() => {
     // If the contract resolves while the user is on the page, get the top contract metrics
@@ -258,7 +261,14 @@ export function ContractPageContent(
     [props.historyData.points, newBets]
   )
 
-  const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
+  const {
+    isResolved,
+    outcomeType,
+    resolution,
+    closeTime,
+    creatorId,
+    aiDescription,
+  } = contract
 
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
@@ -330,7 +340,40 @@ export function ContractPageContent(
           toggleResolver={() => setShowResolver(!showResolver)}
         />
 
-        {contract.aiDescription && <Row>{contract.aiDescription}</Row>}
+        {aiDescription && (
+          <Col className={'my-2'}>
+            <Row
+              className={
+                'relative rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-1'
+              }
+            >
+              <Row
+                className={' w-full justify-between rounded-lg bg-white p-2 '}
+              >
+                <span>Ask an AI</span>
+                <Button
+                  color={'gray-white'}
+                  size={'xs'}
+                  onClick={() => setSeeWhatTheAiSays(!seeWhatTheAiSays)}
+                >
+                  {seeWhatTheAiSays ? (
+                    <ChevronUpIcon className="ml-1 h-4 w-4" />
+                  ) : (
+                    <ChevronDownIcon className="ml-1 h-4 w-4" />
+                  )}
+                </Button>
+              </Row>
+            </Row>
+            <Row>
+              {seeWhatTheAiSays && (
+                <Linkify
+                  className={'whitespace-pre-wrap'}
+                  text={aiDescription}
+                />
+              )}
+            </Row>
+          </Col>
+        )}
 
         {showResolver &&
           user &&

@@ -39,13 +39,17 @@ export const onCreateContract = functions
       mentioned
     )
     const imagePrompt = await getImagePrompt(contract.question)
-    const [coverImageUrl, aiDescription] = await Promise.all([
-      dreamWithDefaultParams(imagePrompt ?? contract.question),
-      getDescriptionForQuestion(contract.question),
-    ])
+    const coverImageUrl = await dreamWithDefaultParams(
+      imagePrompt ?? contract.question
+    )
     await snapshot.ref.update(
       removeUndefinedProps({
         coverImageUrl,
+      })
+    )
+    const aiDescription = await getDescriptionForQuestion(contract.question)
+    await snapshot.ref.update(
+      removeUndefinedProps({
         aiDescription,
       })
     )

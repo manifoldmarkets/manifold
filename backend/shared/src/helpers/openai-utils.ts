@@ -135,7 +135,9 @@ export const getDescriptionForQuestion = async (question: string) => {
   const content = `Consider this question from a crowd-sourced question and answer site: "${question}"
 Now, please describe any background or other relevant information that would be of use to someone interested in answering the question and/or just learning more about the topic.`
   // send a message and wait for the response
-  const res = await api.sendMessage(content)
+  const res = await api.sendMessage(content, {
+    onProgress: (partialResponse) => console.log(partialResponse.text),
+  })
   console.log('ai description response:', res.text)
   return res.text
 }
