@@ -68,7 +68,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   popularityScore?: number
   dailyScore?: number
-  followerCount?: number
   likedByUserCount?: number
   flaggedByUsernames?: string[] // Deprecated as of 2023-01-05
   unlistedById?: string
