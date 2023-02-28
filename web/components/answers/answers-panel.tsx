@@ -28,7 +28,7 @@ export function getAnswerColor(answer: Answer, answersArray: string[]) {
   const colorIndex = answersArray.indexOf(answer.text)
   return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
     ? CHOICE_ANSWER_COLORS[colorIndex]
-    : '#B1B1C780'
+    : '#B1B1C7B3'
 }
 
 export function AnswersPanel(props: {
