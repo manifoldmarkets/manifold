@@ -1,6 +1,8 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
 import { clamp } from 'lodash'
+import toast from 'react-hot-toast'
+import { CheckIcon } from '@heroicons/react/solid'
 
 import { useUser } from 'web/hooks/use-user'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
@@ -36,18 +38,16 @@ import { BetSignUpPrompt } from '../sign-up-prompt'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { track } from 'web/lib/service/analytics'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { LimitBets } from './limit-bets'
+import { LimitBets, OrderBookButton } from './limit-bets'
 import { PillButton } from '../buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { Modal } from '../layout/modal'
-import { Title } from '../widgets/title'
-import toast from 'react-hot-toast'
-import { CheckIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
+import { SiteLink } from '../widgets/site-link'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -179,6 +179,7 @@ export function BuyPanel(props: {
   mobileView?: boolean
   initialOutcome?: binaryOutcomes
   location?: string
+  className?: string
 }) {
   const {
     contract,
@@ -190,11 +191,16 @@ export function BuyPanel(props: {
     mobileView,
     initialOutcome,
     location = 'bet panel',
+    className,
   } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const [outcome, setOutcome] = useState<binaryOutcomes>(initialOutcome)
+  const [option, setOption] = useState<binaryOutcomes | 'limit'>(initialOutcome)
+
+  const outcome = option === 'limit' ? undefined : option
+  const seeLimit = option === 'limit'
+
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -203,12 +209,12 @@ export function BuyPanel(props: {
 
   useEffect(() => {
     if (initialOutcome) {
-      setOutcome(initialOutcome)
+      setOption(initialOutcome)
     }
   }, [initialOutcome])
 
   function onBetChoice(choice: 'YES' | 'NO') {
-    setOutcome(choice)
+    setOption(choice)
 
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
@@ -217,9 +223,9 @@ export function BuyPanel(props: {
 
   function mobileOnBetChoice(choice: 'YES' | 'NO' | undefined) {
     if (outcome === choice) {
-      setOutcome(undefined)
+      setOption(undefined)
     } else {
-      setOutcome(choice)
+      setOption(choice)
     }
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
@@ -229,7 +235,7 @@ export function BuyPanel(props: {
   function onBetChange(newAmount: number | undefined) {
     setBetAmount(newAmount)
     if (!outcome) {
-      setOutcome('YES')
+      setOption('YES')
     }
   }
 
@@ -288,7 +294,6 @@ export function BuyPanel(props: {
     balanceByUserId
   )
 
-  const [seeLimit, setSeeLimit] = useState(false)
   const resultProb = getCpmmProbability(newPool, newP)
   const probStayedSame =
     formatPercent(resultProb) === formatPercent(initialProb)
@@ -326,31 +331,42 @@ export function BuyPanel(props: {
   const displayError = !!outcome
 
   return (
-    <Col className={hidden ? 'hidden' : ''}>
-      <YesNoSelector
-        className="mb-2"
-        btnClassName="flex-1"
-        selected={outcome}
-        onSelect={(choice) => {
-          if (mobileView) {
-            mobileOnBetChoice(choice)
-          } else {
-            onBetChoice(choice)
-          }
-        }}
-        isPseudoNumeric={isPseudoNumeric}
-      />
+    <Col className={clsx(className, hidden ? 'hidden' : '')}>
+      <Row className="mb-2 w-full items-center gap-3">
+        <YesNoSelector
+          className="flex-1"
+          btnClassName="flex-1"
+          selected={outcome}
+          onSelect={(choice) => {
+            if (mobileView) {
+              mobileOnBetChoice(choice)
+            } else {
+              onBetChoice(choice)
+            }
+          }}
+          isPseudoNumeric={isPseudoNumeric}
+        />
+        <button
+          className={clsx(
+            'inline-flex items-center justify-center rounded-3xl border-2 py-2 px-4',
+            seeLimit
+              ? 'border-indigo-500 bg-indigo-500 text-white'
+              : 'border-indigo-500 bg-white text-indigo-500 hover:border-indigo-500 hover:text-indigo-500'
+          )}
+          onClick={() => setOption('limit')}
+        >
+          %
+        </button>
+      </Row>
 
       <Col
         className={clsx(
-          mobileView
-            ? outcome === 'NO'
-              ? 'bg-red-25'
-              : outcome === 'YES'
-              ? 'bg-teal-50'
-              : 'hidden'
-            : 'bg-white',
-          mobileView ? 'rounded-lg px-4 py-2' : 'px-0'
+          outcome === 'NO'
+            ? 'bg-red-25'
+            : outcome === 'YES'
+            ? 'bg-teal-50'
+            : 'hidden',
+          'rounded-lg px-4 py-2'
         )}
       >
         <Row className="mt-2 mb-1 justify-between text-left text-sm text-gray-500">
@@ -365,7 +381,7 @@ export function BuyPanel(props: {
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}
-          sliderOptions={{ show: true, wrap: !mobileView }}
+          sliderOptions={{ show: true, wrap: false }}
           binaryOutcome={outcome}
           hideInput={hideInput}
         />
@@ -450,18 +466,9 @@ export function BuyPanel(props: {
             }
           />
         )}
-        <button
-          className="mx-auto mt-3 select-none text-sm text-gray-600 underline xl:hidden"
-          onClick={() => setSeeLimit(true)}
-        >
-          Advanced
-        </button>
-        <Modal
-          open={seeLimit}
-          setOpen={setSeeLimit}
-          className="rounded-lg bg-white p-4"
-        >
-          <Title children="Limit Order" />
+      </Col>
+      {option === 'limit' && (
+        <Col className="bg-indigo-25 rounded-lg px-4 py-2">
           <LimitOrderPanel
             hidden={!seeLimit}
             contract={contract}
@@ -470,13 +477,10 @@ export function BuyPanel(props: {
             balanceByUserId={balanceByUserId}
             mobileView={mobileView}
           />
-          <LimitBets
-            contract={contract}
-            bets={unfilledBets as LimitBet[]}
-            className="mt-4"
-          />
-        </Modal>
-      </Col>
+        </Col>
+      )}
+
+      <LimitBets contract={contract} bets={unfilledBets as LimitBet[]} />
     </Col>
   )
 }
@@ -667,7 +671,25 @@ function LimitOrderPanel(props: {
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
-      <Row className="mt-1 mb-4 items-center gap-4">
+      <Row
+        className={clsx(
+          'mb-2 w-full justify-between gap-4 self-start',
+          mobileView ? '' : 'sm:hidden'
+        )}
+      >
+        <OrderBookButton limitBets={unfilledBets} contract={contract} />
+        <SiteLink
+          className="flex flex-row items-center gap-1 text-sm text-gray-500"
+          href={
+            // Manifold help for limit orders.
+            'https://help.manifold.markets/64cf65f9f96047c3a727489e778e5983'
+          }
+          followsLinkClass
+        >
+          What is a limit order? <ExternalLinkIcon className="h-4 w-4" />
+        </SiteLink>
+      </Row>
+      <Row className="mt-1 mb-4 gap-4">
         <Col className="gap-2">
           <div className="text-sm text-gray-500">
             Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
@@ -693,6 +715,24 @@ function LimitOrderPanel(props: {
             placeholder="90"
           />
         </Col>
+        <Row
+          className={clsx(
+            mobileView ? 'hidden' : 'hidden sm:flex',
+            'ml-auto gap-4 self-start'
+          )}
+        >
+          <SiteLink
+            className="flex flex-row items-center gap-1 text-sm text-gray-500"
+            href={
+              // Manifold help for limit orders.
+              'https://help.manifold.markets/64cf65f9f96047c3a727489e778e5983'
+            }
+            followsLinkClass
+          >
+            What is a limit order? <ExternalLinkIcon className="h-4 w-4" />
+          </SiteLink>
+          <OrderBookButton limitBets={unfilledBets} contract={contract} />
+        </Row>
       </Row>
 
       {outOfRangeError && (
@@ -723,7 +763,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        sliderOptions={{ show: true, wrap: !mobileView }}
+        sliderOptions={{ show: true, wrap: false }}
       />
 
       <Col className="mt-8 w-full gap-3">

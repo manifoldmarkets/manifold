@@ -687,6 +687,18 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_user_bets_from_resolved_contracts: {
+        Args: {
+          uid: string
+          count: number
+          start: number
+        }
+        Returns: {
+          contract_id: string
+          bets: Json[]
+          contract: Json
+        }[]
+      }
       get_your_contract_ids:
         | {
             Args: {
