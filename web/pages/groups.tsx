@@ -152,7 +152,7 @@ export function GroupCard(props: {
   return (
     <Card
       className={clsx(
-        'hover:bg-ink-100 bg-canvas-0  relative min-w-[20rem] gap-1 rounded-xl  p-6',
+        'hover:bg-ink-100 bg-canvas-0 relative min-w-[20rem] gap-1 rounded-xl  p-6',
         className,
         highlightCards?.includes(group.id) &&
           '!bg-primary-100 outline-primary-500 outline outline-2'
