@@ -35,9 +35,7 @@ export function Page(props: {
           className,
           bottomBarPadding,
           'text-ink-1000 mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:gap-x-8',
-            maxWidth
-            ? maxWidth
-            : 'xl:max-w-7xl'
+          maxWidth ? maxWidth : 'xl:max-w-7xl'
         )}
       >
         <Toaster
