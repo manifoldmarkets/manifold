@@ -107,9 +107,9 @@ export default function CalibrationPage(props: { user: User | null }) {
                 {user?.name} bet YES at x%, the market resolved YES y% of the
                 time on average. Perfect calibration would result in all green
                 points being above the line, all red points below, and a score
-                of zero. The score is the mean squared error for yes and no
-                bets. Bets are put in buckets with a maximum size of 10%, and
-                buckets are weighted by the size of the bet in mana.
+                of zero. The score is the mean squared error for yes and no bets
+                times -100. Each point is a bucket of bets weighted by bet
+                amount with a maximum size of 10% (sold bets are excluded).
               </div>
             </>
           )}
@@ -134,6 +134,8 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
     const resolvedYES = resolution === 'YES'
 
     for (const bet of bets as Bet[]) {
+      if (bet.amount < 0) continue // skip sales
+
       const rawP = bet.probAfter * 100
 
       // get probability bucket that's closest to a prespecified point
@@ -141,7 +143,7 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
         Math.abs(curr - rawP) < Math.abs(prev - rawP) ? curr : prev
       )
 
-      const w = Math.abs(bet.amount) // weight by bet amount
+      const w = bet.amount // weight by bet amount
 
       if (bet.outcome === 'YES') {
         yesProbBuckets[p] = (yesProbBuckets[p] ?? 0) + (resolvedYES ? w : 0)
@@ -188,19 +190,21 @@ const calculateScore = (
   let n = 0
 
   for (const point of points) {
-    if (yesBuckets[point] !== undefined) {
-      score +=
-        yesBuckets[point] < point ? ((point - yesBuckets[point]) / 100) ** 2 : 0
+    const prob = point / 100
+    const yes = yesBuckets[point]
+    const no = noBuckets[point]
+
+    if (yes !== undefined) {
+      score += yes < prob ? (prob - yes) ** 2 : 0
       n++
     }
 
-    if (noBuckets[point] !== undefined) {
-      score +=
-        noBuckets[point] > point ? ((noBuckets[point] - point) / 100) ** 2 : 0
+    if (no !== undefined) {
+      score += no > prob ? (no - prob) ** 2 : 0
       n++
     }
   }
 
   const raw = score / n
-  return -Math.round(raw * 1e4) / 1e4
+  return (-100 * Math.round(raw * 1e4)) / 1e4
 }
