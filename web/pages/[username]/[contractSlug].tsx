@@ -308,11 +308,11 @@ export function ContractPageContent(
       {user && <BackRow />}
 
       <Row className="w-full items-start gap-6">
-        <Col className="max-w-4xl rounded bg-canvas-50 px-4 py-4 md:px-8 md:py-8 xl:w-[70%]">
+        <Col className="bg-canvas-50 max-w-4xl rounded px-4 py-4 md:px-8 md:py-8 xl:w-[70%]">
           <Col className="gap-3 sm:gap-4">
             <ContractDetails contract={contract} />
             <Linkify
-              className="text-lg text-primary-700 sm:text-2xl"
+              className="text-primary-700 text-lg sm:text-2xl"
               text={contract.question}
             />
             <ContractOverview
@@ -456,51 +456,3 @@ export function ContractSEO(props: {
     />
   )
 }
-<<<<<<< HEAD
-
-function ContractPageSidebar(props: { contract: Contract }) {
-  const { contract } = props
-  const { outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isNumeric = outcomeType === 'NUMERIC'
-  const allowTrade = tradingAllowed(contract)
-
-  const hasSidePanel = (isBinary || isNumeric || isPseudoNumeric) && allowTrade
-
-  if (!hasSidePanel) {
-    return null
-  }
-
-  return isNumeric ? (
-    <NumericBetPanel className="hidden xl:flex" contract={contract} />
-  ) : (
-    <BetPanel
-      className="hidden xl:flex"
-      contract={contract as CPMMBinaryContract}
-    />
-  )
-}
-
-const RelatedContractsWidget = memo(function RecommendedContractsWidget(props: {
-  contract: Contract
-}) {
-  const { contract } = props
-  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(contract)
-
-  if (!relatedMarkets || relatedMarkets.length === 0) {
-    return null
-  }
-  return (
-    <Col className="mt-2 gap-2 px-2 sm:px-1">
-      <Title className="text-ink-700" children="Related markets" />
-      <ContractsGrid
-        contracts={relatedMarkets ?? []}
-        trackingPostfix=" related"
-        loadMore={loadMore}
-      />
-    </Col>
-  )
-})
-=======
->>>>>>> main

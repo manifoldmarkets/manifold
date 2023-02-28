@@ -24,7 +24,6 @@ export function SignedInBinaryMobileBetting(props: {
 
   return (
     <Col className="my-3 w-full px-1">
-      <Title className="!mt-0 hidden text-black sm:flex">Trade</Title>
       <BuyPanel
         hidden={false}
         contract={contract as CPMMBinaryContract}

@@ -351,7 +351,7 @@ export function BuyPanel(props: {
             'inline-flex items-center justify-center rounded-3xl border-2 py-2 px-4',
             seeLimit
               ? 'border-indigo-500 bg-indigo-500 text-white'
-              : 'border-indigo-500 bg-white text-indigo-500 hover:border-indigo-500 hover:text-indigo-500'
+              : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:text-indigo-500'
           )}
           onClick={() => setOption('limit')}
         >
@@ -361,14 +361,12 @@ export function BuyPanel(props: {
 
       <Col
         className={clsx(
-          mobileView
-            ? outcome === 'NO'
-              ? 'bg-red-500/10'
-              : outcome === 'YES'
-              ? 'bg-teal-500/10'
-              : 'hidden'
-            : 'bg-canvas-0',
-          mobileView ? 'rounded-lg px-4 py-2' : 'px-0'
+          outcome === 'NO'
+            ? 'bg-red-500/10'
+            : outcome === 'YES'
+            ? 'bg-teal-500/10'
+            : 'hidden',
+          'rounded-lg px-4 py-2'
         )}
       >
         <Row className="text-ink-500 mt-2 mb-1 justify-between text-left text-sm">
@@ -470,7 +468,7 @@ export function BuyPanel(props: {
         )}
       </Col>
       {option === 'limit' && (
-        <Col className="bg-indigo-25 rounded-lg px-4 py-2">
+        <Col className="rounded-lg bg-indigo-500/10 px-4 py-2">
           <LimitOrderPanel
             hidden={!seeLimit}
             contract={contract}

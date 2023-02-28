@@ -56,7 +56,7 @@ function RelatedContractsList(props: {
 
   return (
     <Col>
-      <Col className="divide-y-[0.5px]">
+      <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts
           .filter((c) => c.coverImageUrl)
           .map((contract) => (
@@ -93,7 +93,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
       href={contractPath(contract)}
       className={clsx(
         'group flex flex-col gap-2 whitespace-nowrap rounded-sm py-3 px-4',
-        'bg-white focus:bg-[#fafaff] lg:hover:bg-[#fafaff]'
+        'bg-canvas-50 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors'
       )}
     >
       <Row className="gap-2">
