@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
@@ -37,37 +38,20 @@ export function LimitBets(props: {
     (bet) => bet.createdTime
   )
 
+  if (yourBets.length === 0) return null
+
   return (
-    <Col className={className}>
-      {yourBets.length === 0 && (
-        <OrderBookButton
-          className="self-end"
-          limitBets={bets}
-          contract={contract}
-        />
+    <Col
+      className={clsx(
+        className,
+        'mt-4 gap-2 overflow-hidden rounded bg-white py-3 sm:px-4'
       )}
+    >
+      <Row className="mt-2 mb-4 items-center justify-between">
+        <Subtitle className="!my-0">Your orders</Subtitle>
+      </Row>
 
-      {yourBets.length > 0 && (
-        <Col
-          className={'mt-4 gap-2 overflow-hidden rounded bg-white py-3 sm:px-4'}
-        >
-          <Row className="mt-2 mb-4 items-center justify-between">
-            <Subtitle className="!my-0">Your orders</Subtitle>
-
-            <OrderBookButton
-              className="self-end"
-              limitBets={bets}
-              contract={contract}
-            />
-          </Row>
-
-          <LimitOrderTable
-            limitBets={yourBets}
-            contract={contract}
-            isYou={true}
-          />
-        </Col>
-      )}
+      <LimitOrderTable limitBets={yourBets} contract={contract} isYou={true} />
     </Col>
   )
 }
@@ -228,9 +212,9 @@ export function OrderBookButton(props: {
         className={className}
         onClick={() => setOpen(true)}
         size="xs"
-        color="blue"
+        color="indigo"
       >
-        Order book ({limitBets.length})
+        {limitBets.length} orders
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">

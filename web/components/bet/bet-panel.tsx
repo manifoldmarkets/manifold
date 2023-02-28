@@ -38,7 +38,7 @@ import { BetSignUpPrompt } from '../sign-up-prompt'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { track } from 'web/lib/service/analytics'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { LimitBets } from './limit-bets'
+import { LimitBets, OrderBookButton } from './limit-bets'
 import { PillButton } from '../buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
@@ -46,6 +46,8 @@ import { WarningConfirmationButton } from '../buttons/warning-confirmation-butto
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { SINGULAR_BET } from 'common/user'
+import { SiteLink } from '../widgets/site-link'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -379,7 +381,7 @@ export function BuyPanel(props: {
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}
-          sliderOptions={{ show: true, wrap: !mobileView }}
+          sliderOptions={{ show: true, wrap: false }}
           binaryOutcome={outcome}
           hideInput={hideInput}
         />
@@ -475,13 +477,10 @@ export function BuyPanel(props: {
             balanceByUserId={balanceByUserId}
             mobileView={mobileView}
           />
-          <LimitBets
-            contract={contract}
-            bets={unfilledBets as LimitBet[]}
-            className="mt-4"
-          />
         </Col>
       )}
+
+      <LimitBets contract={contract} bets={unfilledBets as LimitBet[]} />
     </Col>
   )
 }
@@ -672,7 +671,25 @@ function LimitOrderPanel(props: {
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
-      <Row className="mt-1 mb-4 items-center gap-4">
+      <Row
+        className={clsx(
+          'mb-2 w-full justify-between gap-4 self-start',
+          mobileView ? '' : 'sm:hidden'
+        )}
+      >
+        <OrderBookButton limitBets={unfilledBets} contract={contract} />
+        <SiteLink
+          className="flex flex-row items-center gap-1 text-sm text-gray-500"
+          href={
+            // Manifold help for limit orders.
+            'https://help.manifold.markets/64cf65f9f96047c3a727489e778e5983'
+          }
+          followsLinkClass
+        >
+          What is a limit order? <ExternalLinkIcon className="h-4 w-4" />
+        </SiteLink>
+      </Row>
+      <Row className="mt-1 mb-4 gap-4">
         <Col className="gap-2">
           <div className="text-sm text-gray-500">
             Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
@@ -698,6 +715,24 @@ function LimitOrderPanel(props: {
             placeholder="90"
           />
         </Col>
+        <Row
+          className={clsx(
+            mobileView ? 'hidden' : 'hidden sm:flex',
+            'ml-auto gap-4 self-start'
+          )}
+        >
+          <SiteLink
+            className="flex flex-row items-center gap-1 text-sm text-gray-500"
+            href={
+              // Manifold help for limit orders.
+              'https://help.manifold.markets/64cf65f9f96047c3a727489e778e5983'
+            }
+            followsLinkClass
+          >
+            What is a limit order? <ExternalLinkIcon className="h-4 w-4" />
+          </SiteLink>
+          <OrderBookButton limitBets={unfilledBets} contract={contract} />
+        </Row>
       </Row>
 
       {outOfRangeError && (
@@ -728,7 +763,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        sliderOptions={{ show: true, wrap: !mobileView }}
+        sliderOptions={{ show: true, wrap: false }}
       />
 
       <Col className="mt-8 w-full gap-3">
