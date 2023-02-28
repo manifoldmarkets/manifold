@@ -15,7 +15,6 @@ import { groupBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
-import { TipTxn } from 'common/txn'
 import { Group } from 'common/group'
 import { Challenge } from 'common/challenge'
 import {
@@ -142,6 +141,7 @@ export type replied_users_info = {
   }
 }
 
+// TODO: remove contract updated from this, seems out of place
 export const createCommentOrAnswerOrUpdatedContractNotification = async (
   sourceId: string,
   sourceType: 'comment' | 'answer' | 'contract',
@@ -444,52 +444,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   // if they weren't notified previously, notify them now
   log('notifying followers')
   await notifyContractFollowers()
-}
-
-export const createTipNotification = async (
-  fromUser: User,
-  toUser: User,
-  tip: TipTxn,
-  idempotencyKey: string,
-  commentId: string,
-  contract?: Contract,
-  group?: Group
-) => {
-  const privateUser = await getPrivateUser(toUser.id)
-  if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'tip_received'
-  )
-  if (!sendToBrowser) return
-
-  const slug = group ? group.slug + `#${commentId}` : commentId
-  const notificationRef = firestore
-    .collection(`/users/${toUser.id}/notifications`)
-    .doc(idempotencyKey)
-  const notification: Notification = {
-    id: idempotencyKey,
-    userId: toUser.id,
-    reason: 'tip_received',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: tip.id,
-    sourceType: 'tip',
-    sourceUpdateType: 'created',
-    sourceUserName: fromUser.name,
-    sourceUserUsername: fromUser.username,
-    sourceUserAvatarUrl: fromUser.avatarUrl,
-    sourceText: tip.amount.toString(),
-    sourceContractCreatorUsername: contract?.creatorUsername,
-    sourceContractTitle: contract?.question,
-    sourceContractSlug: contract?.slug,
-    sourceSlug: slug,
-    sourceTitle: group?.name,
-  }
-  return await notificationRef.set(removeUndefinedProps(notification))
-
-  // TODO: send notification to users that are watching the contract and want highly tipped comments only
-  // maybe TODO: send email notification to bet creator
 }
 
 export const createBetFillNotification = async (
