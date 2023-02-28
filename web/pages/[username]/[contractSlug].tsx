@@ -65,6 +65,7 @@ import { ContractDetails } from 'web/components/contract/contract-details'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { RelatedContractsWidget } from 'web/components/contract/related-contracts-widget'
 import { Row } from 'web/components/layout/row'
+import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -133,6 +134,10 @@ export async function getStaticPropz(ctx: {
 
   const creator = contract && (await getUser(contract.creatorId))
 
+  const relatedContracts = contract
+    ? await getInitialRelatedMarkets(contract)
+    : []
+
   return {
     props: removeUndefinedProps({
       contract,
@@ -147,6 +152,7 @@ export async function getStaticPropz(ctx: {
       totalBets,
       topContractMetrics,
       creatorTwitter: creator?.twitterHandle,
+      relatedContracts,
     }),
   }
 }
@@ -164,7 +170,8 @@ export default function ContractPage(props: {
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
-  creatorTwitter?: string
+  creatorTwitter: string | undefined
+  relatedContracts: Contract[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -175,6 +182,7 @@ export default function ContractPage(props: {
     totalBets: 0,
     topContractMetrics: [],
     totalPositions: 0,
+    relatedContracts: [],
   }
 
   const inIframe = useIsIframe()
@@ -202,6 +210,7 @@ export function ContractPageContent(
     totalPositions,
     pointsString,
     creatorTwitter,
+    relatedContracts,
   } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
@@ -410,9 +419,14 @@ export function ContractPageContent(
         <RelatedContractsWidget
           className="hidden max-w-[400px] xl:flex"
           contract={contract}
+          initialContracts={relatedContracts}
         />
       </Row>
-      <RelatedContractsWidget className="xl:hidden" contract={contract} />
+      <RelatedContractsWidget
+        className="xl:hidden"
+        contract={contract}
+        initialContracts={relatedContracts}
+      />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>

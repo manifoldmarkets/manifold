@@ -13,24 +13,26 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export const RelatedContractsWidget = memo(
   function RecommendedContractsWidget(props: {
     contract: Contract
+    initialContracts: Contract[]
     className?: string
   }) {
-    const { contract, className } = props
-    const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(contract)
+    const { contract, initialContracts, className } = props
+    const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
+      contract,
+      initialContracts
+    )
 
-    if (!relatedMarkets || relatedMarkets.length === 0) {
+    if (relatedMarkets.length === 0) {
       return null
     }
     return (
       <Col className={clsx(className, 'gap-2')}>
-        <RelatedContractsList
-          contracts={relatedMarkets ?? []}
-          loadMore={loadMore}
-        />
+        <RelatedContractsList contracts={relatedMarkets} loadMore={loadMore} />
       </Col>
     )
   }
@@ -84,6 +86,8 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
     creatorCreatedTime,
   } = contract
 
+  const isClient = useIsClient()
+
   return (
     <Link
       href={contractPath(contract)}
@@ -103,6 +107,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
           username={contract.creatorUsername}
           className="text-sm text-gray-400"
           createdTime={creatorCreatedTime}
+          noLink={!isClient}
         />
       </Row>
       <Row className="gap-2">
