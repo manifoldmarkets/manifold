@@ -821,6 +821,25 @@ from (
 limit count
 $$;
 
+create or replace function get_user_bets_from_resolved_contracts(uid text, count int, start int)
+    returns table(contract_id text, bets jsonb[], contract jsonb)
+    immutable parallel safe
+    language sql
+as $$;
+select contract_id, bets.data as bets, contracts.data as contracts
+from (
+         select contract_id, array_agg(data order by (data->>'createdTime') desc) as data from contract_bets
+         where (data->>'userId') = uid and
+               (data->>'amount')::real != 0
+         group by contract_id
+     ) as bets
+ join contracts
+ on contracts.id = bets.contract_id
+ where (contracts.data->>'isResolved')::boolean = true and (contracts.data->>'outcomeType')::text = 'BINARY'
+limit count
+offset start
+$$;
+
 
 create or replace view group_role as(
   select member_id, 
