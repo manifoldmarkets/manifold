@@ -53,7 +53,7 @@ export function UserCommentsList(props: { user: User }) {
   }
 
   return (
-    <Col className={'bg-ink-1000'}>
+    <Col className={'bg-canvas-50'}>
       {pageComments.map(({ key, items }, i) => {
         return <ProfileCommentGroup key={i} groupKey={key} items={items} />
       })}
