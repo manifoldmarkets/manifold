@@ -90,7 +90,10 @@ export default function Sidebar(props: {
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
-        <DarkModeSwitch />
+        <Spacer h={1} />
+        <div className="px-2">
+          <DarkModeSwitch />
+        </div>
         {user === null && (
           <SignInButton key="sign-in-button" className="mt-3" />
         )}
