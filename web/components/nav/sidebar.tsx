@@ -90,8 +90,8 @@ export default function Sidebar(props: {
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
-        <Spacer h={1} />
-        <div className="px-2">
+
+        <div className="px-2 py-1">
           <DarkModeSwitch />
         </div>
         {user === null && (

@@ -83,7 +83,7 @@ const ContractWithProbChange = forwardRef(
         href={contractPath(contract)}
         className={clsx(
           'group flex flex-col gap-1 whitespace-nowrap px-4 py-3 lg:flex-row lg:gap-2',
-          'focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
+          'focus:bg-ink-300/20 lg:hover:bg-ink-300/20',
           className
         )}
       >
