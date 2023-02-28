@@ -58,10 +58,7 @@ export default function CalibrationPage(props: { user: User | null }) {
 
   return (
     <Page>
-      <SEO
-        title="Calibration"
-        description="Personal calibration results"
-      />
+      <SEO title="Calibration" description="Personal calibration results" />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
           <Title>Calibration</Title>
@@ -98,7 +95,8 @@ export default function CalibrationPage(props: { user: User | null }) {
                   width: 800,
                   height: 500,
                   title:
-                    'Calibration' +
+                    user?.name +
+                    "'s bet calibration" +
                     (score !== undefined ? ` (score: ${score})` : ''),
                   xaxis: { title: 'Probability after bet' },
                   yaxis: { title: 'Resolution probability' },
@@ -107,9 +105,11 @@ export default function CalibrationPage(props: { user: User | null }) {
               <div className="max-w-2xl text-sm">
                 Interpretation: The green dot at (x%, y%) means when{' '}
                 {user?.name} bet YES at x%, the market resolved YES y% of the
-                time. Perfect calibration would result in all green points being
-                above the line, all red points below, and a score of zero. The
-                score is the mean squared error for yes and no bets.
+                time on average. Perfect calibration would result in all green
+                points being above the line, all red points below, and a score
+                of zero. The score is the mean squared error for yes and no
+                bets. Bets are put in buckets with a maximum size of 10%, and
+                buckets are weighted by the size of the bet in mana.
               </div>
             </>
           )}
