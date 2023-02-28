@@ -39,7 +39,7 @@ export function MultipleChoiceAnswers(props: {
             <button
               onClick={() => removeAnswer(i)}
               type="button"
-              className="inline-flex items-center rounded-full border border-gray-300 bg-white p-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
               <XIcon className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -51,7 +51,7 @@ export function MultipleChoiceAnswers(props: {
         <button
           type="button"
           onClick={addAnswer}
-          className="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
         >
           Add answer
         </button>

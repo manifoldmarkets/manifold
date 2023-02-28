@@ -116,7 +116,7 @@ const LabCard = (props: {
     <Link href={href} className="mb-4 block">
       <Card className="flex flex-col gap-2 px-4 py-3">
         <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="text-gray-600">{description}</p>
+        <p className="text-ink-600">{description}</p>
       </Card>
     </Link>
   )

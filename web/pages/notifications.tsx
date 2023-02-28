@@ -66,7 +66,7 @@ export default function Notifications() {
         ) : (
           privateUser &&
           !privateUser.hasSeenAppBannerInNotificationsOn && (
-            <Row className="relative rounded-md bg-blue-50 p-2">
+            <Row className="bg-primary-50 relative mb-2 rounded-md py-2 px-4 text-sm">
               <XIcon
                 onClick={() =>
                   updatePrivateUser(privateUser.id, {
@@ -74,10 +74,10 @@ export default function Notifications() {
                   })
                 }
                 className={
-                  'absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full bg-gray-100 sm:p-0.5'
+                  'bg-canvas-100 absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full sm:p-0.5'
                 }
               />
-              <span className={'text-sm sm:text-base'}>
+              <span className={'text-ink-0 text-sm sm:text-base'}>
                 <Row className={'items-center'}>
                   We have a mobile app! Get the Manifold icon on your home
                   screen and push notifications (if you want 'em).
@@ -146,7 +146,7 @@ function RenderNotificationGroups(props: {
   const { notificationGroups } = props
 
   const grayLine = (
-    <div className="mx-auto h-[1.5px] w-[calc(100%-1rem)] bg-gray-300" />
+    <div className="bg-ink-300 mx-auto h-[1.5px] w-[calc(100%-1rem)]" />
   )
   return (
     <>

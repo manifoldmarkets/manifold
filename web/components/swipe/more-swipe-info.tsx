@@ -37,7 +37,7 @@ export function MoreSwipeInfo(props: {
   return (
     <Col
       className={clsx(
-        'break-words text-sm font-thin text-gray-100',
+        'text-ink-100 break-words text-sm font-thin',
         'items-end'
       )}
     >
@@ -46,7 +46,7 @@ export function MoreSwipeInfo(props: {
       </div>
 
       <span
-        className="mr-2 font-semibold text-indigo-400"
+        className="text-primary-400 mr-2 font-semibold"
         onClick={() => setAllOpen(true)}
       >
         See more
@@ -74,8 +74,8 @@ export function MoreInfoButton(props: {
   return (
     <button
       className={clsx(
-        'hover:text-gray-600 disabled:opacity-50',
-        color === 'white' ? 'text-white' : 'text-gray-500'
+        'hover:text-ink-600 disabled:opacity-50',
+        color === 'white' ? 'text-ink' : 'text-ink-500'
       )}
       onClick={(e) => {
         e.preventDefault()

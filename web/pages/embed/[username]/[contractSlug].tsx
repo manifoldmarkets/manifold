@@ -195,10 +195,10 @@ function ContractSmolView(props: {
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
   const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
-  const questionColor = textColor ?? 'rgb(67, 56, 202)' // text-indigo-700
+  const questionColor = textColor ?? 'rgb(67, 56, 202)' // text-primary-700
 
   return (
-    <Col className="h-[100vh] w-full bg-white p-4">
+    <Col className="bg-canvas-0 h-[100vh] w-full p-4">
       <Row className="justify-between gap-4">
         <div>
           <a
@@ -250,8 +250,8 @@ const Details = (props: { contract: Contract }) => {
     props.contract
 
   return (
-    <div className="relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-400">
-      <span className="flex gap-1 text-gray-600">
+    <div className="text-ink-400 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs">
+      <span className="text-ink-600 flex gap-1">
         <Avatar
           size="2xs"
           avatarUrl={creatorAvatarUrl}

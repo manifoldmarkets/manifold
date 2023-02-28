@@ -41,7 +41,7 @@ export default function App() {
         url="/dream"
       />
       <Col>
-        <Col className="mx-auto max-w-lg gap-2 rounded bg-white">
+        <Col className="bg-canvas-0 mx-auto max-w-lg gap-2 rounded">
           <DreamCard onDream={onDream} />
           {imageUrl ? (
             <>

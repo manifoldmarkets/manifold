@@ -52,7 +52,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
         <PencilIcon className="inline h-4 w-4" /> Edit
       </Button>
       <Modal open={open} setOpen={updateOpen}>
-        <div className="h-full rounded-md bg-white p-8">
+        <div className="bg-canvas-0 h-full rounded-md p-8">
           <div className="flex w-full flex-col">
             <label className="px-1 py-2">
               <span className="mb-1">Group name</span>

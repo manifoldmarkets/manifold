@@ -84,7 +84,7 @@ export function BetStatusText(props: {
       : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
 
   return (
-    <div className={clsx('text-sm text-gray-500', className)}>
+    <div className={clsx('text-ink-500 text-sm', className)}>
       {!hideUser ? (
         <UserLink name={bet.userName} username={bet.userUsername} />
       ) : (

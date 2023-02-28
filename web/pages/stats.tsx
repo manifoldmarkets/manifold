@@ -87,11 +87,11 @@ export function CustomAnalytics(props: Stats) {
   return (
     <Col className="px-2 sm:px-0">
       <Title children="Active users" />
-      <p className="text-gray-500">
+      <p className="text-ink-500">
         An active user is a user who has traded in, commented on, or created a
         market.
       </p>
-      <div className="mt-2 text-gray-500">
+      <div className="text-ink-500 mt-2">
         <b>{formatLargeNumber(currentDAUs)} DAUs</b> yesterday;{' '}
         {formatLargeNumber(avgDAUs)} avg DAUs last week
       </div>
@@ -140,7 +140,7 @@ export function CustomAnalytics(props: Stats) {
         ]}
       />
       {/* We'd like to embed these in a separate tab, but unfortunately Umami doesn't seem to support iframe embeds atm */}
-      <InfoBox title="" className="mt-4 bg-gray-100">
+      <InfoBox title="" className="bg-ink-100 mt-4">
         <span>
           For pageview and visitor stats, see{' '}
           {isNative ? (
@@ -148,7 +148,7 @@ export function CustomAnalytics(props: Stats) {
               href={
                 'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets'
               }
-              className={'text-indigo-700'}
+              className={'text-primary-700'}
             >
               our umami page
             </a>
@@ -161,7 +161,7 @@ export function CustomAnalytics(props: Stats) {
       <Spacer h={8} />
 
       <Title children="Revenue" />
-      <p className="text-gray-500">
+      <p className="text-ink-500">
         <b>${formatWithCommas(last30dSales)}</b> of mana sold in the last 30d
       </p>
 
@@ -182,7 +182,7 @@ export function CustomAnalytics(props: Stats) {
       <Spacer h={8} />
 
       <Title children="Retention" />
-      <p className="text-gray-500">
+      <p className="text-ink-500">
         What fraction of active users are still active after the given time
         period?
       </p>
@@ -239,7 +239,7 @@ export function CustomAnalytics(props: Stats) {
 
       <Spacer h={8} />
       <Title children="New user retention" />
-      <p className="text-gray-500">
+      <p className="text-ink-500">
         What fraction of new users are still active after the given time period?
       </p>
       <Spacer h={4} />
@@ -326,7 +326,7 @@ export function CustomAnalytics(props: Stats) {
       <Spacer h={8} />
 
       <Title children="Activation rate" />
-      <p className="text-gray-500">
+      <p className="text-ink-500">
         Out of all new users, how many placed at least one bet?
       </p>
       <Spacer h={4} />
@@ -404,7 +404,7 @@ export function CustomAnalytics(props: Stats) {
       <Spacer h={8} />
 
       <Title children="Total mana bet" />
-      <p className="text-gray-500">
+      <p className="text-ink-500">
         Sum of bet amounts. (Divided by 100 to be more readable.)
       </p>
       <Tabs
@@ -439,7 +439,7 @@ export function CustomAnalytics(props: Stats) {
 export function WasabiCharts() {
   return (
     <>
-      <p className="text-gray-500">
+      <p className="text-ink-500">
         Courtesy of <Linkify text="@wasabipesto" />; originally found{' '}
         <SiteLink
           className="font-bold"
@@ -451,7 +451,7 @@ export function WasabiCharts() {
       <InfoBox
         text="This page is out of date, as of 2023-01-01"
         title=""
-        className="mt-2 bg-gray-100"
+        className="bg-ink-100 mt-2"
       />
       <Spacer h={4} />
       <iframe

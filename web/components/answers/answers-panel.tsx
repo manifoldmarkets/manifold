@@ -184,7 +184,7 @@ export function AnswersPanel(props: {
       )}
 
       {answers.length === 0 && (
-        <div className="pb-4 text-gray-500">No answers yet...</div>
+        <div className="text-ink-500 pb-4">No answers yet...</div>
       )}
 
       {outcomeType === 'FREE_RESPONSE' &&
@@ -226,7 +226,7 @@ function OpenAnswer(props: {
             contract={contract}
             mode={betMode}
             closePanel={() => setBetMode(undefined)}
-            className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
+            className="sm:max-w-84 bg-canvas-0 !rounded-md !px-8 !py-6"
             isModal={true}
           />
         )}
@@ -235,7 +235,7 @@ function OpenAnswer(props: {
       <div
         className={clsx(
           'relative w-full rounded-lg transition-all',
-          tradingAllowed(contract) ? 'text-gray-900' : 'text-gray-500'
+          tradingAllowed(contract) ? 'text-ink-900' : 'text-ink-500'
         )}
         style={{
           background: `linear-gradient(to right, ${color}90 ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
@@ -287,7 +287,7 @@ function OpenAnswer(props: {
                 className="p-1"
                 onClick={() => onAnswerCommentClick(answer)}
               >
-                <ChatIcon className="h-5 w-5 text-gray-400 transition-colors hover:text-gray-600" />
+                <ChatIcon className="text-ink-400 hover:text-ink-600 h-5 w-5 transition-colors" />
               </button>
             )}
           </Row>

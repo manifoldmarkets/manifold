@@ -52,7 +52,7 @@ export function MiscDetails(props: {
     !contract.isResolved && (contract.closeTime ?? Infinity) > Date.now()
 
   return (
-    <Row className="w-full items-center gap-3 text-sm text-gray-400">
+    <Row className="text-ink-400 w-full items-center gap-3 text-sm">
       {isOpen && contract.elasticity < 0.5 ? (
         <Tooltip text={'High-stakes'} className={'z-10'}>
           <FireIcon className="h-5 w-5 text-blue-700" />
@@ -91,7 +91,7 @@ export function MiscDetails(props: {
           href={groupPath(groupToDisplay.slug)}
           className={clsx(
             linkClass,
-            'z-10 max-w-[8rem] truncate text-sm text-gray-400'
+            'text-ink-400 z-10 max-w-[8rem] truncate text-sm'
           )}
         >
           {groupToDisplay.name}
@@ -141,12 +141,12 @@ export function MarketSubheader(props: { contract: Contract }) {
 
       <Col className="whitespace-nowrap text-sm">
         <UserLink
-          className="text-gray-600"
+          className="text-ink-600"
           name={creatorName}
           username={creatorUsername}
           createdTime={creatorCreatedTime}
         />
-        <span className="text-xs font-light text-gray-400">
+        <span className="text-ink-400 text-xs font-light">
           <CloseOrResolveTime contract={contract} editable={isEditable} />
         </span>
       </Col>
@@ -204,9 +204,9 @@ function MarketGroups(props: { contract: Contract }) {
         {user && (
           <button onClick={() => setOpen(true)}>
             {groupsToDisplay.length ? (
-              <DotsCircleHorizontalIcon className="h-[20px] text-gray-400 hover:text-gray-400/75" />
+              <DotsCircleHorizontalIcon className="text-ink-400 hover:text-ink-400/75 h-[20px]" />
             ) : (
-              <span className="flex items-center rounded-full bg-gray-400 py-0.5 px-2 text-xs font-light text-white hover:bg-gray-400/75">
+              <span className="bg-ink-400 hover:bg-ink-400/75 text-ink-0 flex items-center rounded-full py-0.5 px-2 text-xs font-light">
                 <PlusIcon className="mr-1 h-3 w-3" /> Group
               </span>
             )}
@@ -216,7 +216,7 @@ function MarketGroups(props: { contract: Contract }) {
       <Modal open={open} setOpen={setOpen} size={'md'}>
         <Col
           className={
-            'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
+            'bg-canvas-0 max-h-[70vh] min-h-[20rem] overflow-auto rounded p-6'
           }
         >
           <ContractGroupsList contract={contract} user={user} />
@@ -233,7 +233,7 @@ function GroupDisplay(props: { groupToDisplay: GroupLink }) {
     <Link prefetch={false} href={groupPath(groupToDisplay.slug)} legacyBehavior>
       <a
         className={clsx(
-          'max-w-[200px] truncate whitespace-nowrap rounded-full bg-gray-400 py-0.5 px-2 text-xs font-light text-white sm:max-w-[250px]'
+          'bg-ink-400 text-ink-0 max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs font-light sm:max-w-[250px]'
         )}
       >
         {groupToDisplay.name}
@@ -305,7 +305,7 @@ function EditableCloseDate(props: {
         setOpen={setIsEditingCloseTime}
         position="top"
       >
-        <Col className="items-center rounded bg-white p-8">
+        <Col className="bg-canvas-0 items-center rounded p-8">
           <Title className="!text-2xl">Change when this market closes</Title>
           <Row className="flex-wrap items-center justify-center gap-2">
             <Input

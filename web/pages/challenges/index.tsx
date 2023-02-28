@@ -78,7 +78,7 @@ export default function ChallengesListPage() {
           If you want to bet mana against your friend directly, try{' '}
           <a
             href="https://www.wagerwith.me/"
-            className={clsx('text-indigo-700', linkClass)}
+            className={clsx('text-primary-700', linkClass)}
           >
             wagerwith.me
           </a>
@@ -96,8 +96,8 @@ function YourChallengesTable(props: { links: Challenge[] }) {
     <p>There aren't currently any challenges.</p>
   ) : (
     <div className="overflow-scroll">
-      <table className="w-full divide-y divide-gray-300 rounded-lg border border-gray-200">
-        <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
+      <table className="divide-ink-300 border-ink-200 w-full divide-y rounded-lg border">
+        <thead className="bg-canvas-50 text-ink-900 text-left text-sm font-semibold">
           <tr>
             <th className={amountClass}>Amount</th>
             <th
@@ -111,7 +111,7 @@ function YourChallengesTable(props: { links: Challenge[] }) {
             <th className={columnClass}>Accepted By</th>
           </tr>
         </thead>
-        <tbody className={'divide-y divide-gray-200 bg-white'}>
+        <tbody className={'divide-ink-200 bg-canvas-0 divide-y'}>
           {links.map((link) => (
             <YourLinkSummaryRow challenge={link} />
           ))}
@@ -127,17 +127,17 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
 
   const [open, setOpen] = React.useState(false)
   const className = clsx(
-    'whitespace-nowrap text-sm hover:cursor-pointer text-gray-500 hover:bg-sky-50 bg-white'
+    'whitespace-nowrap text-sm hover:cursor-pointer text-ink-500 hover:bg-sky-50 bg-ink'
   )
   return (
     <>
       <Modal open={open} setOpen={setOpen} size={'sm'}>
         <Col
           className={
-            'items-center justify-center gap-4 rounded-md bg-white p-8 py-8 '
+            'bg-canvas-0 items-center justify-center gap-4 rounded-md p-8 py-8 '
           }
         >
-          <span className={'mb-4  text-center text-xl text-indigo-700'}>
+          <span className={'text-primary-700  mb-4 text-center text-xl'}>
             Have your friend scan this to accept the challenge!
           </span>
           <QRCode url={getChallengeUrl(challenge)} />
@@ -218,8 +218,8 @@ function PublicChallengesTable(props: { links: Challenge[] }) {
     <p>There aren't currently any challenges.</p>
   ) : (
     <div className="overflow-scroll">
-      <table className="w-full divide-y divide-gray-300 rounded-lg border border-gray-200">
-        <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
+      <table className="divide-ink-300 border-ink-200 w-full divide-y rounded-lg border">
+        <thead className="bg-canvas-50 text-ink-900 text-left text-sm font-semibold">
           <tr>
             <th className={amountClass}>Amount</th>
             <th className={columnClass}>Creator</th>
@@ -227,7 +227,7 @@ function PublicChallengesTable(props: { links: Challenge[] }) {
             <th className={columnClass}>Market</th>
           </tr>
         </thead>
-        <tbody className={'divide-y divide-gray-200 bg-white'}>
+        <tbody className={'divide-ink-200 bg-canvas-0 divide-y'}>
           {links.map((link) => (
             <PublicLinkSummaryRow challenge={link} />
           ))}
@@ -250,7 +250,7 @@ function PublicLinkSummaryRow(props: { challenge: Challenge }) {
   } = challenge
 
   const className = clsx(
-    'whitespace-nowrap text-sm hover:cursor-pointer text-gray-500 hover:bg-sky-50 bg-white'
+    'whitespace-nowrap text-sm hover:cursor-pointer text-ink-500 hover:bg-sky-50 bg-ink'
   )
   return (
     <tr

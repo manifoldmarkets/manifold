@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { getNativePlatform } from 'web/lib/native/is-native'
 
 export const linkClass =
-  'break-anywhere hover:underline hover:decoration-indigo-400 hover:decoration-2'
+  'break-anywhere hover:underline hover:decoration-primary-400 hover:decoration-2'
 
 export const SiteLink = (props: {
   href: string | undefined

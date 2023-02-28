@@ -21,7 +21,7 @@ export function ManifoldLogo(props: {
     >
       <img
         className="transition-all group-hover:rotate-12"
-        src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
+        src={darkBackground ? '/logo-ink.svg' : '/logo.svg'}
         width={45}
         height={45}
         alt=""
@@ -32,8 +32,8 @@ export function ManifoldLogo(props: {
         ) : twoLine ? (
           <div
             className={clsx(
-              'font-major-mono mt-1 text-lg lowercase text-gray-900',
-              darkBackground && 'text-white'
+              'font-major-mono text-ink-900 mt-1 text-lg lowercase',
+              darkBackground && 'text-ink'
             )}
           >
             Manifold
@@ -43,8 +43,8 @@ export function ManifoldLogo(props: {
         ) : (
           <div
             className={clsx(
-              'font-major-mono mt-2 text-2xl lowercase text-gray-900 md:whitespace-nowrap',
-              darkBackground && 'text-white'
+              'font-major-mono text-ink-900 mt-2 text-2xl lowercase md:whitespace-nowrap',
+              darkBackground && 'text-ink'
             )}
           >
             Manifold Markets

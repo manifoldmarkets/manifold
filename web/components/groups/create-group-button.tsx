@@ -142,7 +142,7 @@ export function CreateGroupButton(props: {
       <Col className="gap-4">
         <Title className="!my-0" children="Create a group" />
 
-        <Col className="text-gray-500">
+        <Col className="text-ink-500">
           <div>You can add markets to your group after creation.</div>
         </Col>
         {errorText && <div className={'text-error'}>{errorText}</div>}
@@ -185,7 +185,7 @@ export function CreateGroupButton(props: {
 
         <div className="flex w-full flex-col">
           <label className="mb-2 ml-1 mt-0">
-            About <span className="text-gray-400">(optional)</span>
+            About <span className="text-ink-400">(optional)</span>
           </label>
           <TextEditor editor={editor} />
         </div>

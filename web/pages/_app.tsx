@@ -34,7 +34,17 @@ type ManifoldPageProps = { auth?: AuthUser }
 function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
-
+  if (typeof window !== 'undefined') {
+    if (
+      localStorage.theme === 'dark' ||
+      (!('theme' in localStorage) &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }
   return (
     <>
       <Head>
@@ -63,7 +73,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
           name="twitter:image"
-          content="https://manifold.markets/logo-bg-white.png"
+          content="https://manifold.markets/logo-bg-ink.png"
           key="image2"
         />
         <meta

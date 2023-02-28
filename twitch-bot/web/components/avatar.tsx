@@ -33,7 +33,7 @@ export function Avatar(props: { username?: string; avatarUrl?: string; noLink?: 
   // item with a fake grey user circle guy even if you aren't signed in
   return avatarUrl ? (
     <img
-      className={clsx('flex-shrink-0 rounded-full bg-white object-cover', `${w} ${h}`, !noLink && 'cursor-pointer', className)}
+      className={clsx('bg-canvas-0 flex-shrink-0 rounded-full object-cover', `${w} ${h}`, !noLink && 'cursor-pointer', className)}
       style={{ maxWidth: `${s * 0.25}rem` }}
       src={avatarUrl}
       onClick={onClick}
@@ -41,7 +41,7 @@ export function Avatar(props: { username?: string; avatarUrl?: string; noLink?: 
       referrerPolicy="no-referrer"
     />
   ) : (
-    <UserCircleIcon className={clsx(`flex-shrink-0 rounded-full bg-white ${w} ${h} text-gray-500`, className)} aria-hidden="true" />
+    <UserCircleIcon className={clsx(`bg-canvas-0 flex-shrink-0 rounded-full ${w} ${h} text-ink-500`, className)} aria-hidden="true" />
   );
 }
 
@@ -51,8 +51,8 @@ export function EmptyAvatar(props: { size?: number; multi?: boolean }) {
   const Icon = multi ? UsersIcon : UserIcon;
 
   return (
-    <div className={`flex flex-shrink-0 h-${size} w-${size} items-center justify-center rounded-full bg-gray-200`}>
-      <Icon className={`h-${insize} w-${insize} text-gray-500`} aria-hidden />
+    <div className={`flex flex-shrink-0 h-${size} w-${size} bg-ink-200 items-center justify-center rounded-full`}>
+      <Icon className={`h-${insize} w-${insize} text-ink-500`} aria-hidden />
     </div>
   );
 }

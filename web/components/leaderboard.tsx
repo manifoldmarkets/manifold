@@ -37,11 +37,11 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
     <div className={clsx('w-full px-1', className)}>
       <Title>{title}</Title>
       {entries.length === 0 ? (
-        <div className="ml-2 text-gray-500">None yet</div>
+        <div className="text-ink-500 ml-2">None yet</div>
       ) : (
         <div className="overflow-x-auto">
           {/* zebra stripes */}
-          <Table className="[&>tbody_tr:nth-child(odd)]:bg-white">
+          <Table className="[&>tbody_tr:nth-child(odd)]:bg-ink">
             <thead>
               <tr>
                 <th>#</th>

@@ -14,7 +14,7 @@ export function CreatorSharePanel(props: { contract: Contract }) {
     <GradientContainer className="mb-8 p-4">
       <div className="mb-6">Share your market</div>
 
-      <div className="mb-2 text-base text-gray-500">
+      <div className="text-ink-500 mb-2 text-base">
         Earn a {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new sign
         up and {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each unique trader
         that bets in your market using your share link.

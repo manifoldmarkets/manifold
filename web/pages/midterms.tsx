@@ -553,7 +553,7 @@ const App = (props: {
           {flourish} 2022 US Midterm Elections {flourish}
         </Title>
 
-        <div className="mx-8 mb-4 text-base text-gray-500">
+        <div className="text-ink-500 mx-8 mb-4 text-base">
           Manifold's midterm forecast. Bet on elections and{' '}
           <SiteLink href="/group/us-2022-midterms/about">
             win up to $1,000 USD in our tournament
@@ -567,7 +567,7 @@ const App = (props: {
             { title: 'House', content: houseTab, className: 'w-full' },
           ]}
         />
-        <Row className="mt-8 mb-8 text-base text-gray-500">
+        <Row className="text-ink-500 mt-8 mb-8 text-base">
           <SiteLink
             href="/group/us-2022-midterms/markets"
             className="flex items-center"

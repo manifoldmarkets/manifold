@@ -77,7 +77,7 @@ export function CommentInput(props: {
   if (user?.isBannedFromPosting) return <></>
 
   return blocked ? (
-    <div className={'mb-3 text-sm text-gray-500'}>
+    <div className={'text-ink-500 mb-3 text-sm'}>
       You blocked the creator or they blocked you, so you can't comment.
     </div>
   ) : (
@@ -136,8 +136,8 @@ export function AnswerCommentInput(props: {
             onSubmitComment={onCancelAnswerResponse}
           />
           <button onClick={onCancelAnswerResponse}>
-            <div className="absolute -top-1 -right-2 h-4 w-4 rounded-full bg-white" />
-            <XCircleIcon className="absolute -top-1 -right-2 h-5 w-5 text-gray-500 hover:text-gray-600" />
+            <div className="bg-canvas-0 absolute -top-1 -right-2 h-4 w-4 rounded-full" />
+            <XCircleIcon className="text-ink-500 hover:text-ink-600 absolute -top-1 -right-2 h-5 w-5" />
           </button>
         </div>
       </Col>
@@ -198,7 +198,7 @@ export function CommentInputTextArea(props: {
     <TextEditor editor={editor}>
       {user && !isSubmitting && (
         <button
-          className="px-4 text-gray-400 transition-colors hover:text-gray-600 active:bg-gray-300 disabled:text-gray-300"
+          className="text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
           disabled={!editor || editor.isEmpty}
           onClick={submit}
         >
@@ -206,7 +206,7 @@ export function CommentInputTextArea(props: {
         </button>
       )}
 
-      {isSubmitting && <LoadingIndicator spinnerClassName="border-gray-500" />}
+      {isSubmitting && <LoadingIndicator spinnerClassName="border-ink-500" />}
     </TextEditor>
   )
 }

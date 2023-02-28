@@ -20,7 +20,7 @@ export default function GroupPrivacyStatusWidget(props: {
   return (
     <>
       <Row
-        className="cursor-pointer items-center gap-1 text-sm text-gray-700"
+        className="text-ink-700 cursor-pointer items-center gap-1 text-sm"
         onClick={() => setOpen(true)}
       >
         {icon}
@@ -51,8 +51,8 @@ export function GroupMembersWidget(props: { group: Group; canEdit: boolean }) {
   return (
     <>
       <button onClick={() => setOpen(true)}>
-        <Row className="cursor-pointer items-center gap-1 text-sm text-gray-700">
-          <Row className="items-center gap-1 text-sm text-gray-700"></Row>
+        <Row className="text-ink-700 cursor-pointer items-center gap-1 text-sm">
+          <Row className="text-ink-700 items-center gap-1 text-sm"></Row>
           <UserGroupIcon className="h-4 w-4" />
           <span>{numMembers} members</span>
         </Row>

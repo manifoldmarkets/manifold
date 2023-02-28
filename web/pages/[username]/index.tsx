@@ -176,17 +176,17 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   username={user.username}
                   avatarUrl={user.avatarUrl}
                   size={24}
-                  className="bg-white"
+                  className="bg-ink"
                   noLink
                 />
               }
             />
             {isCurrentUser && (
               <Link
-                className="absolute right-0 bottom-0 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300 hover:bg-indigo-700"
+                className="bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute right-0 bottom-0 rounded-full p-2 shadow-sm"
                 href="/profile"
               >
-                <PencilIcon className="h-5" />
+                <PencilIcon className="text-ink-0 h-5 w-5" />
               </Link>
             )}
           </div>
@@ -207,17 +207,17 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   {user.isBannedFromPosting && <PostBanBadge />}
                 </div>
                 <Row className="sm:text-md items-center gap-4 text-sm ">
-                  <span className={' text-gray-400'}>@{user.username}</span>
+                  <span className={' text-ink-400'}>@{user.username}</span>
                   {isAdmin && (
                     <span>
                       <a
-                        className="mr-2 text-sm text-indigo-400 hover:underline"
+                        className="text-primary-400 mr-2 text-sm hover:underline"
                         href={firestoreUserConsolePath(user.id)}
                       >
                         firestore user
                       </a>
                       <a
-                        className="text-sm text-indigo-400 hover:underline"
+                        className="text-primary-400 text-sm hover:underline"
                         href={firestorePrivateConsolePath(user.id)}
                       >
                         private user
@@ -268,9 +268,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    <span className="text-sm text-gray-400">
-                      {user.website}
-                    </span>
+                    <span className="text-ink-400 text-sm">{user.website}</span>
                   </Row>
                 </SiteLink>
               )}
@@ -289,7 +287,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                       className="h-4 w-4"
                       alt="Twitter"
                     />
-                    <span className="text-sm text-gray-400">
+                    <span className="text-ink-400 text-sm">
                       {user.twitterHandle}
                     </span>
                   </Row>
@@ -304,7 +302,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                       className="h-4 w-4"
                       alt="Discord"
                     />
-                    <span className="text-sm text-gray-400">
+                    <span className="text-ink-400 text-sm">
                       {user.discordHandle}
                     </span>
                   </Row>
@@ -315,7 +313,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                 <div
                   className={clsx(
                     linkClass,
-                    'cursor-pointer text-sm text-gray-400'
+                    'text-ink-400 cursor-pointer text-sm'
                   )}
                   onClick={(e) => {
                     e.preventDefault()
@@ -424,7 +422,7 @@ function ProfilePublicStats(props: {
   return (
     <Row
       className={clsx(
-        'flex-wrap items-center gap-3 text-sm text-gray-600',
+        'text-ink-600 flex-wrap items-center gap-3 text-sm',
         className
       )}
     >
@@ -495,9 +493,9 @@ function FollowsDialog(props: {
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="max-h-[90vh] rounded bg-white p-6 pb-2">
+      <Col className="bg-canvas-0 max-h-[90vh] rounded p-6 pb-2">
         <div className="p-2 pb-1 text-xl">{user.name}</div>
-        <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
+        <div className="text-ink-500 p-2 pt-0 text-sm">@{user.username}</div>
         <Tabs
           tabs={[
             {

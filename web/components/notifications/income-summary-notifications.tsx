@@ -183,7 +183,7 @@ export function BonusIncomeNotification(props: {
         <NotificationIcon
           symbol={'🎁'}
           symbolBackgroundClass={
-            'bg-gradient-to-br from-indigo-500 to-indigo-300'
+            'bg-gradient-to-br from-primary-500 to-primary-300'
           }
         />
       }
@@ -232,7 +232,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         <NotificationIcon
           symbol={'🔥'}
           symbolBackgroundClass={
-            'bg-gradient-to-br from-indigo-600 to-indigo-300'
+            'bg-gradient-to-br from-primary-600 to-primary-300'
           }
         />
       }

@@ -186,13 +186,13 @@ export function ActivityLog(props: {
       )}
       {!allLoaded && <LoadingIndicator />}
       {allLoaded && (
-        <Col className="divide-y-[0.5px] rounded-sm border-[0.5px]">
+        <Col className="border-ink-300 divide-ink-300 divide-y-[0.5px] rounded-sm border-[0.5px]">
           {groups.map(({ contractId, items }) => {
             const contract = contractsById[contractId] as Contract
             return (
               <Col
                 key={contractId}
-                className="gap-2 bg-white px-4 py-3 focus:bg-[#fafaff] lg:hover:bg-[#fafaff]"
+                className="bg-canvas-0 focus:bg-canvas-100 lg:hover:bg-canvas-100 gap-2 px-4 py-3"
               >
                 <ContractMention contract={contract} />
                 {items.map((item) =>
@@ -223,7 +223,7 @@ export const MarketCreatedLog = (props: { contract: Contract }) => {
     props.contract
 
   return (
-    <Row className="items-center gap-2 text-sm text-gray-500">
+    <Row className="text-ink-500 items-center gap-2 text-sm">
       <Avatar
         avatarUrl={creatorAvatarUrl}
         username={creatorUsername}
@@ -231,7 +231,7 @@ export const MarketCreatedLog = (props: { contract: Contract }) => {
       />
       <UserLink name={creatorName} username={creatorUsername} />
       <Row>
-        <div className="text-gray-400">created</div>
+        <div className="text-ink-400">created</div>
         <RelativeTimestamp time={createdTime} />
       </Row>
     </Row>
@@ -249,7 +249,7 @@ export const CommentLog = memo(function FeedComment(props: {
     <Col>
       <Row
         id={comment.id}
-        className="mb-1 items-center gap-2 text-sm text-gray-500"
+        className="text-ink-500 mb-1 items-center gap-2 text-sm"
       >
         <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
         <div>

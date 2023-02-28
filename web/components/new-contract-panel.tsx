@@ -312,7 +312,7 @@ export function NewContractPanel(props: {
             />
           </Row>
           {marketInfoText && (
-            <div className="mt-3 ml-1 text-sm text-indigo-700">
+            <div className="text-primary-700 mt-3 ml-1 text-sm">
               {marketInfoText}
             </div>
           )}
@@ -413,7 +413,7 @@ export function NewContractPanel(props: {
                 />
                 {selectedGroup && (
                   <a target="_blank" href={groupPath(selectedGroup.slug)}>
-                    <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
+                    <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
                   </a>
                 )}
               </Row>
@@ -500,7 +500,7 @@ export function NewContractPanel(props: {
             />
           </label>
 
-          <div className="pl-1 text-sm text-gray-700">
+          <div className="text-ink-700 pl-1 text-sm">
             {formatMoney(ante)}
             {BONUS_OUTCOME_TYPES.includes(outcomeType) ? (
               <span>
@@ -517,7 +517,7 @@ export function NewContractPanel(props: {
               <span className="text-red-500"> - no unique trader bonus</span>
             )}
           </div>
-          <div className="pl-1 text-gray-500"></div>
+          <div className="text-ink-500 pl-1"></div>
 
           {ante > balance && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">

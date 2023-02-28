@@ -97,9 +97,9 @@ export default function PostPage(props: {
         <Row className="mt-4 items-center">
           <Col className="flex-1 px-2">
             <div className={'inline-flex'}>
-              <div className="mr-1 text-gray-500">Created by</div>
+              <div className="text-ink-500 mr-1">Created by</div>
               <UserLink
-                className="text-gray-700"
+                className="text-ink-700"
                 name={creator.name}
                 username={creator.username}
               />
@@ -116,14 +116,14 @@ export default function PostPage(props: {
         </Row>
 
         <Spacer h={2} />
-        <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
+        <div className="bg-canvas-0 rounded-lg px-6 py-4 sm:py-0">
           <div className="flex w-full flex-col py-2">
             <RichEditPost post={post} canEdit={canEdit} />
           </div>
         </div>
 
         <Spacer h={4} />
-        <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
+        <div className="bg-canvas-0 rounded-lg px-6 py-4 sm:py-0">
           <PostCommentsActivity post={post} comments={comments} tips={tips} />
         </div>
       </div>

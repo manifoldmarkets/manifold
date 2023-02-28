@@ -28,7 +28,7 @@ export default function DropdownMenu(props: {
     >
       <Menu.Button
         className={clsx(
-          'flex items-center rounded-full text-gray-400 hover:text-gray-600',
+          'text-ink-400 hover:text-ink-600 flex items-center rounded-full',
           buttonClass
         )}
         onClick={(e: any) => {
@@ -50,7 +50,7 @@ export default function DropdownMenu(props: {
       >
         <Menu.Items
           className={clsx(
-            'absolute right-0 z-30 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none',
+            'bg-canvas-0 ring-ink-1000 absolute right-0 z-30 mt-2 origin-top-right rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none',
             menuWidth ?? 'w-32'
           )}
         >
@@ -61,7 +61,7 @@ export default function DropdownMenu(props: {
                   <button
                     onClick={item.onClick}
                     className={clsx(
-                      active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                      active ? 'bg-ink-100 text-ink-900' : 'text-ink-700',
                       'block w-full px-4 py-2 text-sm'
                     )}
                   >

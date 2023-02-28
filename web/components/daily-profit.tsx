@@ -123,10 +123,10 @@ function DailyProfitModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <div className="rounded-lg bg-white p-4">
+      <div className="bg-canvas-0 rounded-lg p-4">
         <Col className={'mb-4'}>
           <Title className={'mb-1'}>Daily profit</Title>
-          <span className="text-sm text-gray-500">
+          <span className="text-ink-500 text-sm">
             Change in the value of your Yes/No positions over the last 24 hours.
             (Updates every 30 min)
           </span>
@@ -186,7 +186,7 @@ export function ProfitChangeTable(props: {
   ]
 
   if (positive.length === 0 && negative.length === 0)
-    return <div className="px-4 text-gray-500">None</div>
+    return <div className="text-ink-500 px-4">None</div>
 
   const marketRow = (c: CPMMBinaryContract) =>
     r(
@@ -203,7 +203,7 @@ export function ProfitChangeTable(props: {
     )
 
   const columnHeader = (text: string) =>
-    r(<Row className={'mx-2 items-center gap-2 text-gray-600'}>{text}</Row>)
+    r(<Row className={'text-ink-600 mx-2 items-center gap-2'}>{text}</Row>)
   const profitRow = (profit: number) =>
     r(
       <div

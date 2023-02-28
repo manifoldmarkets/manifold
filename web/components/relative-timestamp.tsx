@@ -12,7 +12,7 @@ export function RelativeTimestamp(props: {
   const isClient = useIsClient()
   return (
     <DateTimeTooltip
-      className="ml-1 whitespace-nowrap text-gray-400"
+      className="text-ink-400 ml-1 whitespace-nowrap"
       time={time}
       placement={placement}
     >

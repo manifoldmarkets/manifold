@@ -74,7 +74,7 @@ export function UserLink(props: {
 
 function BotBadge() {
   return (
-    <span className="ml-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+    <span className="bg-ink-100 text-ink-800 ml-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
       Bot
     </span>
   )
@@ -111,7 +111,10 @@ export function UserBadge(props: { username: string; fresh?: boolean }) {
 function CoreBadge() {
   return (
     <Tooltip text="I work on Manifold!" placement="right">
-      <ShieldCheckIcon className="h-4 w-4 text-indigo-700" aria-hidden="true" />
+      <ShieldCheckIcon
+        className="text-primary-700 h-4 w-4"
+        aria-hidden="true"
+      />
     </Tooltip>
   )
 }
@@ -120,7 +123,7 @@ function CoreBadge() {
 function CheckBadge() {
   return (
     <Tooltip text="Trustworthy. ish." placement="right">
-      <BadgeCheckIcon className="h-4 w-4 text-indigo-700" aria-hidden="true" />
+      <BadgeCheckIcon className="text-primary-700 h-4 w-4" aria-hidden="true" />
     </Tooltip>
   )
 }

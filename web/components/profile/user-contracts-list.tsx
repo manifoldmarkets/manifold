@@ -34,9 +34,9 @@ export function UserContractsList(props: { creator: User }) {
     const { title, total, subTitle } = props
     return (
       <Col className={clsx('')}>
-        <div className="text-xs text-gray-600 sm:text-sm">{title}</div>
+        <div className="text-ink-600 text-xs sm:text-sm">{title}</div>
         <Row className={'items-center  gap-2'}>
-          <span className="text-lg text-indigo-600 sm:text-xl">{total}</span>
+          <span className="text-primary-600 text-lg sm:text-xl">{total}</span>
           {subTitle}
         </Row>
       </Col>
@@ -55,7 +55,7 @@ export function UserContractsList(props: { creator: User }) {
           subTitle={
             unresolvedMarkets === 0 ? null : (
               <Tooltip text={'Closed & unresolved markets'}>
-                <div className="bg-scarlet-300 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 text-white ">
+                <div className="bg-scarlet-300 text-ink-0 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 ">
                   {`${unresolvedMarkets}`}
                 </div>
               </Tooltip>

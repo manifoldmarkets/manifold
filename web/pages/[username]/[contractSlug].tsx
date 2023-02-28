@@ -309,11 +309,11 @@ export function ContractPageContent(
 
       {user && <BackRow />}
 
-      <Col className="w-full justify-between rounded bg-white px-4 py-4 md:px-8 md:py-8">
+      <Col className="bg-canvas-0 w-full justify-between rounded px-4 py-4 md:px-8 md:py-8">
         <Col className="gap-3 sm:gap-4">
           <ContractDetails contract={contract} />
           <Linkify
-            className="text-lg text-indigo-700 sm:text-2xl"
+            className="text-primary-700 text-lg sm:text-2xl"
             text={contract.question}
           />
           <ContractOverview
@@ -483,7 +483,7 @@ const RelatedContractsWidget = memo(function RecommendedContractsWidget(props: {
   }
   return (
     <Col className="mt-2 gap-2 px-2 sm:px-1">
-      <Title className="text-gray-700" children="Related markets" />
+      <Title className="text-ink-700" children="Related markets" />
       <ContractsGrid
         contracts={relatedMarkets ?? []}
         trackingPostfix=" related"

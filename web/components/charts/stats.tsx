@@ -26,7 +26,7 @@ const DailyCountTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
   return (
     <Row className="items-center gap-2">
       <span className="font-semibold">{dayjs(nearest.x).format('MMM DD')}</span>
-      <span className="text-gray-600">{nearest.y}</span>
+      <span className="text-ink-600">{nearest.y}</span>
     </Row>
   )
 }
@@ -36,7 +36,7 @@ const DailyPercentTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
   return (
     <Row className="items-center gap-2">
       <span className="font-semibold">{dayjs(nearest.x).format('MMM DD')}</span>
-      <span className="text-gray-600">{formatPercent(nearest.y)}</span>
+      <span className="text-ink-600">{formatPercent(nearest.y)}</span>
     </Row>
   )
 }

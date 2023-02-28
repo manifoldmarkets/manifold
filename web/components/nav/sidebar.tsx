@@ -35,6 +35,9 @@ import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import DiscordOutlineIcon from 'web/lib/icons/discord-outline-icon'
 import { Spacer } from '../layout/spacer'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { Switch } from '@headlessui/react'
+import { DarkModeSwitch } from '../dark-mode-switch'
 
 export default function Sidebar(props: {
   className?: string
@@ -65,7 +68,7 @@ export default function Sidebar(props: {
     >
       <ManifoldLogo className="pt-6" twoLine />
       {logoSubheading && (
-        <Row className="pl-2 text-2xl text-indigo-700 sm:mt-3">
+        <Row className="text-primary-700 pl-2 text-2xl sm:mt-3">
           {logoSubheading}
         </Row>
       )}
@@ -87,7 +90,7 @@ export default function Sidebar(props: {
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
-
+        <DarkModeSwitch />
         {user === null && (
           <SignInButton key="sign-in-button" className="mt-3" />
         )}

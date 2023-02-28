@@ -70,11 +70,11 @@ export function BetPanel(props: {
       <SellRow
         contract={contract}
         user={user}
-        className={'rounded-t-md bg-gray-100 px-4 py-5'}
+        className={'bg-ink-100 rounded-t-md px-4 py-5'}
       />
       <Col
         className={clsx(
-          'relative rounded-b-md bg-white px-6 py-6',
+          'bg-canvas-0 relative rounded-b-md px-6 py-6',
           !sharesOutcome && 'rounded-t-md',
           className
         )}
@@ -127,12 +127,12 @@ export function SimpleBetPanel(props: {
       <SellRow
         contract={contract}
         user={user}
-        className={'rounded-t-md bg-gray-100 px-4 py-5'}
+        className={'bg-ink-100 rounded-t-md px-4 py-5'}
       />
       <Col
         className={clsx(
           !hasShares && 'rounded-t-md',
-          'rounded-b-md bg-white px-8 py-6'
+          'bg-canvas-0 rounded-b-md px-8 py-6'
         )}
       >
         <QuickOrLimitBet
@@ -345,15 +345,15 @@ export function BuyPanel(props: {
         className={clsx(
           mobileView
             ? outcome === 'NO'
-              ? 'bg-red-25'
+              ? 'bg-red-500/10'
               : outcome === 'YES'
-              ? 'bg-teal-50'
+              ? 'bg-teal-500/10'
               : 'hidden'
-            : 'bg-white',
+            : 'bg-ink',
           mobileView ? 'rounded-lg px-4 py-2' : 'px-0'
         )}
       >
-        <Row className="mt-2 mb-1 justify-between text-left text-sm text-gray-500">
+        <Row className="text-ink-500 mt-2 mb-1 justify-between text-left text-sm">
           Amount
         </Row>
 
@@ -372,7 +372,7 @@ export function BuyPanel(props: {
 
         <Row className="mt-8 w-full">
           <Col className="w-1/2 text-sm">
-            <Col className="flex-nowrap whitespace-nowrap text-sm text-gray-500">
+            <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
               <div>
                 {isPseudoNumeric ? (
                   'Max payout'
@@ -385,7 +385,7 @@ export function BuyPanel(props: {
               <span className="whitespace-nowrap text-lg">
                 {formatMoney(currentPayout)}
               </span>
-              <span className="pr-3 text-sm text-gray-500">
+              <span className="text-ink-500 pr-3 text-sm">
                 {' '}
                 +{currentReturnPercent}
               </span>
@@ -393,7 +393,7 @@ export function BuyPanel(props: {
           </Col>
           <Col className="w-1/2 text-sm">
             <Row>
-              <span className="whitespace-nowrap text-sm text-gray-500">
+              <span className="text-ink-500 whitespace-nowrap text-sm">
                 {isPseudoNumeric ? 'Estimated value' : 'New probability'}
               </span>
               {!isPseudoNumeric && (
@@ -410,7 +410,7 @@ export function BuyPanel(props: {
             ) : (
               <div className="text-lg">
                 {getFormattedMappedValue(contract, resultProb)}
-                <span className={clsx('text-sm text-gray-500')}>
+                <span className={clsx('text-ink-500 text-sm')}>
                   {isPseudoNumeric ? (
                     <></>
                   ) : (
@@ -451,7 +451,7 @@ export function BuyPanel(props: {
           />
         )}
         <button
-          className="mx-auto mt-3 select-none text-sm text-gray-600 underline xl:hidden"
+          className="text-ink-600 mx-auto mt-3 select-none text-sm underline xl:hidden"
           onClick={() => setSeeLimit(true)}
         >
           Advanced
@@ -459,7 +459,7 @@ export function BuyPanel(props: {
         <Modal
           open={seeLimit}
           setOpen={setSeeLimit}
-          className="rounded-lg bg-white p-4"
+          className="bg-canvas-0 rounded-lg p-4"
         >
           <Title children="Limit Order" />
           <LimitOrderPanel
@@ -669,7 +669,7 @@ function LimitOrderPanel(props: {
     <Col className={hidden ? 'hidden' : ''}>
       <Row className="mt-1 mb-4 items-center gap-4">
         <Col className="gap-2">
-          <div className="text-sm text-gray-500">
+          <div className="text-ink-500 text-sm">
             Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
@@ -682,7 +682,7 @@ function LimitOrderPanel(props: {
         </Col>
 
         <Col className="gap-2">
-          <div className="text-sm text-gray-500">
+          <div className="text-ink-500 text-sm">
             Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
           </div>
           <ProbabilityOrNumericInput
@@ -707,7 +707,7 @@ function LimitOrderPanel(props: {
         </div>
       )}
 
-      <Row className="mt-1 mb-3 justify-between text-left text-sm text-gray-500">
+      <Row className="text-ink-500 mt-1 mb-3 justify-between text-left text-sm">
         <span>
           Max amount<span className="text-scarlet-500 ml-1">*</span>
         </span>
@@ -729,7 +729,7 @@ function LimitOrderPanel(props: {
       <Col className="mt-8 w-full gap-3">
         {(hasTwoBets || (hasYesLimitBet && yesBet.amount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
-            <div className="whitespace-nowrap text-gray-500">
+            <div className="text-ink-500 whitespace-nowrap">
               {isPseudoNumeric ? (
                 <HigherLabel />
               ) : (
@@ -745,7 +745,7 @@ function LimitOrderPanel(props: {
         )}
         {(hasTwoBets || (hasNoLimitBet && noBet.amount !== 0)) && (
           <Row className="items-center justify-between gap-2 text-sm">
-            <div className="whitespace-nowrap text-gray-500">
+            <div className="text-ink-500 whitespace-nowrap">
               {isPseudoNumeric ? (
                 <LowerLabel />
               ) : (
@@ -761,7 +761,7 @@ function LimitOrderPanel(props: {
         )}
         {hasTwoBets && (
           <Row className="items-center justify-between gap-2 text-sm">
-            <div className="whitespace-nowrap text-gray-500">
+            <div className="text-ink-500 whitespace-nowrap">
               Profit if both orders filled
             </div>
             <div className="mr-2 whitespace-nowrap">
@@ -771,7 +771,7 @@ function LimitOrderPanel(props: {
         )}
         {hasYesLimitBet && !hasTwoBets && (
           <Row className="items-center justify-between gap-2 text-sm">
-            <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+            <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
               <div>
                 {isPseudoNumeric ? (
                   'Max payout'
@@ -795,7 +795,7 @@ function LimitOrderPanel(props: {
         )}
         {hasNoLimitBet && !hasTwoBets && (
           <Row className="items-center justify-between gap-2 text-sm">
-            <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+            <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
               <div>
                 {isPseudoNumeric ? (
                   'Max payout'

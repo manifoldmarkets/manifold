@@ -106,7 +106,7 @@ function ButtonSection() {
           2xl
         </Button>
       </div>
-      <div className="flex gap-4 text-gray-600">
+      <div className="text-ink-600 flex gap-4">
         <label className="flex items-center gap-2">
           Disable
           <ShortToggle on={disabled} setOn={setDisabled} />
@@ -160,7 +160,7 @@ function ToggleSection() {
           <option>green</option>
         </Select>
       </div>
-      <label className="flex items-center gap-2 text-gray-600">
+      <label className="text-ink-600 flex items-center gap-2">
         Disable
         <ShortToggle on={disabled} setOn={setDisabled} />
       </label>

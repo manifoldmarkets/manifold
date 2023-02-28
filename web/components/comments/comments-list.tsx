@@ -45,20 +45,20 @@ export function UserCommentsList(props: { user: User }) {
 
   if (pageComments.length === 0) {
     if (isStart && isEnd) {
-      return <p className="mt-4 text-gray-500">No comments yet</p>
+      return <p className="text-ink-500 mt-4">No comments yet</p>
     } else {
       // this can happen if their comment count is a multiple of page size
-      return <p className="mt-4 text-gray-500">No more comments to display</p>
+      return <p className="text-ink-500 mt-4">No more comments to display</p>
     }
   }
 
   return (
-    <Col className={'bg-white'}>
+    <Col className={'bg-ink'}>
       {pageComments.map(({ key, items }, i) => {
         return <ProfileCommentGroup key={i} groupKey={key} items={items} />
       })}
       <nav
-        className="border-t border-gray-200 px-4 py-3 sm:px-6"
+        className="border-ink-200 border-t px-4 py-3 sm:px-6"
         aria-label="Pagination"
       >
         <PaginationNextPrev
@@ -83,7 +83,7 @@ function ProfileCommentGroup(props: {
   return (
     <div className="border-b p-5">
       <SiteLink
-        className="mb-2 block pb-2 font-medium text-indigo-700"
+        className="text-primary-700 mb-2 block pb-2 font-medium"
         href={path}
       >
         {contractQuestion}
@@ -106,9 +106,9 @@ function ProfileComment(props: { comment: ContractComment }) {
     <Row className="relative flex items-start space-x-3">
       <Avatar username={userUsername} avatarUrl={userAvatarUrl} />
       <div className="min-w-0 flex-1">
-        <p className="mt-0.5 text-sm text-gray-500">
+        <p className="text-ink-500 mt-0.5 text-sm">
           <UserLink
-            className="text-gray-500"
+            className="text-ink-500"
             username={userUsername}
             name={userName}
           />{' '}

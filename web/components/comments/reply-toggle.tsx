@@ -11,7 +11,7 @@ export function ReplyToggle(props: {
   return (
     <button
       className={clsx(
-        'text-left text-sm text-gray-500',
+        'text-ink-500 text-left text-sm',
         numComments === 0 ? 'hidden' : ''
       )}
       onClick={onClick}

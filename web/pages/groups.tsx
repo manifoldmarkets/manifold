@@ -153,10 +153,10 @@ export function GroupCard(props: {
   return (
     <Card
       className={clsx(
-        'relative min-w-[20rem]  gap-1 rounded-xl bg-white p-6  hover:bg-gray-100',
+        'hover:bg-ink-100 bg-canvas-0  relative min-w-[20rem] gap-1 rounded-xl  p-6',
         className,
         highlightCards?.includes(group.id) &&
-          '!bg-indigo-100 outline outline-2 outline-indigo-500'
+          '!bg-primary-100 outline-primary-500 outline outline-2'
       )}
       onClick={(e) => {
         if (!onGroupClick) return
@@ -196,11 +196,11 @@ export function GroupCard(props: {
             </Row>
           )}
         </Row>
-        <Row className="text-sm text-gray-500">
+        <Row className="text-ink-500 text-sm">
           <GroupMembersList group={group} />
         </Row>
         <Row>
-          <div className="text-sm text-gray-500">{group.about}</div>
+          <div className="text-ink-500 text-sm">{group.about}</div>
         </Row>
       </Link>
       {isMember != null && user != null && (
@@ -222,7 +222,7 @@ export function GroupMembersList(props: { group: Group }) {
   const { totalMembers } = group
   if (totalMembers === 1) return <div />
   return (
-    <div className="flex flex-wrap gap-1 text-gray-700">
+    <div className="text-ink-700 flex flex-wrap gap-1">
       <span>{totalMembers} followers</span>
     </div>
   )

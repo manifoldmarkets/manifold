@@ -61,16 +61,17 @@ function KeyItem(props: { bg: string; name: string }) {
 }
 
 function CanvasDonut() {
-
   const drawDonut = (g: CanvasRenderingContext2D, w: number, h: number, lineWidth: number, colour: string, radius: number, value: number) => {
-    g.save(); {
+    g.save();
+    {
       g.lineWidth = lineWidth;
       g.strokeStyle = colour;
       g.lineCap = 'round';
       g.beginPath();
       g.arc(w / 2, h / 2, radius, -Math.PI / 2, value * Math.PI * 2 - Math.PI / 2);
       g.stroke();
-    } g.restore();
+    }
+    g.restore();
   };
 
   const render = (g: CanvasRenderingContext2D, w: number, h: number) => {
@@ -87,8 +88,8 @@ function CanvasDonut() {
   };
 
   return (
-    <div className="flex w-full flex-col md:flex-row h-full">
-      <div className="relative h-full aspect-square">
+    <div className="flex h-full w-full flex-col md:flex-row">
+      <div className="relative aspect-square h-full">
         <Canvas render={render} />
       </div>
       <div className="m-6 flex items-center">
@@ -105,52 +106,58 @@ function CanvasDonut() {
 function Tooltip() {
   const ref = useRef(null);
   useEffect(() => {
-    console.log("Tooltip loaded");
+    console.log('Tooltip loaded');
 
     // ref.current.style.transform = `translate(${window.getMou.x}px,${e.y}px)`;
 
     const handler = (e: MouseEvent) => {
       if (!ref.current) {
-        console.log("No ref");
+        console.log('No ref');
         return;
-      };
+      }
       const div = ref.current as HTMLDivElement;
       div.style.transform = `translate(${e.x}px,${e.y}px)`;
-    }
+    };
 
-    window.addEventListener("mousemove", handler);
-    return () => window.removeEventListener("mousemove", handler);
+    window.addEventListener('mousemove', handler);
+    return () => window.removeEventListener('mousemove', handler);
   }, []);
-  return <div className="fixed inset-0 border border-slate-200 dark:border-slate-500 max-w-fit max-h-fit bg-white dark:bg-slate-900 z-50 rounded-lg text-base p-2 whitespace-nowrap" ref={ref}>
-    700 / 1000
-  </div>
+  return (
+    <div className="bg-canvas-0 border-ink-200 dark:border-ink-500 dark:bg-ink-900 fixed inset-0 z-50 max-h-fit max-w-fit whitespace-nowrap rounded-lg border p-2 text-base" ref={ref}>
+      700 / 1000
+    </div>
+  );
 }
 
-function LineGraphEntry(props: { bg: string, name: string, fac: number }) {
+function LineGraphEntry(props: { bg: string; name: string; fac: number }) {
   const { bg, fac, name } = props;
   const [tooltip, setTooltip] = useState(undefined);
   const onHover = () => {
     setTooltip(true);
-  }
+  };
   const onExit = () => {
     setTooltip(false);
-  }
-  return <div onMouseEnter={onHover} onMouseLeave={onExit}>
-    {tooltip && <Tooltip />}
-    {name}
-    <div className="h-2 relative">
-      <div className={clsx("absolute h-2 z-10", bg)} style={{ width: (100 * fac) + "%" }} />
-      <div className={clsx("w-full bg-gray-400 h-2 opacity-40")} />
+  };
+  return (
+    <div onMouseEnter={onHover} onMouseLeave={onExit}>
+      {tooltip && <Tooltip />}
+      {name}
+      <div className="relative h-2">
+        <div className={clsx('absolute z-10 h-2', bg)} style={{ width: 100 * fac + '%' }} />
+        <div className={clsx('bg-ink-400 h-2 w-full opacity-40')} />
+      </div>
     </div>
-  </div>
+  );
 }
 
 function LineGraph() {
-  return <div className="flex flex-col p-6 gap-6">
-    <LineGraphEntry bg="bg-[#A495FC]" name="Unique users" fac={500 / 1000} />
-    <LineGraphEntry bg="bg-[#5883F3]" name="Featured questions" fac={700 / 1000} />
-    <LineGraphEntry bg="bg-[#58D0BC]" name="New bots" fac={100 / 1000} />
-  </div>
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <LineGraphEntry bg="bg-[#A495FC]" name="Unique users" fac={500 / 1000} />
+      <LineGraphEntry bg="bg-[#5883F3]" name="Featured questions" fac={700 / 1000} />
+      <LineGraphEntry bg="bg-[#58D0BC]" name="New bots" fac={100 / 1000} />
+    </div>
+  );
 }
 
 function gradient(a: number[], b: number[]) {
@@ -232,10 +239,19 @@ function CanvasChart() {
 
 function Panel(props: { className?: string; children?: ReactNode; disabled?: boolean }) {
   const { className, children, disabled = false } = props;
-  return <div className={clsx('relative grow rounded-xl border bg-white p-2 dark:border-slate-500 dark:bg-slate-900', className)}>
-    {disabled && <div className="absolute top-0 left-0 z-50 w-full h-full opacity-50 flex items-center justify-center text-white text-2xl" style={{ background: "repeating-linear-gradient(45deg,#606dbc,#606dbc 10px,#465298 10px,#465298 20px)" }}>Coming soon</div>}
-    {children}
-  </div>;
+  return (
+    <div className={clsx('bg-canvas-0 dark:border-ink-500 dark:bg-ink-900 relative grow rounded-xl border p-2', className)}>
+      {disabled && (
+        <div
+          className="text-ink-0 absolute top-0 left-0 z-50 flex h-full w-full items-center justify-center text-2xl opacity-50"
+          style={{ background: 'repeating-linear-gradient(45deg,#606dbc,#606dbc 10px,#465298 10px,#465298 20px)' }}
+        >
+          Coming soon
+        </div>
+      )}
+      {children}
+    </div>
+  );
 }
 
 function getPercentageChange(prev: number, current: number): number {
@@ -250,13 +266,13 @@ function PanelRaw(props: { name: string; days: { [day: number]: MetricDay }; pro
   if (!today || !yesterday) {
     // Not loaded data yet
     return (
-      <Panel className="max-w-lg !flex-[1_0_10rem] dark:bg-slate-900">
+      <Panel className="dark:bg-ink-900 max-w-lg !flex-[1_0_10rem]">
         <Col className="m-4">
           <Row className="whitespace-nowrap text-lg">
             {name}
             <div className="min-w-[1.5rem] flex-[1_0]"></div>
           </Row>
-          <div className="pt-5 text-5xl min-h-[1.5em]"></div>
+          <div className="min-h-[1.5em] pt-5 text-5xl"></div>
         </Col>
       </Panel>
     );
@@ -264,7 +280,7 @@ function PanelRaw(props: { name: string; days: { [day: number]: MetricDay }; pro
 
   const MUCH_LOWER = <ChevronDoubleDownIcon className="h-4 w-4" />;
   const LOWER = <ArrowDownIcon className="h-4 w-4" />;
-  const EQUAL = "=";
+  const EQUAL = '=';
   const HIGHER = <ArrowUpIcon className="h-4 w-4" />;
   const MUCH_HIGHER = <ChevronDoubleUpIcon className="h-4 w-4" />;
 
@@ -284,12 +300,12 @@ function PanelRaw(props: { name: string; days: { [day: number]: MetricDay }; pro
   }
 
   let pString = Math.abs(percentChange).toFixed(1);
-  if (pString.endsWith("0")) {
+  if (pString.endsWith('0')) {
     pString = pString.substring(0, pString.length - 2);
   }
 
   return (
-    <Panel className="max-w-lg !flex-[1_0_10rem] dark:bg-slate-900">
+    <Panel className="dark:bg-ink-900 max-w-lg !flex-[1_0_10rem]">
       <Col className="m-4">
         <Row className="whitespace-nowrap text-lg">
           {name}
@@ -299,22 +315,22 @@ function PanelRaw(props: { name: string; days: { [day: number]: MetricDay }; pro
             {isFinite(percentChange) && percentChange !== 0 && <p>{pString}%</p>}
           </div>
         </Row>
-        <div className="pt-5 text-5xl min-h-[1.5em]">{value}</div>
+        <div className="min-h-[1.5em] pt-5 text-5xl">{value}</div>
       </Col>
     </Panel>
   );
 }
 
 function DarkModeSwitch() {
-  const isDarkMode = localStorage.getItem("dark-mode") ? true : false;
+  const isDarkMode = localStorage.getItem('dark-mode') ? true : false;
   useEffect(() => {
     if (isDarkMode) {
       document.querySelector('html').classList.add('dark');
     }
   }, []);
   return (
-    <div className="flex darkmodeslider">
-      <SunIconSolid className="mr-1 h-8 w-8 fill-slate-600 dark:fill-slate-50" />
+    <div className="darkmodeslider flex">
+      <SunIconSolid className="fill-ink-600 dark:fill-ink-50 mr-1 h-8 w-8" />
       <input
         type="checkbox"
         id="switch"
@@ -322,15 +338,15 @@ function DarkModeSwitch() {
         onChange={(e) => {
           if (e.target.checked) {
             document.querySelector('html').classList.add('dark');
-            localStorage.setItem("dark-mode", "true");
+            localStorage.setItem('dark-mode', 'true');
           } else {
             document.querySelector('html').classList.remove('dark');
-            localStorage.removeItem("dark-mode");
+            localStorage.removeItem('dark-mode');
           }
         }}
       />
       <label htmlFor="switch">Toggle</label>
-      <MoonIcon className="ml-1 h-7 w-7 fill-slate-600 dark:fill-slate-50" />
+      <MoonIcon className="fill-ink-600 dark:fill-ink-50 ml-1 h-7 w-7" />
     </div>
   );
 }
@@ -342,10 +358,10 @@ function MetricsPage() {
     const tempDays = {};
 
     const loadDay = async (daysInPast: number) => {
-      const dayData = await fetch(`/metric-data?epochDay=${getCurrentEpochDay() - daysInPast}`).then(r => r.json());
+      const dayData = await fetch(`/metric-data?epochDay=${getCurrentEpochDay() - daysInPast}`).then((r) => r.json());
       tempDays[daysInPast] = dayData;
       setDays(days);
-    }
+    };
 
     Promise.all([loadDay(0), loadDay(1), loadDay(2)]).then(() => setDays(tempDays));
   }, []);
@@ -355,45 +371,47 @@ function MetricsPage() {
       <Head>
         <title>Twitch Metrics</title>
       </Head>
-      {typeof window !== "undefined" && <div
-        className={clsx(
-          'font-readex-pro animate min-h-screen w-full bg-slate-50 p-2 dark:bg-slate-600 lg:p-20 text-slate-800 dark:text-white',
-          animateThemeChange && '[&_*]:ease [&_*]:transition-[background-color,border-color] [&_*]:duration-300'
-        )}
-      >
-        <div className="flex flex-row pb-1 lg:pb-6 text-6xl">
-          <Title text="Today's data" className='!mb-0 !mt-0 pl-1 dark:text-white' />
-          <div className="grow" />
-          <DarkModeSwitch />
-        </div>
-        <Col className={clsx('grow', gap6)}>
-          <div className={clsx('flex flex-row flex-wrap', gap6)}>
-            <Panel className="relative overflow-hidden !p-0 flex-1 min-w-fit min-h-fit" disabled>
-              <CanvasDonut />
-            </Panel>
-            <Panel className="relative overflow-hidden !p-0 flex-1 min-w-fit" disabled>
-              <LineGraph />
-            </Panel>
+      {typeof window !== 'undefined' && (
+        <div
+          className={clsx(
+            'font-readex-pro animate dark:text-ink-0 bg-ink-50 text-ink-800 dark:bg-ink-600 min-h-screen w-full p-2 lg:p-20',
+            animateThemeChange && '[&_*]:ease [&_*]:transition-[background-color,border-color] [&_*]:duration-300'
+          )}
+        >
+          <div className="flex flex-row pb-1 text-6xl lg:pb-6">
+            <Title text="Today's data" className="dark:text-ink-0 !mb-0 !mt-0 pl-1" />
+            <div className="grow" />
+            <DarkModeSwitch />
           </div>
-          <Row className={clsx('flex-wrap justify-center', gap6)}>
-            <PanelRaw name="Unique users" days={days} propName={"uniqueUserFeatures"} />
-            <PanelRaw name="Featured questions" days={days} propName={"featuredQuestions"} />
-            <PanelRaw name="New bots" days={days} propName={"newBots"} />
-            <PanelRaw name="Twitch links" days={days} propName={"twitchLinks"} />
-            <PanelRaw name="Commands used" days={days} propName={"commandsUsed"} />
-            <PanelRaw name="Active users" days={days} propName={"activeUsers"} />
-          </Row>
-          <Panel className="relative h-96  overflow-hidden !p-0" disabled>
-            <CanvasChart />
-          </Panel>
-        </Col>
-      </div>}
+          <Col className={clsx('grow', gap6)}>
+            <div className={clsx('flex flex-row flex-wrap', gap6)}>
+              <Panel className="relative min-h-fit min-w-fit flex-1 overflow-hidden !p-0" disabled>
+                <CanvasDonut />
+              </Panel>
+              <Panel className="relative min-w-fit flex-1 overflow-hidden !p-0" disabled>
+                <LineGraph />
+              </Panel>
+            </div>
+            <Row className={clsx('flex-wrap justify-center', gap6)}>
+              <PanelRaw name="Unique users" days={days} propName={'uniqueUserFeatures'} />
+              <PanelRaw name="Featured questions" days={days} propName={'featuredQuestions'} />
+              <PanelRaw name="New bots" days={days} propName={'newBots'} />
+              <PanelRaw name="Twitch links" days={days} propName={'twitchLinks'} />
+              <PanelRaw name="Commands used" days={days} propName={'commandsUsed'} />
+              <PanelRaw name="Active users" days={days} propName={'activeUsers'} />
+            </Row>
+            <Panel className="relative h-96  overflow-hidden !p-0" disabled>
+              <CanvasChart />
+            </Panel>
+          </Col>
+        </div>
+      )}
     </>
   );
-};
+}
 
 const DynamicComponentWithNoSSR = dynamic(() => Promise.resolve(MetricsPage), {
-  ssr: false
-})
+  ssr: false,
+});
 
-export default () => <DynamicComponentWithNoSSR />
+export default () => <DynamicComponentWithNoSSR />;

@@ -33,7 +33,7 @@ export function ContractDescription(props: {
   const isCreator = user?.id === contract.creatorId
 
   return (
-    <div className={clsx('text-gray-700', className)}>
+    <div className={clsx('text-ink-700', className)}>
       {user &&
       (isCreator || isAdmin) &&
       !contract.isResolved &&

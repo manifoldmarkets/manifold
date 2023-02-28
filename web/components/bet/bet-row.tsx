@@ -21,7 +21,7 @@ export function BetRow(props: {
           buttonClassName,
           baseButtonClasses,
           sizeClasses['2xs'],
-          'border border-gray-400 text-gray-500 hover:bg-gray-100 disabled:opacity-50'
+          'border-ink-400 text-ink-500 hover:bg-ink-100 border disabled:opacity-50'
         )}
         type="button"
         onClick={(e) => {
@@ -37,7 +37,7 @@ export function BetRow(props: {
           buttonClassName,
           baseButtonClasses,
           sizeClasses['2xs'],
-          'border border-gray-400 text-gray-500 hover:bg-gray-100 disabled:opacity-50'
+          'border-ink-400 text-ink-500 hover:bg-ink-100 border disabled:opacity-50'
         )}
         onClick={(e) => {
           e.preventDefault()

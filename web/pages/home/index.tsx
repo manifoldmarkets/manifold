@@ -152,8 +152,8 @@ function MobileHome() {
       <button
         type="button"
         className={clsx(
-          'fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent  p-4  shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden',
-          'from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700 enabled:bg-gradient-to-r disabled:bg-gray-300'
+          'focus:ring-primary-500 fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r'
         )}
         onClick={() => {
           Router.push('/create')
@@ -199,7 +199,7 @@ function HomeSectionHeader(props: {
   return (
     <Row
       className={clsx(
-        'sticky top-0 z-20 my-1 mx-2 items-center justify-between pb-2 pl-1 text-gray-900 lg:-ml-1',
+        'text-ink-900 sticky top-0 z-20 my-1 mx-2 items-center justify-between pb-2 pl-1 lg:-ml-1',
         BACKGROUND_COLOR
       )}
     >
@@ -211,7 +211,7 @@ function HomeSectionHeader(props: {
           onClick={() => track('home click section header', { section: href })}
         >
           {label}
-          <GoToIcon className="mb-1 ml-2 inline h-5 w-5 text-gray-400" />
+          <GoToIcon className="text-ink-400 mb-1 ml-2 inline h-5 w-5" />
         </SiteLink>
       ) : (
         <div className="flex-1 text-lg md:text-xl">{label}</div>

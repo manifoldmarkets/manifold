@@ -80,10 +80,10 @@ export const SwipeCard = memo(
           <img
             src={image}
             alt=""
-            className="flex grow bg-black object-cover brightness-[40%]"
+            className="bg-ink-1000 flex grow object-cover brightness-[40%]"
           />
-          <div className="absolute top-0 z-0 h-[10%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
-          <div className="absolute bottom-0 z-0 h-[30%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
+          <div className="from-ink-1000 via-ink-1000/60 absolute top-0 z-0 h-[10%] w-full bg-gradient-to-b to-transparent" />
+          <div className="from-ink-1000 via-ink-1000/60 absolute bottom-0 z-0 h-[30%] w-full bg-gradient-to-t to-transparent" />
         </Col>
         <Col
           className={clsx(
@@ -101,7 +101,7 @@ export const SwipeCard = memo(
             <SiteLink href={contractPath(contract)} followsLinkClass>
               <div
                 className={clsx(
-                  'font-semibold text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
+                  'text-ink-0 font-semibold [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
                   getQuestionSize(question, cardHeight)
                 )}
               >
@@ -175,17 +175,17 @@ const CornerDetails = (props: {
         </SiteLink>
         <div className="text-xs">
           <SiteLink href={`/${creatorUsername}`} followsLinkClass>
-            <div className="text-white">{creatorName}</div>
+            <div className="text-ink">{creatorName}</div>
           </SiteLink>
           {closeTime != undefined && (
-            <div className="text-gray-400 ">
+            <div className="text-ink-400 ">
               trading closes {fromNow(closeTime)}
             </div>
           )}
         </div>
       </Row>
 
-      <div className="flex items-center rounded-full text-gray-400">
+      <div className="text-ink-400 flex items-center rounded-full">
         <DailyStats user={user} showLoans={false} />
         {toggleView && (
           <SwitchHorizontalIcon className="ml-2 h-6 w-6" onClick={toggleView} />

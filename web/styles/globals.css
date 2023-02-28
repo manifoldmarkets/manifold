@@ -2,9 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
+@layer ink {
   html {
     -webkit-tap-highlight-color: transparent;
+  }
+  :root {
+    /* --color-ink-0: #ffffff;
+    --color-ink-50: #fbfbff;
+    --color-ink-100: #f4f4fb;
+    --color-ink-200: #e7e7f4;
+    --color-ink-300: #d8d8eb;
+    --color-ink-400: #b1b1c7;
+    --color-ink-500: #9191a7;
+    --color-ink-600: #66667c;
+    --color-ink-700: #4a4a68;
+    --color-ink-800: #2d2d54;
+    --color-ink-900: #111140;
+    --color-ink-1000: #0000;
+
+    --color-canvas-0: #ffffff;
+    --color-canvas-50: #fbfbff;
+    --color-canvas-100: #f4f4fb;
+
+    --color-primary-50: #eef2ff;
+    --color-primary-100: #e0e7ff;
+    --color-primary-200: #c7d2fe;
+    --color-primary-300: #a5b4fc;
+    --color-primary-400: #818cf8;
+    --color-primary-500: #6366f1;
+    --color-primary-600: #4f46e5;
+    --color-primary-700: #4338ca;
+    --color-primary-800: #3730a3;
+    --color-primary-900: #312e81; */
+
+    --color-ink-0: 255 255 255;
+    --color-ink-50: 251 251 255;
+    --color-ink-100: 244 244 251;
+    --color-ink-200: 231 231 244;
+    --color-ink-300: 216 216 235;
+    --color-ink-400: 177 177 199;
+    --color-ink-500: 145 145 167;
+    --color-ink-600: 102 102 124;
+    --color-ink-700: 74 74 104;
+    --color-ink-800: 45 45 84;
+    --color-ink-900: 17 17 64;
+    --color-ink-1000: 0 0 0;
+
+    --color-canvas-0: #ffffff;
+    --color-canvas-50: #fbfbff;
+    --color-canvas-100: #f4f4fb;
+
+    --color-primary-50: #eef2ff;
+    --color-primary-100: #e0e7ff;
+    --color-primary-200: #c7d2fe;
+    --color-primary-300: #a5b4fc;
+    --color-primary-400: #818cf8;
+    --color-primary-500: #6366f1;
+    --color-primary-600: #4f46e5;
+    --color-primary-700: #4338ca;
+    --color-primary-800: #3730a3;
+    --color-primary-900: #312e81;
+  }
+  .dark {
+    --color-ink-1000: 255 255 255;
+    --color-ink-900: 251 251 255;
+    --color-ink-800: 244 244 251;
+    --color-ink-700: 231 231 244;
+    --color-ink-600: 216 216 235;
+    --color-ink-500: 177 177 199;
+    --color-ink-400: 145 145 167;
+    --color-ink-300: 102 102 124;
+    --color-ink-200: 74 74 104;
+    --color-ink-100: 45 45 84;
+    --color-ink-50: 17 17 64;
+    --color-ink-0: 0 0 0;
+
+    --color-canvas-0: #1e293b;
+    --color-canvas-50: #0f172a;
+    --color-canvas-100: #334155;
+
+    --color-primary-900: #eef2ff;
+    --color-primary-800: #e0e7ff;
+    --color-primary-700: #818cf8;
+    --color-primary-600: #a5b4fc;
+    --color-primary-500: #818cf8;
+    --color-primary-400: #6366f1;
+    --color-primary-300: #4f46e5;
+    --color-primary-200: #4338ca;
+    --color-primary-100: #3730a3;
+    --color-primary-50: #312e81;
   }
 }
 
@@ -73,7 +159,7 @@
   content: '\1e40';
 }
 
-/* For Webkit-based browsers (Chrome, Safari and Opera) */
+/* For Webkit-inkd browsers (Chrome, Safari and Opera) */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }

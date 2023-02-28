@@ -31,8 +31,8 @@ export function SwipeComments(props: {
   return (
     <button
       className={clsx(
-        'hover:text-gray-600 disabled:opacity-50',
-        color === 'white' ? 'text-white' : 'text-gray-500'
+        'hover:text-ink-600 disabled:opacity-50',
+        color === 'white' ? 'text-ink' : 'text-ink-500'
       )}
       onClick={withTracking(() => setAllOpen(true), 'view swipe comments', {
         contractId: contract.id,
@@ -48,7 +48,7 @@ export function SwipeComments(props: {
           className={clsx(
             'mx-auto -mt-1 h-6 disabled:opacity-50',
             size === 'xl' ? 'text-lg' : size === 'md' ? 'text-xs' : '',
-            color === 'white' ? 'text-white' : 'text-gray-500'
+            color === 'white' ? 'text-ink' : 'text-ink-500'
           )}
         >
           {comments.length > 0 && comments.length}
@@ -79,8 +79,8 @@ export function CommentsButton(props: {
     <Tooltip text={`Comments`} placement="bottom" className={'z-10'}>
       <button
         className={clsx(
-          'hover:text-gray-600 disabled:opacity-50',
-          color === 'white' ? 'text-white' : 'text-gray-500'
+          'hover:text-ink-600 disabled:opacity-50',
+          color === 'white' ? 'text-ink' : 'text-ink-500'
         )}
         onClick={() => {
           setOpen(true)
@@ -96,7 +96,7 @@ export function CommentsButton(props: {
               className={clsx(
                 'h-5 align-middle disabled:opacity-50',
                 size === 'md' ? 'text-sm' : '',
-                color === 'white' ? 'text-white' : 'text-gray-500'
+                color === 'white' ? 'text-ink' : 'text-ink-500'
               )}
             >
               {comments.length}

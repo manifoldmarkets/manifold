@@ -32,7 +32,7 @@ export default function GroupSelectorDialog(props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className="h-[32rem] rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
+      <Col className="bg-canvas-0 h-[32rem] rounded-md px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
         <Title children="What interests you?" />
         <p className="mb-4">
           Select the topics you're interested in to personalize your Manifold

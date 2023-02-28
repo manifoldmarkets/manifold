@@ -49,7 +49,9 @@ export function LimitBets(props: {
 
       {yourBets.length > 0 && (
         <Col
-          className={'mt-4 gap-2 overflow-hidden rounded bg-white py-3 sm:px-4'}
+          className={
+            'bg-canvas-0 mt-4 gap-2 overflow-hidden rounded py-3 sm:px-4'
+          }
         >
           <Row className="mt-2 mb-4 items-center justify-between">
             <Subtitle className="!my-0">Your orders</Subtitle>
@@ -234,7 +236,7 @@ export function OrderBookButton(props: {
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="rounded bg-white p-4 py-6">
+        <Col className="bg-canvas-0 rounded p-4 py-6">
           <Title className="flex">
             Order book{' '}
             <InfoTooltip

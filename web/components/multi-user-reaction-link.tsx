@@ -14,7 +14,7 @@ export function MultiUserReactionModal(props: {
   const { similarNotifications, modalLabel, open, setOpen } = props
   return (
     <Modal open={open} setOpen={setOpen} size={'sm'}>
-      <Col className="items-start gap-4 rounded-md bg-white p-6">
+      <Col className="bg-canvas-0 items-start gap-4 rounded-md p-6">
         <span className={'text-xl'}>{modalLabel}</span>
         {similarNotifications.map((userInfo) => (
           <Row

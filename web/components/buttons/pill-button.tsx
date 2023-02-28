@@ -19,8 +19,8 @@ export function PillButton(props: {
         'cursor-pointer select-none whitespace-nowrap rounded-full px-3 py-1.5 text-sm',
         xs ? 'text-xs' : '',
         selected
-          ? ['text-white', color ?? 'bg-gray-600']
-          : 'bg-gray-200 hover:bg-gray-300',
+          ? ['text-ink', color ?? 'bg-ink-600']
+          : 'bg-ink-200 hover:bg-ink-300',
         className
       )}
       onClick={onSelect}
@@ -45,8 +45,8 @@ export function ExplicitPillButton(props: {
         'cursor-pointer select-none whitespace-nowrap rounded-full px-3 py-1.5 text-sm',
         xs ? 'text-xs' : '',
         selected
-          ? ['text-white', color ?? 'bg-blue-500']
-          : 'bg-gray-200 hover:bg-gray-300',
+          ? ['text-ink', color ?? 'bg-blue-500']
+          : 'bg-ink-200 hover:bg-ink-300',
         className
       )}
       onClick={onSelect}

@@ -26,7 +26,7 @@ const CertChartTooltip = (props: TooltipProps<Date, HistoryPoint<never>>) => {
   return (
     <Row className="items-center gap-2">
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-gray-600">{prev.y.toFixed(2)}</span>
+      <span className="text-ink-600">{prev.y.toFixed(2)}</span>
     </Row>
   )
 }

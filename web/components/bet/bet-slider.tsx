@@ -14,7 +14,7 @@ export const BetSlider = (props: {
   const { amount, onAmountChange, binaryOutcome } = props
 
   const mark = (value: number) => (
-    <span className="text-xs text-gray-400">
+    <span className="text-ink-400 text-xs">
       <div className={'sm:h-0.5'} />
       {formatMoney(value)}
     </span>
@@ -45,13 +45,13 @@ export const BetSlider = (props: {
           value={amount ?? 0}
           onChange={(value) => onAmountChange(value as number)}
           className={clsx(
-            'my-auto mx-2 !h-1  xl:mx-2 xl:mt-3  [&>.rc-slider-rail]:bg-gray-200',
+            '[&>.rc-slider-rail]:bg-ink-200 my-auto mx-2  !h-1 xl:mx-2  xl:mt-3',
             '[&>.rc-slider-handle]:z-10',
             binaryOutcome === 'YES'
               ? '[&>.rc-slider-handle]:bg-teal-500 [&>.rc-slider-track]:bg-teal-600'
               : binaryOutcome === 'NO'
               ? '[&>.rc-slider-track]:bg-scarlet-600 [&>.rc-slider-handle]:bg-scarlet-300'
-              : '[&>.rc-slider-handle]:bg-indigo-500 [&>.rc-slider-track]:bg-indigo-700'
+              : '[&>.rc-slider-handle]:bg-primary-500 [&>.rc-slider-track]:bg-primary-700'
           )}
           railStyle={{ height: 6, top: 4, left: 0 }}
           trackStyle={{ height: 6, top: 4 }}

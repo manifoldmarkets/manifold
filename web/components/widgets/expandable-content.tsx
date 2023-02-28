@@ -20,7 +20,7 @@ export function ExpandButton(props: {
     <Button
       color="override"
       className={clsx(
-        'z-10 select-none bg-inherit text-sm text-indigo-500 shadow-none hover:text-indigo-700',
+        'text-primary-500 hover:text-primary-700 z-10 select-none bg-inherit text-sm shadow-none',
         className
       )}
       onClick={onClick}

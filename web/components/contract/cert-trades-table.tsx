@@ -73,28 +73,28 @@ export default function CertTradesTable(props: { txns: CertTxn[] }) {
     <div className="mt-8 flex flex-col">
       <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
         <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-          <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead className="bg-gray-50">
+          <div className="ring-ink-1000 overflow-hidden shadow ring-1 ring-opacity-5 md:rounded-lg">
+            <table className="divide-ink-300 min-w-full divide-y">
+              <thead className="bg-canvas-50">
                 <tr>
                   {titles.map((title) => (
                     <th
                       scope="col"
-                      className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      className="text-ink-900 whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold"
                     >
                       {title}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-white">
+              <tbody className="bg-ink">
                 {entries.map((entry, i) => (
                   <tr
                     key={entry.id}
-                    className={i % 2 === 0 ? undefined : 'bg-gray-100'}
+                    className={i % 2 === 0 ? undefined : 'bg-ink-100'}
                   >
                     {keys.map((key) => (
-                      <td className="whitespace-nowrap px-2 py-0.5 text-sm text-gray-500">
+                      <td className="text-ink-500 whitespace-nowrap px-2 py-0.5 text-sm">
                         {
                           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                           // @ts-ignore

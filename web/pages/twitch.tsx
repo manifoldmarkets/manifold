@@ -47,7 +47,7 @@ export default function TwitchLandingPage() {
         <ManifoldLogo />
       </div>
 
-      <Col className="max-w-3xl gap-8 rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
+      <Col className="text-ink-600 bg-canvas-0 max-w-3xl gap-8 rounded p-4 shadow-md sm:mx-auto sm:p-10">
         <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
         <TwitchChatCommands />
         <SetUpBot user={user} privateUser={privateUser} />
@@ -294,7 +294,7 @@ function BotSetupStep(props: {
 function CopyButton(props: { link: string; text: string }) {
   const { link, text } = props
   const toastTheme = {
-    className: '!bg-teal-600 !text-white',
+    className: '!bg-teal-600 !text-ink',
     icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
   }
   const copyLinkCallback = async () => {
@@ -349,11 +349,11 @@ function BotConnectButton(props: {
         },
         success: {
           className:
-            '!bg-teal-600 !transition-all !duration-500 !text-white !max-w-sm',
+            '!bg-teal-600 !transition-all !duration-500 !text-ink-0 !max-w-sm',
         },
         error: {
           className:
-            '!bg-scarlet-400 !transition-all !duration-500 !text-white !max-w-sm',
+            '!bg-scarlet-400 !transition-all !duration-500 !text-ink-0 !max-w-sm',
         },
       }
     )
@@ -463,7 +463,7 @@ function SetUpBot(props: {
         </div>
         {user && (
           <Col className="mb-8 p-4">
-            <div className="mb-2 text-base text-gray-700">
+            <div className="text-ink-700 mb-2 text-base">
               Share your markets! Earn a {formatMoney(REFERRAL_AMOUNT)} referral
               bonus if a new user signs up and places a trade using the link.
             </div>

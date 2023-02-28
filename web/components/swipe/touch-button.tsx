@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { ReactNode } from 'react'
 
 const touchButtonColors = {
-  'white-icon': 'transition-colors text-white',
+  'white-icon': 'transition-colors text-ink',
 }
 type colorType = 'white-icon'
 

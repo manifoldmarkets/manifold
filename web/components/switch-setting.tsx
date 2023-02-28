@@ -25,8 +25,8 @@ export const SwitchSetting = (props: {
           checked={checked}
           onChange={onChange}
           className={clsx(
-            checked ? 'bg-indigo-600' : 'bg-gray-200',
-            'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
+            checked ? 'bg-primary-600' : 'bg-ink-200',
+            'focus:ring-primary-500 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2',
             disabled ? 'cursor-not-allowed opacity-50' : ''
           )}
           disabled={disabled}
@@ -35,7 +35,7 @@ export const SwitchSetting = (props: {
             aria-hidden="true"
             className={clsx(
               checked ? 'translate-x-5' : 'translate-x-0',
-              'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
+              'bg-canvas-0 pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
             )}
           />
         </Switch>
@@ -43,7 +43,7 @@ export const SwitchSetting = (props: {
       <Switch.Label as="span" className="ml-3">
         <span
           className={clsx(
-            'text-sm font-medium text-gray-900',
+            'text-ink-900 text-sm font-medium',
             disabled ? 'cursor-not-allowed opacity-50' : ''
           )}
         >
