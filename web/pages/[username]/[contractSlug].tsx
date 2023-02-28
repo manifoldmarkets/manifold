@@ -297,7 +297,7 @@ export function ContractPageContent(
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
   return (
-    <Page fullWidth>
+    <Page maxWidth="max-w-[1400px]">
       <ContractSEO contract={contract} points={pointsString} />
       {creatorTwitter && (
         <Head>
@@ -307,8 +307,8 @@ export function ContractPageContent(
 
       {user && <BackRow />}
 
-      <Row className="w-full items-start gap-6">
-        <Col className="bg-canvas-0 w-full max-w-4xl rounded px-4 py-4 md:px-8 md:py-8 xl:w-[70%]">
+      <Row className="w-full items-start gap-8 self-center">
+        <Col className="bg-canvas-0 w-full max-w-3xl rounded px-4 py-4 md:px-8 md:py-8 xl:w-[70%]">
           <Col className="gap-3 sm:gap-4">
             <ContractDetails contract={contract} />
             <Linkify
@@ -417,7 +417,7 @@ export function ContractPageContent(
           </div>
         </Col>
         <RelatedContractsWidget
-          className="hidden max-w-[400px] xl:flex"
+          className="hidden max-w-[375px] xl:flex"
           contract={contract}
           initialContracts={relatedContracts}
         />

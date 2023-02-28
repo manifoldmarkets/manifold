@@ -606,7 +606,7 @@ export function ContractCardNew(props: {
             fill
             alt={descriptionString}
             sizes="100vw"
-            className="object-cover"
+            className="object-cover opacity-90"
             src={coverImageUrl ?? ''}
           />
         </div>

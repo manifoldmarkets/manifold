@@ -117,12 +117,12 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
       </Row>
 
       {coverImageUrl && (
-        <div className="relative h-36">
+        <div className="relative h-32">
           <Image
             fill
             alt={question}
             sizes="100vw"
-            className="object-cover"
+            className="object-cover opacity-90"
             src={coverImageUrl ?? ''}
           />
         </div>
