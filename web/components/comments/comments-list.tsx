@@ -81,7 +81,7 @@ function ProfileCommentGroup(props: {
   const { contractSlug, contractQuestion } = groupKey
   const path = contractPath(contractSlug)
   return (
-    <div className="border-b p-5">
+    <div className="bg-canvas-0 border-ink-300 border-b p-5">
       <SiteLink
         className="text-primary-700 mb-2 block pb-2 font-medium"
         href={path}
