@@ -56,7 +56,9 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                 <tr
                   key={index}
                   className={
-                    entry.username === highlightUsername ? '!bg-amber-100' : ''
+                    entry.username === highlightUsername
+                      ? '!bg-indigo-400/20'
+                      : ''
                   }
                 >
                   <td className={'w-[4.5rem] min-w-[4.5rem] '}>

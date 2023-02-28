@@ -1,6 +1,7 @@
 import { Switch } from '@headlessui/react'
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useContext } from 'react'
+import ThemeContext from 'web/hooks/theme-context'
 import { Row } from './layout/row'
 
 export function DarkModeSwitch(props: { disabled?: boolean }) {
@@ -14,22 +15,15 @@ export function DarkModeSwitch(props: { disabled?: boolean }) {
 
 function DMSwitch(props: { disabled?: boolean }) {
   const { disabled } = props
-  const [isDark, setIsDark] = useState(
-    document.documentElement.classList[0] === 'dark'
-  )
+  const { currentTheme, changeCurrentTheme } = useContext(ThemeContext)
+  const isDark = currentTheme === 'dark'
   return (
     <Row className="text-ink-600 gap-2 text-sm">
       <Switch
         disabled={disabled}
         checked={isDark}
         onChange={(e: boolean) => {
-          if (e) {
-            setIsDark(true)
-            document.documentElement.classList.add('dark')
-          } else {
-            setIsDark(false)
-            document.documentElement.classList.remove('dark')
-          }
+          changeCurrentTheme(e ? 'dark' : 'light')
         }}
         className={clsx(
           'focus:ring-primary-500 group relative inline-flex h-5 w-10 flex-shrink-0 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2',

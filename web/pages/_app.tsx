@@ -10,6 +10,7 @@ import '../styles/globals.css'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import { SearchProvider } from 'web/components/search/search-context'
 import Script from 'next/script'
+import ThemeContextWrapper from 'web/components/ThemeContextWrapper'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -36,77 +37,85 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useHasLoaded()
   if (typeof window !== 'undefined') {
     if (
-      document.documentElement.classList[0] !== 'dark' &&
-      (localStorage.theme === 'dark' ||
-        (!('theme' in localStorage) &&
-          window.matchMedia('(prefers-color-scheme: dark)').matches))
+      localStorage.theme === 'dark' ||
+      (!('theme' in localStorage) &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)
     ) {
       document.documentElement.classList.add('dark')
     } else {
       document.documentElement.classList.remove('dark')
     }
-  }
-  return (
-    <>
-      <Head>
-        <title>Manifold Markets</title>
+    return (
+      <>
+        <ThemeContextWrapper>
+          <Head>
+            <title>Manifold Markets</title>
 
-        <meta
-          property="og:title"
-          name="twitter:title"
-          content="Manifold Markets"
-          key="title"
-        />
-        <meta
-          name="description"
-          content="Create your own prediction market. Unfold the future."
-          key="description1"
-        />
-        <meta
-          property="og:description"
-          name="twitter:description"
-          content="Create your own prediction market. Unfold the future."
-          key="description2"
-        />
-        <meta property="og:url" content="https://manifold.markets" key="url" />
-        <meta property="og:site_name" content="Manifold Markets" />
-        <meta name="twitter:card" content="summary" key="card" />
-        <meta name="twitter:site" content="@manifoldmarkets" />
-        <meta
-          name="twitter:image"
-          content="https://manifold.markets/logo-bg-ink.png"
-          key="image2"
-        />
-        <meta
-          property="og:image"
-          content="https://manifold.markets/logo-cover.png"
-          key="image1"
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="apple-itunes-app" content="app-id=6444136749" />
-        <link
-          rel="search"
-          type="application/opensearchdescription+xml"
-          href="https://manifold.markets/opensearch.xml"
-          title="Manifold Markets"
-        />
-      </Head>
-      <AuthProvider serverUser={pageProps.auth}>
-        <NativeMessageListener />
-        <QueryClientProvider client={queryClient}>
-          <SearchProvider>
-            <Welcome />
-            <Component {...pageProps} />
-          </SearchProvider>
-        </QueryClientProvider>
-      </AuthProvider>
-      <Analytics />
-      <Script
-        src="https://analytics.umami.is/script.js"
-        data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
-      />
-    </>
-  )
+            <meta
+              property="og:title"
+              name="twitter:title"
+              content="Manifold Markets"
+              key="title"
+            />
+            <meta
+              name="description"
+              content="Create your own prediction market. Unfold the future."
+              key="description1"
+            />
+            <meta
+              property="og:description"
+              name="twitter:description"
+              content="Create your own prediction market. Unfold the future."
+              key="description2"
+            />
+            <meta
+              property="og:url"
+              content="https://manifold.markets"
+              key="url"
+            />
+            <meta property="og:site_name" content="Manifold Markets" />
+            <meta name="twitter:card" content="summary" key="card" />
+            <meta name="twitter:site" content="@manifoldmarkets" />
+            <meta
+              name="twitter:image"
+              content="https://manifold.markets/logo-bg-ink.png"
+              key="image2"
+            />
+            <meta
+              property="og:image"
+              content="https://manifold.markets/logo-cover.png"
+              key="image1"
+            />
+            <meta
+              name="viewport"
+              content="width=device-width, initial-scale=1"
+            />
+            <meta name="apple-itunes-app" content="app-id=6444136749" />
+            <link
+              rel="search"
+              type="application/opensearchdescription+xml"
+              href="https://manifold.markets/opensearch.xml"
+              title="Manifold Markets"
+            />
+          </Head>
+          <AuthProvider serverUser={pageProps.auth}>
+            <NativeMessageListener />
+            <QueryClientProvider client={queryClient}>
+              <SearchProvider>
+                <Welcome />
+                <Component {...pageProps} />
+              </SearchProvider>
+            </QueryClientProvider>
+          </AuthProvider>
+          <Analytics />
+          <Script
+            src="https://analytics.umami.is/script.js"
+            data-website-id="ee5d6afd-5009-405b-a69f-04e3e4e3a685"
+          />
+        </ThemeContextWrapper>
+      </>
+    )
+  } else return <></>
 }
 
 const queryClient = new QueryClient()

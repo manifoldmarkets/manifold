@@ -19,7 +19,7 @@ export function PillButton(props: {
         'cursor-pointer select-none whitespace-nowrap rounded-full px-3 py-1.5 text-sm',
         xs ? 'text-xs' : '',
         selected
-          ? ['text-ink', color ?? 'bg-ink-600']
+          ? ['text-ink-0', color ?? 'bg-ink-600']
           : 'bg-ink-200 hover:bg-ink-300',
         className
       )}
