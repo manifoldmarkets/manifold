@@ -9,6 +9,7 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2017",
+    "baseUrl": "./",
     "paths": {
       "common/*": ["../../common/src/*", "../../../common/lib/*"],
       "shared/*": ["../shared/src/*", "../../shared/lib/*"],
