@@ -78,6 +78,21 @@ export const getOpenLimitOrdersWithContracts = async (
   return { betsByContract, contracts }
 }
 
+export const getUserBetsFromResolvedContracts = async (
+  userId: string,
+  count = 1000
+) => {
+  const { data } = await db.rpc('get_user_bets_from_resolved_contracts', {
+    count,
+    start: 0,
+    uid: userId,
+  })
+
+  return flatMap(data).map((d: any) => {
+    return [d.contract, d.bets]
+  }) as [Contract, LimitBet[]][]
+}
+
 export const useRecentlyBetOnContracts = (userId: string) => {
   const [savedContracts, setSavedContracts] = useState<Contract[]>()
 
