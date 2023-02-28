@@ -53,7 +53,7 @@ export function UserCommentsList(props: { user: User }) {
   }
 
   return (
-    <Col className={'bg-ink-1000'}>
+    <Col className={'bg-canvas-50'}>
       {pageComments.map(({ key, items }, i) => {
         return <ProfileCommentGroup key={i} groupKey={key} items={items} />
       })}
@@ -81,7 +81,7 @@ function ProfileCommentGroup(props: {
   const { contractSlug, contractQuestion } = groupKey
   const path = contractPath(contractSlug)
   return (
-    <div className="border-b p-5">
+    <div className="bg-canvas-0 border-ink-300 border-b p-5">
       <SiteLink
         className="text-primary-700 mb-2 block pb-2 font-medium"
         href={path}

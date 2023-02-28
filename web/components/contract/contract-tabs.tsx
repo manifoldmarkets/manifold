@@ -224,8 +224,8 @@ const BinaryUserPositionsTabContent = memo(
         <Row
           className={clsx(
             'border-ink-300 items-center justify-between gap-2 rounded-sm border-b p-2',
-            currentUser?.id === position.userId && 'bg-amber-100',
-            followedUsers?.includes(position.userId) && 'bg-blue-50'
+            currentUser?.id === position.userId && 'bg-amber-500/20',
+            followedUsers?.includes(position.userId) && 'bg-blue-500/20'
           )}
         >
           <Row
