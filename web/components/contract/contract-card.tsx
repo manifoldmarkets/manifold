@@ -192,7 +192,7 @@ export const ContractCard = memo(function ContractCard(props: {
             <div className="absolute bottom-0 w-full">
               <div
                 className={clsx(
-                  'break-anywhere text-ink-0 from-ink-900 bg-gradient-to-t px-4 pb-2 pt-12 text-xl font-semibold',
+                  'break-anywhere bg-gradient-to-t from-black px-4 pb-2 pt-12 text-xl font-semibold text-white',
                   questionClass
                 )}
               >
