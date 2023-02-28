@@ -308,7 +308,7 @@ export function ContractPageContent(
       {user && <BackRow />}
 
       <Row className="w-full items-start gap-6">
-        <Col className="max-w-4xl rounded bg-white px-4 py-4 md:px-8 md:py-8 xl:w-[70%]">
+        <Col className="w-full max-w-4xl rounded bg-white px-4 py-4 md:px-8 md:py-8 xl:w-[70%]">
           <Col className="gap-3 sm:gap-4">
             <ContractDetails contract={contract} />
             <Linkify
