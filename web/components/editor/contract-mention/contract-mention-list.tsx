@@ -42,15 +42,15 @@ const MentionList = forwardRef((props: SuggestionProps<Contract>, ref) => {
   }))
 
   return (
-    <div className="w-42 absolute z-10 overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+    <div className="w-42 bg-canvas-0 ring-ink-1000 absolute z-10 overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none">
       {!contracts.length ? (
         <span className="m-1 whitespace-nowrap">No results found yet</span>
       ) : (
         contracts.map((contract, i) => (
           <button
             className={clsx(
-              'flex h-8 w-full cursor-pointer select-none items-center gap-2 truncate px-4 hover:bg-indigo-200',
-              selectedIndex === i ? 'bg-indigo-500 text-white' : 'text-gray-900'
+              'hover:bg-primary-200 flex h-8 w-full cursor-pointer select-none items-center gap-2 truncate px-4',
+              selectedIndex === i ? 'text-ink-0 bg-primary-500' : 'text-ink-900'
             )}
             onClick={() => submitUser(i)}
             key={contract.id}

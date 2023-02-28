@@ -248,7 +248,7 @@ export function BetsList(props: { user: User }) {
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
         <Row className="mr-2 gap-4">
           <Col className={'shrink-0'}>
-            <div className="text-xs text-gray-600 sm:text-sm">
+            <div className="text-ink-600 text-xs sm:text-sm">
               Investment value
             </div>
             <div className="text-lg">
@@ -257,7 +257,7 @@ export function BetsList(props: { user: User }) {
             </div>
           </Col>
           <Col className={'shrink-0'}>
-            <div className="text-xs text-gray-600 sm:text-sm">Total loans</div>
+            <div className="text-ink-600 text-xs sm:text-sm">Total loans</div>
             <div className="text-lg">{formatMoney(currentLoan)}</div>
           </Col>
 
@@ -303,7 +303,7 @@ export function BetsList(props: { user: User }) {
         </div>
       </div>
 
-      <Col className="mt-6 divide-y">
+      <Col className="divide-ink-300 mt-6 divide-y">
         {displayedContracts.length === 0 ? (
           <NoMatchingBets />
         ) : (
@@ -334,11 +334,11 @@ export function BetsList(props: { user: User }) {
 const NoBets = ({ user }: { user: User }) => {
   const me = useUser()
   return (
-    <div className="py-4 text-center text-gray-500">
+    <div className="text-ink-500 py-4 text-center">
       {user.id === me?.id ? (
         <>
           You have not made any bets yet.{' '}
-          <SiteLink href="/home" className="text-indigo-500 hover:underline">
+          <SiteLink href="/home" className="text-primary-500 hover:underline">
             Find a prediction market!
           </SiteLink>
         </>
@@ -349,7 +349,7 @@ const NoBets = ({ user }: { user: User }) => {
   )
 }
 const NoMatchingBets = () => (
-  <div className="py-4 text-center text-gray-500">
+  <div className="text-ink-500 py-4 text-center">
     No bets matching the current filter
   </div>
 )
@@ -388,7 +388,7 @@ function ContractBets(props: {
   const { payout, profit, profitPercent } = metrics
 
   return (
-    <div tabIndex={0} className="relative bg-white p-4 pr-6">
+    <div tabIndex={0} className="bg-canvas-0 relative p-4 pr-6">
       <Row
         className="cursor-pointer flex-wrap gap-2"
         onClick={() => setCollapsed((collapsed) => !collapsed)}
@@ -397,7 +397,7 @@ function ContractBets(props: {
           <Row className="mr-2 max-w-lg">
             <Link
               href={contractPath(contract)}
-              className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              className="text-primary-700 hover:decoration-primary-400 font-medium hover:underline hover:decoration-2"
               onClick={(e) => e.stopPropagation()}
             >
               {contract.question}
@@ -411,7 +411,7 @@ function ContractBets(props: {
             )}
           </Row>
 
-          <Row className="flex-1 items-center gap-2 text-sm text-gray-500">
+          <Row className="text-ink-500 flex-1 items-center gap-2 text-sm">
             {resolution ? (
               <>
                 <div>
@@ -449,7 +449,7 @@ function ContractBets(props: {
       </Row>
 
       {!collapsed && (
-        <div className="bg-white">
+        <div className="bg-canvas-0">
           <BetsSummary
             className="mt-8 mr-5 flex-1 sm:mr-8"
             contract={contract}
@@ -471,7 +471,7 @@ function ContractBets(props: {
 
           {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
             <div className="max-w-md">
-              <div className="mt-4 bg-gray-50 px-4 py-2">Limit orders</div>
+              <div className="bg-canvas-0 mt-4 px-4 py-2">Limit orders</div>
               <LimitOrderTable
                 contract={contract}
                 limitBets={limitBets}
@@ -480,7 +480,7 @@ function ContractBets(props: {
             </div>
           )}
 
-          <div className="mt-4 bg-gray-50 px-4 py-2">Bets</div>
+          <div className="bg-canvas-0 mt-4 px-4 py-2">Bets</div>
           {bets ? (
             <ContractBetsTable
               contract={contract}
@@ -542,7 +542,7 @@ export function ContractBetsTable(props: {
     <div className="overflow-x-auto">
       {amountRedeemed > 0 && (
         <>
-          <div className="pl-2 text-sm text-gray-500">
+          <div className="text-ink-500 pl-2 text-sm">
             {isCPMM2 ? (
               <>
                 {amountRedeemed} shares of each outcome redeemed for{' '}
@@ -562,7 +562,7 @@ export function ContractBetsTable(props: {
 
       {!isResolved && amountLoaned > 0 && (
         <>
-          <div className="pl-2 text-sm text-gray-500">
+          <div className="text-ink-500 pl-2 text-sm">
             {isYourBets ? (
               <>You currently have a loan of {formatMoney(amountLoaned)}.</>
             ) : (
@@ -681,7 +681,7 @@ function BetRow(props: {
 
   return (
     <tr>
-      <td className="text-gray-700">
+      <td className="text-ink-700">
         {isYourBet &&
           isDPM &&
           !isNumeric &&

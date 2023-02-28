@@ -25,11 +25,11 @@ export function BackRow() {
 
   if (!canGoBack) return <div />
   return (
-    <header className="top-2 w-full border-b border-gray-200 lg:hidden">
-      <Row className="items-center justify-between gap-2 bg-white">
+    <header className="border-ink-200 top-2 w-full border-b lg:hidden">
+      <Row className="bg-canvas-0 items-center justify-between gap-2">
         <div className="flex flex-1">
           <button
-            className="flex px-3 py-2 text-sm text-indigo-700 hover:bg-gray-200 "
+            className="hover:bg-ink-200 text-primary-700 flex px-3 py-2 text-sm "
             onClick={router.back}
           >
             <ArrowLeftIcon className="mr-2 h-5 w-5" aria-hidden />

@@ -13,7 +13,7 @@ export default function AnalyticsEmbed() {
     return <></>
   }
   return (
-    <Col className="w-full bg-white px-2">
+    <Col className="bg-canvas-0 w-full px-2">
       <CustomAnalytics {...stats} />
     </Col>
   )

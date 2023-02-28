@@ -24,10 +24,10 @@ export function OgMarket(props: OgCardProps) {
   const showGraph = data && data.length > 5
 
   return (
-    <div className="flex h-full w-full flex-col items-stretch justify-between bg-white py-8">
+    <div className="bg-canvas-0 flex h-full w-full flex-col items-stretch justify-between py-8">
       <div
         className={clsx(
-          'flex overflow-hidden px-24 leading-tight text-indigo-700',
+          'text-primary-700 flex overflow-hidden px-24 leading-tight',
           showGraph ? 'text-5xl' : 'max-h-[300px] text-6xl'
         )}
       >
@@ -77,14 +77,14 @@ export function OgMarket(props: OgCardProps) {
       )}
 
       {/* Bottom row */}
-      <div className="flex w-full flex-row items-center justify-between px-24 text-3xl text-gray-600">
+      <div className="text-ink-600 flex w-full flex-row items-center justify-between px-24 text-3xl">
         {/* Details */}
         <div className="flex items-center">
           <div className="mr-6 flex items-center">
             {/* Profile image */}
             {creatorAvatarUrl && (
               <img
-                className="mr-2 h-12 w-12 rounded-full bg-white"
+                className="bg-canvas-0 mr-2 h-12 w-12 rounded-full"
                 src={creatorAvatarUrl}
               />
             )}

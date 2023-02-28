@@ -178,14 +178,14 @@ const CornerDetails = (props: {
             <div className="text-white">{creatorName}</div>
           </SiteLink>
           {closeTime != undefined && (
-            <div className="text-gray-400 ">
+            <div className="text-ink-400 ">
               trading closes {fromNow(closeTime)}
             </div>
           )}
         </div>
       </Row>
 
-      <div className="flex items-center rounded-full text-gray-400">
+      <div className="text-ink-400 flex items-center rounded-full">
         <DailyStats user={user} showLoans={false} />
         {toggleView && (
           <SwitchHorizontalIcon className="ml-2 h-6 w-6" onClick={toggleView} />
@@ -221,7 +221,7 @@ function CardActions(props: {
         size={'xl'}
         showTotalLikesUnder={true}
         color={'white'}
-        className={'flex-col gap-2 drop-shadow-sm'}
+        className={'flex-col gap-2 text-white drop-shadow-sm'}
         isSwipe
       />
 

@@ -32,7 +32,7 @@ export function ShowMoreLessButton(props: {
     <Button
       color="override"
       className={clsx(
-        'z-10 select-none bg-white text-sm text-indigo-500 hover:text-indigo-700',
+        'bg-canvas-0 text-primary-500 hover:text-primary-700 z-10 select-none text-sm',
         className
       )}
       onClick={onClick}
@@ -102,7 +102,7 @@ function ActuallyCollapsibleContent(props: {
         {isCollapsed && (
           <>
             <div className="absolute bottom-0 w-full">
-              <div className="h-12 bg-gradient-to-t from-gray-100" />
+              <div className="from-ink-100 h-12 bg-gradient-to-t" />
             </div>
           </>
         )}

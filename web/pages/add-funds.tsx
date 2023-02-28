@@ -43,7 +43,7 @@ export default function AddFundsPage() {
         url="/add-funds"
       />
 
-      <Col className="mx-auto max-w-[700px] rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
+      <Col className="bg-canvas-0 mx-auto max-w-[700px] rounded p-4 py-8 sm:p-8 sm:shadow-md">
         <Title>Get Mana</Title>
 
         <div className="mb-6">
@@ -52,7 +52,7 @@ export default function AddFundsPage() {
           <div className="italic">Not redeemable for cash.</div>
         </div>
 
-        <div className="mb-2 text-sm text-gray-500">Amount</div>
+        <div className="text-ink-500 mb-2 text-sm">Amount</div>
         <FundsSelector
           fundAmounts={WEB_PRICES}
           selected={amountSelected}
@@ -60,7 +60,7 @@ export default function AddFundsPage() {
         />
 
         <div className="mt-6">
-          <div className="mb-1 text-sm text-gray-500">Price USD</div>
+          <div className="text-ink-500 mb-1 text-sm">Price USD</div>
           <div className="text-xl">${Math.round(amountSelected / 100)}.00</div>
         </div>
 

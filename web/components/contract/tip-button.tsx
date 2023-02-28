@@ -35,8 +35,8 @@ export function TipButton(props: {
         disabled={disabled}
         className={clsx(
           'px-2 py-1 text-xs', //2xs button
-          'text-gray-500 transition-transform disabled:cursor-not-allowed',
-          !disabled ? 'hover:text-gray-600' : ''
+          'text-ink-500 transition-transform disabled:cursor-not-allowed',
+          !disabled ? 'hover:text-ink-600' : ''
         )}
         onMouseOver={() => {
           if (!disabled) {
@@ -76,7 +76,7 @@ export function TipButton(props: {
           />
           <div
             className={clsx(
-              userTipped && 'text-indigo-600',
+              userTipped && 'text-primary-600',
               'absolute top-0.5 text-[0.5rem]',
               tipDisplay.length === 1
                 ? 'left-[7px]'

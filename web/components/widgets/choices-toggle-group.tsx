@@ -4,12 +4,12 @@ import React from 'react'
 
 const colorClasses = {
   'indigo-dark':
-    'text-gray-900 hover:bg-indigo-50 aria-checked:bg-indigo-500 aria-checked:text-white',
+    'text-ink-900 hover:bg-primary-50 aria-checked:bg-primary-500 aria-checked:text-ink-1000',
   indigo:
-    'hover:bg-gray-100 aria-checked:bg-indigo-100 aria-checked:text-indigo-500',
+    'hover:bg-ink-100 aria-checked:bg-primary-100 aria-checked:text-primary-500',
   green:
-    'hover:bg-gray-100 aria-checked:bg-teal-500/30 aria-checked:text-teal-600',
-  red: 'hover:bg-gray-100 aria-checked:bg-scarlet-100 aria-checked:text-scarlet-600',
+    'hover:bg-ink-100 aria-checked:bg-teal-500/30 aria-checked:text-teal-600',
+  red: 'hover:bg-ink-100 aria-checked:bg-scarlet-100 aria-checked:text-scarlet-600',
 }
 
 export type ColorType = keyof typeof colorClasses
@@ -40,8 +40,8 @@ export function ChoicesToggleGroup(props: {
     <RadioGroup
       className={clsx(
         className,
-        'inline-flex flex-row gap-2 rounded-md border border-gray-300 bg-white p-1 text-sm text-gray-400 shadow-sm',
-        disabled && '!cursor-not-allowed bg-gray-50'
+        'border-ink-300 text-ink-400 bg-canvas-0 inline-flex flex-row gap-2 rounded-md border p-1 text-sm shadow-sm',
+        disabled && 'bg-canvas-50 !cursor-not-allowed'
       )}
       value={currentChoice}
       onChange={setChoice}
@@ -55,9 +55,9 @@ export function ChoicesToggleGroup(props: {
           className={({ disabled }) =>
             clsx(
               disabled
-                ? 'cursor-not-allowed text-gray-300 aria-checked:bg-gray-300 aria-checked:text-white'
+                ? 'text-ink-300 aria-checked:bg-ink-300 aria-checked:text-ink-0 cursor-not-allowed'
                 : 'cursor-pointer ' + colorClasses[color],
-              'flex items-center rounded-md p-2 outline-none ring-indigo-500 transition-all focus-visible:ring-2 sm:px-3',
+              'ring-primary-500 flex items-center rounded-md p-2 outline-none transition-all focus-visible:ring-2 sm:px-3',
               toggleClassName
             )
           }

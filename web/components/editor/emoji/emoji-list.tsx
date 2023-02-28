@@ -47,7 +47,7 @@ export const EmojiList = forwardRef(
     }))
 
     return (
-      <div className="w-42 absolute z-10 overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+      <div className="w-42 bg-canvas-0 ring-ink-1000 absolute z-10 overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none">
         {!items.length ? (
           <span className="m-1 whitespace-nowrap">No results...</span>
         ) : (
@@ -56,8 +56,8 @@ export const EmojiList = forwardRef(
               className={clsx(
                 'flex h-8 w-full cursor-pointer select-none items-center gap-2 truncate px-4',
                 selectedIndex === i
-                  ? 'bg-indigo-500 text-white'
-                  : 'text-gray-900'
+                  ? 'text-ink-0 bg-primary-500'
+                  : 'text-ink-900'
               )}
               key={item.codePoint}
               onClick={() => selectItem(i)}

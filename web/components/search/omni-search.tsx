@@ -42,7 +42,7 @@ export const OmniSearch = (props: {
         router.push(slug)
         onSelect?.()
       }}
-      className={clsx('relative flex flex-col bg-white', className)}
+      className={clsx('bg-canvas-0 relative flex flex-col', className)}
     >
       <Combobox.Input
         autoFocus
@@ -53,13 +53,13 @@ export const OmniSearch = (props: {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search markets, users, & groups"
         className={clsx(
-          'border-0 border-b !border-gray-100 py-4 px-6 text-xl ring-0 ring-transparent placeholder:text-gray-400 focus:ring-transparent',
+          '!border-ink-100 placeholder:text-ink-400 bg-canvas-0 text-ink-1000 border-0 border-b py-4 px-6 text-xl ring-0 ring-transparent focus:ring-transparent',
           inputClassName
         )}
       />
       <Combobox.Options
         static
-        className="flex flex-col overflow-y-auto px-2 text-gray-700"
+        className="text-ink-700 flex flex-col overflow-y-auto px-2"
       >
         {query ? <Results query={query} /> : <DefaultResults />}
       </Combobox.Options>
@@ -75,7 +75,7 @@ const DefaultResults = () => {
       <PageResults pages={defaultPages} />
       <MarketResults markets={markets} />
       <div className="mx-2 my-2 text-xs">
-        <SparklesIcon className="mr-1 inline h-4 w-4 align-text-bottom text-indigo-500" />
+        <SparklesIcon className="text-primary-500 mr-1 inline h-4 w-4 align-text-bottom" />
         Start with <Key>%</Key> for markets, <Key>@</Key> for users, or{' '}
         <Key>#</Key> for groups
       </div>
@@ -84,7 +84,7 @@ const DefaultResults = () => {
 }
 
 const Key = (props: { children: ReactNode }) => (
-  <code className="mx-0.5 rounded bg-gray-300 p-0.5">{props.children}</code>
+  <code className="bg-ink-300 mx-0.5 rounded p-0.5">{props.children}</code>
 )
 
 const Results = (props: { query: string }) => {
@@ -131,7 +131,7 @@ const Results = (props: { query: string }) => {
     return (
       <LoadingIndicator
         className="absolute right-6 bottom-1/2 translate-y-1/2"
-        spinnerClassName="!border-gray-300 !border-r-transparent"
+        spinnerClassName="!border-ink-300 !border-r-transparent"
       />
     )
   }
@@ -157,7 +157,7 @@ const Results = (props: { query: string }) => {
 }
 
 const SectionTitle = (props: { children: ReactNode }) => (
-  <h2 className="mt-2 mb-1 px-1 text-sm text-gray-500">{props.children}</h2>
+  <h2 className="text-ink-500 mt-2 mb-1 px-1 text-sm">{props.children}</h2>
 )
 
 const ResultOption = (props: { value: Option; children: ReactNode }) => (
@@ -166,7 +166,7 @@ const ResultOption = (props: { value: Option; children: ReactNode }) => (
       <div
         className={clsx(
           'mb-1 cursor-pointer select-none rounded-md px-3 py-2',
-          active && 'bg-indigo-100 text-indigo-800'
+          active && 'bg-primary-100 text-primary-800'
         )}
       >
         {props.children}
@@ -222,7 +222,7 @@ const UserResults = (props: { users: UserSearchResult[] }) => {
             />
             {name}
             {username !== name && (
-              <span className="font-light text-gray-400">@{username}</span>
+              <span className="text-ink-400 font-light">@{username}</span>
             )}
           </div>
         </ResultOption>

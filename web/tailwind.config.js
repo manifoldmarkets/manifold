@@ -3,6 +3,7 @@ const defaultTheme = require('tailwindcss/defaultTheme')
 const plugin = require('tailwindcss/plugin')
 
 module.exports = {
+  darkMode: ['class'],
   content: [
     './pages/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
@@ -256,6 +257,37 @@ module.exports = {
         'slide-up-3-grow': 'slide-up-3-grow 4s',
       },
       colors: {
+        ink: {
+          0: 'rgb(var(--color-ink-0) / <alpha-value>)',
+          50: 'rgb(var(--color-ink-50) / <alpha-value>)',
+          100: 'rgb(var(--color-ink-100) / <alpha-value>)',
+          200: 'rgb(var(--color-ink-200) / <alpha-value>)',
+          300: 'rgb(var(--color-ink-300) / <alpha-value>)',
+          400: 'rgb(var(--color-ink-400) / <alpha-value>)',
+          500: 'rgb(var(--color-ink-500) / <alpha-value>)',
+          600: 'rgb(var(--color-ink-600) / <alpha-value>)',
+          700: 'rgb(var(--color-ink-700) / <alpha-value>)',
+          800: 'rgb(var(--color-ink-800) / <alpha-value>)',
+          900: 'rgb(var(--color-ink-900) / <alpha-value>)',
+          1000: 'rgb(var(--color-ink-1000) / <alpha-value>)',
+        },
+        canvas: {
+          0: 'rgb(var(--color-canvas-0) / <alpha-value>)',
+          50: 'rgb(var(--color-canvas-50) / <alpha-value>)',
+          100: 'rgb(var(--color-canvas-100) / <alpha-value>)',
+        },
+        primary: {
+          50: 'rgb(var(--color-primary-50)/ <alpha-value>)',
+          100: 'rgb(var(--color-primary-100)/ <alpha-value>)',
+          200: 'rgb(var(--color-primary-200)/ <alpha-value>)',
+          300: 'rgb(var(--color-primary-300)/ <alpha-value>)',
+          400: 'rgb(var(--color-primary-400)/ <alpha-value>)',
+          500: 'rgb(var(--color-primary-500)/ <alpha-value>)',
+          600: 'rgb(var(--color-primary-600)/ <alpha-value>)',
+          700: 'rgb(var(--color-primary-700)/ <alpha-value>)',
+          800: 'rgb(var(--color-primary-800)/ <alpha-value>)',
+          900: 'rgb(var(--color-primary-900)/ <alpha-value>)',
+        },
         gray: {
           50: '#FBFBFF',
           100: '#F4F4FB',

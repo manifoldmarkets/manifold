@@ -64,14 +64,14 @@ function GroupsDialog(props: {
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="rounded bg-white p-6">
+      <Col className="bg-canvas-0 rounded p-6">
         <div className="p-2 pb-1 text-xl">{user.name}</div>
-        <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
+        <div className="text-ink-500 p-2 pt-0 text-sm">@{user.username}</div>
         <Col className="gap-2">
           {groups === undefined ? (
             <LoadingIndicator />
           ) : groups.length === 0 ? (
-            <div className="text-gray-500">No groups yet...</div>
+            <div className="text-ink-500">No groups yet...</div>
           ) : (
             groups.map((group) => (
               <Row

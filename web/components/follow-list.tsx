@@ -31,7 +31,7 @@ export function FollowList(props: {
   return (
     <Col className="gap-2 overflow-auto pt-4">
       {userIds.length === 0 && (
-        <div className="text-gray-500">No users yet...</div>
+        <div className="text-ink-500">No users yet...</div>
       )}
       {userIds.map((userId) => (
         <UserFollowItem

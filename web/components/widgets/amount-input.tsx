@@ -47,7 +47,7 @@ export function AmountInput(props: {
     <>
       <Col className={clsx('relative', error && 'mb-3', className)}>
         <label className="font-sm md:font-lg relative">
-          <span className="absolute top-1/2 my-auto ml-2 -translate-y-1/2 text-gray-400">
+          <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
             {label}
           </span>
           <div className="flex">
@@ -175,7 +175,7 @@ export function BuyAmountInput(props: {
                   ? 'text-teal-500 hover:bg-teal-100'
                   : binaryOutcome === 'NO'
                   ? 'text-scarlet-300 hover:bg-scarlet-50'
-                  : 'text-gray-500 hover:bg-gray-200'
+                  : 'text-ink-500 hover:bg-ink-200'
               }
             />
           )}
@@ -203,7 +203,7 @@ const BuyMoreFunds = () => {
     <>
       Not enough funds.
       <button
-        className="ml-1 text-indigo-500 hover:underline hover:decoration-indigo-400"
+        className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
         onClick={() => setAddFundsModalOpen(true)}
       >
         Buy more?

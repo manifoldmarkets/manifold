@@ -34,7 +34,7 @@ export const Avatar = memo(
         width={sizeInPx}
         height={sizeInPx}
         className={clsx(
-          'my-0 flex-shrink-0 rounded-full bg-white object-cover',
+          'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
           `w-${s} h-${s}`,
           !noLink && 'cursor-pointer',
           className
@@ -52,7 +52,7 @@ export const Avatar = memo(
     ) : (
       <UserCircleIcon
         className={clsx(
-          `flex-shrink-0 rounded-full bg-white w-${s} h-${s} text-gray-500`,
+          `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
           className
         )}
         aria-hidden="true"
@@ -73,11 +73,11 @@ export function EmptyAvatar(props: {
   return (
     <div
       className={clsx(
-        `flex flex-shrink-0 h-${size} w-${size} items-center justify-center rounded-full bg-gray-200`,
+        `flex flex-shrink-0 h-${size} w-${size} bg-ink-200 items-center justify-center rounded-full`,
         className
       )}
     >
-      <Icon className={`h-${insize} w-${insize} text-gray-500`} aria-hidden />
+      <Icon className={`h-${insize} w-${insize} text-ink-500`} aria-hidden />
     </div>
   )
 }

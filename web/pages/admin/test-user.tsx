@@ -38,10 +38,10 @@ export default function TestUser() {
   return (
     <Col className={'items-center justify-items-center gap-1'}>
       <Title>Test New User Creation</Title>
-      <Row className={'text-sm text-gray-600'}>
+      <Row className={'text-ink-600 text-sm'}>
         Prerequisite: Set TEST_CREATE_USER_KEY to the{' '}
         <a
-          className={'mx-1 text-indigo-700'}
+          className={'text-primary-700 mx-1'}
           href={
             'https://www.notion.so/manifoldmarkets/Passwords-f460a845ed6d47fc9ea353699adf7c5f?pvs=4#8a11d580b85449a2bba6e400cda8a4c6'
           }
@@ -51,9 +51,9 @@ export default function TestUser() {
         in local storage
       </Row>
       Email
-      <Row className={'text-gray-600'}>{email}</Row>
+      <Row className={'text-ink-600'}>{email}</Row>
       Password
-      <Row className={'text-gray-600'}>{password}</Row>
+      <Row className={'text-ink-600'}>{password}</Row>
       <Button loading={submitting} className={'mt-2'} onClick={create}>
         Submit
       </Button>

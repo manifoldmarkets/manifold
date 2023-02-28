@@ -35,7 +35,7 @@ export function GroupMemberModalContent(props: {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search members"
-        className={clsx('w-full placeholder:text-gray-400')}
+        className={clsx('placeholder:text-ink-400 w-full')}
       />
       {query !== '' && (
         <SearchGroupMemberModalContent
@@ -183,7 +183,7 @@ export function LoadingMember(props: { className?: string }) {
           className="animate-pulse"
         />
         <Col className="h-full justify-end">
-          <div className="h-4 w-32 animate-pulse bg-gray-400" />
+          <div className="bg-ink-400 h-4 w-32 animate-pulse" />
         </Col>
       </Row>
     </Row>
@@ -210,7 +210,7 @@ export function MemberRoleSection(props: {
       {members === undefined ? (
         <LoadingIndicator />
       ) : members.length === 0 ? (
-        <div className="text-gray-400">{`No ${role}s yet...`}</div>
+        <div className="text-ink-400">{`No ${role}s yet...`}</div>
       ) : (
         members.map((member) => {
           return (
@@ -233,15 +233,13 @@ export function MemberRoleHeader(props: {
 }) {
   const { headerText, description } = props
   return (
-    <Col className="gap-0.5 bg-white pt-4 text-sm text-gray-400">
+    <Col className="text-ink-400 bg-canvas-0 gap-0.5 pt-4 text-sm">
       <Row className="w-full gap-2 font-semibold">
-        <div className="my-auto flex h-[1px] grow bg-gray-400" />
+        <div className="bg-ink-400 my-auto flex h-[1px] grow" />
         {headerText}
-        <div className="my-auto flex h-[1px] grow bg-gray-400" />
+        <div className="bg-ink-400 my-auto flex h-[1px] grow" />
       </Row>
-      {description && (
-        <div className="text-xs text-gray-500">{description}</div>
-      )}
+      {description && <div className="text-ink-500 text-xs">{description}</div>}
     </Col>
   )
 }
@@ -256,12 +254,12 @@ export function Member(props: {
   const tag = member.role ? (
     <div
       className={clsx(
-        'font-regular rounded px-2 py-1 text-xs text-white',
+        'font-regular text-ink-0 rounded px-2 py-1 text-xs',
         isCreator
-          ? 'bg-indigo-400'
+          ? 'bg-primary-400'
           : member.role === 'admin'
-          ? 'bg-indigo-300'
-          : 'bg-gray-300'
+          ? 'bg-primary-300'
+          : 'bg-ink-300'
       )}
     >
       {isCreator ? 'CREATOR' : `${member.role.toLocaleUpperCase()}`}
@@ -402,7 +400,7 @@ export function AdminRoleDropdown(props: {
     return (
       <DropdownMenu
         Items={groupMemberOptions}
-        Icon={<DotsVerticalIcon className={clsx('h-5 w-5 text-gray-400')} />}
+        Icon={<DotsVerticalIcon className={clsx('text-ink-400 h-5 w-5')} />}
         menuWidth={'w-40'}
         className={clsx(className)}
       />

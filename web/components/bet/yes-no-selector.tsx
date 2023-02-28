@@ -35,10 +35,10 @@ export function YesNoSelector(props: {
           className={clsx(
             commonClassNames,
             selected == 'YES'
-              ? 'border-teal-500 bg-teal-500 text-white'
+              ? 'text-ink-0 border-teal-500 bg-teal-500'
               : selected == 'NO'
-              ? 'border-gray-300 bg-white text-gray-300 hover:border-teal-500 hover:text-teal-500'
-              : 'border-teal-500 bg-white text-teal-500 hover:bg-teal-50',
+              ? 'border-ink-300 text-ink-300 bg-canvas-0 hover:border-teal-500 hover:text-teal-500'
+              : 'bg-canvas-0 border-teal-500 text-teal-500 hover:bg-teal-500/10',
             btnClassName
           )}
           onClick={() => onSelect('YES')}
@@ -54,10 +54,10 @@ export function YesNoSelector(props: {
           className={clsx(
             commonClassNames,
             selected == 'NO'
-              ? 'border-scarlet-300 bg-scarlet-300 text-white'
+              ? 'border-scarlet-300 bg-scarlet-300 text-ink-1000'
               : selected == 'YES'
-              ? 'hover:border-scarlet-300 hover:text-scarlet-300 border-gray-300 bg-white text-gray-300'
-              : 'border-scarlet-300 text-scarlet-300 bg-white hover:bg-red-50',
+              ? 'hover:border-scarlet-300 hover:text-scarlet-300 border-ink-300 text-ink-300 bg-canvas-0'
+              : 'border-scarlet-300 text-scarlet-300 bg-canvas-0 hover:bg-red-500/10',
             btnClassName
           )}
           onClick={() => onSelect('NO')}
@@ -164,7 +164,7 @@ export function BuyButton(props: { className?: string; onClick?: () => void }) {
   return (
     <button
       className={clsx(
-        'hover:bg-teal-600-focus hover:border-teal-600-focus inline-flex flex-1 items-center  justify-center rounded-lg border-2 border-teal-600 p-2 hover:text-white',
+        'hover:bg-teal-600-focus hover:border-teal-600-focus hover:text-ink-0 inline-flex flex-1  items-center justify-center rounded-lg border-2 border-teal-600 p-2',
         'bg-transparent text-lg text-teal-500',
         className
       )}

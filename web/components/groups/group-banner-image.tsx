@@ -112,15 +112,15 @@ export function ChangeBannerModal(props: {
           ))}
         </Row>
         <Row className="w-full items-center">
-          <div className="h-0.5 flex-1 bg-gray-300" />
-          <div className="px-2 text-gray-300">OR</div>
-          <div className="h-0.5 flex-1 bg-gray-300" />
+          <div className="bg-ink-300 h-0.5 flex-1" />
+          <div className="text-ink-300 px-2">OR</div>
+          <div className="bg-ink-300 h-0.5 flex-1" />
         </Row>
 
         <Col className="w-full items-center gap-4">
           <div
             className={clsx(
-              'h-40 w-full rounded bg-gray-200 ring-offset-2 transition-all',
+              'bg-ink-200 h-40 w-full rounded ring-offset-2 transition-all',
               fileLoading ? 'animate-pulse' : '',
               fileUrl
                 ? 'hover:ring-highlight-blue ring-opacity-50 hover:ring'
@@ -136,7 +136,7 @@ export function ChangeBannerModal(props: {
             }}
           >
             {!fileUrl && (
-              <PhotographIcon className="mx-auto mt-10 h-1/2 text-white" />
+              <PhotographIcon className="text-ink-0 mx-auto mt-10 h-1/2" />
             )}
             {fileUrl && (
               <figure className="group relative h-full w-full">
@@ -245,8 +245,8 @@ function BannerDropdown(props: {
             onClick: onChangeBannerClick,
           },
         ]}
-        Icon={<PencilIcon className="h-5 w-5 text-gray-900" />}
-        buttonClass="rounded-md bg-white bg-opacity-50 p-1"
+        Icon={<PencilIcon className="text-ink-900 h-5 w-5" />}
+        buttonClass="rounded-md bg-canvas-0 bg-opacity-50 p-1"
         menuWidth="w-60"
       />
       <ChangeBannerModal

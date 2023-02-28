@@ -14,7 +14,7 @@ export function ContractsFeed() {
 
   return (
     <Col>
-      <Col className="divide-y-[0.5px] border-[0.5px]">
+      <Col className="divide-ink-300 border-ink-300 divide-y-[0.5px] border-[0.5px]">
         {contracts.map((contract) => (
           <ContractCardNew key={contract.id} contract={contract} />
         ))}
@@ -28,9 +28,12 @@ export function ContractsFeed() {
       <LoadingIndicator className="mt-4" />
 
       {contracts !== undefined && contracts.length === 0 && (
-        <div className="m-4 flex w-full flex-col items-center justify-center">
+        <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
-          <SiteLink href="/markets?s=newest&f=open" className="text-indigo-700">
+          <SiteLink
+            href="/markets?s=newest&f=open"
+            className="text-primary-700"
+          >
             Browse new markets
           </SiteLink>
         </div>

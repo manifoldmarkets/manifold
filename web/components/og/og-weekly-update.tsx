@@ -25,17 +25,17 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
     })
 
   return (
-    <div className="flex h-full w-full flex-col bg-white px-24">
+    <div className="bg-canvas-0 flex h-full w-full flex-col px-24">
       {/* <!-- Profile image --> */}
       <div className="absolute left-24 top-8 flex flex-row ">
         <img
-          className="mr-6 flex h-24 w-24 items-center justify-center rounded-full bg-white"
+          className="bg-canvas-0 mr-6 flex h-24 w-24 items-center justify-center rounded-full"
           src={creatorAvatarUrl}
           alt=""
         />
         <div className="mt-3 flex flex-col">
-          <div className="flex text-3xl text-gray-900">{creatorName}</div>
-          <div className="flex text-3xl text-gray-500">@{creatorUsername}</div>
+          <div className="text-ink-900 flex text-3xl">{creatorName}</div>
+          <div className="text-ink-500 flex text-3xl">@{creatorUsername}</div>
         </div>
       </div>
 
@@ -70,7 +70,7 @@ export function OgWeeklyUpdate(props: WeeklyPortfolioUpdateOGCardProps) {
 function ProfitDiv(profit: number, date: string) {
   const color = profit > 0 ? 'text-teal-500' : 'text-red-600'
   return (
-    <div className={'flex flex-col rounded-md bg-white p-2 ' + color}>
+    <div className={'bg-canvas-0 flex flex-col rounded-md p-2 ' + color}>
       <div className="flex flex-row text-8xl">M${profit}</div>
       <div className=" flex w-full flex-row justify-center text-4xl">
         {date} profit

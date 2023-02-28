@@ -29,7 +29,11 @@ export function AddFundsModal(props: {
   const { open, setOpen } = props
 
   return (
-    <Modal open={open} setOpen={setOpen} className="rounded-md bg-white p-8">
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      className="bg-canvas-0 text-ink-1000 rounded-md p-8"
+    >
       <Tabs
         currentPageForAnalytics="buy modal"
         tabs={[
@@ -89,7 +93,7 @@ function BuyManaTab(props: { onClose: () => void }) {
         <div className="italic">Not redeemable for cash.</div>
       </div>
 
-      <div className="mb-2 text-sm text-gray-500">Amount</div>
+      <div className="text-ink-500 mb-2 text-sm">Amount</div>
       <FundsSelector
         fundAmounts={prices}
         selected={amountSelected}
@@ -97,7 +101,7 @@ function BuyManaTab(props: { onClose: () => void }) {
       />
 
       <div className="mt-6">
-        <div className="mb-1 text-sm text-gray-500">Price USD</div>
+        <div className="text-ink-500 mb-1 text-sm">Price USD</div>
         <div className="text-xl">{manaToUSD(amountSelected)}</div>
       </div>
 

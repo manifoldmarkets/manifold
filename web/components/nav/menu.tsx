@@ -32,7 +32,7 @@ export function MenuButton(props: {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute left-0 mt-2 w-40 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <Menu.Items className="bg-canvas-0 ring-ink-1000 absolute left-0 mt-2 w-40 origin-top-right rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none">
           {menuItems.map((item) => (
             <Menu.Item key={item.href || item.name}>
               {({ active }) => (
@@ -41,8 +41,8 @@ export function MenuButton(props: {
                   target={item.href?.startsWith('http') ? '_blank' : undefined}
                   onClick={item.onClick}
                   className={clsx(
-                    active ? 'bg-gray-100' : '',
-                    'line-clamp-3 block cursor-pointer py-1.5 px-4 text-sm text-gray-700'
+                    active ? 'bg-ink-100' : '',
+                    'line-clamp-3 text-ink-700 block cursor-pointer py-1.5 px-4 text-sm'
                   )}
                 >
                   {item.name}

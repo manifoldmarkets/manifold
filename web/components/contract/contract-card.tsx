@@ -156,7 +156,7 @@ export const ContractCard = memo(function ContractCard(props: {
                 name={contract.creatorName}
                 username={contract.creatorUsername}
                 noLink={noLinkAvatar}
-                className="text-sm text-gray-400"
+                className="text-ink-400 text-sm"
                 createdTime={creatorCreatedTime}
               />
             </Row>
@@ -192,7 +192,7 @@ export const ContractCard = memo(function ContractCard(props: {
             <div className="absolute bottom-0 w-full">
               <div
                 className={clsx(
-                  'break-anywhere bg-gradient-to-t from-slate-900 px-4 pb-2 pt-12 text-xl font-semibold text-white',
+                  'break-anywhere bg-gradient-to-t from-black px-4 pb-2 pt-12 text-xl font-semibold text-white',
                   questionClass
                 )}
               >
@@ -207,7 +207,7 @@ export const ContractCard = memo(function ContractCard(props: {
           {!hasImage && !hideQuestion && (
             <div
               className={clsx(
-                'break-anywhere text-md pb-2 font-medium text-gray-900',
+                'break-anywhere text-md text-ink-900 pb-2 font-medium',
                 questionClass
               )}
             >
@@ -471,10 +471,10 @@ function LoadedMetricsFooter(props: {
     contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
 
   return (
-    <div className="columns-2 items-center gap-4 rounded-b-[7px] bg-gray-100 px-4 pt-1 pb-2 text-sm">
+    <div className="bg-ink-100 columns-2 items-center gap-4 rounded-b-[7px] px-4 pt-1 pb-2 text-sm">
       <Col>
-        <span className="text-xs text-gray-400">Your position</span>
-        <div className="text-sm text-gray-600">
+        <span className="text-ink-400 text-xs">Your position</span>
+        <div className="text-ink-600 text-sm">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
               ? formatWithCommas(yesShares)
@@ -485,11 +485,11 @@ function LoadedMetricsFooter(props: {
         </div>
       </Col>
       <Col>
-        <div className="text-xs text-gray-400">
+        <div className="text-ink-400 text-xs">
           {' '}
           Your {showDailyProfit ? 'daily' : 'total'} profit{' '}
         </div>
-        <div className={clsx('text-sm font-semibold text-gray-600')}>
+        <div className={clsx('text-ink-600 text-sm font-semibold')}>
           {profit ? formatMoney(profit) : '--'}
         </div>
       </Col>
@@ -500,7 +500,7 @@ function LoadedMetricsFooter(props: {
 export function FeaturedPill(props: { label?: string }) {
   const label = props.label ?? 'Featured'
   return (
-    <div className="rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-xs text-white">
+    <div className="text-ink-0 from-primary-500 rounded-full bg-gradient-to-br to-fuchsia-500 px-2 py-0.5 text-xs">
       {label}
     </div>
   )
@@ -544,7 +544,7 @@ export function ContractCardNew(props: {
 
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
-  const textColor = isClosed && !isResolved ? 'text-gray-500' : 'text-gray-900'
+  const textColor = isClosed && !isResolved ? 'text-ink-500' : 'text-ink-900'
   const descriptionString =
     typeof description === 'string'
       ? description
@@ -555,11 +555,11 @@ export function ContractCardNew(props: {
       href={contractPath(contract)}
       className={clsx(
         'group flex flex-col gap-2 whitespace-nowrap rounded-sm py-3 px-4',
-        'bg-white focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
+        'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
         className
       )}
     >
-      <Row className="items-center gap-3 text-sm text-gray-500">
+      <Row className="text-ink-500 items-center gap-3 text-sm">
         <Row className="z-10 gap-2">
           <Avatar
             username={creatorUsername}
@@ -569,7 +569,7 @@ export function ContractCardNew(props: {
           <UserLink
             name={creatorName}
             username={creatorUsername}
-            className="h-[24px] text-sm text-gray-500"
+            className="text-ink-500 h-[24px] text-sm"
             createdTime={creatorCreatedTime}
           />
         </Row>
@@ -612,7 +612,7 @@ export function ContractCardNew(props: {
         </div>
       )}
 
-      <Row ref={ref} className="items-center gap-3 text-sm text-gray-500">
+      <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
         <div className="text-base font-semibold">
           <ContractStatusLabel contract={contract} chanceLabel />
         </div>
@@ -658,10 +658,10 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="items-center gap-4 rounded bg-gray-50 p-2 text-sm">
+    <Row className="bg-canvas-50 items-center gap-4 rounded p-2 text-sm">
       <Row className="items-center gap-2">
-        <span className="text-gray-500">Your position</span>
-        <div className="text-gray-600">
+        <span className="text-ink-500">Your position</span>
+        <div className="text-ink-600">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
               ? formatWithCommas(yesShares)
@@ -671,8 +671,8 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
         </div>
       </Row>
       <Row className="ml-auto items-center gap-2">
-        <div className="text-gray-500">Your profit </div>
-        <div className={clsx('font-semibold text-gray-600')}>
+        <div className="text-ink-500">Your profit </div>
+        <div className={clsx('text-ink-600 font-semibold')}>
           {profit ? formatMoney(profit) : '--'}
         </div>
       </Row>

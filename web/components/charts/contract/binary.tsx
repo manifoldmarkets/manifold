@@ -37,7 +37,7 @@ const BinaryChartTooltip = (
         <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
       )}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-gray-600">{formatPct(prev.y)}</span>
+      <span className="text-ink-600">{formatPct(prev.y)}</span>
     </Row>
   )
 }

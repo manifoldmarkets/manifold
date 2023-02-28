@@ -231,7 +231,7 @@ export function ContractSearch(props: {
           listViewDisabled={listViewDisabled}
         />
         {renderedContracts && renderedContracts.length === 0 && profile ? (
-          <p className="mx-2 text-gray-500">No markets found</p>
+          <p className="text-ink-500 mx-2">No markets found</p>
         ) : (
           <ContractsGrid
             contracts={renderedContracts}
@@ -262,7 +262,7 @@ export function ContractSearch(props: {
           autoFocus={autoFocus}
         />
         {renderedContracts && renderedContracts.length === 0 && profile ? (
-          <p className="mx-2 text-gray-500">No markets found</p>
+          <p className="text-ink-500 mx-2">No markets found</p>
         ) : asList ? (
           <ContractsList
             contracts={renderedContracts}
@@ -412,7 +412,7 @@ function ContractSearchControls(props: {
   return (
     <div
       className={clsx(
-        'sticky top-0 z-30 mb-1 flex flex-col items-stretch gap-3 bg-gray-50 pb-2 pt-px sm:flex-row sm:gap-2',
+        'sticky top-0 z-30 mb-1 flex flex-col items-stretch gap-3 pb-2 pt-px sm:flex-row sm:gap-2',
         className
       )}
     >
@@ -500,7 +500,7 @@ function SearchFilters(props: {
         <button
           type="button"
           onClick={() => setAsList(!asList)}
-          className="relative inline-flex h-full items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:py-2"
+          className="hover:bg-canvas-50 border-ink-300 text-ink-500 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 relative inline-flex h-full items-center rounded-md border px-2 py-1 text-sm font-medium shadow-sm focus:z-10 focus:outline-none focus:ring-1 sm:py-2"
         >
           {asList ? (
             <ViewGridIcon className="h-5 w-5" aria-hidden="true" />

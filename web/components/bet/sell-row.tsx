@@ -106,7 +106,7 @@ function SellSharesModal(props: {
 
   return (
     <Modal open={true} setOpen={setOpen}>
-      <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
+      <Col className={clsx('bg-canvas-0 rounded-md px-8 py-6', className)}>
         <Title>Sell shares</Title>
 
         <div className="mb-6">

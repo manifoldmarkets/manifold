@@ -346,7 +346,7 @@ function SignupBonusNotification(props: {
         <NotificationIcon
           symbol={'✨'}
           symbolBackgroundClass={
-            'bg-gradient-to-br from-indigo-600 to-indigo-300'
+            'bg-gradient-to-br from-primary-600 to-primary-300'
           }
         />
       }
@@ -440,7 +440,7 @@ function MarketResolvedNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         cancelled {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -458,7 +458,7 @@ function MarketResolvedNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         resolved {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -568,7 +568,7 @@ function NewMarketNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
@@ -618,7 +618,7 @@ function MarketUpdateNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         <span>
           {action}{' '}
@@ -675,7 +675,7 @@ function CommentNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         {reasonText}
         {!isChildOfGroup && (
@@ -717,7 +717,7 @@ function AnswerNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         answered{' '}
         {!isChildOfGroup && (
@@ -754,7 +754,7 @@ function TaggedUserNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         tagged you{' '}
         {!isChildOfGroup && (
@@ -830,7 +830,7 @@ function FollowNotification(props: {
         <AvatarNotificationIcon
           notification={notification}
           symbol={
-            <Col className="h-5 w-5 items-center rounded-lg bg-gradient-to-br from-gray-400 to-gray-200 text-sm">
+            <Col className="from-ink-400 to-ink-200 h-5 w-5 items-center rounded-lg bg-gradient-to-br text-sm">
               ➕
             </Col>
           }
@@ -842,7 +842,7 @@ function FollowNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         followed you
       </>
@@ -878,7 +878,7 @@ function LiquidityNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         added{' '}
         {sourceText && <span>{formatMoney(parseInt(sourceText))} of</span>}{' '}
@@ -916,7 +916,7 @@ function GroupAddNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         added you{' '}
         {!isChildOfGroup && (
@@ -986,7 +986,7 @@ function UserJoinedNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         joined Manifold Markets {reasonBlock}
       </div>
@@ -1022,7 +1022,7 @@ function ChallengeNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         accepted your challenge{' '}
         {!isChildOfGroup && (
@@ -1071,7 +1071,7 @@ function GroupRoleChangedNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         {sourceText}{' '}
         {!isChildOfGroup && (
@@ -1105,7 +1105,7 @@ function WeeklyUpdateNotification(props: {
         <NotificationIcon
           symbol={'✨'}
           symbolBackgroundClass={
-            'bg-gradient-to-br from-indigo-600 to-indigo-300'
+            'bg-gradient-to-br from-primary-600 to-primary-300'
           }
         />
       }

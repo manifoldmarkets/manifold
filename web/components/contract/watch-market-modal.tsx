@@ -12,11 +12,11 @@ export const WatchMarketModal = (props: {
   const { open, setOpen, title } = props
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className="items-center gap-4 rounded-md bg-white px-8 py-6">
+      <Col className="bg-canvas-0 items-center gap-4 rounded-md px-8 py-6">
         <EyeIcon className={clsx('h-20 w-20')} aria-hidden="true" />
         <span className="text-xl">{title ? title : 'Watching questions'}</span>
         <Col className={'gap-2'}>
-          <span className={'text-indigo-700'}>• What is watching?</span>
+          <span className={'text-primary-700'}>• What is watching?</span>
           <span className={'ml-2'}>
             Watching a market means you'll receive notifications from activity
             on it. You automatically start watching a market if you comment on
@@ -27,7 +27,7 @@ export const WatchMarketModal = (props: {
             />
             ️ button.
           </span>
-          <span className={'text-indigo-700'}>
+          <span className={'text-primary-700'}>
             • What types of notifications will I receive?
           </span>
           <span className={'ml-2'}>

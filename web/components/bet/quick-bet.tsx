@@ -311,10 +311,10 @@ function BinaryQuickBetButton(props: {
             className={clsx(
               'mx-2 h-6 w-6 drop-shadow-md transition-all',
               shouldFocus
-                ? 'animate-bounce-left text-indigo-600'
+                ? 'animate-bounce-left text-primary-600'
                 : hasInvestment
-                ? 'text-indigo-500'
-                : 'text-indigo-300'
+                ? 'text-primary-500'
+                : 'text-primary-300'
             )}
           />
         )}
@@ -323,10 +323,10 @@ function BinaryQuickBetButton(props: {
             className={clsx(
               'mx-2 h-6 w-6 drop-shadow-md transition-all',
               shouldFocus
-                ? 'sm:animate-bounce-right text-indigo-600'
+                ? 'sm:animate-bounce-right text-primary-600'
                 : hasInvestment
-                ? 'text-indigo-500'
-                : 'text-indigo-300'
+                ? 'text-primary-500'
+                : 'text-primary-300'
             )}
           />
         )}
@@ -362,7 +362,7 @@ function QuickBetAmount(props: {
   return (
     <span
       className={clsx(
-        'my-auto text-sm font-light text-indigo-600 transition-opacity',
+        'text-primary-600 my-auto text-sm font-light transition-opacity',
         shouldFocus ? 'opacity-100' : 'opacity-0'
       )}
     >
@@ -551,7 +551,7 @@ function ContractCardAnswer(props: {
   return (
     <div
       className={clsx(
-        'relative h-7 overflow-hidden rounded-md bg-gray-100',
+        'bg-ink-100 relative h-7 overflow-hidden rounded-md',
         type === 'winner' && 'ring-[1.5px] ring-purple-500'
       )}
     >
@@ -565,7 +565,7 @@ function ContractCardAnswer(props: {
       <span
         className={clsx(
           'text-md',
-          type === 'loser' ? 'text-gray-500' : 'text-gray-900',
+          type === 'loser' ? 'text-ink-500' : 'text-ink-900',
           'absolute inset-0 flex items-center justify-between px-4'
         )}
       >
@@ -604,7 +604,7 @@ function getNumericScale(contract: NumericContract) {
 const OUTCOME_TO_COLOR_BAR = {
   YES: 'bg-teal-200',
   NO: 'bg-scarlet-200',
-  CANCEL: 'bg-gray-200',
+  CANCEL: 'bg-ink-200',
   MKT: 'bg-sky-200',
 }
 
@@ -612,20 +612,20 @@ export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-100'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-primary-100'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return 'bg-slate-200'
+    return 'bg-ink-200'
   }
 
-  return 'bg-indigo-100'
+  return 'bg-primary-100'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
   YES: 'bg-teal-100',
   NO: 'bg-scarlet-100',
-  CANCEL: 'bg-gray-100',
+  CANCEL: 'bg-ink-100',
   MKT: 'bg-sky-100',
 }
 
@@ -633,18 +633,16 @@ export function getBgColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return (
-      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-gray-100'
-    )
+    return OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-ink-100'
   }
 
-  return 'bg-gray-100'
+  return 'bg-ink-100'
 }
 
 const OUTCOME_TO_COLOR_TEXT = {
   YES: 'text-teal-600',
   NO: 'text-scarlet-600',
-  CANCEL: 'text-gray-400',
+  CANCEL: 'text-ink-400',
   MKT: 'text-sky-600',
 }
 
@@ -652,12 +650,12 @@ export function getTextColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_TEXT[resolution as resolution] ?? 'text-indigo-200'
+    return OUTCOME_TO_COLOR_TEXT[resolution as resolution] ?? 'text-primary-200'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return 'text-gray-600'
+    return 'text-ink-600'
   }
 
-  return 'text-gray-900'
+  return 'text-ink-900'
 }

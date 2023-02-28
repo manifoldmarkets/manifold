@@ -223,7 +223,7 @@ const BinaryUserPositionsTabContent = memo(
       return (
         <Row
           className={clsx(
-            'items-center justify-between gap-2 rounded-sm border-b p-2',
+            'border-ink-300 items-center justify-between gap-2 rounded-sm border-b p-2',
             currentUser?.id === position.userId && 'bg-amber-100',
             followedUsers?.includes(position.userId) && 'bg-blue-50'
           )}
@@ -264,7 +264,7 @@ const BinaryUserPositionsTabContent = memo(
       <Col className={'w-full '}>
         <Row className={'gap-8'}>
           <Col className={'w-full max-w-sm gap-2'}>
-            <Row className={'justify-end px-2 text-gray-500'}>
+            <Row className={'text-ink-500 justify-end px-2'}>
               <span>
                 <YesLabel /> shares
               </span>
@@ -280,7 +280,7 @@ const BinaryUserPositionsTabContent = memo(
             })}
           </Col>
           <Col className={'w-full max-w-sm gap-2'}>
-            <Row className={'justify-end px-2 text-gray-500'}>
+            <Row className={'text-ink-500 justify-end px-2'}>
               <span>
                 <NoLabel /> shares
               </span>
@@ -511,8 +511,8 @@ export function SortRow(props: {
   return (
     <Row className="mb-4 items-center justify-end gap-4">
       <Row className="items-center gap-1">
-        <div className="text-sm text-gray-400">Sort by:</div>
-        <button className="w-20 text-sm text-gray-600" onClick={onSortClick}>
+        <div className="text-ink-400 text-sm">Sort by:</div>
+        <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>
           <Tooltip text={sort === 'Best' ? 'Most likes first' : ''}>
             <Row className="items-center gap-1">
               {sort}

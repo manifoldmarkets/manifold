@@ -25,7 +25,7 @@ export function DreamModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className="gap-2 rounded bg-white">
+      <Col className="bg-canvas-0 gap-2 rounded">
         <DreamCard {...props} onDream={onDream} />
         {imageUrl && (
           <>
@@ -116,7 +116,7 @@ export function DreamCard(props: {
 
   return (
     <Col className="gap-2 p-6">
-      <div className="pt-2 text-sm text-gray-600">
+      <div className="text-ink-600 pt-2 text-sm">
         Ask our AI to generate a custom image
       </div>
       <Row className="gap-2">
@@ -125,7 +125,7 @@ export function DreamCard(props: {
           type="text"
           name="embed"
           id="embed"
-          className="block w-full rounded-md border-gray-300 shadow-sm placeholder:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="border-ink-300 placeholder:text-ink-300 focus:border-primary-500 focus:ring-primary-500 block w-full rounded-md shadow-sm sm:text-sm"
           placeholder="Prediction markets taking over the world"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -144,7 +144,7 @@ export function DreamCard(props: {
         <div className="text-sm">This may take ~10 seconds...</div>
       )}
       {/* TODO: Allow the user to choose their own modifiers */}
-      <div className="pt-2 text-xs text-gray-300">Modifiers: {MODIFIERS}</div>
+      <div className="text-ink-300 pt-2 text-xs">Modifiers: {MODIFIERS}</div>
     </Col>
   )
 }

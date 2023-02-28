@@ -218,7 +218,7 @@ export function OrderBookButton(props: {
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="rounded bg-white p-4 py-6">
+        <Col className="bg-canvas-0 rounded p-4 py-6">
           <Title className="flex">
             Order book{' '}
             <InfoTooltip

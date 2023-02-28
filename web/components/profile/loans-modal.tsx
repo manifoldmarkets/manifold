@@ -11,30 +11,30 @@ export function LoansModal(props: {
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
-      <Col className="items-center gap-4 rounded-md bg-white px-8 py-6">
+      <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
         <span className={'text-8xl'}>🏦</span>
         <span className="text-xl">Daily loans on your {PLURAL_BETS}</span>
         <Col className={'gap-2'}>
-          <span className={'text-indigo-700'}>• What are daily loans?</span>
+          <span className={'text-primary-700'}>• What are daily loans?</span>
           <span className={'ml-2'}>
             Every day at midnight PT, get 2% of your total bet amount back as a
             loan.
           </span>
-          <span className={'text-indigo-700'}>
+          <span className={'text-primary-700'}>
             • Do I have to pay back a loan?
           </span>
           <span className={'ml-2'}>
             Yes, don't worry! You will automatically pay back loans when the
             market resolves or you sell your bet.
           </span>
-          <span className={'text-indigo-700'}>
+          <span className={'text-primary-700'}>
             • What is the purpose of loans?
           </span>
           <span className={'ml-2'}>
             Loans make it worthwhile to bet on markets that won't resolve for
             months or years, because your investment won't be locked up as long.
           </span>
-          <span className={'text-indigo-700'}>• What is an example?</span>
+          <span className={'text-primary-700'}>• What is an example?</span>
           <span className={'ml-2'}>
             For example, if you bet {ENV_CONFIG.moneyMoniker}1000 on "Will I
             become a millionare?", you will get {ENV_CONFIG.moneyMoniker}20 back

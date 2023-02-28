@@ -203,7 +203,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
                   award={tourney.award}
                   endTime={tourney.endTime}
                 />
-                <span className="text-gray-500">{tourney.blurb}</span>
+                <span className="text-ink-500">{tourney.blurb}</span>
                 <MarketCarousel slug={slug} />
               </div>
             )
@@ -216,7 +216,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
             award={Salem.award}
             endTime={Salem.endTime}
           />
-          <span className="text-gray-500">{Salem.blurb}</span>
+          <span className="text-ink-500">{Salem.blurb}</span>
           <ImageCarousel url={Salem.url} images={Salem.images} />
         </div>
 
@@ -226,10 +226,10 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
             className="absolute inset-0 flex items-center"
             aria-hidden="true"
           >
-            <div className="w-full border-t border-gray-300" />
+            <div className="border-ink-300 w-full border-t" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-gray-50 px-3 text-lg font-medium text-gray-900">
+            <span className="bg-canvas-50 text-ink-900 px-3 text-lg font-medium">
               Past tournaments
             </span>
           </div>
@@ -247,7 +247,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
                   award={tourney.award}
                   endTime={tourney.endTime}
                 />
-                <span className="text-gray-500">{tourney.blurb}</span>
+                <span className="text-ink-500">{tourney.blurb}</span>
                 <MarketCarousel slug={slug} />
               </div>
             )
@@ -259,10 +259,10 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
             className="absolute inset-0 flex items-center"
             aria-hidden="true"
           >
-            <div className="w-full border-t border-gray-300" />
+            <div className="border-ink-300 w-full border-t" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-gray-50 px-3 text-lg font-medium text-gray-900">
+            <span className="bg-canvas-50 text-ink-900 px-3 text-lg font-medium">
               Featured Groups
             </span>
           </div>
@@ -279,13 +279,13 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
                   award={tourney.award}
                   endTime={tourney.endTime}
                 />
-                <span className="text-gray-500">{tourney.blurb}</span>
+                <span className="text-ink-500">{tourney.blurb}</span>
                 <MarketCarousel slug={slug} />
               </div>
             )
         )}
 
-        <p className="pb-10 italic text-gray-500">
+        <p className="text-ink-500 pb-10 italic">
           We'd love to sponsor more tournaments and groups. Have an idea? Ping{' '}
           <SiteLink
             className="font-semibold"
@@ -311,7 +311,7 @@ const SectionHeader = (props: {
   return (
     <Link href={url} className="group mb-3 flex flex-wrap justify-between">
       <h2 className="text-xl group-hover:underline md:text-3xl">{title}</h2>
-      <Row className="my-2 items-center gap-4 whitespace-nowrap rounded-full bg-gray-200 px-6">
+      <Row className="bg-ink-200 my-2 items-center gap-4 whitespace-nowrap rounded-full px-6">
         {!!award && <span className="flex items-center">🏆 {award}</span>}
         {!!ppl && (
           <span className="flex items-center gap-1">
@@ -343,7 +343,7 @@ const ImageCarousel = (props: { images: MarketImage[]; url: string }) => {
         </a>
       ))}
       <SiteLink
-        className="ml-6 mr-10 flex shrink-0 items-center text-indigo-700"
+        className="text-primary-700 ml-6 mr-10 flex shrink-0 items-center"
         href={url}
       >
         See more

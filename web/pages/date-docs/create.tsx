@@ -131,7 +131,7 @@ export default function CreateDateDocPage() {
                   onChange={(e) => setQuestion(e.target.value || '')}
                   disabled={!createMarket}
                 />
-                <div className="ml-2 text-gray-500">
+                <div className="text-ink-500 ml-2">
                   Cost: {ENV_CONFIG.moneyMoniker}100
                 </div>
               </Col>

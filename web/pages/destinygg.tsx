@@ -83,7 +83,7 @@ export default function DestinyLandingPage(props: { subCount: number }) {
         description="Get more out of Twitch with play-money betting markets."
       />
 
-      <Col className="max-w-3xl rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
+      <Col className="text-ink-600 bg-canvas-0 max-w-3xl rounded p-4 shadow-md sm:mx-auto sm:p-10">
         <Title>Claim a Destiny tier-1 subscription!</Title>
         <div>
           Support Destiny by trading in our markets. Claim a sub for you or a
@@ -173,17 +173,17 @@ export function ExternalInfoCard(props: {
   const { link, icon, text } = props
   return (
     <Link
-      className="group flex w-1/3 flex-col items-center gap-1 rounded-xl bg-indigo-700 px-4 py-2 text-center text-sm text-white drop-shadow-sm transition-all hover:drop-shadow-lg"
+      className="text-ink-0 bg-primary-700 group flex w-1/3 flex-col items-center gap-1 rounded-xl px-4 py-2 text-center text-sm drop-shadow-sm transition-all hover:drop-shadow-lg"
       href={link}
       target="_blank"
     >
-      <div className="text-indigo-400 transition-colors group-hover:text-white">
+      <div className="group-hover:text-ink-0 text-primary-400 transition-colors">
         {icon}
       </div>
       <div>
         {text}
         <span>
-          <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-white" />
+          <GoToIcon className="text-ink-0 mb-1 ml-2 inline h-4 w-4" />
         </span>
       </div>
     </Link>
@@ -202,33 +202,33 @@ export function InfoCard(props: {
   return (
     <>
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="rounded-md bg-white px-8 pb-6 pt-0 text-sm font-light md:text-lg">
+        <Col className="bg-canvas-0 rounded-md px-8 pb-6 pt-0 text-sm font-light md:text-lg">
           <Title children={text} />
           {modal}
           <Link
             href={link}
-            className="mt-2 text-indigo-700 underline"
+            className="text-primary-700 mt-2 underline"
             target="_blank"
           >
             Learn more{' '}
             <span>
-              <GoToIcon className="mb-1 ml-1 inline h-4 w-4 text-indigo-700" />
+              <GoToIcon className="text-primary-700 mb-1 ml-1 inline h-4 w-4" />
             </span>
           </Link>
         </Col>
       </Modal>
       <button
-        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl bg-indigo-700 px-4 py-2 text-center text-sm text-white drop-shadow-sm transition-all hover:drop-shadow-lg"
+        className="text-ink-0 bg-primary-700 group flex w-1/3 flex-col items-center gap-1 rounded-xl px-4 py-2 text-center text-sm drop-shadow-sm transition-all hover:drop-shadow-lg"
         onClick={() => setOpen(true)}
       >
-        <div className="text-indigo-400 transition-colors group-hover:text-white">
+        <div className="group-hover:text-ink-0 text-primary-400 transition-colors">
           {icon}
         </div>
         <div>
           <div>{text}</div>
           {externalLink && (
             <span>
-              <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-400" />
+              <GoToIcon className="text-primary-400 mb-1 ml-2 inline h-4 w-4" />
             </span>
           )}
         </div>

@@ -49,7 +49,7 @@ export function AnswerItem(props: {
             ? 'mb-2 bg-blue-50'
             : 'mb-10 bg-teal-50'
           : chosenProb === undefined
-          ? 'bg-gray-50'
+          ? 'bg-canvas-50'
           : showChoice === 'radio'
           ? 'bg-teal-50'
           : 'bg-blue-50'
@@ -60,7 +60,7 @@ export function AnswerItem(props: {
           <Linkify text={text} />
         </div>
 
-        <Row className="items-center gap-2 text-sm text-gray-500">
+        <Row className="text-ink-500 items-center gap-2 text-sm">
           <SiteLink className="relative" href={`/${username}`}>
             <Row className="items-center gap-2">
               <Avatar avatarUrl={avatarUrl} size={6} />
@@ -93,7 +93,7 @@ export function AnswerItem(props: {
             <div
               className={clsx(
                 'text-2xl',
-                tradingAllowed(contract) ? 'text-teal-500' : 'text-gray-500'
+                tradingAllowed(contract) ? 'text-teal-500' : 'text-ink-500'
               )}
             >
               {probPercent}
@@ -150,7 +150,7 @@ export function AnswerItem(props: {
                 Chosen{' '}
                 {resolutions ? `${Math.round(resolutions[answer.id])}%` : ''}
               </div>
-              <div className="text-2xl text-gray-500">{probPercent}</div>
+              <div className="text-ink-500 text-2xl">{probPercent}</div>
             </Col>
           )
         )}

@@ -84,10 +84,10 @@ export function PinnedSelectModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} className={' sm:p-0'} size={'lg'}>
-      <Col className=" h-[85vh] w-full gap-4 overflow-scroll rounded-md bg-white">
+      <Col className=" bg-canvas-0 text-ink-1000 h-[85vh] w-full gap-4 overflow-scroll rounded-md">
         <div className=" p-8 pb-0">
           <Row>
-            <div className={'text-xl text-indigo-700'}>{title}</div>
+            <div className={'text-primary-700 text-xl'}>{title}</div>
 
             {!loading && (
               <Row className="grow justify-end gap-4">
@@ -152,7 +152,7 @@ export function PinnedSelectModal(props: {
               highlightContractIds={[selectedItem?.itemId ?? '']}
               additionalFilter={group ? { groupSlug: group.slug } : undefined}
               persistPrefix={group ? `group-${group.slug}` : undefined}
-              headerClassName="bg-white"
+              headerClassName="bg-ink-1000"
               {...contractSearchOptions}
             />
           </div>
@@ -165,7 +165,7 @@ export function PinnedSelectModal(props: {
                 highlightCards={[selectedItem?.itemId ?? '']}
               />
               {posts.length == 0 && (
-                <div className="text-center text-gray-500">No posts yet</div>
+                <div className="text-ink-500 text-center">No posts yet</div>
               )}
             </div>
           </>

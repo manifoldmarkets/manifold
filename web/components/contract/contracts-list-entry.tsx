@@ -31,7 +31,7 @@ export function ContractStatusLabel(props: {
         <span className={probTextColor}>
           {formatPercentShort(getDisplayProbability(contract))}
           {chanceLabel && (
-            <span className="text-sm font-normal text-gray-500"> chance</span>
+            <span className="text-ink-500 text-sm font-normal"> chance</span>
           )}
         </span>
       )
@@ -83,7 +83,7 @@ export const ContractsListEntry = forwardRef(
 
     const isClosed = contract.closeTime && contract.closeTime < Date.now()
     const textColor =
-      isClosed && !contract.isResolved ? 'text-gray-500' : 'text-gray-900'
+      isClosed && !contract.isResolved ? 'text-ink-500' : 'text-ink-900'
 
     return (
       <Link
@@ -95,7 +95,7 @@ export const ContractsListEntry = forwardRef(
         ref={ref}
         href={contractPath(contract)}
         className={clsx(
-          'group flex flex-row gap-2 whitespace-nowrap rounded-sm p-2 hover:bg-indigo-50 focus:bg-indigo-50 md:gap-4',
+          'hover:bg-primary-50 focus:bg-primary-50 group flex flex-row gap-2 whitespace-nowrap rounded-sm p-2 md:gap-4',
           className
         )}
       >

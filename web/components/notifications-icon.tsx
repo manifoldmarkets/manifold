@@ -52,7 +52,7 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
   }
 
   return (
-    <div className="-mt-0.75 absolute ml-3.5 min-w-[15px] rounded-full bg-indigo-500 p-[2px] text-center text-[10px] leading-3 text-white lg:left-0 lg:-mt-1 lg:ml-2">
+    <div className="-mt-0.75 text-ink-0 bg-primary-500 absolute ml-3.5 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3 lg:left-0 lg:-mt-1 lg:ml-2">
       {unseenNotifs > NOTIFICATIONS_PER_PAGE
         ? `${NOTIFICATIONS_PER_PAGE}+`
         : unseenNotifs}

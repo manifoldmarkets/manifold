@@ -50,13 +50,13 @@ export function AddMemberModal(props: {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search users"
-          className={clsx('w-full placeholder:text-gray-400')}
+          className={clsx('placeholder:text-ink-400 w-full')}
         />
         <Col
           className={clsx(loading ? 'animate-pulse' : '', 'gap-4', 'w-full')}
         >
           {searchMemberResult.length == 0 && (
-            <div className="text-gray-500">No members found</div>
+            <div className="text-ink-500">No members found</div>
           )}
           {searchMemberResult.map((user) => (
             <AddMemberWidget

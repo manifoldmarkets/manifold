@@ -174,7 +174,7 @@ export default function ProfilePage(props: {
     <Page>
       <SEO title="Profile" description="User profile settings" url="/profile" />
 
-      <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
+      <Col className="bg-canvas-0 max-w-lg rounded p-6 shadow-md sm:mx-auto">
         <Row className="items-start justify-between">
           <Title>Edit Profile</Title>
           <Link
@@ -194,7 +194,7 @@ export default function ProfilePage(props: {
                   src={avatarUrl}
                   width={80}
                   height={80}
-                  className="flex items-center justify-center rounded-full bg-gray-400"
+                  className="bg-ink-400 flex items-center justify-center rounded-full"
                 />
                 <input type="file" name="file" onChange={fileHandler} />
               </>
@@ -268,7 +268,7 @@ export default function ProfilePage(props: {
 
           <div>
             <label className="mb-1 block">Email</label>
-            <div className="text-gray-500">{privateUser.email ?? '\u00a0'}</div>
+            <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
           </div>
 
           <div>

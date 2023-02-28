@@ -34,7 +34,7 @@ export function Page(props: {
         className={clsx(
           className,
           bottomBarPadding,
-          'mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:gap-x-8',
+          'text-ink-1000 mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:gap-x-8',
           fullWidth ? 'w-full !max-w-none' : 'xl:max-w-7xl'
         )}
       >
