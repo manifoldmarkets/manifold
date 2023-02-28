@@ -21,7 +21,7 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
       <Card className="!rounded-2xl">
         <Row className="mt-6 mb-2">{tags?.includes('New') && <NewBadge />}</Row>
         <div className="px-8">
-          <figure className="relative h-32">
+          <figure className="relative h-32 bg-white">
             {photo ? (
               <Image src={photo} alt="" layout="fill" objectFit="contain" />
             ) : (

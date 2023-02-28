@@ -16,7 +16,7 @@ export function Checkbox(props: {
           <input
             id={label}
             type="checkbox"
-            className="border-ink-300 text-primary-600 focus:ring-primary-500 h-5 w-5 rounded"
+            className="border-ink-300 bg-canvas-0 text-primary-600 focus:ring-primary-500 h-5 w-5 rounded"
             checked={checked}
             onChange={(e) => toggle(e.target.checked)}
             disabled={disabled}

@@ -35,7 +35,7 @@ export function YesNoSelector(props: {
           className={clsx(
             commonClassNames,
             selected == 'YES'
-              ? 'text-ink-0 border-teal-500 bg-teal-500'
+              ? 'border-teal-500 bg-teal-500 text-white'
               : selected == 'NO'
               ? 'border-ink-300 text-ink-300 bg-canvas-0 hover:border-teal-500 hover:text-teal-500'
               : 'bg-canvas-0 border-teal-500 text-teal-500 hover:bg-teal-500/10',
@@ -54,7 +54,7 @@ export function YesNoSelector(props: {
           className={clsx(
             commonClassNames,
             selected == 'NO'
-              ? 'border-scarlet-300 bg-scarlet-300 text-ink-1000'
+              ? 'border-scarlet-300 bg-scarlet-300 text-white'
               : selected == 'YES'
               ? 'hover:border-scarlet-300 hover:text-scarlet-300 border-ink-300 text-ink-300 bg-canvas-0'
               : 'border-scarlet-300 text-scarlet-300 bg-canvas-0 hover:bg-red-500/10',
