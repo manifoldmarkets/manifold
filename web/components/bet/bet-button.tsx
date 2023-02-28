@@ -9,7 +9,6 @@ import { User } from 'web/lib/firebase/users'
 import { SellRow } from './sell-row'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Title } from '../widgets/title'
 
 export function SignedInBinaryMobileBetting(props: {
   contract: BinaryContract | PseudoNumericContract
