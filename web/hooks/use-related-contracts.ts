@@ -16,8 +16,11 @@ const GROUPS_PAGE_SIZE = 6
 const RELATED_PAGE_SIZE_WITH_GROUPS = 2
 const RELATED_PAGE_SIZE = 10
 
-export const useRelatedMarkets = (contract: Contract) => {
-  const [savedContracts, setSavedContracts] = useState<Contract[]>()
+export const useRelatedMarkets = (
+  contract: Contract,
+  initialContracts: Contract[]
+) => {
+  const [savedContracts, setSavedContracts] = useState(initialContracts)
   const relatedPage = useRef(0)
   const groupsPage = useRef(0)
   const creatorPage = useRef(0)
@@ -86,4 +89,35 @@ export const useRelatedMarkets = (contract: Contract) => {
   }, [loadMore])
 
   return { contracts: savedContracts, loadMore }
+}
+
+export async function getInitialRelatedMarkets(contract: Contract) {
+  const { groupSlugs } = contract
+  const groupSlugsToUse = (groupSlugs ?? []).filter(
+    (slug) => !['spam', 'improperly-resolved'].includes(slug)
+  )
+  const [{ data: groupData }, { data: creatorData }, { data: relatedData }] =
+    await Promise.all([
+      db.rpc('search_contracts_by_group_slugs' as any, {
+        group_slugs: groupSlugsToUse,
+        lim: GROUPS_PAGE_SIZE,
+        start: 0,
+      }),
+      db.rpc('search_contracts_by_group_slugs_for_creator' as any, {
+        creator_id: contract.creatorId,
+        group_slugs: groupSlugsToUse,
+        lim: GROUPS_PAGE_SIZE,
+        start: 0,
+      }),
+      db.rpc('get_related_contracts' as any, {
+        cid: contract.id,
+        lim: RELATED_PAGE_SIZE,
+        start: 0,
+      }),
+    ])
+
+  const contracts: Contract[] = buildArray(groupData, creatorData, relatedData)
+  return uniqBy(contracts, (c) => c.id)
+    .filter((c) => c.id !== contract.id)
+    .slice(0, 10)
 }

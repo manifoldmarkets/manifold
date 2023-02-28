@@ -64,7 +64,7 @@ export default function Sidebar(props: {
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx('flex h-screen flex-col', className)}
+      className={clsx('flex h-screen flex-col xl:ml-2', className)}
     >
       <ManifoldLogo className="pt-6" twoLine />
       {logoSubheading && (

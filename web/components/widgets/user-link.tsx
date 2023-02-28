@@ -1,4 +1,4 @@
-import { SiteLink } from 'web/components/widgets/site-link'
+import { linkClass, SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
 import {
   BOT_USERNAMES,
@@ -56,13 +56,26 @@ export function UserLink(props: {
     props
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name) : name
+  if (noLink) {
+    return (
+      <div
+        className={clsx(
+          'inline-flex max-w-[120px] flex-row items-center gap-1 truncate min-[480px]:max-w-[200px]',
+          linkClass,
+          className
+        )}
+      >
+        {shortName}
+        {!hideBadge && <UserBadge username={username} fresh={fresh} />}
+      </div>
+    )
+  }
   return (
     <SiteLink
       href={`/${username}`}
       className={clsx(
         'inline-flex max-w-[120px] flex-row items-center gap-1 truncate min-[480px]:max-w-[200px]',
-        className,
-        noLink && 'pointer-events-none'
+        className
       )}
       followsLinkClass
     >

@@ -303,6 +303,7 @@ module.exports = {
         warning: '#F59E0B', // amber-500 TODO: change color
         error: '#FF5033', // TODO: change color
         'red-25': '#FDF7F6',
+        'indigo-25': '#F2F7FF',
         'highlight-blue': '#5BCEFF',
         'hover-blue': '#90DEFF',
         scarlet: {
