@@ -43,7 +43,7 @@ export default function TestimonialsPanel() {
       >
         <div
           className={clsx(
-            'bg-primary-200 relative z-30 h-[5%] w-full rounded-t-xl sm:h-full sm:w-2/5 sm:rounded-l-xl sm:rounded-r-none'
+            'relative z-30 h-[5%] w-full rounded-t-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-l-xl sm:rounded-r-none'
           )}
         >
           <div className="group absolute top-8 left-8 z-30 sm:top-32">
@@ -67,7 +67,7 @@ export default function TestimonialsPanel() {
             </div>
           </div>
           <div className="absolute top-6 left-8 sm:top-48 md:left-8">
-            <div className="text-ink-900 hidden text-right text-sm sm:inline">
+            <div className="hidden text-right text-sm text-black sm:inline">
               And get{'   '}
               <span className="relative z-10 font-semibold">
                 {ENV_CONFIG.moneyMoniker}
@@ -78,7 +78,7 @@ export default function TestimonialsPanel() {
             </div>
           </div>
         </div>
-        <div className="bg-primary-700 relative h-[95%] w-full rounded-b-xl sm:h-full sm:w-3/5 sm:rounded-r-xl sm:rounded-l-none">
+        <div className="relative h-[95%] w-full rounded-b-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-r-xl sm:rounded-l-none">
           {hasTestimonials && (
             <Testimonial
               key={testimonialList[pageNumber].testimonial}
@@ -86,16 +86,16 @@ export default function TestimonialsPanel() {
             />
           )}
           {!isMobile && (
-            <div className="absolute -left-0.5 bottom-0 z-10 h-full">
+            <div className="absolute -left-0.5 bottom-0 z-20 h-full">
               <SquiggleVerticalFlippedIcon
-                className={clsx('text-primary-200 h-full')}
+                className={clsx('h-full text-indigo-200')}
               />
             </div>
           )}
           {isMobile && (
             <div className="absolute right-0 -top-0.5 z-10 w-full items-center">
               <SquiggleHorizontalFlippedIcon
-                className={clsx('text-primary-200')}
+                className={clsx('text-indigo-200')}
               />
             </div>
           )}
@@ -138,7 +138,7 @@ export function Testimonial(props: {
 }) {
   const { testimonial, name, credit, icon, src } = props
   return (
-    <div className="animate-slide-up-1 sm:animate-slide-in-1 text-ink-0 absolute top-[20%] left-8 z-20 w-4/5 select-none sm:top-2 sm:z-0">
+    <div className="animate-slide-up-1 sm:animate-slide-in-1 absolute top-[20%] left-8 z-20 w-4/5 select-none text-white sm:top-2 sm:z-0">
       <StartQuoteIcon className="h-10 w-10 text-teal-200" />
       <div className="ml-8">{testimonial}</div>
       <Row className="justify-end">

@@ -127,7 +127,7 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
 
   const [open, setOpen] = React.useState(false)
   const className = clsx(
-    'whitespace-nowrap text-sm hover:cursor-pointer text-ink-500 hover:bg-sky-50 bg-ink'
+    'whitespace-nowrap text-sm hover:cursor-pointer text-ink-500 hover:bg-sky-50 bg-ink-1000'
   )
   return (
     <>
@@ -250,7 +250,7 @@ function PublicLinkSummaryRow(props: { challenge: Challenge }) {
   } = challenge
 
   const className = clsx(
-    'whitespace-nowrap text-sm hover:cursor-pointer text-ink-500 hover:bg-sky-50 bg-ink'
+    'whitespace-nowrap text-sm hover:cursor-pointer text-ink-500 hover:bg-sky-50 bg-ink-1000'
   )
   return (
     <tr

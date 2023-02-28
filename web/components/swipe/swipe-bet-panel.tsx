@@ -56,7 +56,7 @@ export function SwipeBetPanel(props: {
           className={clsx(
             'absolute -left-[100px] z-20 flex h-16 flex-col justify-center rounded-[4rem] border-2 font-semibold transition-all',
             !disabled
-              ? 'active:bg-scarlet-300 active:border-scarlet-300 active:text-ink'
+              ? 'active:bg-scarlet-300 active:border-scarlet-300 active:text-ink-1000'
               : 'border-ink-200 text-ink-200 w-16 pl-4',
             swipingLeft
               ? 'bg-scarlet-300 border-scarlet-300 text-ink-0 w-[188px] pl-[74px]'
@@ -78,7 +78,7 @@ export function SwipeBetPanel(props: {
         {swipingLeft && (
           <div className="absolute -left-20 z-30">
             {betStatus === 'loading' && (
-              <LoadingIndicator size="md" spinnerClassName="border-ink" />
+              <LoadingIndicator size="md" spinnerClassName="border-ink-1000" />
             )}
             {betStatus === 'success' && (
               <CheckCircleIcon className={'text-ink-0 h-7 w-7'} />
@@ -100,7 +100,7 @@ export function SwipeBetPanel(props: {
           className={'opacity-70'}
         />
 
-        <Row className="z-30 mx-1 w-10 justify-center py-4">
+        <Row className="z-30 mx-1 w-10 justify-center py-4 text-white">
           {disabled ? formatMoney(STARTING_BET_AMOUNT) : formatMoney(amount)}
         </Row>
 
@@ -141,7 +141,7 @@ export function SwipeBetPanel(props: {
         {swipingRight && (
           <div className="absolute -right-20 z-30">
             {betStatus === 'loading' && (
-              <LoadingIndicator size="md" spinnerClassName="border-ink" />
+              <LoadingIndicator size="md" spinnerClassName="border-ink-1000" />
             )}
             {betStatus === 'success' && (
               <CheckCircleIcon className={'text-ink-0 h-7 w-7'} />

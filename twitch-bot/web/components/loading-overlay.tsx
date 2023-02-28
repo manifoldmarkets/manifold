@@ -8,7 +8,7 @@ export function LoadingOverlay(props: { visible: boolean; message: string; loadi
     true && (
       <div className={clsx('bg-canvas-500 text-ink-0 absolute inset-0 z-[9999] flex items-center justify-center bg-opacity-75', !visible && 'pointer-events-none opacity-0', className)}>
         <Row className={clsx('grow items-center justify-center gap-4 p-6', loading ? 'text-left' : 'text-center')}>
-          {loading && <Spinner borderColor={clsx(spinnerBorderColor ? spinnerBorderColor : 'border-ink')} />}
+          {loading && <Spinner borderColor={clsx(spinnerBorderColor ? spinnerBorderColor : 'border-ink-1000')} />}
           <div>{message}</div>
         </Row>
       </div>

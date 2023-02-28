@@ -294,7 +294,7 @@ function BotSetupStep(props: {
 function CopyButton(props: { link: string; text: string }) {
   const { link, text } = props
   const toastTheme = {
-    className: '!bg-teal-600 !text-ink',
+    className: '!bg-teal-600 !text-ink-1000',
     icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
   }
   const copyLinkCallback = async () => {

@@ -30,7 +30,7 @@ export function CreateLinksButton(props: {
   return (
     <>
       <Modal open={open} setOpen={(newOpen) => setOpen(newOpen)}>
-        <Col className="bg-canvas-0 gap-4 rounded-md px-8 py-6">
+        <Col className="bg-canvas-0 text-ink-1000 gap-4 rounded-md px-8 py-6">
           <CreateManalinkForm
             highlightedSlug={highlightedSlug}
             user={user}

@@ -54,9 +54,9 @@ export function YesNoSelector(props: {
           className={clsx(
             commonClassNames,
             selected == 'NO'
-              ? 'border-scarlet-300 bg-scarlet-300 text-ink'
+              ? 'border-scarlet-300 bg-scarlet-300 text-ink-1000'
               : selected == 'YES'
-              ? 'hover:border-scarlet-300 hover:text-scarlet-300 border-ink-300 text-ink-300 bg-ink'
+              ? 'hover:border-scarlet-300 hover:text-scarlet-300 border-ink-300 text-ink-300 bg-canvas-0'
               : 'border-scarlet-300 text-scarlet-300 bg-canvas-0 hover:bg-red-500/10',
             btnClassName
           )}

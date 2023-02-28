@@ -36,10 +36,7 @@ export function MoreSwipeInfo(props: {
 
   return (
     <Col
-      className={clsx(
-        'text-ink-100 break-words text-sm font-thin',
-        'items-end'
-      )}
+      className={clsx('break-words text-sm font-thin text-white', 'items-end')}
     >
       <div className="line-clamp-3 w-full [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]">
         {descriptionString}
@@ -75,7 +72,7 @@ export function MoreInfoButton(props: {
     <button
       className={clsx(
         'hover:text-ink-600 disabled:opacity-50',
-        color === 'white' ? 'text-ink' : 'text-ink-500'
+        color === 'white' ? 'text-ink-1000' : 'text-ink-500'
       )}
       onClick={(e) => {
         e.preventDefault()

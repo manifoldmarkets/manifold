@@ -16,7 +16,7 @@ export function Percent(props: {
     <Row
       className={clsx(
         'transition-color items-center font-bold',
-        !outcome && 'text-ink',
+        !outcome && 'text-ink-1000',
         outcome === 'YES' && 'text-teal-100',
         outcome === 'NO' && 'text-scarlet-100',
         className

@@ -160,7 +160,8 @@ export const LikeButton = memo(function LikeButton(props: {
                 size === 'md' && 'h-5 w-5',
                 size === 'lg' && 'h-8 w-8',
                 size === 'xl' && 'h-12 w-12',
-                liked ? 'fill-pink-400 stroke-pink-400' : ''
+                liked ? 'fill-pink-400 stroke-pink-400' : '',
+                isSwipe ? 'text-white disabled:opacity-50' : ''
               )}
             />
           </div>
@@ -180,7 +181,7 @@ export const LikeButton = memo(function LikeButton(props: {
           className={clsx(
             'h-5 disabled:opacity-50',
             size === 'xl' ? '-mt-3 text-lg' : 'text-sm',
-            color === 'white' ? 'text-ink' : 'text-ink-500'
+            color === 'white' ? 'text-ink-1000' : 'text-ink-500'
           )}
         >
           {totalLikes > 0 ? totalLikes : ''}

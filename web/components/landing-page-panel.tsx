@@ -38,7 +38,7 @@ export function PaginationCircle(props: {
       <div
         className={clsx(
           'h-2 w-2 rounded-full transition-colors',
-          currentPageNumber === pageNumber ? 'bg-ink' : 'bg-primary-400'
+          currentPageNumber === pageNumber ? 'bg-white' : 'bg-indigo-400'
         )}
       />
     </div>
@@ -61,18 +61,18 @@ export function LandingPagePanel() {
   return (
     <>
       <div className="flex h-96 w-full flex-col overflow-hidden drop-shadow-sm sm:mt-4 sm:h-60 sm:flex-row">
-        <div className="bg-primary-700 relative h-4/5 w-full rounded-t-xl sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
+        <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
           {pageNumber === 0 && <LandingPage0 isMobile={isMobile} />}
           {pageNumber === 1 && <LandingPage1 isMobile={isMobile} />}
           {pageNumber === 2 && <LandingPage2 isMobile={isMobile} />}
           {!isMobile && (
             <div className="absolute -right-0.5 bottom-0 z-20 h-full">
-              <SquiggleVerticalIcon className="text-primary-200 h-full" />
+              <SquiggleVerticalIcon className="h-full text-indigo-200" />
             </div>
           )}
           {isMobile && (
             <div className="absolute right-0 -bottom-0.5 z-20 w-full items-center">
-              <SquiggleHorizontalIcon className="text-primary-200" />
+              <SquiggleHorizontalIcon className="text-indigo-200" />
             </div>
           )}
           <div
@@ -109,7 +109,7 @@ export function LandingPagePanel() {
         </div>
         <div
           className={clsx(
-            'bg-primary-200 relative z-30 h-1/5 w-full rounded-b-xl sm:h-full sm:w-2/5 sm:rounded-r-xl sm:rounded-l-none'
+            'relative z-30 h-1/5 w-full rounded-b-xl bg-indigo-200 sm:h-full sm:w-2/5 sm:rounded-r-xl sm:rounded-l-none'
           )}
         >
           <div className="group absolute bottom-16 right-8 z-30 md:right-12">
@@ -123,7 +123,7 @@ export function LandingPagePanel() {
             </Button>
             <div
               className={clsx(
-                'text-ink-900 rounded-md bg-teal-200',
+                'rounded-md bg-teal-200 text-white',
                 isMobile
                   ? 'px-6 py-2.5 text-base font-semibold'
                   : 'px-6 py-3 text-xl font-semibold'
@@ -133,7 +133,7 @@ export function LandingPagePanel() {
             </div>
           </div>
           <div className="absolute top-6 right-8 sm:top-48 md:right-12">
-            <div className="text-ink-900 text-right text-sm">
+            <div className="text-right text-sm text-black">
               and get{'   '}
               <span className="relative z-10 font-semibold">
                 {ENV_CONFIG.moneyMoniker}
@@ -156,7 +156,7 @@ export function LandingPage0(props: { isMobile: boolean }) {
     <>
       <div
         className={clsx(
-          'sm: text-ink-0 absolute z-10 text-xl',
+          'sm: absolute z-10 text-xl text-white',
           isMobile
             ? 'animate-slide-up-1 left-[20px] top-[32px]'
             : 'animate-slide-in-2 left-[32px] top-[16px]'
@@ -166,7 +166,7 @@ export function LandingPage0(props: { isMobile: boolean }) {
       </div>
       <div
         className={clsx(
-          'text-primary-300 absolute text-xl',
+          'absolute text-xl text-indigo-300',
           isMobile
             ? 'animate-slide-up-2 left-[21px] top-[33px]'
             : 'animate-slide-in-1 left-[33px] top-[17px]'
@@ -215,7 +215,7 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
       {isMobile && (
         <img
           className="transition-all group-hover:rotate-12"
-          src={'/logo-ink.svg'}
+          src={'/logo-white.svg'}
           width={20}
           height={20}
           alt=""
@@ -233,7 +233,7 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
       <div
         className={clsx(
           'font-major-mono text-xs lowercase sm:whitespace-nowrap sm:text-sm',
-          isMobile ? 'text-ink' : 'text-ink-900'
+          isMobile ? 'text-ink-1000' : 'text-white'
         )}
       >
         Manifold Markets
@@ -256,7 +256,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
     <>
       <div
         className={clsx(
-          'text-ink-0 absolute z-10 text-xl',
+          'absolute z-10 text-xl text-white',
           isMobile
             ? 'animate-slide-up-1 left-[20px] top-[32px]'
             : 'animate-slide-in-2 left-[32px] top-[16px]'
@@ -303,7 +303,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
           )}
         />
         <EquilateralLeftTriangle className="text-primary-400 absolute left-[8px] top-[7px] z-10 h-6 w-6" />
-        <EquilateralLeftTriangle className="text-ink-900 absolute left-[11px] top-[11px] z-0 h-6 w-6 opacity-20" />
+        <EquilateralLeftTriangle className="absolute left-[11px] top-[11px] z-0 h-6 w-6 text-white opacity-20" />
         <div className="absolute top-[6px] left-[100px] z-30 text-xl font-semibold">
           {shouldPercentChange && (
             <CountUp start={50} end={75} duration={1.3} suffix="%" />
@@ -316,7 +316,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
             shouldButtonHighlight ? 'text-primary-600' : 'text-primary-400'
           )}
         />
-        <EquilateralRightTriangle className="text-ink-900 absolute right-[6px] top-[11px] z-0 h-6 w-6 opacity-20" />
+        <EquilateralRightTriangle className="absolute right-[6px] top-[11px] z-0 h-6 w-6 text-white opacity-20" />
         <div
           className={clsx(
             'animate-float-and-fade-1 text-primary-600 absolute right-[10px] top-[2px] z-40 font-thin',
@@ -361,7 +361,7 @@ export function LandingPage2(props: { isMobile: boolean }) {
     <>
       <div
         className={clsx(
-          'text-ink-0 absolute z-10 text-xl',
+          'absolute z-10 text-xl text-white',
           isMobile
             ? 'animate-slide-up-1 left-[20px] top-[32px]'
             : 'animate-slide-in-2 left-[32px] top-[16px]'

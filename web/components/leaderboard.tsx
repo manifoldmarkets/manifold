@@ -41,7 +41,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
       ) : (
         <div className="overflow-x-auto">
           {/* zebra stripes */}
-          <Table className="[&>tbody_tr:nth-child(odd)]:bg-ink">
+          <Table className="[&>tbody_tr:nth-child(odd)]:bg-canvas-0">
             <thead>
               <tr>
                 <th>#</th>

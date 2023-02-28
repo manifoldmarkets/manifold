@@ -349,7 +349,7 @@ export function BuyPanel(props: {
               : outcome === 'YES'
               ? 'bg-teal-500/10'
               : 'hidden'
-            : 'bg-ink',
+            : 'bg-canvas-0',
           mobileView ? 'rounded-lg px-4 py-2' : 'px-0'
         )}
       >

@@ -123,7 +123,7 @@ export function GroupSelector(props: {
                           <span
                             className={clsx(
                               'absolute inset-y-0 left-2 flex items-center pr-4',
-                              active ? 'text-ink' : 'text-primary-600'
+                              active ? 'text-ink-1000' : 'text-primary-600'
                             )}
                           >
                             <CheckIcon className="h-5 w-5" aria-hidden="true" />
@@ -141,7 +141,7 @@ export function GroupSelector(props: {
                           <Row
                             className={clsx(
                               'text-ink-500 gap-2 text-sm',
-                              active ? 'text-ink' : 'text-ink-500'
+                              active ? 'text-ink-1000' : 'text-ink-500'
                             )}
                           >
                             <Row className="w-12 items-center gap-0.5">

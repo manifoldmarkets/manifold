@@ -101,7 +101,7 @@ export function GroupSelector(props: {
                   {({ active, selected }) => (
                     <>
                       {selected && (
-                        <span className={clsx('absolute inset-y-0 left-2 flex items-center pr-4', active ? 'text-ink' : 'text-primary-600')}>
+                        <span className={clsx('absolute inset-y-0 left-2 flex items-center pr-4', active ? 'text-ink-1000' : 'text-primary-600')}>
                           <CheckIcon className="h-5 w-5" aria-hidden="true" />
                         </span>
                       )}

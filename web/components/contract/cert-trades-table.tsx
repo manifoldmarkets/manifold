@@ -87,7 +87,7 @@ export default function CertTradesTable(props: { txns: CertTxn[] }) {
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-ink">
+              <tbody className="bg-ink-1000">
                 {entries.map((entry, i) => (
                   <tr
                     key={entry.id}

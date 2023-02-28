@@ -4,7 +4,7 @@ import React from 'react'
 
 const colorClasses = {
   'indigo-dark':
-    'text-ink-900 hover:bg-primary-50 aria-checked:bg-primary-500 aria-checked:text-ink',
+    'text-ink-900 hover:bg-primary-50 aria-checked:bg-primary-500 aria-checked:text-ink-1000',
   indigo:
     'hover:bg-ink-100 aria-checked:bg-primary-100 aria-checked:text-primary-500',
   green:

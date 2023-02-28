@@ -40,6 +40,7 @@ import {
 } from 'web/lib/supabase/groups'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { QfExplainer } from './contract/qf-overview'
+import clsx from 'clsx'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -248,7 +249,7 @@ export function NewContractPanel(props: {
   }, [])
 
   return (
-    <div className={className}>
+    <div className={clsx(className, 'text-ink-1000')}>
       <div className="flex w-full flex-col">
         <label className="px-1 pt-2 pb-3">
           Question<span className={'text-scarlet-500'}>*</span>

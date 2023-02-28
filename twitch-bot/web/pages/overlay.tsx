@@ -351,7 +351,7 @@ export default () => {
               <Col className="overflow-hidden text-center">
                 <div
                   style={{
-                    backgroundImage: 'url(logo-ink.svg)',
+                    backgroundImage: 'url(logo-white.svg)',
                     backgroundSize: 'contain',
                     backgroundRepeat: 'no-repeat',
                     backgroundPosition: 'center',

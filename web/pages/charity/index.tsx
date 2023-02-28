@@ -135,13 +135,11 @@ export default function Charity(props: {
         <Col className="">
           <Title>Manifold for Charity</Title>
 
-          <div className="max-w-xl">
-            <AlertBox title="Charity program is not ending!" text="">
-              After clarifying several details with Stripe, we are happy to
-              announce that we will be able to continue our charitable donation
-              program after all!
-            </AlertBox>
-          </div>
+          <AlertBox title="Charity program is not ending!" text="">
+            After clarifying several details with Stripe, we are happy to
+            announce that we will be able to continue our charitable donation
+            program after all!
+          </AlertBox>
 
           <span className="text-ink-600 mt-8">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable

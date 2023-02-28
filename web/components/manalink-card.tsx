@@ -72,7 +72,7 @@ export function ManalinkCard(props: {
             'block h-1/3 w-1/3 self-center transition-all group-hover:rotate-12',
             preview ? 'my-2' : 'w-1/2 md:mb-6 md:h-1/2'
           )}
-          src="/logo-ink.svg"
+          src="/logo-white.svg"
         />
         <Row className="bg-canvas-0 rounded-b-lg p-4">
           <div
@@ -139,7 +139,7 @@ export function ManalinkCardFromView(props: {
           </Col>
           <img
             className={clsx('my-auto block w-1/3 select-none self-center py-3')}
-            src="/logo-ink.svg"
+            src="/logo-white.svg"
           />
         </Col>
         <Row className="bg-canvas-0 relative w-full rounded-b-lg px-4 py-2 align-middle text-lg">

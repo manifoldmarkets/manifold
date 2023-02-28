@@ -178,7 +178,7 @@ export default function GroupPage(props: {
           group={group}
           user={user}
           userRole={'admin'}
-          className="fill-ink-0fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
+          className="fill-ink-0 fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
         />
       )}
       {user &&
@@ -190,7 +190,7 @@ export default function GroupPage(props: {
             group={group}
             user={user}
             userRole={userRole ?? undefined}
-            className="fill-ink-0fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
+            className="fill-ink-0 fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
           />
         )}
       {isMobile && (

@@ -317,7 +317,7 @@ export default () => {
         message={loadingMessage}
         loading={connectionState == ConnectionState.CONNECTING}
         className="bg-base-200"
-        spinnerBorderColor="border-ink"
+        spinnerBorderColor="border-ink-1000"
       />
       {initialized && (
         <div className="flex justify-center">
@@ -623,7 +623,7 @@ function Button(props: { className?: string; onClick?: () => void; color: 'green
       type="button"
       className={clsx(
         'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
-        color === 'green' && 'btn-primary text-ink',
+        color === 'green' && 'btn-primary text-ink-1000',
         color === 'red' && 'text-ink-0 bg-red-400 hover:bg-red-500',
         color === 'yellow' && 'text-ink-0 bg-yellow-400 hover:bg-yellow-500',
         color === 'blue' && 'text-ink-0 bg-blue-400 hover:bg-blue-500',

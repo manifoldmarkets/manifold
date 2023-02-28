@@ -80,10 +80,10 @@ export const SwipeCard = memo(
           <img
             src={image}
             alt=""
-            className="bg-ink-1000 flex grow object-cover brightness-[40%]"
+            className="flex grow bg-black object-cover brightness-[40%]"
           />
-          <div className="from-ink-1000 via-ink-1000/60 absolute top-0 z-0 h-[10%] w-full bg-gradient-to-b to-transparent" />
-          <div className="from-ink-1000 via-ink-1000/60 absolute bottom-0 z-0 h-[30%] w-full bg-gradient-to-t to-transparent" />
+          <div className="absolute top-0 z-0 h-[10%] w-full bg-gradient-to-b from-black via-black/60 to-transparent" />
+          <div className="absolute bottom-0 z-0 h-[30%] w-full bg-gradient-to-t from-black via-black/60 to-transparent" />
         </Col>
         <Col
           className={clsx(
@@ -101,7 +101,7 @@ export const SwipeCard = memo(
             <SiteLink href={contractPath(contract)} followsLinkClass>
               <div
                 className={clsx(
-                  'text-ink-0 font-semibold [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
+                  'font-semibold text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]',
                   getQuestionSize(question, cardHeight)
                 )}
               >
@@ -175,7 +175,7 @@ const CornerDetails = (props: {
         </SiteLink>
         <div className="text-xs">
           <SiteLink href={`/${creatorUsername}`} followsLinkClass>
-            <div className="text-ink">{creatorName}</div>
+            <div className="text-white">{creatorName}</div>
           </SiteLink>
           {closeTime != undefined && (
             <div className="text-ink-400 ">
@@ -221,7 +221,7 @@ function CardActions(props: {
         size={'xl'}
         showTotalLikesUnder={true}
         color={'white'}
-        className={'flex-col gap-2 drop-shadow-sm'}
+        className={'flex-col gap-2 text-white drop-shadow-sm'}
         isSwipe
       />
 

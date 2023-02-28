@@ -123,7 +123,7 @@ export default function PostPage(props: {
         </div>
 
         <Spacer h={4} />
-        <div className="bg-canvas-0 rounded-lg px-6 py-4 sm:py-0">
+        <div className="rounded-lg px-6 py-4 sm:py-0">
           <PostCommentsActivity post={post} comments={comments} tips={tips} />
         </div>
       </div>

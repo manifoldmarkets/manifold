@@ -103,7 +103,7 @@ export function SelectMarkets(props: {
           excludeContractIds: additionalFilter?.excludeContractIds,
           facetFilters: getUsersBlockFacetFilters(privateUser),
         }}
-        headerClassName={clsx('bg-ink', headerClassName)}
+        headerClassName={clsx('bg-canvas-0', headerClassName)}
         {...contractSearchOptions}
         listViewDisabled={true}
       />

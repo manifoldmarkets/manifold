@@ -176,7 +176,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   username={user.username}
                   avatarUrl={user.avatarUrl}
                   size={24}
-                  className="bg-ink"
+                  className="bg-ink-1000"
                   noLink
                 />
               }

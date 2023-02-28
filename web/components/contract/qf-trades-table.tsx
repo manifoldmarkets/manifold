@@ -92,7 +92,7 @@ export default function QfTradesTable(props: {
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-ink">
+              <tbody className="bg-ink-1000">
                 {entries.map((entry, i) => (
                   <tr
                     key={entry.id}

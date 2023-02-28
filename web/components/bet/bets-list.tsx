@@ -303,7 +303,7 @@ export function BetsList(props: { user: User }) {
         </div>
       </div>
 
-      <Col className="mt-6 divide-y">
+      <Col className="divide-ink-300 mt-6 divide-y">
         {displayedContracts.length === 0 ? (
           <NoMatchingBets />
         ) : (
@@ -449,7 +449,7 @@ function ContractBets(props: {
       </Row>
 
       {!collapsed && (
-        <div className="bg-ink">
+        <div className="bg-canvas-0">
           <BetsSummary
             className="mt-8 mr-5 flex-1 sm:mr-8"
             contract={contract}
@@ -471,7 +471,7 @@ function ContractBets(props: {
 
           {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
             <div className="max-w-md">
-              <div className="bg-canvas-50 mt-4 px-4 py-2">Limit orders</div>
+              <div className="bg-canvas-0 mt-4 px-4 py-2">Limit orders</div>
               <LimitOrderTable
                 contract={contract}
                 limitBets={limitBets}
@@ -480,7 +480,7 @@ function ContractBets(props: {
             </div>
           )}
 
-          <div className="bg-canvas-50 mt-4 px-4 py-2">Bets</div>
+          <div className="bg-canvas-0 mt-4 px-4 py-2">Bets</div>
           {bets ? (
             <ContractBetsTable
               contract={contract}

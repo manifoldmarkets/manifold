@@ -33,7 +33,7 @@ export function AdditionalControlsDropdown(props: { sw: SocketWrapper<Socket> })
             <div className="px-1 py-1 ">
               <Menu.Item>
                 {({ active }) => (
-                  <button className={`${active ? 'bg-secondary text-ink' : 'text-ink-900'} group flex w-full items-center rounded-md px-2 py-2 text-left text-sm`} onClick={groupControl}>
+                  <button className={`${active ? 'bg-secondary text-ink-1000' : 'text-ink-900'} group flex w-full items-center rounded-md px-2 py-2 text-left text-sm`} onClick={groupControl}>
                     {active ? <QrcodeIcon className="mr-2 h-5 w-5" aria-hidden="true" /> : <QrcodeIcon className="mr-2 h-5 w-5" aria-hidden="true" />}
                     Group control
                   </button>
