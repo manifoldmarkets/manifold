@@ -9,6 +9,7 @@ import { NativeMessageListener } from 'web/components/native-message-listener'
 import Welcome from 'web/components/onboarding/welcome'
 import { SearchProvider } from 'web/components/search/search-context'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
+import { useIsClient } from 'web/hooks/use-is-client'
 import '../styles/globals.css'
 
 function firstLine(msg: string) {
@@ -34,7 +35,8 @@ type ManifoldPageProps = { auth?: AuthUser }
 function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
-  if (typeof window !== 'undefined') {
+  const isClient = useIsClient()
+  if (isClient) {
     if (
       localStorage.theme === 'dark' ||
       (!('theme' in localStorage) &&

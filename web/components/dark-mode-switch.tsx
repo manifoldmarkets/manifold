@@ -1,11 +1,13 @@
 import { Switch } from '@headlessui/react'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
+import { useIsClient } from 'web/hooks/use-is-client'
 import { Row } from './layout/row'
 
 export function DarkModeSwitch(props: { disabled?: boolean }) {
   const { disabled } = props
-  if (typeof window !== 'undefined') {
+  const isClient = useIsClient()
+  if (isClient) {
     return <DMSwitch disabled={disabled} />
   } else {
     return <></>
