@@ -15,13 +15,14 @@ import { PrivateUser } from 'common/user'
 const firestore = admin.firestore()
 const now = new Date()
 const time = now.getTime()
-const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
-const USERS_TO_SAVE = 200
-// Saving metrics should work until USERS_TO_SAVE * 3*60 users
+const getDateSlug = () =>
+  `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
+const USERS_TO_SAVE = 100
+// Saving metrics should work until USERS_TO_SAVE * 5*60 users
 export const saveWeeklyContractMetrics = functions
   .runWith({ memory: '4GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 60 })
-  // every minute for 4 hours Friday 2am PT (UTC -08:00)
-  .pubsub.schedule('* 10-14 * * 5')
+  // every minute for 5 hours Friday 1am PT (UTC -08:00)
+  .pubsub.schedule('* 9-14 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await saveWeeklyContractMetricsInternal()
@@ -51,7 +52,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
   const privateUsers = users.docs.map((doc) => doc.data() as PrivateUser)
   const snap = await firestore
     .collectionGroup(`weekly-update`)
-    .where('rangeEndDateSlug', '==', date)
+    .where('rangeEndDateSlug', '==', getDateSlug())
     .get()
 
   // get the parent ref is the user id
@@ -65,18 +66,26 @@ export const saveWeeklyContractMetricsInternal = async () => {
   log('usersToSave', usersToSave.length)
   if (usersToSave.length === 0) return
 
-  // TODO: use the new rpc call
-  const allContractMetricsByUsers =
-    await getUsersContractMetricsOrderedByProfit(
-      usersToSave.map((u) => u.id),
-      db,
-      'week'
-    )
+  // TODO: try out the new rpc call
+  const usersToContractMetrics = await getUsersContractMetricsOrderedByProfit(
+    usersToSave.map((u) => u.id),
+    db,
+    'week'
+  )
+  if (Object.keys(usersToContractMetrics).length === 0) {
+    log('Error: no contract metrics to save')
+    return
+  }
+
   const allPortfolioMetrics = await getPortfolioHistories(
     usersToSave.map((u) => u.id),
     time - 7 * DAY_MS,
     db
   )
+  if (Object.keys(allPortfolioMetrics).length === 0) {
+    log('Error: no portfolio metrics to save')
+    return
+  }
 
   // If the function doesn't complete, filter by those who haven't had their weekly update saved yet
   const results = sortBy(
@@ -88,14 +97,14 @@ export const saveWeeklyContractMetricsInternal = async () => {
             y: p.balance + p.investmentValue - p.totalDeposits,
           })
         )
-        const contractMetrics = allContractMetricsByUsers[user.id]
+        const contractMetrics = usersToContractMetrics[user.id]
         return {
           contractMetrics,
           userId: user.id,
           weeklyProfit: sum(
             contractMetrics.map((m) => m.from?.week.profit ?? 0)
           ),
-          rangeEndDateSlug: date,
+          rangeEndDateSlug: getDateSlug(),
           profitPoints: portfolioMetrics,
           createdTime: time,
         } as Omit<WeeklyPortfolioUpdate, 'id'>
@@ -138,14 +147,10 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
   let count = 0
   await Promise.all(
     privateUsers.map(async (privateUser) => {
-      const snap = await firestore
-        .collection(`users/${privateUser.id}/weekly-update`)
-        .where('rangeEndDateSlug', '==', date)
-        .get()
-      if (snap.empty) return
-      const update = orderBy(snap.docs, (d) => -d.data().createdTime)[0]
+      const data = await getUsersWeeklyUpdate(privateUser.id, getDateSlug())
+      if (!data) return
       const { weeklyProfit, rangeEndDateSlug, contractMetrics, profitPoints } =
-        update.data() as WeeklyPortfolioUpdate
+        data
       // Don't send update if there are no contracts
       count++
       if (count % 100 === 0)
@@ -159,4 +164,14 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
       )
     })
   )
+}
+
+const getUsersWeeklyUpdate = async (userId: string, dateSlug: string) => {
+  const snap = await firestore
+    .collection(`users/${userId}/weekly-update`)
+    .where('rangeEndDateSlug', '==', dateSlug)
+    .get()
+  if (snap.empty) return
+  const update = orderBy(snap.docs, (d) => -d.data().createdTime)[0]
+  return update.data() as WeeklyPortfolioUpdate
 }

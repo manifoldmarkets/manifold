@@ -28,8 +28,8 @@ export async function getPortfolioHistories(
   cutoff: number,
   db: SupabaseClient
 ) {
-  // chunk user ids into smaller groups - above 40 doesn't work well
-  const chunks = chunk(userIds, 40)
+  // chunk user ids into smaller groups - above 20 doesn't work well
+  const chunks = chunk(userIds, 20)
   const promises = chunks.map(async (chunk) => {
     const { data, error } = await db.rpc(
       'get_portfolio_histories_grouped_by_user_ids_from',
@@ -40,7 +40,7 @@ export async function getPortfolioHistories(
     )
 
     if (!data || error) {
-      console.error('error:', error)
+      console.error('Error getting portfolio histories:', error)
       return undefined
     }
     return data
