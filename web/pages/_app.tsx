@@ -36,9 +36,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useHasLoaded()
   if (typeof window !== 'undefined') {
     if (
-      localStorage.theme === 'dark' ||
-      (!('theme' in localStorage) &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches)
+      document.documentElement.classList[0] !== 'dark' &&
+      (localStorage.theme === 'dark' ||
+        (!('theme' in localStorage) &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches))
     ) {
       document.documentElement.classList.add('dark')
     } else {
