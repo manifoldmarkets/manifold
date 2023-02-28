@@ -51,7 +51,7 @@ export function PushNotificationsModal(props: {
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
-      <Col className="bg-canvas-0 items-center gap-4 rounded-md px-8 py-6">
+      <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
         <span className="mb-2 text-lg">
           Want push notifications when a market resolves or when users reply to
           you?

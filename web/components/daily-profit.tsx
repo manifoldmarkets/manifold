@@ -123,7 +123,7 @@ function DailyProfitModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <div className="bg-canvas-0 rounded-lg p-4">
+      <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
         <Col className={'mb-4'}>
           <Title className={'mb-1'}>Daily profit</Title>
           <span className="text-ink-500 text-sm">

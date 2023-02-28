@@ -31,7 +31,7 @@ export function SelectMarketsModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
-      <Col className="bg-canvas-0 relative h-[85vh] w-full gap-4 rounded-md p-8">
+      <Col className="bg-canvas-0 text-ink-1000 relative h-[85vh] w-full gap-4 rounded-md p-8">
         <div className={'text-primary-700 pb-0 text-xl'}>{title}</div>
         {description}
         <SelectMarkets

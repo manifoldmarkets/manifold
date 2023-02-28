@@ -84,7 +84,7 @@ export function PinnedSelectModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} className={' sm:p-0'} size={'lg'}>
-      <Col className=" bg-canvas-0 h-[85vh] w-full gap-4 overflow-scroll rounded-md">
+      <Col className=" bg-canvas-0 text-ink-1000 h-[85vh] w-full gap-4 overflow-scroll rounded-md">
         <div className=" p-8 pb-0">
           <Row>
             <div className={'text-primary-700 text-xl'}>{title}</div>

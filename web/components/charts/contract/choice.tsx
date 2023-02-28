@@ -24,15 +24,15 @@ import { buildArray } from 'common/util/array'
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
 export const CHOICE_ANSWER_COLORS = [
-  '#77AADD80',
-  '#EE886680',
-  '#EEDD8880',
-  '#FFAABB80',
-  '#99DDFF80',
-  '#44BB9980',
-  '#BBCC3380',
+  '#77AADDB3',
+  '#EE8866B3',
+  '#EEDD88B3',
+  '#FFAABBB3',
+  '#99DDFFB3',
+  '#44BB99B3',
+  '#BBCC33B3',
 ]
-export const CHOICE_OTHER_COLOR = '#CCC'
+export const CHOICE_OTHER_COLOR = '#B1B1C7B3'
 export const CHOICE_ALL_COLORS = [...CHOICE_ANSWER_COLORS, CHOICE_OTHER_COLOR]
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }

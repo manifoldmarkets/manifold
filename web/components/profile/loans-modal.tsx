@@ -11,7 +11,7 @@ export function LoansModal(props: {
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
-      <Col className="bg-canvas-0 items-center gap-4 rounded-md px-8 py-6">
+      <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
         <span className={'text-8xl'}>🏦</span>
         <span className="text-xl">Daily loans on your {PLURAL_BETS}</span>
         <Col className={'gap-2'}>

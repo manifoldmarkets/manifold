@@ -28,7 +28,7 @@ export function getAnswerColor(answer: Answer, answersArray: string[]) {
   const colorIndex = answersArray.indexOf(answer.text)
   return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
     ? CHOICE_ANSWER_COLORS[colorIndex]
-    : '#B1B1C7'
+    : '#B1B1C780'
 }
 
 export function AnswersPanel(props: {
@@ -226,7 +226,7 @@ function OpenAnswer(props: {
             contract={contract}
             mode={betMode}
             closePanel={() => setBetMode(undefined)}
-            className="sm:max-w-84 bg-canvas-0 !rounded-md !px-8 !py-6"
+            className="sm:max-w-84 bg-canvas-0 text-ink-1000 !rounded-md !px-8 !py-6"
             isModal={true}
           />
         )}
@@ -238,7 +238,7 @@ function OpenAnswer(props: {
           tradingAllowed(contract) ? 'text-ink-900' : 'text-ink-500'
         )}
         style={{
-          background: `linear-gradient(to right, ${color}90 ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
+          background: `linear-gradient(to right, ${color} ${colorWidth}%, #94a3b833 ${colorWidth}%)`,
         }}
       >
         <Row className="z-20 justify-between gap-2 py-1.5 px-3">

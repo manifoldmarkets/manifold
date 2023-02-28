@@ -40,11 +40,11 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'red' &&
       'disabled:bg-ink-300 bg-scarlet-300 text-white hover:bg-scarlet-400',
     color === 'yellow' &&
-      'disabled:bg-ink-300 bg-yellow-400 text-ink-0 hover:bg-yellow-500',
+      'disabled:bg-ink-300 bg-yellow-400 text-whitehover:bg-yellow-500',
     color === 'blue' &&
-      'disabled:bg-ink-300 bg-blue-400 text-ink-0 hover:bg-blue-500',
+      'disabled:bg-ink-300 bg-blue-400 text-white hover:bg-blue-500',
     color === 'indigo' &&
-      'disabled:bg-ink-300 bg-primary-500 text-ink-0 hover:bg-primary-600',
+      'disabled:bg-ink-300 bg-primary-500 text-white hover:bg-primary-600',
     color === 'indigo-outline' &&
       'border-2 border-primary-500 disabled:border-ink-300 disabled:text-ink-300 text-primary-500 hover:bg-primary-500 hover:text-ink-0 disabled:focus:bg-inherit disabled:hover:bg-inherit',
     color === 'gray' &&

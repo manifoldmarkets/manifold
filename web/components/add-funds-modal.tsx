@@ -29,7 +29,11 @@ export function AddFundsModal(props: {
   const { open, setOpen } = props
 
   return (
-    <Modal open={open} setOpen={setOpen} className="bg-canvas-0 rounded-md p-8">
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      className="bg-canvas-0 text-ink-1000 rounded-md p-8"
+    >
       <Tabs
         currentPageForAnalytics="buy modal"
         tabs={[
