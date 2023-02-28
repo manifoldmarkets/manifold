@@ -87,6 +87,7 @@ export async function getBestAndWorstUserContractMetrics(
   ) as ContractMetrics[]
 }
 
+//TODO: Transition this to rpc call
 export async function getUsersContractMetricsOrderedByProfit(
   userIds: string[],
   db: SupabaseClient,

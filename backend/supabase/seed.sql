@@ -57,6 +57,7 @@ drop policy if exists "public read" on user_portfolio_history;
 create policy "public read" on user_portfolio_history for select using (true);
 create index if not exists user_portfolio_history_gin on user_portfolio_history using GIN (data);
 create index if not exists user_portfolio_history_timestamp on user_portfolio_history (user_id, (to_jsonb(data->'timestamp')) desc);
+create index if not exists user_portfolio_history_user_timestamp on user_portfolio_history (user_id, ((data->'timestamp')::bigint) desc);
 
 create table if not exists user_contract_metrics (
     user_id text not null,
@@ -74,6 +75,9 @@ create index if not exists user_contract_metrics_recent_bets on user_contract_me
      ((data->'lastBetTime')::bigint) desc
     );
 create index if not exists user_contract_metrics_contract_id on user_contract_metrics (contract_id);
+create index user_contract_metrics_weekly_profit on user_contract_metrics ((data->'from'->'week'->'profit'))
+ where (data->'from'->'week'->'profit') is not null;
+create index user_contract_metrics_user_id on user_contract_metrics (user_id)
 
 create table if not exists user_follows (
     user_id text not null,
@@ -985,4 +989,29 @@ as $$
   order by max_ts desc
   limit n
   offset start
+$$;
+
+create or replace function get_contract_metrics_grouped_by_user_ids(uids text[], period text)
+returns table(user_id text, contract_metrics jsonb[])
+immutable parallel safe
+language sql
+as $$
+select ucm.user_id, array_agg(ucm.data) as contract_metrics
+from user_contract_metrics as ucm
+where ucm.user_id in (select unnest(uids))
+  and (ucm.data->'from'->period->'profit') is not null
+    and abs((ucm.data->'from'->period->'profit')::bigint) > 1
+group by ucm.user_id
+$$;
+
+create or replace function get_portfolio_histories_grouped_by_user_ids_from(uids text[],start bigint)
+returns table(user_id text, portfolio_metrics jsonb[])
+immutable parallel safe
+language sql
+as $$
+select uph.user_id, array_agg(uph.data) as portfolio_metrics
+from user_portfolio_history as uph
+where uph.user_id in (select unnest(uids)) and
+(data->'timestamp')::bigint > start
+group by uph.user_id
 $$;

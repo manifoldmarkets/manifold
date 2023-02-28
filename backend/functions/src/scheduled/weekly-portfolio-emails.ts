@@ -129,7 +129,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       )
     })
   )
-
+  // TODO: use their saved weekly portfolio update object from weekly-portfolio-updates.ts
   const usersToContractMetrics = await getUsersContractMetricsOrderedByProfit(
     userIds,
     db,

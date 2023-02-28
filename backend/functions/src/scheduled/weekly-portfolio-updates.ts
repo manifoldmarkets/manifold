@@ -16,12 +16,12 @@ const firestore = admin.firestore()
 const now = new Date()
 const time = now.getTime()
 const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
-
-// Saving metrics should work until 60k users
+const USERS_TO_SAVE = 200
+// Saving metrics should work until USERS_TO_SAVE * 3*60 users
 export const saveWeeklyContractMetrics = functions
   .runWith({ memory: '4GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 60 })
-  // every minute for 2 hours Friday 2am PT (UTC -08:00)
-  .pubsub.schedule('* 10-12 * * 5')
+  // every minute for 4 hours Friday 2am PT (UTC -08:00)
+  .pubsub.schedule('* 10-14 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await saveWeeklyContractMetricsInternal()
@@ -29,8 +29,8 @@ export const saveWeeklyContractMetrics = functions
 
 export const sendWeeklyPortfolioUpdate = functions
   .runWith({ memory: '8GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 540 })
-  // every Friday at 12pm PT (UTC -06:00)
-  .pubsub.schedule('0 18 * * 5')
+  // every Friday at 12pm PT (UTC -08:00)
+  .pubsub.schedule('0 20 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await sendWeeklyPortfolioUpdateNotifications()
@@ -60,11 +60,12 @@ export const saveWeeklyContractMetricsInternal = async () => {
   // filter out the users who have already had their weekly update saved
   const usersToSave = privateUsers
     .filter((user) => !weeklyUpdatedUsers.includes(user.id))
-    .slice(0, 500)
+    .slice(0, USERS_TO_SAVE)
 
   log('usersToSave', usersToSave.length)
   if (usersToSave.length === 0) return
 
+  // TODO: use the new rpc call
   const allContractMetricsByUsers =
     await getUsersContractMetricsOrderedByProfit(
       usersToSave.map((u) => u.id),
@@ -76,6 +77,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
     time - 7 * DAY_MS,
     db
   )
+
   // If the function doesn't complete, filter by those who haven't had their weekly update saved yet
   const results = sortBy(
     await Promise.all(
@@ -142,13 +144,13 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
         .get()
       if (snap.empty) return
       const update = orderBy(snap.docs, (d) => -d.data().createdTime)[0]
-      const { weeklyProfit, rangeEndDateSlug, contractMetrics } =
+      const { weeklyProfit, rangeEndDateSlug, contractMetrics, profitPoints } =
         update.data() as WeeklyPortfolioUpdate
       // Don't send update if there are no contracts
       count++
       if (count % 100 === 0)
         log('sent weekly portfolio updates to', count, '/', privateUsers.length)
-      if (contractMetrics.length === 0) return
+      if (contractMetrics.length === 0 || profitPoints.length === 0) return
       await createWeeklyPortfolioUpdateNotification(
         privateUser,
         userData[privateUser.id].username,

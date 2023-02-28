@@ -1,5 +1,7 @@
+import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { filterDefined } from 'common/util/array'
 import { run, selectFrom, SupabaseClient } from './utils'
-import { chunk, groupBy, sortBy } from 'lodash'
+import { chunk, Dictionary, sortBy } from 'lodash'
 
 export async function getPortfolioHistory(
   userId: string,
@@ -20,28 +22,33 @@ export async function getPortfolioHistory(
   )
   return sortBy(data, 'timestamp')
 }
+
 export async function getPortfolioHistories(
   userIds: string[],
   cutoff: number,
   db: SupabaseClient
 ) {
-  const chunks = chunk(userIds, 200)
+  // chunk user ids into smaller groups - above 40 doesn't work well
+  const chunks = chunk(userIds, 40)
   const promises = chunks.map(async (chunk) => {
-    const { data } = await run(
-      selectFrom(
-        db,
-        'user_portfolio_history',
-        'timestamp',
-        'investmentValue',
-        'totalDeposits',
-        'balance',
-        'userId'
-      )
-        .in('user_id', chunk)
-        .gt('data->>timestamp', cutoff)
+    const { data, error } = await db.rpc(
+      'get_portfolio_histories_grouped_by_user_ids_from',
+      {
+        uids: chunk,
+        start: cutoff,
+      }
     )
 
-    return sortBy(data, 'timestamp')
+    if (!data || error) {
+      console.error('error:', error)
+      return undefined
+    }
+    return data
   })
-  return groupBy((await Promise.all(promises)).flat(), 'userId')
+  const data = filterDefined((await Promise.all(promises)).flat())
+  const userIdsToMetrics = {} as Dictionary<PortfolioMetrics[]>
+  data.flat().forEach((d) => {
+    userIdsToMetrics[d.user_id] = d.portfolio_metrics as PortfolioMetrics[]
+  })
+  return userIdsToMetrics
 }
