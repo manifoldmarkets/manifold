@@ -676,7 +676,7 @@ function LimitOrderPanel(props: {
       >
         <OrderBookButton limitBets={unfilledBets} contract={contract} />
         <SiteLink
-          className="flex flex-row items-center gap-1 text-sm text-gray-500"
+          className="text-ink-500 flex flex-row items-center gap-1 text-sm"
           href={
             // Manifold help for limit orders.
             'https://help.manifold.markets/64cf65f9f96047c3a727489e778e5983'
@@ -719,7 +719,7 @@ function LimitOrderPanel(props: {
           )}
         >
           <SiteLink
-            className="flex flex-row items-center gap-1 text-sm text-gray-500"
+            className="text-ink-500 flex flex-row items-center gap-1 text-sm"
             href={
               // Manifold help for limit orders.
               'https://help.manifold.markets/64cf65f9f96047c3a727489e778e5983'
