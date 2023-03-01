@@ -60,12 +60,12 @@ export function UserLink(props: {
     return (
       <div
         className={clsx(
-          'inline-flex max-w-[120px] flex-row items-center gap-1 truncate min-[480px]:max-w-[200px]',
+          'inline-flex flex-row items-center gap-1',
           linkClass,
           className
         )}
       >
-        {shortName}
+        <span className="max-w-[200px] truncate">{shortName}</span>
         {!hideBadge && <UserBadge username={username} fresh={fresh} />}
       </div>
     )
@@ -73,13 +73,10 @@ export function UserLink(props: {
   return (
     <SiteLink
       href={`/${username}`}
-      className={clsx(
-        'inline-flex max-w-[120px] flex-row items-center gap-1 truncate min-[480px]:max-w-[200px]',
-        className
-      )}
+      className={clsx('inline-flex flex-row items-center gap-1', className)}
       followsLinkClass
     >
-      {shortName}
+      <span className="max-w-[200px] truncate">{shortName}</span>
       {!hideBadge && <UserBadge username={username} fresh={fresh} />}
     </SiteLink>
   )
