@@ -17,13 +17,15 @@ interface DepthChartProps {
 }
 
 export function DepthChart(props: DepthChartProps) {
+  const { contract, yesBets, noBets } = props
+
   // Won't display a depth chart for numeric contracts, only binary contracts right now
-  if (props.contract.outcomeType === 'PSEUDO_NUMERIC') {
+  if (contract.outcomeType === 'PSEUDO_NUMERIC') {
     return <div className="depth-chart" />
   }
 
-  const yesData = cumulative(props.yesBets)
-  const noData = cumulative(props.noBets)
+  const yesData = cumulative(yesBets)
+  const noData = cumulative(noBets)
   const maxAmount = Math.max(
     yesData[yesData.length - 1].y,
     noData[noData.length - 1].y
@@ -42,7 +44,7 @@ export function DepthChart(props: DepthChartProps) {
   yesData.unshift({ x: minX, y: yesData[0].y })
   noData.push({ x: maxX, y: noData[noData.length - 1].y })
 
-  const currentValue = getDisplayProbability(props.contract)
+  const currentValue = getDisplayProbability(contract)
 
   return (
     <div className="depth-chart">
