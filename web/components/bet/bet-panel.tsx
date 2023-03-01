@@ -196,10 +196,10 @@ export function BuyPanel(props: {
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const [option, setOption] = useState<binaryOutcomes | 'limit'>(initialOutcome)
+  const [option, setOption] = useState<binaryOutcomes | 'LIMIT'>(initialOutcome)
 
-  const outcome = option === 'limit' ? undefined : option
-  const seeLimit = option === 'limit'
+  const outcome = option === 'LIMIT' ? undefined : option
+  const seeLimit = option === 'LIMIT'
 
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
@@ -213,20 +213,13 @@ export function BuyPanel(props: {
     }
   }, [initialOutcome])
 
-  function onBetChoice(choice: 'YES' | 'NO') {
-    setOption(choice)
-
-    if (!isIOS() && !isAndroid()) {
-      focusAmountInput()
-    }
-  }
-
-  function mobileOnBetChoice(choice: 'YES' | 'NO' | undefined) {
-    if (outcome === choice) {
+  function onOptionChoice(choice: 'YES' | 'NO' | 'LIMIT') {
+    if (option === choice) {
       setOption(undefined)
     } else {
       setOption(choice)
     }
+
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
     }
@@ -338,11 +331,7 @@ export function BuyPanel(props: {
           btnClassName="flex-1"
           selected={outcome}
           onSelect={(choice) => {
-            if (mobileView) {
-              mobileOnBetChoice(choice)
-            } else {
-              onBetChoice(choice)
-            }
+            onOptionChoice(choice)
           }}
           isPseudoNumeric={isPseudoNumeric}
         />
@@ -353,7 +342,7 @@ export function BuyPanel(props: {
               ? 'border-indigo-500 bg-indigo-500 text-white'
               : 'bg-canvas-0 border-indigo-500 text-indigo-500 hover:border-indigo-500 hover:text-indigo-500'
           )}
-          onClick={() => setOption('limit')}
+          onClick={() => onOptionChoice('LIMIT')}
         >
           %
         </button>
@@ -468,7 +457,7 @@ export function BuyPanel(props: {
         )}
       </Col>
 
-      {option === 'limit' && (
+      {option === 'LIMIT' && (
         <>
           <LimitOrderPanel
             className="rounded-lg bg-indigo-400/10 px-4 py-2"
