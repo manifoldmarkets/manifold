@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { first } from 'lodash'
+import clsx from 'clsx'
+
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { Col } from 'web/components/layout/col'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -308,7 +310,13 @@ export function ContractPageContent(
       {user && <BackRow />}
 
       <Row className="w-full items-start gap-8 self-center">
-        <Col className="bg-canvas-0 w-full max-w-3xl rounded px-4 py-4 md:px-8 md:py-8 xl:w-[70%]">
+        <Col
+          className={clsx(
+            'bg-canvas-0 w-full max-w-3xl rounded px-4 py-4 md:px-8 md:py-8 xl:w-[70%]',
+            // Keep content in view when scrolling related markets on desktop.
+            'sticky bottom-0 self-end'
+          )}
+        >
           <Col className="gap-3 sm:gap-4">
             <ContractDetails contract={contract} />
             <Linkify
