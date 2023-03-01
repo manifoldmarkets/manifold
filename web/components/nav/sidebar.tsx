@@ -1,15 +1,12 @@
 import {
-  BeakerIcon,
   BookOpenIcon,
   CashIcon,
   DeviceMobileIcon,
-  HeartIcon,
   HomeIcon,
   LightningBoltIcon,
   LogoutIcon,
   ScaleIcon,
   SearchIcon,
-  TicketIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
@@ -17,6 +14,7 @@ import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import Router, { useRouter } from 'next/router'
 import { useState } from 'react'
+import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import NotificationsIcon from 'web/components/notifications-icon'
@@ -48,9 +46,10 @@ export default function Sidebar(props: {
 
   const user = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
   const navOptions = isMobile
-    ? getMobileNav()
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(!!isMobile, !!user)
@@ -103,6 +102,13 @@ export default function Sidebar(props: {
             buttonContent={<MoreButton />}
           />
         )}
+        {user && isMobile && (
+          <MenuButton
+            key="menu-button"
+            menuItems={getMoreMobileNavigation()}
+            buttonContent={<MoreButton />}
+          />
+        )}
 
         {createMarketButton}
       </div>
@@ -112,6 +118,10 @@ export default function Sidebar(props: {
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
       </div>
+      <AddFundsModal
+        open={isAddFundsModalOpen}
+        setOpen={setIsAddFundsModalOpen}
+      />
     </nav>
   )
 }
@@ -171,9 +181,16 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
     loggedIn && { name: 'Sign out', onClick: logout }
   )
 }
+function getMoreMobileNavigation() {
+  return buildArray(
+    { name: 'Referrals', href: '/referrals' },
+    { name: 'Charity', href: '/charity' },
+    { name: 'Labs', href: '/labs' }
+  )
+}
 
 // No sidebar when signed out
-const getMobileNav = () => {
+const getMobileNav = (toggleModal: () => void) => {
   if (IS_PRIVATE_MANIFOLD) {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
   }
@@ -181,15 +198,12 @@ const getMobileNav = () => {
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
-    { name: 'Get mana', href: '/add-funds', icon: CashIcon },
+    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     {
       name: 'Groups',
       href: '/groups',
       icon: UserGroupIcon,
-    },
-    { name: 'Charity', href: '/charity', icon: HeartIcon },
-    { name: 'Labs', href: '/labs', icon: BeakerIcon },
-    { name: 'Referrals', href: '/referrals', icon: TicketIcon }
+    }
   )
 }
 
