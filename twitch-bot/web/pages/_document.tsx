@@ -14,7 +14,7 @@ export default function Document() {
         />
         <link rel="icon" href="logo.svg" />
       </Head>
-      <body className="font-readex-pro bg-base-200 min-h-screen">
+      <body className="font-readex-pro bg-base-200 text-ink-1000 min-h-screen">
         <Main />
         <NextScript />
       </body>
