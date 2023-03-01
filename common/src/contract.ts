@@ -208,7 +208,7 @@ export const OUTCOME_TYPES = [
   'QUADRATIC_FUNDING',
 ] as const
 
-export const MAX_QUESTION_LENGTH = 240
+export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000
 export const MAX_TAG_LENGTH = 60
 
