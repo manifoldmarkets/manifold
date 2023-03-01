@@ -41,7 +41,7 @@ export function Modal(props: {
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog
-        className="relative z-50"
+        className="text-ink-1000 relative z-50"
         onClose={setOpen}
         // prevent modal from re-opening from bubbled event if Modal is child of the open button
         onClick={(e: any) => e.stopPropagation()}

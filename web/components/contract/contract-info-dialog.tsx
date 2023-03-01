@@ -344,7 +344,7 @@ export function ContractInfoDialog(props: {
                             <Row className="gap-1">
                               <ChangeCoverImageButton contract={contract} />
                               <button
-                                className="text-ink-0 bg-ink-1000/20 hover:bg-ink-1000/40 flex gap-1 p-2 transition-all [text-shadow:_0_1px_0_rgb(0_0_0)]"
+                                className="flex gap-1 bg-black/20 p-2 text-white transition-all [text-shadow:_0_1px_0_rgb(0_0_0)] hover:bg-black/40"
                                 onClick={redream}
                               >
                                 {dreaming ? (
@@ -434,7 +434,7 @@ const ChangeCoverImageButton = (props: { contract: Contract }) => {
   return (
     <FileUploadButton
       onFiles={uploadMutation.mutate}
-      className="text-ink-0 bg-ink-1000/20 hover:bg-ink-1000/40 flex gap-1 p-2 transition-all [text-shadow:_0_1px_0_rgb(0_0_0)]"
+      className="flex gap-1 bg-black/20 p-2 text-white transition-all [text-shadow:_0_1px_0_rgb(0_0_0)] hover:bg-black/40"
     >
       Edit
       {uploadMutation.isLoading && <LoadingIndicator size="md" />}
