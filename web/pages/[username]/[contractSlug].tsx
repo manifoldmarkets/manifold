@@ -68,6 +68,7 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { RelatedContractsWidget } from 'web/components/contract/related-contracts-widget'
 import { Row } from 'web/components/layout/row'
 import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { track } from 'web/lib/service/analytics'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -428,12 +429,18 @@ export function ContractPageContent(
           className="hidden max-w-[375px] xl:flex"
           contract={contract}
           initialContracts={relatedContracts}
+          onContractClick={(c) =>
+            track('click related market', { contractId: c.id })
+          }
         />
       </Row>
       <RelatedContractsWidget
-        className="xl:hidden"
+        className="max-w-[600px] xl:hidden"
         contract={contract}
         initialContracts={relatedContracts}
+        onContractClick={(c) =>
+          track('click related market', { contractId: c.id })
+        }
       />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />

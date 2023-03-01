@@ -19,9 +19,10 @@ export const RelatedContractsWidget = memo(
   function RecommendedContractsWidget(props: {
     contract: Contract
     initialContracts: Contract[]
+    onContractClick?: (contract: Contract) => void
     className?: string
   }) {
-    const { contract, initialContracts, className } = props
+    const { contract, initialContracts, onContractClick, className } = props
     const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
       contract,
       initialContracts
@@ -32,7 +33,11 @@ export const RelatedContractsWidget = memo(
     }
     return (
       <Col className={clsx(className, 'gap-2')}>
-        <RelatedContractsList contracts={relatedMarkets} loadMore={loadMore} />
+        <RelatedContractsList
+          contracts={relatedMarkets}
+          onContractClick={onContractClick}
+          loadMore={loadMore}
+        />
       </Col>
     )
   }
@@ -43,7 +48,7 @@ function RelatedContractsList(props: {
   loadMore?: () => void
   onContractClick?: (contract: Contract) => void
 }) {
-  const { contracts, loadMore } = props
+  const { contracts, loadMore, onContractClick } = props
   const onVisibilityUpdated = useEvent((visible: boolean) => {
     if (visible && loadMore) {
       loadMore()
@@ -60,7 +65,11 @@ function RelatedContractsList(props: {
         {contracts
           .filter((c) => c.coverImageUrl)
           .map((contract) => (
-            <RelatedContractCard contract={contract} key={contract.id} />
+            <RelatedContractCard
+              contract={contract}
+              key={contract.id}
+              onContractClick={onContractClick}
+            />
           ))}
       </Col>
 
@@ -76,8 +85,9 @@ function RelatedContractsList(props: {
 
 const RelatedContractCard = memo(function RelatedContractCard(props: {
   contract: Contract
+  onContractClick?: (contract: Contract) => void
 }) {
-  const { contract } = props
+  const { contract, onContractClick } = props
   const {
     creatorUsername,
     creatorAvatarUrl,
@@ -95,6 +105,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
         'group flex flex-col gap-2 whitespace-nowrap rounded-sm py-3 px-4',
         'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors'
       )}
+      onClick={() => onContractClick?.(contract)}
     >
       <Row className="gap-2">
         <Avatar
