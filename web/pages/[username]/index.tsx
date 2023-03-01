@@ -5,7 +5,7 @@ import {
   PencilIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
-import { LinkIcon } from '@heroicons/react/solid'
+import { LinkIcon, PresentationChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { difference } from 'lodash'
 import { useRouter } from 'next/router'
@@ -257,81 +257,90 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
               <Spacer h={2} />
             </>
           )}
-          {(user.website || user.twitterHandle || user.discordHandle) && (
-            <Row className="mb-2 flex-wrap items-center gap-2 sm:gap-4">
-              {user.website && (
-                <SiteLink
-                  href={
-                    'https://' +
-                    user.website.replace('http://', '').replace('https://', '')
-                  }
-                >
-                  <Row className="items-center gap-1">
-                    <LinkIcon className="h-4 w-4" />
-                    <span className="text-ink-400 text-sm">{user.website}</span>
-                  </Row>
-                </SiteLink>
-              )}
+          <Row className="mb-2 flex-wrap items-center gap-2 sm:gap-4">
+            {user.website && (
+              <SiteLink
+                href={
+                  'https://' +
+                  user.website.replace('http://', '').replace('https://', '')
+                }
+              >
+                <Row className="items-center gap-1">
+                  <LinkIcon className="h-4 w-4" />
+                  <span className="text-ink-400 text-sm">{user.website}</span>
+                </Row>
+              </SiteLink>
+            )}
 
-              {user.twitterHandle && (
-                <SiteLink
-                  href={`https://twitter.com/${user.twitterHandle
-                    .replace('https://www.twitter.com/', '')
-                    .replace('https://twitter.com/', '')
-                    .replace('www.twitter.com/', '')
-                    .replace('twitter.com/', '')}`}
-                >
-                  <Row className="items-center gap-1">
-                    <img
-                      src="/twitter-logo.svg"
-                      className="h-4 w-4"
-                      alt="Twitter"
-                    />
-                    <span className="text-ink-400 text-sm">
-                      {user.twitterHandle}
-                    </span>
-                  </Row>
-                </SiteLink>
-              )}
+            {user.twitterHandle && (
+              <SiteLink
+                href={`https://twitter.com/${user.twitterHandle
+                  .replace('https://www.twitter.com/', '')
+                  .replace('https://twitter.com/', '')
+                  .replace('www.twitter.com/', '')
+                  .replace('twitter.com/', '')}`}
+              >
+                <Row className="items-center gap-1">
+                  <img
+                    src="/twitter-logo.svg"
+                    className="h-4 w-4"
+                    alt="Twitter"
+                  />
+                  <span className="text-ink-400 text-sm">
+                    {user.twitterHandle}
+                  </span>
+                </Row>
+              </SiteLink>
+            )}
 
-              {user.discordHandle && (
-                <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
-                  <Row className="items-center gap-1">
-                    <img
-                      src="/discord-logo.svg"
-                      className="h-4 w-4"
-                      alt="Discord"
-                    />
-                    <span className="text-ink-400 text-sm">
-                      {user.discordHandle}
-                    </span>
-                  </Row>
-                </SiteLink>
-              )}
+            {user.discordHandle && (
+              <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
+                <Row className="items-center gap-1">
+                  <img
+                    src="/discord-logo.svg"
+                    className="h-4 w-4"
+                    alt="Discord"
+                  />
+                  <span className="text-ink-400 text-sm">
+                    {user.discordHandle}
+                  </span>
+                </Row>
+              </SiteLink>
+            )}
 
-              {isCurrentUser && (
-                <div
-                  className={clsx(
-                    linkClass,
-                    'text-ink-400 cursor-pointer text-sm'
-                  )}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    copyToClipboard(referralUrl)
-                    toast.success('Copied your referral link!', {
-                      icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
-                    })
-                    track('copy referral link')
-                  }}
-                >
-                  <Row className="items-center gap-1">
-                    <LinkIcon className="h-4 w-4" />
-                    Referrals (earn {ENV_CONFIG.moneyMoniker}250)
-                  </Row>
-                </div>
-              )}
-            </Row>
-          )}
+            {isCurrentUser && (
+              <div
+                className={clsx(
+                  linkClass,
+                  'text-ink-400 cursor-pointer text-sm'
+                )}
+                onClick={(e) => {
+                  e.preventDefault()
+                  copyToClipboard(referralUrl)
+                  toast.success('Copied your referral link!', {
+                    icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
+                  })
+                  track('copy referral link')
+                }}
+              >
+                <Row className="items-center gap-1">
+                  <LinkIcon className="h-4 w-4" />
+                  Referrals (earn {ENV_CONFIG.moneyMoniker}250)
+                </Row>
+              </div>
+            )}
+
+            <SiteLink
+              href={'/' + user.username + '/calibration'}
+              className={clsx(linkClass, 'text-ink-400 cursor-pointer text-sm')}
+            >
+              <Row className="items-center gap-1">
+                <PresentationChartBarIcon className="h-4 w-4" />
+                Calibration
+              </Row>
+            </SiteLink>
+          </Row>
+
           <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
