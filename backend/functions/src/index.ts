@@ -5,7 +5,7 @@ import { EndpointDefinition } from './api/helpers'
 admin.initializeApp()
 
 // triggers
-export * from './triggers/log-writes'
+export * from './triggers/log-writes' // Running the emulator? Comment this line out
 export * from './triggers/on-create-user'
 export * from './triggers/on-create-bet'
 export * from './triggers/on-create-comment-on-contract'
