@@ -75,9 +75,9 @@ create index if not exists user_contract_metrics_recent_bets on user_contract_me
      ((data->'lastBetTime')::bigint) desc
     );
 create index if not exists user_contract_metrics_contract_id on user_contract_metrics (contract_id);
-create index user_contract_metrics_weekly_profit on user_contract_metrics ((data->'from'->'week'->'profit'))
+create index if not exists user_contract_metrics_weekly_profit on user_contract_metrics ((data->'from'->'week'->'profit'))
  where (data->'from'->'week'->'profit') is not null;
-create index user_contract_metrics_user_id on user_contract_metrics (user_id)
+create index if not exists user_contract_metrics_user_id on user_contract_metrics (user_id);
 
 create table if not exists user_follows (
     user_id text not null,
@@ -846,7 +846,7 @@ $$;
 
 
 create or replace view group_role as(
-  select member_id, 
+  select member_id,
     gp.id as group_id,
     gp.data as group_data,
     gp.data ->> 'name' as group_name,
@@ -855,7 +855,7 @@ create or replace view group_role as(
     users.data ->> 'name' as name,
     users.data ->> 'username' as username,
     users.data ->> 'avatarUrl' as avatar_url,
-    (select 
+    (select
       CASE
       WHEN (gp.data ->> 'creatorId')::text = member_id THEN 'admin'
       ELSE (gm.data ->> 'role')
@@ -863,19 +863,19 @@ create or replace view group_role as(
     ) as role,
     (gm.data ->> 'createdTime')::bigint as createdTime
   from (group_members gm join groups gp on gp.id = gm.group_id) join users on users.id = gm.member_id
-) 
+);
 
 create or replace view user_groups as(
-select 
-users.id as id, 
-users.data->>'name' as name, 
-users.data->>'username' as username, 
-users.data->>'avatarUrl' as avatarurl, 
+select
+users.id as id,
+users.data->>'name' as name,
+users.data->>'username' as username,
+users.data->>'avatarUrl' as avatarurl,
 (users.data->>'followerCountCached')::integer as follower_count,
-user_groups.groups as groups 
+user_groups.groups as groups
 from (users left join
-(select member_id, array_agg(group_id) as groups from group_members group by member_id) user_groups 
-on users.id=user_groups.member_id))
+(select member_id, array_agg(group_id) as groups from group_members group by member_id) user_groups
+on users.id=user_groups.member_id));
 
 create or replace function get_contracts_by_creator_ids(creator_ids text[], created_time bigint)
 returns table(creator_id text, contracts jsonb)
