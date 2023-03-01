@@ -149,7 +149,8 @@ export const LikeButton = memo(function LikeButton(props: {
                   'text-ink-0 absolute rounded-full text-center',
                   size === 'md' &&
                     '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
-                  size === 'xl' && 'bottom-0 right-0 min-w-[24px] p-0.5 text-sm',
+                  size === 'xl' &&
+                    'bottom-0 right-0 min-w-[24px] p-0.5 text-sm',
                   isSwipe && 'text-white'
                 )}
               >
