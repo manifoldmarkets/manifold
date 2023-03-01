@@ -46,13 +46,13 @@ export function AnswerItem(props: {
         'flex flex-col gap-4 rounded p-4 sm:flex-row',
         wasResolvedTo
           ? resolution === 'MKT'
-            ? 'mb-2 bg-blue-500/30'
-            : 'mb-10 bg-teal-500/30'
+            ? 'mb-2 bg-blue-500/20'
+            : 'mb-10 flex flex-col gap-4 rounded bg-teal-500/20 p-4'
           : chosenProb === undefined
           ? 'bg-canvas-50'
           : showChoice === 'radio'
-          ? 'bg-teal-500/30'
-          : 'bg-blue-500/30'
+          ? 'bg-teal-500/20'
+          : 'bg-blue-500/20'
       )}
     >
       <Col className="flex-1 gap-3">
