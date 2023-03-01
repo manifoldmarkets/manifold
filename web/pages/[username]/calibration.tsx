@@ -7,11 +7,9 @@ import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Dictionary, range } from 'lodash'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
-import { useEffect, useState } from 'react'
 import { getUserBetsFromResolvedContracts } from 'web/lib/supabase/bets'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export const getStaticProps = async (props: {
   params: {
@@ -21,9 +19,19 @@ export const getStaticProps = async (props: {
   const { username } = props.params
   const user = await getUserByUsername(username)
 
+  const bets = user
+    ? await getUserBetsFromResolvedContracts(user.id, 25000)
+    : []
+  const [yesBuckets, noBuckets] = getCalibrationPoints(bets)
+
+  const yesPoints = getXY(yesBuckets)
+  const noPoints = getXY(noBuckets)
+
+  const score = calculateScore(yesBuckets, noBuckets)
+
   return {
-    props: { user },
-    revalidate: 60, // Regenerate after 60 second
+    props: { user, yesPoints, noPoints, score },
+    revalidate: 60 * 60, // Regenerate after an hour
   }
 }
 
@@ -31,30 +39,14 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function CalibrationPage(props: { user: User | null }) {
-  const { user } = props
+export default function CalibrationPage(props: {
+  user: User | null
+  yesPoints: { x: number[]; y: number[] }
+  noPoints: { x: number[]; y: number[] }
+  score: number
+}) {
+  const { user, yesPoints, noPoints, score } = props
   const domain = range(0, 1.01, 0.01)
-
-  const [yesProbBuckets, setYesProbBuckets] = useState<Dictionary<number>>({})
-  const [noProbBuckets, setNoProbBuckets] = useState<Dictionary<number>>({})
-
-  const isLoading = Object.keys(yesProbBuckets).length === 0
-
-  const score = !isLoading
-    ? calculateScore(yesProbBuckets, noProbBuckets)
-    : undefined
-
-  useEffect(() => {
-    if (!user) return
-
-    getUserBetsFromResolvedContracts(user.id, 25000).then(
-      (betsWithContracts) => {
-        const [yesBuckets, noBuckets] = getCalibrationPoints(betsWithContracts)
-        setYesProbBuckets(yesBuckets)
-        setNoProbBuckets(noBuckets)
-      }
-    )
-  }, [user])
 
   return (
     <Page>
@@ -62,57 +54,53 @@ export default function CalibrationPage(props: { user: User | null }) {
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
           <Title>Calibration</Title>
-          {isLoading ? (
-            <LoadingIndicator />
-          ) : (
-            <>
-              <Plot
-                data={[
-                  {
-                    ...getXY(yesProbBuckets),
-                    mode: 'markers',
-                    type: 'scatter',
-                    marker: { color: 'green' },
-                    name: 'YES bets',
-                  },
-                  {
-                    ...getXY(noProbBuckets),
-                    mode: 'markers',
-                    type: 'scatter',
-                    marker: { color: 'red' },
-                    name: 'NO bets',
-                  },
-                  {
-                    x: domain,
-                    y: domain,
-                    mode: 'lines',
-                    type: 'scatter',
-                    marker: { color: 'gray' },
-                    name: 'y=x',
-                  },
-                ]}
-                layout={{
-                  width: 800,
-                  height: 500,
-                  title:
-                    user?.name +
-                    "'s bet calibration" +
-                    (score !== undefined ? ` (score: ${score})` : ''),
-                  xaxis: { title: 'Probability after bet' },
-                  yaxis: { title: 'Resolution probability' },
-                }}
-              />
-              <div className="max-w-2xl text-sm">
-                Interpretation: The green dot at (x%, y%) means when{' '}
-                {user?.name} bet YES at x%, the market resolved YES y% of the
-                time on average. Perfect calibration would result in all green
-                points being above the line, all red points below, and a score
-                of zero. The score is the mean squared error for yes and no bets
-                times -100. Each point is a bucket of bets weighted by bet
-                amount with a maximum size of 10% (sold bets are excluded).
-              </div>
-            </>
-          )}
+
+          <Plot
+            data={[
+              {
+                ...yesPoints,
+                mode: 'markers',
+                type: 'scatter',
+                marker: { color: 'green' },
+                name: 'YES bets',
+              },
+              {
+                ...noPoints,
+                mode: 'markers',
+                type: 'scatter',
+                marker: { color: 'red' },
+                name: 'NO bets',
+              },
+              {
+                x: domain,
+                y: domain,
+                mode: 'lines',
+                type: 'scatter',
+                marker: { color: 'gray' },
+                name: 'y=x',
+              },
+            ]}
+            layout={{
+              width: 800,
+              height: 500,
+              title:
+                user?.name +
+                "'s bet calibration" +
+                (score !== undefined ? ` (score: ${score})` : ''),
+              xaxis: { title: 'Probability after bet' },
+              yaxis: { title: 'Resolution probability' },
+            }}
+          />
+
+          <div className="max-w-2xl text-sm">
+            Interpretation: The green dot at (x%, y%) means when {user?.name}{' '}
+            bet YES at x%, the market resolved YES y% of the time on average.
+            Perfect calibration would result in all green points being above the
+            line, all red points below, and a score of zero. The score is the
+            mean squared error for yes and no bets times -100. Each point is a
+            bucket of bets weighted by bet amount with a maximum size of 10%
+            (sold bets are excluded).
+          </div>
         </Col>
       </Col>
     </Page>
