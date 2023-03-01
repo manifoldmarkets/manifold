@@ -81,6 +81,13 @@ find icons [here](https://icons.expo.fyi/)
 ## Monitoring
 - [Sentry](https://sentry.io/organizations/manifold-markets/projects/react-native/?issuesType=new&project=4504040585494528)
 
+### Problems with building android after deleting `android/`
+- `However we cannot choose between the following variants of project :react-native-iap: - amazonDebugRuntimeElements - playDebugRuntimeElements`
+  - Add `missingDimensionStrategy 'store', 'play'` to `android/app/build.gradle` in the `defaultConfig` section
+- `error: cannot find symbol import com.markets.BuildConfig;`
+  - Add `namespace "com.markets.manifold"` in place of `namespace "com.manifold"` to `app/build.gradle`
+  - Add `package com.markets.manifold;` in place of incorrect package at the top of `native/android/app/src/release/java/com/manifold/ReactNativeFlipper.java` 
+
 ## Troubleshooting
 - getting an errors on build/install? like `Error: spawn .../manifold/native/android/gradlew EACCES`
   - Delete the `android` or `ios` folders or run `yarn clean` and try again.
@@ -90,5 +97,4 @@ find icons [here](https://icons.expo.fyi/)
 - Fastlane build failing? Could be a malformed import
 - Pod install erroring out?
   - I had to reinstall cocoapods via [these instructions](https://github.com/expo/expo/issues/20707#issuecomment-1377790160)
-- Problems with building android and seeing: `However we cannot choose between the following variants of project :react-native-iap: - amazonDebugRuntimeElements - playDebugRuntimeElements`
-  - Fix by adding `missingDimensionStrategy 'store', 'play'` to `android/app/build.gradle` in the `defaultConfig` section
+  
