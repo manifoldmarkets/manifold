@@ -77,7 +77,7 @@ export default function Notifications() {
                   'bg-canvas-100 absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full sm:p-0.5'
                 }
               />
-              <span className={'text-ink-0 text-sm sm:text-base'}>
+              <span className={'text-ink-600 text-sm sm:text-base'}>
                 <Row className={'items-center'}>
                   We have a mobile app! Get the Manifold icon on your home
                   screen and push notifications (if you want 'em).
