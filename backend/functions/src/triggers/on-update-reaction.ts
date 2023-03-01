@@ -18,7 +18,6 @@ export const onCreateReaction = functions.firestore
   .onCreate(async (change, context) => {
     const { eventId } = context
     const reaction = change.data() as Reaction
-    console.log('running emulator?', process.env.EMULATOR)
     const { type } = reaction
     const { count, otherReactions } = await updateCountsOnDocuments(reaction)
     if (type === 'like') {
