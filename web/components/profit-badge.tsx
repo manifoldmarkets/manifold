@@ -10,8 +10,8 @@ export function ProfitBadge(props: {
   if (!profitPercent) return null
   const colors =
     profitPercent > 0
-      ? 'bg-teal-100 text-teal-700'
-      : 'bg-scarlet-50 text-scarlet-600'
+      ? 'bg-teal-500/20 text-teal-700 dark:text-teal-300'
+      : 'bg-scarlet-500/20 text-scarlet-600 dark:text-scarlet-200'
 
   return (
     <span

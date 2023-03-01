@@ -287,7 +287,7 @@ function OpenAnswer(props: {
                 className="p-1"
                 onClick={() => onAnswerCommentClick(answer)}
               >
-                <ChatIcon className="text-ink-400 hover:text-ink-600 h-5 w-5 transition-colors" />
+                <ChatIcon className="text-ink-500 hover:text-ink-600 h-5 w-5 transition-colors" />
               </button>
             )}
           </Row>
