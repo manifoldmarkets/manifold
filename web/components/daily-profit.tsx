@@ -94,10 +94,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
               dailyProfit > 0 && seen && 'text-teal-500'
             )}
           >
-            <span>
-              {dailyProfit >= 0 ? '+' : ''}
-              {formatMoney(dailyProfit)}
-            </span>
+            <span>💰 {formatMoney(dailyProfit)}</span>
           </Row>
         </Tooltip>
       </button>
@@ -125,7 +122,7 @@ function DailyProfitModal(props: {
     <Modal open={open} setOpen={setOpen} size={'lg'}>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
         <Col className={'mb-4'}>
-          <Title className={'mb-1'}>Daily profit</Title>
+          <Title className={'mb-1'}>💰 Daily profit</Title>
           <span className="text-ink-500 text-sm">
             Change in the value of your Yes/No positions over the last 24 hours.
             (Updates every 30 min)
