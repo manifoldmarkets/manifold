@@ -77,7 +77,7 @@ export function OgMarket(props: OgCardProps) {
       )}
 
       {/* Bottom row */}
-      <div className="flex w-full flex-row items-center justify-between px-24 text-3xl text-gray-600">
+      <div className="text-ink-600 flex w-full flex-row items-center justify-between px-24 text-3xl">
         {/* Details */}
         <div className="flex items-center">
           <div className="mr-6 flex items-center">
