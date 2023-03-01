@@ -5510,10 +5510,10 @@ firebase-admin@11.2.0:
     "@google-cloud/firestore" "^6.4.0"
     "@google-cloud/storage" "^6.5.2"
 
-firebase-functions@4.1.1:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/firebase-functions/-/firebase-functions-4.1.1.tgz#47c39a40d6cdaad9a46cb7ee3b9ffbb9bcaa7f2c"
-  integrity sha512-D0fhHO7m3OfZp5TpbO+ClsEo6vmr8uaR4kt7sePhQgcF1OCRI6YT5dEa9szaQekGKoao/YeZ+C5HVxEGsLxD9Q==
+firebase-functions@4.2.1:
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/firebase-functions/-/firebase-functions-4.2.1.tgz#3400aebe8192e9f0a62a8a39625fa76699c0208e"
+  integrity sha512-+NjbI6TD3ivuoT7B3oC4iwRlt41QDTcYowo3TO88ZyMHmjCzlrbiuAjiPzz/zfwgi3+GCoP1tztHOQHhDGYE5w==
   dependencies:
     "@types/cors" "^2.8.5"
     "@types/express" "4.17.3"

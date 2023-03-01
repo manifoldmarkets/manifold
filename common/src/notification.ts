@@ -117,6 +117,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'Answers on your own markets',
     verb: 'answered your question',
   },
+  some_comments_on_watched_markets: {
+    simple: 'Liked comments on markets you watch',
+    detailed: 'Comments on markets you watch that other users have liked',
+  },
   all_comments_on_my_markets: {
     simple: 'Comments on your markets',
     detailed: 'Comments on your own markets',

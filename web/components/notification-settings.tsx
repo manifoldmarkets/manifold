@@ -96,6 +96,7 @@ export function NotificationSettings(props: {
     'tagged_user',
 
     // TODO: add these
+    // 'some_comments_on_watched_markets',
     // 'limit_order_fills',
     // 'contract_from_followed_user',
     // 'probability_updates_on_watched_markets',
@@ -109,6 +110,7 @@ export function NotificationSettings(props: {
   const comments: SectionData = {
     label: 'New Comments',
     subscriptionTypes: [
+      'some_comments_on_watched_markets',
       'all_comments_on_watched_markets',
       'all_comments_on_contracts_with_shares_in_on_watched_markets',
       // TODO: combine these two
