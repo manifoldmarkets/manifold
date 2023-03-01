@@ -3,7 +3,7 @@
     "name": "Manifold",
     "slug": "manifold-markets",
     "owner": "iansp",
-    "sdkVersion": "46.0.0",
+    "sdkVersion": "47.0.0",
     "version": "2.0.36",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
@@ -33,7 +33,7 @@
       "url": "https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b"
     },
     "android": {
-      "runtimeVersion": "46.0.0",
+      "runtimeVersion": "47.0.0",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -50,7 +50,6 @@
           ]
         }
       ],
-      "useNextNotificationsApi": true,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
