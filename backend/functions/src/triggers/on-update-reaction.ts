@@ -11,7 +11,7 @@ import {
 } from '../create-notification'
 
 const firestore = admin.firestore()
-const MINIMUM_LIKES_TO_NOTIFY = 2
+const MINIMUM_LIKES_TO_NOTIFY = 1
 
 export const onCreateReaction = functions.firestore
   .document('users/{userId}/reactions/{reactionId}')
