@@ -31,8 +31,8 @@ export function SwipeComments(props: {
   return (
     <button
       className={clsx(
-        'hover:text-ink-600 disabled:opacity-50',
-        color === 'white' ? 'text-white' : 'text-ink-500'
+        'hover:text-gray-600 disabled:opacity-50',
+        color === 'white' ? 'text-white' : 'text-gray-500'
       )}
       onClick={withTracking(() => setAllOpen(true), 'view swipe comments', {
         contractId: contract.id,
