@@ -8,13 +8,13 @@ import {
 } from 'victory'
 import { LimitBet } from 'common/bet'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import { getDisplayProbability } from 'common/calculate'
+
 interface DepthChartProps {
   contract: CPMMBinaryContract | PseudoNumericContract
   yesBets: LimitBet[]
   noBets: LimitBet[]
 }
-import { getDisplayValue } from 'common/calculate'
-import { ENV_CONFIG } from 'common/envs/constants'
 
 export function DepthChart(props: DepthChartProps) {
   // Won't display a depth chart for numeric contracts, only binary contracts right now
@@ -42,7 +42,7 @@ export function DepthChart(props: DepthChartProps) {
   yesData.unshift({ x: minX, y: yesData[0].y })
   noData.push({ x: maxX, y: noData[noData.length - 1].y })
 
-  const currentValue = getDisplayValue(props.contract)
+  const currentValue = getDisplayProbability(props.contract)
 
   return (
     <div className="depth-chart">
@@ -130,13 +130,7 @@ type Coordinate = { x: number; y: number }
 
 // Converts a list of LimitBets into a list of coordinates to render into a depth chart.
 // Going in order of probability, the y value accumulates each order's amount.
-// The "yes" and "no" bets go in opposite directions.
 function cumulative(bets: LimitBet[]): Coordinate[] {
-  //   orders.sort(compare)
-  //   if (reverse) {
-  //     orders.reverse()
-  //   }
-
   const result: Coordinate[] = []
   let totalAmount = 0
 
@@ -147,13 +141,3 @@ function cumulative(bets: LimitBet[]): Coordinate[] {
 
   return result
 }
-
-// function compare(a: LimitBet, b: LimitBet) {
-//   if (a.probability < b.probability) {
-//     return -1
-//   }
-//   if (a.probability > b.probability) {
-//     return 1
-//   }
-//   return 0
-// }
