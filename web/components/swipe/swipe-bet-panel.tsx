@@ -51,15 +51,15 @@ export function SwipeBetPanel(props: {
     !disabled && betDirection === 'YES' && !isStatusAFailure(betStatus)
   return (
     <Row className="relative mb-4 w-full justify-center gap-5">
-      <Row className="text-ink-0 relative items-center gap-0.5">
+      <Row className="relative items-center gap-0.5 text-white">
         <button
           className={clsx(
             'absolute -left-[100px] z-20 flex h-16 flex-col justify-center rounded-[4rem] border-2 font-semibold transition-all',
             !disabled
-              ? 'active:bg-scarlet-300 active:border-scarlet-300 active:text-ink-1000'
-              : 'border-ink-200 text-ink-200 w-16 pl-4',
+              ? 'active:bg-scarlet-300 active:border-scarlet-300 active:text-white'
+              : 'w-16 border-gray-200 pl-4 text-gray-200',
             swipingLeft
-              ? 'bg-scarlet-300 border-scarlet-300 text-ink-0 w-[188px] pl-[74px]'
+              ? 'bg-scarlet-300 border-scarlet-300 w-[188px] pl-[74px] text-white'
               : 'border-scarlet-200 text-scarlet-200 w-16 pl-4',
             swipingLeft && betStatus === 'success'
               ? 'bg-scarlet-500 border-scarlet-500'
@@ -78,10 +78,10 @@ export function SwipeBetPanel(props: {
         {swipingLeft && (
           <div className="absolute -left-20 z-30">
             {betStatus === 'loading' && (
-              <LoadingIndicator size="md" spinnerClassName="border-ink-1000" />
+              <LoadingIndicator size="md" spinnerClassName="border-white" />
             )}
             {betStatus === 'success' && (
-              <CheckCircleIcon className={'text-ink-0 h-7 w-7'} />
+              <CheckCircleIcon className={'h-7 w-7 text-white'} />
             )}
           </div>
         )}
@@ -92,15 +92,16 @@ export function SwipeBetPanel(props: {
           children={
             <MinusIcon
               className={clsx(
+                'text-white',
                 swipingRight || swipingLeft ? 'opacity-0' : '',
-                'active:bg-canvas-0 active:text-ink-1000 z-10 h-8 w-8 rounded-full border p-1 transition-colors'
+                'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
               )}
             />
           }
           className={'opacity-70'}
         />
 
-        <Row className="z-30 mx-1 w-10 justify-center py-4 text-white">
+        <Row className="z-30 mx-1 w-10 justify-center py-4">
           {disabled ? formatMoney(STARTING_BET_AMOUNT) : formatMoney(amount)}
         </Row>
 
@@ -111,8 +112,9 @@ export function SwipeBetPanel(props: {
           children={
             <PlusIcon
               className={clsx(
+                'text-white',
                 swipingRight || swipingLeft ? 'opacity-0' : '',
-                'active:bg-canvas-0 active:text-ink-1000 z-10 h-8 w-8 rounded-full border p-1 transition-colors'
+                'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
               )}
             />
           }
@@ -120,9 +122,9 @@ export function SwipeBetPanel(props: {
         />
         <button
           className={clsx(
-            'active:text-ink-0 absolute -right-[100px] z-20 flex h-16 flex-col justify-center rounded-full border-2 font-semibold transition-all active:border-teal-600 active:bg-teal-600',
+            'absolute -right-[100px] z-20 flex h-16 flex-col justify-center rounded-full border-2 font-semibold transition-all active:border-teal-600 active:bg-teal-600 active:text-white',
             swipingRight
-              ? 'text-ink-0 w-[188px] border-teal-500 bg-teal-500 pl-[74px]'
+              ? 'w-[188px] border-teal-500 bg-teal-500 pl-[74px] text-white'
               : 'w-16 border-teal-300 bg-inherit pl-[13px] text-teal-300',
             swipingRight && betStatus === 'success'
               ? 'border-teal-600 bg-teal-600'
@@ -141,10 +143,10 @@ export function SwipeBetPanel(props: {
         {swipingRight && (
           <div className="absolute -right-20 z-30">
             {betStatus === 'loading' && (
-              <LoadingIndicator size="md" spinnerClassName="border-ink-1000" />
+              <LoadingIndicator size="md" spinnerClassName="border-white" />
             )}
             {betStatus === 'success' && (
-              <CheckCircleIcon className={'text-ink-0 h-7 w-7'} />
+              <CheckCircleIcon className={'h-7 w-7 text-white'} />
             )}
           </div>
         )}

@@ -221,7 +221,7 @@ function CardActions(props: {
         size={'xl'}
         showTotalLikesUnder={true}
         color={'white'}
-        className={'flex-col gap-2 text-white drop-shadow-sm'}
+        className={'flex-col gap-2 !text-white drop-shadow-sm'}
         isSwipe
       />
 
