@@ -34,7 +34,7 @@ import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { LimitBet } from 'common/bet'
 import { Pagination } from '../widgets/pagination'
-import { LimitOrderTable } from './limit-bets'
+import { OrderTable } from './limit-bets'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BetsSummary } from './bet-summary'
 import { ProfitBadge } from '../profit-badge'
@@ -472,7 +472,7 @@ function ContractBets(props: {
           {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
             <div className="max-w-md">
               <div className="bg-canvas-0 mt-4 px-4 py-2">Limit orders</div>
-              <LimitOrderTable
+              <OrderTable
                 contract={contract}
                 limitBets={limitBets}
                 isYou={isYourBets}

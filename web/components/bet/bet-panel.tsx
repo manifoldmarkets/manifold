@@ -38,7 +38,7 @@ import { BetSignUpPrompt } from '../sign-up-prompt'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { track } from 'web/lib/service/analytics'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { LimitBets, OrderBookButton } from './limit-bets'
+import { YourOrders, OrderBookButton } from './limit-bets'
 import { PillButton } from '../buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
@@ -101,7 +101,7 @@ export function BetPanel(props: {
       </Col>
 
       {unfilledBets.length > 0 && (
-        <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
+        <YourOrders className="mt-4" contract={contract} bets={unfilledBets} />
       )}
     </Col>
   )
@@ -161,7 +161,7 @@ export function SimpleBetPanel(props: {
       </Col>
 
       {unfilledBets.length > 0 && (
-        <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
+        <YourOrders className="mt-4" contract={contract} bets={unfilledBets} />
       )}
     </Col>
   )
@@ -467,9 +467,11 @@ export function BuyPanel(props: {
           />
         )}
       </Col>
+
       {option === 'limit' && (
-        <Col className="rounded-lg bg-indigo-500/10 px-4 py-2">
+        <>
           <LimitOrderPanel
+            className="rounded-lg bg-indigo-400/10 px-4 py-2"
             hidden={!seeLimit}
             contract={contract}
             user={user}
@@ -477,10 +479,14 @@ export function BuyPanel(props: {
             balanceByUserId={balanceByUserId}
             mobileView={mobileView}
           />
-        </Col>
-      )}
 
-      <LimitBets contract={contract} bets={unfilledBets as LimitBet[]} />
+          <YourOrders
+            className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
+            contract={contract}
+            bets={unfilledBets as LimitBet[]}
+          />
+        </>
+      )}
     </Col>
   )
 }
@@ -493,6 +499,7 @@ function LimitOrderPanel(props: {
   hidden: boolean
   onBuySuccess?: () => void
   mobileView?: boolean
+  className?: string
 }) {
   const {
     contract,
@@ -502,6 +509,7 @@ function LimitOrderPanel(props: {
     hidden,
     onBuySuccess,
     mobileView,
+    className,
   } = props
 
   const initialProb = getProbability(contract)
@@ -670,7 +678,7 @@ function LimitOrderPanel(props: {
   const profitIfBothFilled = shares - (yesAmount + noAmount) - yesFees - noFees
 
   return (
-    <Col className={hidden ? 'hidden' : ''}>
+    <Col className={clsx(className, hidden && 'hidden')}>
       <Row
         className={clsx(
           'mb-2 w-full justify-between gap-4 self-start',
