@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import {
+  BalanceChangeNotificationTypes,
   BetFillData,
   ContractResolutionData,
   getSourceUrl,
@@ -7,6 +8,7 @@ import {
   ReactionNotificationTypes,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
+import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -19,6 +21,7 @@ import {
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 import { Linkify } from '../widgets/linkify'
 import {
   AvatarNotificationIcon,
@@ -28,8 +31,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { useIsVisible } from 'web/hooks/use-is-visible'
-import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -39,14 +40,8 @@ export function NotificationItem(props: {
   const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted, setHighlighted] = useState(!notification.isSeen)
-  const incomeSourceTypes = [
-    'bonus',
-    'tip',
-    'loan',
-    'betting_streak_bonus',
-    'tip_and_like',
-  ]
-  if (incomeSourceTypes.includes(sourceType)) {
+
+  if (BalanceChangeNotificationTypes.includes(reason)) {
     return (
       <IncomeNotificationItem
         notification={notification}
@@ -172,15 +167,6 @@ export function NotificationItem(props: {
     }
     return (
       <GroupAddNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'user') {
-    return (
-      <UserJoinedNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -357,7 +343,7 @@ function SignupBonusNotification(props: {
   )
 }
 
-function MarketResolvedNotification(props: {
+export function MarketResolvedNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
@@ -924,71 +910,6 @@ function GroupAddNotification(props: {
             to <PrimaryNotificationLink text={sourceTitle} />
           </span>
         )}
-      </div>
-    </NotificationFrame>
-  )
-}
-
-function UserJoinedNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername, sourceSlug, reason, sourceText } =
-    notification
-  let reasonBlock = <span>because of you</span>
-  if (sourceSlug && reason) {
-    reasonBlock = (
-      <>
-        to bet on your market{' '}
-        <QuestionOrGroupLink
-          notification={notification}
-          truncatedLength={'xl'}
-        />
-      </>
-    )
-  } else if (sourceSlug) {
-    reasonBlock = (
-      <>
-        because you shared{' '}
-        <QuestionOrGroupLink
-          notification={notification}
-          truncatedLength={'xl'}
-        />
-      </>
-    )
-  }
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <AvatarNotificationIcon notification={notification} symbol={'👋'} />
-      }
-      link={getSourceUrl(notification)}
-      subtitle={
-        sourceText && (
-          <span>
-            As a thank you, we sent you{' '}
-            <span className="text-teal-500">
-              {formatMoney(parseInt(sourceText))}
-            </span>
-            !
-          </span>
-        )
-      }
-    >
-      <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'hover:text-primary-500 relative flex-shrink-0'}
-        />{' '}
-        joined Manifold Markets {reasonBlock}
       </div>
     </NotificationFrame>
   )

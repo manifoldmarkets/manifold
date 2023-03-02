@@ -1,13 +1,13 @@
-import { notification_preference } from './user-notification-preferences'
+import { outcomeType } from 'common/contract'
 import { groupPath } from './group'
 import { PAST_BET } from './user'
-import { outcomeType } from 'common/contract'
+import { notification_preference } from './user-notification-preferences'
 
 export type Notification = {
   id: string
   userId: string
   reasonText?: string
-  reason: notification_reason_types | notification_preference
+  reason: NotificationReason
   createdTime: number
   viewTime?: number
   isSeen: boolean
@@ -33,6 +33,10 @@ export type Notification = {
 
   isSeenOnHref?: string
 }
+
+export type NotificationReason =
+  | notification_reason_types
+  | notification_preference
 
 export type notification_source_types =
   | 'contract'
@@ -355,4 +359,17 @@ export function getSourceUrl(notification: Notification) {
 export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
   'comment_like',
   'contract_like',
+]
+
+export const BalanceChangeNotificationTypes: NotificationReason[] = [
+  'loan_income',
+  // bonuses
+  'betting_streak_incremented',
+  'unique_bettors_on_your_contract',
+  // resolutions
+  'resolution_on_contract_with_users_shares_in',
+  // referrals
+  'you_referred_user',
+  'user_joined_to_bet_on_your_market',
+  'user_joined_from_your_group_invite',
 ]
