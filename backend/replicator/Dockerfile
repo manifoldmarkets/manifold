@@ -19,4 +19,4 @@ RUN yarn install --frozen-lockfile --production
 # then copy over typescript payload
 COPY dist ./
 
-CMD [ "node", "backend/replicator/lib/index.js" ]
+ENTRYPOINT [ "node", "backend/replicator/lib/index.js" ]
