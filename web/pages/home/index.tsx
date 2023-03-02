@@ -256,13 +256,14 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
 
 const LiveSection = memo(function LiveSection() {
   return (
-    <Col>
+    <Col className="relative">
       <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
       <ActivityLog
-        count={10}
+        count={7}
         showPills={false}
-        className="h-[370px] overflow-hidden"
+        className="h-[380px] overflow-hidden"
       />
+      <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
     </Col>
   )
 })
