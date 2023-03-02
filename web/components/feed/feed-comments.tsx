@@ -196,6 +196,7 @@ export function CommentActions(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
   const isAdmin = useAdmin()
+  const isContractCreator = user?.id === contract.creatorId
 
   return (
     <Row className="grow items-center justify-end">
@@ -252,7 +253,7 @@ export function CommentActions(props: {
               else toast.error(`You can't report your own comment`)
             },
           },
-          isAdmin && {
+          (isAdmin || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
