@@ -67,8 +67,9 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                       ? (entry.rank ?? 21) - 1 // account for @acc's removal
                       : index + 1}
                   </td>
-                  <td className="max-w-[200px]">
+                  <td>
                     <UserAvatarAndBadge
+                      className="overflow-hidden max-[600px]:max-w-[200px] max-[400px]:max-w-[160px]"
                       name={entry.name}
                       username={entry.username}
                       avatarUrl={entry.avatarUrl}
