@@ -52,7 +52,7 @@ export default function CalibrationPage(props: {
     <Page>
       <SEO title="Calibration" description="Personal calibration results" />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
-        <Col className="">
+        <Col className="max-w-[800px]">
           <Title>Calibration</Title>
 
           <Plot
@@ -81,8 +81,6 @@ export default function CalibrationPage(props: {
               },
             ]}
             layout={{
-              width: 800,
-              height: 500,
               title:
                 user?.name +
                 "'s bet calibration" +
@@ -92,13 +90,13 @@ export default function CalibrationPage(props: {
             }}
           />
 
-          <div className="max-w-2xl text-sm">
+          <div className="mt-4 max-w-[800px]text-sm">
             Interpretation: The green dot at (x%, y%) means when {user?.name}{' '}
             bet YES at x%, the market resolved YES y% of the time on average.
             Perfect calibration would result in all green points being above the
             line, all red points below, and a score of zero. The score is the
             mean squared error for yes and no bets times -100. Each point is a
-            bucket of bets weighted by bet amount with a maximum size of 10%
+            bucket of bets weighted by bet amount with a maximum range of 10%
             (sold bets are excluded).
           </div>
         </Col>
