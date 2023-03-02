@@ -1,3 +1,4 @@
+import { spawn } from 'child_process'
 import * as express from 'express'
 import * as admin from 'firebase-admin'
 import { PubSub, Subscription, Message } from '@google-cloud/pubsub'
@@ -5,11 +6,12 @@ import {
   replicateWrites,
   createFailedWrites,
   replayFailedWrites,
+  WriteMessage,
 } from './replicate-writes'
 import { log } from './utils'
-import { TLEntry } from 'common/transaction-log'
 import { CONFIGS } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getInstanceHostname } from 'common/supabase/utils'
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
@@ -24,10 +26,17 @@ if (!SUPABASE_INSTANCE_ID) {
   throw new Error(`Can't connect to Supabase; no instance ID set for ${ENV}.`)
 }
 
+const SUPABASE_PASSWORD = process.env.SUPABASE_PASSWORD
+if (!SUPABASE_PASSWORD) {
+  throw new Error(
+    `Can't connect to Supabase; no process.env.SUPABASE_PASSWORD.`
+  )
+}
+
 const pubsub = new PubSub()
 const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
-const pg = createSupabaseDirectClient(SUPABASE_INSTANCE_ID)
+const pg = createSupabaseDirectClient(SUPABASE_INSTANCE_ID, SUPABASE_PASSWORD)
 
 const app = express()
 app.use(express.json())
@@ -43,13 +52,39 @@ app.post('/replay-failed', async (_req, res) => {
   }
 })
 
+app.post('/repack', async (_req, res) => {
+  log('INFO', 'Starting repack process...')
+  try {
+    const host = `db.${getInstanceHostname(SUPABASE_INSTANCE_ID)}`
+    await new Promise<void>((resolve, reject) => {
+      const args = ['-h', host, '-p', '5432', '-d', 'postgres', '-c', 'public']
+      const proc = spawn('/usr/libexec/postgresql15/pg_repack', args, {
+        env: { PGUSER: 'postgres', PGPASSWORD: SUPABASE_PASSWORD },
+      })
+      proc.stdout.on('data', (data) => log('INFO', data.toString()))
+      proc.stderr.on('data', (data) => log('INFO', data.toString()))
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve()
+        } else {
+          reject(new Error(`pg_repack exited with code ${code}.`))
+        }
+      })
+    })
+    return res.status(200).json({ success: true })
+  } catch (e) {
+    log('ERROR', 'Error running pg_repack.', e)
+    return res.status(500).json({ error: (e as any).toString() })
+  }
+})
+
 type ParsedMessage<T> = { msg: Message; data: T }
 
 function parseMessage<T>(msg: Message): ParsedMessage<T> {
   return { msg, data: JSON.parse(msg.data.toString()) }
 }
 
-async function tryReplicateBatch(batchId: number, ...entries: TLEntry[]) {
+async function tryReplicateBatch(batchId: number, ...entries: WriteMessage[]) {
   try {
     const t0 = process.hrtime.bigint()
     log('DEBUG', `Beginning replication of batch=${batchId}.`)
@@ -76,7 +111,7 @@ function processSubscriptionBatched(
   batchTimeoutMs: number
 ) {
   let i = 0
-  const batch: ParsedMessage<TLEntry>[] = []
+  const batch: ParsedMessage<WriteMessage>[] = []
 
   const processBatch = async (kind: string) => {
     if (batch.length > 0) {
@@ -93,7 +128,7 @@ function processSubscriptionBatched(
 
   subscription.on('message', async (message) => {
     try {
-      const parsed = parseMessage<TLEntry>(message)
+      const parsed = parseMessage<WriteMessage>(message)
       const entry = parsed.data
       log(
         'DEBUG',
