@@ -9,7 +9,6 @@ import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
@@ -32,35 +31,31 @@ export const RelatedContractsWidget = memo(
       return null
     }
     return (
-      <Col className={clsx(className, 'gap-2')}>
-        <RelatedContractsList
-          contracts={relatedMarkets}
-          onContractClick={onContractClick}
-          loadMore={loadMore}
-        />
-      </Col>
+      <RelatedContractsList
+        className={className}
+        contracts={relatedMarkets}
+        onContractClick={onContractClick}
+        loadMore={loadMore}
+      />
     )
   }
 )
 
 function RelatedContractsList(props: {
-  contracts: Contract[] | undefined
-  loadMore?: () => void
+  contracts: Contract[]
+  loadMore?: () => Promise<void>
   onContractClick?: (contract: Contract) => void
+  className?: string
 }) {
-  const { contracts, loadMore, onContractClick } = props
+  const { contracts, loadMore, onContractClick, className } = props
   const onVisibilityUpdated = useEvent((visible: boolean) => {
     if (visible && loadMore) {
       loadMore()
     }
   })
 
-  if (contracts === undefined) {
-    return <LoadingIndicator />
-  }
-
   return (
-    <Col>
+    <Col className={clsx(className, 'flex-1')}>
       <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts
           .filter((c) => c.coverImageUrl)
@@ -73,10 +68,18 @@ function RelatedContractsList(props: {
           ))}
       </Col>
 
+      <div className="relative">
+        {loadMore && (
+          <VisibilityObserver
+            onVisibilityUpdated={onVisibilityUpdated}
+            className="pointer-events-none absolute bottom-0 h-[75vh] w-full select-none"
+          />
+        )}
+      </div>
       {loadMore && (
         <VisibilityObserver
           onVisibilityUpdated={onVisibilityUpdated}
-          className="relative -top-96 h-1"
+          className="pointer-events-none w-full flex-1 select-none"
         />
       )}
     </Col>

@@ -426,7 +426,7 @@ export function ContractPageContent(
           </div>
         </Col>
         <RelatedContractsWidget
-          className="hidden max-w-[375px] xl:flex"
+          className="hidden min-h-full max-w-[375px] xl:flex"
           contract={contract}
           initialContracts={relatedContracts}
           onContractClick={(c) =>
