@@ -109,7 +109,7 @@ export default function CalibrationPage(props: {
             }}
           />
 
-          <div className="prose prose-sm my-4 max-w-[800px]">
+          <div className="prose prose-sm text-ink-600 my-4 max-w-[800px]">
             <b>Interpretation</b>
             <ul>
               <li>
