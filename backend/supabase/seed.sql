@@ -4,8 +4,9 @@
 /* 0. database-wide configuration */
 /***************************************************************/
 
-/* allow our backend to have a long statement timeout */
-alter role service_role set statement_timeout = '120s';
+/* allow our backend and CLI users to have a long statement timeout */
+alter role postgres set statement_timeout = '1h';
+alter role service_role set statement_timeout = '1h';
 
 /* for clustering without locks */
 create extension if not exists pg_repack;
