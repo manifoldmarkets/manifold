@@ -5,9 +5,9 @@ import {
   replicateWrites,
   createFailedWrites,
   replayFailedWrites,
+  WriteMessage,
 } from './replicate-writes'
 import { log } from './utils'
-import { TLEntry } from 'common/transaction-log'
 import { CONFIGS } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
@@ -49,7 +49,7 @@ function parseMessage<T>(msg: Message): ParsedMessage<T> {
   return { msg, data: JSON.parse(msg.data.toString()) }
 }
 
-async function tryReplicateBatch(batchId: number, ...entries: TLEntry[]) {
+async function tryReplicateBatch(batchId: number, ...entries: WriteMessage[]) {
   try {
     const t0 = process.hrtime.bigint()
     log('DEBUG', `Beginning replication of batch=${batchId}.`)
@@ -76,7 +76,7 @@ function processSubscriptionBatched(
   batchTimeoutMs: number
 ) {
   let i = 0
-  const batch: ParsedMessage<TLEntry>[] = []
+  const batch: ParsedMessage<WriteMessage>[] = []
 
   const processBatch = async (kind: string) => {
     if (batch.length > 0) {
@@ -93,7 +93,7 @@ function processSubscriptionBatched(
 
   subscription.on('message', async (message) => {
     try {
-      const parsed = parseMessage<TLEntry>(message)
+      const parsed = parseMessage<WriteMessage>(message)
       const entry = parsed.data
       log(
         'DEBUG',

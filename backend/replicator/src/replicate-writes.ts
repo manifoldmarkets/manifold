@@ -1,12 +1,22 @@
-import { Firestore } from 'firebase-admin/firestore'
-import { TLEntry } from 'common/transaction-log'
+import { Firestore, DocumentData } from 'firebase-admin/firestore'
 import { log } from './utils'
 import { bulkInsert } from 'shared/supabase/utils'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
+export type WriteMessage<T extends DocumentData = DocumentData> = {
+  ts: number
+  eventId: string
+  writeKind: string
+  tableId: string
+  path: string
+  parentId: string
+  docId: string
+  data: T | null | undefined
+}
+
 export async function createFailedWrites(
   firestore: Firestore,
-  ...entries: TLEntry[]
+  ...entries: WriteMessage[]
 ) {
   const coll = firestore
     .collection('replicationState')
@@ -36,7 +46,7 @@ export async function replayFailedWrites(
 
   log('INFO', `Attempting to replay ${failedWrites.size} write(s)...`)
   const deleter = firestore.bulkWriter({ throttling: false })
-  const entries = failedWrites.docs.map((d) => d.data() as TLEntry)
+  const entries = failedWrites.docs.map((d) => d.data() as WriteMessage)
   await replicateWrites(supabase, ...entries)
   for (const doc of failedWrites.docs) {
     deleter.delete(doc.ref)
@@ -48,7 +58,7 @@ export async function replayFailedWrites(
 
 export async function replicateWrites(
   pg: SupabaseDirectClient,
-  ...entries: TLEntry[]
+  ...entries: WriteMessage[]
 ) {
   return await bulkInsert(
     pg,
