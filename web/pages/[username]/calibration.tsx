@@ -5,11 +5,17 @@ import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { Dictionary, range } from 'lodash'
+import { Dictionary, mapValues, range, sortBy } from 'lodash'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { getUserBetsFromResolvedContracts } from 'web/lib/supabase/bets'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
+import { ContractMention } from 'web/components/contract/contract-mention'
+import { formatMoney } from 'common/util/format'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { useState } from 'react'
+import { Row } from 'web/components/layout/row'
+import clsx from 'clsx'
 
 export const getStaticProps = async (props: {
   params: {
@@ -22,7 +28,8 @@ export const getStaticProps = async (props: {
   const bets = user
     ? await getUserBetsFromResolvedContracts(user.id, 25000)
     : []
-  const [yesBuckets, noBuckets] = getCalibrationPoints(bets)
+  const { yesBuckets, noBuckets, yesBetsBuckets, noBetsBuckets } =
+    getCalibrationPoints(bets)
 
   const yesPoints = getXY(yesBuckets)
   const noPoints = getXY(noBuckets)
@@ -30,7 +37,14 @@ export const getStaticProps = async (props: {
   const score = calculateScore(yesBuckets, noBuckets)
 
   return {
-    props: { user, yesPoints, noPoints, score },
+    props: {
+      user,
+      yesPoints,
+      noPoints,
+      score,
+      yesBetsBuckets,
+      noBetsBuckets,
+    },
     revalidate: 60 * 60, // Regenerate after an hour
   }
 }
@@ -43,6 +57,8 @@ export default function CalibrationPage(props: {
   user: User | null
   yesPoints: { x: number[]; y: number[] }
   noPoints: { x: number[]; y: number[] }
+  yesBetsBuckets: Record<number, [Contract, Bet][]>
+  noBetsBuckets: Record<number, [Contract, Bet][]>
   score: number
 }) {
   const { user, yesPoints, noPoints, score } = props
@@ -50,10 +66,13 @@ export default function CalibrationPage(props: {
 
   return (
     <Page>
-      <SEO title="Calibration" description="Personal calibration results" />
+      <SEO
+        title={`${user?.name}'s calibration`}
+        description="Personal calibration results"
+      />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="max-w-[800px]">
-          <Title>Calibration</Title>
+          <Title>{user?.name}'s calibration</Title>
 
           <Plot
             data={[
@@ -90,18 +109,85 @@ export default function CalibrationPage(props: {
             }}
           />
 
-          <div className="max-w-[800px]text-sm mt-4">
-            Interpretation: The green dot at (x%, y%) means when {user?.name}{' '}
-            bet YES at x%, the market resolved YES y% of the time on average.
-            Perfect calibration would result in all green points being above the
-            line, all red points below, and a score of zero. The score is the
-            mean squared error for yes and no bets times -100. Each point is a
-            bucket of bets weighted by bet amount with a maximum range of 10%
-            (sold bets are excluded).
+          <div className="prose prose-sm my-4 max-w-[800px]">
+            <b>Interpretation</b>
+            <ul>
+              <li>
+                The green dot at (x%, y%) means when {user?.name} bet YES at x%,
+                the market resolved YES y% of the time on average.
+              </li>
+
+              <li>
+                Perfect calibration would result in all green points being above
+                the line, all red points below, and a score of zero.
+              </li>
+
+              <li>
+                The score is the mean squared error for yes and no bets times
+                -100.
+              </li>
+
+              <li>
+                Each point is a bucket of bets weighted by bet amount with a
+                maximum range of 10% (sold bets are excluded).
+              </li>
+            </ul>
           </div>
+
+          <BetsTable
+            yesBetsBuckets={props.yesBetsBuckets}
+            noBetsBuckets={props.noBetsBuckets}
+          />
         </Col>
       </Col>
     </Page>
+  )
+}
+
+function BetsTable(props: {
+  yesBetsBuckets: Record<number, [Contract, Bet][]>
+  noBetsBuckets: Record<number, [Contract, Bet][]>
+}) {
+  const { yesBetsBuckets, noBetsBuckets } = props
+  const [betsShown, setBetsShown] = useState<'YES' | 'NO'>('YES')
+  const textColor = betsShown === 'YES' ? 'text-teal-600' : 'text-scarlet-600'
+
+  return (
+    <div>
+      <Row className="justify-center">
+        <ChoicesToggleGroup
+          choicesMap={{
+            'YES bets': 'YES',
+            'NO bets': 'NO',
+          }}
+          currentChoice={betsShown}
+          setChoice={(c) => setBetsShown(c as 'YES' | 'NO')}
+          color="indigo"
+        />
+      </Row>
+
+      <div className="text-center text-xs text-gray-400">
+        10 largest bets for each bucket
+      </div>
+
+      {Object.entries(betsShown === 'YES' ? yesBetsBuckets : noBetsBuckets).map(
+        ([p, contractAndBet]) => (
+          <div key={p}>
+            <span className={clsx('text-3xl', textColor)}>{p}%</span>
+            <ul className="mb-8">
+              {contractAndBet.map(([contract, bet]) => (
+                <li key={bet.id}>
+                  <ContractMention contract={contract} />
+                  <span className={clsx('ml-2', textColor)}>
+                    {formatMoney(bet.amount)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      )}
+    </div>
   )
 }
 
@@ -110,9 +196,11 @@ const points = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
   const yesProbBuckets: Dictionary<number> = {}
   const yesCountBuckets: Dictionary<number> = {}
+  const yesBetsBuckets: Record<number, [Contract, Bet][]> = {}
 
   const noProbBuckets: Dictionary<number> = {}
   const noCountBuckets: Dictionary<number> = {}
+  const noBetsBuckets: Record<number, [Contract, Bet][]> = {}
 
   for (const [contract, bets] of betsData) {
     const { resolution } = contract
@@ -134,9 +222,11 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
       if (bet.outcome === 'YES') {
         yesProbBuckets[p] = (yesProbBuckets[p] ?? 0) + (resolvedYES ? w : 0)
         yesCountBuckets[p] = (yesCountBuckets[p] ?? 0) + w
+        yesBetsBuckets[p] = [...(yesBetsBuckets[p] ?? []), [contract, bet]]
       } else {
         noProbBuckets[p] = (noProbBuckets[p] ?? 0) + (resolvedYES ? 0 : w)
         noCountBuckets[p] = (noCountBuckets[p] ?? 0) + w
+        noBetsBuckets[p] = [...(noBetsBuckets[p] ?? []), [contract, bet]]
       }
     }
   }
@@ -151,7 +241,17 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
     }
   }
 
-  return [yesProbBuckets, noProbBuckets]
+  // Return the top 10 bets by amount for each probability bucket
+  function sortAndLimit(contractAndBets: [Contract, Bet][]) {
+    return sortBy(contractAndBets, (cAndB) => -cAndB[1].amount).slice(0, 10)
+  }
+
+  return {
+    yesBuckets: yesProbBuckets,
+    noBuckets: noProbBuckets,
+    yesBetsBuckets: mapValues(yesBetsBuckets, sortAndLimit),
+    noBetsBuckets: mapValues(noBetsBuckets, sortAndLimit),
+  }
 }
 
 const getXY = (probBuckets: Dictionary<number>) => {
