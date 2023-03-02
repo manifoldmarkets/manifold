@@ -83,7 +83,7 @@ export const ContractLeaderboard = function ContractLeaderboard(props: {
           renderCell: (entry) => formatMoney(entry.total),
         },
       ]}
-      className="mt-12 max-w-sm"
+      className="mt-12"
       highlightUsername={currentUser?.username}
     />
   ) : null
