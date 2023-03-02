@@ -57,7 +57,13 @@ app.post('/repack', async (_req, res) => {
     await new Promise<void>((resolve, reject) => {
       const args = ['-h', host, '-p', '5432', '-d', 'postgres', '-c', 'public']
       const proc = spawn('/usr/libexec/postgresql15/pg_repack', args, {
-        env: { PGUSER: 'postgres', PGPASSWORD: SUPABASE_PASSWORD },
+        env: {
+          PGUSER: 'postgres',
+          PGPASSWORD: SUPABASE_PASSWORD,
+          PGOPTIONS:
+            // make sure that the TCP connection doesn't drop on long repack operations
+            '-c tcp_keepalives_idle=60 -c tcp_keepalives_interval=5 -c tcp_keepalives_count=4',
+        },
       })
       proc.stdout.on('data', (data) => log('INFO', `[repack] ${data}`))
       proc.stderr.on('data', (data) => log('INFO', `[repack] ${data}`))
