@@ -1,7 +1,7 @@
 import { spawn } from 'child_process'
 import * as express from 'express'
 import * as admin from 'firebase-admin'
-import { PubSub, Subscription, Message } from '@google-cloud/pubsub'
+import { PubSub, Message } from '@google-cloud/pubsub'
 import {
   replicateWrites,
   createFailedWrites,
@@ -33,8 +33,6 @@ if (!SUPABASE_PASSWORD) {
   )
 }
 
-const pubsub = new PubSub()
-const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 const firestore = admin.initializeApp().firestore()
 const pg = createSupabaseDirectClient(SUPABASE_INSTANCE_ID, SUPABASE_PASSWORD)
 
@@ -106,62 +104,68 @@ async function tryReplicateBatch(batchId: number, ...entries: WriteMessage[]) {
   }
 }
 
-function processSubscriptionBatched(
-  subscription: Subscription,
-  batchSize: number,
-  batchTimeoutMs: number
-) {
-  let i = 0
-  const batch: ParsedMessage<WriteMessage>[] = []
-
-  const processBatch = async (kind: string) => {
-    if (batch.length > 0) {
-      const batchId = i++
-      const toWrite = [...batch]
-      batch.length = 0
-      log('DEBUG', `Starting ${kind} batch=${batchId}.`)
-      await tryReplicateBatch(batchId, ...toWrite.map((x) => x.data))
-      for (const x of toWrite) {
-        x.msg.ack()
-      }
+const batch: ParsedMessage<WriteMessage>[] = []
+let batchCount = 0
+async function processBatch(kind: string) {
+  if (batch.length > 0) {
+    const batchId = batchCount++
+    const toWrite = [...batch]
+    batch.length = 0
+    log('DEBUG', `Starting ${kind} batch=${batchId}.`)
+    await tryReplicateBatch(batchId, ...toWrite.map((x) => x.data))
+    for (const x of toWrite) {
+      x.msg.ack()
     }
   }
-
-  subscription.on('message', async (message) => {
-    try {
-      const parsed = parseMessage<WriteMessage>(message)
-      const entry = parsed.data
-      log(
-        'DEBUG',
-        `Received message id=${message.id} batch=${i} eventId=${entry.eventId} kind=${entry.writeKind} tableId=${entry.tableId} parentId=${entry.parentId} docId=${entry.docId}.`
-      )
-      batch.push(parsed)
-      if (batch.length >= batchSize) {
-        await processBatch('clear')
-      }
-    } catch (e) {
-      log('ERROR', 'Big error processing message:', e)
-    }
-  })
-
-  subscription.on('debug', (msg) => {
-    log('INFO', 'Debug message from stream: ', msg)
-  })
-
-  subscription.on('error', (error) => {
-    log('ERROR', 'Received error from subscription:', error)
-  })
-
-  return setInterval(async () => {
-    if (batch.length > 0) {
-      await processBatch('interval')
-    }
-  }, batchTimeoutMs)
 }
 
-// unref() means it won't keep the process running if GCP stops the webserver
-processSubscriptionBatched(writeSub, 1000, 100).unref()
+const pubsub = new PubSub()
+const writeSub = pubsub.subscription('supabaseReplicationPullSubscription')
 
-app.listen(PORT, () =>
+writeSub.on('message', async (message) => {
+  try {
+    const parsed = parseMessage<WriteMessage>(message)
+    const entry = parsed.data
+    log(
+      'DEBUG',
+      `Received message id=${message.id} batch=${batchCount} eventId=${entry.eventId} kind=${entry.writeKind} tableId=${entry.tableId} parentId=${entry.parentId} docId=${entry.docId}.`
+    )
+    batch.push(parsed)
+    if (batch.length >= 1000) {
+      await processBatch('clear')
+    }
+  } catch (e) {
+    log('ERROR', 'Big error processing message:', e)
+  }
+})
+
+writeSub.on('close', async () => {
+  log('INFO', 'Closing subscription.')
+})
+
+writeSub.on('debug', (msg) => {
+  log('INFO', 'Debug message from stream: ', msg)
+})
+
+writeSub.on('error', (error) => {
+  log('ERROR', 'Received error from subscription:', error)
+})
+
+const processingInterval = setInterval(async () => {
+  if (batch.length > 0) {
+    await processBatch('interval')
+  }
+}, 100)
+
+const server = app.listen(PORT, () => {
   log('INFO', `Running in ${ENV} environment listening on port ${PORT}.`)
-)
+
+  process.on('SIGTERM', async () => {
+    log('INFO', 'Shutting down.')
+    await new Promise((resolve) => server.close(resolve))
+    clearInterval(processingInterval)
+    await writeSub.close()
+    await processBatch('final')
+    process.exit(0)
+  })
+})
