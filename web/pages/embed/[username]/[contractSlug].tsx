@@ -25,13 +25,12 @@ import { track } from 'web/lib/service/analytics'
 import { useContract } from 'web/hooks/use-contracts'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
-import { OrderByDirection } from 'firebase/firestore'
 import { useUser } from 'web/hooks/use-user'
 import {
   HistoryPoint,
   useSingleValueHistoryChartViewScale,
 } from 'web/components/charts/generic-charts'
-import { getBets } from 'web/lib/supabase/bets'
+import { getBets, getBetFields } from 'web/lib/supabase/bets'
 import { NoSEO } from 'web/components/NoSEO'
 import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 
@@ -46,22 +45,29 @@ async function getHistoryData(contract: Contract) {
   if (contract.outcomeType === 'NUMERIC') {
     return null
   }
-  const bets = await getBets({
-    contractId: contract.id,
-    ...CONTRACT_BET_LOADING_OPTS,
-    limit: 50000,
-    order: 'desc' as OrderByDirection,
-  })
   switch (contract.outcomeType) {
     case 'BINARY':
     case 'PSEUDO_NUMERIC':
       // We could include avatars in the embed, but not sure it's worth it
-      const points = bets.map((bet) => ({
+      const points = (
+        await getBetFields(['createdTime', 'probAfter'], {
+          contractId: contract.id,
+          ...CONTRACT_BET_LOADING_OPTS,
+          limit: 50000,
+          order: 'desc',
+        })
+      ).map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
       }))
       return { points } as HistoryData
     default: // choice contracts
+      const bets = await getBets({
+        contractId: contract.id,
+        ...CONTRACT_BET_LOADING_OPTS,
+        limit: 50000,
+        order: 'desc',
+      })
       return { bets } as HistoryData
   }
 }
