@@ -171,7 +171,7 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
     { name: 'Referrals', href: '/referrals' },
     { name: 'Groups', href: '/groups' },
     { name: 'Charity', href: '/charity' },
-    { name: 'Labs', href: '/labs' },
+    { name: 'Directory', href: '/directory' },
     // { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     {
@@ -185,7 +185,7 @@ function getMoreMobileNavigation() {
   return buildArray(
     { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
-    { name: 'Labs', href: '/labs' }
+    { name: 'Directory', href: '/directory' }
   )
 }
 

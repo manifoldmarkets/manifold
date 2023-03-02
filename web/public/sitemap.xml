@@ -10,5 +10,5 @@
 <url><loc>https://manifold.markets/charity</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
 <url><loc>https://manifold.markets/groups</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
 <url><loc>https://manifold.markets/tournaments</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
-<url><loc>https://manifold.markets/labs</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
+<url><loc>https://manifold.markets/directory</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
 </urlset>
