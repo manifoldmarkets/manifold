@@ -90,7 +90,7 @@ export async function getStaticPropz(ctx: {
     ? await getBets({
         contractId,
         ...CONTRACT_BET_FILTER,
-        limit: useBetPoints ? 10000 : 4000,
+        limit: useBetPoints ? 50000 : 4000,
         order: 'desc',
       })
     : []

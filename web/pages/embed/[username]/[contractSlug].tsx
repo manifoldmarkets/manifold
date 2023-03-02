@@ -49,7 +49,7 @@ async function getHistoryData(contract: Contract) {
   const bets = await getBets({
     contractId: contract.id,
     ...CONTRACT_BET_LOADING_OPTS,
-    limit: 10000,
+    limit: 50000,
     order: 'desc' as OrderByDirection,
   })
   switch (contract.outcomeType) {
