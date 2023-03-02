@@ -5,7 +5,6 @@ import { memo } from 'react'
 import clsx from 'clsx'
 
 import { useEvent } from 'web/hooks/use-event'
-import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -14,34 +13,7 @@ import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { useIsClient } from 'web/hooks/use-is-client'
 
-export const RelatedContractsWidget = memo(
-  function RecommendedContractsWidget(props: {
-    contract: Contract
-    initialContracts: Contract[]
-    onContractClick?: (contract: Contract) => void
-    className?: string
-  }) {
-    const { contract, initialContracts, onContractClick, className } = props
-    const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
-      contract,
-      initialContracts
-    )
-
-    if (relatedMarkets.length === 0) {
-      return null
-    }
-    return (
-      <RelatedContractsList
-        className={className}
-        contracts={relatedMarkets}
-        onContractClick={onContractClick}
-        loadMore={loadMore}
-      />
-    )
-  }
-)
-
-function RelatedContractsList(props: {
+export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
   loadMore?: () => Promise<void>
   onContractClick?: (contract: Contract) => void
@@ -53,6 +25,10 @@ function RelatedContractsList(props: {
       loadMore()
     }
   })
+
+  if (contracts.length === 0) {
+    return null
+  }
 
   return (
     <Col className={clsx(className, 'flex-1')}>
@@ -84,7 +60,7 @@ function RelatedContractsList(props: {
       )}
     </Col>
   )
-}
+})
 
 const RelatedContractCard = memo(function RelatedContractCard(props: {
   contract: Contract

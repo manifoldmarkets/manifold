@@ -61,9 +61,12 @@ import Head from 'next/head'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { RelatedContractsWidget } from 'web/components/contract/related-contracts-widget'
+import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
 import { Row } from 'web/components/layout/row'
-import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
+import {
+  getInitialRelatedMarkets,
+  useRelatedMarkets,
+} from 'web/hooks/use-related-contracts'
 import { track } from 'web/lib/service/analytics'
 
 const CONTRACT_BET_FILTER: BetFilter = {
@@ -295,6 +298,11 @@ export function ContractPageContent(
   })
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
+  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
+    contract,
+    relatedContracts
+  )
+
   return (
     <Page maxWidth="max-w-[1400px]">
       <ContractSEO contract={contract} points={pointsString} />
@@ -421,22 +429,22 @@ export function ContractPageContent(
             />
           </div>
         </Col>
-        <RelatedContractsWidget
+        <RelatedContractsList
           className="hidden min-h-full max-w-[375px] xl:flex"
-          contract={contract}
-          initialContracts={relatedContracts}
+          contracts={relatedMarkets}
           onContractClick={(c) =>
             track('click related market', { contractId: c.id })
           }
+          loadMore={loadMore}
         />
       </Row>
-      <RelatedContractsWidget
+      <RelatedContractsList
         className="max-w-[600px] xl:hidden"
-        contract={contract}
-        initialContracts={relatedContracts}
+        contracts={relatedMarkets}
         onContractClick={(c) =>
           track('click related market', { contractId: c.id })
         }
+        loadMore={loadMore}
       />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
