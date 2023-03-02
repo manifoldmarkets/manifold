@@ -1,6 +1,7 @@
 import { db } from './db'
-import { run, selectJson } from 'common/supabase/utils'
+import { run, selectFrom, selectJson } from 'common/supabase/utils'
 import { BetFilter } from 'web/lib/firebase/bets'
+import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { Dictionary, flatMap } from 'lodash'
 import { LimitBet } from 'common/bet'
@@ -23,16 +24,30 @@ export async function getOlderBets(
 }
 
 export const getBets = async (options?: BetFilter) => {
-  const query = getBetsQuery(options)
-  const { data } = await run(query)
+  let q = selectJson(db, 'contract_bets')
+  q = q.order('data->>createdTime', {
+    ascending: options?.order === 'asc',
+  } as any)
+  q = applyBetsFilter(q, options)
+  const { data } = await run(q)
   return data.map((r) => r.data)
 }
 
-export const getBetsQuery = (options?: BetFilter) => {
-  let q = selectJson(db, 'contract_bets').order('data->>createdTime', {
+export const getBetFields = async <T extends (keyof Bet)[]>(
+  fields: T,
+  options?: BetFilter
+) => {
+  let q = selectFrom(db, 'contract_bets', ...fields)
+  q = q.order('data->>createdTime', {
     ascending: options?.order === 'asc',
   } as any)
+  q = applyBetsFilter(q, options)
+  const { data } = await run(q)
+  return data
+}
 
+// mqp: good luck typing q
+export const applyBetsFilter = (q: any, options?: BetFilter) => {
   if (options?.contractId) {
     q = q.eq('contract_id', options.contractId)
   }
@@ -43,16 +58,17 @@ export const getBetsQuery = (options?: BetFilter) => {
     q = q.gt('data->>createdTime', options.afterTime)
   }
   if (options?.filterChallenges) {
-    q = q.contains('data', { isChallenge: false })
+    q = q.eq('data->isChallenge', false)
   }
   if (options?.filterAntes) {
-    q = q.contains('data', { isAnte: false })
+    q = q.eq('data->isAnte', false)
   }
   if (options?.filterRedemptions) {
-    q = q.contains('data', { isRedemption: false })
+    q = q.eq('data->isRedemption', false)
   }
   if (options?.isOpenLimitOrder) {
-    q = q.contains('data', { isFilled: false, isCancelled: false })
+    q = q.eq('data->isFilled', false)
+    q = q.eq('data->isCancelled', false)
   }
   if (options?.limit) {
     q = q.limit(options.limit)
