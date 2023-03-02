@@ -53,7 +53,7 @@ app.post('/replay-failed', async (_req, res) => {
 })
 
 app.post('/repack', async (_req, res) => {
-  log('INFO', 'Starting repack process...')
+  log('INFO', '[repack] Starting...')
   try {
     const host = `db.${getInstanceHostname(SUPABASE_INSTANCE_ID)}`
     await new Promise<void>((resolve, reject) => {
@@ -61,10 +61,11 @@ app.post('/repack', async (_req, res) => {
       const proc = spawn('/usr/libexec/postgresql15/pg_repack', args, {
         env: { PGUSER: 'postgres', PGPASSWORD: SUPABASE_PASSWORD },
       })
-      proc.stdout.on('data', (data) => log('INFO', data.toString()))
-      proc.stderr.on('data', (data) => log('INFO', data.toString()))
+      proc.stdout.on('data', (data) => log('INFO', `[repack] ${data}`))
+      proc.stderr.on('data', (data) => log('INFO', `[repack] ${data}`))
       proc.on('close', (code) => {
         if (code === 0) {
+          log('INFO', `[repack] Finished.`)
           resolve()
         } else {
           reject(new Error(`pg_repack exited with code ${code}.`))
@@ -73,7 +74,7 @@ app.post('/repack', async (_req, res) => {
     })
     return res.status(200).json({ success: true })
   } catch (e) {
-    log('ERROR', 'Error running pg_repack.', e)
+    log('ERROR', '[repack] Error running pg_repack.', e)
     return res.status(500).json({ error: (e as any).toString() })
   }
 })
