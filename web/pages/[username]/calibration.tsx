@@ -90,7 +90,7 @@ export default function CalibrationPage(props: {
             }}
           />
 
-          <div className="mt-4 max-w-[800px]text-sm">
+          <div className="max-w-[800px]text-sm mt-4">
             Interpretation: The green dot at (x%, y%) means when {user?.name}{' '}
             bet YES at x%, the market resolved YES y% of the time on average.
             Perfect calibration would result in all green points being above the
