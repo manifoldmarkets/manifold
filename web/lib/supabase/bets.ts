@@ -43,16 +43,17 @@ export const getBetsQuery = (options?: BetFilter) => {
     q = q.gt('data->>createdTime', options.afterTime)
   }
   if (options?.filterChallenges) {
-    q = q.contains('data', { isChallenge: false })
+    q = q.eq('data->isChallenge', false)
   }
   if (options?.filterAntes) {
-    q = q.contains('data', { isAnte: false })
+    q = q.eq('data->isAnte', false)
   }
   if (options?.filterRedemptions) {
-    q = q.contains('data', { isRedemption: false })
+    q = q.eq('data->isRedemption', false)
   }
   if (options?.isOpenLimitOrder) {
-    q = q.contains('data', { isFilled: false, isCancelled: false })
+    q = q.eq('data->isFilled', false)
+    q = q.eq('data->isCancelled', false)
   }
   if (options?.limit) {
     q = q.limit(options.limit)
