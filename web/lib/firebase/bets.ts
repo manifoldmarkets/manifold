@@ -40,6 +40,7 @@ export type BetFilter = {
   filterAntes?: boolean
   isOpenLimitOrder?: boolean
   afterTime?: number
+  beforeTime?: number
   order?: OrderByDirection
   limit?: number
 }
@@ -57,6 +58,9 @@ export const getBetsQuery = (options?: BetFilter) => {
   }
   if (options?.afterTime) {
     q = query(q, where('createdTime', '>', options.afterTime))
+  }
+  if (options?.beforeTime) {
+    q = query(q, where('createdTime', '<', options.beforeTime))
   }
   if (options?.filterChallenges) {
     q = query(q, where('isChallenge', '==', false))
