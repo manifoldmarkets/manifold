@@ -26,6 +26,9 @@ export function DepthChart(props: DepthChartProps) {
 
   const yesData = cumulative(yesBets)
   const noData = cumulative(noBets)
+  if (yesData.length === 0 || noData.length === 0) {
+    return null
+  }
   const maxAmount = Math.max(
     yesData[yesData.length - 1].y,
     noData[noData.length - 1].y
