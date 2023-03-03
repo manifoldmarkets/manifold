@@ -57,6 +57,9 @@ export const applyBetsFilter = (q: any, options?: BetFilter) => {
   if (options?.afterTime) {
     q = q.gt('data->>createdTime', options.afterTime)
   }
+  if (options?.beforeTime) {
+    q = q.lt('data->>createdTime', options.beforeTime)
+  }
   if (options?.filterChallenges) {
     q = q.eq('data->isChallenge', false)
   }
