@@ -95,70 +95,64 @@ export const loadUserDataForRecommendations = async (
 
   const betOnIds = Object.fromEntries(
     await pg.map(
-      `select u.id, array_agg(ucm.contract_id) as contract_ids
-       from users as u
-       join user_contract_metrics as ucm on ucm.user_id = u.id
-       group by u.id`,
+      `select user_id, array_agg(contract_id) as contract_ids
+       from user_contract_metrics
+       group by user_id`,
       [],
-      (r) => [r.id as string, r.contract_ids as string[]]
+      (r) => [r.user_id as string, r.contract_ids as string[]]
     )
   )
 
   const swipedIds = Object.fromEntries(
     await pg.map(
-      `select u.id, array_agg(usm.contract_id) as contract_ids
-      from users as u
-      join user_seen_markets as usm on usm.user_id = u.id
-      group by u.id`,
+      `select user_id, array_agg(contract_id) as contract_ids
+      from user_seen_markets
+      group by user_id`,
       [],
-      (r) => [r.id as string, r.contract_ids as string[]]
+      (r) => [r.user_id as string, r.contract_ids as string[]]
     )
   )
 
   const viewedCardIds = Object.fromEntries(
     await pg.map(
-      `select u.id, array_agg(distinct ue.data->>'contractId') as contract_ids
-      from users as u
-      join user_events as ue on ue.user_id = u.id
-      where ue.data->>'name' = 'view market card'
-      group by u.id`,
+      `select user_id, array_agg(distinct data->>'contractId') as contract_ids
+      from user_events
+      where data->>'name' = 'view market card'
+      group by user_id`,
       [],
-      (r) => [r.id as string, r.contract_ids as string[]]
+      (r) => [r.user_id as string, r.contract_ids as string[]]
     )
   )
 
   const viewedPageIds = Object.fromEntries(
     await pg.map(
-      `select u.id, array_agg(distinct ue.data->>'contractId') as contract_ids
-      from users as u
-      join user_events as ue on ue.user_id = u.id
-      where ue.data->>'name' = 'view market'
-      group by u.id`,
+      `select user_id, array_agg(distinct data->>'contractId') as contract_ids
+      from user_events
+      where data->>'name' = 'view market'
+      group by user_id`,
       [],
-      (r) => [r.id as string, r.contract_ids as string[]]
+      (r) => [r.user_id as string, r.contract_ids as string[]]
     )
   )
 
   const likedIds = Object.fromEntries(
     await pg.map(
-      `select u.id, array_agg(distinct ur.data->>'contentId') as contract_ids
-      from users as u
-      join user_reactions as ur on ur.user_id = u.id
-      where ur.data->>'contentType' = 'contract'
-      group by u.id`,
+      `select user_id, array_agg(distinct data->>'contentId') as contract_ids
+      from user_reactions
+      where data->>'contentType' = 'contract'
+      group by user_id`,
       [],
-      (r) => [r.id as string, r.contract_ids as string[]]
+      (r) => [r.user_id as string, r.contract_ids as string[]]
     )
   )
 
   const groupIds = Object.fromEntries(
     await pg.map(
-      `select u.id, array_agg(gm.group_id) as group_ids
-      from users as u
-      left join group_members as gm on gm.member_id = u.id
-      group by u.id`,
+      `select member_id, array_agg(group_id) as group_ids
+      from group_members
+      group by member_id`,
       [],
-      (r) => [r.id as string, r.group_ids as string[]]
+      (r) => [r.member_id as string, r.group_ids as string[]]
     )
   )
 
