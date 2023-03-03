@@ -1,16 +1,16 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { Query, CollectionReference } from 'firebase-admin/firestore'
-import { uniq } from 'lodash'
+import { CollectionReference } from 'firebase-admin/firestore'
 
 import { invokeFunction, loadPaginated } from 'shared/utils'
 import { newEndpointNoAuth } from '../api/helpers'
 import { getMarketRecommendations } from 'common/recommendation'
-import { run } from 'common/supabase/utils'
-import { mapAsyncChunked } from 'common/util/promise'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
+import { bulkUpsert } from 'shared/supabase/utils'
 
 const firestore = admin.firestore()
 
@@ -27,7 +27,12 @@ export const scheduleUpdateRecommended = functions.pubsub
   })
 
 export const updaterecommended = newEndpointNoAuth(
-  { timeoutSeconds: 3600, memory: '8GiB', minInstances: 0 },
+  {
+    timeoutSeconds: 3600,
+    memory: '8GiB',
+    minInstances: 0,
+    secrets: ['SUPABASE_PASSWORD'],
+  },
   async (_req) => {
     await updateRecommendedMarkets()
     return { success: true }
@@ -35,11 +40,13 @@ export const updaterecommended = newEndpointNoAuth(
 )
 
 export const updateRecommendedMarkets = async () => {
+  const pg = createSupabaseDirectClient()
+
   console.log('Loading contracts...')
   const contracts = await loadContracts()
 
   console.log('Loading user data...')
-  const userData = await loadUserDataForRecommendations()
+  const userData = await loadUserDataForRecommendations(pg)
 
   console.log('Computing recommendations...')
 
@@ -65,110 +72,105 @@ export const updateRecommendedMarkets = async () => {
 
   console.log('Writing recommendations to Supabase...')
 
-  const db = createSupabaseClient()
-  await run(db.from('user_recommendation_features').upsert(userFeatureRows))
-  await run(
-    db.from('contract_recommendation_features').upsert(contractFeatureRows)
+  await bulkUpsert(
+    pg,
+    'user_recommendation_features',
+    'user_id',
+    userFeatureRows
   )
-
+  await bulkUpsert(
+    pg,
+    'contract_recommendation_features',
+    'contract_id',
+    contractFeatureRows
+  )
   console.log('Done.')
 }
 
-export const loadUserDataForRecommendations = async () => {
-  const userIds = (
-    await loadPaginated(
-      firestore.collection('users').select('id') as Query<{ id: string }>
+export const loadUserDataForRecommendations = async (
+  pg: SupabaseDirectClient
+) => {
+  const uids = await pg.map('select id from users', [], (r) => r.id as string)
+  console.log('Querying', uids.length, 'users')
+
+  const betOnIds = Object.fromEntries(
+    await pg.map(
+      `select u.id, array_agg(ucm.contract_id) as contract_ids
+       from users as u
+       join user_contract_metrics as ucm on ucm.user_id = u.id
+       group by u.id`,
+      [],
+      (r) => [r.id as string, r.contract_ids as string[]]
     )
-  ).map(({ id }) => id)
-
-  console.log('Loaded', userIds.length, 'users')
-
-  return await mapAsyncChunked(
-    userIds,
-    async (userId) => {
-      const betOnIds = (
-        await loadPaginated(
-          firestore
-            .collection('users')
-            .doc(userId)
-            .collection('contract-metrics')
-            .select('contractId') as Query<{ contractId: string }>
-        )
-      ).map(({ contractId }) => contractId)
-
-      const swipeData = await loadPaginated(
-        admin
-          .firestore()
-          .collection('private-users')
-          .doc(userId)
-          .collection('seenMarkets')
-          .select('id') as Query<{ id: string }>
-      )
-      const swipedIds = uniq(swipeData.map(({ id }) => id))
-
-      const viewedCardIds = uniq(
-        (
-          await loadPaginated(
-            firestore
-              .collection('users')
-              .doc(userId)
-              .collection('events')
-              .where('name', '==', 'view market card')
-              .select('contractId') as Query<{ contractId: string }>
-          )
-        ).map(({ contractId }) => contractId)
-      )
-
-      const viewedPageIds = uniq(
-        (
-          await loadPaginated(
-            firestore
-              .collection('users')
-              .doc(userId)
-              .collection('events')
-              .where('name', '==', 'view market')
-              .select('contractId') as Query<{ contractId: string }>
-          )
-        ).map(({ contractId }) => contractId)
-      )
-
-      const likedIds = uniq(
-        (
-          await loadPaginated(
-            admin
-              .firestore()
-              .collection('users')
-              .doc(userId)
-              .collection('reactions')
-              .where('contentType', '==', 'contract')
-              .select('contentId') as Query<{ contentId: string }>
-          )
-        ).map(({ contentId }) => contentId)
-      )
-
-      const groupMemberSnap = await admin
-        .firestore()
-        .collectionGroup('groupMembers')
-        .where('userId', '==', userId)
-        .select()
-        .get()
-      const groupIds = uniq(
-        filterDefined(
-          groupMemberSnap.docs.map((doc) => doc.ref.parent.parent?.id)
-        )
-      )
-      return {
-        userId,
-        betOnIds,
-        swipedIds,
-        viewedCardIds,
-        viewedPageIds,
-        likedIds,
-        groupIds,
-      }
-    },
-    10
   )
+
+  const swipedIds = Object.fromEntries(
+    await pg.map(
+      `select u.id, array_agg(usm.contract_id) as contract_ids
+      from users as u
+      join user_seen_markets as usm on usm.user_id = u.id
+      group by u.id`,
+      [],
+      (r) => [r.id as string, r.contract_ids as string[]]
+    )
+  )
+
+  const viewedCardIds = Object.fromEntries(
+    await pg.map(
+      `select u.id, array_agg(distinct ue.data->>'contractId') as contract_ids
+      from users as u
+      join user_events as ue on ue.user_id = u.id
+      where ue.data->>'name' = 'view market card'
+      group by u.id`,
+      [],
+      (r) => [r.id as string, r.contract_ids as string[]]
+    )
+  )
+
+  const viewedPageIds = Object.fromEntries(
+    await pg.map(
+      `select u.id, array_agg(distinct ue.data->>'contractId') as contract_ids
+      from users as u
+      join user_events as ue on ue.user_id = u.id
+      where ue.data->>'name' = 'view market'
+      group by u.id`,
+      [],
+      (r) => [r.id as string, r.contract_ids as string[]]
+    )
+  )
+
+  const likedIds = Object.fromEntries(
+    await pg.map(
+      `select u.id, array_agg(distinct ur.data->>'contentId') as contract_ids
+      from users as u
+      join user_reactions as ur on ur.user_id = u.id
+      where ur.data->>'contentType' = 'contract'
+      group by u.id`,
+      [],
+      (r) => [r.id as string, r.contract_ids as string[]]
+    )
+  )
+
+  const groupIds = Object.fromEntries(
+    await pg.map(
+      `select u.id, array_agg(gm.group_id) as group_ids
+      from users as u
+      left join group_members as gm on gm.member_id = u.id
+      group by u.id`,
+      [],
+      (r) => [r.id as string, r.group_ids as string[]]
+    )
+  )
+
+  return uids.map((userId) => ({
+    userId,
+    betOnIds: betOnIds[userId],
+    swipedIds: swipedIds[userId],
+    viewedCardIds: viewedCardIds[userId],
+    viewedPageIds: viewedPageIds[userId],
+    likedIds: likedIds[userId],
+    groupIds: groupIds[userId],
+  }))
 }
 
 export const loadContracts = async () => {
