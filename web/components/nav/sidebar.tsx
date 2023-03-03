@@ -3,11 +3,9 @@ import {
   CashIcon,
   DeviceMobileIcon,
   HomeIcon,
-  LightningBoltIcon,
   LogoutIcon,
   ScaleIcon,
   SearchIcon,
-  UserGroupIcon,
 } from '@heroicons/react/outline'
 import { GiftIcon, MapIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -21,7 +19,6 @@ import { CreateQuestionButton } from 'web/components/buttons/create-question-but
 import NotificationsIcon from 'web/components/notifications-icon'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout } from 'web/lib/firebase/users'
-import DiscordOutlineIcon from 'web/lib/icons/discord-outline-icon'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
