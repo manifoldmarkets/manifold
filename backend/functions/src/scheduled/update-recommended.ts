@@ -159,12 +159,12 @@ export const loadUserDataForRecommendations = async (
 
   return uids.map((userId) => ({
     userId,
-    betOnIds: betOnIds[userId],
-    swipedIds: swipedIds[userId],
-    viewedCardIds: viewedCardIds[userId],
-    viewedPageIds: viewedPageIds[userId],
-    likedIds: likedIds[userId],
-    groupIds: groupIds[userId],
+    betOnIds: betOnIds[userId] ?? [],
+    swipedIds: swipedIds[userId] ?? [],
+    viewedCardIds: viewedCardIds[userId] ?? [],
+    viewedPageIds: viewedPageIds[userId] ?? [],
+    likedIds: likedIds[userId] ?? [],
+    groupIds: groupIds[userId] ?? [],
   }))
 }
 
