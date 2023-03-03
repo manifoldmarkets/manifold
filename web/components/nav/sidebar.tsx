@@ -168,16 +168,16 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
   }
 
   return buildArray(
-    { name: 'Referrals', href: '/referrals' },
-    { name: 'Groups', href: '/groups' },
-    { name: 'Charity', href: '/charity' },
+    // { name: 'Referrals', href: '/referrals' },
+    // { name: 'Groups', href: '/groups' },
+    // { name: 'Charity', href: '/charity' },
     { name: 'Directory', href: '/directory' },
     // { name: 'Blog', href: 'https://news.manifold.markets' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    {
-      name: 'Help & About',
-      href: 'https://help.manifold.markets/',
-    },
+    // { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    // {
+    //   name: 'Help & About',
+    //   href: 'https://help.manifold.markets/',
+    // },
     loggedIn && { name: 'Sign out', onClick: logout }
   )
 }
