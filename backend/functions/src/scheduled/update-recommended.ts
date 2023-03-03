@@ -44,7 +44,7 @@ export const updateRecommendedMarkets = async () => {
   console.log('Computing recommendations...')
 
   const { userIds, userFeatures, contractIds, contractFeatures } =
-    getMarketRecommendations(contracts, userData, 2500)
+    getMarketRecommendations(contracts, userData, 2000)
 
   const userFeatureRows = userFeatures.map((features, i) => ({
     user_id: userIds[i],
