@@ -283,11 +283,7 @@ const PositionRow = memo(function PositionRow(props: {
       >
         <Avatar size={'sm'} avatarUrl={userAvatarUrl} username={userUsername} />
         {userName && userUsername ? (
-          <UserLink
-            short={isMobile}
-            name={userName}
-            username={userUsername}
-          />
+          <UserLink short={isMobile} name={userName} username={userUsername} />
         ) : (
           <span>Loading..</span>
         )}
