@@ -23,7 +23,7 @@ export function AddLiquidityButton(props: {
       className={clsx(
         buttonClass('2xs', 'override'),
         'cursor-pointer',
-        'gap-1 border-2 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white',
+        'hover:text-ink-0 gap-1 border-2 border-blue-400 text-blue-400 hover:bg-blue-400',
         className
       )}
       onClick={() => setOpen(true)}

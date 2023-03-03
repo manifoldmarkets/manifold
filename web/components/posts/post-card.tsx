@@ -26,7 +26,7 @@ export function PostCard(props: {
     <Card
       className={clsx(
         'group relative flex gap-2 py-2 px-4',
-        highlight && '!bg-indigo-100 outline outline-2 outline-indigo-400'
+        highlight && '!bg-primary-100 outline-primary-400 outline outline-2'
       )}
     >
       <Col className="w-full gap-1">
@@ -38,24 +38,24 @@ export function PostCard(props: {
               size={4}
             />
             <UserLink
-              className="text-sm text-gray-400"
+              className="text-ink-400 text-sm"
               name={post.creatorName}
               username={post.creatorUsername}
             />
-            <span className="mx-1 text-gray-400">•</span>
-            <span className="text-gray-400">{fromNow(post.createdTime)}</span>
+            <span className="text-ink-400 mx-1">•</span>
+            <span className="text-ink-400">{fromNow(post.createdTime)}</span>
           </Row>
           {pinned && <FeaturedPill label={post.featuredLabel} />}
         </Row>
-        <div className="text-md mb-1 font-medium text-gray-900">
+        <div className="text-md text-ink-900 mb-1 font-medium">
           {post.title}
         </div>
         <Linkify
-          className="line-clamp-5 text-sm text-gray-600"
+          className="line-clamp-5 text-ink-600 text-sm"
           text={richTextToString(post.content)}
         />
         <Row className="gap-2 pt-1">
-          <Row className="gap-1 text-sm text-gray-400">
+          <Row className="text-ink-400 gap-1 text-sm">
             <div className="font-semibold">{post.commentCount ?? 0}</div>
             <div className="font-normal">comments</div>
           </Row>
@@ -126,7 +126,7 @@ export function PostCardList(props: {
       {limit && limit != 0 && posts.length > limit && (
         <div className="flex justify-center">
           <button
-            className="text-sm font-semibold text-indigo-700"
+            className="text-primary-700 text-sm font-semibold"
             onClick={() => setShownPosts(posts)}
           >
             Show all

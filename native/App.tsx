@@ -97,6 +97,10 @@ const App = () => {
     isIOS ? LinkingManager.default : null
   )
 
+  // UI
+  const [backgroundColor, setBackgroundColor] = useState('rgba(255,255,255,1)')
+  const [theme, setTheme] = useState<'dark' | 'light'>('light')
+
   const setUrlWithNativeQuery = (endpoint?: string) => {
     const newUrl = baseUri + (endpoint ?? '/home') + nativeQuery
     log('Setting new url', newUrl)
@@ -360,6 +364,10 @@ const App = () => {
         title,
         message,
       })
+    } else if (type === 'theme') {
+      const { theme, backgroundColor } = payload
+      setBackgroundColor(backgroundColor)
+      setTheme(theme)
     } else {
       log('Unhandled nativeEvent.data: ', data)
     }
@@ -386,6 +394,7 @@ const App = () => {
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
+      backgroundColor: backgroundColor,
     },
     webView: {
       display: webViewAndUserLoaded ? 'flex' : 'none',
@@ -419,7 +428,11 @@ const App = () => {
       )}
 
       <SafeAreaView style={styles.container}>
-        <StatusBar animated={true} style={'dark'} hidden={false} />
+        <StatusBar
+          animated={true}
+          style={theme === 'dark' ? 'light' : 'dark'}
+          hidden={false}
+        />
 
         <View style={[styles.container, { position: 'relative' }]}>
           <ExternalWebView
@@ -466,7 +479,7 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
-      <ExportLogsButton />
+      {/*<ExportLogsButton />*/}
     </>
   )
 }

@@ -1,15 +1,16 @@
+import { Analytics } from '@vercel/analytics/react'
 import type { AppProps } from 'next/app'
-import { useEffect } from 'react'
 import Head from 'next/head'
+import Script from 'next/script'
+import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
-import Welcome from 'web/components/onboarding/welcome'
 import { NativeMessageListener } from 'web/components/native-message-listener'
-import { Analytics } from '@vercel/analytics/react'
-import '../styles/globals.css'
-import { useHasLoaded } from 'web/hooks/use-has-loaded'
+import Welcome from 'web/components/onboarding/welcome'
 import { SearchProvider } from 'web/components/search/search-context'
-import Script from 'next/script'
+import { useDarkMode } from 'web/hooks/use-dark-mode'
+import { useHasLoaded } from 'web/hooks/use-has-loaded'
+import '../styles/globals.css'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -34,6 +35,7 @@ type ManifoldPageProps = { auth?: AuthUser }
 function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
+  useDarkMode()
 
   return (
     <>
@@ -63,7 +65,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         <meta name="twitter:site" content="@manifoldmarkets" />
         <meta
           name="twitter:image"
-          content="https://manifold.markets/logo-bg-white.png"
+          content="https://manifold.markets/logo-white.png"
           key="image2"
         />
         <meta

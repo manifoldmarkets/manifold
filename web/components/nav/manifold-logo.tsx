@@ -32,8 +32,8 @@ export function ManifoldLogo(props: {
         ) : twoLine ? (
           <div
             className={clsx(
-              'font-major-mono mt-1 text-lg lowercase text-gray-900',
-              darkBackground && 'text-white'
+              'font-major-mono text-ink-900 mt-1 text-lg lowercase',
+              darkBackground && 'text-ink-1000'
             )}
           >
             Manifold
@@ -43,8 +43,8 @@ export function ManifoldLogo(props: {
         ) : (
           <div
             className={clsx(
-              'font-major-mono mt-2 text-2xl lowercase text-gray-900 md:whitespace-nowrap',
-              darkBackground && 'text-white'
+              'font-major-mono text-ink-900 mt-2 text-2xl lowercase md:whitespace-nowrap',
+              darkBackground && 'text-ink-1000'
             )}
           >
             Manifold Markets

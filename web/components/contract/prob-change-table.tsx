@@ -36,10 +36,10 @@ export function ProbChangeTable(props: {
   ]
 
   if (contracts.length === 0)
-    return <div className="px-4 text-gray-500">None</div>
+    return <div className="text-ink-500 px-4">None</div>
 
   return (
-    <Col className="w-full divide-y-[0.5px] rounded-sm border-[0.5px] bg-white">
+    <Col className="bg-canvas-0 divide-ink-300 border-ink-300 w-full divide-y-[0.5px] rounded-sm border-[0.5px]">
       {contracts.map((contract) => (
         <ContractWithProbChange key={contract.id} contract={contract} />
       ))}
@@ -68,8 +68,7 @@ const ContractWithProbChange = forwardRef(
     } = contract
 
     const isClosed = closeTime && closeTime < Date.now()
-    const textColor =
-      isClosed && !isResolved ? 'text-gray-500' : 'text-gray-900'
+    const textColor = isClosed && !isResolved ? 'text-ink-500' : 'text-ink-900'
 
     const probChangeToday = probChanges?.day ?? 0
 
@@ -84,7 +83,7 @@ const ContractWithProbChange = forwardRef(
         href={contractPath(contract)}
         className={clsx(
           'group flex flex-col gap-1 whitespace-nowrap px-4 py-3 lg:flex-row lg:gap-2',
-          'focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
+          'focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
           className
         )}
       >
@@ -159,7 +158,7 @@ export function ProfitChangeCardsTable(props: {
   ).slice(0, maxRows)
 
   if (positive.length === 0 && negative.length === 0)
-    return <div className="px-4 text-gray-500">None</div>
+    return <div className="text-ink-500 px-4">None</div>
 
   return (
     <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
@@ -197,7 +196,7 @@ export function ProbOrNumericChange(props: {
 
   if (Math.abs(change * 100) >= 1) {
     return (
-      <div className="mr-1 flex items-center justify-center whitespace-nowrap rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">
+      <div className="bg-ink-200 mr-1 flex items-center justify-center whitespace-nowrap rounded-full px-2 py-1 text-xs font-semibold">
         {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
       </div>
     )

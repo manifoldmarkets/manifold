@@ -26,7 +26,7 @@ export function Linkify(props: { text: string; className?: string }) {
     return (
       <>
         {whitespace}
-        <SiteLink className="text-indigo-700" href={href} followsLinkClass>
+        <SiteLink className="text-primary-700" href={href} followsLinkClass>
           {symbol}
           {tag}
         </SiteLink>

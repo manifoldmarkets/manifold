@@ -6,22 +6,21 @@ import { getUsersContractMetricsOrderedByProfit } from 'common/supabase/contract
 import { createWeeklyPortfolioUpdateNotification } from '../create-notification'
 import { getUsernameById } from 'common/supabase/users'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
-import { DAY_MS } from 'common/util/time'
-import { getPortfolioHistories } from 'common/supabase/portfolio-metrics'
 import { PrivateUser } from 'common/user'
 
 const firestore = admin.firestore()
 const now = new Date()
 const time = now.getTime()
-const date = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
-
-// Saving metrics should work until 60k users
+const getDateSlug = () =>
+  `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
+const USERS_TO_SAVE = 300
+// Saving metrics should work until our users are greater than USERS_TO_SAVE * 2*60 users
 export const saveWeeklyContractMetrics = functions
   .runWith({ memory: '4GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 60 })
-  // every minute for 2 hours Friday 2am PT (UTC -08:00)
-  .pubsub.schedule('* 10-12 * * 5')
+  // every minute for 2 hours Friday 4am PT (UTC -08:00)
+  .pubsub.schedule('* 13-14 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await saveWeeklyContractMetricsInternal()
@@ -29,8 +28,8 @@ export const saveWeeklyContractMetrics = functions
 
 export const sendWeeklyPortfolioUpdate = functions
   .runWith({ memory: '8GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 540 })
-  // every Friday at 12pm PT (UTC -06:00)
-  .pubsub.schedule('0 18 * * 5')
+  // every Friday at 12pm PT (UTC -08:00)
+  .pubsub.schedule('0 20 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await sendWeeklyPortfolioUpdateNotifications()
@@ -49,52 +48,49 @@ export const saveWeeklyContractMetricsInternal = async () => {
     )
     .get()
   const privateUsers = users.docs.map((doc) => doc.data() as PrivateUser)
-  const snap = await firestore
+
+  // This is a lot of reads on firebase, we should save these in supabase instead
+  const alreadyUpdatedSnap = await firestore
     .collectionGroup(`weekly-update`)
-    .where('rangeEndDateSlug', '==', date)
+    .where('rangeEndDateSlug', '==', getDateSlug())
     .get()
 
-  // get the parent ref is the user id
-  const weeklyUpdatedUsers = snap.docs.map((doc) => doc.ref.parent.parent?.id)
+  // The parent ref is the user id
+  const weeklyUpdatedUsers = alreadyUpdatedSnap.docs.map(
+    (doc) => doc.ref.parent.parent?.id
+  )
   log('already updated users', weeklyUpdatedUsers.length, 'at', time)
   // filter out the users who have already had their weekly update saved
   const usersToSave = privateUsers
     .filter((user) => !weeklyUpdatedUsers.includes(user.id))
-    .slice(0, 500)
+    .slice(0, USERS_TO_SAVE)
 
   log('usersToSave', usersToSave.length)
   if (usersToSave.length === 0) return
 
-  const allContractMetricsByUsers =
-    await getUsersContractMetricsOrderedByProfit(
-      usersToSave.map((u) => u.id),
-      db,
-      'week'
-    )
-  const allPortfolioMetrics = await getPortfolioHistories(
+  // TODO: try out the new rpc call
+  const usersToContractMetrics = await getUsersContractMetricsOrderedByProfit(
     usersToSave.map((u) => u.id),
-    time - 7 * DAY_MS,
-    db
+    db,
+    'week'
   )
-  // If the function doesn't complete, filter by those who haven't had their weekly update saved yet
+  if (Object.keys(usersToContractMetrics).length === 0) {
+    log('Error: no contract metrics to save')
+    return
+  }
+
   const results = sortBy(
     await Promise.all(
-      usersToSave.map(async (user) => {
-        const portfolioMetrics = (allPortfolioMetrics[user.id] ?? []).map(
-          (p) => ({
-            x: p.timestamp,
-            y: p.balance + p.investmentValue - p.totalDeposits,
-          })
-        )
-        const contractMetrics = allContractMetricsByUsers[user.id]
+      usersToSave.map(async (privateUser) => {
+        const user = await getUser(privateUser.id)
+        const contractMetrics = usersToContractMetrics[privateUser.id]
         return {
           contractMetrics,
-          userId: user.id,
-          weeklyProfit: sum(
-            contractMetrics.map((m) => m.from?.week.profit ?? 0)
-          ),
-          rangeEndDateSlug: date,
-          profitPoints: portfolioMetrics,
+          userId: privateUser.id,
+          weeklyProfit:
+            user?.profitCached.weekly ??
+            sum(contractMetrics.map((m) => m.from?.week.profit ?? 0)),
+          rangeEndDateSlug: getDateSlug(),
           createdTime: time,
         } as Omit<WeeklyPortfolioUpdate, 'id'>
       })
@@ -136,14 +132,9 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
   let count = 0
   await Promise.all(
     privateUsers.map(async (privateUser) => {
-      const snap = await firestore
-        .collection(`users/${privateUser.id}/weekly-update`)
-        .where('rangeEndDateSlug', '==', date)
-        .get()
-      if (snap.empty) return
-      const update = orderBy(snap.docs, (d) => -d.data().createdTime)[0]
-      const { weeklyProfit, rangeEndDateSlug, contractMetrics } =
-        update.data() as WeeklyPortfolioUpdate
+      const data = await getUsersWeeklyUpdate(privateUser.id, getDateSlug())
+      if (!data) return
+      const { weeklyProfit, rangeEndDateSlug, contractMetrics } = data
       // Don't send update if there are no contracts
       count++
       if (count % 100 === 0)
@@ -157,4 +148,14 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
       )
     })
   )
+}
+
+const getUsersWeeklyUpdate = async (userId: string, dateSlug: string) => {
+  const snap = await firestore
+    .collection(`users/${userId}/weekly-update`)
+    .where('rangeEndDateSlug', '==', dateSlug)
+    .get()
+  if (snap.empty) return
+  const update = orderBy(snap.docs, (d) => -d.data().createdTime)[0]
+  return update.data() as WeeklyPortfolioUpdate
 }

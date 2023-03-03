@@ -55,12 +55,7 @@ async function backfillContractFollowers() {
         .doc(followerId)
         .set({ id: followerId, createdTime: Date.now() })
     }
-    // Perhaps handled by the trigger?
-    // const followerCount = followerIds.length
-    // await firestore
-    //   .collection(`contracts`)
-    //   .doc(contract.id)
-    //   .update({ followerCount: followerCount })
+
     count += 1
     if (count % 100 === 0) {
       console.log(`${count} contracts processed`)

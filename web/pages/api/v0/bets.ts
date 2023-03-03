@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { Bet, getBets } from 'web/lib/firebase/bets'
+import { Bet } from 'common/bet'
+import { getBet, getBets } from 'web/lib/supabase/bets'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { getUserByUsername } from 'web/lib/firebase/users'
 import { ApiError, ValidationError } from './_types'
@@ -52,6 +53,21 @@ const getUserId = async (params: z.infer<typeof queryParams>) => {
   }
 }
 
+// mqp: this pagination approach is technically incorrect if multiple bets
+// have the exact same createdTime, but that's very unlikely
+
+const getBeforeTime = async (params: z.infer<typeof queryParams>) => {
+  if (params.before) {
+    const beforeBet = await getBet(params.before)
+    if (beforeBet == null) {
+      throw new Error('Bet specified in before parameter not found.')
+    }
+    return beforeBet.createdTime
+  } else {
+    return undefined
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Bet[] | ValidationError | ApiError>
@@ -69,12 +85,13 @@ export default async function handler(
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
 
-  const { limit, before } = params
-  const [userId, contractId] = await Promise.all([
+  const { limit } = params
+  const [userId, contractId, beforeTime] = await Promise.all([
     getUserId(params),
     getContractId(params),
+    getBeforeTime(params),
   ])
-  const bets = await getBets({ userId, contractId, limit, before })
+  const bets = await getBets({ userId, contractId, beforeTime, limit })
 
   res.setHeader('Cache-Control', 'max-age=15, public')
   return res.status(200).json(bets)

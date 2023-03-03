@@ -93,7 +93,7 @@ export function MiniUserFollowButton(props: {
     return (
       <CheckCircleIcon
         className={clsx(
-          'text-highlight-blue h-5 w-5 rounded-full bg-white',
+          'text-highlight-blue bg-canvas-0 h-5 w-5 rounded-full',
           className
         )}
         aria-label="followed"
@@ -116,7 +116,7 @@ export function MiniUserFollowButton(props: {
     >
       <PlusCircleIcon
         className={clsx(
-          'text-highlight-blue hover:text-hover-blue h-5 w-5 rounded-full bg-white'
+          'text-highlight-blue hover:text-hover-blue bg-canvas-0 h-5 w-5 rounded-full'
         )}
         aria-hidden
       />

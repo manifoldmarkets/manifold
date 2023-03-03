@@ -1,40 +1,37 @@
-import React, { useState } from 'react'
 import {
-  CashIcon,
-  HomeIcon,
-  SearchIcon,
   BookOpenIcon,
-  LogoutIcon,
-  HeartIcon,
-  LightningBoltIcon,
+  CashIcon,
   DeviceMobileIcon,
+  HomeIcon,
+  LogoutIcon,
   ScaleIcon,
-  UserGroupIcon,
-  TicketIcon,
-  BeakerIcon,
+  SearchIcon,
 } from '@heroicons/react/outline'
+import { GiftIcon, MapIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { buildArray } from 'common/util/array'
 import Router, { useRouter } from 'next/router'
+import { useState } from 'react'
+import { AddFundsModal } from 'web/components/add-funds-modal'
+import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
+import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
+import NotificationsIcon from 'web/components/notifications-icon'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout } from 'web/lib/firebase/users'
+import TrophyIcon from 'web/lib/icons/trophy-icon'
+import { withTracking } from 'web/lib/service/analytics'
+import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
+import { SignInButton } from '../buttons/sign-in-button'
+import { DarkModeSwitch } from '../dark-mode-switch'
+import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
-import { ProfileSummary } from './profile-menu'
-import NotificationsIcon from 'web/components/notifications-icon'
-import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
-import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
-import { withTracking } from 'web/lib/service/analytics'
-import { buildArray } from 'common/util/array'
-import { SignInButton } from '../buttons/sign-in-button'
-import { SidebarItem } from './sidebar-item'
 import { MoreButton } from './more-button'
-import { Row } from '../layout/row'
-import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
+import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
-import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
-import TrophyIcon from 'web/lib/icons/trophy-icon'
-import DiscordOutlineIcon from 'web/lib/icons/discord-outline-icon'
-import { Spacer } from '../layout/spacer'
+import { SidebarItem } from './sidebar-item'
 
 export default function Sidebar(props: {
   className?: string
@@ -47,9 +44,10 @@ export default function Sidebar(props: {
 
   const user = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
   const navOptions = isMobile
-    ? getMobileNav()
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(!!isMobile, !!user)
@@ -65,7 +63,7 @@ export default function Sidebar(props: {
     >
       <ManifoldLogo className="pt-6" twoLine />
       {logoSubheading && (
-        <Row className="pl-2 text-2xl text-indigo-700 sm:mt-3">
+        <Row className="text-primary-700 pl-2 text-2xl sm:mt-3">
           {logoSubheading}
         </Row>
       )}
@@ -88,6 +86,9 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
+        <div className="px-2 py-1">
+          <DarkModeSwitch />
+        </div>
         {user === null && (
           <SignInButton key="sign-in-button" className="mt-3" />
         )}
@@ -108,6 +109,10 @@ export default function Sidebar(props: {
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
       </div>
+      <AddFundsModal
+        open={isAddFundsModalOpen}
+        setOpen={setIsAddFundsModalOpen}
+      />
     </nav>
   )
 }
@@ -154,56 +159,55 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
   }
 
   return buildArray(
-    { name: 'Referrals', href: '/referrals' },
-    { name: 'Groups', href: '/groups' },
-    { name: 'Charity', href: '/charity' },
-    { name: 'Labs', href: '/labs' },
+    // { name: 'Referrals', href: '/referrals' },
+    // { name: 'Groups', href: '/groups' },
+    // { name: 'Charity', href: '/charity' },
+    { name: 'Sitemap', href: '/sitemap' },
     // { name: 'Blog', href: 'https://news.manifold.markets' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    {
-      name: 'Help & About',
-      href: 'https://help.manifold.markets/',
-    },
+    // { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    // {
+    //   name: 'Help & About',
+    //   href: 'https://help.manifold.markets/',
+    // },
     loggedIn && { name: 'Sign out', onClick: logout }
   )
 }
 
 // No sidebar when signed out
-const getMobileNav = () => {
+const getMobileNav = (toggleModal: () => void) => {
   if (IS_PRIVATE_MANIFOLD) {
     return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
   }
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
-    { name: 'Live', href: '/live', icon: LightningBoltIcon },
+    // { name: 'Live', href: '/live', icon: LightningBoltIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
-    { name: 'Get mana', href: '/add-funds', icon: CashIcon },
-    {
-      name: 'Groups',
-      href: '/groups',
-      icon: UserGroupIcon,
-    },
-    { name: 'Charity', href: '/charity', icon: HeartIcon },
-    { name: 'Labs', href: '/labs', icon: BeakerIcon },
-    { name: 'Referrals', href: '/referrals', icon: TicketIcon }
+    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
+    { name: 'Referrals', icon: GiftIcon, href: '/referrals' },
+    { name: 'Sitemap', icon: MapIcon, href: '/sitemap' }
+    // {
+    //   name: 'Groups',
+    //   href: '/groups',
+    //   icon: UserGroupIcon,
+    // }
   )
 }
 
 const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
   buildArray(
-    loggedIn &&
-      isMobile && {
-        name: 'Help & About',
-        href: 'https://help.manifold.markets/',
-        icon: BookOpenIcon,
-      },
-    !IS_PRIVATE_MANIFOLD &&
-      loggedIn &&
-      isMobile && {
-        name: 'Discord',
-        href: 'https://discord.gg/eHQBNBqXuh',
-        icon: DiscordOutlineIcon,
-      },
+    // loggedIn &&
+    //   isMobile && {
+    //     name: 'Help & About',
+    //     href: 'https://help.manifold.markets/',
+    //     icon: BookOpenIcon,
+    //   },
+    // !IS_PRIVATE_MANIFOLD &&
+    //   loggedIn &&
+    //   isMobile && {
+    //     name: 'Discord',
+    //     href: 'https://discord.gg/eHQBNBqXuh',
+    //     icon: DiscordOutlineIcon,
+    //   },
 
     isMobile &&
       loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }

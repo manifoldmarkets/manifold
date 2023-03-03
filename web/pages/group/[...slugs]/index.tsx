@@ -55,7 +55,7 @@ import { addContractToGroup } from 'web/lib/firebase/api'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
 
-export const groupButtonClass = 'text-gray-700 hover:text-gray-800'
+export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -178,7 +178,7 @@ export default function GroupPage(props: {
           group={group}
           user={user}
           userRole={'admin'}
-          className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
+          className="fill-ink-0 fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
         />
       )}
       {user &&
@@ -190,7 +190,7 @@ export default function GroupPage(props: {
             group={group}
             user={user}
             userRole={userRole ?? undefined}
-            className="fixed bottom-16 right-2 z-50 fill-white lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
+            className="fill-ink-0 fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
           />
         )}
       {isMobile && (
@@ -213,9 +213,9 @@ export default function GroupPage(props: {
             key={group.id}
           />
         </div>
-        <Col className="absolute bottom-0 w-full bg-white bg-opacity-80 px-4">
+        <Col className="bg-canvas-0 absolute bottom-0 w-full bg-opacity-80 px-4">
           <Row className="mt-4 mb-2 w-full justify-between gap-1">
-            <div className="text-2xl font-normal text-gray-900 sm:text-3xl">
+            <div className="text-ink-900 text-2xl font-normal sm:text-3xl">
               {group.name}
             </div>
             <Col className="justify-end">
@@ -304,7 +304,7 @@ export default function GroupPage(props: {
               title: 'Leaderboards',
               content: (
                 <Col>
-                  <div className="mb-4 text-gray-500">
+                  <div className="text-ink-500 mb-4">
                     Updated every 15 minutes
                   </div>
                   <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
@@ -357,11 +357,11 @@ export function TopGroupNavBar(props: {
   )
   const router = useRouter()
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200">
-      <Row className="items-center justify-between gap-2 bg-white px-2">
+    <header className="border-ink-200 sticky top-0 z-50 w-full border-b">
+      <Row className="bg-canvas-0 items-center justify-between gap-2 px-2">
         <div className="flex flex-1">
           <button
-            className="py-4 px-2 text-indigo-700 hover:text-gray-500"
+            className="hover:text-ink-500 text-primary-700 py-4 px-2"
             onClick={() => router.back()}
           >
             <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
@@ -369,7 +369,7 @@ export function TopGroupNavBar(props: {
         </div>
         <h1
           className={clsx(
-            'truncate text-lg font-medium text-indigo-700 transition-all duration-500',
+            'text-primary-700 truncate text-lg font-medium transition-all duration-500',
             transitionClass
           )}
         >
@@ -493,8 +493,8 @@ function AddContractButton(props: {
         onClick={() => setOpen(true)}
         className="drop-shadow hover:drop-shadow-lg"
       >
-        <div className="relative h-12 w-12 rounded-full bg-white">
-          <PlusCircleIcon className="absolute -left-2 -top-2 h-16 w-16 text-indigo-700 drop-shadow" />
+        <div className="bg-canvas-0 relative h-12 w-12 rounded-full">
+          <PlusCircleIcon className="text-primary-700 absolute -left-2 -top-2 h-16 w-16 drop-shadow" />
         </div>
       </IconButton>
       <AddMarketToGroupModal

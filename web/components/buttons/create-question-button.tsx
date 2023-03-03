@@ -9,7 +9,7 @@ export const CreateQuestionButton = () => {
       href="/create"
       className={clsx(
         buttonClass('xl', 'gradient'),
-        'mt-4 w-full bg-gradient-to-r !px-3'
+        'mt-4 w-full bg-gradient-to-r !px-3 text-white'
       )}
     >
       Create a market

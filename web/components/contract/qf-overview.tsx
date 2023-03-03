@@ -95,7 +95,7 @@ export function QfExplainer() {
       coming from the matching pool. See{' '}
       <SiteLink
         followsLinkClass
-        className="text-indigo-700"
+        className="text-primary-700"
         href="https://vitalik.ca/general/2019/12/07/quadratic.html"
       >
         this primer
@@ -165,7 +165,7 @@ function QfPayPanel(props: {
   const deltaMatch = newMatch - oldMatch
 
   return (
-    <Col className="sm:max-w-84 gap-4 !rounded-md bg-white !px-8 !py-6">
+    <Col className="sm:max-w-84 bg-canvas-0 gap-4 !rounded-md !px-8 !py-6">
       {/* Add information about the answer */}
       <Row className="justify-between">
         <div className="text-2xl">Fund "{answer.text}"</div>
@@ -189,7 +189,7 @@ function QfPayPanel(props: {
       />
 
       {deltaMatch > 0 && (
-        <Row className="mt-8 items-baseline gap-1.5 text-gray-500">
+        <Row className="text-ink-500 mt-8 items-baseline gap-1.5">
           <div className="text-2xl">{formatMoney(deltaMatch)}</div>
           match{' '}
           <InfoTooltip text="Quadratic match. May decrease as other entries get funding." />
@@ -236,7 +236,7 @@ function QfAnswer(props: {
     <Col
       className={clsx(
         'relative w-full rounded-lg transition-all',
-        tradingAllowed(contract) ? 'text-gray-900' : 'text-gray-500'
+        tradingAllowed(contract) ? 'text-ink-900' : 'text-ink-500'
       )}
       style={{
         background: `linear-gradient(to right, ${color}90 ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
@@ -272,7 +272,7 @@ function QfAnswer(props: {
             </Button>
           )}
           {/* <button className="p-1" onClick={() => {}}>
-            <ChatIcon className="h-5 w-5 text-gray-400 transition-colors hover:text-gray-600" />
+            <ChatIcon className="h-5 w-5 text-ink-400 transition-colors hover:text-ink-600" />
           </button> */}
         </Row>
       </Row>

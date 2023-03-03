@@ -11,7 +11,7 @@ import { Row } from './layout/row';
 import { Title } from './title';
 
 function Chip(props: { text: string }) {
-  return <div className="rounded-full bg-red-500 text-white px-2 py-0.5 text-sm mr-1 animate-[popInS_0.2s_ease-in-out_forwards]">{props.text}</div>;
+  return <div className="text-ink-0 mr-1 animate-[popInS_0.2s_ease-in-out_forwards] rounded-full bg-red-500 px-2 py-0.5 text-sm">{props.text}</div>;
 }
 
 function ControlURL(props: { removeRequested: () => void; field: Field; onUpdate: () => void }) {
@@ -27,30 +27,30 @@ function ControlURL(props: { removeRequested: () => void; field: Field; onUpdate
     onUpdate();
   };
   return (
-    <Row className="gap-1 items-center animate-[popInS_0.4s_ease-in-out_forwards]">
+    <Row className="animate-[popInS_0.4s_ease-in-out_forwards] items-center gap-1">
       <Row className="w-full items-center">
         {field.channelName && <Chip text={field.channelName} />}
         <input
           placeholder="Dock URL"
           value={field.text}
-          className="grow border rounded-md border-gray-300 bg-white px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none placeholder:text-gray-200"
+          className="border-ink-300 placeholder:text-ink-200 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 disabled:border-ink-200 disabled:bg-ink-50 disabled:text-ink-500 grow rounded-md border px-2 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 disabled:shadow-none"
           onChange={onUpdateURL}
           disabled={field.disabled}
         />
       </Row>
-      <div className={clsx('relative group', !field.disabled && 'cursor-pointer')} onClick={!field.disabled ? removeRequested : undefined}>
-        <div className={clsx('absolute opacity-0 w-6 h-6 transition-opacity', !field.disabled && 'group-hover:opacity-100')}>
-          <XCircleIcon className="absolute fill-gray-500 animate-[popIn_0.2s_ease-in-out_forwards]" />
+      <div className={clsx('group relative', !field.disabled && 'cursor-pointer')} onClick={!field.disabled ? removeRequested : undefined}>
+        <div className={clsx('absolute h-6 w-6 opacity-0 transition-opacity', !field.disabled && 'group-hover:opacity-100')}>
+          <XCircleIcon className="fill-ink-500 absolute animate-[popIn_0.2s_ease-in-out_forwards]" />
         </div>
-        <div className={clsx('transition-opacity peer w-6 h-6', !field.disabled && 'group-hover:opacity-0')}>
+        <div className={clsx('peer h-6 w-6 transition-opacity', !field.disabled && 'group-hover:opacity-0')}>
           {field.state === State.CHECKING ? (
-            <div className="absolute w-6 h-6 flex items-center justify-center">
-              <div className="border-gray-400 border-2 rounded-full !border-t-transparent border-solid w-4 h-4 animate-spin"></div>
+            <div className="absolute flex h-6 w-6 items-center justify-center">
+              <div className="border-ink-400 h-4 w-4 animate-spin rounded-full border-2 border-solid !border-t-transparent"></div>
             </div>
           ) : field.state === State.VALID ? (
             <CheckIcon className="fill-primary animate-[popIn_0.2s_ease-in-out_forwards]" />
           ) : field.state === State.INVALID ? (
-            <XIcon className="fill-red-500 animate-[popIn_0.2s_ease-in-out_forwards]" />
+            <XIcon className="animate-[popIn_0.2s_ease-in-out_forwards] fill-red-500" />
           ) : (
             <></>
           )}
@@ -138,7 +138,7 @@ export function ModalGroupControl(props: { sw: SocketWrapper<Socket>; open: bool
   };
 
   return (
-    <Modal open={open} setOpen={setOpen} size={'lg'} className="rounded-md bg-white p-4">
+    <Modal open={open} setOpen={setOpen} size={'lg'} className="bg-canvas-0 rounded-md p-4">
       <Title text="Dock control URLs" className="!mt-2" />
       <Col className="gap-2">
         {fields.current.map((f, index) => (
@@ -146,9 +146,9 @@ export function ModalGroupControl(props: { sw: SocketWrapper<Socket>; open: bool
         ))}
         {fields.current.length < 10 && (
           <div className="flex flex-col items-center">
-            <div className="relative w-7 h-7 group cursor-pointer">
-              <PlusCircleIcon className="absolute stroke-gray-300 opacity-100 group-hover:opacity-0 transition-all" onClick={addNewLine} />
-              <PlusCircleIconSolid className="absolute opacity-0 group-hover:opacity-100 fill-gray-300 transition-all" onClick={addNewLine} />
+            <div className="group relative h-7 w-7 cursor-pointer">
+              <PlusCircleIcon className="stroke-ink-300 absolute opacity-100 transition-all group-hover:opacity-0" onClick={addNewLine} />
+              <PlusCircleIconSolid className="fill-ink-300 absolute opacity-0 transition-all group-hover:opacity-100" onClick={addNewLine} />
             </div>
           </div>
         )}

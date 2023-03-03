@@ -25,7 +25,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { DepthChart } from './depth-chart'
 
-export function LimitBets(props: {
+export function YourOrders(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   bets: LimitBet[]
   className?: string
@@ -42,22 +42,17 @@ export function LimitBets(props: {
   if (yourBets.length === 0) return null
 
   return (
-    <Col
-      className={clsx(
-        className,
-        'mt-4 gap-2 overflow-hidden rounded bg-white py-3 sm:px-4'
-      )}
-    >
-      <Row className="mt-2 mb-4 items-center justify-between">
+    <Col className={clsx(className, 'gap-2 overflow-hidden')}>
+      <Row className="items-center justify-between">
         <Subtitle className="!my-0">Your orders</Subtitle>
       </Row>
 
-      <LimitOrderTable limitBets={yourBets} contract={contract} isYou={true} />
+      <OrderTable limitBets={yourBets} contract={contract} isYou={true} />
     </Col>
   )
 }
 
-export function LimitOrderTable(props: {
+export function OrderTable(props: {
   limitBets: LimitBet[]
   contract: CPMMBinaryContract | PseudoNumericContract
   isYou: boolean
@@ -108,7 +103,7 @@ export function LimitOrderTable(props: {
         </thead>
         <tbody>
           {limitBets.map((bet) => (
-            <LimitBet
+            <OrderRow
               key={bet.id}
               bet={bet}
               contract={contract}
@@ -122,7 +117,7 @@ export function LimitOrderTable(props: {
   )
 }
 
-function LimitBet(props: {
+function OrderRow(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   bet: LimitBet
   isYou: boolean
@@ -220,7 +215,7 @@ export function OrderBookButton(props: {
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="rounded bg-white p-4 py-6">
+        <Col className="bg-canvas-0 rounded p-4 py-6">
           <Title className="flex">
             Order book{' '}
             <InfoTooltip
@@ -230,13 +225,13 @@ export function OrderBookButton(props: {
           </Title>
           <DepthChart contract={contract} yesBets={yesBets} noBets={noBets} />
           <Row className="mt-2 items-start justify-around gap-2">
-            <LimitOrderTable
+            <OrderTable
               limitBets={yesBets}
               contract={contract}
               isYou={false}
               side="YES"
             />
-            <LimitOrderTable
+            <OrderTable
               limitBets={noBets}
               contract={contract}
               isYou={false}

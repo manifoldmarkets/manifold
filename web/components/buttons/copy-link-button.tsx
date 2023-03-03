@@ -77,11 +77,13 @@ export function CopyLinkButton(props: {
   return (
     <Row
       className={clsx(
-        'items-center rounded border bg-gray-50 text-sm text-gray-500 transition-colors duration-700',
-        bgPressed ? 'bg-indigo-50 text-indigo-500 transition-none' : ''
+        'bg-canvas-50 text-ink-500 items-center rounded border text-sm transition-colors duration-700',
+        bgPressed ? 'bg-primary-50 text-primary-500 transition-none' : ''
       )}
     >
-      <div className="ml-3 w-full select-all truncate">{displayUrl ?? url}</div>
+      <div className="ml-3 w-full max-w-xs select-all truncate sm:max-w-full">
+        {displayUrl ?? url}
+      </div>
       <Button onClick={onClick} />
     </Row>
   )

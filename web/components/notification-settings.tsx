@@ -201,12 +201,12 @@ export function NotificationSettings(props: {
     return (
       <Row
         className={clsx(
-          'my-1 gap-1 text-gray-300',
-          highlight ? 'rounded-md bg-indigo-100 p-1' : ''
+          'text-ink-300 my-1 gap-1',
+          highlight ? 'bg-primary-100 rounded-md p-1' : ''
         )}
       >
         <Col className="ml-3 gap-2 text-sm">
-          <Row className="gap-2 font-medium text-gray-700">
+          <Row className="text-ink-700 gap-2 font-medium">
             <span>{description}</span>
           </Row>
           <Row className={'gap-4'}>
@@ -299,18 +299,18 @@ export function NotificationSettings(props: {
     return (
       <Col className={clsx('ml-2 gap-2')}>
         <Row
-          className={'mt-1 cursor-pointer items-center gap-2 text-gray-600'}
+          className={'text-ink-600 mt-1 cursor-pointer items-center gap-2'}
           onClick={() => setExpanded(!expanded)}
         >
           {icon}
           <span>{label}</span>
 
           {expanded ? (
-            <ChevronUpIcon className="h-5 w-5 text-xs text-gray-500">
+            <ChevronUpIcon className="text-ink-500 h-5 w-5 text-xs">
               Hide
             </ChevronUpIcon>
           ) : (
-            <ChevronDownIcon className="h-5 w-5 text-xs text-gray-500">
+            <ChevronDownIcon className="text-ink-500 h-5 w-5 text-xs">
               Show
             </ChevronDownIcon>
           )}
@@ -360,8 +360,8 @@ export function NotificationSettings(props: {
       !rejectedPushNotificationsOn
     ) {
       return (
-        <Row className="items-center justify-center font-medium text-gray-700">
-          <span className={'rounded-md bg-gray-100 p-2'}>
+        <Row className="text-ink-700 items-center justify-center font-medium">
+          <span className={'bg-ink-100 rounded-md p-2'}>
             You haven't enabled mobile push notifications.
             <Button
               size={'2xs'}
@@ -383,8 +383,8 @@ export function NotificationSettings(props: {
 
     // Otherwise, they rejected the system modal, so they've to re-enable it in their settings
     return (
-      <Row className="items-center justify-center text-sm text-gray-700">
-        <span className={'rounded-md bg-gray-100 p-2'}>
+      <Row className="text-ink-700 items-center justify-center text-sm">
+        <span className={'bg-ink-100 rounded-md p-2'}>
           Mobile push notifications are disabled. To enable them, go to your
           phone's notification settings.
         </span>
@@ -396,10 +396,10 @@ export function NotificationSettings(props: {
     <div className={'p-2'}>
       <Col className={'gap-6'}>
         <PushNotificationsBanner privateUser={privateUser} />
-        <Row className={'gap-2 text-xl text-gray-700'}>
+        <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>Notifications for Watched Markets</span>
           <InformationCircleIcon
-            className="-mb-1 h-5 w-5 cursor-pointer text-gray-500"
+            className="text-ink-500 -mb-1 h-5 w-5 cursor-pointer"
             onClick={() => setShowWatchModal(true)}
           />
         </Row>
@@ -413,7 +413,7 @@ export function NotificationSettings(props: {
           data={answers}
         />
         <Section icon={<UserIcon className={'h-6 w-6'} />} data={yourMarkets} />
-        <Row className={'gap-2 text-xl text-gray-700'}>
+        <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>Balance Changes</span>
         </Row>
         <Section
@@ -424,7 +424,7 @@ export function NotificationSettings(props: {
           icon={<CashIcon className={'h-6 w-6'} />}
           data={otherBalances}
         />
-        <Row className={'gap-2 text-xl text-gray-700'}>
+        <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>General</span>
         </Row>
         <Section

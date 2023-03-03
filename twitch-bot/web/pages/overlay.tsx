@@ -326,7 +326,7 @@ export default () => {
       >
         <div id="content" className={clsx('fixed inset-0 overflow-hidden', styles.border)}>
           <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} className="bg-opacity-100" />
-          <Col className={clsx('absolute inset-0 bg-[#212121] leading-[normal] text-white')} style={{ fontSize: 'calc(min(70px, 4.5vw))' }}>
+          <Col className={clsx('text-ink-0 absolute inset-0 bg-[#212121] leading-[normal]')} style={{ fontSize: 'calc(min(70px, 4.5vw))' }}>
             <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
               <div id="question" className="shrink grow pr-[0.5em] text-center"></div>
               <Col className="min-w-[5.2em] items-center justify-center justify-self-end">
@@ -348,7 +348,7 @@ export default () => {
                   </div>
                 </Col>
               </Col>
-              <Col className="text-center overflow-hidden">
+              <Col className="overflow-hidden text-center">
                 <div
                   style={{
                     backgroundImage: 'url(logo-white.svg)',
@@ -384,7 +384,7 @@ export default () => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Col className="absolute inset-0 bg-[#212121] leading-[normal] text-white">
+                <Col className="text-ink-0 absolute inset-0 bg-[#212121] leading-[normal]">
                   <Col className="flex grow items-center justify-center text-6xl font-bold">
                     <div>Resolved</div>
                     {resolvedData.outcome === ResolutionOutcome.YES ? (
@@ -407,7 +407,7 @@ export default () => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Col className="absolute inset-0 bg-[#212121] p-4 font-bold leading-[normal] text-white">
+                <Col className="text-ink-0 absolute inset-0 bg-[#212121] p-4 font-bold leading-[normal]">
                   <Row className="justify-between">
                     <Row className="items-center text-3xl">
                       <div>Resolved</div>

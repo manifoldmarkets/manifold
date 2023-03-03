@@ -56,7 +56,7 @@ export function FilterSelectUsers(props: {
         <>
           <div className="relative mt-1 rounded-md">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <UserIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <UserIcon className="text-ink-400 h-5 w-5" aria-hidden="true" />
             </div>
             <Input
               type="text"
@@ -88,7 +88,7 @@ export function FilterSelectUsers(props: {
               >
                 <Menu.Items
                   static={true}
-                  className="absolute right-0 mt-2 w-full origin-top-right cursor-pointer divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                  className="divide-ink-100 bg-canvas-0 ring-ink-1000 absolute right-0 mt-2 w-full origin-top-right cursor-pointer divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
                 >
                   <div className="py-1">
                     {filteredUsers.map((user) => (
@@ -97,8 +97,8 @@ export function FilterSelectUsers(props: {
                           <span
                             className={clsx(
                               active
-                                ? 'bg-gray-100 text-gray-900'
-                                : 'text-gray-700',
+                                ? 'bg-ink-100 text-ink-900'
+                                : 'text-ink-700',
                               'group flex items-center px-4 py-2 text-sm'
                             )}
                             onClick={() => {
@@ -158,7 +158,7 @@ export function FilterSelectUsers(props: {
                       ...selectedUsers.filter(({ id }) => id != user.id),
                     ])
                   }
-                  className=" h-5 w-5 cursor-pointer text-gray-400"
+                  className=" text-ink-400 h-5 w-5 cursor-pointer"
                   aria-hidden="true"
                 />
               </div>

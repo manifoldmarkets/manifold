@@ -127,7 +127,7 @@ export function PrivacyStatusView(props: {
       className={clsx(
         'cursor-pointer rounded-lg py-2 px-4',
         isSelected
-          ? 'bg-gradient-to-br from-indigo-100 to-transparent ring-2 ring-indigo-500'
+          ? 'from-primary-100 ring-primary-500 bg-gradient-to-br to-transparent ring-2'
           : '',
         size == 'md' ? 'gap-1' : ''
       )}
@@ -145,7 +145,7 @@ export function PrivacyStatusView(props: {
           {status}
         </Row>
       )}
-      <p className="text-sm text-gray-700">{descriptor}</p>
+      <p className="text-ink-700 text-sm">{descriptor}</p>
     </Col>
   )
 }

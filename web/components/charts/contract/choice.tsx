@@ -24,15 +24,15 @@ import { buildArray } from 'common/util/array'
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
 export const CHOICE_ANSWER_COLORS = [
-  '#97C1EB',
-  '#F39F83',
-  '#F9EBA5',
-  '#FFC7D2',
-  '#C7ECFF',
-  '#8CDEC7',
-  '#DBE96F',
+  '#77AADDB3',
+  '#EE8866B3',
+  '#EEDD88B3',
+  '#FFAABBB3',
+  '#99DDFFB3',
+  '#44BB99B3',
+  '#BBCC33B3',
 ]
-export const CHOICE_OTHER_COLOR = '#CCC'
+export const CHOICE_OTHER_COLOR = '#B1B1C7B3'
 export const CHOICE_ALL_COLORS = [...CHOICE_ANSWER_COLORS, CHOICE_OTHER_COLOR]
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
@@ -116,7 +116,7 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
               {item.label}
             </span>
           </Row>
-          <span className="text-gray-600">{item.value}</span>
+          <span className="text-ink-600">{item.value}</span>
         </li>
       ))}
     </ol>

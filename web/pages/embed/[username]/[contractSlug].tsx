@@ -25,13 +25,12 @@ import { track } from 'web/lib/service/analytics'
 import { useContract } from 'web/hooks/use-contracts'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
-import { OrderByDirection } from 'firebase/firestore'
 import { useUser } from 'web/hooks/use-user'
 import {
   HistoryPoint,
   useSingleValueHistoryChartViewScale,
 } from 'web/components/charts/generic-charts'
-import { listBets } from 'web/lib/firebase/bets'
+import { getBets, getBetFields } from 'web/lib/supabase/bets'
 import { NoSEO } from 'web/components/NoSEO'
 import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
 
@@ -46,22 +45,29 @@ async function getHistoryData(contract: Contract) {
   if (contract.outcomeType === 'NUMERIC') {
     return null
   }
-  const bets = await listBets({
-    contractId: contract.id,
-    ...CONTRACT_BET_LOADING_OPTS,
-    limit: 10000,
-    order: 'desc' as OrderByDirection,
-  })
   switch (contract.outcomeType) {
     case 'BINARY':
     case 'PSEUDO_NUMERIC':
       // We could include avatars in the embed, but not sure it's worth it
-      const points = bets.map((bet) => ({
+      const points = (
+        await getBetFields(['createdTime', 'probAfter'], {
+          contractId: contract.id,
+          ...CONTRACT_BET_LOADING_OPTS,
+          limit: 50000,
+          order: 'desc',
+        })
+      ).map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
       }))
       return { points } as HistoryData
     default: // choice contracts
+      const bets = await getBets({
+        contractId: contract.id,
+        ...CONTRACT_BET_LOADING_OPTS,
+        limit: 50000,
+        order: 'desc',
+      })
       return { bets } as HistoryData
   }
 }
@@ -195,10 +201,10 @@ function ContractSmolView(props: {
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
   const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
-  const questionColor = textColor ?? 'rgb(67, 56, 202)' // text-indigo-700
+  const questionColor = textColor ?? 'rgb(67, 56, 202)' // text-primary-700
 
   return (
-    <Col className="h-[100vh] w-full bg-white p-4">
+    <Col className="bg-canvas-0 h-[100vh] w-full p-4">
       <Row className="justify-between gap-4">
         <div>
           <a
@@ -250,8 +256,8 @@ const Details = (props: { contract: Contract }) => {
     props.contract
 
   return (
-    <div className="relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-400">
-      <span className="flex gap-1 text-gray-600">
+    <div className="text-ink-400 relative right-0 mt-2 flex flex-wrap items-center gap-4 text-xs">
+      <span className="text-ink-600 flex gap-1">
         <Avatar
           size="2xs"
           avatarUrl={creatorAvatarUrl}

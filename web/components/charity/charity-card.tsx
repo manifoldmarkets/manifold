@@ -21,11 +21,11 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
       <Card className="!rounded-2xl">
         <Row className="mt-6 mb-2">{tags?.includes('New') && <NewBadge />}</Row>
         <div className="px-8">
-          <figure className="relative h-32">
+          <figure className="relative h-32 bg-white">
             {photo ? (
               <Image src={photo} alt="" layout="fill" objectFit="contain" />
             ) : (
-              <div className="h-full w-full bg-gradient-to-r from-slate-300 to-indigo-200" />
+              <div className="to-primary-200 from-ink-300 h-full w-full bg-gradient-to-r" />
             )}
           </figure>
         </div>
@@ -33,7 +33,7 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
           <div className="line-clamp-4 text-sm">{preview}</div>
           {raised > 0 && (
             <>
-              <Row className="mt-4 flex-1 items-end justify-center gap-6 text-gray-900">
+              <Row className="text-ink-900 mt-4 flex-1 items-end justify-center gap-6">
                 <Row className="items-baseline gap-1">
                   <span className="text-3xl font-semibold">
                     {formatMoneyUSD(raised / 100)}
@@ -41,7 +41,7 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
                   raised
                 </Row>
                 {/* {match && (
-                <Col className="text-gray-500">
+                <Col className="text-ink-500">
                   <span className="text-xl">+{formatUsd(match)}</span>
                   <span className="">match</span>
                 </Col>
@@ -57,7 +57,7 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
 
 function NewBadge() {
   return (
-    <span className="inline-flex items-center gap-1 bg-blue-100 px-3 py-0.5 text-sm font-medium text-indigo-700">
+    <span className="text-primary-700 inline-flex items-center gap-1 bg-blue-100 px-3 py-0.5 text-sm font-medium">
       <StarIcon className="h-4 w-4" aria-hidden="true" /> New
     </span>
   )

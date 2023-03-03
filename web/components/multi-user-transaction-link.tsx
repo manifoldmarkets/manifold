@@ -25,7 +25,7 @@ export function MultiUserTransactionLink(props: {
     <span>
       <button
         className={
-          'bg-transparent font-semibold transition-colors hover:text-indigo-500'
+          'hover:text-primary-500 bg-transparent font-semibold transition-colors'
         }
         onClick={(e) => {
           e.stopPropagation()
@@ -54,7 +54,7 @@ export function MultiUserTransactionModal(props: {
   const { userInfos, modalLabel, open, setOpen, short } = props
   return (
     <Modal open={open} setOpen={setOpen} size={'sm'}>
-      <Col className="relative items-start gap-4 rounded-md bg-white p-6">
+      <Col className="bg-canvas-0 text-ink-1000 relative items-start gap-4 rounded-md p-6">
         <span className={'sticky top-0 text-xl'}>{modalLabel}</span>
         {userInfos == null ? (
           <LoadingIndicator />

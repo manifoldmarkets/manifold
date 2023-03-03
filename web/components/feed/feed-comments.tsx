@@ -142,7 +142,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       className={clsx(
         commentKind,
         'gap-2',
-        highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
+        highlighted ? 'bg-primary-50' : 'hover:bg-canvas-50'
       )}
     >
       <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
@@ -173,7 +173,7 @@ function HideableContent(props: { comment: ContractComment }) {
   const [showHidden, setShowHidden] = useState(false)
   return comment.hidden && !showHidden ? (
     <div
-      className="hover text-sm font-thin italic text-gray-600 hover:cursor-pointer"
+      className="hover text-ink-600 text-sm font-thin italic hover:cursor-pointer"
       onClick={() => {
         setShowHidden(!showHidden)
       }}
@@ -196,6 +196,7 @@ export function CommentActions(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
   const isAdmin = useAdmin()
+  const isContractCreator = user?.id === contract.creatorId
 
   return (
     <Row className="grow items-center justify-end">
@@ -252,7 +253,7 @@ export function CommentActions(props: {
               else toast.error(`You can't report your own comment`)
             },
           },
-          isAdmin && {
+          (isAdmin || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
@@ -293,7 +294,7 @@ export const FeedComment = memo(function FeedComment(props: {
       id={comment.id}
       className={clsx(
         'ml-9 gap-2 ',
-        highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
+        highlighted ? 'bg-primary-50' : 'hover:bg-canvas-50'
       )}
     >
       <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
@@ -403,9 +404,9 @@ export function FeedCommentHeader(props: {
   }
   const shouldDisplayOutcome = betOutcome && !comment.answerOutcome
   return (
-    <span className="mt-0.5 text-sm text-gray-600">
+    <span className="text-ink-600 mt-0.5 text-sm">
       <UserLink username={userUsername} name={userName} />
-      <span className="ml-1 text-gray-400">
+      <span className="text-ink-400 ml-1">
         <CommentStatus contract={contract} comment={comment} />
         {bought} {money}
         {shouldDisplayOutcome && (

@@ -5,13 +5,17 @@ import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { Dictionary, range } from 'lodash'
+import { Dictionary, mapValues, range, sortBy } from 'lodash'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
-import { useEffect, useState } from 'react'
 import { getUserBetsFromResolvedContracts } from 'web/lib/supabase/bets'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { ContractMention } from 'web/components/contract/contract-mention'
+import { formatMoney } from 'common/util/format'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { useState } from 'react'
+import { Row } from 'web/components/layout/row'
+import clsx from 'clsx'
 
 export const getStaticProps = async (props: {
   params: {
@@ -21,9 +25,27 @@ export const getStaticProps = async (props: {
   const { username } = props.params
   const user = await getUserByUsername(username)
 
+  const bets = user
+    ? await getUserBetsFromResolvedContracts(user.id, 25000)
+    : []
+  const { yesBuckets, noBuckets, yesBetsBuckets, noBetsBuckets } =
+    getCalibrationPoints(bets)
+
+  const yesPoints = getXY(yesBuckets)
+  const noPoints = getXY(noBuckets)
+
+  const score = calculateScore(yesBuckets, noBuckets)
+
   return {
-    props: { user },
-    revalidate: 60, // Regenerate after 60 second
+    props: {
+      user,
+      yesPoints,
+      noPoints,
+      score,
+      yesBetsBuckets,
+      noBetsBuckets,
+    },
+    revalidate: 60 * 60, // Regenerate after an hour
   }
 }
 
@@ -31,91 +53,141 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function CalibrationPage(props: { user: User | null }) {
-  const { user } = props
+export default function CalibrationPage(props: {
+  user: User | null
+  yesPoints: { x: number[]; y: number[] }
+  noPoints: { x: number[]; y: number[] }
+  yesBetsBuckets: Record<number, [Contract, Bet][]>
+  noBetsBuckets: Record<number, [Contract, Bet][]>
+  score: number
+}) {
+  const { user, yesPoints, noPoints, score } = props
   const domain = range(0, 1.01, 0.01)
-
-  const [yesProbBuckets, setYesProbBuckets] = useState<Dictionary<number>>({})
-  const [noProbBuckets, setNoProbBuckets] = useState<Dictionary<number>>({})
-
-  const isLoading = Object.keys(yesProbBuckets).length === 0
-
-  const score = !isLoading
-    ? calculateScore(yesProbBuckets, noProbBuckets)
-    : undefined
-
-  useEffect(() => {
-    if (!user) return
-
-    getUserBetsFromResolvedContracts(user.id, 25000).then(
-      (betsWithContracts) => {
-        const [yesBuckets, noBuckets] = getCalibrationPoints(betsWithContracts)
-        setYesProbBuckets(yesBuckets)
-        setNoProbBuckets(noBuckets)
-      }
-    )
-  }, [user])
 
   return (
     <Page>
-      <SEO title="Calibration" description="Personal calibration results" />
+      <SEO
+        title={`${user?.name}'s calibration`}
+        description="Personal calibration results"
+      />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
-        <Col className="">
-          <Title>Calibration</Title>
-          {isLoading ? (
-            <LoadingIndicator />
-          ) : (
-            <>
-              <Plot
-                data={[
-                  {
-                    ...getXY(yesProbBuckets),
-                    mode: 'markers',
-                    type: 'scatter',
-                    marker: { color: 'green' },
-                    name: 'YES bets',
-                  },
-                  {
-                    ...getXY(noProbBuckets),
-                    mode: 'markers',
-                    type: 'scatter',
-                    marker: { color: 'red' },
-                    name: 'NO bets',
-                  },
-                  {
-                    x: domain,
-                    y: domain,
-                    mode: 'lines',
-                    type: 'scatter',
-                    marker: { color: 'gray' },
-                    name: 'y=x',
-                  },
-                ]}
-                layout={{
-                  width: 800,
-                  height: 500,
-                  title:
-                    user?.name +
-                    "'s bet calibration" +
-                    (score !== undefined ? ` (score: ${score})` : ''),
-                  xaxis: { title: 'Probability after bet' },
-                  yaxis: { title: 'Resolution probability' },
-                }}
-              />
-              <div className="max-w-2xl text-sm">
-                Interpretation: The green dot at (x%, y%) means when{' '}
-                {user?.name} bet YES at x%, the market resolved YES y% of the
-                time on average. Perfect calibration would result in all green
-                points being above the line, all red points below, and a score
-                of zero. The score is the mean squared error for yes and no
-                bets. Bets are put in buckets with a maximum size of 10%, and
-                buckets are weighted by the size of the bet in mana.
-              </div>
-            </>
-          )}
+        <Col className="max-w-[800px]">
+          <Title>{user?.name}'s calibration</Title>
+
+          <Plot
+            data={[
+              {
+                ...yesPoints,
+                mode: 'markers',
+                type: 'scatter',
+                marker: { color: 'green' },
+                name: 'YES bets',
+              },
+              {
+                ...noPoints,
+                mode: 'markers',
+                type: 'scatter',
+                marker: { color: 'red' },
+                name: 'NO bets',
+              },
+              {
+                x: domain,
+                y: domain,
+                mode: 'lines',
+                type: 'scatter',
+                marker: { color: 'gray' },
+                name: 'y=x',
+              },
+            ]}
+            layout={{
+              title:
+                user?.name +
+                "'s bet calibration" +
+                (score !== undefined ? ` (score: ${score})` : ''),
+              xaxis: { title: 'Probability after bet' },
+              yaxis: { title: 'Resolution probability' },
+            }}
+          />
+
+          <div className="prose prose-sm text-ink-600 my-4 max-w-[800px]">
+            <b>Interpretation</b>
+            <ul>
+              <li>
+                The green dot at (x%, y%) means when {user?.name} bet YES at x%,
+                the market resolved YES y% of the time on average.
+              </li>
+
+              <li>
+                Perfect calibration would result in all green points being above
+                the line, all red points below, and a score of zero.
+              </li>
+
+              <li>
+                The score is the mean squared error for yes and no bets times
+                -100.
+              </li>
+
+              <li>
+                Each point is a bucket of bets weighted by bet amount with a
+                maximum range of 10% (sold bets are excluded).
+              </li>
+            </ul>
+          </div>
+
+          <BetsTable
+            yesBetsBuckets={props.yesBetsBuckets}
+            noBetsBuckets={props.noBetsBuckets}
+          />
         </Col>
       </Col>
     </Page>
+  )
+}
+
+function BetsTable(props: {
+  yesBetsBuckets: Record<number, [Contract, Bet][]>
+  noBetsBuckets: Record<number, [Contract, Bet][]>
+}) {
+  const { yesBetsBuckets, noBetsBuckets } = props
+  const [betsShown, setBetsShown] = useState<'YES' | 'NO'>('YES')
+  const textColor = betsShown === 'YES' ? 'text-teal-600' : 'text-scarlet-600'
+
+  return (
+    <div>
+      <Row className="justify-center">
+        <ChoicesToggleGroup
+          choicesMap={{
+            'YES bets': 'YES',
+            'NO bets': 'NO',
+          }}
+          currentChoice={betsShown}
+          setChoice={(c) => setBetsShown(c as 'YES' | 'NO')}
+          color="indigo"
+        />
+      </Row>
+
+      <div className="text-center text-xs text-gray-400">
+        10 largest bets for each bucket
+      </div>
+
+      {Object.entries(betsShown === 'YES' ? yesBetsBuckets : noBetsBuckets).map(
+        ([p, contractAndBet]) => (
+          <div key={p}>
+            <span className={clsx('text-3xl', textColor)}>{p}%</span>
+            <ul className="mb-8">
+              {contractAndBet.map(([contract, bet]) => (
+                <li key={bet.id}>
+                  <ContractMention contract={contract} />
+                  <span className={clsx('ml-2', textColor)}>
+                    {formatMoney(bet.amount)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      )}
+    </div>
   )
 }
 
@@ -124,9 +196,11 @@ const points = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
   const yesProbBuckets: Dictionary<number> = {}
   const yesCountBuckets: Dictionary<number> = {}
+  const yesBetsBuckets: Record<number, [Contract, Bet][]> = {}
 
   const noProbBuckets: Dictionary<number> = {}
   const noCountBuckets: Dictionary<number> = {}
+  const noBetsBuckets: Record<number, [Contract, Bet][]> = {}
 
   for (const [contract, bets] of betsData) {
     const { resolution } = contract
@@ -134,6 +208,8 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
     const resolvedYES = resolution === 'YES'
 
     for (const bet of bets as Bet[]) {
+      if (bet.amount < 0) continue // skip sales
+
       const rawP = bet.probAfter * 100
 
       // get probability bucket that's closest to a prespecified point
@@ -141,14 +217,16 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
         Math.abs(curr - rawP) < Math.abs(prev - rawP) ? curr : prev
       )
 
-      const w = Math.abs(bet.amount) // weight by bet amount
+      const w = bet.amount // weight by bet amount
 
       if (bet.outcome === 'YES') {
         yesProbBuckets[p] = (yesProbBuckets[p] ?? 0) + (resolvedYES ? w : 0)
         yesCountBuckets[p] = (yesCountBuckets[p] ?? 0) + w
+        yesBetsBuckets[p] = [...(yesBetsBuckets[p] ?? []), [contract, bet]]
       } else {
         noProbBuckets[p] = (noProbBuckets[p] ?? 0) + (resolvedYES ? 0 : w)
         noCountBuckets[p] = (noCountBuckets[p] ?? 0) + w
+        noBetsBuckets[p] = [...(noBetsBuckets[p] ?? []), [contract, bet]]
       }
     }
   }
@@ -163,7 +241,17 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
     }
   }
 
-  return [yesProbBuckets, noProbBuckets]
+  // Return the top 10 bets by amount for each probability bucket
+  function sortAndLimit(contractAndBets: [Contract, Bet][]) {
+    return sortBy(contractAndBets, (cAndB) => -cAndB[1].amount).slice(0, 10)
+  }
+
+  return {
+    yesBuckets: yesProbBuckets,
+    noBuckets: noProbBuckets,
+    yesBetsBuckets: mapValues(yesBetsBuckets, sortAndLimit),
+    noBetsBuckets: mapValues(noBetsBuckets, sortAndLimit),
+  }
 }
 
 const getXY = (probBuckets: Dictionary<number>) => {
@@ -188,19 +276,21 @@ const calculateScore = (
   let n = 0
 
   for (const point of points) {
-    if (yesBuckets[point] !== undefined) {
-      score +=
-        yesBuckets[point] < point ? ((point - yesBuckets[point]) / 100) ** 2 : 0
+    const prob = point / 100
+    const yes = yesBuckets[point]
+    const no = noBuckets[point]
+
+    if (yes !== undefined) {
+      score += yes < prob ? (prob - yes) ** 2 : 0
       n++
     }
 
-    if (noBuckets[point] !== undefined) {
-      score +=
-        noBuckets[point] > point ? ((noBuckets[point] - point) / 100) ** 2 : 0
+    if (no !== undefined) {
+      score += no > prob ? (no - prob) ** 2 : 0
       n++
     }
   }
 
   const raw = score / n
-  return -Math.round(raw * 1e4) / 1e4
+  return (-100 * Math.round(raw * 1e4)) / 1e4
 }

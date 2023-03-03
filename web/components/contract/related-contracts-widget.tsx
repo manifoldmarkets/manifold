@@ -5,79 +5,68 @@ import { memo } from 'react'
 import clsx from 'clsx'
 
 import { useEvent } from 'web/hooks/use-event'
-import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { useIsClient } from 'web/hooks/use-is-client'
 
-export const RelatedContractsWidget = memo(
-  function RecommendedContractsWidget(props: {
-    contract: Contract
-    initialContracts: Contract[]
-    className?: string
-  }) {
-    const { contract, initialContracts, className } = props
-    const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
-      contract,
-      initialContracts
-    )
-
-    if (relatedMarkets.length === 0) {
-      return null
-    }
-    return (
-      <Col className={clsx(className, 'gap-2')}>
-        <RelatedContractsList contracts={relatedMarkets} loadMore={loadMore} />
-      </Col>
-    )
-  }
-)
-
-function RelatedContractsList(props: {
-  contracts: Contract[] | undefined
-  loadMore?: () => void
+export const RelatedContractsList = memo(function RelatedContractsList(props: {
+  contracts: Contract[]
+  loadMore?: () => Promise<void>
   onContractClick?: (contract: Contract) => void
+  className?: string
 }) {
-  const { contracts, loadMore } = props
+  const { contracts, loadMore, onContractClick, className } = props
   const onVisibilityUpdated = useEvent((visible: boolean) => {
     if (visible && loadMore) {
       loadMore()
     }
   })
 
-  if (contracts === undefined) {
-    return <LoadingIndicator />
+  if (contracts.length === 0) {
+    return null
   }
 
   return (
-    <Col>
-      <Col className="divide-y-[0.5px]">
+    <Col className={clsx(className, 'flex-1')}>
+      <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts
           .filter((c) => c.coverImageUrl)
           .map((contract) => (
-            <RelatedContractCard contract={contract} key={contract.id} />
+            <RelatedContractCard
+              contract={contract}
+              key={contract.id}
+              onContractClick={onContractClick}
+            />
           ))}
       </Col>
 
+      <div className="relative">
+        {loadMore && (
+          <VisibilityObserver
+            onVisibilityUpdated={onVisibilityUpdated}
+            className="pointer-events-none absolute bottom-0 h-[75vh] w-full select-none"
+          />
+        )}
+      </div>
       {loadMore && (
         <VisibilityObserver
           onVisibilityUpdated={onVisibilityUpdated}
-          className="relative -top-96 h-1"
+          className="pointer-events-none w-full flex-1 select-none"
         />
       )}
     </Col>
   )
-}
+})
 
 const RelatedContractCard = memo(function RelatedContractCard(props: {
   contract: Contract
+  onContractClick?: (contract: Contract) => void
 }) {
-  const { contract } = props
+  const { contract, onContractClick } = props
   const {
     creatorUsername,
     creatorAvatarUrl,
@@ -93,8 +82,9 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
       href={contractPath(contract)}
       className={clsx(
         'group flex flex-col gap-2 whitespace-nowrap rounded-sm py-3 px-4',
-        'bg-white focus:bg-[#fafaff] lg:hover:bg-[#fafaff]'
+        'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors'
       )}
+      onClick={() => onContractClick?.(contract)}
     >
       <Row className="gap-2">
         <Avatar
@@ -105,7 +95,7 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
         <UserLink
           name={contract.creatorName}
           username={contract.creatorUsername}
-          className="text-sm text-gray-400"
+          className="text-ink-400 text-sm"
           createdTime={creatorCreatedTime}
           noLink={!isClient}
         />
@@ -117,12 +107,12 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
       </Row>
 
       {coverImageUrl && (
-        <div className="relative h-36">
+        <div className="relative h-32">
           <Image
             fill
             alt={question}
             sizes="100vw"
-            className="object-cover"
+            className="object-cover opacity-90"
             src={coverImageUrl ?? ''}
           />
         </div>

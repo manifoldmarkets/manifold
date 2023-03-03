@@ -147,7 +147,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
             {text && (
               <>
                 <Col className="mt-1 w-full gap-2">
-                  <Row className="my-3 justify-between text-left text-sm text-gray-500">
+                  <Row className="text-ink-500 my-3 justify-between text-left text-sm">
                     Bet Amount
                     <span className={'sm:hidden'}>
                       Balance: {formatMoney(user?.balance ?? 0)}
@@ -166,7 +166,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
                 </Col>
                 <Col className="w-full gap-3 sm:max-w-md">
                   <Row className="items-center justify-between text-sm">
-                    <div className="text-gray-500">Probability</div>
+                    <div className="text-ink-500">Probability</div>
                     <Row>
                       <div>{formatPercent(0)}</div>
                       <div className="mx-2">→</div>
@@ -175,7 +175,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
                   </Row>
 
                   <Row className="items-center justify-between gap-4 text-sm">
-                    <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+                    <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
                       <div>
                         Estimated <br /> payout if chosen
                       </div>

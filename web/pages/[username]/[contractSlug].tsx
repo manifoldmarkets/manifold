@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { first } from 'lodash'
+import clsx from 'clsx'
+
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { Col } from 'web/components/layout/col'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -11,12 +13,8 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import {
-  Bet,
-  BetFilter,
-  getTotalBetCount,
-  listBets,
-} from 'web/lib/firebase/bets'
+import { Bet, BetFilter, getTotalBetCount } from 'web/lib/firebase/bets'
+import { getBets } from 'web/lib/supabase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -63,9 +61,13 @@ import Head from 'next/head'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { RelatedContractsWidget } from 'web/components/contract/related-contracts-widget'
+import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
 import { Row } from 'web/components/layout/row'
-import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
+import {
+  getInitialRelatedMarkets,
+  useRelatedMarkets,
+} from 'web/hooks/use-related-contracts'
+import { track } from 'web/lib/service/analytics'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -88,10 +90,10 @@ export async function getStaticPropz(ctx: {
     contract?.outcomeType === 'PSEUDO_NUMERIC'
   // Prioritize newer bets via descending order
   const bets = contractId
-    ? await listBets({
+    ? await getBets({
         contractId,
         ...CONTRACT_BET_FILTER,
-        limit: useBetPoints ? 10000 : 4000,
+        limit: useBetPoints ? 50000 : 4000,
         order: 'desc',
       })
     : []
@@ -296,8 +298,13 @@ export function ContractPageContent(
   })
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
+  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
+    contract,
+    relatedContracts
+  )
+
   return (
-    <Page fullWidth>
+    <Page maxWidth="max-w-[1400px]">
       <ContractSEO contract={contract} points={pointsString} />
       {creatorTwitter && (
         <Head>
@@ -307,12 +314,18 @@ export function ContractPageContent(
 
       {user && <BackRow />}
 
-      <Row className="w-full items-start gap-6">
-        <Col className="max-w-4xl rounded bg-white px-4 py-4 md:px-8 md:py-8 xl:w-[70%]">
+      <Row className="w-full items-start gap-8 self-center">
+        <Col
+          className={clsx(
+            'bg-canvas-0 mb-4 w-full max-w-3xl rounded px-4 py-4 md:px-8 md:py-8 xl:mb-14 xl:w-[70%]',
+            // Keep content in view when scrolling related markets on desktop.
+            'sticky bottom-0 self-end'
+          )}
+        >
           <Col className="gap-3 sm:gap-4">
             <ContractDetails contract={contract} />
             <Linkify
-              className="text-lg text-indigo-700 sm:text-2xl"
+              className="text-primary-700 text-lg sm:text-2xl"
               text={contract.question}
             />
             <ContractOverview
@@ -416,16 +429,22 @@ export function ContractPageContent(
             />
           </div>
         </Col>
-        <RelatedContractsWidget
-          className="hidden max-w-[400px] xl:flex"
-          contract={contract}
-          initialContracts={relatedContracts}
+        <RelatedContractsList
+          className="hidden min-h-full max-w-[375px] xl:flex"
+          contracts={relatedMarkets}
+          onContractClick={(c) =>
+            track('click related market', { contractId: c.id })
+          }
+          loadMore={loadMore}
         />
       </Row>
-      <RelatedContractsWidget
-        className="xl:hidden"
-        contract={contract}
-        initialContracts={relatedContracts}
+      <RelatedContractsList
+        className="max-w-[600px] xl:hidden"
+        contracts={relatedMarkets}
+        onContractClick={(c) =>
+          track('click related market', { contractId: c.id })
+        }
+        loadMore={loadMore}
       />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />

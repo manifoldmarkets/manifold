@@ -30,7 +30,7 @@ export function CreateLinksButton(props: {
   return (
     <>
       <Modal open={open} setOpen={(newOpen) => setOpen(newOpen)}>
-        <Col className="gap-4 rounded-md bg-white px-8 py-6">
+        <Col className="bg-canvas-0 text-ink-1000 gap-4 rounded-md px-8 py-6">
           <CreateManalinkForm
             highlightedSlug={highlightedSlug}
             user={user}
@@ -120,7 +120,7 @@ function CreateManalinkForm(props: {
             <div className="flex flex-auto flex-col">
               <label className="px-1 py-2">Amount</label>
               <div className="relative">
-                <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
+                <span className="text-ink-400 absolute mx-3 mt-3.5 text-sm">
                   {ENV_CONFIG.moneyMoniker}
                 </span>
                 <Input

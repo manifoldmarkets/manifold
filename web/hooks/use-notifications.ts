@@ -1,4 +1,7 @@
-import { Notification } from 'common/notification'
+import {
+  BalanceChangeNotificationTypes,
+  Notification,
+} from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { groupBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
@@ -74,6 +77,13 @@ export function useGroupedNotifications(privateUser: PrivateUser) {
   }, [notifications])
 }
 
+export function useGroupedBalanceChangeNotifications(privateUser: PrivateUser) {
+  const notifications = useNotifications(privateUser) ?? []
+  return useMemo(() => {
+    return groupBalanceChangeNotifications(notifications)
+  }, [notifications])
+}
+
 export function useGroupedUnseenNotifications(privateUser: PrivateUser) {
   const notifications = useUnseenNotifications(privateUser)
   return useMemo(() => {
@@ -83,6 +93,28 @@ export function useGroupedUnseenNotifications(privateUser: PrivateUser) {
 
 function groupNotifications(notifications: Notification[]) {
   const sortedNotifications = sortBy(notifications, (n) => -n.createdTime)
+  const notificationGroupsByDayAndContract = groupBy(
+    sortedNotifications,
+    (notification) =>
+      new Date(notification.createdTime).toDateString() +
+      notification.sourceContractId +
+      notification.sourceTitle
+  )
+
+  return Object.entries(notificationGroupsByDayAndContract).map(
+    ([key, value]) => ({
+      notifications: value,
+      groupedById: key,
+      isSeen: value.some((n) => !n.isSeen),
+    })
+  )
+}
+
+function groupBalanceChangeNotifications(notifications: Notification[]) {
+  const sortedNotifications = sortBy(
+    notifications,
+    (n) => -n.createdTime
+  ).filter((n) => BalanceChangeNotificationTypes.includes(n.reason))
   const notificationGroupsByDayAndContract = groupBy(
     sortedNotifications,
     (notification) =>

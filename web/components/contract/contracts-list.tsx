@@ -22,7 +22,7 @@ import { Avatar } from '../widgets/avatar'
 import { Row } from '../layout/row'
 
 const contractListEntryHighlightClass =
-  'bg-gradient-to-b from-indigo-100 via-white to-white outline outline-2 outline-indigo-400'
+  'bg-gradient-to-b from-primary-100 via-ink-0to-ink-0outline outline-2 outline-primary-400'
 export function ContractsList(props: {
   contracts: Contract[] | undefined
   loadMore?: () => void
@@ -147,10 +147,10 @@ export function SimpleContractList(props: {
   if (!contracts) return <LoadingIndicator />
 
   if (contracts.length === 0)
-    return <div className="px-4 text-gray-500">None</div>
+    return <div className="text-ink-500 px-4">None</div>
 
   return (
-    <Col className="w-full divide-y-[0.5px] rounded-sm border-[0.5px] bg-white">
+    <Col className="bg-canvas-0 divide-ink-300 border-ink-300 w-full divide-y-[0.5px] rounded-sm border-[0.5px]">
       {contracts.map((contract) => (
         <ContractItem key={contract.id} contract={contract} />
       ))}
@@ -178,8 +178,7 @@ const ContractItem = forwardRef(
     } = contract
 
     const isClosed = closeTime && closeTime < Date.now()
-    const textColor =
-      isClosed && !isResolved ? 'text-gray-500' : 'text-gray-900'
+    const textColor = isClosed && !isResolved ? 'text-ink-500' : 'text-ink-900'
 
     return (
       <Link
@@ -192,7 +191,7 @@ const ContractItem = forwardRef(
         href={contractPath(contract)}
         className={clsx(
           'group flex flex-col gap-1 whitespace-nowrap px-4 py-3 lg:flex-row lg:gap-2',
-          'focus:bg-[#fafaff] lg:hover:bg-[#fafaff]',
+          'focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
           className
         )}
       >

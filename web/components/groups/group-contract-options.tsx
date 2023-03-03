@@ -26,7 +26,7 @@ export function GroupContractOptions(props: {
   return (
     <DropdownMenu
       Items={contractOptions}
-      Icon={<DotsVerticalIcon className={clsx('h-5 w-5 text-gray-400')} />}
+      Icon={<DotsVerticalIcon className={clsx('text-ink-400 h-5 w-5')} />}
       menuWidth={'w-52'}
     />
   )

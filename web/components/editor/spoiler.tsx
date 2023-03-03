@@ -17,8 +17,8 @@ const SpoilerComponent = (props: { children: ReactNode }) => {
       onClick={() => setOpen(true)}
       className={
         open
-          ? 'cursor-text rounded-sm bg-gray-200'
-          : 'cursor-pointer select-none rounded-sm bg-gray-600 text-transparent [&_*]:invisible'
+          ? 'bg-ink-200 cursor-text rounded-sm'
+          : 'bg-ink-600 cursor-pointer select-none rounded-sm text-transparent [&_*]:invisible'
       }
     >
       {children}

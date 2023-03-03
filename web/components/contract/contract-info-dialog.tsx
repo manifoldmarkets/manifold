@@ -211,7 +211,7 @@ export const Stats = (props: {
                 <a
                   href={firestoreConsolePath(id)}
                   target="_blank"
-                  className="text-indigo-400"
+                  className="text-primary-400"
                 >
                   {id}
                 </a>
@@ -310,7 +310,7 @@ export function ContractInfoDialog(props: {
         </IconButton>
 
         <Modal open={open} setOpen={setOpen}>
-          <Col className="gap-4 rounded bg-white p-6">
+          <Col className="bg-canvas-0 gap-4 rounded p-6">
             <Row className={'items-center justify-between'}>
               <Title className="!mb-0">This Market</Title>
               <FollowMarketButton contract={contract} user={user} />
@@ -335,7 +335,7 @@ export function ContractInfoDialog(props: {
                             alt=""
                           />
                         ) : (
-                          <div className="flex aspect-square w-[300px] shrink items-center justify-center bg-gray-100 sm:w-[400px]">
+                          <div className="bg-ink-100 flex aspect-square w-[300px] shrink items-center justify-center sm:w-[400px]">
                             No image
                           </div>
                         )}
@@ -373,7 +373,7 @@ export function ContractInfoDialog(props: {
                         className="self-center"
                       />
 
-                      <div className="mt-4 mb-2 text-base text-gray-500">
+                      <div className="text-ink-500 mt-4 mb-2 text-base">
                         Invite traders to participate in this market and earn a{' '}
                         {formatMoney(REFERRAL_AMOUNT)} referral bonus for each
                         new trader that signs up.

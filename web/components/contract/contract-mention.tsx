@@ -23,19 +23,19 @@ export function ContractMention(props: {
       className={clsx('group inline whitespace-nowrap rounded-sm', className)}
       title={isClient ? tooltipLabel(contract) : undefined}
     >
-      <span className="break-anywhere mr-0.5 whitespace-normal font-medium text-gray-900 transition-colors group-hover:text-indigo-500 group-focus:text-indigo-500">
+      <span className="break-anywhere text-ink-900 group-hover:text-primary-500 group-focus:text-primary-500 mr-0.5 whitespace-normal font-medium transition-colors">
         {contract.question}
       </span>
       <span
         className={clsx(
           probTextColor,
-          'inline-flex rounded-full px-2 align-bottom font-semibold ring-1 ring-inset ring-indigo-100 transition-colors group-hover:ring-indigo-200'
+          'ring-primary-100 group-hover:ring-primary-200 inline-flex rounded-full px-2 align-bottom font-semibold ring-1 ring-inset transition-colors'
         )}
       >
         <ContractStatusLabel contract={contract} />
       </span>
       {!contract.resolution && probChange && (
-        <span className="ml-0.5 text-xs text-gray-500">{probChange}</span>
+        <span className="text-ink-500 ml-0.5 text-xs">{probChange}</span>
       )}
       &zwnj;{/* cursor positioning hack */}
     </Link>

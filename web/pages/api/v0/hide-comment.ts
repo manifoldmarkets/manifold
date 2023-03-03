@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { getUserId, initAdmin } from 'web/pages/api/v0/_firebase-utils'
 import { PrivateUser } from 'common/user'
 import { validate } from './_validate'
+import { Contract } from 'common/contract'
 
 export const config = { api: { bodyParser: true } }
 
@@ -29,16 +30,25 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
     origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
     methods: 'POST',
   })
+  const { commentPath } = validate(schema, req.body)
 
   // Get the private-user to verify if user has an admin email
-  // TODO: Consider letting market creators hide comments
   const userId = await getUserId(req, res)
   const privateDoc = await firestore.doc(`private-users/${userId}`).get()
   const privateUser = privateDoc.data() as PrivateUser
-  if (!isAdmin(privateUser.email)) {
-    return res.status(401).json({ error: 'Only admins can hide markets' })
+
+  // Extract contractId from commentPath
+  const contractId = commentPath.split('/')[1]
+  const contractDoc = await firestore.doc(`contracts/${contractId}`).get()
+  const contract = contractDoc.data() as Contract
+  const isContractCreator = contract.creatorId === userId
+
+  if (!isAdmin(privateUser.email) && !isContractCreator) {
+    return res
+      .status(401)
+      .json({ error: 'Only the market creator or an admin can hide markets' })
   }
-  const { commentPath } = validate(schema, req.body)
+
   await hideComment(commentPath, userId)
   return res.status(200).json({ success: true })
 }

@@ -79,8 +79,8 @@ export function CommentsButton(props: {
     <Tooltip text={`Comments`} placement="bottom" className={'z-10'}>
       <button
         className={clsx(
-          'hover:text-gray-600 disabled:opacity-50',
-          color === 'white' ? 'text-white' : 'text-gray-500'
+          'hover:text-ink-600 disabled:opacity-50',
+          color === 'white' ? 'text-ink-1000' : 'text-ink-500'
         )}
         onClick={() => {
           setOpen(true)
@@ -96,7 +96,7 @@ export function CommentsButton(props: {
               className={clsx(
                 'h-5 align-middle disabled:opacity-50',
                 size === 'md' ? 'text-sm' : '',
-                color === 'white' ? 'text-white' : 'text-gray-500'
+                color === 'white' ? 'text-ink-1000' : 'text-ink-500'
               )}
             >
               {comments.length}

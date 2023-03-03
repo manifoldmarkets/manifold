@@ -30,7 +30,7 @@ export function MoreOptionsUserButton(props: { user: User }) {
         />
       </Button>
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
-        <Col className={'rounded-md bg-white p-4'}>
+        <Col className={'bg-canvas-0 text-ink-1000 rounded-md p-4 '}>
           <Title className={'!mb-2 flex justify-between'}>
             {name}
             {isAdmin && (

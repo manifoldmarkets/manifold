@@ -126,17 +126,17 @@ export function ExternalInfoCard(props: {
   const { link, icon, text } = props
   return (
     <Link
-      className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-300 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-all hover:border-indigo-700"
+      className="text-ink-700 border-primary-300 hover:border-primary-700 group flex w-1/3 flex-col items-center gap-1 rounded-xl border px-4 py-2 text-center text-sm drop-shadow-sm transition-all"
       href={link}
       target="_blank"
     >
-      <div className="text-indigo-300 transition-colors group-hover:text-indigo-700">
+      <div className="text-primary-300 group-hover:text-primary-700 transition-colors">
         {icon}
       </div>
       <div>
-        <span className="text-gray-700">{text}</span>
+        <span className="text-ink-700">{text}</span>
         <span>
-          <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-300" />
+          <GoToIcon className="text-primary-300 mb-1 ml-2 inline h-4 w-4" />
         </span>
       </div>
     </Link>
@@ -155,33 +155,33 @@ export function InfoCard(props: {
   return (
     <>
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="rounded-md bg-white px-8 py-6 text-sm font-light md:text-lg">
+        <Col className="bg-canvas-0 text-ink-1000 rounded-md px-8 py-6 text-sm font-light md:text-lg">
           <Title children={text} />
           {modal}
           <Link
             href={link}
-            className="mt-2 text-indigo-700 underline"
+            className="text-primary-700 mt-2 underline"
             target="_blank"
           >
             Learn more{' '}
             <span>
-              <GoToIcon className="mb-1 ml-1 inline h-4 w-4 text-indigo-700" />
+              <GoToIcon className="text-primary-700 mb-1 ml-1 inline h-4 w-4" />
             </span>
           </Link>
         </Col>
       </Modal>
       <button
-        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl border border-indigo-300 px-4 py-2 text-center text-sm text-gray-700 drop-shadow-sm transition-colors hover:border-indigo-700"
+        className="text-ink-700 border-primary-300 hover:border-primary-700 group flex w-1/3 flex-col items-center gap-1 rounded-xl border px-4 py-2 text-center text-sm drop-shadow-sm transition-colors"
         onClick={() => setOpen(true)}
       >
-        <div className="text-indigo-300 transition-colors group-hover:text-indigo-700">
+        <div className="text-primary-300 group-hover:text-primary-700 transition-colors">
           {icon}
         </div>
         <div>
-          <div className="text-gray-700">{text}</div>
+          <div className="text-ink-700">{text}</div>
           {externalLink && (
             <span>
-              <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-300" />
+              <GoToIcon className="text-primary-300 mb-1 ml-2 inline h-4 w-4" />
             </span>
           )}
         </div>
@@ -198,7 +198,7 @@ export function ManaExplainer() {
         src={'/welcome/treasure.png'}
       />
       <div>
-        <span className="mt-4 font-normal text-indigo-700">
+        <span className="text-primary-700 mt-4 font-normal">
           Mana ({ENV_CONFIG.moneyMoniker})
         </span>{' '}
         is Manifold's play money. Use it to create and bet in markets. The more
@@ -219,10 +219,10 @@ export function PredictionMarketExplainer() {
         Manifold, you can create your own prediction market on any question you
         want!
       </p>
-      <div className="mt-4 font-semibold text-gray-400">EXAMPLE</div>
-      <div className="mb-4 border-l-2 border-indigo-700 bg-indigo-50 py-2 px-2 text-sm">
+      <div className="text-ink-400 mt-4 font-semibold">EXAMPLE</div>
+      <div className="border-primary-700 bg-primary-50 mb-4 border-l-2 py-2 px-2 text-sm">
         <p className="mt-2">
-          <span className="font-semibold text-indigo-700">
+          <span className="text-primary-700 font-semibold">
             "Will Democrats win the 2024 US presidential election?"
           </span>
         </p>

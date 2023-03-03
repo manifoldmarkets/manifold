@@ -42,7 +42,7 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
 
   const createPost = (
     <Modal size="xl" open={showCreatePost} setOpen={setShowCreatePost}>
-      <div className="w-full bg-white py-10">
+      <div className="bg-canvas-0 w-full py-10">
         <CreatePostForm group={group} />
       </div>
     </Modal>
@@ -62,7 +62,7 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
       <div className="mt-2">
         <PostCardList posts={posts} />
         {posts.length === 0 && (
-          <div className="text-center text-gray-500">No posts yet</div>
+          <div className="text-ink-500 text-center">No posts yet</div>
         )}
       </div>
     </div>
@@ -208,7 +208,7 @@ export function PinnedItems(props: {
             <div className="py-2" key="plus-circle">
               <Row
                 className={
-                  'relative gap-3 rounded-lg border-4 border-dotted p-2 hover:cursor-pointer hover:bg-gray-100'
+                  'hover:bg-ink-100 relative gap-3 rounded-lg border-4 border-dotted p-2 hover:cursor-pointer'
                 }
               >
                 <button
@@ -216,7 +216,7 @@ export function PinnedItems(props: {
                   onClick={() => setOpen(true)}
                 >
                   <PlusCircleIcon
-                    className="h-12 w-12 text-gray-600"
+                    className="text-ink-600 h-12 w-12"
                     aria-hidden="true"
                   />
                 </button>
@@ -232,7 +232,7 @@ export function PinnedItems(props: {
         setOpen={setOpen}
         title="Pin a post or market"
         description={
-          <div className={'text-md my-4 text-gray-600'}>{modalMessage}</div>
+          <div className={'text-md text-ink-600 my-4'}>{modalMessage}</div>
         }
         onSubmit={onSubmit}
         groups={groups}
@@ -248,9 +248,9 @@ function CrossIcon(props: { onClick: () => void }) {
 
   return (
     <div>
-      <button className=" text-gray-500 hover:text-gray-700" onClick={onClick}>
-        <div className="absolute top-0 left-0 right-0 bottom-0 bg-gray-200 bg-opacity-50">
-          <XCircleIcon className="h-12 w-12 text-gray-600" />
+      <button className=" text-ink-500 hover:text-ink-700" onClick={onClick}>
+        <div className="bg-ink-200 absolute top-0 left-0 right-0 bottom-0 bg-opacity-50">
+          <XCircleIcon className="text-ink-600 h-12 w-12" />
         </div>
       </button>
     </div>

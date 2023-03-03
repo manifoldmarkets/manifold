@@ -555,6 +555,25 @@ export interface Database {
         }
         Returns: number
       }
+      get_contract_metrics_for_contract: {
+        Args: {
+          contractid: string
+        }
+        Returns: {
+          user_id: string
+          contract_metrics: Json
+        }[]
+      }
+      get_contract_metrics_grouped_by_user: {
+        Args: {
+          uids: string[]
+          period: string
+        }
+        Returns: {
+          user_id: string
+          contract_metrics: Json[]
+        }[]
+      }
       get_contract_metrics_with_contracts:
         | {
             Args: {
@@ -610,6 +629,16 @@ export interface Database {
           contract_id: string
           bets: Json[]
           contract: Json
+        }[]
+      }
+      get_portfolio_histories_grouped_by_user_ids_from: {
+        Args: {
+          uids: string[]
+          start: number
+        }
+        Returns: {
+          user_id: string
+          portfolio_metrics: Json[]
         }[]
       }
       get_recommended_contract_scores: {

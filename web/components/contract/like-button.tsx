@@ -134,9 +134,9 @@ export const LikeButton = memo(function LikeButton(props: {
           className={clsx(
             'transition-transform disabled:cursor-not-allowed',
             color === 'white'
-              ? 'text-white disabled:opacity-50'
-              : 'text-gray-500',
-            !disabled && color === 'gray' ? 'hover:text-gray-600' : ''
+              ? 'text-ink-0 disabled:opacity-50'
+              : 'text-ink-500',
+            !disabled && color === 'gray' ? 'hover:text-ink-600' : ''
           )}
           onClick={(e) => e.preventDefault()}
           {...likeLongPress}
@@ -145,11 +145,13 @@ export const LikeButton = memo(function LikeButton(props: {
             {!showTotalLikesUnder && (
               <div
                 className={clsx(
-                  totalLikes > 0 ? 'bg-gray-500' : '',
-                  'absolute rounded-full text-center text-white',
+                  totalLikes > 0 ? 'bg-ink-500' : '',
+                  'text-ink-0 absolute rounded-full text-center',
                   size === 'md' &&
                     '-bottom-1.5 -right-1.5 min-w-[15px] p-[1.5px] text-[10px] leading-3',
-                  size === 'xl' && 'bottom-0 right-0 min-w-[24px] p-0.5 text-sm'
+                  size === 'xl' &&
+                    'bottom-0 right-0 min-w-[24px] p-0.5 text-sm',
+                  isSwipe && 'text-white'
                 )}
               >
                 {totalLikes > 0 ? totalLikes : ''}
@@ -160,7 +162,8 @@ export const LikeButton = memo(function LikeButton(props: {
                 size === 'md' && 'h-5 w-5',
                 size === 'lg' && 'h-8 w-8',
                 size === 'xl' && 'h-12 w-12',
-                liked ? 'fill-pink-400 stroke-pink-400' : ''
+                liked ? 'fill-pink-400 stroke-pink-400' : '',
+                isSwipe ? 'text-white disabled:opacity-50' : ''
               )}
             />
           </div>
@@ -180,7 +183,8 @@ export const LikeButton = memo(function LikeButton(props: {
           className={clsx(
             'h-5 disabled:opacity-50',
             size === 'xl' ? '-mt-3 text-lg' : 'text-sm',
-            color === 'white' ? 'text-white' : 'text-gray-500'
+            color === 'white' ? 'text-ink-1000' : 'text-ink-500',
+            isSwipe && 'text-white'
           )}
         >
           {totalLikes > 0 ? totalLikes : ''}
@@ -275,7 +279,7 @@ function UserLikedPopup(props: {
       })}
       {displayInfos.length > shown.length && (
         <div
-          className="w-full cursor-pointer text-left text-indigo-300 hover:text-indigo-200"
+          className="text-primary-300 hover:text-primary-200 w-full cursor-pointer text-left"
           onClick={onRequestModal}
         >
           & {displayInfos.length - shown.length} more

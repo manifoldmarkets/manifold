@@ -71,7 +71,7 @@ function CharityPage(props: { charity: Charity }) {
       )}
 
       <Col className="mx-1 w-full items-center sm:px-0">
-        <Col className="max-w-2xl rounded bg-white px-8 py-6">
+        <Col className="bg-canvas-0 max-w-2xl rounded px-8 py-6">
           <Title children={name} />
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
@@ -87,7 +87,7 @@ function CharityPage(props: { charity: Charity }) {
               numSupporters={numSupporters}
             />
           </Row>
-          <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
+          <h2 className="text-primary-700 mt-7 mb-2 text-xl">About</h2>
           <CollapsibleContent
             content={description}
             stateKey={`isCollapsed-charity-${charity.id}`}
@@ -120,7 +120,7 @@ function Details(props: {
         </div>
       )}
       {numSupporters > 0 && (
-        <div className="text-gray-500">{numSupporters} supporters</div>
+        <div className="text-ink-500">{numSupporters} supporters</div>
       )}
       <Linkify text={website} />
     </Col>
@@ -164,11 +164,11 @@ function DonationBox(props: {
   }
 
   return (
-    <div className="rounded-lg bg-white py-6 px-8 shadow-lg">
+    <div className="bg-canvas-0 rounded-lg py-6 px-8 shadow-lg">
       <Title>Donate</Title>
       <form onSubmit={onSubmit}>
         <label
-          className="mb-2 block text-sm text-gray-500"
+          className="text-ink-500 mb-2 block text-sm"
           htmlFor="donate-input"
         >
           Amount{' '}
@@ -184,7 +184,7 @@ function DonationBox(props: {
 
         <Col className="mt-3 w-full gap-3">
           <Row className="items-center text-sm xl:justify-between">
-            <span className="mr-1 text-gray-500">{charity.name} receives</span>
+            <span className="text-ink-500 mr-1">{charity.name} receives</span>
             <span>{manaToUSD(amount || 0)}</span>
           </Row>
           {/* TODO: matching pool */}

@@ -61,7 +61,7 @@
     "gridjs-react": "5.1.0",
     "lodash": "4.17.21",
     "nanoid": "^3.3.4",
-    "next": "13.1.0",
+    "next": "13.2.3",
     "plotly.js": "2.18.2",
     "prosemirror-state": "1.4.2",
     "rc-slider": "10.0.1",

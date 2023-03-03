@@ -1,5 +1,3 @@
-import clsx from 'clsx'
-
 import { STARTING_BALANCE } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
@@ -87,7 +85,7 @@ export default function Welcome() {
 
   return (
     <Modal open={open} setOpen={close}>
-      <Col className="place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:text-lg">
+      <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm font-light md:text-lg">
         {availablePages[page]}
         <Col>
           <Row className="mt-2 justify-between">
@@ -102,15 +100,6 @@ export default function Welcome() {
               {isLastPage ? 'Done' : 'Next'}
             </Button>
           </Row>
-          <span
-            className={clsx(
-              'mt-2 cursor-pointer self-center text-xs text-gray-500 hover:underline',
-              isLastPage && 'invisible'
-            )}
-            onClick={close}
-          >
-            I got the gist, exit welcome
-          </span>
         </Col>
       </Col>
     </Modal>
@@ -137,7 +126,7 @@ function WhatIsManifoldPage() {
         className="h-1/3 w-1/3 place-self-center object-contain sm:h-1/2 sm:w-1/2 "
         src="/welcome/manipurple.png"
       />
-      <div className="mt-3 mb-6 to-white text-center text-xl font-normal text-indigo-700">
+      <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-xl font-normal">
         Welcome to Manifold Markets
       </div>
       <p className="mb-4 text-lg">
@@ -151,7 +140,7 @@ function WhatIsManifoldPage() {
 function PredictionMarketPage() {
   return (
     <>
-      <div className="mt-3 mb-6 text-center text-xl font-normal text-indigo-700">
+      <div className="text-primary-700 mt-3 mb-6 text-center text-xl font-normal">
         How it works
       </div>
       <div className="mt-2 text-lg">
@@ -174,14 +163,14 @@ function ThankYouPage() {
         src={'/welcome/treasure.png'}
       />
       <div
-        className="mb-6 text-center text-xl font-normal text-indigo-700"
+        className="text-primary-700 mb-6 text-center text-xl font-normal"
         children="Start trading"
       />
       <p className="text-lg">
         As a thank you for signing up, we sent you{' '}
         {formatMoney(STARTING_BALANCE)} in play money!
       </p>
-      <Row className={'my-3 text-sm text-gray-600'}>
+      <Row className={'text-ink-600 my-3 text-sm'}>
         Note that mana ({ENV_CONFIG.moneyMoniker}) can't be converted into cash.
       </Row>
     </>

@@ -1,36 +1,41 @@
-import { getUserByUsername, User } from 'web/lib/firebase/users'
-import { useUser } from 'web/hooks/use-user'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import Custom404 from 'web/pages/404'
-import React, { useMemo } from 'react'
-import { Page } from 'web/components/layout/page'
-import { query, where } from 'firebase/firestore'
+import clsx from 'clsx'
+import { CPMMBinaryContract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { getContracts } from 'common/supabase/contracts'
+import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { formatMoney, formatMoneyNumber } from 'common/util/format'
+import { DAY_MS } from 'common/util/time'
 import {
   WeeklyPortfolioUpdate,
   WeeklyPortfolioUpdateOGCardProps,
 } from 'common/weekly-portfolio-update'
-import { Col } from 'web/components/layout/col'
-import { PortfolioGraph } from 'web/components/portfolio/portfolio-value-graph'
-import { useSingleValueHistoryChartViewScale } from 'web/components/charts/generic-charts'
-import { coll, getValues } from 'web/lib/firebase/utils'
-import { Row } from 'web/components/layout/row'
-import { formatMoney, formatMoneyNumber } from 'common/util/format'
-import { getContracts } from 'common/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
-import { CPMMBinaryContract } from 'common/contract'
-import { ProfitChangeTable } from 'web/components/daily-profit'
-import clsx from 'clsx'
-import { SizedContainer } from 'web/components/sized-container'
+import { query, where } from 'firebase/firestore'
 import { chunk, orderBy, sum } from 'lodash'
-import { UserLink } from 'web/components/widgets/user-link'
-import { Title } from 'web/components/widgets/title'
-import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { SEO } from 'web/components/SEO'
-import { ENV_CONFIG } from 'common/envs/constants'
+import React, { useMemo } from 'react'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
-import { DAY_MS } from 'common/util/time'
+import {
+  HistoryPoint,
+  useSingleValueHistoryChartViewScale,
+} from 'web/components/charts/generic-charts'
+import { ContractsGrid } from 'web/components/contract/contracts-grid'
+import { ProfitChangeTable } from 'web/components/daily-profit'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { PortfolioGraph } from 'web/components/portfolio/portfolio-value-graph'
+import { SEO } from 'web/components/SEO'
+import { SizedContainer } from 'web/components/sized-container'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Title } from 'web/components/widgets/title'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useUser } from 'web/hooks/use-user'
+import { getUserByUsername, User } from 'web/lib/firebase/users'
+import { coll, getValues } from 'web/lib/firebase/utils'
+import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
+import { db } from 'web/lib/supabase/db'
+import Custom404 from 'web/pages/404'
 
 export async function getStaticProps(props: {
   params: { username: string; rangeEndDateSlug: string }
@@ -49,6 +54,22 @@ export async function getStaticProps(props: {
   const weeklyPortfolioUpdate = weeklyPortfolioUpdates
     ? orderBy(weeklyPortfolioUpdates, (u) => -(u.createdTime ?? 0))[0]
     : null
+  const end = weeklyPortfolioUpdate?.createdTime
+    ? weeklyPortfolioUpdate?.createdTime
+    : new Date(rangeEndDateSlug).valueOf()
+  const start = end - 7 * DAY_MS
+  const profitPoints =
+    weeklyPortfolioUpdate && user
+      ? await getPortfolioHistory(user.id, start, db, end).then(
+          (portfolioHistory) => {
+            return portfolioHistory?.map((p) => ({
+              x: p.timestamp,
+              y: p.balance + p.investmentValue - p.totalDeposits,
+              obj: p,
+            }))
+          }
+        )
+      : []
   const contracts = weeklyPortfolioUpdate
     ? await getContracts(
         weeklyPortfolioUpdate.contractMetrics.map((c) => c.contractId),
@@ -59,7 +80,9 @@ export async function getStaticProps(props: {
   return {
     props: {
       user,
-      weeklyPortfolioUpdateString: JSON.stringify(weeklyPortfolioUpdate),
+      profitPoints,
+      weeklyPortfolioUpdateString:
+        JSON.stringify(weeklyPortfolioUpdate) ?? '{}',
       contractsString: JSON.stringify(contracts),
     },
 
@@ -85,8 +108,9 @@ export default function RangePerformancePage(props: {
   user: User | null
   weeklyPortfolioUpdateString: string
   contractsString: string
+  profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[]
 }) {
-  const { user, weeklyPortfolioUpdateString } = props
+  const { user, weeklyPortfolioUpdateString, profitPoints } = props
   const weeklyPortfolioUpdate = JSON.parse(
     weeklyPortfolioUpdateString
   ) as WeeklyPortfolioUpdate
@@ -100,37 +124,22 @@ export default function RangePerformancePage(props: {
     user?.id ?? '_'
   )
 
-  if (!user || !weeklyPortfolioUpdate) return <Custom404 />
+  if (!user || !weeklyPortfolioUpdate || !weeklyPortfolioUpdate.weeklyProfit)
+    return <Custom404 />
 
-  const {
-    profitPoints,
-    contractMetrics,
-    weeklyProfit,
-    rangeEndDateSlug,
-    createdTime,
-  } = weeklyPortfolioUpdate
+  const { contractMetrics, weeklyProfit, rangeEndDateSlug, createdTime } =
+    weeklyPortfolioUpdate
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const graphPoints = useMemo(() => {
     if (profitPoints.length === 0) return []
-    const contractMetricsSum = sum(
-      contractMetrics.map((c) => c.from?.week.profit ?? 0)
-    )
-    const points = [] as { x: number; y: number; obj: any }[]
     const firstPointToScaleBy = profitPoints[0]?.y ?? 0
-    const portfolioPoints = profitPoints.map((p) => {
-      // Squash the range by 2 times the total profit
-      const possibleY = p.y - firstPointToScaleBy
-      const y =
-        Math.abs(possibleY - contractMetricsSum) > contractMetricsSum * 2
-          ? contractMetricsSum * (possibleY < 0 ? -1 : 1)
-          : possibleY
-      return { x: p.x, y, obj: p }
-    })
-
-    // We could replace last point with sum of contractMetrics
-    // portfolioPoints[portfolioPoints.length - 1].y = contractMetricsSum - firstPointToScaleBy
-    return points.concat(portfolioPoints)
+    return profitPoints
+      .sort((p) => -p.x)
+      .map((p) => {
+        const y = p.y - firstPointToScaleBy
+        return { x: p.x, y, obj: p.obj }
+      })
   }, [profitPoints])
 
   const endDate = createdTime ? new Date(createdTime) : new Date()

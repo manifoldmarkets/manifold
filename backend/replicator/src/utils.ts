@@ -2,7 +2,7 @@ function getMessage(obj: unknown) {
   if (typeof obj === 'string') {
     return obj
   } else if (obj instanceof Error) {
-    return `${obj.message} ${obj.stack}`
+    return `${obj.stack}`
   } else {
     return JSON.stringify(obj)
   }

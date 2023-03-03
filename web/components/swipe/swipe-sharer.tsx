@@ -29,7 +29,7 @@ export function SwipeSharer(props: { contract: BinaryContract; user?: User }) {
   }
 
   return (
-    <button className={'text-white disabled:opacity-50'} onClick={onClick}>
+    <button className={'text-ink-0 disabled:opacity-50'} onClick={onClick}>
       <div className="relative">
         <ArrowUpSquareIcon className={'h-12 w-12'} />
       </div>

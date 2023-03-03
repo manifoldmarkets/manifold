@@ -51,9 +51,9 @@ export function CommentsAnswer(props: {
           background: color ? color : '#B1B1C7',
         }}
       />
-      <Col className="w-fit bg-gray-100 py-1 pl-2 pr-2">
+      <Col className="bg-ink-100 w-fit py-1 pl-2 pr-2">
         <Row className="gap-2">
-          <div className="text-xs text-gray-400">
+          <div className="text-ink-400 text-xs">
             <UserLink username={username} name={name} /> answered
             <CopyLinkDateTimeComponent
               prefix={contract.creatorUsername}

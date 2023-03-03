@@ -189,8 +189,6 @@ const BinaryUserPositionsTabContent = memo(
       useContractMetrics(contractId, 100, outcomes) ?? props.positions
     const [page, setPage] = useState(0)
     const pageSize = 20
-    const currentUser = useUser()
-    const followedUsers = useFollows(currentUser?.id)
     const yesPositionsSorted = positions.YES ?? []
     const noPositionsSorted = positions.NO ?? []
     useEffect(() => {
@@ -211,60 +209,11 @@ const BinaryUserPositionsTabContent = memo(
         ? yesPositionsSorted.length
         : noPositionsSorted.length
 
-    const PositionRow = memo(function PositionRow(props: {
-      position: ContractMetric
-      outcome: 'YES' | 'NO'
-    }) {
-      const { position, outcome } = props
-      const { totalShares, userName, userUsername, userAvatarUrl } = position
-      const shares = totalShares[outcome] ?? 0
-      const isMobile = useIsMobile(800)
-
-      return (
-        <Row
-          className={clsx(
-            'items-center justify-between gap-2 rounded-sm border-b p-2',
-            currentUser?.id === position.userId && 'bg-amber-100',
-            followedUsers?.includes(position.userId) && 'bg-blue-50'
-          )}
-        >
-          <Row
-            className={clsx(
-              'max-w-[7rem] shrink items-center gap-2 sm:max-w-none'
-            )}
-          >
-            <Avatar
-              size={'sm'}
-              avatarUrl={userAvatarUrl}
-              username={userUsername}
-            />
-            {userName && userUsername ? (
-              <UserLink
-                short={isMobile}
-                name={userName}
-                username={userUsername}
-              />
-            ) : (
-              <span>Loading..</span>
-            )}
-          </Row>
-          <span
-            className={clsx(
-              outcome === 'YES' ? 'text-teal-500' : 'text-red-700',
-              'shrink-0'
-            )}
-          >
-            {formatWithCommas(Math.floor(shares))}
-          </span>
-        </Row>
-      )
-    })
-
     return (
       <Col className={'w-full '}>
         <Row className={'gap-8'}>
           <Col className={'w-full max-w-sm gap-2'}>
-            <Row className={'justify-end px-2 text-gray-500'}>
+            <Row className={'text-ink-500 justify-end px-2'}>
               <span>
                 <YesLabel /> shares
               </span>
@@ -280,7 +229,7 @@ const BinaryUserPositionsTabContent = memo(
             })}
           </Col>
           <Col className={'w-full max-w-sm gap-2'}>
-            <Row className={'justify-end px-2 text-gray-500'}>
+            <Row className={'text-ink-500 justify-end px-2'}>
               <span>
                 <NoLabel /> shares
               </span>
@@ -306,6 +255,50 @@ const BinaryUserPositionsTabContent = memo(
     )
   }
 )
+
+const PositionRow = memo(function PositionRow(props: {
+  position: ContractMetric
+  outcome: 'YES' | 'NO'
+}) {
+  const { position, outcome } = props
+  const { totalShares, userName, userUsername, userAvatarUrl } = position
+  const shares = totalShares[outcome] ?? 0
+  const isMobile = useIsMobile(800)
+
+  const currentUser = useUser()
+  const followedUsers = useFollows(currentUser?.id)
+
+  return (
+    <Row
+      className={clsx(
+        'border-ink-300 items-center justify-between gap-2 rounded-sm border-b p-2',
+        currentUser?.id === position.userId && 'bg-amber-500/20',
+        followedUsers?.includes(position.userId) && 'bg-blue-500/20'
+      )}
+    >
+      <Row
+        className={clsx(
+          'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
+        )}
+      >
+        <Avatar size={'sm'} avatarUrl={userAvatarUrl} username={userUsername} />
+        {userName && userUsername ? (
+          <UserLink short={isMobile} name={userName} username={userUsername} />
+        ) : (
+          <span>Loading..</span>
+        )}
+      </Row>
+      <span
+        className={clsx(
+          outcome === 'YES' ? 'text-teal-500' : 'text-red-700',
+          'shrink-0'
+        )}
+      >
+        {formatWithCommas(Math.floor(shares))}
+      </span>
+    </Row>
+  )
+})
 
 export const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
@@ -511,8 +504,8 @@ export function SortRow(props: {
   return (
     <Row className="mb-4 items-center justify-end gap-4">
       <Row className="items-center gap-1">
-        <div className="text-sm text-gray-400">Sort by:</div>
-        <button className="w-20 text-sm text-gray-600" onClick={onSortClick}>
+        <div className="text-ink-400 text-sm">Sort by:</div>
+        <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>
           <Tooltip text={sort === 'Best' ? 'Most likes first' : ''}>
             <Row className="items-center gap-1">
               {sort}

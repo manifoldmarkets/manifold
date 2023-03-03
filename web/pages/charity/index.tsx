@@ -25,7 +25,6 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -63,17 +62,17 @@ type Stat = {
 function DonatedStats(props: { stats: Stat[] }) {
   const { stats } = props
   return (
-    <dl className="mt-3 grid grid-cols-1 gap-5 rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-4 sm:grid-cols-3">
+    <dl className="to-primary-400 mt-3 grid grid-cols-1 gap-5 rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 p-4 sm:grid-cols-3">
       {stats.map((stat) => (
         <div
           key={stat.name}
-          className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6"
+          className="bg-canvas-0 overflow-hidden rounded-lg px-4 py-5 shadow sm:p-6"
         >
-          <dt className="truncate text-sm font-medium text-gray-500">
+          <dt className="text-ink-500 truncate text-sm font-medium">
             {stat.name}
           </dt>
 
-          <dd className="mt-1 text-2xl font-semibold text-gray-900">
+          <dd className="text-ink-900 mt-1 text-2xl font-semibold">
             {stat.url ? (
               <SiteLink href={stat.url}>{stat.stat}</SiteLink>
             ) : (
@@ -135,20 +134,12 @@ export default function Charity(props: {
         <Col className="">
           <Title>Manifold for Charity</Title>
 
-          <div className="max-w-xl">
-            <AlertBox title="Charity program is not ending!" text="">
-              After clarifying several details with Stripe, we are happy to
-              announce that we will be able to continue our charitable donation
-              program after all!
-            </AlertBox>
-          </div>
-
-          <span className="mt-8 text-gray-600">
+          <span className="text-ink-600 mt-8">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
             donations.{' '}
             <SiteLink
               href="https://help.manifold.markets/manifold-charitable-donation-program"
-              className="ml-2 text-indigo-700"
+              className="text-primary-700 ml-2"
             >
               Read more here.
             </SiteLink>
@@ -190,22 +181,22 @@ export default function Charity(props: {
           ))}
         </div>
         {filterCharities.length === 0 && (
-          <div className="text-center text-gray-500">
+          <div className="text-ink-500 text-center">
             😢 We couldn't find that charity...
           </div>
         )}
 
-        <div className="mt-10 w-full rounded-xl bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-5">
+        <div className="to-primary-400 mt-10 w-full rounded-xl bg-gradient-to-r from-pink-300 via-purple-300 p-5">
           <iframe
             height="405"
             src="https://manifold.markets/embed/SG/will-manifold-have-100k-in-donation"
             title="How many $ will be donated through Manifold's Giving Tuesday?"
             frameBorder="0"
-            className="w-full rounded-xl bg-white p-4"
+            className="bg-canvas-0 w-full rounded-xl p-4"
           />
         </div>
 
-        <div className="prose mt-10 max-w-none text-gray-500">
+        <div className="prose text-ink-500 mt-10 max-w-none">
           <span className="text-lg font-semibold">Notes</span>
           <ul>
             <li>

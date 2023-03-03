@@ -145,9 +145,9 @@ export default function WorldCup(props: {
             image="" // TODO: Add image for preview
           />
 
-          <div className="mb-2 text-5xl text-indigo-700">World Cup 2022</div>
+          <div className="text-primary-700 mb-2 text-5xl">World Cup 2022</div>
 
-          <div className="my-4 text-base text-gray-500">
+          <div className="text-ink-1000 my-4 text-base">
             Manifold's 2022 FIFA World Cup forecast. Place your bets and{' '}
             <SiteLink href="#rules">
               win up to $500 USD in our tournament
@@ -159,7 +159,7 @@ export default function WorldCup(props: {
 
           {/* Might want to put an image or something here. */}
 
-          <div className="my-4 text-3xl text-indigo-700">
+          <div className="text-primary-700 my-4 text-3xl">
             Who will win the World Cup?
           </div>
           <Masonry
@@ -180,9 +180,9 @@ export default function WorldCup(props: {
 
           {/* <Spacer h={8} />
 
-          <div className="mb-2 text-3xl text-indigo-700">Group Stage </div>
+          <div className="mb-2 text-3xl text-primary-700">Group Stage </div>
           {isMobile && (
-            <div className="mb-2  text-xl text-indigo-400">
+            <div className="mb-2  text-xl text-primary-400">
               Pick the winner and runner-up of each group
             </div>
           )}
@@ -206,7 +206,7 @@ export default function WorldCup(props: {
 
           <Spacer h={16} />
 
-          <div className="mb-2 text-3xl text-indigo-700">
+          <div className="text-primary-700 mb-2 text-3xl">
             Player Performance
           </div>
           <Spacer h={4} />
@@ -232,19 +232,19 @@ export default function WorldCup(props: {
 
           <Spacer h={8} />
 
-          <div className="mb-2 text-3xl text-indigo-700" id="rules">
+          <div className="text-primary-700 mb-2 text-3xl" id="rules">
             Tournament rules
           </div>
           <Spacer h={4} />
 
-          <div className="mb-4 text-base text-gray-700">
+          <div className="text-ink-700 mb-4 text-base">
             Manifold is sponsoring a tournament on the 2022 World Cup with a{' '}
             <strong>$500 USD prize</strong> {''}
             pool. Show off your soccer/football knowledge, and win real USD if
             you're correct.
           </div>
 
-          <div className="mb-4 text-base text-gray-700">
+          <div className="text-ink-700 mb-4 text-base">
             Only markets on this page will count towards the{' '}
             <SiteLink
               href="group/fifa-2022-world-cup-1000-competitio/leaderboards"
@@ -258,19 +258,19 @@ export default function WorldCup(props: {
             </SiteLink>
             &nbsp;to view all the other user-created World Cup markets.
           </div>
-          <div className="mb-4 text-base text-gray-700">
+          <div className="text-ink-700 mb-4 text-base">
             A couple of new markets will be added weekly in addition to the
             existing collection.
           </div>
 
-          <div className="mb-4 text-base text-gray-700">
+          <div className="text-ink-700 mb-4 text-base">
             Trading will cease at half-time for markets predicting the result of
             a match. This is to allow some live trading while ensuring users who
             are predicting in advance aren’t significantly disadvantaged by
             people who are on the site 24/7.
           </div>
 
-          <ol className="list-decimal space-y-4 px-4 text-base text-gray-700">
+          <ol className="text-ink-700 list-decimal space-y-4 px-4 text-base">
             <li>
               <p>
                 USD prizes will be awarded to the top 5 traders on the
@@ -328,7 +328,7 @@ export function GroupComponent(props: { group: Contract; title: string }) {
   const { group, title } = props
   return (
     <Col>
-      <div className="text-black-500   text-xl">{title} </div>
+      <div className="text-  text-xl">{title} </div>
 
       <ContractCard
         contract={group}
