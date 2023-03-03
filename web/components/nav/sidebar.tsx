@@ -9,6 +9,7 @@ import {
   SearchIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
+import { GiftIcon, MapIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
@@ -102,13 +103,6 @@ export default function Sidebar(props: {
             buttonContent={<MoreButton />}
           />
         )}
-        {user && isMobile && (
-          <MenuButton
-            key="menu-button"
-            menuItems={getMoreMobileNavigation()}
-            buttonContent={<MoreButton />}
-          />
-        )}
 
         {createMarketButton}
       </div>
@@ -171,7 +165,7 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
     // { name: 'Referrals', href: '/referrals' },
     // { name: 'Groups', href: '/groups' },
     // { name: 'Charity', href: '/charity' },
-    { name: 'Directory', href: '/directory' },
+    { name: 'Sitemap', href: '/sitemap' },
     // { name: 'Blog', href: 'https://news.manifold.markets' },
     // { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     // {
@@ -179,13 +173,6 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
     //   href: 'https://help.manifold.markets/',
     // },
     loggedIn && { name: 'Sign out', onClick: logout }
-  )
-}
-function getMoreMobileNavigation() {
-  return buildArray(
-    { name: 'Referrals', href: '/referrals' },
-    { name: 'Charity', href: '/charity' },
-    { name: 'Directory', href: '/directory' }
   )
 }
 
@@ -196,32 +183,34 @@ const getMobileNav = (toggleModal: () => void) => {
   }
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
-    { name: 'Live', href: '/live', icon: LightningBoltIcon },
+    // { name: 'Live', href: '/live', icon: LightningBoltIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
-    {
-      name: 'Groups',
-      href: '/groups',
-      icon: UserGroupIcon,
-    }
+    { name: 'Referrals', icon: GiftIcon, href: '/referrals' },
+    { name: 'Sitemap', icon: MapIcon, href: '/sitemap' }
+    // {
+    //   name: 'Groups',
+    //   href: '/groups',
+    //   icon: UserGroupIcon,
+    // }
   )
 }
 
 const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
   buildArray(
-    loggedIn &&
-      isMobile && {
-        name: 'Help & About',
-        href: 'https://help.manifold.markets/',
-        icon: BookOpenIcon,
-      },
-    !IS_PRIVATE_MANIFOLD &&
-      loggedIn &&
-      isMobile && {
-        name: 'Discord',
-        href: 'https://discord.gg/eHQBNBqXuh',
-        icon: DiscordOutlineIcon,
-      },
+    // loggedIn &&
+    //   isMobile && {
+    //     name: 'Help & About',
+    //     href: 'https://help.manifold.markets/',
+    //     icon: BookOpenIcon,
+    //   },
+    // !IS_PRIVATE_MANIFOLD &&
+    //   loggedIn &&
+    //   isMobile && {
+    //     name: 'Discord',
+    //     href: 'https://discord.gg/eHQBNBqXuh',
+    //     icon: DiscordOutlineIcon,
+    //   },
 
     isMobile &&
       loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
