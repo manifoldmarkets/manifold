@@ -1,5 +1,5 @@
 import { formatMoney, manaToUSD } from 'common/util/format'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Button } from './buttons/button'
@@ -21,6 +21,7 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
+import { useRouter } from 'next/router'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -58,7 +59,7 @@ export function AddFundsModal(props: {
   )
 }
 
-function BuyManaTab(props: { onClose: () => void }) {
+export function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
@@ -85,6 +86,12 @@ function BuyManaTab(props: { onClose: () => void }) {
     setLoading(false)
   }
   useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
+
+  const router = useRouter()
+  console.log('route', router.route)
+
+  const [url, setUrl] = useState('https://manifold.markets')
+  useEffect(() => setUrl(window.location.href), [])
 
   return (
     <>
@@ -124,11 +131,7 @@ function BuyManaTab(props: { onClose: () => void }) {
           </Button>
         ) : (
           <form
-            action={checkoutURL(
-              user?.id || '',
-              amountSelected,
-              window.location.href
-            )}
+            action={checkoutURL(user?.id || '', amountSelected, url)}
             method="POST"
           >
             <Button type="submit" color="gradient">
