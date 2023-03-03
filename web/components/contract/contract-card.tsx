@@ -601,7 +601,7 @@ export function ContractCardNew(props: {
       </div>
 
       {!hideImage && coverImageUrl && (
-        <div className="relative h-36 lg:h-48">
+        <div className="relative h-36">
           <Image
             fill
             alt={descriptionString}
