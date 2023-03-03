@@ -9,6 +9,8 @@ import {
 import { LimitBet } from 'common/bet'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { getDisplayProbability } from 'common/calculate'
+import { Col } from '../layout/col'
+import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 
 interface DepthChartProps {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -19,9 +21,11 @@ interface DepthChartProps {
 export function DepthChart(props: DepthChartProps) {
   const { contract, yesBets, noBets } = props
 
+  const isDarkMode = useIsDarkMode()
+
   // Won't display a depth chart for numeric contracts, only binary contracts right now
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    return <div className="depth-chart" />
+    return null
   }
 
   const yesData = cumulative(yesBets)
@@ -49,9 +53,19 @@ export function DepthChart(props: DepthChartProps) {
 
   const currentValue = getDisplayProbability(contract)
 
+  const strokeColor = isDarkMode ? 'white' : 'black'
+  const axisStyle = {
+    axis: {
+      stroke: strokeColor,
+    },
+    tickLabels: {
+      fill: strokeColor,
+    },
+  }
+
   return (
-    <div className="depth-chart">
-      <h2>Market depth chart</h2>
+    <Col>
+      <h2 className="text-ink-1000">Market depth chart</h2>
       <VictoryChart
         minDomain={{ x: minX, y: 0 }}
         maxDomain={{ x: maxX, y: maxAmount }}
@@ -63,6 +77,7 @@ export function DepthChart(props: DepthChartProps) {
           tickCount={10}
           label="Chance"
           axisLabelComponent={<VictoryLabel dy={10} />}
+          style={axisStyle}
         />
         <VictoryAxis
           tickFormat={(t) => `${Math.round(t)}` + 'M'}
@@ -70,6 +85,7 @@ export function DepthChart(props: DepthChartProps) {
           dependentAxis={true}
           axisLabelComponent={<VictoryLabel dy={-30} />}
           label={'Amount'}
+          style={axisStyle}
         />
         <VictoryGroup
           style={{
@@ -79,7 +95,8 @@ export function DepthChart(props: DepthChartProps) {
           {/* // Line that shows the current value */}
           <VictoryLine
             style={{
-              data: { stroke: 'gray' },
+              // Indigo
+              data: { stroke: 'rgb(99 102 241)' },
             }}
             data={[
               { x: currentValue, y: 0 },
@@ -127,7 +144,7 @@ export function DepthChart(props: DepthChartProps) {
           />
         </VictoryGroup>
       </VictoryChart>
-    </div>
+    </Col>
   )
 }
 
