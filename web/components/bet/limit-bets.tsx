@@ -23,6 +23,7 @@ import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
 import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { DepthChart } from './depth-chart'
 
 export function YourOrders(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -206,6 +207,7 @@ export function OrderBookButton(props: {
       <Button
         className={className}
         onClick={() => setOpen(true)}
+        disabled={limitBets.length === 0}
         size="xs"
         color="indigo"
       >
@@ -221,7 +223,8 @@ export function OrderBookButton(props: {
               className="ml-1 self-center"
             />
           </Title>
-          <Row className="items-start justify-around gap-2">
+          <DepthChart contract={contract} yesBets={yesBets} noBets={noBets} />
+          <Row className="mt-2 items-start justify-around gap-2">
             <OrderTable
               limitBets={yesBets}
               contract={contract}
