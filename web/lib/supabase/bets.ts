@@ -23,6 +23,12 @@ export async function getOlderBets(
   return data.map((r) => r.data)
 }
 
+export const getBet = async (id: string) => {
+  const q = selectJson(db, 'contract_bets').eq('bet_id', id)
+  const { data } = await run(q)
+  return data.length > 0 ? data[0].data : null
+}
+
 export const getBets = async (options?: BetFilter) => {
   let q = selectJson(db, 'contract_bets')
   q = q.order('data->>createdTime', {
