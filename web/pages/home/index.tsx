@@ -145,6 +145,7 @@ function MobileHome() {
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourRecentContracts contracts={recentContracts} />
           <YourDailyUpdates contracts={dailyChangedUniqueContracts} />
+          <LiveSection />
           <ContractsFeed />
         </Col>
       </Col>
