@@ -5,10 +5,10 @@ import Script from 'next/script'
 import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
+import { DarkModeProvider } from 'web/components/dark-mode-provider'
 import { NativeMessageListener } from 'web/components/native-message-listener'
 import Welcome from 'web/components/onboarding/welcome'
 import { SearchProvider } from 'web/components/search/search-context'
-import { useDarkMode } from 'web/hooks/use-dark-mode'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 
@@ -35,7 +35,6 @@ type ManifoldPageProps = { auth?: AuthUser }
 function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
-  useDarkMode()
 
   return (
     <>
@@ -83,13 +82,15 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         />
       </Head>
       <AuthProvider serverUser={pageProps.auth}>
-        <NativeMessageListener />
-        <QueryClientProvider client={queryClient}>
-          <SearchProvider>
-            <Welcome />
-            <Component {...pageProps} />
-          </SearchProvider>
-        </QueryClientProvider>
+        <DarkModeProvider>
+          <NativeMessageListener />
+          <QueryClientProvider client={queryClient}>
+            <SearchProvider>
+              <Welcome />
+              <Component {...pageProps} />
+            </SearchProvider>
+          </QueryClientProvider>
+        </DarkModeProvider>
       </AuthProvider>
       <Analytics />
       <Script

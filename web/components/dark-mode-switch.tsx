@@ -1,8 +1,7 @@
 import { Switch } from '@headlessui/react'
 import clsx from 'clsx'
-import { useRouter } from 'next/router'
-import { useEffect } from 'react'
-import { postMessageToNative } from 'web/components/native-message-listener'
+import { useContext } from 'react'
+import { DarkModeContext } from 'web/hooks/dark-mode-context'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Row } from './layout/row'
 
@@ -15,28 +14,12 @@ export function DarkModeSwitch(props: { disabled?: boolean }) {
     return <></>
   }
 }
-type themeValue = 'dark' | 'light'
 
 function DMSwitch(props: { disabled?: boolean }) {
   const { disabled } = props
-  const isDark = localStorage.theme === 'dark'
-  const router = useRouter()
 
-  useEffect(() => {
-    const element = document.querySelector('.bg-canvas-0')
-    if (element === null) return
-    const con = getComputedStyle(element).getPropertyValue('--color-canvas-0')
-    const color = `rgba(${con.replaceAll(' ', ',')}, 1)`
-    postMessageToNative('theme', {
-      theme: localStorage.theme,
-      backgroundColor: color,
-    })
-  }, [])
-
-  const changeTheme = (newTheme: themeValue) => {
-    localStorage.setItem('theme', newTheme)
-    router.reload()
-  }
+  const { theme, changeTheme } = useContext(DarkModeContext)
+  const isDark = theme === 'dark'
 
   return (
     <Row className="text-ink-600 gap-2 text-sm">
