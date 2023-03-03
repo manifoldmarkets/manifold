@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { CollectionReference } from 'firebase-admin/firestore'
+import { groupBy } from 'lodash'
 
 import { invokeFunction, loadPaginated } from 'shared/utils'
 import { newEndpointNoAuth } from '../api/helpers'
@@ -113,26 +114,26 @@ export const loadUserDataForRecommendations = async (
     )
   )
 
-  const viewedCardIds = Object.fromEntries(
-    await pg.map(
-      `select user_id, array_agg(distinct data->>'contractId') as contract_ids
-      from user_events
-      where data->>'name' = 'view market card'
-      group by user_id`,
-      [],
-      (r) => [r.user_id as string, r.contract_ids as string[]]
-    )
+  const viewedIds = await pg.manyOrNone(
+    `select
+      user_id, data->>'name' as event_name,
+      array_agg(distinct data->>'contractId') as contract_ids
+    from user_events
+    where data->>'name' = 'view market' or data->>'name' = 'view market card'
+    group by user_id, data->>'name'`
   )
-
+  const viewedIdsByEvent = groupBy(viewedIds, (r) => r.event_name)
+  const viewedCardIds = Object.fromEntries(
+    viewedIdsByEvent['view market card'].map((r) => [
+      r.user_id as string,
+      r.contract_ids as string[],
+    ])
+  )
   const viewedPageIds = Object.fromEntries(
-    await pg.map(
-      `select user_id, array_agg(distinct data->>'contractId') as contract_ids
-      from user_events
-      where data->>'name' = 'view market'
-      group by user_id`,
-      [],
-      (r) => [r.user_id as string, r.contract_ids as string[]]
-    )
+    viewedIdsByEvent['view market'].map((r) => [
+      r.user_id as string,
+      r.contract_ids as string[],
+    ])
   )
 
   const likedIds = Object.fromEntries(
