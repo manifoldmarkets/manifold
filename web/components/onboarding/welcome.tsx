@@ -102,15 +102,6 @@ export default function Welcome() {
               {isLastPage ? 'Done' : 'Next'}
             </Button>
           </Row>
-          <span
-            className={clsx(
-              'text-ink-500 mt-2 cursor-pointer self-center text-xs hover:underline',
-              isLastPage && 'invisible'
-            )}
-            onClick={close}
-          >
-            I got the gist, exit welcome
-          </span>
         </Col>
       </Col>
     </Modal>
