@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 
 import { STARTING_BALANCE } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
