@@ -25,7 +25,6 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { AlertBox } from 'web/components/widgets/alert-box'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -134,12 +133,6 @@ export default function Charity(props: {
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
           <Title>Manifold for Charity</Title>
-
-          <AlertBox title="Charity program is not ending!" text="">
-            After clarifying several details with Stripe, we are happy to
-            announce that we will be able to continue our charitable donation
-            program after all!
-          </AlertBox>
 
           <span className="text-ink-600 mt-8">
             Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
