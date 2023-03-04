@@ -25,7 +25,7 @@ export function FeedLiquidity(props: {
 
   return (
     <div className="to-primary-300 -ml-2 rounded-full bg-gradient-to-r from-pink-300 via-purple-300 p-2">
-      <Row className="bg-ink-1000/50 items-stretch gap-2 rounded-full">
+      <Row className="bg-ink-100 items-stretch gap-2 rounded-full">
         {isSelf ? (
           <Avatar avatarUrl={user.avatarUrl} username={user.username} />
         ) : bettor ? (
@@ -58,13 +58,13 @@ function LiquidityStatusText(props: {
   const money = formatMoney(Math.abs(amount))
 
   return (
-    <div className="text-ink-500 flex flex-wrap items-center gap-x-1 pr-4 text-sm">
+    <div className="text-ink-1000 flex flex-wrap items-center gap-x-1 pr-4 text-sm">
       {bettor ? (
         <UserLink name={bettor.name} username={bettor.username} />
       ) : (
         <span>{isSelf ? 'You' : `A ${BETTOR}`}</span>
       )}
-      {bought} a subsidy of <span className="text-violet-800">{money}</span>
+      {bought} a subsidy of <span className="text-primary-700">{money}</span>
       <RelativeTimestamp time={createdTime} className="text-ink-1000" />
     </div>
   )
