@@ -1,6 +1,6 @@
 import { v1 } from 'firebase-admin/firestore'
 import { getServiceAccountCredentials } from 'shared/init-admin'
-import { backupDbCore } from 'functions/backup-db'
+import { backupDbCore } from 'functions/scheduled/backup-db'
 
 async function backupDb() {
   const credentials = getServiceAccountCredentials()

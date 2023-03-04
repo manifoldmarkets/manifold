@@ -3,7 +3,7 @@
 import * as admin from 'firebase-admin'
 import { initAdmin } from 'shared/init-admin'
 import { isProd, log } from 'shared/utils'
-import { getSlug } from 'functions/create-group'
+import { getSlug } from 'functions/api/create-group'
 import { Group, GroupLink } from 'common/group'
 import { uniq } from 'lodash'
 import { Contract } from 'common/contract'
@@ -43,6 +43,7 @@ const createGroup = async (
     totalMembers: 1,
     postIds: [],
     pinnedItems: [],
+    privacyStatus: 'public',
     bannerUrl: '/group/default_group_banner_indigo.png',
   }
   await groupRef.create(group)
