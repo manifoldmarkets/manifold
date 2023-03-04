@@ -11,7 +11,6 @@ type SparseMatrix = [number, number][][]
  * Gets the factors of a sparse matrix
  *
  * @param TARGET_MATRIX target matrix, where each row specifies a subset of all columns.
- * @param N_COLUMNS Number of total columns in the target matrix.
  * @param FEATURES Number of latent features
  * @param ITERS Number of times to move towards the real factors
  * @param LEARNING_RATE Learning rate
