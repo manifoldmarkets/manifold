@@ -178,7 +178,7 @@ function getMoreDesktopNavigation(
   }
 
   return buildArray(
-    { name: 'Dark mode: ' + themeDisplay, href: '#', onClick: toggleTheme },
+    { name: 'Dark mode: ' + themeDisplay, onClick: toggleTheme },
     { name: 'Sitemap', href: '/sitemap' },
     loggedIn && { name: 'Sign out', onClick: logout }
   )
@@ -207,7 +207,6 @@ const bottomNav = (
   buildArray(
     isMobile && {
       name: 'Dark mode: ' + themeDisplay,
-      href: '#',
       icon: MoonIcon,
       onClick: toggleTheme,
     },
