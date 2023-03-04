@@ -20,7 +20,12 @@ export const scheduleUpdateGroupMetrics = functions.pubsub
   })
 
 export const updategroupmetrics = newEndpointNoAuth(
-  { timeoutSeconds: 2000, memory: '2GiB', minInstances: 0 },
+  {
+    timeoutSeconds: 2000,
+    memory: '2GiB',
+    minInstances: 0,
+    secrets: ['SUPABASE_PASSWORD'],
+  },
   async (_req) => {
     await updateGroupMetrics()
     return { success: true }
