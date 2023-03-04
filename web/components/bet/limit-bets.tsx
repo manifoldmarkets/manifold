@@ -23,7 +23,7 @@ import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
 import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { DepthChart } from './depth-chart'
+import { DepthChart } from '../charts/contract/depth-chart'
 
 export function YourOrders(props: {
   contract: CPMMBinaryContract | PseudoNumericContract

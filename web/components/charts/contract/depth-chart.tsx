@@ -9,16 +9,14 @@ import {
 import { LimitBet } from 'common/bet'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { getDisplayProbability } from 'common/calculate'
-import { Col } from '../layout/col'
+import { Col } from '../../layout/col'
 import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 
-interface DepthChartProps {
+export function DepthChart(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   yesBets: LimitBet[]
   noBets: LimitBet[]
-}
-
-export function DepthChart(props: DepthChartProps) {
+}) {
   const { contract, yesBets, noBets } = props
 
   const isDarkMode = useIsDarkMode()
