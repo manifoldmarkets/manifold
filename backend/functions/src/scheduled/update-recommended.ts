@@ -33,6 +33,7 @@ export const scheduleUpdateRecommended = functions.pubsub
 export const updaterecommended = newEndpointNoAuth(
   {
     timeoutSeconds: 3600,
+    cpu: 4,
     memory: '8GiB',
     minInstances: 0,
     secrets: ['SUPABASE_PASSWORD'],
