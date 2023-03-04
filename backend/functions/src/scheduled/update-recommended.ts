@@ -5,7 +5,10 @@ import { groupBy } from 'lodash'
 
 import { invokeFunction, loadPaginated } from 'shared/utils'
 import { newEndpointNoAuth } from '../api/helpers'
-import { getMarketRecommendations } from 'common/recommendation'
+import {
+  LATENT_FEATURES_COUNT,
+  getMarketRecommendations,
+} from 'common/recommendation'
 import { Contract } from 'common/contract'
 import {
   createSupabaseDirectClient,
@@ -54,21 +57,21 @@ export const updateRecommendedMarkets = async () => {
   const { userIds, userFeatures, contractIds, contractFeatures } =
     getMarketRecommendations(contracts, userData, 2000)
 
-  const userFeatureRows = userFeatures.map((features, i) => ({
-    user_id: userIds[i],
-    f0: features[0],
-    f1: features[1],
-    f2: features[2],
-    f3: features[3],
-    f4: features[4],
+  const userFeatureRows = userIds.map((userId, i) => ({
+    user_id: userId,
+    f0: userFeatures[i * LATENT_FEATURES_COUNT + 0],
+    f1: userFeatures[i * LATENT_FEATURES_COUNT + 1],
+    f2: userFeatures[i * LATENT_FEATURES_COUNT + 2],
+    f3: userFeatures[i * LATENT_FEATURES_COUNT + 3],
+    f4: userFeatures[i * LATENT_FEATURES_COUNT + 4],
   }))
-  const contractFeatureRows = contractFeatures.map((features, i) => ({
-    contract_id: contractIds[i],
-    f0: features[0],
-    f1: features[1],
-    f2: features[2],
-    f3: features[3],
-    f4: features[4],
+  const contractFeatureRows = contractIds.map((contractId, i) => ({
+    contract_id: contractId,
+    f0: contractFeatures[i * LATENT_FEATURES_COUNT + 0],
+    f1: contractFeatures[i * LATENT_FEATURES_COUNT + 1],
+    f2: contractFeatures[i * LATENT_FEATURES_COUNT + 2],
+    f3: contractFeatures[i * LATENT_FEATURES_COUNT + 3],
+    f4: contractFeatures[i * LATENT_FEATURES_COUNT + 4],
   }))
 
   console.log('Writing recommendations to Supabase...')
