@@ -1,6 +1,6 @@
 import { uniq } from 'lodash'
 import { Contract } from './contract'
-import { dotProduct, factorizeMatrix } from './util/matrix'
+import { factorizeMatrix } from './util/matrix'
 import { chooseRandomSubset } from './util/random'
 
 export type user_data = {
@@ -13,6 +13,7 @@ export type user_data = {
   groupIds: string[]
 }
 
+export const LATENT_FEATURES_COUNT = 5
 const DESTINY_GROUP_ID = 'W2ES30fRo6CCbPNwMTTj'
 
 export function getMarketRecommendations(
@@ -35,24 +36,33 @@ export function getMarketRecommendations(
       groupsToContracts[groupId][contract.id] = true
     }
   }
+  const destinyContractIds = Object.keys(
+    groupsToContracts[DESTINY_GROUP_ID] ?? {}
+  )
+
+  const contractIds: string[] = []
+  const contractIdToIndex: { [contractId: string]: number } = {}
+  const getColumnIndex = (contractId: string) => {
+    let idx = contractIdToIndex[contractId]
+    if (idx == null) {
+      idx = contractIdToIndex[contractId] = contractIds.length
+      contractIds.push(contractId)
+    }
+    return idx
+  }
 
   // Sparse matrix of users x contracts.
-  const sparseMatrix = userIds.map(
-    () => ({} as { [contractId: string]: number })
-  )
-  const contractIdSet = new Set<string>()
+  const rows = userData.map((data) => {
+    const {
+      swipedIds,
+      viewedCardIds,
+      viewedPageIds,
+      betOnIds,
+      likedIds,
+      groupIds,
+    } = data
 
-  for (const {
-    userId,
-    swipedIds,
-    viewedCardIds,
-    viewedPageIds,
-    betOnIds,
-    likedIds,
-    groupIds,
-  } of userData) {
-    const userIndex = userIdToIndex[userId]
-
+    const row: Map<number, number> = new Map()
     const viewedCardsOrSwipes = uniq([...viewedCardIds, ...swipedIds])
     const yourViewedContractsSet = new Set(
       viewedCardsOrSwipes.concat(viewedPageIds)
@@ -61,30 +71,25 @@ export function getMarketRecommendations(
 
     for (const contractId of viewedCardsOrSwipes) {
       // If you viewed it but didn't take any action, that's evidence you're not interested.
-      sparseMatrix[userIndex][contractId] = 0
-      contractIdSet.add(contractId)
+      row.set(getColumnIndex(contractId), 0)
     }
     if (!groupIds.includes(DESTINY_GROUP_ID)) {
       // Downweight markets in the Destiny group if you don't follow it.
-      const contractIds = Object.keys(groupsToContracts[DESTINY_GROUP_ID] ?? {})
-      const contractIdSubset = chooseRandomSubset(contractIds, 25)
+      const contractIdSubset = chooseRandomSubset(destinyContractIds, 25)
       for (const contractId of contractIdSubset) {
-        sparseMatrix[userIndex][contractId] = 0
-        contractIdSet.add(contractId)
+        row.set(getColumnIndex(contractId), 0)
       }
     }
     for (const contractId of viewedPageIds) {
       // If you clicked into a market, that demonstrates interest.
-      sparseMatrix[userIndex][contractId] = 0.25
-      contractIdSet.add(contractId)
+      row.set(getColumnIndex(contractId), 0.25)
     }
     for (const groupId of groupIds) {
       // If you follow a group, count that as interest in random subset of group markets.
       const contractIds = Object.keys(groupsToContracts[groupId] ?? {})
       const contractIdSubset = chooseRandomSubset(contractIds, 5)
       for (const contractId of contractIdSubset) {
-        sparseMatrix[userIndex][contractId] = 1
-        contractIdSet.add(contractId)
+        row.set(getColumnIndex(contractId), 1)
       }
     }
     for (const contractId of likedOrBetOnIds) {
@@ -92,43 +97,35 @@ export function getMarketRecommendations(
       // If there are no views, then algorithm can just predict 1 always.
       if (yourViewedContractsSet.has(contractId)) {
         // Predicting these bets and likes is the goal!
-        sparseMatrix[userIndex][contractId] = 1
+        row.set(getColumnIndex(contractId), 1)
       }
     }
-  }
-
-  const contractIds = Array.from(contractIdSet)
-  console.log('rows', sparseMatrix.length, 'columns', contractIds.length)
+    return row
+  })
 
   // Fill in a few random 0's for each user and contract column.
   // When users click a link directly to a market or search for it,
   // and bet on it, then we start to get only 1's in the matrix,
   // which is bad for the algorithm to distinguish between good and bad contracts:
   // it will just predict 1 for all contracts.
-  for (const row of sparseMatrix) {
+  for (const row of rows) {
     for (let i = 0; i < 20; i++) {
-      const randContractId =
-        contractIds[Math.floor(Math.random() * contractIds.length)]
-      if (row[randContractId] === undefined) row[randContractId] = 0
+      const column = Math.floor(Math.random() * contractIds.length)
+      if (!row.has(column)) row.set(column, 0)
     }
   }
-  for (const contractId of contractIds) {
+  for (let column = 0; column < contractIds.length; column++) {
     for (let i = 0; i < 10; i++) {
-      const randUser = Math.floor(Math.random() * sparseMatrix.length)
-      if (sparseMatrix[randUser][contractId] === undefined)
-        sparseMatrix[randUser][contractId] = 0
+      const row = rows[Math.floor(Math.random() * rows.length)]
+      if (!row.has(column)) row.set(column, 0)
     }
   }
 
-  const [userFeatures, contractFeatures] = factorizeMatrix(
+  const sparseMatrix = rows.map((m) => Array.from(m.entries()))
+  const [userFeatures, contractFeatures, getScore] = factorizeMatrix(
     sparseMatrix,
-    contractIds,
-    5,
+    LATENT_FEATURES_COUNT,
     iterations
-  )
-
-  const contractIdToIndex = Object.fromEntries(
-    contractIds.map((column, i) => [column, i] as const)
   )
 
   // Compute scores per user one at a time to save memory.
@@ -136,13 +133,9 @@ export function getMarketRecommendations(
     const userIndex = userIdToIndex[userId]
     if (!userIndex) return {}
 
-    const contractScorePairs = contractIds.map((contractId) => {
-      const contractIndex = contractIdToIndex[contractId]
-      const score = dotProduct(
-        userFeatures[userIndex],
-        contractFeatures[contractIndex]
-      )
-      return [contractId, score] as const
+    const contractScorePairs = contractIds.map((contractId, contractIndex) => {
+      // Get current approximation as dot product of latent features
+      return [contractId, getScore(userIndex, contractIndex)] as const
     })
 
     return Object.fromEntries(contractScorePairs)

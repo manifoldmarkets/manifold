@@ -5,7 +5,7 @@ import { getContract } from 'shared/utils'
 
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
-
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   loadContracts,
   loadUserDataForRecommendations,
@@ -15,13 +15,14 @@ import { Contract } from 'common/contract'
 const recommend = async () => {
   console.log('Recommend script')
 
+  const pg = createSupabaseDirectClient()
   let userData = await readJson<user_data[]>('user-data1.json')
 
   if (userData) {
     console.log('Loaded view data from file.')
   } else {
-    console.log('Loading view data from Firestore...')
-    userData = await loadUserDataForRecommendations()
+    console.log('Loading view data from Supabase...')
+    userData = await loadUserDataForRecommendations(pg)
     await writeJson('user-data1.json', userData)
   }
 
