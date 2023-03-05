@@ -183,6 +183,10 @@ alter table contract_bets enable row level security;
 drop policy if exists "public read" on contract_bets;
 create policy "public read" on contract_bets for select using (true);
 create index if not exists contract_bets_data_gin on contract_bets using GIN (data);
+/* serving stats page */
+create index if not exists contract_bets_created_time_global on contract_bets (
+    ((data->'createdTime')::bigint) desc
+)
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (
     contract_id,
@@ -735,12 +739,36 @@ as $$ begin
   end if;
 end $$;
 
+create or replace function ts_to_millis(ts timestamptz)
+    returns bigint
+    language sql
+    immutable parallel safe
+as $$
+select extract(epoch from ts)::bigint * 1000
+$$;
+
+create or replace function millis_to_ts(millis bigint)
+    returns timestamptz
+    language sql
+    immutable parallel safe
+as $$
+select to_timestamp(millis / 1000)
+$$;
+
+create or replace function millis_interval(start_millis bigint, end_millis bigint)
+    returns interval
+    language sql
+    immutable parallel safe
+as $$
+select millis_to_ts(end_millis) - millis_to_ts(start_millis)
+$$;
+
 create or replace function get_time()
     returns bigint
     language sql
     stable parallel safe
 as $$
-select (extract(epoch from now()) * 1000)::bigint;
+select ts_to_millis(now())
 $$;
 
 create or replace function is_valid_contract(data jsonb)
