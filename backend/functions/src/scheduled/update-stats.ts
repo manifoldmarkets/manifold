@@ -7,16 +7,14 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 import { range, zip, uniq, sum, sumBy, countBy } from 'lodash'
-import { loadPaginated, log, logMemory } from 'shared/utils'
+import { log, logMemory } from 'shared/utils'
 import { Stats } from 'common/stats'
 import { DAY_MS } from 'common/util/time'
 import { average, median } from 'common/util/math'
-import { mapAsync } from 'common/util/promise'
-import { User } from 'common/user'
-import { Query } from 'firebase-admin/firestore'
-import { Contract } from 'common/contract'
-import { Comment } from 'common/comment'
-import { Bet } from 'common/bet'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 
 const firestore = admin.firestore()
 
@@ -27,82 +25,111 @@ interface StatEvent {
   userId: string
   ts: number
 }
+type StatBet = StatEvent & { amount: number }
 
-const getBetsQuery = (startTime: number, endTime: number) =>
-  firestore
-    .collectionGroup('bets')
-    .where('createdTime', '>=', startTime)
-    .where('createdTime', '<', endTime)
-    .orderBy('createdTime', 'asc')
-    .select('createdTime', 'userId', 'amount') as Query<Bet>
-
-export async function getDailyBets(startTime: number, numberOfDays: number) {
-  const queries = range(0, numberOfDays).map((days) => {
-    const begin = startTime + days * DAY_MS
-    return getBetsQuery(begin, begin + DAY_MS)
-  })
-
-  const betsByDay = await mapAsync(queries, async (q) => {
-    return (await loadPaginated(q)).map((b) => ({
-      id: b.id,
-      userId: b.userId,
-      ts: b.createdTime,
-      amount: b.amount,
-    }))
-  })
+async function getDailyBets(
+  pg: SupabaseDirectClient,
+  startTime: number,
+  numberOfDays: number
+) {
+  const bets = await pg.manyOrNone(
+    `select
+      extract(day from millis_interval((data->'createdTime')::bigint, $2)) as day,
+      (data->'createdTime')::bigint as ts,
+      data->>'userId' as user_id,
+      data->>'amount' as amount,
+      bet_id
+    from contract_bets
+    where (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
+    [startTime, startTime + numberOfDays * DAY_MS]
+  )
+  const betsByDay: StatBet[][] = range(0, numberOfDays).map((_) => [])
+  for (const r of bets) {
+    betsByDay[(numberOfDays - 1 - r.day) as number].push({
+      id: r.bet_id as string,
+      userId: r.user_id as string,
+      ts: r.ts as number,
+      amount: parseFloat(r.amount as string),
+    } as const)
+  }
   return betsByDay
 }
 
-const getCommentsQuery = (startTime: number, endTime: number) =>
-  firestore
-    .collectionGroup('comments')
-    .where('createdTime', '>=', startTime)
-    .where('createdTime', '<', endTime)
-    .orderBy('createdTime', 'asc')
-    .select('createdTime', 'userId') as Query<Comment>
-
-export async function getDailyComments(
+async function getDailyComments(
+  pg: SupabaseDirectClient,
   startTime: number,
   numberOfDays: number
 ) {
-  const query = getCommentsQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const comments = await loadPaginated(query)
-
-  const commentsByDay = range(0, numberOfDays).map(() => [] as StatEvent[])
-  for (const comment of comments) {
-    const ts = comment.createdTime
-    const userId = comment.userId
-    const dayIndex = Math.floor((ts - startTime) / DAY_MS)
-    commentsByDay[dayIndex].push({ id: comment.id, userId, ts })
+  const comments = await pg.manyOrNone(
+    `select
+      extract(day from millis_interval((data->'createdTime')::bigint, $2)) as day,
+      (data->'createdTime')::bigint as ts,
+      data->>'userId' as user_id,
+      comment_id
+    from contract_comments
+    where (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
+    [startTime, startTime + numberOfDays * DAY_MS]
+  )
+  const commentsByDay: StatEvent[][] = range(0, numberOfDays).map((_) => [])
+  for (const r of comments) {
+    commentsByDay[(numberOfDays - 1 - r.day) as number].push({
+      id: r.comment_id as string,
+      userId: r.user_id as string,
+      ts: r.ts as number,
+    } as const)
   }
-
   return commentsByDay
 }
 
-const getContractsQuery = (startTime: number, endTime: number) =>
-  firestore
-    .collection('contracts')
-    .where('createdTime', '>=', startTime)
-    .where('createdTime', '<', endTime)
-    .orderBy('createdTime', 'asc')
-    .select('createdTime', 'creatorId') as Query<Contract>
-
-export async function getDailyContracts(
+async function getDailyContracts(
+  pg: SupabaseDirectClient,
   startTime: number,
   numberOfDays: number
 ) {
-  const query = getContractsQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const contracts = await loadPaginated(query)
-
-  const contractsByDay = range(0, numberOfDays).map(() => [] as StatEvent[])
-  for (const contract of contracts) {
-    const ts = contract.createdTime
-    const userId = contract.creatorId
-    const dayIndex = Math.floor((ts - startTime) / DAY_MS)
-    contractsByDay[dayIndex].push({ id: contract.id, userId, ts })
+  const contracts = await pg.manyOrNone(
+    `select
+      extract(day from millis_interval((data->'createdTime')::bigint, $2)) as day,
+      (data->'createdTime')::bigint as ts,
+      data->>'creatorId' as user_id,
+      id
+    from contracts
+    where (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
+    [startTime, startTime + numberOfDays * DAY_MS]
+  )
+  const contractsByDay: StatEvent[][] = range(0, numberOfDays).map((_) => [])
+  for (const r of contracts) {
+    contractsByDay[(numberOfDays - 1 - r.day) as number].push({
+      id: r.id as string,
+      userId: r.user_id as string,
+      ts: r.ts as number,
+    } as const)
   }
-
   return contractsByDay
+}
+
+async function getDailyNewUsers(
+  pg: SupabaseDirectClient,
+  startTime: number,
+  numberOfDays: number
+) {
+  const users = await pg.manyOrNone(
+    `select
+      extract(day from millis_interval((data->'createdTime')::bigint, $2)) as day,
+      (data->'createdTime')::bigint as ts,
+      id
+    from users
+    where (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
+    [startTime, startTime + numberOfDays * DAY_MS]
+  )
+  const usersByDay: StatEvent[][] = range(0, numberOfDays).map((_) => [])
+  for (const r of users) {
+    usersByDay[(numberOfDays - 1 - r.day) as number].push({
+      id: r.id as string,
+      userId: r.id as string,
+      ts: r.ts as number,
+    } as const)
+  }
+  return usersByDay
 }
 
 const getStripeSalesQuery = (startTime: number, endTime: number) =>
@@ -133,32 +160,8 @@ export async function getStripeSales(startTime: number, numberOfDays: number) {
   return salesByDay
 }
 
-const getUsersQuery = (startTime: number, endTime: number) =>
-  firestore
-    .collection('users')
-    .where('createdTime', '>=', startTime)
-    .where('createdTime', '<', endTime)
-    .orderBy('createdTime', 'asc')
-    .select('createdTime') as Query<User>
-
-export async function getDailyNewUsers(
-  startTime: number,
-  numberOfDays: number
-) {
-  const query = getUsersQuery(startTime, startTime + DAY_MS * numberOfDays)
-  const users = await loadPaginated(query)
-
-  const usersByDay = range(0, numberOfDays).map(() => [] as StatEvent[])
-  for (const user of users) {
-    const ts = user.createdTime
-    const dayIndex = Math.floor((ts - startTime) / DAY_MS)
-    usersByDay[dayIndex].push({ id: user.id, userId: user.id, ts })
-  }
-
-  return usersByDay
-}
-
 export const updateStatsCore = async () => {
+  const pg = createSupabaseDirectClient()
   const today = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
   const startDate = today - numberOfDays * DAY_MS
 
@@ -170,19 +173,21 @@ export const updateStatsCore = async () => {
     dailyNewUsers,
     dailyStripeSales,
   ] = await Promise.all([
-    getDailyBets(startDate.valueOf(), numberOfDays),
-    getDailyContracts(startDate.valueOf(), numberOfDays),
-    getDailyComments(startDate.valueOf(), numberOfDays),
-    getDailyNewUsers(startDate.valueOf(), numberOfDays),
+    getDailyBets(pg, startDate.valueOf(), numberOfDays),
+    getDailyContracts(pg, startDate.valueOf(), numberOfDays),
+    getDailyComments(pg, startDate.valueOf(), numberOfDays),
+    getDailyNewUsers(pg, startDate.valueOf(), numberOfDays),
     getStripeSales(startDate.valueOf(), numberOfDays),
   ])
   logMemory()
 
   const dailyBetCounts = dailyBets.map((bets) => bets.length)
+
   const dailyContractCounts = dailyContracts.map(
     (contracts) => contracts.length
   )
   const dailyCommentCounts = dailyComments.map((comments) => comments.length)
+  const dailyNewUserCounts = dailyNewUsers.map((users) => users.length)
 
   const dailySales = dailyStripeSales.map((sales) =>
     sum(sales.map((s) => s.amount))
@@ -213,8 +218,8 @@ export const updateStatsCore = async () => {
   log(
     `Fetched ${sum(dailyBetCounts)} bets, ${sum(
       dailyContractCounts
-    )} contracts, ${sum(dailyComments)} comments, from ${sum(
-      dailyNewUsers
+    )} contracts, ${sum(dailyCommentCounts)} comments, from ${sum(
+      dailyNewUserCounts
     )} unique users.`
   )
 
@@ -413,11 +418,16 @@ export const updateStatsCore = async () => {
       monthly: monthlyManaBet,
     },
   }
+
   log('Computed stats: ', statsData)
   await firestore.doc('stats/stats').set(statsData)
 }
 
 export const updateStats = functions
-  .runWith({ memory: '8GB', timeoutSeconds: 540 })
+  .runWith({
+    memory: '8GB',
+    timeoutSeconds: 540,
+    secrets: ['SUPABASE_PASSWORD'],
+  })
   .pubsub.schedule('every 60 minutes')
   .onRun(updateStatsCore)
