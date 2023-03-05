@@ -742,6 +742,34 @@ as $$ begin
   end if;
 end $$;
 
+create or replace function get_cpmm_pool_prob(pool jsonb, p numeric)
+    returns numeric
+    language plpgsql
+    immutable parallel safe
+as $$
+declare
+    p_no numeric := (pool->>'NO')::numeric;
+    p_yes numeric := (pool->>'YES')::numeric;
+    no_weight numeric := p * p_no;
+    yes_weight numeric := (1 - p) * p_yes + p * p_no;
+begin
+    return case when yes_weight = 0 then 1 else (no_weight / yes_weight) end;
+end
+$$;
+
+create or replace function get_cpmm_resolved_prob(data jsonb)
+    returns numeric
+    language sql
+    immutable parallel safe
+as $$
+select case
+    when data->>'resolution' = 'YES' then 1
+    when data->>'resolution' = 'NO' then 0
+    when data->>'resolution' = 'MKT' and data ? 'resolutionProbability' then (data->'resolutionProbability')::numeric
+    else null
+end
+$$;
+
 create or replace function ts_to_millis(ts timestamptz)
     returns bigint
     language sql
