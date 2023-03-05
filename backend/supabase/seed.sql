@@ -697,7 +697,7 @@ as $$
     where user_events.user_id = uid
     and user_events.data->>'name' = 'view market card'
     and user_events.data->>'contractId' = crf.contract_id
-    and (user_events.data->'timestamp')::bigint > (extract(epoch from (now() - interval '1 day')) * 1000)::bigint
+    and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
   )
   order by score desc
 $$;
@@ -777,7 +777,7 @@ create or replace function is_valid_contract(data jsonb)
 as $$
 select not (data->>'isResolved')::boolean
        and (data->>'visibility') != 'unlisted'
-       and (data->>'closeTime')::bigint > extract(epoch from now() + interval '10 minutes') * 1000
+       and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '10 minutes')
 $$ language sql;
 
 create or replace function get_related_contract_ids(source_id text)
