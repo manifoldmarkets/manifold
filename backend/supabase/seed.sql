@@ -186,9 +186,9 @@ alter table contract_bets enable row level security;
 drop policy if exists "public read" on contract_bets;
 create policy "public read" on contract_bets for select using (true);
 create index if not exists contract_bets_data_gin on contract_bets using GIN (data);
-/* serving stats page */
+/* serving stats page, recent bets API */
 create index if not exists contract_bets_created_time_global on contract_bets (
-    ((data->'createdTime')::bigint) desc
+    (to_jsonb(data)->>'createdTime') desc
 )
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (

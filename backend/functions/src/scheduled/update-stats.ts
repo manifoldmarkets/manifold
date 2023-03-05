@@ -40,7 +40,7 @@ async function getDailyBets(
       data->>'amount' as amount,
       bet_id
     from contract_bets
-    where (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
+    where to_jsonb(data)->>'createdTime' >= $1::text and to_jsonb(data)->>'createdTime' < $2::text`,
     [startTime, startTime + numberOfDays * DAY_MS]
   )
   const betsByDay: StatBet[][] = range(0, numberOfDays).map((_) => [])
