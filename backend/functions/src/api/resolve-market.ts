@@ -32,7 +32,6 @@ import {
 } from 'common/antes'
 import { User } from 'common/user'
 import { updateContractMetricsForUsers } from 'shared/helpers/user-contract-metrics'
-import { computeContractMetricUpdates } from '../scheduled/update-contract-metrics'
 import { runTxn, TxnData } from 'shared/run-txn'
 
 import { ContractResolutionPayoutTxn } from 'common/txn'
@@ -195,7 +194,7 @@ export const resolveMarket = async (
     resolutionProbability
   )
 
-  let contract = {
+  const contract = {
     ...unresolvedContract,
     ...removeUndefinedProps({
       isResolved: true,
@@ -210,8 +209,9 @@ export const resolveMarket = async (
     subsidyPool: 0,
   } as Contract
 
-  const updates = await computeContractMetricUpdates(contract, Date.now())
-  contract = { ...contract, ...(updates as any) }
+  // mqp: it would be nice to do this but would require some refactoring
+  // const updates = await computeContractMetricUpdates(contract, Date.now())
+  // contract = { ...contract, ...(updates as any) }
 
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
   const loanPayouts = getLoanPayouts(openBets)
