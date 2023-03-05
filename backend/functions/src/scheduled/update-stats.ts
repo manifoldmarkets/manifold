@@ -187,6 +187,7 @@ export const updateStatsCore = async () => {
     (contracts) => contracts.length
   )
   const dailyCommentCounts = dailyComments.map((comments) => comments.length)
+  const dailyNewUserCounts = dailyNewUsers.map((users) => users.length)
 
   const dailySales = dailyStripeSales.map((sales) =>
     sum(sales.map((s) => s.amount))
@@ -217,8 +218,8 @@ export const updateStatsCore = async () => {
   log(
     `Fetched ${sum(dailyBetCounts)} bets, ${sum(
       dailyContractCounts
-    )} contracts, ${sum(dailyComments)} comments, from ${sum(
-      dailyNewUsers
+    )} contracts, ${sum(dailyCommentCounts)} comments, from ${sum(
+      dailyNewUserCounts
     )} unique users.`
   )
 
