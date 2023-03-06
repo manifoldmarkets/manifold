@@ -28,30 +28,7 @@ export const onCreateReaction = functions.firestore
       reaction.contentType === 'comment' &&
       count >= MINIMUM_LIKES_TO_NOTIFY
     ) {
-      const commentSnap = await firestore
-        .collection(`contracts/${reaction.contentParentId}/comments`)
-        .doc(reaction.contentId)
-        .get()
-      if (!commentSnap.exists) return
-      const comment = commentSnap.data() as Comment
-      // Only notify on top-level comments (for now)
-      if (comment.replyToCommentId) return
-      const user = await getUser(comment.userId)
-      if (!user) return
-      const contractSnap = await firestore
-        .collection('contracts')
-        .doc(reaction.contentParentId)
-        .get()
-      if (!contractSnap.exists) return
-      const contract = contractSnap.data() as Contract
-      await createTopLevelLikedCommentNotification(
-        comment.id,
-        user,
-        richTextToString(comment.content),
-        contract,
-        eventId,
-        otherReactions.map((r) => r.userId)
-      )
+      await handleTopLevelCommentLike(reaction, otherReactions, eventId)
     }
   })
 
@@ -95,4 +72,35 @@ const updateCommentLikes = async (reaction: Reaction, count: number) => {
     .update({
       likes: count,
     })
+}
+
+const handleTopLevelCommentLike = async (
+  reaction: Reaction,
+  otherReactions: Reaction[],
+  eventId: string
+) => {
+  const commentSnap = await firestore
+    .collection(`contracts/${reaction.contentParentId}/comments`)
+    .doc(reaction.contentId)
+    .get()
+  if (!commentSnap.exists) return
+  const comment = commentSnap.data() as Comment
+  // Only notify on top-level comments (for now)
+  if (comment.replyToCommentId) return
+  const user = await getUser(comment.userId)
+  if (!user) return
+  const contractSnap = await firestore
+    .collection('contracts')
+    .doc(reaction.contentParentId)
+    .get()
+  if (!contractSnap.exists) return
+  const contract = contractSnap.data() as Contract
+  await createTopLevelLikedCommentNotification(
+    comment.id,
+    user,
+    richTextToString(comment.content),
+    contract,
+    eventId,
+    otherReactions.map((r) => r.userId)
+  )
 }
