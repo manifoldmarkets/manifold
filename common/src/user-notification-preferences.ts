@@ -1,5 +1,5 @@
 import { filterDefined } from './util/array'
-import { notification_reason_types } from './notification'
+import { notification_reason_types, NotificationReason } from './notification'
 import { getFunctionUrl } from './api'
 import { DOMAIN } from './envs/constants'
 import { PrivateUser } from './user'
@@ -216,9 +216,7 @@ export const notificationReasonToSubscriptionType: Partial<
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
 }
 
-export function getNotificationPreference(
-  reason: notification_reason_types | notification_preference
-) {
+export function getNotificationPreference(reason: NotificationReason) {
   return (notificationReasonToSubscriptionType[
     reason as notification_reason_types
   ] ?? reason) as notification_preference
@@ -227,7 +225,7 @@ export function getNotificationPreference(
 export const getNotificationDestinationsForUser = (
   privateUser: PrivateUser,
   // TODO: accept reasons array from most to least important and work backwards
-  reason: notification_reason_types | notification_preference
+  reason: NotificationReason
 ) => {
   const notificationSettings = privateUser.notificationPreferences
   const unsubscribeEndpoint = getFunctionUrl('unsubscribe')

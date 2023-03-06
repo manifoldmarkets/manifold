@@ -1,6 +1,7 @@
 import {
   BalanceChangeNotificationTypes,
   Notification,
+  NotificationReason,
 } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { groupBy, sortBy } from 'lodash'
@@ -70,10 +71,15 @@ function useUnseenNotifications(privateUser: PrivateUser) {
   return unseenNotifications
 }
 
-export function useGroupedNotifications(privateUser: PrivateUser) {
+export function useGroupedNonBalanceChangeNotifications(
+  privateUser: PrivateUser
+) {
   const notifications = useNotifications(privateUser) ?? []
+  const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
   return useMemo(() => {
-    return groupNotifications(notifications)
+    return groupNotifications(
+      notifications.filter((n) => !balanceChangeOnlyReasons.includes(n.reason))
+    )
   }, [notifications])
 }
 

@@ -28,7 +28,7 @@ import { Title } from 'web/components/widgets/title'
 import {
   NotificationGroup,
   useGroupedBalanceChangeNotifications,
-  useGroupedNotifications,
+  useGroupedNonBalanceChangeNotifications,
 } from 'web/hooks/use-notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
@@ -194,7 +194,8 @@ function RenderNotificationGroups(props: {
 
 function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
-  const allGroupedNotifications = useGroupedNotifications(privateUser)
+  const allGroupedNotifications =
+    useGroupedNonBalanceChangeNotifications(privateUser)
 
   const [page, setPage] = useState(0)
 
