@@ -112,11 +112,11 @@ export function NotificationSettings(props: {
     label: 'New Comments',
     subscriptionTypes: [
       'some_comments_on_watched_markets',
-      'all_comments_on_watched_markets',
-      'all_comments_on_contracts_with_shares_in_on_watched_markets',
       // TODO: combine these two
       'all_replies_to_my_comments_on_watched_markets',
       'all_replies_to_my_answers_on_watched_markets',
+      'all_comments_on_contracts_with_shares_in_on_watched_markets',
+      'all_comments_on_watched_markets',
     ],
   }
 

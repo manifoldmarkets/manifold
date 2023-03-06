@@ -118,7 +118,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     verb: 'answered your question',
   },
   some_comments_on_watched_markets: {
-    simple: 'Liked comments on markets you watch',
+    simple: 'Popular comments on markets you watch',
     detailed: 'Comments on markets you watch that other users have liked',
   },
   all_comments_on_my_markets: {
