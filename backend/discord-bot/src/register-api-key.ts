@@ -1,7 +1,7 @@
 import { User } from 'common/user'
-import { config } from './constants/config.js'
+import { config } from 'discord-bot/constants/config'
 import { Message } from 'discord.js'
-import { writeApiKeyToDiscordUserId } from './storage.js'
+import { writeApiKeyToDiscordUserId } from 'discord-bot/storage'
 
 export const registerApiKey = async (message: Message) => {
   const key = message.content.trim()

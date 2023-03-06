@@ -1,5 +1,5 @@
 import { FullMarket } from 'common/api-market-types'
-import { config } from '../constants/config.js'
+import { config } from 'discord-bot/constants/config'
 import {
   AttachmentBuilder,
   ChatInputCommandInteraction,
@@ -9,17 +9,21 @@ import {
   TextChannel,
   User,
 } from 'discord.js'
-import { customEmojis, emojis, getBettingEmojisAsStrings } from '../emojis.js'
+import {
+  customEmojis,
+  emojis,
+  getBettingEmojisAsStrings,
+} from 'discord-bot/emojis'
 import {
   getCurrentMarketDescription,
   getOpenBinaryMarketFromSlug,
   getSlug,
   handleReaction,
-} from '../helpers.js'
+} from 'discord-bot/helpers'
 import {
   messagesHandledViaInteraction,
   saveMarketToMessageId,
-} from '../storage.js'
+} from 'discord-bot/storage'
 
 const data = new SlashCommandBuilder()
   .setName('market')

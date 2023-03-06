@@ -1,2 +1,2 @@
-import { marketCommand } from './market-react-bets.js'
+import { marketCommand } from 'discord-bot/commands/market-react-bets'
 export const commands = [marketCommand]

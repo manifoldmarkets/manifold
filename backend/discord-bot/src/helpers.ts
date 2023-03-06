@@ -1,7 +1,7 @@
 import { FullMarket } from 'common/api-market-types'
 import { randomString } from 'common/util/random'
 import * as console from 'console'
-import { config } from './constants/config.js'
+import { config } from 'discord-bot/constants/config'
 import {
   EmbedBuilder,
   Message,
