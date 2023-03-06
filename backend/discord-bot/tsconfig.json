@@ -2,16 +2,15 @@
     "compilerOptions": {
         "rootDir": "src",
         "composite": true,
-        "target": "es2021",
+        "target": "es2022",
         "module": "es2022",
-        "lib": ["es2021"],
         "noImplicitReturns": true,
         "moduleResolution": "node",
         "outDir": "./lib",
         "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
         "strict": true,
         "paths": {
-            "common/*": ["../common/src/*", "../../common/lib/*"],
+            "common/*": ["../../common/src/*", "../../../common/lib/*"],
             "discord-bot/*": ["./src/*"]
         }
          },
@@ -21,10 +20,12 @@
     },
     "references": [
         {
-            "path": "../common"
+            "path": "../../common"
         },
     ],
-
+    "tsc-alias": {
+        "resolveFullPaths": true
+    },
     "compileOnSave": true,
     "include": ["src/**/*.ts"]
 }

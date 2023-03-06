@@ -1,6 +1,6 @@
 import { REST } from '@discordjs/rest'
 import * as console from 'console'
-import { commands } from './commands/index.js'
+import { commands } from 'discord-bot/commands'
 
 import {
   ChatInputCommandInteraction,
