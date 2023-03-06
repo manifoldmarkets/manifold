@@ -2,9 +2,8 @@
     "compilerOptions": {
         "rootDir": "src",
         "composite": true,
-        "target": "es2021",
+        "target": "es2022",
         "module": "es2022",
-        "lib": ["es2021"],
         "noImplicitReturns": true,
         "moduleResolution": "node",
         "outDir": "./lib",

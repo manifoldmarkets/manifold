@@ -2,14 +2,14 @@
   "compilerOptions": {
     "rootDir": "src",
     "composite": true,
-    "module": "commonjs",
+    "module": "es2022",
     "moduleResolution": "node",
     "noImplicitReturns": true,
     "outDir": "lib",
     "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017",
+    "target": "es2022",
     "paths": {
       "common/*": ["./src/*", "../lib/*"]
     }
