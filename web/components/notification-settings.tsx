@@ -69,6 +69,7 @@ export function NotificationSettings(props: {
     'unique_bettors_on_your_contract',
     'profit_loss_updates',
     'opt_out_all',
+    'some_comments_on_watched_markets',
     // TODO: add these
     // biggest winner, here are the rest of your markets
 
@@ -94,6 +95,7 @@ export function NotificationSettings(props: {
     'all_comments_on_my_markets',
     'all_answers_on_my_markets',
     'tagged_user',
+    'some_comments_on_watched_markets',
 
     // TODO: add these
     // 'limit_order_fills',
@@ -109,11 +111,12 @@ export function NotificationSettings(props: {
   const comments: SectionData = {
     label: 'New Comments',
     subscriptionTypes: [
-      'all_comments_on_watched_markets',
-      'all_comments_on_contracts_with_shares_in_on_watched_markets',
+      'some_comments_on_watched_markets',
       // TODO: combine these two
       'all_replies_to_my_comments_on_watched_markets',
       'all_replies_to_my_answers_on_watched_markets',
+      'all_comments_on_contracts_with_shares_in_on_watched_markets',
+      'all_comments_on_watched_markets',
     ],
   }
 
