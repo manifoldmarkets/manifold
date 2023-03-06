@@ -13,9 +13,9 @@ const firestore = admin.firestore()
 async function main() {
   const privateUsers = filterDefined(await getAllPrivateUsers())
   const defaults = getDefaultNotificationPreferences(!isProd())
-
+  let count = 0
   await Promise.all(
-    privateUsers.map((privateUser) => {
+    privateUsers.map(async (privateUser) => {
       if (!privateUser.id) return Promise.resolve()
       const prefs = privateUser.notificationPreferences
         ? privateUser.notificationPreferences
@@ -26,7 +26,7 @@ async function main() {
       if (prefs[newPref] === undefined) {
         prefs[newPref] = defaults[newPref]
       }
-      return firestore
+      await firestore
         .collection('private-users')
         .doc(privateUser.id)
         .update({
@@ -34,6 +34,8 @@ async function main() {
             ...prefs,
           },
         })
+      count++
+      if (count % 100 === 0) console.log('Updated', count, 'users')
     })
   )
 }
