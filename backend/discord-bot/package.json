@@ -8,10 +8,10 @@
     "alias": "tsc-alias",
     "compile": "tsc -b",
     "build:watch": "concurrently --kill-others \"tsc -w\" \"tsc-alias -w\"",
-    "build": "yarn compile && yarn --cwd=../common alias && yarn alias && yarn dist",
+    "build": "yarn compile && yarn --cwd=../../common alias && yarn alias && yarn dist",
     "dist": "yarn dist:prepare && yarn dist:copy",
-    "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib  dist/discord-bot/lib",
-    "dist:copy": "cp -R ../common/lib/* dist/common/lib && cp -R ./lib/* dist/discord-bot/lib && cp ../yarn.lock dist && cp package.json dist"
+    "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib  dist/backend/discord-bot/lib",
+    "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ./lib/* dist/backend/discord-bot/lib && cp ../../yarn.lock dist && cp package.json dist"
   },
   "type": "module",
   "dependencies": {

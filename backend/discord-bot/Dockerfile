@@ -9,4 +9,4 @@ RUN yarn install --frozen-lockfile --production
 # then copy over typescript payload
 COPY dist ./
 
-CMD ["node", "discord-bot/lib/index.js"]
+CMD ["node", "backend/discord-bot/lib/index.js"]
