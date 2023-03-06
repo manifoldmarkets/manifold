@@ -6,11 +6,9 @@ import { getContract } from 'shared/utils'
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import {
-  loadContracts,
-  loadUserDataForRecommendations,
-} from 'functions/scheduled/update-recommended'
+import { loadUserDataForRecommendations } from 'functions/scheduled/update-recommended'
 import { Contract } from 'common/contract'
+import { getAll } from 'shared/supabase/utils'
 
 const recommend = async () => {
   console.log('Recommend script')
@@ -31,7 +29,7 @@ const recommend = async () => {
     console.log('Loaded contracts from file.')
   } else {
     console.log('Loading contracts...')
-    contracts = await loadContracts()
+    contracts = await getAll(pg, 'contracts')
     await writeJson('contracts1.json', contracts)
   }
 
