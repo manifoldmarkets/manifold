@@ -35,7 +35,8 @@ async function main() {
           },
         })
       count++
-      if (count % 100 === 0) console.log('Updated', count, 'users')
+      if (count % 100 === 0)
+        console.log('Updated', count, 'users of', privateUsers.length)
     })
   )
 }
