@@ -86,7 +86,7 @@ export async function updateGroupMetrics() {
   for (const groupId of groupIds) {
     const topTraderScores = profitScoresByGroup[groupId] ?? []
     const topCreatorScores = creatorScoresByGroup[groupId] ?? []
-    const doc = firestore.collection('groups').doc('id')
+    const doc = firestore.collection('groups').doc(groupId)
     writer.update(doc, {
       cachedLeaderboard: {
         topTraders: sortBy(topTraderScores, (x) => -x.score),
