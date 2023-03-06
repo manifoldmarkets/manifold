@@ -5,7 +5,7 @@ export async function getIds<T extends TableName>(
   db: SupabaseDirectClient,
   table: T
 ) {
-  return db.map('select id from $1~', [table], (r) => r.data as string)
+  return db.map('select id from $1~', [table], (r) => r.id as string)
 }
 
 export async function getAll<T extends TableName>(
