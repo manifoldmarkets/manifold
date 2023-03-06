@@ -1,19 +1,21 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { CollectionReference } from 'firebase-admin/firestore'
-import { sumBy } from 'lodash'
+import { groupBy, mapValues } from 'lodash'
 
-import { getValues, invokeFunction, loadPaginated, log } from 'shared/utils'
-import { Bet, LimitBet } from 'common/bet'
-import { Contract, CPMM, CPMMContract } from 'common/contract'
+import { invokeFunction, log } from 'shared/utils'
+import { LimitBet } from 'common/bet'
+import { CPMM } from 'common/contract'
 import { DAY_MS } from 'common/util/time'
 import { computeElasticity } from 'common/calculate-metrics'
-import { getProbability } from 'common/calculate'
 import { mapAsync } from 'common/util/promise'
 import { hasChanges } from 'common/util/object'
 import { newEndpointNoAuth } from '../api/helpers'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
+import { getAll } from 'shared/supabase/utils'
 
-const firestore = admin.firestore()
 export const scheduleUpdateContractMetrics = functions.pubsub
   .schedule('every 15 minutes')
   .onRun(async () => {
@@ -25,7 +27,12 @@ export const scheduleUpdateContractMetrics = functions.pubsub
   })
 
 export const updatecontractmetrics = newEndpointNoAuth(
-  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
+  {
+    timeoutSeconds: 2000,
+    memory: '2GiB',
+    minInstances: 0,
+    secrets: ['SUPABASE_PASSWORD'],
+  },
   async (_req) => {
     await updateContractMetrics()
     return { success: true }
@@ -33,18 +40,59 @@ export const updatecontractmetrics = newEndpointNoAuth(
 )
 
 export async function updateContractMetrics() {
-  log('Loading contracts...')
-  const contracts = await loadPaginated(
-    firestore.collection('contracts') as CollectionReference<Contract>
-  )
+  const firestore = admin.firestore()
+  const pg = createSupabaseDirectClient()
+  log('Loading contract data...')
+  const contracts = await getAll(pg, 'contracts')
   log(`Loaded ${contracts.length} contracts.`)
 
-  log('Computing metric updates...')
   const now = Date.now()
+  const yesterday = now - DAY_MS
+  const weekAgo = now - 7 * DAY_MS
+  const monthAgo = now - 30 * DAY_MS
 
+  log('Loading historic contract probabilities...')
+  const [yesterdayProbs, weekAgoProbs, monthAgoProbs] = await Promise.all(
+    [yesterday, weekAgo, monthAgo].map((t) => getContractProbsAt(pg, t))
+  )
+
+  log('Loading unique bettors...')
+  const [yesterdayBettors, weekAgoBettors, monthAgoBettors] = await Promise.all(
+    [yesterday, weekAgo, monthAgo].map((t) => getBettorsSince(pg, t))
+  )
+
+  log('Loading volume...')
+  const volume = await getVolumeSince(pg, yesterday)
+
+  log('Loading unfilled limits...')
+  const limits = await getUnfilledLimitOrders(pg)
+
+  log('Computing metric updates...')
   const writer = firestore.bulkWriter()
   await mapAsync(contracts, async (contract) => {
-    const update = await computeContractMetricUpdates(contract, now)
+    let cpmmFields: Partial<CPMM> = {}
+    if (contract.mechanism === 'cpmm-1') {
+      const cid = contract.id
+      cpmmFields = {
+        prob: yesterdayProbs[cid].current,
+        probChanges: {
+          day: yesterdayProbs[cid].current - yesterdayProbs[cid].historical,
+          week: weekAgoProbs[cid].current - weekAgoProbs[cid].historical,
+          month: monthAgoProbs[cid].current - monthAgoProbs[cid].historical,
+        },
+      }
+    }
+    const isClosed = contract.closeTime && contract.closeTime < now
+    const elasticity = computeElasticity(limits[contract.id] ?? [], contract)
+    const update = {
+      volume24Hours: volume[contract.id] ?? 0,
+      elasticity: isClosed ? 0 : elasticity,
+      uniqueBettors24Hours: yesterdayBettors[contract.id] ?? 0,
+      uniqueBettors7Days: weekAgoBettors[contract.id] ?? 0,
+      uniqueBettors30Days: monthAgoBettors[contract.id] ?? 0,
+      ...cpmmFields,
+    }
+
     if (hasChanges(contract, update)) {
       const contractDoc = firestore.collection('contracts').doc(contract.id)
       writer.update(contractDoc, update)
@@ -56,127 +104,85 @@ export async function updateContractMetrics() {
   log('Done.')
 }
 
-export const computeContractMetricUpdates = async (
-  contract: Contract,
-  now: number
-) => {
-  const yesterday = now - DAY_MS
-  const weekAgo = now - 7 * DAY_MS
-  const monthAgo = now - 30 * DAY_MS
-  const yesterdayBets = await getValues<Bet>(
-    firestore
-      .collection('contracts')
-      .doc(contract.id)
-      .collection('bets')
-      .orderBy('createdTime', 'desc')
-      .where('createdTime', '>=', yesterday)
-      .where('isRedemption', '==', false)
-      .where('isAnte', '==', false)
+const getUnfilledLimitOrders = async (pg: SupabaseDirectClient) => {
+  const unfilledBets = await pg.manyOrNone(
+    `select contract_id, data
+    from contract_bets
+    where (data->'limitProb')::numeric > 0
+    and not (data->'isFilled')::boolean
+    and not (data->'isCancelled')::boolean`
   )
-  const unfilledBets = await getValues<LimitBet>(
-    firestore
-      .collection('contracts')
-      .doc(contract.id)
-      .collection('bets')
-      .where('limitProb', '>', 0)
-      .where('isFilled', '==', false)
-      .where('isCancelled', '==', false)
+  return mapValues(
+    groupBy(unfilledBets, (r) => r.contract_id as string),
+    (rows) => rows.map((r) => r.data as LimitBet)
   )
+}
 
-  let cpmmFields: Partial<CPMM> = {}
-  if (contract.mechanism === 'cpmm-1') {
-    cpmmFields = await computeProbChanges(
-      contract,
-      yesterday,
-      weekAgo,
-      monthAgo
+const getVolumeSince = async (pg: SupabaseDirectClient, since: number) => {
+  return Object.fromEntries(
+    await pg.map(
+      `select contract_id, sum(abs((data->'amount')::numeric)) as volume
+      from contract_bets
+      where (data->'createdTime')::bigint >= $1
+      and not (data->'isRedemption')::boolean
+      and not (data->'isAnte')::boolean
+      group by contract_id`,
+      [since],
+      (r) => [r.contract_id as string, parseFloat(r.volume as string)]
     )
-  }
+  )
+}
 
-  const [uniqueBettors24Hours, uniqueBettors7Days, uniqueBettors30Days] =
-    await Promise.all(
-      [yesterday, weekAgo, monthAgo].map((t) =>
-        getUniqueBettors(contract.id, t)
+const getBettorsSince = async (pg: SupabaseDirectClient, since: number) => {
+  return Object.fromEntries(
+    await pg.map(
+      `select contract_id, count(*) as n
+      from user_contract_metrics
+      where (data->'lastBetTime')::bigint > $1
+      group by contract_id`,
+      [since],
+      (r) => [r.contract_id as string, r.n as number]
+    )
+  )
+}
+
+const getContractProbsAt = async (pg: SupabaseDirectClient, when: number) => {
+  return Object.fromEntries(
+    await pg.map(
+      `with probs_before as (
+        select distinct on (contract_id) contract_id, (data->>'probAfter')::numeric as prob
+        from contract_bets
+        where to_jsonb(data)->>'createdTime' < $1::text
+        order by contract_id, to_jsonb(data)->>'createdTime' desc
+      ), probs_after as (
+        select distinct on (contract_id) contract_id, (data->>'probBefore')::numeric as prob
+        from contract_bets
+        where to_jsonb(data)->>'createdTime' >= $1::text
+        order by contract_id, to_jsonb(data)->>'createdTime' asc
+      ), current_probs as (
+        select id, data,
+          get_cpmm_resolved_prob(data) as resolved_prob,
+          get_cpmm_pool_prob(data->'pool', (data->>'p')::numeric) as pool_prob
+        from contracts
+        where data->>'mechanism' = 'cpmm-1'
       )
+      select id, coalesce(cp.resolved_prob, cp.pool_prob) as current_prob,
+        case
+          when data ? 'resolutionTime' and data->>'resolutionTime' <= $1::text
+          then coalesce(cp.resolved_prob, cp.pool_prob)
+          else coalesce(pa.prob, pb.prob, cp.pool_prob)
+        end as historical_prob
+      from current_probs as cp
+      left join probs_before as pb on pb.contract_id = cp.id
+      left join probs_after as pa on pa.contract_id = cp.id`,
+      [when],
+      (r) => [
+        r.id as string,
+        {
+          current: parseFloat(r.current_prob as string),
+          historical: parseFloat(r.historical_prob as string),
+        },
+      ]
     )
-  const isClosed = contract.closeTime && contract.closeTime < now
-
-  return {
-    volume24Hours: sumBy(yesterdayBets, (b) => Math.abs(b.amount)),
-    elasticity: isClosed ? 0 : computeElasticity(unfilledBets, contract),
-    uniqueBettors24Hours,
-    uniqueBettors7Days,
-    uniqueBettors30Days,
-    ...cpmmFields,
-  }
-}
-
-const computeProbChanges = async (
-  contract: CPMMContract,
-  yesterday: number,
-  weekAgo: number,
-  monthAgo: number
-) => {
-  let prob = getProbability(contract)
-  const { resolution, resolutionProbability } = contract
-  if (resolution === 'YES') prob = 1
-  else if (resolution === 'NO') prob = 0
-  else if (resolution === 'MKT' && resolutionProbability !== undefined)
-    prob = resolutionProbability
-
-  const [probYesterday, probWeekAgo, probMonthAgo] = await Promise.all(
-    [yesterday, weekAgo, monthAgo].map((t) => getProbAt(contract, prob, t))
   )
-  const probChanges = {
-    day: prob - probYesterday,
-    week: prob - probWeekAgo,
-    month: prob - probMonthAgo,
-  }
-  return { prob, probChanges }
-}
-
-const getProbAt = async (
-  contract: Contract,
-  currentProb: number,
-  since: number
-) => {
-  if (contract.resolutionTime && since >= contract.resolutionTime)
-    return currentProb
-
-  const [betBefore, betAfter] = await getBetsAroundTime(contract.id, since)
-  if (betBefore) {
-    return betBefore.probAfter
-  } else if (betAfter) {
-    return betAfter.probBefore
-  } else {
-    return currentProb // there are no bets at all
-  }
-}
-
-async function getBetsAroundTime(contractId: string, when: number) {
-  const bets = firestore
-    .collection('contracts')
-    .doc(contractId)
-    .collection('bets') as CollectionReference<Bet>
-  const beforeQ = bets
-    .where('createdTime', '<', when)
-    .orderBy('createdTime', 'desc')
-    .limit(1)
-  const afterQ = bets
-    .where('createdTime', '>=', when)
-    .orderBy('createdTime', 'asc')
-    .limit(1)
-  const results = await Promise.all([beforeQ.get(), afterQ.get()])
-  return results.map((d) => d.docs[0]?.data() as Bet | undefined)
-}
-
-async function getUniqueBettors(contractId: string, since: number) {
-  return (
-    await firestore
-      .collectionGroup('contract-metrics')
-      .where('contractId', '==', contractId)
-      .where('lastBetTime', '>', since)
-      .count()
-      .get()
-  ).data().count
 }

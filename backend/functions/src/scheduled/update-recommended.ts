@@ -1,22 +1,17 @@
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
-import { CollectionReference } from 'firebase-admin/firestore'
 import { groupBy } from 'lodash'
 
-import { invokeFunction, loadPaginated } from 'shared/utils'
+import { invokeFunction } from 'shared/utils'
 import { newEndpointNoAuth } from '../api/helpers'
 import {
   LATENT_FEATURES_COUNT,
   getMarketRecommendations,
 } from 'common/recommendation'
-import { Contract } from 'common/contract'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { bulkUpsert } from 'shared/supabase/utils'
-
-const firestore = admin.firestore()
+import { getAll, bulkUpsert } from 'shared/supabase/utils'
 
 export const scheduleUpdateRecommended = functions.pubsub
   // Run every hour.
@@ -48,7 +43,7 @@ export const updateRecommendedMarkets = async () => {
   const pg = createSupabaseDirectClient()
 
   console.log('Loading contracts...')
-  const contracts = await loadContracts()
+  const contracts = await getAll(pg, 'contracts')
 
   console.log('Loading user data...')
   const userData = await loadUserDataForRecommendations(pg)
@@ -170,12 +165,4 @@ export const loadUserDataForRecommendations = async (
     likedIds: likedIds[userId] ?? [],
     groupIds: groupIds[userId] ?? [],
   }))
-}
-
-export const loadContracts = async () => {
-  const contracts = await loadPaginated(
-    firestore.collection('contracts') as CollectionReference<Contract>
-  )
-  console.log('Loaded', contracts.length, 'contracts')
-  return contracts
 }
