@@ -136,7 +136,7 @@ const getVolumeSince = async (pg: SupabaseDirectClient, since: number) => {
 const getBettorsSince = async (pg: SupabaseDirectClient, since: number) => {
   return Object.fromEntries(
     await pg.map(
-      `select contract_id, count(*) as n
+      `select contract_id, count(*)::int as n
       from user_contract_metrics
       where (data->'lastBetTime')::bigint > $1
       group by contract_id`,
