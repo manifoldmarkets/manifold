@@ -43,7 +43,7 @@ export function NumberInput(props: {
         value={numberString}
         error={!!error}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value.substring(0, 9))}
+        onChange={(e) => onChange(e.target.value.substring(0, 12))}
       />
 
       <Spacer h={4} />
