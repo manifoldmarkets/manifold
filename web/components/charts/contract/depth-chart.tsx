@@ -63,7 +63,7 @@ export function DepthChart(props: {
 
   return (
     <Col>
-      <h2 className="text-ink-1000">Market depth chart</h2>
+      <h2 className="text-ink-1000 self-center text-sm">Market depth</h2>
       <VictoryChart
         minDomain={{ x: minX, y: 0 }}
         maxDomain={{ x: maxX, y: maxAmount }}
@@ -78,7 +78,7 @@ export function DepthChart(props: {
           style={axisStyle}
         />
         <VictoryAxis
-          tickFormat={(t) => `${Math.round(t)}` + 'M'}
+          tickFormat={(t) => `M${Math.round(t)}`}
           tickCount={6}
           dependentAxis={true}
           axisLabelComponent={<VictoryLabel dy={-30} />}
