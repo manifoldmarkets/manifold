@@ -13,27 +13,28 @@ const firestore = admin.firestore()
 async function main() {
   const privateUsers = filterDefined(await getAllPrivateUsers())
   const defaults = getDefaultNotificationPreferences(!isProd())
+  console.log('Updating', privateUsers.length, 'users')
   let count = 0
   await Promise.all(
     privateUsers.map(async (privateUser) => {
-      if (!privateUser.id) return Promise.resolve()
-      const prefs = privateUser.notificationPreferences
+      if (!privateUser.id) return
+      const currentUserPreferences = privateUser.notificationPreferences
         ? privateUser.notificationPreferences
         : defaults
       // Add your new pref here, and be sure to add the default as well
       const newPref: notification_preference =
         'some_comments_on_watched_markets'
-      if (prefs[newPref] === undefined) {
-        prefs[newPref] = defaults[newPref]
+      if (currentUserPreferences[newPref] === undefined) {
+        currentUserPreferences[newPref] = defaults[newPref]
+        await firestore
+          .collection('private-users')
+          .doc(privateUser.id)
+          .update({
+            notificationPreferences: {
+              ...currentUserPreferences,
+            },
+          })
       }
-      await firestore
-        .collection('private-users')
-        .doc(privateUser.id)
-        .update({
-          notificationPreferences: {
-            ...prefs,
-          },
-        })
       count++
       if (count % 100 === 0)
         console.log('Updated', count, 'users of', privateUsers.length)
