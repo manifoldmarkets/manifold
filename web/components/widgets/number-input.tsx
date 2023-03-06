@@ -39,11 +39,11 @@ export function NumberInput(props: {
         pattern="[0-9]*"
         inputMode="numeric"
         placeholder={placeholder ?? '0'}
-        maxLength={9}
+        maxLength={12}
         value={numberString}
         error={!!error}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value.substring(0, 12))}
+        onChange={(e) => onChange(e.target.value)}
       />
 
       <Spacer h={4} />
