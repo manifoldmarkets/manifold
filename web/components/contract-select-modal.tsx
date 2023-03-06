@@ -31,8 +31,8 @@ export function SelectMarketsModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
-      <Col className="relative h-[85vh] w-full gap-4 rounded-md bg-white p-8">
-        <div className={'pb-0 text-xl text-indigo-700'}>{title}</div>
+      <Col className="bg-canvas-0 text-ink-1000 relative h-[85vh] w-full gap-4 rounded-md p-8">
+        <div className={'text-primary-700 pb-0 text-xl'}>{title}</div>
         {description}
         <SelectMarkets
           submitLabel={submitLabel}
@@ -103,11 +103,11 @@ export function SelectMarkets(props: {
           excludeContractIds: additionalFilter?.excludeContractIds,
           facetFilters: getUsersBlockFacetFilters(privateUser),
         }}
-        headerClassName={clsx('bg-white', headerClassName)}
+        headerClassName={clsx('bg-canvas-0', headerClassName)}
         {...contractSearchOptions}
         listViewDisabled={true}
       />
-      <Row className="fixed inset-x-0 bottom-0 z-40 justify-end bg-white px-8 py-2">
+      <Row className="bg-canvas-0 fixed inset-x-0 bottom-0 z-40 justify-end px-8 py-2">
         {!loading && (
           <Row className="grow justify-end gap-4">
             <Button

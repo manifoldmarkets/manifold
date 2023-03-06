@@ -29,7 +29,7 @@ export function AddMarketToGroupModal(props: {
   return (
     <Modal open={open} setOpen={setOpen} size="lg">
       <Col className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}>
-        <div className="fixed inset-x-0 top-0 z-40 w-full rounded-t-md bg-indigo-100 py-2 px-8 text-indigo-800">
+        <div className="bg-primary-100 text-primary-800 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-8">
           {group.name}
         </div>
         {group.privacyStatus == 'public' &&
@@ -64,7 +64,7 @@ export function AddMarketToGroupModal(props: {
                   ),
                 },
               ]}
-              className="sticky top-4 z-40 bg-white"
+              className="bg-canvas-0 sticky top-4 z-40"
             />
           </Col>
         )}

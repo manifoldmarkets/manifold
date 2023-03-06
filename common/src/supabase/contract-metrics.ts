@@ -87,12 +87,13 @@ export async function getBestAndWorstUserContractMetrics(
   ) as ContractMetrics[]
 }
 
+//TODO: Transition this to rpc call
 export async function getUsersContractMetricsOrderedByProfit(
   userIds: string[],
   db: SupabaseClient,
   from: 'day' | 'week' | 'month' | 'all'
 ) {
-  const chunks = chunk(userIds, 200)
+  const chunks = chunk(userIds, 100)
   const promises = chunks.map(async (chunk) => {
     const orderString =
       from !== 'all' ? `data->from->${from}->profit` : 'data->profit'

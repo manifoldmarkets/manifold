@@ -65,9 +65,9 @@ function ReferralsDialog(props: {
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="rounded bg-white p-6">
+      <Col className="bg-canvas-0 rounded p-6">
         <div className="p-2 pb-1 text-xl">{user.name}</div>
-        <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
+        <div className="text-ink-500 p-2 pt-0 text-sm">@{user.username}</div>
         <Tabs
           className="mb-4"
           tabs={[
@@ -76,7 +76,7 @@ function ReferralsDialog(props: {
               content: (
                 <Col className="gap-2">
                   {referredUsers.length === 0 && (
-                    <div className="text-gray-500">No users yet...</div>
+                    <div className="text-ink-500">No users yet...</div>
                   )}
                   {referredUsers.map((refUser) => (
                     <Row
@@ -147,7 +147,7 @@ function ReferralsDialog(props: {
                       <span className={'text-error'}>{errorText}</span>
                     </>
                   ) : (
-                    <div className="justify-center text-gray-700">
+                    <div className="text-ink-700 justify-center">
                       {referredByUser ? (
                         <Row className={'items-center gap-2 p-2'}>
                           <Avatar
@@ -160,7 +160,7 @@ function ReferralsDialog(props: {
                           />
                         </Row>
                       ) : (
-                        <span className={'text-gray-500'}>No one...</span>
+                        <span className={'text-ink-500'}>No one...</span>
                       )}
                     </div>
                   )}

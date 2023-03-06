@@ -354,7 +354,7 @@ export const TooltipContainer = (props: {
       ref={setElem}
       className={clsx(
         className,
-        'pointer-events-none absolute z-10 whitespace-pre rounded border border-gray-200 bg-white/80 p-2 px-4 py-2 text-xs sm:text-sm'
+        'border-ink-200 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border p-2 px-4 py-2 text-xs sm:text-sm'
       )}
       style={{
         margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,

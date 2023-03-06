@@ -26,7 +26,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
             username={user.username}
             avatarUrl={user.avatarUrl}
             size={24}
-            className="bg-white shadow-sm shadow-indigo-300"
+            className="bg-canvas-0 shadow-primary-300 shadow-sm"
           />
 
           <Col className="w-full gap-4 pl-5">
@@ -39,7 +39,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
                   {user.isBannedFromPosting && <PostBanBadge />}
                 </span>
                 <Row className="sm:text-md items-center gap-x-3 text-sm ">
-                  <span className={' text-gray-400'}>@{user.username}</span>
+                  <span className={' text-ink-400'}>@{user.username}</span>
                 </Row>
               </Col>
               <Row

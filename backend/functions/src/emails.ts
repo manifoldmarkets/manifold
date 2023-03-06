@@ -13,7 +13,10 @@ import { formatNumericProbability } from 'common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getUser, log } from 'shared/utils'
 import { getContractOGProps } from 'common/contract-seo'
-import { notification_reason_types } from 'common/notification'
+import {
+  notification_reason_types,
+  NotificationReason,
+} from 'common/notification'
 import { Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { buildOgUrl } from 'common/util/og'
@@ -320,7 +323,7 @@ export const sendMarketCloseEmail = async (
 }
 
 export const sendNewCommentEmail = async (
-  reason: notification_reason_types,
+  reason: NotificationReason,
   privateUser: PrivateUser,
   commentCreator: User,
   contract: Contract,

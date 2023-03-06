@@ -64,12 +64,12 @@ export const PortfolioValueSection = memo(
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
           profitElement={
-            <div className="animate-pulse text-lg text-gray-500 sm:text-xl">
+            <div className="text-ink-500 animate-pulse text-lg sm:text-xl">
               ---
             </div>
           }
           valueElement={
-            <div className="animate-pulse text-lg text-gray-500 sm:text-xl">
+            <div className="text-ink-500 animate-pulse text-lg sm:text-xl">
               ---
             </div>
           }
@@ -80,7 +80,7 @@ export const PortfolioValueSection = memo(
                 margin: '20px 70px 20px 10px',
               }}
             >
-              <PlaceholderGraph className="h-full w-full animate-pulse text-gray-400" />
+              <PlaceholderGraph className="text-ink-400 h-full w-full animate-pulse" />
             </div>
           )}
           disabled={true}
@@ -125,7 +125,7 @@ export const PortfolioValueSection = memo(
           </div>
         }
         valueElement={
-          <div className={clsx('text-lg text-indigo-600 sm:text-xl')}>
+          <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
             {graphMode === 'value'
               ? graphDisplayNumber
                 ? graphDisplayNumber
@@ -187,7 +187,7 @@ export function PortfolioValueSkeleton(props: {
             onClickNumber('profit')
           }}
         >
-          <div className="text-xs text-gray-600 sm:text-sm">Profit</div>
+          <div className="text-ink-600 text-xs sm:text-sm">Profit</div>
           {profitElement}
         </Col>
 
@@ -200,9 +200,7 @@ export function PortfolioValueSkeleton(props: {
             onClickNumber('value')
           }}
         >
-          <div className="text-xs text-gray-600 sm:text-sm">
-            Portfolio value
-          </div>
+          <div className="text-ink-600 text-xs sm:text-sm">Portfolio value</div>
           {valueElement}
         </Col>
 

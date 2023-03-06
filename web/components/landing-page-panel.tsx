@@ -123,7 +123,7 @@ export function LandingPagePanel() {
             </Button>
             <div
               className={clsx(
-                'rounded-md bg-teal-200 text-gray-900',
+                'rounded-md bg-teal-200 text-white',
                 isMobile
                   ? 'px-6 py-2.5 text-base font-semibold'
                   : 'px-6 py-3 text-xl font-semibold'
@@ -133,7 +133,7 @@ export function LandingPagePanel() {
             </div>
           </div>
           <div className="absolute top-6 right-8 sm:top-48 md:right-12">
-            <div className="text-right text-sm text-gray-900">
+            <div className="text-right text-sm text-black">
               and get{'   '}
               <span className="relative z-10 font-semibold">
                 {ENV_CONFIG.moneyMoniker}
@@ -176,7 +176,7 @@ export function LandingPage0(props: { isMobile: boolean }) {
       </div>
       <Col
         className={clsx(
-          'absolute z-10 h-32 w-72 gap-2 rounded-md bg-white px-4 py-2 drop-shadow',
+          'bg-canvas-0 absolute z-10 h-32 w-72 gap-2 rounded-md px-4 py-2 drop-shadow',
           isMobile
             ? 'animate-slide-up-3 top-[70px] left-[20px]'
             : 'animate-slide-in-4 top-[58px] left-[32px]'
@@ -184,7 +184,7 @@ export function LandingPage0(props: { isMobile: boolean }) {
       >
         <Row className="items-center gap-2">
           <UserCircleIcon className="h-5 w-5 text-red-300" />
-          <div className="text-gray-400">You</div>
+          <div className="text-ink-400">You</div>
         </Row>
         <TypewriterComponent
           options={{ delay: 30 }}
@@ -233,7 +233,7 @@ export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
       <div
         className={clsx(
           'font-major-mono text-xs lowercase sm:whitespace-nowrap sm:text-sm',
-          isMobile ? 'text-white' : 'text-gray-900'
+          isMobile ? 'text-ink-1000' : 'text-white'
         )}
       >
         Manifold Markets
@@ -266,7 +266,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
       </div>
       <div
         className={clsx(
-          'absolute text-xl text-indigo-300',
+          'text-primary-300 absolute text-xl',
           isMobile
             ? 'animate-slide-up-2 left-[21px] top-[33px]'
             : 'animate-slide-in-1 left-[33px] top-[17px] '
@@ -276,7 +276,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
       </div>
       <Col
         className={clsx(
-          'absolute z-10 h-32 w-72 gap-1 rounded-md bg-white px-4 py-2 drop-shadow',
+          'bg-canvas-0 absolute z-10 h-32 w-72 gap-1 rounded-md px-4 py-2 drop-shadow',
           isMobile
             ? 'animate-slide-up-3 left-[20px] top-[70px]'
             : 'animate-slide-in-4 left-[32px] top-[58px]'
@@ -284,13 +284,13 @@ export function LandingPage1(props: { isMobile: boolean }) {
       >
         <Row className="items-center gap-1">
           <UserCircleIcon className="h-5 w-5 text-blue-300" />
-          <div className="text-sm text-gray-400">Your friend</div>
+          <div className="text-ink-400 text-sm">Your friend</div>
         </Row>
         <div>Will I get a date to prom?</div>
       </Col>
       <div
         className={clsx(
-          'absolute z-20 mt-2 h-10 w-60 rounded-md bg-gray-100 drop-shadow',
+          'bg-ink-100 absolute z-20 mt-2 h-10 w-60 rounded-md drop-shadow',
           isMobile
             ? 'animate-slide-up-3-big left-[36px] top-[130px]'
             : 'animate-slide-in-4 left-[48px] top-[114px]'
@@ -298,12 +298,12 @@ export function LandingPage1(props: { isMobile: boolean }) {
       >
         <div
           className={clsx(
-            'h-full rounded-l-md bg-indigo-200 transition-all duration-[1500ms] ease-out',
+            'bg-primary-200 h-full rounded-l-md transition-all duration-[1500ms] ease-out',
             shouldPercentChange ? 'w-48' : 'w-[120px]'
           )}
         />
-        <EquilateralLeftTriangle className="absolute left-[8px] top-[7px] z-10 h-6 w-6 text-indigo-400" />
-        <EquilateralLeftTriangle className="absolute left-[11px] top-[11px] z-0 h-6 w-6 text-gray-900 opacity-20" />
+        <EquilateralLeftTriangle className="text-primary-400 absolute left-[8px] top-[7px] z-10 h-6 w-6" />
+        <EquilateralLeftTriangle className="absolute left-[11px] top-[11px] z-0 h-6 w-6 text-white opacity-20" />
         <div className="absolute top-[6px] left-[100px] z-30 text-xl font-semibold">
           {shouldPercentChange && (
             <CountUp start={50} end={75} duration={1.3} suffix="%" />
@@ -313,13 +313,13 @@ export function LandingPage1(props: { isMobile: boolean }) {
         <EquilateralRightTriangle
           className={clsx(
             'animate-press-3x absolute right-[8px] top-[7px] z-10 h-6 w-6 transition-colors',
-            shouldButtonHighlight ? 'text-indigo-600' : 'text-indigo-400'
+            shouldButtonHighlight ? 'text-primary-600' : 'text-primary-400'
           )}
         />
-        <EquilateralRightTriangle className="absolute right-[6px] top-[11px] z-0 h-6 w-6 text-gray-900 opacity-20" />
+        <EquilateralRightTriangle className="absolute right-[6px] top-[11px] z-0 h-6 w-6 text-white opacity-20" />
         <div
           className={clsx(
-            'animate-float-and-fade-1 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',
+            'animate-float-and-fade-1 text-primary-600 absolute right-[10px] top-[2px] z-40 font-thin',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
@@ -327,7 +327,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         </div>
         <div
           className={clsx(
-            'animate-float-and-fade-2 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',
+            'animate-float-and-fade-2 text-primary-600 absolute right-[10px] top-[2px] z-40 font-thin',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
@@ -335,7 +335,7 @@ export function LandingPage1(props: { isMobile: boolean }) {
         </div>
         <div
           className={clsx(
-            'animate-float-and-fade-3 absolute right-[10px] top-[2px] z-40 font-thin text-indigo-600',
+            'animate-float-and-fade-3 text-primary-600 absolute right-[10px] top-[2px] z-40 font-thin',
             !isMVisible ? 'opacity-0' : ''
           )}
         >
@@ -371,7 +371,7 @@ export function LandingPage2(props: { isMobile: boolean }) {
       </div>
       <div
         className={clsx(
-          'absolute text-xl text-indigo-300',
+          'text-primary-300 absolute text-xl',
           isMobile
             ? 'animate-slide-up-2 left-[21px] top-[33px]'
             : 'animate-slide-in-1 left-[33px] top-[17px]'

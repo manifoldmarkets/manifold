@@ -4,7 +4,6 @@ export type WeeklyPortfolioUpdate = {
   id: string
   userId: string
   contractMetrics: ContractMetric[]
-  profitPoints: { x: number; y: number }[]
   weeklyProfit: number
   rangeEndDateSlug: string // format yyyy-m-d
   createdTime?: number

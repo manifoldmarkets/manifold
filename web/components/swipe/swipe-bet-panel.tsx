@@ -92,6 +92,7 @@ export function SwipeBetPanel(props: {
           children={
             <MinusIcon
               className={clsx(
+                'text-white',
                 swipingRight || swipingLeft ? 'opacity-0' : '',
                 'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
               )}
@@ -111,6 +112,7 @@ export function SwipeBetPanel(props: {
           children={
             <PlusIcon
               className={clsx(
+                'text-white',
                 swipingRight || swipingLeft ? 'opacity-0' : '',
                 'z-10 h-8 w-8 rounded-full border p-1 transition-colors active:bg-white active:text-black'
               )}

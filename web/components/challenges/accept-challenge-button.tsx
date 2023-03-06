@@ -61,7 +61,7 @@ export function AcceptChallengeButton(props: {
   return (
     <>
       <Modal open={open} setOpen={(newOpen) => setOpen(newOpen)} size={'sm'}>
-        <Col className="gap-4 rounded-md bg-white px-8 py-6">
+        <Col className="bg-canvas-0 gap-4 rounded-md px-8 py-6">
           <Col className={'gap-4'}>
             <div className={'flex flex-row justify-start '}>
               <Title children={"So you're in?"} className={'!my-2'} />

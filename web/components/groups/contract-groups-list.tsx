@@ -70,13 +70,13 @@ export function ContractGroupsList(props: {
 
   return (
     <Col className={'gap-2'}>
-      <span className={'text-xl text-indigo-700'}>
+      <span className={'text-primary-700 text-xl'}>
         <SiteLink href={'/groups/'}>Groups</SiteLink>
       </span>
       <Col className="h-96 justify-between overflow-auto">
         <Col>
           {groupLinks.length === 0 && (
-            <Col className="text-gray-400">No groups yet...</Col>
+            <Col className="text-ink-400">No groups yet...</Col>
           )}
           <Row className="my-2 flex-wrap gap-3">
             {groupLinks.map((groupLink) => {
@@ -85,7 +85,7 @@ export function ContractGroupsList(props: {
                 <span
                   key={groupLink.groupId}
                   className={clsx(
-                    'group relative rounded-full bg-gray-600 p-1 px-4 text-sm text-white transition-colors hover:bg-indigo-600'
+                    'bg-ink-600 text-ink-0 hover:bg-primary-600 group relative rounded-full p-1 px-4 text-sm transition-colors'
                   )}
                 >
                   <GroupLinkItem group={groupLink} />
@@ -108,8 +108,8 @@ export function ContractGroupsList(props: {
                         }}
                       >
                         <div className="group relative transition-colors">
-                          <div className="z-0 h-4 w-4 rounded-full bg-white group-hover:bg-gray-600" />
-                          <XCircleIcon className="absolute -inset-1 text-gray-400 group-hover:text-gray-200" />
+                          <div className="group-hover:bg-ink-600 bg-canvas-0 z-0 h-4 w-4 rounded-full" />
+                          <XCircleIcon className="text-ink-400 group-hover:text-ink-200 absolute -inset-1" />
                         </div>
                       </IconButton>
                     </div>
@@ -121,7 +121,7 @@ export function ContractGroupsList(props: {
           {/* if is manifold admin, show all possible groups */}
           {(isAdmin || isCreator || adminGroups.length > 0) && (
             <Col className={'my-2 items-center justify-between p-0.5'}>
-              <Row className="w-full justify-start text-sm text-gray-400">
+              <Row className="text-ink-400 w-full justify-start text-sm">
                 Add to group
               </Row>
               <GroupSelector

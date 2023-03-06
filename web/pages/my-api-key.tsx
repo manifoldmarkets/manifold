@@ -47,7 +47,7 @@ export default function MyApiKey() {
               </Button>
             </Row>
             2. Paste your key in the direct message with our Discord bot.
-            <Row className={'text-xs text-gray-600'}>
+            <Row className={'text-ink-600 text-xs'}>
               Your API key gives access to your account - only share with
               bots/people that you trust!
             </Row>

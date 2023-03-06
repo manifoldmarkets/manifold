@@ -104,7 +104,7 @@ type TableJsonTypes = {
   group_contracts: GroupContractDoc
 }
 
-type DataFor<T extends TableName> = T extends keyof TableJsonTypes
+export type DataFor<T extends TableName> = T extends keyof TableJsonTypes
   ? TableJsonTypes[T]
   : any
 

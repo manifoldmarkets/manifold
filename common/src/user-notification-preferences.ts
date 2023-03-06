@@ -1,5 +1,5 @@
 import { filterDefined } from './util/array'
-import { notification_reason_types } from './notification'
+import { notification_reason_types, NotificationReason } from './notification'
 import { getFunctionUrl } from './api'
 import { DOMAIN } from './envs/constants'
 import { PrivateUser } from './user'
@@ -10,6 +10,8 @@ export type notification_preferences = {
   // Watched Markets
   all_comments_on_watched_markets: notification_destination_types[]
   all_answers_on_watched_markets: notification_destination_types[]
+
+  some_comments_on_watched_markets: notification_destination_types[]
 
   // Comments
   tipped_comments_on_watched_markets: notification_destination_types[]
@@ -79,8 +81,9 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
   }
   const defaults: notification_preferences = {
     // Watched Markets
-    all_comments_on_watched_markets: constructPref(true, false, false),
+    all_comments_on_watched_markets: constructPref(false, false, false),
     all_answers_on_watched_markets: constructPref(true, false, false),
+    some_comments_on_watched_markets: constructPref(true, false, false),
 
     // Comments
     tips_on_your_comments: constructPref(true, true, false),
@@ -213,9 +216,7 @@ export const notificationReasonToSubscriptionType: Partial<
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
 }
 
-export function getNotificationPreference(
-  reason: notification_reason_types | notification_preference
-) {
+export function getNotificationPreference(reason: NotificationReason) {
   return (notificationReasonToSubscriptionType[
     reason as notification_reason_types
   ] ?? reason) as notification_preference
@@ -224,7 +225,7 @@ export function getNotificationPreference(
 export const getNotificationDestinationsForUser = (
   privateUser: PrivateUser,
   // TODO: accept reasons array from most to least important and work backwards
-  reason: notification_reason_types | notification_preference
+  reason: NotificationReason
 ) => {
   const notificationSettings = privateUser.notificationPreferences
   const unsubscribeEndpoint = getFunctionUrl('unsubscribe')

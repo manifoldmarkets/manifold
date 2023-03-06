@@ -4,8 +4,9 @@
 /* 0. database-wide configuration */
 /***************************************************************/
 
-/* allow our backend to have a long statement timeout */
-alter role service_role set statement_timeout = '120s';
+/* allow our backend and CLI users to have a long statement timeout */
+alter role postgres set statement_timeout = '1h';
+alter role service_role set statement_timeout = '1h';
 
 /* for clustering without locks */
 create extension if not exists pg_repack;
@@ -44,6 +45,7 @@ create index if not exists users_data_gin on users using GIN (data);
 create index if not exists users_name_gin on users using GIN ((data->>'name') gin_trgm_ops);
 create index if not exists users_username_gin on users using GIN ((data->>'username') gin_trgm_ops);
 create index if not exists users_follower_count_cached on users ((to_jsonb(data->'followerCountCached')) desc);
+alter table users cluster on users_pkey;
 
 create table if not exists user_portfolio_history (
     user_id text not null,
@@ -57,6 +59,8 @@ drop policy if exists "public read" on user_portfolio_history;
 create policy "public read" on user_portfolio_history for select using (true);
 create index if not exists user_portfolio_history_gin on user_portfolio_history using GIN (data);
 create index if not exists user_portfolio_history_timestamp on user_portfolio_history (user_id, (to_jsonb(data->'timestamp')) desc);
+create index if not exists user_portfolio_history_user_timestamp on user_portfolio_history (user_id, ((data->'timestamp')::bigint) desc);
+alter table user_portfolio_history cluster on user_portfolio_history_user_timestamp;
 
 create table if not exists user_contract_metrics (
     user_id text not null,
@@ -74,6 +78,10 @@ create index if not exists user_contract_metrics_recent_bets on user_contract_me
      ((data->'lastBetTime')::bigint) desc
     );
 create index if not exists user_contract_metrics_contract_id on user_contract_metrics (contract_id);
+create index if not exists user_contract_metrics_weekly_profit on user_contract_metrics ((data->'from'->'week'->'profit'))
+ where (data->'from'->'week'->'profit') is not null;
+create index if not exists user_contract_metrics_user_id on user_contract_metrics (user_id);
+alter table user_contract_metrics cluster on user_contract_metrics_pkey;
 
 create table if not exists user_follows (
     user_id text not null,
@@ -86,6 +94,7 @@ alter table user_follows enable row level security;
 drop policy if exists "public read" on user_follows;
 create policy "public read" on user_follows for select using (true);
 create index if not exists user_follows_data_gin on user_follows using GIN (data);
+alter table user_follows cluster on user_follows_pkey;
 
 create table if not exists user_reactions (
     user_id text not null,
@@ -104,6 +113,7 @@ create index if not exists user_reactions_type
 -- useful for getting all reactions for a given contentId recently
 create index if not exists user_reactions_content_id
   on user_reactions ((to_jsonb(data)->>'contentId'), (to_jsonb(data)->>'createdTime') desc);
+alter table user_reactions cluster on user_reactions_type;
 
 create table if not exists user_events (
     user_id text not null,
@@ -116,9 +126,11 @@ alter table user_events enable row level security;
 drop policy if exists "public read" on user_events;
 create policy "public read" on user_events for select using (true);
 create index if not exists user_events_data_gin on user_events using GIN (data);
+create index if not exists user_events_name on user_events (user_id, (data->>'name'));
 create index if not exists user_events_viewed_markets
     on user_events (user_id, (data->>'name'), (data->>'contractId'), ((data->'timestamp')::bigint) desc)
     where data->>'name' = 'view market' or data->>'name' = 'view market card';
+alter table user_events cluster on user_events_name;
 
 create table if not exists user_seen_markets (
     user_id text not null,
@@ -131,6 +143,7 @@ alter table user_seen_markets enable row level security;
 drop policy if exists "public read" on user_seen_markets;
 create policy "public read" on user_seen_markets for select using (true);
 create index if not exists user_seen_markets_data_gin on user_seen_markets using GIN (data);
+alter table user_seen_markets cluster on user_seen_markets_pkey;
 
 create table if not exists contracts (
     id text not null primary key,
@@ -144,6 +157,10 @@ create index if not exists contracts_data_gin on contracts using GIN (data);
 create index if not exists contracts_group_slugs_gin on contracts using GIN ((data->'groupSlugs'));
 create index if not exists contracts_creator_id on contracts ((data->>'creatorId'));
 create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
+/* serves API recent markets endpoint */
+create index if not exists contracts_created_time on contracts ((to_jsonb(data)->>'createdTime') desc);
+
+alter table contracts cluster on contracts_creator_id;
 
 create table if not exists contract_answers (
     contract_id text not null,
@@ -156,6 +173,7 @@ alter table contract_answers enable row level security;
 drop policy if exists "public read" on contract_answers;
 create policy "public read" on contract_answers for select using (true);
 create index if not exists contract_answers_data_gin on contract_answers using GIN (data);
+alter table contract_answers cluster on contract_answers_pkey;
 
 create table if not exists contract_bets (
     contract_id text not null,
@@ -168,6 +186,12 @@ alter table contract_bets enable row level security;
 drop policy if exists "public read" on contract_bets;
 create policy "public read" on contract_bets for select using (true);
 create index if not exists contract_bets_data_gin on contract_bets using GIN (data);
+/* serves bets API pagination */
+create index if not exists contract_bets_bet_id on contract_bets (bet_id);
+/* serving stats page, recent bets API */
+create index if not exists contract_bets_created_time_global on contract_bets (
+    (to_jsonb(data)->>'createdTime') desc
+)
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (
     contract_id,
@@ -188,6 +212,7 @@ create index if not exists contract_bets_user_outstanding_limit_orders on contra
    (data->>'userId'),
    ((data->'isFilled')::boolean),
    ((data->'isCancelled')::boolean));
+alter table contract_bets cluster on contract_bets_created_time;
 
 create table if not exists contract_comments (
     contract_id text not null,
@@ -200,6 +225,7 @@ alter table contract_comments enable row level security;
 drop policy if exists "public read" on contract_comments;
 create policy "public read" on contract_comments for select using (true);
 create index if not exists contract_comments_data_gin on contract_comments using GIN (data);
+alter table contract_comments cluster on contract_comments_pkey;
 
 create table if not exists contract_follows (
     contract_id text not null,
@@ -212,6 +238,7 @@ alter table contract_follows enable row level security;
 drop policy if exists "public read" on contract_follows;
 create policy "public read" on contract_follows for select using (true);
 create index if not exists contract_follows_data_gin on contract_follows using GIN (data);
+alter table contract_follows cluster on contract_follows_pkey;
 
 create table if not exists contract_liquidity (
     contract_id text not null,
@@ -224,6 +251,7 @@ alter table contract_liquidity enable row level security;
 drop policy if exists "public read" on contract_liquidity;
 create policy "public read" on contract_liquidity for select using (true);
 create index if not exists contract_liquidity_data_gin on contract_liquidity using GIN (data);
+alter table contract_liquidity cluster on contract_liquidity_pkey;
 
 create table if not exists groups (
     id text not null primary key,
@@ -234,6 +262,7 @@ alter table groups enable row level security;
 drop policy if exists "public read" on groups;
 create policy "public read" on groups for select using (true);
 create index if not exists groups_data_gin on groups using GIN (data);
+alter table groups cluster on groups_pkey;
 
 create table if not exists group_contracts (
     group_id text not null,
@@ -246,6 +275,7 @@ alter table group_contracts enable row level security;
 drop policy if exists "public read" on group_contracts;
 create policy "public read" on group_contracts for select using (true);
 create index if not exists group_contracts_data_gin on group_contracts using GIN (data);
+alter table group_contracts cluster on group_contracts_pkey;
 
 create table if not exists group_members (
     group_id text not null,
@@ -258,6 +288,7 @@ alter table group_members enable row level security;
 drop policy if exists "public read" on group_members;
 create policy "public read" on group_members for select using (true);
 create index if not exists group_members_data_gin on group_members using GIN (data);
+alter table group_members cluster on group_members_pkey;
 
 create table if not exists txns (
     id text not null primary key,
@@ -268,6 +299,7 @@ alter table txns enable row level security;
 drop policy if exists "public read" on txns;
 create policy "public read" on txns for select using (true);
 create index if not exists txns_data_gin on txns using GIN (data);
+alter table txns cluster on txns_pkey;
 
 create table if not exists manalinks (
     id text not null primary key,
@@ -278,6 +310,7 @@ alter table manalinks enable row level security;
 drop policy if exists "public read" on manalinks;
 create policy "public read" on manalinks for select using (true);
 create index if not exists manalinks_data_gin on manalinks using GIN (data);
+alter table manalinks cluster on manalinks_pkey;
 
 create table if not exists posts (
     id text not null primary key,
@@ -288,6 +321,7 @@ alter table posts enable row level security;
 drop policy if exists "public read" on posts;
 create policy "public read" on posts for select using (true);
 create index if not exists posts_data_gin on posts using GIN (data);
+alter table posts cluster on posts_pkey;
 
 create table if not exists test (
     id text not null primary key,
@@ -298,6 +332,7 @@ alter table test enable row level security;
 drop policy if exists "public read" on test;
 create policy "public read" on test for select using (true);
 create index if not exists test_data_gin on test using GIN (data);
+alter table test cluster on test_pkey;
 
 create table if not exists user_recommendation_features (
     user_id text not null primary key,
@@ -388,6 +423,7 @@ create table if not exists tombstones (
 );
 alter table tombstones enable row level security;
 create index if not exists tombstones_table_id_doc_id_fs_deleted_at on tombstones (table_id, doc_id, fs_deleted_at desc);
+alter table tombstones cluster on tombstones_table_id_doc_id_fs_deleted_at;
 
 drop function if exists get_document_table_spec;
 drop type if exists table_spec;
@@ -666,7 +702,7 @@ as $$
     where user_events.user_id = uid
     and user_events.data->>'name' = 'view market card'
     and user_events.data->>'contractId' = crf.contract_id
-    and (user_events.data->'timestamp')::bigint > (extract(epoch from (now() - interval '1 day')) * 1000)::bigint
+    and (user_events.data->'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
   )
   order by score desc
 $$;
@@ -708,12 +744,64 @@ as $$ begin
   end if;
 end $$;
 
+create or replace function get_cpmm_pool_prob(pool jsonb, p numeric)
+    returns numeric
+    language plpgsql
+    immutable parallel safe
+as $$
+declare
+    p_no numeric := (pool->>'NO')::numeric;
+    p_yes numeric := (pool->>'YES')::numeric;
+    no_weight numeric := p * p_no;
+    yes_weight numeric := (1 - p) * p_yes + p * p_no;
+begin
+    return case when yes_weight = 0 then 1 else (no_weight / yes_weight) end;
+end
+$$;
+
+create or replace function get_cpmm_resolved_prob(data jsonb)
+    returns numeric
+    language sql
+    immutable parallel safe
+as $$
+select case
+    when data->>'resolution' = 'YES' then 1
+    when data->>'resolution' = 'NO' then 0
+    when data->>'resolution' = 'MKT' and data ? 'resolutionProbability' then (data->'resolutionProbability')::numeric
+    else null
+end
+$$;
+
+create or replace function ts_to_millis(ts timestamptz)
+    returns bigint
+    language sql
+    immutable parallel safe
+as $$
+select extract(epoch from ts)::bigint * 1000
+$$;
+
+create or replace function millis_to_ts(millis bigint)
+    returns timestamptz
+    language sql
+    immutable parallel safe
+as $$
+select to_timestamp(millis / 1000)
+$$;
+
+create or replace function millis_interval(start_millis bigint, end_millis bigint)
+    returns interval
+    language sql
+    immutable parallel safe
+as $$
+select millis_to_ts(end_millis) - millis_to_ts(start_millis)
+$$;
+
 create or replace function get_time()
     returns bigint
     language sql
     stable parallel safe
 as $$
-select (extract(epoch from now()) * 1000)::bigint;
+select ts_to_millis(now())
 $$;
 
 create or replace function is_valid_contract(data jsonb)
@@ -722,7 +810,7 @@ create or replace function is_valid_contract(data jsonb)
 as $$
 select not (data->>'isResolved')::boolean
        and (data->>'visibility') != 'unlisted'
-       and (data->>'closeTime')::bigint > extract(epoch from now() + interval '10 minutes') * 1000
+       and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '10 minutes')
 $$ language sql;
 
 create or replace function get_related_contract_ids(source_id text)
@@ -821,9 +909,28 @@ from (
 limit count
 $$;
 
+create or replace function get_user_bets_from_resolved_contracts(uid text, count int, start int)
+    returns table(contract_id text, bets jsonb[], contract jsonb)
+    immutable parallel safe
+    language sql
+as $$;
+select contract_id, bets.data as bets, contracts.data as contracts
+from (
+         select contract_id, array_agg(data order by (data->>'createdTime') desc) as data from contract_bets
+         where (data->>'userId') = uid and
+               (data->>'amount')::real != 0
+         group by contract_id
+     ) as bets
+ join contracts
+ on contracts.id = bets.contract_id
+ where (contracts.data->>'isResolved')::boolean = true and (contracts.data->>'outcomeType')::text = 'BINARY'
+limit count
+offset start
+$$;
+
 
 create or replace view group_role as(
-  select member_id, 
+  select member_id,
     gp.id as group_id,
     gp.data as group_data,
     gp.data ->> 'name' as group_name,
@@ -832,7 +939,7 @@ create or replace view group_role as(
     users.data ->> 'name' as name,
     users.data ->> 'username' as username,
     users.data ->> 'avatarUrl' as avatar_url,
-    (select 
+    (select
       CASE
       WHEN (gp.data ->> 'creatorId')::text = member_id THEN 'admin'
       ELSE (gm.data ->> 'role')
@@ -840,19 +947,19 @@ create or replace view group_role as(
     ) as role,
     (gm.data ->> 'createdTime')::bigint as createdTime
   from (group_members gm join groups gp on gp.id = gm.group_id) join users on users.id = gm.member_id
-) 
+);
 
 create or replace view user_groups as(
-select 
-users.id as id, 
-users.data->>'name' as name, 
-users.data->>'username' as username, 
-users.data->>'avatarUrl' as avatarurl, 
+select
+users.id as id,
+users.data->>'name' as name,
+users.data->>'username' as username,
+users.data->>'avatarUrl' as avatarurl,
 (users.data->>'followerCountCached')::integer as follower_count,
-user_groups.groups as groups 
+user_groups.groups as groups
 from (users left join
-(select member_id, array_agg(group_id) as groups from group_members group by member_id) user_groups 
-on users.id=user_groups.member_id))
+(select member_id, array_agg(group_id) as groups from group_members group by member_id) user_groups
+on users.id=user_groups.member_id));
 
 create or replace function get_contracts_by_creator_ids(creator_ids text[], created_time bigint)
 returns table(creator_id text, contracts jsonb)
@@ -966,4 +1073,29 @@ as $$
   order by max_ts desc
   limit n
   offset start
+$$;
+
+create or replace function get_contract_metrics_grouped_by_user_ids(uids text[], period text)
+returns table(user_id text, contract_metrics jsonb[])
+immutable parallel safe
+language sql
+as $$
+select ucm.user_id, array_agg(ucm.data) as contract_metrics
+from user_contract_metrics as ucm
+where ucm.user_id in (select unnest(uids))
+  and (ucm.data->'from'->period->'profit') is not null
+    and abs((ucm.data->'from'->period->'profit')::bigint) > 1
+group by ucm.user_id
+$$;
+
+create or replace function get_portfolio_histories_grouped_by_user_ids_from(uids text[],start bigint)
+returns table(user_id text, portfolio_metrics jsonb[])
+immutable parallel safe
+language sql
+as $$
+select uph.user_id, array_agg(uph.data) as portfolio_metrics
+from user_portfolio_history as uph
+where uph.user_id in (select unnest(uids)) and
+(data->'timestamp')::bigint > start
+group by uph.user_id
 $$;

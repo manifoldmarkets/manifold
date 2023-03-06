@@ -6,7 +6,7 @@ import {
   collectionTables,
   subcollectionTables,
 } from 'common/supabase/utils'
-
+const RUNNING_EMULATOR = process.env.EMULATOR === 'true'
 const pubSubClient = new PubSub()
 const writeTopic = pubSubClient.topic('firestoreWrite')
 
@@ -42,10 +42,10 @@ async function publishChange<T extends DocumentData>(
       .join(' ')}`
   )
 }
-
 export const logCollections = firestore
   .document('{coll}/{id}')
   .onWrite(async (change, ctx) => {
+    if (RUNNING_EMULATOR) return
     const tableName = collectionTables[ctx.params.coll]
     if (tableName != null) {
       await publishChange(change, ctx, tableName)
@@ -55,6 +55,7 @@ export const logCollections = firestore
 export const logSubcollections = firestore
   .document('{coll}/{parent}/{subcoll}/{id}')
   .onWrite(async (change, ctx) => {
+    if (RUNNING_EMULATOR) return
     const tableName = subcollectionTables[ctx.params.coll]?.[ctx.params.subcoll]
     if (tableName != null) {
       await publishChange(change, ctx, tableName)

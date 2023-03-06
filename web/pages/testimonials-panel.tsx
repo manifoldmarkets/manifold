@@ -57,7 +57,7 @@ export default function TestimonialsPanel() {
             </Button>
             <div
               className={clsx(
-                'rounded-md bg-teal-200 text-gray-900',
+                'text-ink-900 rounded-md bg-teal-200',
                 isMobile
                   ? 'px-6 py-2.5 text-base font-semibold'
                   : 'px-6 py-3 text-xl font-semibold'
@@ -67,7 +67,7 @@ export default function TestimonialsPanel() {
             </div>
           </div>
           <div className="absolute top-6 left-8 sm:top-48 md:left-8">
-            <div className="hidden text-right text-sm text-gray-900 sm:inline">
+            <div className="hidden text-right text-sm text-black sm:inline">
               And get{'   '}
               <span className="relative z-10 font-semibold">
                 {ENV_CONFIG.moneyMoniker}
@@ -86,7 +86,7 @@ export default function TestimonialsPanel() {
             />
           )}
           {!isMobile && (
-            <div className="absolute -left-0.5 bottom-0 z-10 h-full">
+            <div className="absolute -left-0.5 bottom-0 z-20 h-full">
               <SquiggleVerticalFlippedIcon
                 className={clsx('h-full text-indigo-200')}
               />
@@ -151,7 +151,7 @@ export function Testimonial(props: {
             <div className="font-semibold transition-colors group-hover:text-teal-200">
               {name}
             </div>
-            <div className="font-thin text-indigo-200">{credit}</div>
+            <div className="text-primary-200 font-thin">{credit}</div>
           </Col>
         </Row>
       </Link>

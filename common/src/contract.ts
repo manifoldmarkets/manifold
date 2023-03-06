@@ -68,7 +68,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   popularityScore?: number
   dailyScore?: number
-  followerCount?: number
   likedByUserCount?: number
   flaggedByUsernames?: string[] // Deprecated as of 2023-01-05
   unlistedById?: string
@@ -209,7 +208,7 @@ export const OUTCOME_TYPES = [
   'QUADRATIC_FUNDING',
 ] as const
 
-export const MAX_QUESTION_LENGTH = 240
+export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000
 export const MAX_TAG_LENGTH = 60
 

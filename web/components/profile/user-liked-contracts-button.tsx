@@ -56,7 +56,7 @@ export const UserLikedContractsButton = memo(
           <span className="font-semibold">{likedContentCount}</span> Likes
         </TextButton>
         <Modal open={isOpen} setOpen={setIsOpen} size={'lg'}>
-          <Col className="rounded bg-white p-6">
+          <Col className="bg-canvas-0 rounded p-6">
             <Row className={'ml-2 mb-4 items-center justify-between gap-4 '}>
               <span className={'text-xl'}>Likes</span>
               <Input
@@ -75,7 +75,7 @@ export const UserLikedContractsButton = memo(
                   <Col className={'w-full'}>
                     <SiteLink
                       href={like.slug}
-                      className={'line-clamp-2 text-sm text-indigo-700'}
+                      className={'line-clamp-2 text-primary-700 text-sm'}
                     >
                       {like.title}
                     </SiteLink>

@@ -15,7 +15,7 @@ import {
 } from 'shared/supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
 import { TableName } from 'common/supabase/utils'
-import { program } from 'commander'
+import { Command } from 'commander'
 
 // strategy for live importing collection C without dropping data (times are firestore server times)
 // 1. optional - clear supabase table for collection C
@@ -313,6 +313,7 @@ async function importDatabase(
 
 if (require.main === module) {
   initAdmin()
+  const program = new Command()
   program.requiredOption(
     '-t, --tables <tables>',
     '(Required) Comma-separated list of tables to import'

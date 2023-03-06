@@ -21,8 +21,8 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
       onClick={trackCallback('sidebar: ' + item.name)}
       className={clsx(
         isCurrentPage
-          ? 'bg-gray-200 text-gray-900'
-          : 'text-gray-600 hover:bg-gray-100',
+          ? 'bg-ink-200 text-ink-900'
+          : 'text-ink-600 hover:bg-ink-100',
         'group flex items-center rounded-md px-3 py-2 text-sm font-medium'
       )}
       aria-current={item.href == currentPage ? 'page' : undefined}
@@ -31,8 +31,8 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
         <item.icon
           className={clsx(
             isCurrentPage
-              ? 'text-gray-500'
-              : 'text-gray-400 group-hover:text-gray-500',
+              ? 'text-ink-500'
+              : 'text-ink-400 group-hover:text-ink-500',
             '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
           )}
           aria-hidden="true"

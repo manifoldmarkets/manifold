@@ -1,7 +1,8 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { first } from 'lodash'
+import clsx from 'clsx'
+
 import { ContractOverview } from 'web/components/contract/contract-overview'
-import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Spacer } from 'web/components/layout/spacer'
@@ -12,12 +13,8 @@ import {
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import {
-  Bet,
-  BetFilter,
-  getTotalBetCount,
-  listBets,
-} from 'web/lib/firebase/bets'
+import { Bet, BetFilter, getTotalBetCount } from 'web/lib/firebase/bets'
+import { getBets } from 'web/lib/supabase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -26,15 +23,12 @@ import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
-import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
-import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
@@ -57,7 +51,6 @@ import { BackRow } from 'web/components/contract/back-row'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
-import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
@@ -68,6 +61,13 @@ import Head from 'next/head'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
+import { Row } from 'web/components/layout/row'
+import {
+  getInitialRelatedMarkets,
+  useRelatedMarkets,
+} from 'web/hooks/use-related-contracts'
+import { track } from 'web/lib/service/analytics'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -90,10 +90,10 @@ export async function getStaticPropz(ctx: {
     contract?.outcomeType === 'PSEUDO_NUMERIC'
   // Prioritize newer bets via descending order
   const bets = contractId
-    ? await listBets({
+    ? await getBets({
         contractId,
         ...CONTRACT_BET_FILTER,
-        limit: useBetPoints ? 10000 : 4000,
+        limit: useBetPoints ? 50000 : 4000,
         order: 'desc',
       })
     : []
@@ -136,6 +136,10 @@ export async function getStaticPropz(ctx: {
 
   const creator = contract && (await getUser(contract.creatorId))
 
+  const relatedContracts = contract
+    ? await getInitialRelatedMarkets(contract)
+    : []
+
   return {
     props: removeUndefinedProps({
       contract,
@@ -150,6 +154,7 @@ export async function getStaticPropz(ctx: {
       totalBets,
       topContractMetrics,
       creatorTwitter: creator?.twitterHandle,
+      relatedContracts,
     }),
   }
 }
@@ -167,7 +172,8 @@ export default function ContractPage(props: {
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
-  creatorTwitter?: string
+  creatorTwitter: string | undefined
+  relatedContracts: Contract[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -178,6 +184,7 @@ export default function ContractPage(props: {
     totalBets: 0,
     topContractMetrics: [],
     totalPositions: 0,
+    relatedContracts: [],
   }
 
   const inIframe = useIsIframe()
@@ -205,6 +212,7 @@ export function ContractPageContent(
     totalPositions,
     pointsString,
     creatorTwitter,
+    relatedContracts,
   } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
@@ -290,16 +298,13 @@ export function ContractPageContent(
   })
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
+  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
+    contract,
+    relatedContracts
+  )
+
   return (
-    <Page
-      rightSidebar={
-        user || user === null ? (
-          <ContractPageSidebar contract={contract} />
-        ) : (
-          <div />
-        )
-      }
-    >
+    <Page maxWidth="max-w-[1400px]">
       <ContractSEO contract={contract} points={pointsString} />
       {creatorTwitter && (
         <Head>
@@ -309,115 +314,138 @@ export function ContractPageContent(
 
       {user && <BackRow />}
 
-      <Col className="w-full justify-between rounded bg-white px-4 py-4 md:px-8 md:py-8">
-        <Col className="gap-3 sm:gap-4">
-          <ContractDetails contract={contract} />
-          <Linkify
-            className="text-lg text-indigo-700 sm:text-2xl"
-            text={contract.question}
-          />
-          <ContractOverview
+      <Row className="w-full items-start gap-8 self-center">
+        <Col
+          className={clsx(
+            'bg-canvas-0 mb-4 w-full max-w-3xl rounded px-4 py-4 md:px-8 md:py-8 xl:mb-14 xl:w-[70%]',
+            // Keep content in view when scrolling related markets on desktop.
+            'sticky bottom-0 self-end'
+          )}
+        >
+          <Col className="gap-3 sm:gap-4">
+            <ContractDetails contract={contract} />
+            <Linkify
+              className="text-primary-700 text-lg sm:text-2xl"
+              text={contract.question}
+            />
+            <ContractOverview
+              contract={contract}
+              bets={bets}
+              betPoints={betPoints}
+            />
+          </Col>
+
+          <ContractDescription
+            className="mt-2 xl:mt-6"
             contract={contract}
-            bets={bets}
-            betPoints={betPoints}
+            toggleResolver={() => setShowResolver(!showResolver)}
           />
+
+          {showResolver &&
+            user &&
+            !resolution &&
+            (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
+              <NumericResolutionPanel
+                isAdmin={!!isAdmin}
+                creator={user}
+                isCreator={!isAdmin}
+                contract={contract}
+              />
+            ) : outcomeType === 'BINARY' ? (
+              <ResolutionPanel
+                isAdmin={!!isAdmin}
+                creator={user}
+                isCreator={!isAdmin}
+                contract={contract}
+              />
+            ) : outcomeType === 'QUADRATIC_FUNDING' ? (
+              <QfResolutionPanel contract={contract} />
+            ) : null)}
+
+          {(outcomeType === 'FREE_RESPONSE' ||
+            outcomeType === 'MULTIPLE_CHOICE') && (
+            <>
+              <Spacer h={4} />
+              <AnswersPanel
+                contract={contract}
+                onAnswerCommentClick={onAnswerCommentClick}
+                showResolver={showResolver}
+              />
+              <Spacer h={4} />
+            </>
+          )}
+
+          {outcomeType === 'NUMERIC' && (
+            <AlertBox
+              title="Warning"
+              text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
+            />
+          )}
+
+          {isCreator && !isResolved && !isClosed && (
+            <>
+              {showResolver && <Spacer h={4} />}
+              <CreatorSharePanel contract={contract} />
+            </>
+          )}
+
+          {outcomeType === 'NUMERIC' && allowTrade && (
+            <NumericBetPanel className="xl:hidden" contract={contract} />
+          )}
+
+          {isResolved && resolution !== 'CANCEL' && (
+            <>
+              <ContractLeaderboard
+                topContractMetrics={topContractMetrics.filter(
+                  (metric) => metric.userUsername !== HOUSE_BOT_USERNAME
+                )}
+                contractId={contract.id}
+                currentUser={user}
+                currentUserMetrics={contractMetrics}
+              />
+              <Spacer h={12} />
+            </>
+          )}
+
+          <UserBetsSummary
+            className="mt-4 mb-2 px-2"
+            contract={contract}
+            initialMetrics={contractMetrics}
+          />
+
+          <div ref={tabsContainerRef}>
+            <ContractTabs
+              contract={contract}
+              bets={bets}
+              totalBets={totalBets}
+              comments={comments}
+              userPositionsByOutcome={userPositionsByOutcome}
+              totalPositions={totalPositions}
+              answerResponse={answerResponse}
+              onCancelAnswerResponse={onCancelAnswerResponse}
+              blockedUserIds={blockedUserIds}
+              activeIndex={activeTabIndex}
+              setActiveIndex={setActiveTabIndex}
+            />
+          </div>
         </Col>
-
-        <ContractDescription
-          className="mt-2 xl:mt-6"
-          contract={contract}
-          toggleResolver={() => setShowResolver(!showResolver)}
+        <RelatedContractsList
+          className="hidden min-h-full max-w-[375px] xl:flex"
+          contracts={relatedMarkets}
+          onContractClick={(c) =>
+            track('click related market', { contractId: c.id })
+          }
+          loadMore={loadMore}
         />
-
-        {showResolver &&
-          user &&
-          !resolution &&
-          (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
-            <NumericResolutionPanel
-              isAdmin={!!isAdmin}
-              creator={user}
-              isCreator={!isAdmin}
-              contract={contract}
-            />
-          ) : outcomeType === 'BINARY' ? (
-            <ResolutionPanel
-              isAdmin={!!isAdmin}
-              creator={user}
-              isCreator={!isAdmin}
-              contract={contract}
-            />
-          ) : outcomeType === 'QUADRATIC_FUNDING' ? (
-            <QfResolutionPanel contract={contract} />
-          ) : null)}
-
-        {(outcomeType === 'FREE_RESPONSE' ||
-          outcomeType === 'MULTIPLE_CHOICE') && (
-          <>
-            <Spacer h={4} />
-            <AnswersPanel
-              contract={contract}
-              onAnswerCommentClick={onAnswerCommentClick}
-              showResolver={showResolver}
-            />
-            <Spacer h={4} />
-          </>
-        )}
-
-        {outcomeType === 'NUMERIC' && (
-          <AlertBox
-            title="Warning"
-            text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
-          />
-        )}
-
-        {isCreator && !isResolved && !isClosed && (
-          <>
-            {showResolver && <Spacer h={4} />}
-            <CreatorSharePanel contract={contract} />
-          </>
-        )}
-
-        {outcomeType === 'NUMERIC' && allowTrade && (
-          <NumericBetPanel className="xl:hidden" contract={contract} />
-        )}
-
-        {isResolved && resolution !== 'CANCEL' && (
-          <>
-            <ContractLeaderboard
-              topContractMetrics={topContractMetrics.filter(
-                (metric) => metric.userUsername !== HOUSE_BOT_USERNAME
-              )}
-              contractId={contract.id}
-              currentUser={user}
-              currentUserMetrics={contractMetrics}
-            />
-            <Spacer h={12} />
-          </>
-        )}
-
-        <UserBetsSummary
-          className="mt-4 mb-2 px-2"
-          contract={contract}
-          initialMetrics={contractMetrics}
-        />
-
-        <div ref={tabsContainerRef}>
-          <ContractTabs
-            contract={contract}
-            bets={bets}
-            totalBets={totalBets}
-            comments={comments}
-            userPositionsByOutcome={userPositionsByOutcome}
-            totalPositions={totalPositions}
-            answerResponse={answerResponse}
-            onCancelAnswerResponse={onCancelAnswerResponse}
-            blockedUserIds={blockedUserIds}
-            activeIndex={activeTabIndex}
-            setActiveIndex={setActiveTabIndex}
-          />
-        </div>
-      </Col>
-      <RelatedContractsWidget contract={contract} />
+      </Row>
+      <RelatedContractsList
+        className="max-w-[600px] xl:hidden"
+        contracts={relatedMarkets}
+        onContractClick={(c) =>
+          track('click related market', { contractId: c.id })
+        }
+        loadMore={loadMore}
+      />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
@@ -447,48 +475,3 @@ export function ContractSEO(props: {
     />
   )
 }
-
-function ContractPageSidebar(props: { contract: Contract }) {
-  const { contract } = props
-  const { outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isNumeric = outcomeType === 'NUMERIC'
-  const allowTrade = tradingAllowed(contract)
-
-  const hasSidePanel = (isBinary || isNumeric || isPseudoNumeric) && allowTrade
-
-  if (!hasSidePanel) {
-    return null
-  }
-
-  return isNumeric ? (
-    <NumericBetPanel className="hidden xl:flex" contract={contract} />
-  ) : (
-    <BetPanel
-      className="hidden xl:flex"
-      contract={contract as CPMMBinaryContract}
-    />
-  )
-}
-
-const RelatedContractsWidget = memo(function RecommendedContractsWidget(props: {
-  contract: Contract
-}) {
-  const { contract } = props
-  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(contract)
-
-  if (!relatedMarkets || relatedMarkets.length === 0) {
-    return null
-  }
-  return (
-    <Col className="mt-2 gap-2 px-2 sm:px-1">
-      <Title className="text-gray-700" children="Related markets" />
-      <ContractsGrid
-        contracts={relatedMarkets ?? []}
-        trackingPostfix=" related"
-        loadMore={loadMore}
-      />
-    </Col>
-  )
-})

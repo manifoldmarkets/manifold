@@ -47,7 +47,7 @@ export function GroupAboutSection(props: {
   if ((post && post.content) || writingNewAbout) {
     return (
       <Col className="group my-2 gap-2 px-4 py-2 lg:px-0">
-        <div className=" text-gray-500">ABOUT</div>
+        <div className=" text-ink-500">ABOUT</div>
         {canEdit && (
           <EditableGroupAbout
             group={group}
@@ -168,7 +168,7 @@ function EditableGroupAbout(props: {
             groupName={group.name}
           />
         }
-        className="rounded-md bg-white px-4 py-2"
+        className="bg-canvas-0 rounded-md px-4 py-2"
       />
       <DeleteAboutModal
         deleteOpen={deleteOpen}
@@ -206,15 +206,15 @@ function DeleteAboutModal(props: {
           added back under the more options button{' '}
         </div>
         <Row className="w-full items-center justify-between">
-          <div className="h-5 w-1/2 bg-gray-200" />
+          <div className="bg-ink-200 h-5 w-1/2" />
           <Row className="gap-2">
-            <Row className="bg items-center gap-0.5 rounded bg-gray-200 px-2 py-1 text-xs text-white">
+            <Row className="bg bg-ink-200 text-ink-0 items-center gap-0.5 rounded px-2 py-1 text-xs">
               <UserAddIcon className="h-4 w-4" />
               Follow
             </Row>
-            <LinkIcon className={clsx('h-5 w-5 text-gray-200')} />
+            <LinkIcon className={clsx('text-ink-200 h-5 w-5')} />
             <div className="relative">
-              <DotsVerticalIcon className="h-6 w-6 rounded p-1 text-gray-600" />
+              <DotsVerticalIcon className="text-ink-600 h-6 w-6 rounded p-1" />
               <div className="bg-highlight-blue absolute top-0 bottom-0 right-0 left-0 animate-pulse rounded bg-opacity-40" />
             </div>
           </Row>

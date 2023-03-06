@@ -77,7 +77,7 @@ function LiquidityIconButton(props: {
         {total > 0 && (
           <div
             className={clsx(
-              'absolute ml-3.5 mt-2 h-4 w-4 rounded-full bg-gray-500 align-middle text-white sm:mt-3 sm:h-5 sm:w-5 sm:px-1',
+              'bg-canvas-500 text-ink-0 absolute ml-3.5 mt-2 h-4 w-4 rounded-full align-middle sm:mt-3 sm:h-5 sm:w-5 sm:px-1',
               total > 99
                 ? 'text-[0.4rem] sm:text-[0.5rem]'
                 : 'sm:text-2xs text-[0.5rem]'

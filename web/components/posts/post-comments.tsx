@@ -37,7 +37,7 @@ export function PostCommentThread(props: {
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
       <span
-        className="absolute top-5 left-4 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+        className="bg-ink-200 absolute top-5 left-4 -ml-px h-[calc(100%-2rem)] w-0.5"
         aria-hidden="true"
       />
       {[parentComment].concat(threadComments).map((comment, commentIdx) => (
@@ -53,7 +53,7 @@ export function PostCommentThread(props: {
       {showReply && (
         <Col className="-pb-2 relative ml-6">
           <span
-            className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            className="bg-ink-200 absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90"
             aria-hidden="true"
           />
           <PostCommentInput
@@ -133,21 +133,21 @@ export function PostCommentItem(props: {
       className={clsx(
         'relative',
         indent ? 'ml-6' : '',
-        highlighted ? `bg-indigo-50` : ''
+        highlighted ? `bg-primary-50` : ''
       )}
     >
       {/*draw a gray line from the comment to the left:*/}
       {indent ? (
         <span
-          className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+          className="bg-ink-200 absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90"
           aria-hidden="true"
         />
       ) : null}
       <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
       <div className="ml-1.5 min-w-0 flex-1 pl-0.5 sm:ml-3">
-        <div className="mt-0.5 text-sm text-gray-500">
+        <div className="text-ink-500 mt-0.5 text-sm">
           <UserLink
-            className="text-gray-500"
+            className="text-ink-500"
             username={userUsername}
             name={userName}
           />{' '}
@@ -159,7 +159,7 @@ export function PostCommentItem(props: {
           />
         </div>
         <Content className="mt-2" size="sm" content={content || text} />
-        <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
+        <Row className="text-ink-500 mt-2 items-center gap-6 text-xs">
           {onReplyClick && (
             <button
               className="font-bold hover:underline"

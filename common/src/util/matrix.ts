@@ -1,4 +1,7 @@
-import { sumBy } from 'lodash'
+import { max, sumBy } from 'lodash'
+
+// each row has [column, value] pairs
+type SparseMatrix = [number, number][][]
 
 // Code originally from: https://github.com/johnpaulada/matrix-factorization-js/blob/master/src/matrix-factorization.js
 // Used to implement recommendations through collaborative filtering: https://towardsdatascience.com/recommender-systems-matrix-factorization-using-pytorch-bd52f46aa199
@@ -8,180 +11,89 @@ import { sumBy } from 'lodash'
  * Gets the factors of a sparse matrix
  *
  * @param TARGET_MATRIX target matrix, where each row specifies a subset of all columns.
- * @param columns All column names of the target matrix
- * @param LATENT_FEATURES_COUNT Number of latent features
+ * @param FEATURES Number of latent features
  * @param ITERS Number of times to move towards the real factors
  * @param LEARNING_RATE Learning rate
  * @param REGULARIZATION_RATE Regularization amount, i.e. amount of bias reduction
  * @returns An array containing the two factor matrices
  */
 export function factorizeMatrix(
-  TARGET_MATRIX: { [column: string]: number }[],
-  columns: string[],
-  LATENT_FEATURES_COUNT = 5,
+  TARGET_MATRIX: SparseMatrix,
+  FEATURES = 5,
   ITERS = 5000,
   LEARNING_RATE = 0.0002,
   REGULARIZATION_RATE = 0.02,
   THRESHOLD = 0.001
 ) {
-  const columnToIndex = Object.fromEntries(columns.map((col, i) => [col, i]))
-  const columnsOfRow = TARGET_MATRIX.map(Object.keys)
-  const numPoints = sumBy(columnsOfRow, (row) => row.length)
-  console.log('numPoints', numPoints)
+  const initCell = () => (2 * Math.random()) / FEATURES
+  const m = TARGET_MATRIX.length
+  const n = (max(TARGET_MATRIX.flatMap((r) => r.map(([j]) => j))) ?? -1) + 1
+  const points = sumBy(TARGET_MATRIX, (r) => r.length)
+  const mFeatures = fillMatrix(m, FEATURES, initCell)
+  const nFeatures = fillMatrix(n, FEATURES, initCell)
 
-  const FACTOR1_ROW_COUNT = TARGET_MATRIX.length
-  const FACTOR2_ROW_COUNT = columns.length
-  const initCell = () => (2 * Math.random()) / LATENT_FEATURES_COUNT
-  const factorMatrix1 = fillMatrix(
-    FACTOR1_ROW_COUNT,
-    LATENT_FEATURES_COUNT,
-    initCell
-  )
-  const factorMatrix2 = fillMatrix(
-    FACTOR2_ROW_COUNT,
-    LATENT_FEATURES_COUNT,
-    initCell
-  )
+  console.log('rows', m, 'columns', n, 'numPoints', points)
 
-  const updateLatentFeature = (
-    latentFeatureA: number,
-    latentFeatureB: number,
-    error: number
-  ) =>
-    latentFeatureA +
-    LEARNING_RATE *
-      (2 * error * latentFeatureB - REGULARIZATION_RATE * latentFeatureA)
+  const updateFeature = (a: number, b: number, error: number) =>
+    a + LEARNING_RATE * (2 * error * b - REGULARIZATION_RATE * a)
+
+  const dotProduct = (i: number, j: number) => {
+    let result = 0
+    for (let k = 0; k < FEATURES; k++) {
+      result += mFeatures[i * FEATURES + k] * nFeatures[j * FEATURES + k]
+    }
+    return result
+  }
 
   // Iteratively figure out correct factors.
   for (let iter = 0; iter < ITERS; iter++) {
-    for (let i = 0; i < TARGET_MATRIX.length; i++) {
-      for (const column of columnsOfRow[i]) {
-        // Get actual value on target matrix
-        const TRUE_VALUE = TARGET_MATRIX[i][column]
-        const j = columnToIndex[column]
-
-        // Get difference of actual value and the current approximate value as error
-        const CURRENT_VALUE = dotProduct(factorMatrix1[i], factorMatrix2[j])
-        const ERROR = TRUE_VALUE - CURRENT_VALUE
-
-        // Update factor matrices
-        for (let k = 0; k < LATENT_FEATURES_COUNT; k++) {
-          const latentFeatureA = factorMatrix1[i][k]
-          const latentFeatureB = factorMatrix2[j][k]
-
-          // Update latent feature k of factor matrix 1
-          factorMatrix1[i][k] = updateLatentFeature(
-            latentFeatureA,
-            latentFeatureB,
-            ERROR
-          )
-
-          // Update latent feature k of factor matrix 2
-          factorMatrix2[j][k] = updateLatentFeature(
-            latentFeatureB,
-            latentFeatureA,
-            ERROR
-          )
+    for (let i = 0; i < m; i++) {
+      for (const [j, targetValue] of TARGET_MATRIX[i]) {
+        // to approximate the value for target_ij, we take the dot product of the features for m[i] and n[j]
+        const error = targetValue - dotProduct(i, j)
+        // update factor matrices
+        for (let k = 0; k < FEATURES; k++) {
+          const a = mFeatures[i * FEATURES + k]
+          const b = nFeatures[j * FEATURES + k]
+          mFeatures[i * FEATURES + k] = updateFeature(a, b, error)
+          nFeatures[j * FEATURES + k] = updateFeature(b, a, error)
         }
       }
     }
 
     if (iter % 50 === 0 || iter === ITERS - 1) {
-      const TOTAL_ERROR =
-        calculateFactorMatricesError(
-          TARGET_MATRIX,
-          columnToIndex,
-          LATENT_FEATURES_COUNT,
-          REGULARIZATION_RATE,
-          factorMatrix1,
-          factorMatrix2
-        ) / numPoints
-      console.log('iter', iter, 'error', TOTAL_ERROR)
+      let totalError = 0
+      for (let i = 0; i < m; i++) {
+        for (const [j, targetValue] of TARGET_MATRIX[i]) {
+          // add up squared error of current approximated value
+          totalError += (targetValue - dotProduct(i, j)) ** 2
+          // mqp: idk what this part of the error means lol
+          for (let k = 0; k < FEATURES; k++) {
+            const a = mFeatures[i * FEATURES + k]
+            const b = nFeatures[j * FEATURES + k]
+            totalError += (REGULARIZATION_RATE / 2) * (a ** 2 + b ** 2)
+          }
+        }
+      }
+      console.log(iter, 'error', totalError / points)
 
       // Complete factorization process if total error falls below a certain threshold
-      if (TOTAL_ERROR < THRESHOLD) break
+      if (totalError / points < THRESHOLD) break
     }
   }
 
-  return [factorMatrix1, factorMatrix2]
+  return [mFeatures, nFeatures, dotProduct] as const
 }
 
 /**
- * Calculate total error of factor matrices
+ * Creates an m x n matrix filled with the result of given fill function.
  */
-function calculateFactorMatricesError(
-  TARGET_MATRIX: { [column: string]: number }[],
-  columnToIndex: { [column: string]: number },
-  LATENT_FEATURES_COUNT: number,
-  REGULARIZATION_RATE: number,
-  factorMatrix1: number[][],
-  factorMatrix2: number[][]
-) {
-  let totalError = 0
-
-  for (let i = 0; i < TARGET_MATRIX.length; i++) {
-    const row = TARGET_MATRIX[i]
-    for (const column of Object.keys(row)) {
-      // Get actual value on target matrix
-      const TRUE_VALUE = TARGET_MATRIX[i][column]
-      const j = columnToIndex[column]
-
-      // Get difference of actual value and the current approximate value as error
-      const CURRENT_VALUE = dotProduct(factorMatrix1[i], factorMatrix2[j])
-      const ERROR = TRUE_VALUE - CURRENT_VALUE
-
-      // Increment totalError with current error
-      totalError = totalError + ERROR ** 2
-
-      for (let k = 0; k < LATENT_FEATURES_COUNT; k++) {
-        totalError =
-          totalError +
-          (REGULARIZATION_RATE / 2) *
-            (factorMatrix1[i][k] ** 2 + factorMatrix2[j][k] ** 2)
-      }
+function fillMatrix(m: number, n: number, fill: () => number) {
+  const matrix = new Float64Array(m * n)
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < n; j++) {
+      matrix[i * n + j] = fill()
     }
   }
-
-  return totalError
-}
-
-/**
- * Build completed matrix from matrix factors.
- */
-export function buildCompletedMatrix(factor1: number[][], factor2: number[][]) {
-  return multiplyMatrices(factor1, transpose(factor2))
-}
-
-function transpose(matrix: number[][]) {
-  return matrix[0].map((_, i) => matrix.map((row) => row[i]))
-}
-
-function multiplyMatrices(m: number[][], n: number[][]) {
-  const transposedN = transpose(n)
-
-  return m.map((row) => transposedN.map((column) => dotProduct(row, column)))
-}
-
-/**
- * Multiplies vectors together and sums the resulting vector up.
- */
-export function dotProduct(v: number[], w: number[]) {
-  let sum = 0
-  for (let i = 0; i < v.length; i++) sum += v[i] * w[i]
-  return sum
-}
-
-/**
- * Creates an n x m matrix filled with the result of given fill function.
- */
-function fillMatrix(n: number, m: number, fill = () => 0) {
-  const matrix: number[][] = []
-  for (let i = 0; i < n; i++) {
-    matrix.push([])
-    for (let j = 0; j < m; j++) {
-      matrix[i][j] = fill()
-    }
-  }
-
   return matrix
 }

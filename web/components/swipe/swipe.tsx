@@ -282,7 +282,7 @@ export function Swipe(props: { toggleView?: () => void }) {
               We're fresh out of cards!
               <SiteLink
                 href="/markets?s=newest&f=open"
-                className="text-indigo-700"
+                className="text-primary-700"
               >
                 Browse new markets
               </SiteLink>

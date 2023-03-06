@@ -14,7 +14,7 @@ export function DuplicateContractButton(props: { contract: Contract }) {
     <Link
       className={clsx(
         buttonClass('2xs', 'override'),
-        'gap-1 border-2 border-violet-400 text-violet-400 hover:bg-violet-400 hover:text-white'
+        'hover:text-ink-0 gap-1 border-2 border-violet-400 text-violet-400 hover:bg-violet-400'
       )}
       href={href}
       onClick={trackCallback('duplicate market')}

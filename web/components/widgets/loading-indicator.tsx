@@ -23,7 +23,7 @@ export function LoadingIndicator(props: {
     <div className={clsx('flex items-center justify-center', className)}>
       <div
         className={clsx(
-          'spinner-border inline-block animate-spin rounded-full border-4 border-solid border-indigo-500 border-r-transparent',
+          'spinner-border border-primary-500 inline-block animate-spin rounded-full border-4 border-solid border-r-transparent',
           getSizeClass(size),
           spinnerClassName
         )}

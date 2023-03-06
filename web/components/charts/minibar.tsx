@@ -5,7 +5,7 @@ import { CHOICE_ANSWER_COLORS } from './contract/choice'
 /** Sparklineish bar chart. Input: array of nums that sum < 1 */
 export const Minibar = (props: { probs: number[] }) => {
   return (
-    <div className="my-0.5 inline-flex h-5 w-[34px] bg-gray-200">
+    <div className="bg-ink-200 my-0.5 inline-flex h-5 w-[34px]">
       {props.probs.map((p, i) => (
         <span
           key={i}

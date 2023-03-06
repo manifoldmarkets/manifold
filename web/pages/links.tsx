@@ -85,7 +85,7 @@ export default function LinkPage(props: { auth: { user: User } }) {
 
         <Row className="items-baseline justify-between">
           <Subtitle>Your Manalinks</Subtitle>
-          <Row className="items-center gap-4 text-sm text-gray-500">
+          <Row className="text-ink-500 items-center gap-4 text-sm">
             Show claimed links
             <ShortToggle on={showDisabled} setOn={setShowDisabled} />
           </Row>
@@ -96,7 +96,7 @@ export default function LinkPage(props: { auth: { user: User } }) {
             highlightedSlug={highlightedSlug}
           />
         ) : (
-          <p className="text-gray-500">
+          <p className="text-ink-500">
             Your account must be older than a week and have a balance or total
             profits greater than {formatMoney(1000)} to create manalinks.
           </p>
@@ -118,7 +118,7 @@ function ManalinksDisplay(props: {
 
   if (links.length === 0) {
     return (
-      <p className="text-gray-500">
+      <p className="text-ink-500">
         You don't have any active manalinks. Create one to spread the wealth!
       </p>
     )
@@ -152,9 +152,7 @@ export function ClaimsList(props: { txns: ManalinkTxn[] }) {
   const { txns } = props
   return (
     <>
-      <h1 className="mb-4 text-xl font-semibold text-gray-900">
-        Claimed links
-      </h1>
+      <h1 className="text-ink-900 mb-4 text-xl font-semibold">Claimed links</h1>
       {txns.map((txn) => (
         <ClaimDescription txn={txn} key={txn.id} />
       ))}
@@ -176,15 +174,15 @@ export function ClaimDescription(props: { txn: ManalinkTxn }) {
       <div className="relative flex items-center space-x-3">
         <Avatar username={to.name} avatarUrl={to.avatarUrl} size="sm" />
         <div className="min-w-0 flex-1">
-          <p className="mt-0.5 text-sm text-gray-500">
+          <p className="text-ink-500 mt-0.5 text-sm">
             <UserLink
-              className="text-gray-500"
+              className="text-ink-500"
               username={to.username}
               name={to.name}
             />{' '}
             claimed {formatMoney(txn.amount)} from{' '}
             <UserLink
-              className="text-gray-500"
+              className="text-ink-500"
               username={from.username}
               name={from.name}
             />

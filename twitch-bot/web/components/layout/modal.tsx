@@ -18,7 +18,7 @@ export function Modal(props: { children: ReactNode; open: boolean; setOpen: (ope
       <Dialog as="div" className="fixed inset-0 z-50 overflow-hidden" onClose={setOpen}>
         <div className="flex min-h-screen items-end justify-center text-center">
           <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-            <Dialog.Overlay className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <Dialog.Overlay className="bg-canvas-500 fixed inset-0 bg-opacity-75 transition-opacity" />
           </Transition.Child>
           <Transition.Child
             as={Fragment}
@@ -29,7 +29,7 @@ export function Modal(props: { children: ReactNode; open: boolean; setOpen: (ope
             leaveFrom="opacity-100 translate-y-0 sm:scale-100"
             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
-            <div className={clsx('my-1 mx-4 inline-block w-full transform overflow-visible text-left align-bottom transition-all self-center', sizeClass, className)}>{children}</div>
+            <div className={clsx('my-1 mx-4 inline-block w-full transform self-center overflow-visible text-left align-bottom transition-all', sizeClass, className)}>{children}</div>
           </Transition.Child>
         </div>
       </Dialog>

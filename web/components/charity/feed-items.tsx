@@ -18,10 +18,10 @@ export function Donation(props: { txn: DonationTxn }) {
           size="sm"
         />
         <div className="min-w-0 flex-1">
-          <p className="mt-0.5 text-sm text-gray-500">
+          <p className="text-ink-500 mt-0.5 text-sm">
             {user ? (
               <UserLink
-                className="text-gray-500"
+                className="text-ink-500"
                 username={user.username}
                 name={user.name}
               />

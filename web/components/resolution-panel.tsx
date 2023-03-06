@@ -101,7 +101,7 @@ export function ResolutionPanel(props: {
               specify:
             </>
           ) : (
-            <span className="text-gray-500">
+            <span className="text-ink-500">
               Resolving this market will immediately pay out {BETTORS}.
             </span>
           )}

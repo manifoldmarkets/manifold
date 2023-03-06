@@ -37,11 +37,11 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
     <div className={clsx('w-full px-1', className)}>
       <Title>{title}</Title>
       {entries.length === 0 ? (
-        <div className="ml-2 text-gray-500">None yet</div>
+        <div className="text-ink-500 ml-2">None yet</div>
       ) : (
         <div className="overflow-x-auto">
           {/* zebra stripes */}
-          <Table className="[&>tbody_tr:nth-child(odd)]:bg-white">
+          <Table className="[&>tbody_tr:nth-child(odd)]:bg-canvas-0">
             <thead>
               <tr>
                 <th>#</th>
@@ -56,7 +56,9 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                 <tr
                   key={index}
                   className={
-                    entry.username === highlightUsername ? '!bg-amber-100' : ''
+                    entry.username === highlightUsername
+                      ? '!bg-indigo-400/20'
+                      : ''
                   }
                 >
                   <td className={'w-[4.5rem] min-w-[4.5rem] '}>
@@ -65,8 +67,9 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                       ? (entry.rank ?? 21) - 1 // account for @acc's removal
                       : index + 1}
                   </td>
-                  <td className="max-w-[200px]">
+                  <td>
                     <UserAvatarAndBadge
+                      className="overflow-hidden max-[600px]:max-w-[200px] max-[400px]:max-w-[160px]"
                       name={entry.name}
                       username={entry.username}
                       avatarUrl={entry.avatarUrl}
