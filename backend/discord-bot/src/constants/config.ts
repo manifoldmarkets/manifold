@@ -13,4 +13,4 @@ if (ENV === 'PROD') {
   // Add guild ids to ignore here if people want to test the bot on their server
   discordConfig.ignoreGuildIds = [DEV.guildId]
 }
-export const config = { ...discordConfig, ...commonConfig }
+export const config = { ...commonConfig, ...discordConfig }
