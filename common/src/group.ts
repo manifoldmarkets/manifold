@@ -7,7 +7,6 @@ export type Group = {
   about: string
   creatorId: string // User id
   createdTime: number
-  mostRecentActivityTime: number
   anyoneCanJoin?: boolean
   totalContracts: number
   totalMembers: number
