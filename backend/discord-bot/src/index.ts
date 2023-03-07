@@ -1,9 +1,9 @@
 import { REST } from '@discordjs/rest'
 import * as console from 'console'
+import { Command } from 'discord-bot/command'
 import { commands } from 'discord-bot/commands'
 
 import {
-  ChatInputCommandInteraction,
   Client,
   Collection,
   Events,
@@ -13,7 +13,6 @@ import {
   Partials,
   PartialUser,
   Routes,
-  SlashCommandBuilder,
   TextChannel,
   User,
 } from 'discord.js'
@@ -34,13 +33,7 @@ import {
   getMarketInfoFromMessageId,
   messagesHandledViaInteraction,
 } from './storage.js'
-const commandsCollection = new Collection<
-  string,
-  {
-    data: SlashCommandBuilder
-    execute: (interaction: ChatInputCommandInteraction) => Promise<any>
-  }
->()
+const commandsCollection = new Collection<string, Command>()
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,

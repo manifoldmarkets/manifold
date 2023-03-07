@@ -1,4 +1,5 @@
 import { FullMarket } from 'common/api-market-types'
+import { Command } from 'discord-bot/command'
 import { config } from 'discord-bot/constants/config'
 import {
   AttachmentBuilder,
@@ -146,4 +147,4 @@ const sendMarketIntro = async (
 export const marketCommand = {
   data,
   execute,
-}
+} as Command
