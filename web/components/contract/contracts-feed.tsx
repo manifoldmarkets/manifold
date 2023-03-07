@@ -25,9 +25,7 @@ export function ContractsFeed() {
         onVisibilityUpdated={(visible) => visible && loadMore()}
       />
 
-      <LoadingIndicator className="mt-4" />
-
-      {contracts !== undefined && contracts.length === 0 && (
+      {contracts.length === 0 ? (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           We're fresh out of cards!
           <SiteLink
@@ -37,6 +35,8 @@ export function ContractsFeed() {
             Browse new markets
           </SiteLink>
         </div>
+      ) : (
+        <LoadingIndicator className="mt-4" />
       )}
     </Col>
   )
