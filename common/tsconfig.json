@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "composite": true,
-    "module": "es2022",
+    "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitReturns": true,
     "outDir": "lib",
