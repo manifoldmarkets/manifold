@@ -7,7 +7,6 @@ import { LimitBet } from 'common/bet'
 import { CPMM } from 'common/contract'
 import { DAY_MS } from 'common/util/time'
 import { computeElasticity } from 'common/calculate-metrics'
-import { mapAsync } from 'common/util/promise'
 import { hasChanges } from 'common/util/object'
 import { newEndpointNoAuth } from '../api/helpers'
 import {
@@ -69,7 +68,7 @@ export async function updateContractMetrics() {
 
   log('Computing metric updates...')
   const writer = firestore.bulkWriter()
-  await mapAsync(contracts, async (contract) => {
+  for (const contract of contracts) {
     let cpmmFields: Partial<CPMM> = {}
     if (contract.mechanism === 'cpmm-1') {
       const cid = contract.id
@@ -97,7 +96,7 @@ export async function updateContractMetrics() {
       const contractDoc = firestore.collection('contracts').doc(contract.id)
       writer.update(contractDoc, update)
     }
-  })
+  }
 
   log('Committing writes...')
   await writer.close()
