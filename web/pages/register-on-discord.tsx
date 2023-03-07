@@ -16,6 +16,10 @@ export default function RegisterOnDiscord() {
   const privateUser = usePrivateUser()
   const [error, setError] = React.useState<string>('')
   const [status, setStatus] = React.useState<string>('')
+  const register = async (discordId: string) =>
+    registerDiscordId({ discordId })
+      .then(() => setStatus(SUCCESS_MESSAGE))
+      .catch((e) => setError(e.message))
 
   useEffect(() => {
     if (!router.isReady) return
@@ -27,10 +31,8 @@ export default function RegisterOnDiscord() {
     if (privateUser) {
       // Getting an auth error unless we wait a bit
       setTimeout(() => {
-        registerDiscordId({ discordId: discordId as string })
-          .then(() => setStatus(SUCCESS_MESSAGE))
-          .catch((e) => setError(e.message))
-      }, 200)
+        register(discordId as string)
+      }, 1000)
     }
   }, [router, privateUser])
 
@@ -48,7 +50,22 @@ export default function RegisterOnDiscord() {
         ) : status ? (
           <Col className="gap-4 p-1 text-xl">{status}</Col>
         ) : error ? (
-          <Col className="gap-4 p-1 text-xl">{error}</Col>
+          <Col className="gap-4 p-1 text-xl">
+            <Row>{error}</Row>
+            {router.query.discordId && (
+              <Row>
+                <Button
+                  color={'green'}
+                  onClick={() => {
+                    setError('')
+                    register(router.query.discordId as string)
+                  }}
+                >
+                  Try again
+                </Button>
+              </Row>
+            )}
+          </Col>
         ) : (
           <LoadingIndicator />
         )}
