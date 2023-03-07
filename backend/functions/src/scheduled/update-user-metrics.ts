@@ -1,16 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { chunk, groupBy, sortBy, uniq } from 'lodash'
+import { groupBy, mapValues, uniq } from 'lodash'
 
-import {
-  getUser,
-  getValues,
-  loadPaginated,
-  log,
-  revalidateStaticProps,
-} from 'shared/utils'
+import { log, revalidateStaticProps } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
+import { User } from 'common/user'
 import { DAY_MS } from 'common/util/time'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import {
@@ -20,12 +15,12 @@ import {
   calculateMetricsByContract,
 } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
-import { CollectionReference } from 'firebase-admin/firestore'
 import { filterDefined } from 'common/util/array'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { run, SupabaseClient } from 'common/supabase/utils'
-import { JsonData } from 'common/supabase/json-data'
+import {
+  SupabaseDirectClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 
 const firestore = admin.firestore()
 
@@ -33,8 +28,7 @@ export const scheduleUpdateUserMetrics = functions
   .runWith({
     memory: '4GB',
     timeoutSeconds: 540,
-
-    secrets: ['API_SECRET', 'SUPABASE_KEY'],
+    secrets: ['API_SECRET', 'SUPABASE_PASSWORD'],
   })
   .pubsub.schedule('every 1 minutes')
   .onRun(async () => {
@@ -42,47 +36,53 @@ export const scheduleUpdateUserMetrics = functions
   })
 
 export async function updateUserMetrics() {
+  const now = Date.now()
+  const yesterday = now - DAY_MS
+  const weekAgo = now - DAY_MS * 7
+  const monthAgo = now - DAY_MS * 30
+  const pg = createSupabaseDirectClient()
+  const writer = firestore.bulkWriter()
+
   log('Loading users...')
-  const db = createSupabaseClient()
-
-  const limit = 500
-
-  const { data: newUserData } = await run(
-    db
-      .from('users')
-      .select('id')
-      .filter('data->>metricsLastUpdated', 'is', null)
-      .limit(limit)
+  const users = await pg.map(
+    `select data from users order by data->'metricsLastUpdated' asc nulls first limit 500`,
+    [],
+    (r) => r.data as User
   )
-  const { data: userData } = await run(
-    db
-      .from('users')
-      .select('id')
-      .order('data->>metricsLastUpdated' as any, { ascending: true })
-      .limit(limit - newUserData.length)
-  )
-  const userIds = uniq([...newUserData, ...userData].map((u) => u.id))
-  await Promise.all(
-    userIds.map((id) =>
-      firestore.collection('users').doc(id).update({
-        metricsLastUpdated: Date.now(),
-      })
-    )
-  )
-
+  const userIds = users.map((u) => u.id)
+  for (const userId of userIds) {
+    const doc = firestore.collection('users').doc(userId)
+    writer.update(doc, { metricsLastUpdated: now })
+  }
   log(`Loaded ${userIds.length} users.`)
 
-  log('Loading contracts...')
-  const contracts = await loadPaginated(
-    firestore.collection('contracts') as CollectionReference<Contract>
+  log('Loading portfolio history snapshots...')
+  const [
+    currentPortfolioSnapshots,
+    yesterdayPortfolioSnapshots,
+    weekAgoPortfolioSnapshots,
+    monthAgoPortfolioSnapshots,
+  ] = await Promise.all(
+    [now, yesterday, weekAgo, monthAgo].map((t) =>
+      getPortfolioHistorySnapshots(pg, userIds, t)
+    )
   )
+  log(`Loaded portfolio history snapshots.`)
+
+  log('Loading bets...')
+  const metricRelevantBets = await getMetricRelevantUserBets(
+    pg,
+    userIds,
+    monthAgo
+  )
+  log('Loaded bets.')
+
+  log('Loading contracts...')
+  const allBets = Object.values(metricRelevantBets).flat()
+  const contracts = await getRelevantContracts(pg, userIds, allBets)
   const contractsByCreator = groupBy(contracts, (c) => c.creatorId)
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
   log(`Loaded ${contracts.length} contracts.`)
-
-  const now = Date.now()
-  const monthAgo = now - DAY_MS * 30
-  const writer = firestore.bulkWriter()
 
   // We need to update metrics for contracts that resolved up through a month ago,
   // for the purposes of computing the daily/weekly/monthly profit on them
@@ -93,46 +93,35 @@ export async function updateUserMetrics() {
 
   log('Computing metric updates...')
   const userUpdates = []
-  for (const userId of userIds) {
-    const user = await getUser(userId)
-    if (!user) {
-      continue
-    }
+  for (const user of users) {
     const userContracts = contractsByCreator[user.id] ?? []
-    const metricRelevantBets = await loadUserContractBets(
-      db,
-      user.id,
-      metricEligibleContracts
-        .filter((c) => c.uniqueBettorIds?.includes(user.id))
-        .map((c) => c.id)
-    ).catch((e) => {
-      console.error(`Error fetching bets for user ${user.id}: ${e.message}`)
-      return undefined
-    })
+    const newMetricRelevantBets = metricRelevantBets[user.id] ?? []
 
-    if (!metricRelevantBets) {
-      continue
+    const newPortfolioHistory = {
+      current: currentPortfolioSnapshots[user.id],
+      day: yesterdayPortfolioSnapshots[user.id],
+      week: weekAgoPortfolioSnapshots[user.id],
+      month: monthAgoPortfolioSnapshots[user.id],
     }
 
-    const portfolioHistory = await loadPortfolioHistory(user.id, now)
     const newCreatorTraders = calculateCreatorTraders(userContracts)
 
     const newPortfolio = calculateNewPortfolioMetrics(
       user,
       contractsById,
-      metricRelevantBets
+      newMetricRelevantBets
     )
-    const currPortfolio = portfolioHistory.current
+    const currPortfolio = newPortfolioHistory.current
     const didPortfolioChange =
       currPortfolio === undefined ||
       currPortfolio.balance !== newPortfolio.balance ||
       currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
       currPortfolio.investmentValue !== newPortfolio.investmentValue
 
-    const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
+    const newProfit = calculateNewProfit(newPortfolioHistory, newPortfolio)
 
     const metricRelevantBetsByContract = groupBy(
-      metricRelevantBets,
+      newMetricRelevantBets,
       (b) => b.contractId
     )
 
@@ -179,62 +168,57 @@ export async function updateUserMetrics() {
   log('Done.')
 }
 
-const loadUserContractBets = async (
-  db: SupabaseClient,
-  userId: string,
-  contractIds: string[]
+const getRelevantContracts = async (
+  pg: SupabaseDirectClient,
+  userIds: string[],
+  bets: Bet[]
 ) => {
-  const contractIdChunks = chunk(contractIds, 100)
-  const bets: Bet[] = []
-  for (const contractIdChunk of contractIdChunks) {
-    let i = 0
-    while (true) {
-      const query = db
-        .from('contract_bets')
-        .select('data')
-        .eq('data->>userId', userId)
-        .in('contract_id', contractIdChunk)
-        .range(i, i + 1000)
-
-      const { data } = (await run(query)) as any as { data: JsonData<Bet>[] }
-      bets.push(...data.map((d) => d.data))
-
-      if (data.length < 1000) {
-        break
-      } else {
-        i += 1000
-      }
-    }
-  }
-  return sortBy(bets, (bet) => bet.createdTime)
+  const betContractIds = uniq(bets.map((b) => b.contractId))
+  return await pg.map(
+    `select data
+    from contracts
+    where data->>'creatorId' in ($1:list)
+    or id in ($2:list)`,
+    [userIds, betContractIds],
+    (r) => r.data as Contract
+  )
 }
 
-const loadPortfolioHistory = async (userId: string, now: number) => {
-  const query = firestore
-    .collection('users')
-    .doc(userId)
-    .collection('portfolioHistory')
-    .orderBy('timestamp', 'desc')
-    .limit(1)
-
-  const portfolioMetrics = await Promise.all([
-    getValues<PortfolioMetrics>(query),
-    getValues<PortfolioMetrics>(query.where('timestamp', '<', now - DAY_MS)),
-    getValues<PortfolioMetrics>(
-      query.where('timestamp', '<', now - 7 * DAY_MS)
-    ),
-    getValues<PortfolioMetrics>(
-      query.where('timestamp', '<', now - 30 * DAY_MS)
-    ),
-  ])
-  const [current, day, week, month] = portfolioMetrics.map(
-    (p) => p[0] as PortfolioMetrics | undefined
+const getMetricRelevantUserBets = async (
+  pg: SupabaseDirectClient,
+  userIds: string[],
+  since: number
+) => {
+  const bets = await pg.manyOrNone(
+    `select cb.data
+    from contract_bets as cb
+    join contracts as c on cb.contract_id = c.id
+    where
+      cb.data->>'userId' in ($1:list) and
+      (not (c.data ? 'resolutionTime') or c.data->>'resolutionTime' > $2::text) and
+      c.data->'uniqueBettorIds' ? (cb.data->>'userId')::text
+    order by (cb.data->'createdTime')::bigint asc`,
+    [userIds, since]
   )
+  return mapValues(
+    groupBy(bets, (r) => r.data.userId as string),
+    (rows) => rows.map((r) => r.data as Bet)
+  )
+}
 
-  return {
-    current,
-    day,
-    week,
-    month,
-  }
+const getPortfolioHistorySnapshots = async (
+  pg: SupabaseDirectClient,
+  userIds: string[],
+  when: number
+) => {
+  return Object.fromEntries(
+    await pg.map(
+      `select distinct on (user_id) user_id, data
+      from user_portfolio_history
+      where (data->'timestamp')::bigint < $2 and user_id in ($1:list)
+      order by user_id, (data->'timestamp')::bigint desc`,
+      [userIds, when],
+      (r) => [r.user_id as string, r.data as PortfolioMetrics]
+    )
+  )
 }
