@@ -19,9 +19,16 @@ import {
 } from 'discord.js'
 import * as process from 'process'
 import { config } from './constants/config.js'
-import { getAnyHandledEmojiKey } from './emojis.js'
-import { getOpenBinaryMarketFromSlug, handleReaction } from './helpers.js'
-import { registerApiKey } from './register-api-key.js'
+import {
+  customEmojiCache,
+  customEmojis,
+  getAnyHandledEmojiKey,
+} from './emojis.js'
+import {
+  getOpenBinaryMarketFromSlug,
+  handleReaction,
+  shouldIgnoreMessageFromGuild,
+} from './helpers.js'
 import { startListener } from './server.js'
 import {
   getMarketInfoFromMessageId,
@@ -40,6 +47,7 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildEmojisAndStickers,
   ],
   partials: [
     Partials.Message,
@@ -50,7 +58,7 @@ const client = new Client({
 })
 
 const init = async () => {
-  const { id: clientId } = config.client
+  const { clientId } = config
   const token = process.env.DISCORD_BOT_TOKEN
   if (!token) throw new Error('No DISCORD_BOT_TOKEN env var set.')
 
@@ -62,16 +70,27 @@ const init = async () => {
 
   console.log('Logging in... with client id: ', clientId)
 
+  client.once(Events.ClientReady, () => {
+    console.log('Client ready for guild', config.guildId)
+    // client.emojis.cache.map((e) => console.log(e.name, e.id))
+    customEmojis.map((emojiId) => {
+      const emoji = client.emojis.cache.get(emojiId)
+      if (!emoji) throw new Error(`Emoji not found: ${emojiId} `)
+      console.log('Caching emoji:', emojiId, emoji.name)
+      customEmojiCache[emojiId] = emoji
+    })
+  })
   await client.login(token)
   console.log('Logged in')
 
-  process.stdout.write('Refreshing slash commands... ')
+  console.log('Refreshing slash commands... ')
   try {
     await rest.put(Routes.applicationCommands(clientId), {
       body: commandsCollection.mapValues((c) => c.data.toJSON()),
     })
 
     console.log(
+      'Refreshed command:',
       `${[...commandsCollection.values()]
         .map((x) => '/' + x.data.name)
         .join(', ')}`
@@ -84,18 +103,6 @@ const init = async () => {
 
 const registerListeners = () => {
   client.on(Events.MessageReactionAdd, handleOldReaction)
-
-  client.on(Events.MessageCreate, async (message) => {
-    // Here you check for channel type
-    // We only need direct messages here, so skip other messages
-    if (!message.channel.isDMBased()) return
-    if (message.author.id === client.user?.id) return
-    await registerApiKey(message)
-  })
-
-  client.once(Events.ClientReady, () => {
-    console.log('Ready!')
-  })
 
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isChatInputCommand()) return
@@ -123,10 +130,17 @@ const handleOldReaction = async (
   pReaction: MessageReaction | PartialMessageReaction,
   pUser: User | PartialUser
 ) => {
-  const ignore = messagesHandledViaInteraction.has(pReaction.message.id)
-  console.log(`ignoring reaction:${ignore}`)
-  if (ignore) return
-  const marketInfo = await getMarketInfoFromMessageId(pReaction.message.id)
+  const { message } = pReaction
+  const ignore = messagesHandledViaInteraction.has(message.id)
+  if (ignore) {
+    console.log('ignoring reaction with message id:', message.id)
+    return
+  }
+  const guildId =
+    message.guildId === null ? (await message.fetch()).guildId : message.guildId
+  if (shouldIgnoreMessageFromGuild(guildId)) return
+
+  const marketInfo = await getMarketInfoFromMessageId(message.id)
   console.log('got market info from supabase', marketInfo)
   if (!marketInfo) return
 
@@ -155,6 +169,7 @@ const handleOldReaction = async (
         })
     : pUser
   if (!user) return
+
   const channelId = marketInfo.channel_id ?? reaction.message.channelId
   const hasCachedChannel = client.channels.cache.has(channelId)
   const channel = hasCachedChannel

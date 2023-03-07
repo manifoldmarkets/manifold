@@ -10,6 +10,7 @@ import {
   User,
 } from 'discord.js'
 import {
+  customEmojiCache,
   customEmojis,
   emojis,
   getBettingEmojisAsStrings,
@@ -19,6 +20,7 @@ import {
   getOpenBinaryMarketFromSlug,
   getSlug,
   handleReaction,
+  shouldIgnoreMessageFromGuild,
 } from 'discord-bot/helpers'
 import {
   messagesHandledViaInteraction,
@@ -36,6 +38,8 @@ const data = new SlashCommandBuilder()
   ) as SlashCommandBuilder
 
 async function execute(interaction: ChatInputCommandInteraction) {
+  if (shouldIgnoreMessageFromGuild(interaction.guildId)) return
+
   const link = interaction.options.getString('link')
   if (!link || !link.startsWith(config.domain)) {
     await interaction.reply(
@@ -88,9 +92,7 @@ const sendMarketIntro = async (
   market: FullMarket
 ) => {
   await interaction.deferReply()
-  const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings(
-    interaction.guild
-  )
+  const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
 
   const { coverImageUrl } = market
   const getAttachment = async (url: string, name: string) => {
@@ -133,10 +135,7 @@ const sendMarketIntro = async (
   // Add emoji reactions
   for (const emoji of emojis) {
     if (customEmojis.includes(emoji)) {
-      // TODO: this only works on my guild rn
-      const reactionEmoji = interaction.guild?.emojis.cache.find(
-        (e) => e.id === emoji
-      )
+      const reactionEmoji = customEmojiCache[emoji]
       if (reactionEmoji) await message.react(reactionEmoji)
     } else await message.react(emoji)
   }

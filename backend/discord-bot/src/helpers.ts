@@ -24,6 +24,17 @@ import {
 } from './storage.js'
 
 const discordMessageIdsToThreads: { [key: string]: ThreadChannel } = {}
+export const shouldIgnoreMessageFromGuild = (guildId: string | null) => {
+  if (config.guildId && guildId !== config.guildId) {
+    console.log('Not handling message or reaction from guild id', guildId)
+    return true
+  }
+  if (config.ignoreGuildIds?.includes(guildId ?? '')) {
+    console.log('Not handling message or reaction from guild id', guildId)
+    return true
+  }
+  return false
+}
 
 export const handleReaction = async (
   reaction: MessageReaction,
@@ -56,9 +67,7 @@ export const handleReaction = async (
 
   // Help
   if (name === '❓') {
-    const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings(
-      channel.guild
-    )
+    const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
     const content = `This is a market for the question "${market.question}". You can bet YES by reacting with these emojis: ${yesBetsEmojis} and NO with these: ${noBetsEmojis}. The emoji numbers correspond to the amount of mana used per bet.`
     await user.send(content)
     return
@@ -102,7 +111,7 @@ export const handleBet = async (
 
     if (!apiKey) {
       if (sale) return
-      await user.send(registerHelpMessage)
+      await user.send(registerHelpMessage(user.id))
       const userReactions = message.reactions.cache.filter(
         (r) =>
           (r.emoji.id ?? r.emoji.name) ===

@@ -79,6 +79,7 @@ export type PrivateUser = {
   blockedGroupSlugs: string[]
   hasSeenAppBannerInNotificationsOn?: number
   installedAppPlatforms?: string[]
+  discordId?: string
 }
 
 export const MANIFOLD_USER_USERNAME = 'ManifoldMarkets'

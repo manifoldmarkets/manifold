@@ -1,4 +1,4 @@
-import { Guild, MessageReaction } from 'discord.js'
+import { GuildEmoji, MessageReaction } from 'discord.js'
 
 type emojiDetails = {
   outcome: 'YES' | 'NO'
@@ -6,42 +6,25 @@ type emojiDetails = {
 }
 
 // Custom emojis use id, not name
-export const bettingEmojis: { [key: string]: emojiDetails } =
-  process.env.ENVIRONMENT === 'PROD'
-    ? {
-        '1075904553758756914': { outcome: 'YES', amount: 10 },
-        '1075828981720416296': { outcome: 'YES', amount: 50 },
-        '1029761176336334918': { outcome: 'YES', amount: 100 },
-        '1075904582909165720': { outcome: 'NO', amount: 10 },
-        '1075829025093722146': { outcome: 'NO', amount: 50 },
-        '💯': { outcome: 'NO', amount: 100 },
-      }
-    : {
-        '👍': { outcome: 'YES', amount: 10 },
-        '😀': { outcome: 'YES', amount: 50 },
-        '🔥': { outcome: 'YES', amount: 100 },
-        '👎': { outcome: 'NO', amount: 10 },
-        '😞': { outcome: 'NO', amount: 50 },
-        '💯': { outcome: 'NO', amount: 100 },
-      }
-
-export const customEmojis = [
-  '1075828981720416296',
-  '1029761176336334918',
-  '1075829025093722146',
-  '1075904582909165720',
-  '1075904553758756914',
-]
+export const bettingEmojis: { [key: string]: emojiDetails } = {
+  '1075904553758756914': { outcome: 'YES', amount: 10 },
+  '1075828981720416296': { outcome: 'YES', amount: 50 },
+  '1029761176336334918': { outcome: 'YES', amount: 100 },
+  '1075904582909165720': { outcome: 'NO', amount: 10 },
+  '1075829025093722146': { outcome: 'NO', amount: 50 },
+  '1082707352983183360': { outcome: 'NO', amount: 100 },
+}
+export const customEmojis = Object.keys(bettingEmojis)
+export const customEmojiCache: { [key: string]: GuildEmoji } = {}
 
 export const otherEmojis: { [key: string]: string } = {
   ℹ️: 'Get the market details sent to you',
   '❓': 'What is this?',
 }
 
-export const getEmoji = (guild: Guild | null, emojiKey: string) => {
-  if (customEmojis.includes(emojiKey) && guild) {
-    // TODO: this only works on my guild rn
-    return guild.emojis.cache.find((e) => e.id === emojiKey)
+export const getEmoji = (emojiKey: string) => {
+  if (customEmojis.includes(emojiKey)) {
+    return customEmojiCache[emojiKey]
   } else return emojiKey
 }
 
@@ -71,11 +54,11 @@ export const getAnyHandledEmojiKey = (reaction: MessageReaction) => {
   return emojiKey
 }
 
-export const getBettingEmojisAsStrings = (guild: Guild | null) => {
+export const getBettingEmojisAsStrings = () => {
   let yesBetsEmojis = ''
   let noBetsEmojis = ''
   for (const emoji in bettingEmojis) {
-    const emojiText = `${getEmoji(guild, emoji)}`
+    const emojiText = `${getEmoji(emoji)}`
     bettingEmojis[emoji].outcome === 'YES'
       ? (yesBetsEmojis += emojiText)
       : (noBetsEmojis += emojiText)
