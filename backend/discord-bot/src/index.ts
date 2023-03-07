@@ -24,7 +24,11 @@ import {
   customEmojis,
   getAnyHandledEmojiKey,
 } from './emojis.js'
-import { getOpenBinaryMarketFromSlug, handleReaction } from './helpers.js'
+import {
+  getOpenBinaryMarketFromSlug,
+  handleReaction,
+  shouldIgnoreMessageFromGuild,
+} from './helpers.js'
 import { registerApiKey } from './register-api-key.js'
 import { startListener } from './server.js'
 import {
@@ -55,7 +59,7 @@ const client = new Client({
 })
 
 const init = async () => {
-  const { id: clientId } = config.client
+  const { clientId } = config
   const token = process.env.DISCORD_BOT_TOKEN
   if (!token) throw new Error('No DISCORD_BOT_TOKEN env var set.')
 
@@ -143,10 +147,8 @@ const handleOldReaction = async (
   }
   const guildId =
     message.guildId === null ? (await message.fetch()).guildId : message.guildId
-  if (guildId !== config.guildId) {
-    console.log('ignoring reaction with guild id', guildId)
-    return
-  }
+  if (shouldIgnoreMessageFromGuild(guildId)) return
+
   const marketInfo = await getMarketInfoFromMessageId(message.id)
   console.log('got market info from supabase', marketInfo)
   if (!marketInfo) return

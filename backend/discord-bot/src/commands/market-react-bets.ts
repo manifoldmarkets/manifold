@@ -20,6 +20,7 @@ import {
   getOpenBinaryMarketFromSlug,
   getSlug,
   handleReaction,
+  shouldIgnoreMessageFromGuild,
 } from 'discord-bot/helpers'
 import {
   messagesHandledViaInteraction,
@@ -37,10 +38,8 @@ const data = new SlashCommandBuilder()
   ) as SlashCommandBuilder
 
 async function execute(interaction: ChatInputCommandInteraction) {
-  if (interaction.guildId !== config.guildId) {
-    console.log('Not handling guild id', interaction.guildId)
-    return
-  }
+  if (shouldIgnoreMessageFromGuild(interaction.guildId)) return
+
   const link = interaction.options.getString('link')
   if (!link || !link.startsWith(config.domain)) {
     await interaction.reply(

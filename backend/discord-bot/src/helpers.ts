@@ -24,6 +24,17 @@ import {
 } from './storage.js'
 
 const discordMessageIdsToThreads: { [key: string]: ThreadChannel } = {}
+export const shouldIgnoreMessageFromGuild = (guildId: string | null) => {
+  if (config.guildId && guildId !== config.guildId) {
+    console.log('Not handling message or reaction from guild id', guildId)
+    return true
+  }
+  if (config.ignoreGuildIds?.includes(guildId ?? '')) {
+    console.log('Not handling message or reaction from guild id', guildId)
+    return true
+  }
+  return false
+}
 
 export const handleReaction = async (
   reaction: MessageReaction,
