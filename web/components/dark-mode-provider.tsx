@@ -13,7 +13,7 @@ export const DarkModeProvider = (props: { children: any }) => {
     safeLocalStorage?.setItem('theme', newTheme)
   }
 
-  useEffect(() => {
+  const reRenderTheme = () => {
     const autoDark = window.matchMedia('(prefers-color-scheme: dark)').matches
 
     if (theme === 'dark' || (theme === 'auto' && autoDark))
@@ -29,7 +29,15 @@ export const DarkModeProvider = (props: { children: any }) => {
       theme: theme,
       backgroundColor: color,
     })
-  }, [theme])
+  }
+
+  useEffect(reRenderTheme, [theme])
+
+  useEffect(() => {
+    const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    darkQuery.addEventListener('change', reRenderTheme)
+    return () => darkQuery.removeEventListener('change', reRenderTheme)
+  }, [])
 
   return (
     <DarkModeContext.Provider value={{ theme, changeTheme }}>
