@@ -155,6 +155,32 @@ export interface Database {
           id?: string
         }
       }
+      discord_messages_markets: {
+        Row: {
+          channel_id: string
+          last_updated_thread_time: number | null
+          market_id: string
+          market_slug: string
+          message_id: string
+          thread_id: string | null
+        }
+        Insert: {
+          channel_id: string
+          last_updated_thread_time?: number | null
+          market_id: string
+          market_slug: string
+          message_id: string
+          thread_id?: string | null
+        }
+        Update: {
+          channel_id?: string
+          last_updated_thread_time?: number | null
+          market_id?: string
+          market_slug?: string
+          message_id?: string
+          thread_id?: string | null
+        }
+      }
       discord_users: {
         Row: {
           api_key: string
@@ -555,6 +581,14 @@ export interface Database {
         }
         Returns: number
       }
+      get_contract_creator_groups: {
+        Args: {
+          user_id: string
+          query: string
+          max_rows: number
+        }
+        Returns: Json[]
+      }
       get_contract_metrics_for_contract: {
         Args: {
           contractid: string
@@ -608,6 +642,26 @@ export interface Database {
           contracts: Json
         }[]
       }
+      get_cpmm_pool_prob: {
+        Args: {
+          pool: Json
+          p: number
+        }
+        Returns: number
+      }
+      get_cpmm_resolved_prob:
+        | {
+            Args: {
+              data: Json
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              c: unknown
+            }
+            Returns: number
+          }
       get_document_table: {
         Args: {
           doc_kind: string
@@ -826,6 +880,19 @@ export interface Database {
         }
         Returns: unknown
       }
+      millis_interval: {
+        Args: {
+          start_millis: number
+          end_millis: number
+        }
+        Returns: unknown
+      }
+      millis_to_ts: {
+        Args: {
+          millis: number
+        }
+        Returns: string
+      }
       recently_liked_contract_counts: {
         Args: {
           since: number
@@ -896,6 +963,19 @@ export interface Database {
         }
         Returns: Json
       }
+      ts_to_millis:
+        | {
+            Args: {
+              ts: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              ts: string
+            }
+            Returns: number
+          }
       vector_avg: {
         Args: {
           "": number[]

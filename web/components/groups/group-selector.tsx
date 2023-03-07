@@ -53,6 +53,7 @@ export function GroupSelector(props: {
         .then((result) => setSearchedGroups(result as Group[]))
         .finally(() => setLoading(false))
     }
+    console.log('hii', searchedGroups)
   }, [user?.id, isContractCreator, query])
 
   if (!showSelector || !user) {

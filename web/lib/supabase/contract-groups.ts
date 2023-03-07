@@ -1,4 +1,4 @@
-import { run } from 'common/supabase/utils'
+import { createClient, run } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { db } from './db'
 import { getGroupsWhereUserIsMember } from './groups'
@@ -57,7 +57,6 @@ export async function searchGroupsToAdd(props: {
     return data
   }
 
-  let baseQuery
   if (isManifoldAdmin) {
     //if is manifold admin, select from all groups that are not private
     const [{ data: exactData }, { data: prefixData }, { data: containsData }] =
@@ -102,49 +101,15 @@ export async function searchGroupsToAdd(props: {
       .map((item) => item.data)
   } else if (isCreator) {
     //if is manifold creator, select from all groups that are public, and curated groups user is an admin/moderator of
-    const [{ data: exactData }, { data: prefixData }, { data: containsData }] =
-      await Promise.all([
-        run(
-          db
-            .from('group_role')
-            .select('group_id,group_data')
-            .or(
-              'group_data->>privacyStatus.eq.public,role.eq.admin,role.eq.curated'
-            )
-            .neq('group_data->>privacyStatus', 'private')
-            .ilike('group_data->>name', `${prompt}`)
-            .order('group_data->totalMembers', { ascending: false } as any)
-            .limit(GROUPS_LIST_SIZE)
-        ),
-        run(
-          db
-            .from('group_role')
-            .select('group_id,group_data')
-            .or(
-              'group_data->>privacyStatus.eq.public,role.eq.admin, role.eq.curated'
-            )
-            .neq('group_data->>privacyStatus', 'private')
-            .ilike('group_data->>name', `${prompt}%`)
-            .order('group_data->totalMembers', { ascending: false } as any)
-            .limit(GROUPS_LIST_SIZE)
-        ),
-        run(
-          db
-            .from('group_role')
-            .select('group_id,group_data')
-            .or(
-              'group_data->>privacyStatus.eq.public,role.eq.admin, role.eq.curated'
-            )
-            .neq('group_data->>privacyStatus', 'private')
-            .ilike('group_data->>name', `%${prompt}%`)
-            .order('group_data->totalMembers', { ascending: false } as any)
-            .limit(GROUPS_LIST_SIZE)
-        ),
-      ])
-
-    return uniqBy([...exactData, ...prefixData, ...containsData], 'group_id')
-      .slice(0, GROUPS_LIST_SIZE)
-      .map((item) => item.group_data)
+    const { data: contractCreatorGroups } = await db.rpc(
+      'get_contract_creator_groups' as any,
+      {
+        user_id: userId,
+        query: prompt,
+        max_rows: GROUPS_LIST_SIZE,
+      }
+    )
+    return contractCreatorGroups
   } else {
     //only return non private groups user has an admin role in
     const [{ data: exactData }, { data: prefixData }, { data: containsData }] =
