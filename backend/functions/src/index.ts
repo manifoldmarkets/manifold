@@ -82,7 +82,6 @@ const createCheckoutSessionFunction = toCloudFunction(
   endpoints.createcheckoutsession
 )
 const getCurrentUserFunction = toCloudFunction(endpoints.getcurrentuser)
-const acceptChallenge = toCloudFunction(endpoints.acceptchallenge)
 const createPostFunction = toCloudFunction(endpoints.createpost)
 const saveTwitchCredentials = toCloudFunction(endpoints.savetwitchcredentials)
 const testScheduledFunction = toCloudFunction(endpoints.testscheduledfunction)
@@ -122,7 +121,6 @@ export {
   stripeWebhookFunction as stripewebhook,
   createCheckoutSessionFunction as createcheckoutsession,
   getCurrentUserFunction as getcurrentuser,
-  acceptChallenge as acceptchallenge,
   createPostFunction as createpost,
   saveTwitchCredentials as savetwitchcredentials,
   createCommentFunction as createcomment,
