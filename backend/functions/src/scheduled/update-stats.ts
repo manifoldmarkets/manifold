@@ -425,7 +425,7 @@ export const updateStatsCore = async () => {
 
 export const updateStats = functions
   .runWith({
-    memory: '8GB',
+    memory: '2GB',
     timeoutSeconds: 540,
     secrets: ['SUPABASE_PASSWORD'],
   })

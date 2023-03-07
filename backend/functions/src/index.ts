@@ -21,15 +21,15 @@ export * from './triggers/on-delete-group'
 export * from './triggers/on-update-reaction'
 
 // scheduled functions
-export { scheduleUpdateContractMetrics } from './scheduled/update-contract-metrics'
-export { scheduleUpdateUserMetrics } from './scheduled/update-user-metrics'
-export { scheduleUpdateGroupMetrics } from './scheduled/update-group-metrics'
 export { scheduleUpdateLoans } from './scheduled/update-loans'
 export { scheduleUpdateRecommended } from './scheduled/update-recommended'
 export {
   sendWeeklyPortfolioUpdate,
   saveWeeklyContractMetrics,
 } from './scheduled/weekly-portfolio-updates'
+export * from './scheduled/update-contract-metrics'
+export * from './scheduled/update-user-metrics'
+export * from './scheduled/update-group-metrics'
 export * from './scheduled/update-stats'
 export * from './scheduled/backup-db'
 export * from './scheduled/mana-signup-bonus'
@@ -45,16 +45,12 @@ export * from './scheduled/increment-streak-forgiveness'
 
 // v2
 // HTTP endpoints
-import { updatecontractmetrics } from './scheduled/update-contract-metrics'
-import { updategroupmetrics } from './scheduled/update-group-metrics'
 import { updateloans } from './scheduled/update-loans'
 import { updaterecommended } from './scheduled/update-recommended'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
 }
-const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
-const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 const updateLoansFunction = toCloudFunction(updateloans)
 const updateRecommendedFunction = toCloudFunction(updaterecommended)
 
@@ -124,8 +120,6 @@ export {
   saveTwitchCredentials as savetwitchcredentials,
   createCommentFunction as createcomment,
   testScheduledFunction as testscheduledfunction,
-  updateContractMetricsFunction as updatecontractmetrics,
-  updateGroupMetricsFunction as updategroupmetrics,
   updateLoansFunction as updateloans,
   updateRecommendedFunction as updaterecommended,
   validateIAPFunction as validateiap,

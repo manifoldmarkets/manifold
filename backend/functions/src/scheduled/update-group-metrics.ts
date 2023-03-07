@@ -3,35 +3,17 @@ import * as admin from 'firebase-admin'
 import { groupBy, mapValues, sortBy } from 'lodash'
 
 import { log } from 'shared/utils'
-import { newEndpointNoAuth } from '../api/helpers'
-import { invokeFunction } from 'shared/utils'
 import { getIds } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-export const scheduleUpdateGroupMetrics = functions.pubsub
-  .schedule('every 15 minutes')
+export const updateGroupMetrics = functions
+  .runWith({ timeoutSeconds: 540, secrets: ['SUPABASE_PASSWORD'] })
+  .pubsub.schedule('every 15 minutes')
   .onRun(async () => {
-    try {
-      console.log(await invokeFunction('updategroupmetrics'))
-    } catch (e) {
-      console.error(e)
-    }
+    await updateGroupMetricsCore()
   })
 
-export const updategroupmetrics = newEndpointNoAuth(
-  {
-    timeoutSeconds: 2000,
-    memory: '2GiB',
-    minInstances: 0,
-    secrets: ['SUPABASE_PASSWORD'],
-  },
-  async (_req) => {
-    await updateGroupMetrics()
-    return { success: true }
-  }
-)
-
-export async function updateGroupMetrics() {
+export async function updateGroupMetricsCore() {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading group IDs...')
