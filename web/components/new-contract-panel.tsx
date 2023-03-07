@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 
+import clsx from 'clsx'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
@@ -34,13 +35,8 @@ import { createMarket } from 'web/lib/firebase/api'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
-import {
-  getNonPublicGroupsWhereUserHasRole,
-  getPublicGroups,
-} from 'web/lib/supabase/groups'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { QfExplainer } from './contract/qf-overview'
-import clsx from 'clsx'
 
 export type NewQuestionParams = {
   groupId?: string

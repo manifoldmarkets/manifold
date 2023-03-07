@@ -8,7 +8,6 @@ import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
 import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
-import { useMemberGroups } from 'web/hooks/use-group'
 import {
   inMemoryStore,
   usePersistentState,

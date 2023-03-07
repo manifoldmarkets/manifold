@@ -1,7 +1,6 @@
-import { createClient, run } from 'common/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { db } from './db'
-import { getGroupsWhereUserIsMember } from './groups'
 
 const GROUPS_LIST_SIZE = 50
 

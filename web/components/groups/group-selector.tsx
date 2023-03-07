@@ -1,4 +1,3 @@
-import { isAdmin } from '@firebase/util'
 import { Combobox } from '@headlessui/react'
 import {
   CheckIcon,
@@ -8,20 +7,13 @@ import {
 import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
-import { User } from 'common/user'
-import { searchInAny } from 'common/util/parse'
 import { useEffect, useRef, useState } from 'react'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
-import {
-  getInitialGroupsToAdd,
-  searchGroupsToAdd,
-} from 'web/lib/supabase/contract-groups'
-import { getMemberGroups } from 'web/lib/supabase/groups'
+import { searchGroupsToAdd } from 'web/lib/supabase/contract-groups'
 
 export function GroupSelector(props: {
   selectedGroup: Group | undefined
