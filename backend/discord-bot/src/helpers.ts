@@ -56,9 +56,7 @@ export const handleReaction = async (
 
   // Help
   if (name === '❓') {
-    const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings(
-      channel.guild
-    )
+    const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
     const content = `This is a market for the question "${market.question}". You can bet YES by reacting with these emojis: ${yesBetsEmojis} and NO with these: ${noBetsEmojis}. The emoji numbers correspond to the amount of mana used per bet.`
     await user.send(content)
     return

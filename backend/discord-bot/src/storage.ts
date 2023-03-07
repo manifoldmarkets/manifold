@@ -2,7 +2,6 @@ import { createClient } from 'common/supabase/utils'
 import { config } from 'discord-bot/constants/config'
 
 const discordIdsToApiKeys: { [k: string]: string } = {}
-
 type DiscordMessageMarketInfo = {
   market_id: string
   market_slug: string
@@ -12,7 +11,9 @@ type DiscordMessageMarketInfo = {
 }
 const key = process.env.SUPABASE_KEY
 if (!key) throw new Error('No SUPABASE_KEY env var set.')
-export const supabase = createClient(config.supabaseInstanceId, key)
+const supabaseInstanceId = config.supabaseInstanceId
+if (!supabaseInstanceId) throw new Error('No supabaseInstanceId in config.')
+export const supabase = createClient(supabaseInstanceId, key)
 export const messagesHandledViaInteraction: Set<string> = new Set()
 export const channelMarkets: { [k: string]: string } = {}
 export const registerHelpMessage = `In order to bet with me go to ${config.domain}my-api-key to copy your API key and respond here with it.`

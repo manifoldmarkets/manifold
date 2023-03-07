@@ -10,6 +10,7 @@ import {
   User,
 } from 'discord.js'
 import {
+  customEmojiCache,
   customEmojis,
   emojis,
   getBettingEmojisAsStrings,
@@ -36,6 +37,10 @@ const data = new SlashCommandBuilder()
   ) as SlashCommandBuilder
 
 async function execute(interaction: ChatInputCommandInteraction) {
+  if (interaction.guildId !== config.guildId) {
+    console.log('Not handling guild id', interaction.guildId)
+    return
+  }
   const link = interaction.options.getString('link')
   if (!link || !link.startsWith(config.domain)) {
     await interaction.reply(
@@ -88,9 +93,7 @@ const sendMarketIntro = async (
   market: FullMarket
 ) => {
   await interaction.deferReply()
-  const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings(
-    interaction.guild
-  )
+  const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
 
   const { coverImageUrl } = market
   const getAttachment = async (url: string, name: string) => {
@@ -133,10 +136,7 @@ const sendMarketIntro = async (
   // Add emoji reactions
   for (const emoji of emojis) {
     if (customEmojis.includes(emoji)) {
-      // TODO: this only works on my guild rn
-      const reactionEmoji = interaction.guild?.emojis.cache.find(
-        (e) => e.id === emoji
-      )
+      const reactionEmoji = customEmojiCache[emoji]
       if (reactionEmoji) await message.react(reactionEmoji)
     } else await message.react(emoji)
   }
