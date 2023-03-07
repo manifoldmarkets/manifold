@@ -46,9 +46,8 @@ export async function searchGroupsToAdd(props: {
   isCreator: boolean
   isManifoldAdmin: boolean
   prompt: string
-  ignoreGroupIds?: string[]
 }) {
-  const { userId, isCreator, isManifoldAdmin, prompt, ignoreGroupIds } = props
+  const { userId, isCreator, isManifoldAdmin, prompt } = props
   if (!prompt || prompt === '') {
     const data = await getInitialGroupsToAdd({
       userId: userId,
