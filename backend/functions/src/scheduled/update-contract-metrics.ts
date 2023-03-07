@@ -2,43 +2,30 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy, mapValues } from 'lodash'
 
-import { invokeFunction, log } from 'shared/utils'
+import { log } from 'shared/utils'
 import { LimitBet } from 'common/bet'
 import { CPMM } from 'common/contract'
 import { DAY_MS } from 'common/util/time'
 import { computeElasticity } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
-import { newEndpointNoAuth } from '../api/helpers'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getAll } from 'shared/supabase/utils'
 
-export const scheduleUpdateContractMetrics = functions.pubsub
-  .schedule('every 15 minutes')
+export const updateContractMetrics = functions
+  .runWith({
+    memory: '2GB',
+    timeoutSeconds: 540,
+    secrets: ['SUPABASE_PASSWORD'],
+  })
+  .pubsub.schedule('every 15 minutes')
   .onRun(async () => {
-    try {
-      console.log(await invokeFunction('updatecontractmetrics'))
-    } catch (e) {
-      console.error(e)
-    }
+    await updateContractMetricsCore()
   })
 
-export const updatecontractmetrics = newEndpointNoAuth(
-  {
-    timeoutSeconds: 2000,
-    memory: '2GiB',
-    minInstances: 0,
-    secrets: ['SUPABASE_PASSWORD'],
-  },
-  async (_req) => {
-    await updateContractMetrics()
-    return { success: true }
-  }
-)
-
-export async function updateContractMetrics() {
+export async function updateContractMetricsCore() {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')

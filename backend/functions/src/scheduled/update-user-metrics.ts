@@ -24,7 +24,7 @@ import {
 
 const firestore = admin.firestore()
 
-export const scheduleUpdateUserMetrics = functions
+export const updateUserMetrics = functions
   .runWith({
     memory: '4GB',
     timeoutSeconds: 540,
@@ -32,10 +32,10 @@ export const scheduleUpdateUserMetrics = functions
   })
   .pubsub.schedule('every 1 minutes')
   .onRun(async () => {
-    await updateUserMetrics()
+    await updateUserMetricsCore()
   })
 
-export async function updateUserMetrics() {
+export async function updateUserMetricsCore() {
   const now = Date.now()
   const yesterday = now - DAY_MS
   const weekAgo = now - DAY_MS * 7

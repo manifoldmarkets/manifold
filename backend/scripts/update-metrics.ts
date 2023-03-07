@@ -2,17 +2,17 @@ import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
 import { log } from 'shared/utils'
-import { updateUserMetrics } from 'functions/scheduled/update-user-metrics'
-import { updateContractMetrics } from 'functions/scheduled/update-contract-metrics'
-import { updateGroupMetrics } from 'functions/scheduled/update-group-metrics'
+import { updateUserMetricsCore } from 'functions/scheduled/update-user-metrics'
+import { updateContractMetricsCore } from 'functions/scheduled/update-contract-metrics'
+import { updateGroupMetricsCore } from 'functions/scheduled/update-group-metrics'
 
 async function updateMetrics() {
   log('Updating user metrics...')
-  await updateUserMetrics()
+  await updateUserMetricsCore()
   log('Updating contract metrics...')
-  await updateContractMetrics()
+  await updateContractMetricsCore()
   log('Updating group metrics...')
-  await updateGroupMetrics()
+  await updateGroupMetricsCore()
 }
 
 if (require.main === module) {
