@@ -68,8 +68,7 @@ export async function scoreContractsInternal() {
       (contract.uniqueBettors7Days ?? 0)
 
     const popularityScore = todayScore + thisWeekScore / 10
-    const freshnessScore =
-      Math.log(1 + todayScore / (thisWeekScore / 7 + 1)) + 1
+    const freshnessScore = 1 + Math.log(1 + popularityScore)
     const wasCreatedToday = contract.createdTime > dayAgo
 
     let dailyScore: number | undefined
