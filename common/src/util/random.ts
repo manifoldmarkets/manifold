@@ -52,15 +52,3 @@ export const shuffle = (array: unknown[], rand: () => number) => {
     ;[array[i], array[swapIndex]] = [array[swapIndex], array[i]]
   }
 }
-
-export function chooseRandomSubset<T>(
-  items: T[],
-  count: number,
-  seed?: string
-) {
-  const fiveMinutes = 5 * 60 * 1000
-  seed = seed ?? Math.round(Date.now() / fiveMinutes).toString()
-  const copy = [...items]
-  shuffle(copy, createRNG(seed))
-  return copy.slice(0, count)
-}

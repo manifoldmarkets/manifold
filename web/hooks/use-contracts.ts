@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import {
   Contract,
   listenForContracts,
-  listenForHotContracts,
   getUserBetContracts,
   getUserBetContractsQuery,
   listenForContract,
@@ -124,14 +123,6 @@ export const useContractsByDailyScoreGroups = (
     groupSlugs,
     data.map((d) => d.hits.filter((c) => c.dailyScore))
   )
-}
-
-export const useHotContracts = () => {
-  const [hotContracts, setHotContracts] = useState<Contract[] | undefined>()
-
-  useEffect(() => listenForHotContracts(setHotContracts), [])
-
-  return hotContracts
 }
 
 export const usePrefetchUserBetContracts = (userId: string) => {

@@ -13,10 +13,9 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { partition, sortBy, sum, uniqBy } from 'lodash'
+import { sortBy, sum } from 'lodash'
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract } from 'common/contract'
-import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getLiquidity } from 'common/calculate-cpmm-multi'
@@ -220,26 +219,6 @@ export async function unFollowContract(contractId: string, userId: string) {
   await deleteDoc(followDoc)
 }
 
-const hotContractsQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('visibility', '==', 'public'),
-  orderBy('volume24Hours', 'desc'),
-  limit(16)
-)
-
-export function listenForHotContracts(
-  setHotContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(hotContractsQuery, (contracts) => {
-    const hotContracts = sortBy(
-      chooseRandomSubset(contracts, 4),
-      (contract) => contract.volume24Hours
-    )
-    setHotContracts(hotContracts)
-  })
-}
-
 export const trendingContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
@@ -258,20 +237,6 @@ export async function getContractsBySlugs(slugs: string[]) {
   const snapshot = await getDocs(q)
   const data = snapshot.docs.map((doc) => doc.data())
   return sortBy(data, (contract) => -1 * contract.volume24Hours)
-}
-
-const closingSoonQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('visibility', '==', 'public'),
-  where('closeTime', '>', Date.now()),
-  orderBy('closeTime', 'asc'),
-  limit(6)
-)
-
-export async function getClosingSoonContracts() {
-  const data = await getValues<Contract>(closingSoonQuery)
-  return sortBy(chooseRandomSubset(data, 2), (contract) => contract.closeTime)
 }
 
 export const getTopCreatorContracts = async (
@@ -300,35 +265,4 @@ export const getTopGroupContracts = async (
     limit(count)
   )
   return await getValues<Contract>(creatorContractsQuery)
-}
-
-export const getRelatedContracts = async (
-  contract: Contract,
-  excludeBettorId: string,
-  count: number
-) => {
-  const { creatorId, groupSlugs, id } = contract
-
-  const [userContracts, groupContracts] = await Promise.all([
-    getTopCreatorContracts(creatorId, count * 2),
-    groupSlugs && groupSlugs[0]
-      ? getTopGroupContracts(groupSlugs[0], count * 2)
-      : [],
-  ])
-
-  const combined = uniqBy([...userContracts, ...groupContracts], (c) => c.id)
-
-  const open = combined
-    .filter((c) => c.closeTime && c.closeTime > Date.now())
-    .filter((c) => c.id !== id)
-
-  const [betOnContracts, nonBetOnContracts] = partition(
-    open,
-    (c) => c.uniqueBettorIds && c.uniqueBettorIds.includes(excludeBettorId)
-  )
-  const chosen = chooseRandomSubset(nonBetOnContracts, count)
-  if (chosen.length < count)
-    chosen.push(...chooseRandomSubset(betOnContracts, count - chosen.length))
-
-  return chosen
 }

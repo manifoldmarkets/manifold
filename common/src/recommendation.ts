@@ -1,7 +1,6 @@
-import { uniq } from 'lodash'
+import { shuffle, uniq } from 'lodash'
 import { Contract } from './contract'
 import { factorizeMatrix } from './util/matrix'
-import { chooseRandomSubset } from './util/random'
 
 export type user_data = {
   userId: string
@@ -75,7 +74,7 @@ export function getMarketRecommendations(
     }
     if (!groupIds.includes(DESTINY_GROUP_ID)) {
       // Downweight markets in the Destiny group if you don't follow it.
-      const contractIdSubset = chooseRandomSubset(destinyContractIds, 25)
+      const contractIdSubset = shuffle(destinyContractIds).slice(0, 25)
       for (const contractId of contractIdSubset) {
         row.set(getColumnIndex(contractId), 0)
       }
@@ -87,7 +86,7 @@ export function getMarketRecommendations(
     for (const groupId of groupIds) {
       // If you follow a group, count that as interest in random subset of group markets.
       const contractIds = Object.keys(groupsToContracts[groupId] ?? {})
-      const contractIdSubset = chooseRandomSubset(contractIds, 5)
+      const contractIdSubset = shuffle(contractIds).slice(0, 5)
       for (const contractId of contractIdSubset) {
         row.set(getColumnIndex(contractId), 1)
       }
