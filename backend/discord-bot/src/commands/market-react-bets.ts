@@ -111,7 +111,10 @@ const sendMarketIntro = async (
   const marketEmbed = new EmbedBuilder()
   marketEmbed
     .setColor(0x0099ff)
-    .setTitle(market.question)
+    .setTitle(
+      market.question +
+        ` ${Math.round((market.probability ?? 0) * 100)}% chance`
+    )
     .setURL(market.url)
     .setDescription(getCurrentMarketDescription(market))
     .setThumbnail(`attachment://cover.png`)

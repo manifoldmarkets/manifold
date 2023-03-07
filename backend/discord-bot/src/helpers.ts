@@ -1,13 +1,12 @@
 import { FullMarket } from 'common/api-market-types'
-import { randomString } from 'common/util/random'
 import * as console from 'console'
 import { config } from 'discord-bot/constants/config'
 import {
   EmbedBuilder,
+  hyperlink,
   Message,
   MessageReaction,
   TextChannel,
-  ThreadChannel,
   User,
 } from 'discord.js'
 import {
@@ -16,14 +15,8 @@ import {
   getBetEmojiKey,
   getBettingEmojisAsStrings,
 } from './emojis.js'
-import {
-  registerHelpMessage,
-  saveThreadIdToMessageId,
-  updateThreadLastUpdatedTime,
-  userApiKey,
-} from './storage.js'
+import { registerHelpMessage, userApiKey } from './storage.js'
 
-const discordMessageIdsToThreads: { [key: string]: ThreadChannel } = {}
 export const shouldIgnoreMessageFromGuild = (guildId: string | null) => {
   if (config.guildId && guildId !== config.guildId) {
     console.log('Not handling message or reaction from guild id', guildId)
@@ -40,11 +33,9 @@ export const handleReaction = async (
   reaction: MessageReaction,
   user: User,
   channel: TextChannel,
-  market: FullMarket,
-  threadId?: string
+  market: FullMarket
 ) => {
   const { name } = reaction.emoji
-  const messageId = reaction.message.id
   console.log(`Collected ${name} from user id: ${user.id}`)
   if (!getAnyHandledEmojiKey(reaction)) {
     console.log('Not a handled emoji')
@@ -53,15 +44,7 @@ export const handleReaction = async (
   // Market description
   if (name === 'ℹ️') {
     const content = `Market details: ${market.textDescription}`
-    await sendThreadMessage(
-      channel,
-      market,
-      content,
-      user,
-      messageId,
-      threadId,
-      true
-    )
+    await user.send(content)
     return
   }
 
@@ -86,7 +69,7 @@ export const handleReaction = async (
   if (!message) return
 
   // Attempt to place a bet
-  await handleBet(reaction, user, channel, message, market, threadId)
+  await handleBet(reaction, user, channel, message, market)
 }
 
 export const handleBet = async (
@@ -94,9 +77,7 @@ export const handleBet = async (
   user: User,
   channel: TextChannel,
   message: Message,
-  market: FullMarket,
-  threadId?: string,
-  sale?: boolean
+  market: FullMarket
 ) => {
   const emojiKey = getBetEmojiKey(reaction)
   if (!emojiKey) return
@@ -110,7 +91,6 @@ export const handleBet = async (
     })
 
     if (!apiKey) {
-      if (sale) return
       await user.send(registerHelpMessage(user.id))
       const userReactions = message.reactions.cache.filter(
         (r) =>
@@ -128,7 +108,7 @@ export const handleBet = async (
       return
     }
 
-    const outcome = sale ? (buyOutcome === 'YES' ? 'NO' : 'YES') : buyOutcome
+    const outcome = buyOutcome
     // send json post request to api
     const resp = await fetch(`${config.domain}api/v0/bet`, {
       method: 'POST',
@@ -144,29 +124,30 @@ export const handleBet = async (
     })
     if (!resp.ok) {
       const content = `Error: ${resp.statusText}`
-      await sendThreadMessage(
-        channel,
-        market,
-        content,
-        user,
-        messageId,
-        threadId
-      )
+      await user.send(content)
       return
     }
     const bet = await resp.json()
     const newProb = bet.probAfter
-    const content = `${user.tag} ${
-      sale ? 'sold' : 'bet'
-    } M$${amount} on ${buyOutcome}. New probability: ${Math.round(
+    console.log(market.question.length)
+    const truncatedQuestion =
+      market.question.length > 69
+        ? `${market.question.substring(0, 66)}...`
+        : market.question
+    const messageLink = hyperlink(
+      `${truncatedQuestion}`,
+      `https://discord.com/channels/${channel.guildId}/${channel.id}/${messageId}`
+    )
+
+    const content = `${user.toString()} bought M$${amount} ${buyOutcome} on ${messageLink} Now ${Math.round(
       newProb * 100
     )}%`
     market.probability = newProb
-    await sendThreadMessage(channel, market, content, user, messageId, threadId)
+    await sendChannelMessage(channel, market, content)
     await updateMarketStatus(message, market)
   } catch (e) {
     const content = `Error: ${e}`
-    await sendThreadMessage(channel, market, content, user, messageId, threadId)
+    await user.send(content)
   }
 }
 const currentProbText = (prob: number) =>
@@ -189,55 +170,19 @@ const updateMarketStatus = async (message: Message, market: FullMarket) => {
   const previousEmbed = message.embeds[0]
   const marketEmbed = EmbedBuilder.from(previousEmbed)
   marketEmbed.setDescription(getCurrentMarketDescription(market))
+  marketEmbed.setTitle(
+    market.question + ` ${Math.round((market.probability ?? 0) * 100)}% chance`
+  )
   await message.edit({ embeds: [marketEmbed], files: [] })
 }
 
-const getOrCreateThread = async (
-  channel: TextChannel,
-  marketName: string,
-  messageId: string,
-  threadId?: string
-) => {
-  const name = marketName.slice(0, 40) + '-' + randomString(5)
-  if (discordMessageIdsToThreads[messageId])
-    return discordMessageIdsToThreads[messageId]
-  if (threadId) {
-    await channel.threads.fetch({ active: true }, { cache: true })
-    const thread = channel.threads.cache.find((t) => t.id === threadId)
-    if (thread) return thread
-  }
-
-  const thread = await channel.threads.create({
-    name,
-    autoArchiveDuration: 60,
-    reason: 'Activity feed for market: ' + name,
-  })
-  discordMessageIdsToThreads[messageId] = thread
-  await saveThreadIdToMessageId(messageId, thread.id)
-  return thread
-}
-
-export const sendThreadMessage = async (
+export const sendChannelMessage = async (
   channel: TextChannel,
   market: FullMarket,
-  content: string,
-  user: User,
-  messageId: string,
-  threadId?: string,
-  addUserToThread?: boolean
+  content: string
 ) => {
-  // get the thread id from supabase if we have one
-  const thread = await getOrCreateThread(
-    channel,
-    market.question,
-    messageId,
-    threadId
-  )
-  await Promise.all([
-    thread.send(content),
-    addUserToThread ? thread.members.add(user) : Promise.resolve(),
-    updateThreadLastUpdatedTime(messageId),
-  ])
+  const marketEmbed = new EmbedBuilder().setDescription(content)
+  await channel.send({ embeds: [marketEmbed] })
 }
 
 export const getSlug = (link: string) => {

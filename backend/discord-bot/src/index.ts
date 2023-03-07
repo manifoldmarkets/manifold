@@ -185,11 +185,5 @@ const handleOldReaction = async (
   if (!market) return
   console.log('got market', market.url)
 
-  await handleReaction(
-    reaction,
-    user,
-    channel as TextChannel,
-    market,
-    marketInfo.thread_id
-  )
+  await handleReaction(reaction, user, channel as TextChannel, market)
 }
