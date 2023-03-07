@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import { searchInAny } from 'common/util/parse'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -41,19 +41,27 @@ export function GroupSelector(props: {
   const [searchedGroups, setSearchedGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(false)
   const isManifoldAdmin = useAdmin()
+
+  const requestNumber = useRef(0)
+
   useEffect(() => {
     if (user) {
+      requestNumber.current++
+      const requestId = requestNumber.current
       setLoading(true)
       searchGroupsToAdd({
         userId: user.id,
         isCreator: isContractCreator,
         isManifoldAdmin: isManifoldAdmin,
         prompt: query,
+      }).then((result) => {
+        if (requestNumber.current === requestId) {
+          setSearchedGroups(result as Group[])
+          setLoading(false)
+        }
       })
-        .then((result) => setSearchedGroups(result as Group[]))
-        .finally(() => setLoading(false))
     }
-    console.log('hii', searchedGroups)
+    console.log('finalResult', searchedGroups)
   }, [user?.id, isContractCreator, query])
 
   if (!showSelector || !user) {
