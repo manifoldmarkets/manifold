@@ -24,6 +24,14 @@ module.exports = {
         bouncy: 'cubic-bezier(0.8, 0, 1, 1)',
       },
       keyframes: {
+        progress: {
+          from: {
+            width: '0%',
+          },
+          to: {
+            width: '100%',
+          },
+        },
         'bounce-left': {
           '0%,100%': {
             transform: 'translateX(0%)',
@@ -237,6 +245,7 @@ module.exports = {
         },
       },
       animation: {
+        progress: 'progress linear',
         'bounce-left': 'bounce-left 0.8s',
         'bounce-right': 'bounce-right 0.7s',
         'slide-in-1': 'slide-in-1 4s',
