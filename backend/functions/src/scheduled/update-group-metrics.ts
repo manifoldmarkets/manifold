@@ -43,7 +43,7 @@ export async function updateGroupMetrics() {
     `with creator_scores as (
       select
         gc.group_id, c.data->>'creatorId' as user_id, count(*) as score,
-        rank() over (partition by gc.group_id order by count(*) desc) as nth
+        row_number() over (partition by gc.group_id order by count(*) desc) as nth
       from group_contracts as gc
       join contracts as c on gc.contract_id = c.id
       join user_contract_metrics as ucm on ucm.contract_id = gc.contract_id
@@ -65,7 +65,7 @@ export async function updateGroupMetrics() {
     `with profit_scores as (
       select
         gc.group_id, ucm.user_id, sum((ucm.data->'profit')::numeric) as score,
-        rank() over (partition by gc.group_id order by sum((ucm.data->'profit')::numeric) desc) as nth
+        row_number() over (partition by gc.group_id order by sum((ucm.data->'profit')::numeric) desc) as nth
       from group_contracts as gc
       join user_contract_metrics as ucm on ucm.contract_id = gc.contract_id
       group by gc.group_id, ucm.user_id
