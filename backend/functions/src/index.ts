@@ -91,7 +91,6 @@ const dividendCertFunction = toCloudFunction(endpoints.dividendcert)
 const markAllNotificationsFunction = toCloudFunction(
   endpoints.markallnotifications
 )
-const claimDestinySubFunction = toCloudFunction(endpoints.claimdestinysub)
 const addContractToGroupFunction = toCloudFunction(endpoints.addcontracttogroup)
 const updateMemberRoleFunction = toCloudFunction(endpoints.updatememberrole)
 const removeContractFromGroupFunction = toCloudFunction(
@@ -133,7 +132,6 @@ export {
   swapCertFunction as swapcert,
   dividendCertFunction as dividendcert,
   markAllNotificationsFunction as markallnotifications,
-  claimDestinySubFunction as claimdestinysub,
   addContractToGroupFunction as addcontracttogroup,
   updateMemberRoleFunction as updatememberrole,
   removeContractFromGroupFunction as removecontractfromgroup,

@@ -56,7 +56,6 @@ addEndpointRoute('/createpost', endpoints.createpost)
 addEndpointRoute('/testscheduledfunction', endpoints.testscheduledfunction)
 addJsonEndpointRoute('/validateIap', endpoints.validateiap)
 addJsonEndpointRoute('/markallnotifications', endpoints.markallnotifications)
-addJsonEndpointRoute('/claimdestinysub', endpoints.claimdestinysub)
 addJsonEndpointRoute('/updatememberrole', endpoints.updatememberrole)
 addJsonEndpointRoute('/addcontracttogroup', endpoints.addcontracttogroup)
 addJsonEndpointRoute(
