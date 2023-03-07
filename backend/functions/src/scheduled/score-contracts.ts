@@ -16,7 +16,7 @@ import { bulkUpdate } from 'shared/supabase/utils'
 
 export const scoreContracts = functions
   .runWith({
-    memory: '4GB',
+    memory: '1GB',
     timeoutSeconds: 540,
     secrets: ['SUPABASE_KEY', 'SUPABASE_PASSWORD'],
   })

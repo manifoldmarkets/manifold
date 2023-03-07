@@ -29,7 +29,7 @@ export const updaterecommended = newEndpointNoAuth(
   {
     timeoutSeconds: 3600,
     cpu: 4,
-    memory: '8GiB',
+    memory: '2GiB',
     minInstances: 0,
     secrets: ['SUPABASE_PASSWORD'],
   },

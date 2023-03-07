@@ -26,7 +26,7 @@ const firestore = admin.firestore()
 
 export const updateUserMetrics = functions
   .runWith({
-    memory: '4GB',
+    memory: '1GB',
     timeoutSeconds: 540,
     secrets: ['API_SECRET', 'SUPABASE_PASSWORD'],
   })

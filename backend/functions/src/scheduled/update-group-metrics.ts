@@ -7,11 +7,7 @@ import { getIds } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const updateGroupMetrics = functions
-  .runWith({
-    memory: '2GB',
-    timeoutSeconds: 540,
-    secrets: ['SUPABASE_PASSWORD'],
-  })
+  .runWith({ timeoutSeconds: 540, secrets: ['SUPABASE_PASSWORD'] })
   .pubsub.schedule('every 15 minutes')
   .onRun(async () => {
     await updateGroupMetricsCore()

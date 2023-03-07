@@ -16,7 +16,7 @@ import { getAll } from 'shared/supabase/utils'
 
 export const updateContractMetrics = functions
   .runWith({
-    memory: '2GB',
+    memory: '1GB',
     timeoutSeconds: 540,
     secrets: ['SUPABASE_PASSWORD'],
   })
