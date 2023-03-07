@@ -6,11 +6,9 @@ ENV=${1:-dev}
 case $ENV in
     dev)
       ENVIRONMENT=DEV
-      GCLOUD_CPU=1
       GCLOUD_PROJECT=dev-mantic-markets ;;
     prod)
       ENVIRONMENT=PROD
-      GCLOUD_CPU=4
       GCLOUD_PROJECT=mantic-markets ;;
     *)
       echo "Invalid environment; must be dev or prod."
@@ -31,8 +29,8 @@ yarn build && \
          --set-env-vars GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
          --set-secrets SUPABASE_PASSWORD=SUPABASE_PASSWORD:latest \
          --execution-environment gen2 \
-         --cpu ${GCLOUD_CPU} \
-         --memory 2Gi \
+         --cpu 1 \
+         --memory 500Mi \
          --concurrency 1000 \
          --min-instances 1 \
          --no-allow-unauthenticated \
