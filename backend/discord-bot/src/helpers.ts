@@ -111,7 +111,7 @@ export const handleBet = async (
 
     if (!apiKey) {
       if (sale) return
-      await user.send(registerHelpMessage)
+      await user.send(registerHelpMessage(user.id))
       const userReactions = message.reactions.cache.filter(
         (r) =>
           (r.emoji.id ?? r.emoji.name) ===

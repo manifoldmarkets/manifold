@@ -16,7 +16,8 @@ if (!supabaseInstanceId) throw new Error('No supabaseInstanceId in config.')
 export const supabase = createClient(supabaseInstanceId, key)
 export const messagesHandledViaInteraction: Set<string> = new Set()
 export const channelMarkets: { [k: string]: string } = {}
-export const registerHelpMessage = `In order to bet with me go to ${config.domain}my-api-key to copy your API key and respond here with it.`
+export const registerHelpMessage = (discordId: string) =>
+  `In order to bet with me go to ${config.domain}register-on-discord?discordId=${discordId}`
 
 export const userApiKey = async (discordUserId: string) => {
   const storedKey = discordIdsToApiKeys[discordUserId] ?? null
