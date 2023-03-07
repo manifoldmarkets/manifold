@@ -5,22 +5,6 @@ import { getContract } from 'shared/utils'
 import { uniq } from 'lodash'
 const firestore = admin.firestore()
 
-export const onUpdateGroup = functions.firestore
-  .document('groups/{groupId}')
-  .onUpdate(async (change) => {
-    const prevGroup = change.before.data() as Group
-    const group = change.after.data() as Group
-
-    // Ignore the activity update we just made
-    if (prevGroup.mostRecentActivityTime !== group.mostRecentActivityTime)
-      return
-
-    await firestore
-      .collection('groups')
-      .doc(group.id)
-      .update({ mostRecentActivityTime: Date.now() })
-  })
-
 export const onCreateGroupContract = functions.firestore
   .document('groups/{groupId}/groupContracts/{contractId}')
   .onCreate(async (change) => {
@@ -58,7 +42,6 @@ export const onCreateGroupMember = functions.firestore
         .collection('groups')
         .doc(groupId)
         .update({
-          mostRecentActivityTime: Date.now(),
           totalMembers: admin.firestore.FieldValue.increment(1),
         })
   })
@@ -72,7 +55,6 @@ export const onDeleteGroupMember = functions.firestore
         .collection('groups')
         .doc(groupId)
         .update({
-          mostRecentActivityTime: Date.now(),
           totalMembers: admin.firestore.FieldValue.increment(-1),
         })
   })

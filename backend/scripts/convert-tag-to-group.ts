@@ -37,7 +37,6 @@ const createGroup = async (
     name,
     about,
     createdTime: now,
-    mostRecentActivityTime: now,
     anyoneCanJoin: true,
     totalContracts: contracts.length,
     totalMembers: 1,
