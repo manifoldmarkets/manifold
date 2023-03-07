@@ -232,22 +232,6 @@ export function NewContractPanel(props: {
 
   const [hideOptions, setHideOptions] = useState(true)
 
-  const [adminGroups, setAdminGroups] = useState<Group[]>([])
-  const [publicGroups, setPublicGroups] = useState<Group[]>([])
-  useEffect(() => {
-    getNonPublicGroupsWhereUserHasRole(creator.id)
-      .then((g) =>
-        setAdminGroups(g.map((gp: { group_data: any }) => gp.group_data))
-      )
-      .catch((e) => console.log(e))
-  }, [creator.id])
-
-  useEffect(() => {
-    getPublicGroups()
-      .then((g) => setPublicGroups(g.map((gp: { data: any }) => gp.data)))
-      .catch((e) => console.log(e))
-  }, [])
-
   return (
     <div className={clsx(className, 'text-ink-1000')}>
       <div className="flex w-full flex-col">
@@ -408,9 +392,8 @@ export function NewContractPanel(props: {
                 <GroupSelector
                   selectedGroup={selectedGroup}
                   setSelectedGroup={setSelectedGroup}
-                  creator={creator}
                   options={{ showSelector: true, showLabel: true }}
-                  permittedGroups={adminGroups.concat(publicGroups)}
+                  isContractCreator={true}
                 />
                 {selectedGroup && (
                   <a target="_blank" href={groupPath(selectedGroup.slug)}>

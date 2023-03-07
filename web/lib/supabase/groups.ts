@@ -1,3 +1,4 @@
+import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { run, selectFrom } from 'common/supabase/utils'
 import { db } from './db'
@@ -51,6 +52,17 @@ export async function getMemberGroups(userId: string) {
   )
 
   return (await run(query)).data
+}
+
+export async function getShouldBlockDestiny(userId: string) {
+  const groupIds = await getMemberGroupIds(userId)
+  const query = selectFrom(db, 'groups', 'id', 'slug')
+    .in(
+      'id',
+      groupIds.map((d: { group_id: string }) => d.group_id)
+    )
+    .in('data->>slug', DESTINY_GROUP_SLUGS)
+  return (await run(query)).data.length === 0
 }
 
 export async function getMemberGroupIds(userId: string) {

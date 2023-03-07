@@ -138,21 +138,7 @@ export function ContractGroupsList(props: {
                   })
                 }
                 selectedGroup={undefined}
-                creator={user}
-                permittedGroups={
-                  isAdmin
-                    ? undefined
-                    : isCreator
-                    ? adminGroups
-                        .filter(
-                          (g) =>
-                            g.privacyStatus == 'private' ||
-                            g.privacyStatus == 'curated'
-                        )
-                        .concat(publicGroups)
-                        .filter((g) => !contract.groupSlugs?.includes(g.slug))
-                    : adminGroups
-                }
+                isContractCreator={isCreator}
               />
             </Col>
           )}

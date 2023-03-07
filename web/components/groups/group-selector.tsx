@@ -1,3 +1,4 @@
+import { isAdmin } from '@firebase/util'
 import { Combobox } from '@headlessui/react'
 import {
   CheckIcon,
@@ -9,53 +10,49 @@ import clsx from 'clsx'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import { searchInAny } from 'common/util/parse'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useAdmin } from 'web/hooks/use-admin'
 import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
+import { useUser } from 'web/hooks/use-user'
+import {
+  getInitialGroupsToAdd,
+  searchGroupsToAdd,
+} from 'web/lib/supabase/contract-groups'
+import { getMemberGroups } from 'web/lib/supabase/groups'
 
 export function GroupSelector(props: {
   selectedGroup: Group | undefined
   setSelectedGroup: (group: Group) => void
-  creator: User | null | undefined
+  isContractCreator: boolean
   options: {
     showSelector: boolean
     showLabel: boolean
     ignoreGroupIds?: string[]
   }
-  permittedGroups?: Group[]
 }) {
-  const { selectedGroup, setSelectedGroup, creator, options, permittedGroups } =
-    props
+  const { selectedGroup, setSelectedGroup, isContractCreator, options } = props
+  const user = useUser()
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
   const { showSelector, showLabel, ignoreGroupIds } = options
   const [query, setQuery] = useState('')
-  const openGroups = useOpenGroups()
-  const memberGroups = useMemberGroups(creator?.id)
+  const [searchedGroups, setSearchedGroups] = useState<Group[]>([])
+  const isManifoldAdmin = useAdmin()
+  useEffect(() => {
+    if (user) {
+      console.log(query)
+      searchGroupsToAdd({
+        userId: user.id,
+        isCreator: isContractCreator,
+        isManifoldAdmin: isManifoldAdmin,
+        prompt: query,
+      }).then((result) => setSearchedGroups(result as Group[]))
+    }
+  }, [user?.id, isContractCreator, query])
 
-  const sortGroups = (groups: Group[]) =>
-    groups.sort((a, b) => b.totalMembers - a.totalMembers)
-
-  let availableGroups
-  if (permittedGroups) {
-    availableGroups = permittedGroups
-  } else {
-    availableGroups = sortGroups(
-      openGroups
-        .concat(
-          (memberGroups ?? []).filter(
-            (g) => !openGroups.some((og) => og.id === g.id)
-          )
-        )
-        .filter((group) => !ignoreGroupIds?.includes(group.id))
-    )
-  }
-  const filteredGroups = sortGroups(
-    availableGroups.filter((group) => searchInAny(query, group.name))
-  )
-
-  if (!showSelector || !creator) {
+  if (!showSelector || !user) {
     return (
       <>
         <div className={'label justify-start'}>
@@ -106,7 +103,7 @@ export function GroupSelector(props: {
                 static={isCreatingNewGroup}
                 className="bg-canvas-0 ring-ink-1000 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none"
               >
-                {filteredGroups.map((group: Group) => (
+                {searchedGroups.map((group: Group) => (
                   <Combobox.Option
                     key={group.id}
                     value={group}
@@ -156,7 +153,7 @@ export function GroupSelector(props: {
                 ))}
 
                 <CreateGroupButton
-                  user={creator}
+                  user={user}
                   onOpenStateChange={setIsCreatingNewGroup}
                   className={
                     'text-ink-900 bg-canvas-0 hover:text-ink-0 hover:bg-primary-500 group flex w-full flex-row items-center rounded-none border-0 font-normal transition-colors'
