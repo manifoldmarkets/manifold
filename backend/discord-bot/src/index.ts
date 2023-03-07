@@ -29,7 +29,6 @@ import {
   handleReaction,
   shouldIgnoreMessageFromGuild,
 } from './helpers.js'
-import { registerApiKey } from './register-api-key.js'
 import { startListener } from './server.js'
 import {
   getMarketInfoFromMessageId,
@@ -104,14 +103,6 @@ const init = async () => {
 
 const registerListeners = () => {
   client.on(Events.MessageReactionAdd, handleOldReaction)
-
-  client.on(Events.MessageCreate, async (message) => {
-    // Here you check for channel type
-    // We only need direct messages here, so skip other messages
-    if (!message.channel.isDMBased()) return
-    if (message.author.id === client.user?.id) return
-    await registerApiKey(message)
-  })
 
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isChatInputCommand()) return
