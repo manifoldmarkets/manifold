@@ -3,7 +3,7 @@
         "rootDir": "src",
         "composite": true,
         "target": "es2022",
-        "module": "es2022",
+        "module": "commonjs",
         "noImplicitReturns": true,
         "moduleResolution": "node",
         "outDir": "./lib",

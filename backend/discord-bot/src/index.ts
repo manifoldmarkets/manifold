@@ -27,24 +27,14 @@ import {
   getMarketInfoFromMessageId,
   messagesHandledViaInteraction,
 } from './storage.js'
-const { id: clientId } = config.client
-const token = process.env.DISCORD_BOT_TOKEN
-if (!token) throw new Error('No DISCORD_BOT_TOKEN env var set.')
-export const commandsCollection = new Collection<
+const commandsCollection = new Collection<
   string,
   {
     data: SlashCommandBuilder
     execute: (interaction: ChatInputCommandInteraction) => Promise<any>
   }
 >()
-await Promise.all(
-  commands.map(async (c) => commandsCollection.set(c.data.name, c))
-)
-
-const rest = new REST({ version: '10' }).setToken(token)
-
-console.log('Logging in... with client id: ', clientId)
-export const client = new Client({
+const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
@@ -58,45 +48,77 @@ export const client = new Client({
     Partials.User,
   ],
 })
-client.once(Events.ClientReady, () => {
-  console.log('Ready!')
-})
 
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return
+const init = async () => {
+  const { id: clientId } = config.client
+  const token = process.env.DISCORD_BOT_TOKEN
+  if (!token) throw new Error('No DISCORD_BOT_TOKEN env var set.')
 
-  const command = commandsCollection.get(interaction.commandName)
-  if (!command) return
+  await Promise.all(
+    commands.map(async (c) => commandsCollection.set(c.data.name, c))
+  )
 
+  const rest = new REST({ version: '10' }).setToken(token)
+
+  console.log('Logging in... with client id: ', clientId)
+
+  await client.login(token)
+  console.log('Logged in')
+
+  process.stdout.write('Refreshing slash commands... ')
   try {
-    await command.execute(interaction)
-  } catch (error) {
-    console.error(error)
-    await interaction.reply({
-      content: 'There was an error while executing this command :(',
-      ephemeral: true,
+    await rest.put(Routes.applicationCommands(clientId), {
+      body: commandsCollection.mapValues((c) => c.data.toJSON()),
     })
+
+    console.log(
+      `${[...commandsCollection.values()]
+        .map((x) => '/' + x.data.name)
+        .join(', ')}`
+    )
+  } catch (error) {
+    console.log('ERROR')
+    console.error(error)
   }
-})
+}
 
-await client.login(token)
-console.log('Logged in')
+const registerListeners = () => {
+  client.on(Events.MessageReactionAdd, handleOldReaction)
 
-process.stdout.write('Refreshing slash commands... ')
-try {
-  await rest.put(Routes.applicationCommands(clientId), {
-    body: commandsCollection.mapValues((c) => c.data.toJSON()),
+  client.on(Events.MessageCreate, async (message) => {
+    // Here you check for channel type
+    // We only need direct messages here, so skip other messages
+    if (!message.channel.isDMBased()) return
+    if (message.author.id === client.user?.id) return
+    await registerApiKey(message)
   })
 
-  console.log(
-    `${[...commandsCollection.values()]
-      .map((x) => '/' + x.data.name)
-      .join(', ')}`
-  )
-} catch (error) {
-  console.log('ERROR')
-  console.error(error)
+  client.once(Events.ClientReady, () => {
+    console.log('Ready!')
+  })
+
+  client.on(Events.InteractionCreate, async (interaction) => {
+    if (!interaction.isChatInputCommand()) return
+
+    const command = commandsCollection.get(interaction.commandName)
+    if (!command) return
+
+    try {
+      await command.execute(interaction)
+    } catch (error) {
+      console.error(error)
+      await interaction.reply({
+        content: 'There was an error while executing this command :(',
+        ephemeral: true,
+      })
+    }
+  })
 }
+
+init().then(registerListeners)
+// If we're running on GCP, start the server to let the cloud function know we're ready
+if (process.env.GOOGLE_CLOUD_PROJECT) startListener()
+
 const handleOldReaction = async (
   pReaction: MessageReaction | PartialMessageReaction,
   pUser: User | PartialUser
@@ -163,16 +185,3 @@ const handleOldReaction = async (
     marketInfo.thread_id
   )
 }
-
-client.on(Events.MessageReactionAdd, handleOldReaction)
-
-client.on(Events.MessageCreate, async (message) => {
-  // Here you check for channel type
-  // We only need direct messages here, so skip other messages
-  if (!message.channel.isDMBased()) return
-  if (message.author.id === client.user?.id) return
-  await registerApiKey(message)
-})
-
-// If we're running on GCP, start the server to let the cloud function know we're ready
-if (process.env.GOOGLE_CLOUD_PROJECT) startListener()
