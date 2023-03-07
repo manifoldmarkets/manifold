@@ -53,7 +53,6 @@ export function GroupSelector(props: {
         }
       })
     }
-    console.log('finalResult', searchedGroups)
   }, [user?.id, isContractCreator, query])
 
   if (!showSelector || !user) {

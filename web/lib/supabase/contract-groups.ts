@@ -104,20 +104,6 @@ async function getManifoldAdminGroupsToAdd(prompt: string) {
     .map((item) => item.data)
 }
 
-// async function getCreatorGroupsToAdd(prompt: string, userId: string) {
-//   //if is manifold creator, select from all groups that are public, and curated groups user is an admin/moderator of
-//   const { data: contractCreatorGroups } = await db.rpc(
-//     'get_contract_creator_groups' as any,
-//     {
-//       user_id: userId,
-//       query: prompt,
-//       max_rows: GROUPS_LIST_SIZE,
-//     }
-//   )
-//   console.log('resultAHH', prompt, contractCreatorGroups)
-//   return contractCreatorGroups ?? []
-// }
-
 async function getCreatorGroupsToAdd(prompt: string, userId: string) {
   //only return non private groups user has an admin role in
   const [
