@@ -15,10 +15,7 @@ import {
   addContractToGroup,
   removeContractFromGroup,
 } from 'web/lib/firebase/api'
-import {
-  getGroupsWhereUserHasRole,
-  getPublicGroups,
-} from 'web/lib/supabase/groups'
+import { getGroupsWhereUserHasRole } from 'web/lib/supabase/groups'
 import { GroupLinkItem } from 'web/pages/groups'
 import { GroupSelector } from './group-selector'
 
@@ -32,7 +29,6 @@ export function ContractGroupsList(props: {
 
   const isCreator = contract.creatorId === user?.id
   const [adminGroups, setAdminGroups] = useState<Group[]>([])
-  const [publicGroups, setPublicGroups] = useState<Group[]>([])
 
   useEffect(() => {
     if (user) {
@@ -42,17 +38,6 @@ export function ContractGroupsList(props: {
     }
   }, [user])
 
-  useEffect(() => {
-    if (user) {
-      //if user is the creator of contract, show all public groups, and non public groups which use has admin/moderator role
-      if (isCreator) {
-        getPublicGroups().then((pg) =>
-          setPublicGroups(pg.map((pgp: { data: any }) => pgp.data))
-        )
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }
-  }, [])
   const isAdmin = useAdmin()
   function canRemoveFromGroup(group: Group) {
     if (!user) {
@@ -138,21 +123,7 @@ export function ContractGroupsList(props: {
                   })
                 }
                 selectedGroup={undefined}
-                creator={user}
-                permittedGroups={
-                  isAdmin
-                    ? undefined
-                    : isCreator
-                    ? adminGroups
-                        .filter(
-                          (g) =>
-                            g.privacyStatus == 'private' ||
-                            g.privacyStatus == 'curated'
-                        )
-                        .concat(publicGroups)
-                        .filter((g) => !contract.groupSlugs?.includes(g.slug))
-                    : adminGroups
-                }
+                isContractCreator={isCreator}
               />
             </Col>
           )}

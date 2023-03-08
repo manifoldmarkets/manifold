@@ -8,13 +8,13 @@ import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
 import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
-import { useMemberGroups } from 'web/hooks/use-group'
 import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getGroupBySlug, getGroupContractIds } from 'web/lib/firebase/groups'
+import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -37,14 +37,17 @@ export function ActivityLog(props: {
 
   const privateUser = usePrivateUser()
   const user = useUser()
+  const [shouldBlockDestiny, setShouldBlockDestiny] = useState(true)
 
-  const memberGroups = useMemberGroups(user?.id)
-  const shouldBlockDestiny =
-    // If signed out, or you don't follow destiny group, block it!
-    !(
-      memberGroups &&
-      memberGroups.some((g) => DESTINY_GROUP_SLUGS.includes(g.slug))
-    )
+  useEffect(() => {
+    if (user) {
+      getShouldBlockDestiny(user.id).then((result) =>
+        setShouldBlockDestiny(result)
+      )
+    } else if (!shouldBlockDestiny) {
+      setShouldBlockDestiny(true)
+    }
+  }, [user?.id])
 
   const [blockedGroupContractIds, setBlockedGroupContractIds] =
     usePersistentState<string[] | undefined>(undefined, {

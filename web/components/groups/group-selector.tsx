@@ -7,55 +7,55 @@ import {
 import { UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Group } from 'common/group'
-import { User } from 'common/user'
-import { searchInAny } from 'common/util/parse'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Row } from 'web/components/layout/row'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useUser } from 'web/hooks/use-user'
+import { searchGroupsToAdd } from 'web/lib/supabase/contract-groups'
 
 export function GroupSelector(props: {
   selectedGroup: Group | undefined
   setSelectedGroup: (group: Group) => void
-  creator: User | null | undefined
+  isContractCreator: boolean
   options: {
     showSelector: boolean
     showLabel: boolean
     ignoreGroupIds?: string[]
   }
-  permittedGroups?: Group[]
 }) {
-  const { selectedGroup, setSelectedGroup, creator, options, permittedGroups } =
-    props
+  const { selectedGroup, setSelectedGroup, isContractCreator, options } = props
+  const user = useUser()
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
   const { showSelector, showLabel, ignoreGroupIds } = options
   const [query, setQuery] = useState('')
-  const openGroups = useOpenGroups()
-  const memberGroups = useMemberGroups(creator?.id)
+  const [searchedGroups, setSearchedGroups] = useState<Group[]>([])
+  const [loading, setLoading] = useState(false)
+  const isManifoldAdmin = useAdmin()
 
-  const sortGroups = (groups: Group[]) =>
-    groups.sort((a, b) => b.totalMembers - a.totalMembers)
+  const requestNumber = useRef(0)
 
-  let availableGroups
-  if (permittedGroups) {
-    availableGroups = permittedGroups
-  } else {
-    availableGroups = sortGroups(
-      openGroups
-        .concat(
-          (memberGroups ?? []).filter(
-            (g) => !openGroups.some((og) => og.id === g.id)
-          )
-        )
-        .filter((group) => !ignoreGroupIds?.includes(group.id))
-    )
-  }
-  const filteredGroups = sortGroups(
-    availableGroups.filter((group) => searchInAny(query, group.name))
-  )
+  useEffect(() => {
+    if (user) {
+      requestNumber.current++
+      const requestId = requestNumber.current
+      setLoading(true)
+      searchGroupsToAdd({
+        userId: user.id,
+        isCreator: isContractCreator,
+        isManifoldAdmin: isManifoldAdmin,
+        prompt: query,
+      }).then((result) => {
+        if (requestNumber.current === requestId) {
+          setSearchedGroups(result as Group[])
+          setLoading(false)
+        }
+      })
+    }
+  }, [user?.id, isContractCreator, query])
 
-  if (!showSelector || !creator) {
+  if (!showSelector || !user) {
     return (
       <>
         <div className={'label justify-start'}>
@@ -106,57 +106,66 @@ export function GroupSelector(props: {
                 static={isCreatingNewGroup}
                 className="bg-canvas-0 ring-ink-1000 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none"
               >
-                {filteredGroups.map((group: Group) => (
-                  <Combobox.Option
-                    key={group.id}
-                    value={group}
-                    className={({ active }) =>
-                      clsx(
-                        'relative h-12 cursor-pointer select-none py-2 pr-6 transition-colors',
-                        active ? 'text-ink-0 bg-primary-500' : 'text-ink-900'
-                      )
-                    }
-                  >
-                    {({ active, selected }) => (
-                      <>
-                        {selected && (
+                {searchedGroups
+                  .filter(
+                    (group: Group) =>
+                      !ignoreGroupIds?.some((id) => id == group.id)
+                  )
+                  .map((group: Group) => (
+                    <Combobox.Option
+                      key={group.id}
+                      value={group}
+                      className={({ active }) =>
+                        clsx(
+                          'relative h-12 cursor-pointer select-none py-2 pr-6 transition-colors',
+                          active ? 'text-ink-0 bg-primary-500' : 'text-ink-900',
+                          loading ? 'animate-pulse' : ''
+                        )
+                      }
+                    >
+                      {({ active, selected }) => (
+                        <>
+                          {selected && (
+                            <span
+                              className={clsx(
+                                'absolute inset-y-0 left-2 flex items-center pr-4',
+                                active ? 'text-ink-1000' : 'text-primary-600'
+                              )}
+                            >
+                              <CheckIcon
+                                className="h-5 w-5"
+                                aria-hidden="true"
+                              />
+                            </span>
+                          )}
                           <span
                             className={clsx(
-                              'absolute inset-y-0 left-2 flex items-center pr-4',
-                              active ? 'text-ink-1000' : 'text-primary-600'
+                              'ml-3 mt-1 flex flex-row justify-between',
+                              selected && 'font-semibold'
                             )}
                           >
-                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                          </span>
-                        )}
-                        <span
-                          className={clsx(
-                            'ml-3 mt-1 flex flex-row justify-between',
-                            selected && 'font-semibold'
-                          )}
-                        >
-                          <Row className={'items-center gap-1 truncate pl-5'}>
-                            {group.name}
-                          </Row>
-                          <Row
-                            className={clsx(
-                              'text-ink-500 gap-2 text-sm',
-                              active ? 'text-ink-1000' : 'text-ink-500'
-                            )}
-                          >
-                            <Row className="w-12 items-center gap-0.5">
-                              <UsersIcon className="h-4 w-4" />
-                              {group.totalMembers}
+                            <Row className={'items-center gap-1 truncate pl-5'}>
+                              {group.name}
                             </Row>
-                          </Row>
-                        </span>
-                      </>
-                    )}
-                  </Combobox.Option>
-                ))}
+                            <Row
+                              className={clsx(
+                                'text-ink-500 gap-2 text-sm',
+                                active ? 'text-ink-1000' : 'text-ink-500'
+                              )}
+                            >
+                              <Row className="w-12 items-center gap-0.5">
+                                <UsersIcon className="h-4 w-4" />
+                                {group.totalMembers}
+                              </Row>
+                            </Row>
+                          </span>
+                        </>
+                      )}
+                    </Combobox.Option>
+                  ))}
 
                 <CreateGroupButton
-                  user={creator}
+                  user={user}
                   onOpenStateChange={setIsCreatingNewGroup}
                   className={
                     'text-ink-900 bg-canvas-0 hover:text-ink-0 hover:bg-primary-500 group flex w-full flex-row items-center rounded-none border-0 font-normal transition-colors'

@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 
+import clsx from 'clsx'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
@@ -34,13 +35,8 @@ import { createMarket } from 'web/lib/firebase/api'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
-import {
-  getNonPublicGroupsWhereUserHasRole,
-  getPublicGroups,
-} from 'web/lib/supabase/groups'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { QfExplainer } from './contract/qf-overview'
-import clsx from 'clsx'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -232,22 +228,6 @@ export function NewContractPanel(props: {
 
   const [hideOptions, setHideOptions] = useState(true)
 
-  const [adminGroups, setAdminGroups] = useState<Group[]>([])
-  const [publicGroups, setPublicGroups] = useState<Group[]>([])
-  useEffect(() => {
-    getNonPublicGroupsWhereUserHasRole(creator.id)
-      .then((g) =>
-        setAdminGroups(g.map((gp: { group_data: any }) => gp.group_data))
-      )
-      .catch((e) => console.log(e))
-  }, [creator.id])
-
-  useEffect(() => {
-    getPublicGroups()
-      .then((g) => setPublicGroups(g.map((gp: { data: any }) => gp.data)))
-      .catch((e) => console.log(e))
-  }, [])
-
   return (
     <div className={clsx(className, 'text-ink-1000')}>
       <div className="flex w-full flex-col">
@@ -408,9 +388,8 @@ export function NewContractPanel(props: {
                 <GroupSelector
                   selectedGroup={selectedGroup}
                   setSelectedGroup={setSelectedGroup}
-                  creator={creator}
                   options={{ showSelector: true, showLabel: true }}
-                  permittedGroups={adminGroups.concat(publicGroups)}
+                  isContractCreator={true}
                 />
                 {selectedGroup && (
                   <a target="_blank" href={groupPath(selectedGroup.slug)}>
