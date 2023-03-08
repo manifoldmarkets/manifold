@@ -61,7 +61,6 @@ export async function searchGroupsToAdd(props: {
   } else if (isCreator) {
     return await getCreatorGroupsToAdd(prompt, userId)
   } else {
-    //only return non private groups user has an admin role in
     return await getGroupsToAdd(prompt, userId)
   }
 }
@@ -105,7 +104,7 @@ async function getManifoldAdminGroupsToAdd(prompt: string) {
 }
 
 async function getCreatorGroupsToAdd(prompt: string, userId: string) {
-  //only return non private groups user has an admin role in
+  //only return public groups and curated groups user has an admin role in
   const [
     { data: exactPublicData },
     { data: prefixPublicData },
