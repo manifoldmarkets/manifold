@@ -246,7 +246,7 @@ export const Stats = (props: {
         )}
 
         {!hideAdvanced && (
-          <tr className={clsx(isAdmin && 'bg-scarlet-50')}>
+          <tr className={clsx(isAdmin && 'bg-scarlet-500/20')}>
             <td>
               Publicly listed{' '}
               <InfoTooltip
