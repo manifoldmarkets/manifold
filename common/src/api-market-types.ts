@@ -85,7 +85,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
 
   let min, max, isLogScale: any
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    ;({ min, max, isLogScale } = contract)
+    ({ min, max, isLogScale } = contract)
   }
 
   return removeUndefinedProps({
