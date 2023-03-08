@@ -67,7 +67,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
   })
 
   const collector = message.createMessageComponentCollector({
-    time: 0.1 * MINUTE_MS,
+    time: 10 * MINUTE_MS,
   })
 
   collector.on('collect', async (i) => {
