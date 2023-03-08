@@ -205,7 +205,7 @@ export const Stats = (props: {
         {/* Show a path to Firebase if user is an admin, or we're on localhost */}
         {!hideAdvanced && (isAdmin || isDev) && (
           <>
-            <tr className="bg-scarlet-50">
+            <tr className="bg-scarlet-500/20">
               <td>Firestore link</td>
               <td>
                 <a
@@ -218,7 +218,7 @@ export const Stats = (props: {
               </td>
             </tr>
             {contract.isResolved && (
-              <tr className="bg-scarlet-50">
+              <tr className="bg-scarlet-500/20">
                 <td>Unresolve</td>
                 <td>
                   {/* To prevent accidental unresolve, users must type in 'UNRESOLVE' first */}
