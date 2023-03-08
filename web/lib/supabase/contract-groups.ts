@@ -1,7 +1,3 @@
-import {
-  PostgrestQueryBuilder,
-  PostgrestResponse,
-} from '@supabase/postgrest-js'
 import { run } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { db } from './db'
