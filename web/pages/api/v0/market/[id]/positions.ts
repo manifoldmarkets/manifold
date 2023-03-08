@@ -1,5 +1,6 @@
 import { ContractMetric } from 'common/contract-metric'
 import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
+import { uniqBy } from 'lodash'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { getContractFromId } from 'web/lib/firebase/contracts'
@@ -33,9 +34,12 @@ export default async function handler(
     res
       .status(200)
       .json(
-        positions
-          .slice(0, topPositions)
-          .concat(positions.slice(-bottomPositions))
+        uniqBy(
+          positions
+            .slice(0, topPositions)
+            .concat(positions.slice(-bottomPositions)),
+          (cm) => cm.userId
+        )
       )
   } else {
     return res.status(200).json(positions)
