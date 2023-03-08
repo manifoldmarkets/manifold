@@ -15,6 +15,12 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuInteraction,
 } from 'discord.js'
+const MARKETS_PER_PAGE = 5
+const DROPDOWN_PLACEHOLDER = 'Select a market from the dropdown'
+const interactionToPageAndMarkets = new Map<
+  string,
+  { page: number; markets: LiteMarket[] }
+>()
 
 const data = new SlashCommandBuilder()
   .setName('search')
@@ -26,12 +32,6 @@ const data = new SlashCommandBuilder()
       .setRequired(true)
   ) as SlashCommandBuilder
 
-const interactionToPageAndMarkets = new Map<
-  string,
-  { page: number; markets: LiteMarket[] }
->()
-const MARKETS_PER_PAGE = 5
-const DROPDOWN_PLACEHOLDER = 'Select a market from the dropdown'
 async function execute(interaction: ChatInputCommandInteraction) {
   if (shouldIgnoreMessageFromGuild(interaction.guildId)) return
   await interaction.deferReply()
@@ -41,9 +41,16 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply('Please provide some keywords to search for')
     return
   }
-  const markets = await searchMarkets(keywords)
+  const markets = await searchMarkets(keywords).catch(async (error) => {
+    await interaction.editReply(
+      'Error searching markets, please try again later.'
+    )
+    console.log('Error searching markets', error)
+    return
+  })
+  if (!markets) return
   if (markets.length === 0) {
-    await interaction.editReply('No markets found')
+    await interaction.editReply('No markets found, try different keywords.')
     return
   }
   const page = 0
@@ -71,10 +78,8 @@ async function execute(interaction: ChatInputCommandInteraction) {
   })
 
   collector.on('collect', async (i) => {
-    console.log('collected', i.customId)
     // Handle button clicks
     if (i.customId === 'done') {
-      // deleteReply doesn't seem to work?
       interactionToPageAndMarkets.delete(interaction.id)
       await interaction.deleteReply()
       return
@@ -107,19 +112,18 @@ async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     // Handle market selection
-    const stringSelectInteraction = i as StringSelectMenuInteraction
-    if (stringSelectInteraction) {
+    const marketSelectInteraction = i as StringSelectMenuInteraction
+    if (marketSelectInteraction) {
       const market = markets.find(
-        (m) => m.url === stringSelectInteraction.values[0]
+        (m) => m.url === marketSelectInteraction.values[0]
       )
       if (!market) return
-      await replyWithMarketToBetOn(stringSelectInteraction, market)
+      await replyWithMarketToBetOn(marketSelectInteraction, market)
     }
   })
 
   collector.on('end', async () => {
     const stillExists = interactionToPageAndMarkets.has(interaction.id)
-    console.log('end', stillExists)
     if (stillExists) {
       interactionToPageAndMarkets.delete(interaction.id)
       await interaction.deleteReply()
