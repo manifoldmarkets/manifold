@@ -1,4 +1,5 @@
 import { FullMarket } from 'common/api-market-types'
+import { ContractMetrics } from 'common/calculate-metrics'
 import * as console from 'console'
 import { config } from 'discord-bot/constants/config'
 import {
@@ -210,4 +211,17 @@ export const getOpenBinaryMarketFromSlug = async (slug: string) => {
     throw new Error('Only Yes/No markets are supported')
   }
   return market
+}
+
+export const getTopAndBottomPositions = async (slug: string) => {
+  const market = await getMarketFromSlug(slug)
+  const NUM_POSITIONS = 5
+  const resp = await fetch(
+    `${config.domain}api/v0/market/${market.id}/positions?top=${NUM_POSITIONS}&bottom=${NUM_POSITIONS}`
+  )
+  if (!resp.ok) {
+    throw new Error('Positions not found with slug: ' + slug)
+  }
+  const contractMetrics = (await resp.json()) as ContractMetrics[]
+  return { market, contractMetrics }
 }
