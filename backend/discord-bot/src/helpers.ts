@@ -187,7 +187,7 @@ export const sendChannelMessage = async (
 }
 
 export const getSlug = (link: string) => {
-  return link.split('/').pop()?.split('?')[0].split('#')[0]
+  return link.split('/').pop()?.split('?')[0].split('#')[0] ?? ''
 }
 
 export const getMarketFromSlug = async (slug: string) => {
@@ -224,4 +224,10 @@ export const getTopAndBottomPositions = async (slug: string) => {
   }
   const contractMetrics = (await resp.json()) as ContractMetrics[]
   return { market, contractMetrics }
+}
+export function truncateText(text: string, slice: number) {
+  if (text.length <= slice + 3) {
+    return text
+  }
+  return text.slice(0, slice) + '...'
 }

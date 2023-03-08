@@ -7,6 +7,7 @@ import {
   EmbedBuilder,
   MessageReaction,
   SlashCommandBuilder,
+  StringSelectMenuInteraction,
   TextChannel,
   User,
 } from 'discord.js'
@@ -63,10 +64,21 @@ async function execute(interaction: ChatInputCommandInteraction) {
     }
   )
   if (!market) return
+  await replyWithMarketToBetOn(interaction, market)
+}
 
+export const replyWithMarketToBetOn = async (
+  interaction: ChatInputCommandInteraction | StringSelectMenuInteraction,
+  market: FullMarket
+) => {
   const message = await sendMarketIntro(interaction, market)
   const channel = interaction.channel as TextChannel
-  await saveMarketToMessageId(message.id, market.id, slug, channel.id)
+  await saveMarketToMessageId(
+    message.id,
+    market.id,
+    getSlug(market.url),
+    channel.id
+  )
 
   const filter = (reaction: MessageReaction, user: User) => {
     if (user.id === message.author.id) return false
@@ -77,19 +89,10 @@ async function execute(interaction: ChatInputCommandInteraction) {
   collector.on('collect', async (reaction, user) => {
     await handleReaction(reaction, user, channel, market)
   })
-
-  // Removed the un react action for now
-  // collector.on('remove', async (reaction, user) => {
-  //   const message = reaction.message.partial
-  //     ? await reaction.message.fetch()
-  //     : reaction.message
-  //
-  //   await handleBet(reaction, user, channel, message, market, true)
-  // })
 }
 
 const sendMarketIntro = async (
-  interaction: ChatInputCommandInteraction,
+  interaction: ChatInputCommandInteraction | StringSelectMenuInteraction,
   market: FullMarket
 ) => {
   await interaction.deferReply()
