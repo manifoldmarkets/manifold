@@ -75,7 +75,7 @@ export function NumericResolutionPanel(props: {
   return (
     <GradientContainer className={className}>
       {isAdmin && !isCreator && (
-        <span className="bg-scarlet-50 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
+        <span className="bg-scarlet-500/20 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
           ADMIN
         </span>
       )}
