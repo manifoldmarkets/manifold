@@ -129,7 +129,7 @@ export default function CalibrationPage(props: {
 
               <li>
                 Each point is a bucket of bets weighted by bet amount with a
-                maximum range of 10% (sold bets are excluded).
+                maximum range of 10% (sell trades are excluded).
               </li>
             </ul>
           </div>
