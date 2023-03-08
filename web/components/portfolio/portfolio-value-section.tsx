@@ -54,6 +54,7 @@ export const PortfolioValueSection = memo(
       graphView.setViewXScale(undefined)
       graphView.setViewYScale(undefined)
     })
+
     // placeholder when loading
     if (graphPoints === undefined || !lastPortfolioMetrics) {
       return (
@@ -87,6 +88,7 @@ export const PortfolioValueSection = memo(
         />
       )
     }
+
     const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
     const totalProfit = totalValue - totalDeposits
@@ -133,17 +135,21 @@ export const PortfolioValueSection = memo(
               : formatMoney(totalValue)}
           </div>
         }
-        graphElement={(width, height) => (
-          <PortfolioGraph
-            key={graphMode} // we need to reset axis scale state if mode changes
-            mode={graphMode}
-            points={graphPoints}
-            width={width}
-            height={height}
-            viewScaleProps={graphView}
-            onMouseOver={handleGraphDisplayChange}
-          />
-        )}
+        graphElement={
+          graphPoints.length <= 1
+            ? () => <></> // hide graph for new users
+            : (width, height) => (
+                <PortfolioGraph
+                  key={graphMode} // we need to reset axis scale state if mode changes
+                  mode={graphMode}
+                  points={graphPoints}
+                  width={width}
+                  height={height}
+                  viewScaleProps={graphView}
+                  onMouseOver={handleGraphDisplayChange}
+                />
+              )
+        }
       />
     )
   }
