@@ -1,3 +1,7 @@
+import {
+  PostgrestQueryBuilder,
+  PostgrestResponse,
+} from '@supabase/postgrest-js'
 import { run } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { db } from './db'
@@ -11,8 +15,8 @@ export async function getInitialGroupsToAdd(props: {
 }) {
   const { userId, isManifoldAdmin, isCreator } = props
   // if is Manifold Admin or Creator, shows all non private groups in order of popularity
-  if (isManifoldAdmin || isCreator) {
-    const publicGroups = await run(
+  if (isManifoldAdmin) {
+    const adminGroups = await run(
       db
         .from('groups')
         .select('data')
@@ -21,7 +25,30 @@ export async function getInitialGroupsToAdd(props: {
         .limit(GROUPS_LIST_SIZE)
     )
 
-    return publicGroups.data.map((item) => item.data)
+    return adminGroups.data.map((item) => item.data)
+  } else if (isCreator) {
+    const { data: publicGroups } = await run(
+      db
+        .from('groups')
+        .select('data')
+        .or('data->>privacyStatus.eq.public')
+        .order('data->totalMembers', { ascending: false } as any)
+        .limit(GROUPS_LIST_SIZE / 2)
+    )
+    const { data: curatedRoleGroups } = await run(
+      db
+        .from('group_role')
+        .select('group_data')
+        .eq('member_id', userId)
+        .eq('group_data->>privacyStatus', 'curated')
+        .or('role.eq.admin,role.eq.moderator')
+        .order('group_data->totalMembers', { ascending: false } as any)
+        .limit(GROUPS_LIST_SIZE / 2)
+    )
+    return [
+      ...curatedRoleGroups.map((item) => item.group_data),
+      ...publicGroups.map((item) => item.data),
+    ]
   } else {
     // if is not admin/creator, show all non-private groups that they are admin/moderator of
     const userAdminGroups = await run(
@@ -97,7 +124,6 @@ async function getManifoldAdminGroupsToAdd(prompt: string) {
           .limit(GROUPS_LIST_SIZE)
       ),
     ])
-
   return uniqBy([...exactData, ...prefixData, ...containsData], 'id')
     .slice(0, GROUPS_LIST_SIZE)
     .map((item) => item.data)
