@@ -85,7 +85,7 @@ export function BottomNavBar() {
     : signedOutNavigation(appStoreUrl)
 
   return (
-    <nav className="border-ink-200 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-20 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
+    <nav className="border-ink-200 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem
           key={item.name}
