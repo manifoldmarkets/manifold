@@ -929,6 +929,16 @@ export interface Database {
           score: number
         }[]
       }
+      getcontractcreatorgroups: {
+        Args: {
+          userid: string
+          query: string
+          max_rows: number
+        }
+        Returns: {
+          group_data: Json
+        }[]
+      }
       gtrgm_compress: {
         Args: {
           "": unknown

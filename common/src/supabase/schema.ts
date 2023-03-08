@@ -581,14 +581,6 @@ export interface Database {
         }
         Returns: number
       }
-      get_contract_creator_groups: {
-        Args: {
-          user_id: string
-          query: string
-          max_rows: number
-        }
-        Returns: Json[]
-      }
       get_contract_metrics_for_contract: {
         Args: {
           contractid: string
