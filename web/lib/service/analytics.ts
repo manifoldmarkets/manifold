@@ -19,11 +19,12 @@ import { getIsNative } from '../native/is-native'
 init(ENV_CONFIG.amplitudeApiKey ?? '', undefined, { includeReferrer: true })
 
 export function track(eventName: string, eventProperties?: any) {
-  amplitudeTrack(eventName, eventProperties)
+  const isNative = getIsNative()
+
+  amplitudeTrack(eventName, { isNative, ...eventProperties })
 
   const deviceId = getDeviceId()
   const sessionId = getSessionId()
-  const isNative = getIsNative()
 
   const props = removeUndefinedProps({
     isNative,
