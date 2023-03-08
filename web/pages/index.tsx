@@ -26,6 +26,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
+import { LogoSEO } from 'web/components/LogoSEO'
 
 const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
@@ -57,6 +58,7 @@ export default function Home(props: {
         <Col className="gap-4">
           <Row className="items-center justify-between">
             <ManifoldLogo />
+            <LogoSEO />
 
             <div className="hidden items-center gap-2 lg:flex">
               <Button
