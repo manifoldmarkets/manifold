@@ -12,7 +12,7 @@ export default async function handler(
   res: NextApiResponse<ContractMetric[] | ApiError>
 ) {
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
-  const { id } = req.query
+  const { id, top, bottom } = req.query
   const contractId = id as string
   const contract = await getContractFromId(contractId)
   if (!contract) {
@@ -21,5 +21,23 @@ export default async function handler(
   }
   const positions = await getContractMetricsForContractId(contractId, db)
   res.setHeader('Cache-Control', marketCacheStrategy)
-  return res.status(200).json(positions)
+  if (top && !bottom) {
+    const topPositions = parseInt(top as string)
+    res.status(200).json(positions.slice(0, topPositions))
+  } else if (bottom && !top) {
+    const bottomPositions = parseInt(bottom as string)
+    res.status(200).json(positions.slice(-bottomPositions))
+  } else if (top && bottom) {
+    const topPositions = parseInt(top as string)
+    const bottomPositions = parseInt(bottom as string)
+    res
+      .status(200)
+      .json(
+        positions
+          .slice(0, topPositions)
+          .concat(positions.slice(-bottomPositions))
+      )
+  } else {
+    return res.status(200).json(positions)
+  }
 }

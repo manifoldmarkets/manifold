@@ -178,6 +178,8 @@ export async function getContractMetricsForContractId(
       .select('*')
       .eq('contract_id', contractId)
       .gt('data->invested', 0)
+      .neq('data->profit', null)
+      .order('data->profit' as any, { ascending: false })
   )
   return data.map((d) => d.data) as ContractMetrics[]
 }
