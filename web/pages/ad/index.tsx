@@ -10,6 +10,7 @@ import { Content } from 'web/components/widgets/editor'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { PostCommentsActivity } from '../post/[slug]'
+import { UserLink } from 'web/components/widgets/user-link'
 
 export async function getStaticProps() {
   const ads = await getAllAds()
@@ -53,6 +54,11 @@ function Ad(props: { ad: AdType; onNext: () => void; onClaim: () => void }) {
       {/* post */}
       <div className="bg-canvas-0 p-6">
         <Content size="lg" content={content} />
+      </div>
+
+      <div className="mx-2 mt-1 mb-4">
+        <span className="text-ink-500 mr-1">Created by</span>
+        <UserLink username={ad.creatorUsername} name={ad.creatorName} />
       </div>
 
       {/* timer claim box */}
