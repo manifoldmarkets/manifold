@@ -165,6 +165,7 @@ create index if not exists contracts_creator_id on contracts ((data->>'creatorId
 create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
 /* serves API recent markets endpoint */
 create index if not exists contracts_created_time on contracts ((to_jsonb(data)->>'createdTime') desc);
+create index if not exists contracts_close_time on contracts ((to_jsonb(data)->>'closeTime') desc);
 
 alter table contracts cluster on contracts_creator_id;
 
