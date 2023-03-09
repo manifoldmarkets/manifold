@@ -245,7 +245,7 @@ module.exports = {
         },
       },
       animation: {
-        progress: 'progress linear',
+        progress: 'progress linear forwards',
         'bounce-left': 'bounce-left 0.8s',
         'bounce-right': 'bounce-right 0.7s',
         'slide-in-1': 'slide-in-1 4s',

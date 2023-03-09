@@ -1,68 +1,94 @@
-import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { useEffect, useReducer, useState } from 'react'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { Page } from 'web/components/layout/page'
 import { NoSEO } from 'web/components/NoSEO'
+import { getAllAds } from 'web/lib/supabase/posts'
+import type { Ad as AdType } from 'common/src/ad'
+import { Content } from 'web/components/widgets/editor'
+import { useCommentsOnPost } from 'web/hooks/use-comments'
+import { useTipTxns } from 'web/hooks/use-tip-txns'
+import { PostCommentsActivity } from '../post/[slug]'
 
-export default function AdsPage() {
-  const [num, bump] = useReducer((num) => num + 1, 0)
+export async function getStaticProps() {
+  const ads = await getAllAds()
+  return { props: { ads } }
+}
+
+export default function AdsPage(props: { ads: AdType[] }) {
+  const [i, next] = useReducer((num) => num + 1, 0)
+
+  const current = props.ads[i]
 
   return (
     <Page>
       <NoSEO />
-      <Ad viewReward={200} key={num} onNext={bump} onClaim={bump} />
+      {current ? (
+        <Ad ad={current} onNext={next} onClaim={next} key={current.id} />
+      ) : (
+        <>
+          <span className="w-full py-4 text-center">No more ads</span>
+          <CreateBanner />
+        </>
+      )}
     </Page>
   )
 }
 
 const WAIT_TIME = 15 // 15 sec
 
-function Ad(props: {
-  viewReward: number
-  onNext: () => void
-  onClaim: () => void
-}) {
-  const { viewReward, onNext, onClaim } = props
+function Ad(props: { ad: AdType; onNext: () => void; onClaim: () => void }) {
+  const { ad, onNext, onClaim } = props
+  const { costPerView, content } = ad
 
   const counter = useCounter()
   const timeLeft = WAIT_TIME - counter
 
+  const comments = useCommentsOnPost(ad.id) ?? []
+  const tips = useTipTxns({ postId: ad.id })
+
   return (
     <div className="flex flex-col">
       {/* post */}
-      <div className="flex h-0.5 flex-col bg-white">
-        <p>Imagine all the content ... everywhen</p>
+      <div className="bg-canvas-0 p-6">
+        <Content size="lg" content={content} />
       </div>
 
       {/* timer claim box */}
-      <div className="relative mt-5 flex w-full items-center justify-between self-center rounded-md bg-yellow-200 p-4 md:w-[400px]">
-        {timeLeft < 0 ? (
-          <Button onClick={onClaim} color="yellow" className="w-full">
-            Claim {formatMoney(viewReward)} and continue
-          </Button>
-        ) : (
-          <>
-            <span>
-              Claim {formatMoney(viewReward)} in {timeLeft + 1} seconds
-            </span>
-            <Button color="gray-white" onClick={onNext}>
-              Skip
+      <div className="to-primary-400 relative my-5 flex w-full justify-center rounded-md bg-yellow-200 bg-gradient-to-r from-pink-300 via-purple-300 p-4">
+        <div className="flex w-full items-center justify-between md:w-[400px]">
+          {timeLeft < 0 ? (
+            <Button
+              onClick={onClaim}
+              color="gradient"
+              className="outline-canvas-0 w-full outline"
+            >
+              Claim {formatMoney(costPerView)} and continue
             </Button>
-            <TimerBar duration={WAIT_TIME} />
-          </>
-        )}
+          ) : (
+            <>
+              <span className="z-10">
+                Claim {formatMoney(costPerView)} in {timeLeft + 1} seconds
+              </span>
+              <Button
+                color="override"
+                className="hover:bg-ink-500/50 z-10 shadow-none"
+                onClick={onNext}
+              >
+                Skip
+              </Button>
+              <TimerBar duration={WAIT_TIME} />
+            </>
+          )}
+        </div>
       </div>
 
       {/* comments */}
+      <PostCommentsActivity post={ad} comments={comments} tips={tips} />
 
-      <Link
-        href="/ad/create"
-        className={clsx(buttonClass('md', 'gradient'), 'bg-gradient-to-r')}
-      >
-        Create your own advertisement!
-      </Link>
+      <div className="h-8" />
+      <CreateBanner />
     </div>
   )
 }
@@ -82,13 +108,20 @@ const TimerBar = (props: { duration: number }) => {
   const { duration } = props
 
   return (
-    <div className="absolute top-0 left-0 right-0 h-2 overflow-hidden rounded-t-md">
+    <div className="absolute inset-0 flex overflow-hidden rounded-t-md">
       <div
-        className="animate-progress h-full bg-green-500"
+        className="animate-progress"
         style={{
           animationDuration: `${duration}s`,
         }}
       />
+      <div className="grow bg-slate-900/20" />
     </div>
   )
 }
+
+const CreateBanner = () => (
+  <Link href="/ad/create" className={buttonClass('xl', 'indigo')}>
+    Create your own advertisement!
+  </Link>
+)

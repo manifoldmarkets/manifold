@@ -3,6 +3,7 @@ import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import Router from 'next/router'
 import { useState } from 'react'
+import { useMutation } from 'react-query'
 import { Button } from 'web/components/buttons/button'
 import { Page } from 'web/components/layout/page'
 import { NoSEO } from 'web/components/NoSEO'
@@ -21,23 +22,19 @@ export default function CreateAdPage() {
 
   const numViews = Math.floor((totalFunds ?? 0) / PRICE_PER_USER)
 
-  const [submitting, setSubmitting] = useState(false)
-
-  async function createAd() {
+  const createAdMutation = useMutation(async () => {
     if (!editor || totalFunds == 0) return
-
-    setSubmitting(true)
     const newPost = removeUndefinedProps({
       type: 'ad',
-      spend: totalFunds,
+      totalCost: totalFunds,
+      costPerView: PRICE_PER_USER,
       content: editor.getJSON(),
       title: '[AD]',
     })
 
     const result = await createPost(newPost)
     Router.push(postPath(result.post.slug))
-    setSubmitting(false)
-  }
+  })
 
   return (
     <Page>
@@ -54,22 +51,28 @@ export default function CreateAdPage() {
           amount={totalFunds}
           onChange={setTotalFunds}
           label={ENV_CONFIG.moneyMoniker}
-          disabled={submitting}
+          disabled={createAdMutation.isLoading}
         />
 
         <div className="mt-2">
-          Buying {numViews} views at {formatMoney(PRICE_PER_USER)}
+          Buying {numViews} views at {formatMoney(PRICE_PER_USER)} per user
         </div>
       </div>
 
       <Button
-        onClick={createAd}
+        onClick={() => createAdMutation.mutate()}
         disabled={numViews === 0}
-        loading={submitting}
+        loading={createAdMutation.isLoading}
         className="mt-10"
       >
         Create
       </Button>
+
+      {createAdMutation.isError && (
+        <div className="text-scarlet-500">
+          {JSON.stringify(createAdMutation.error as any)}
+        </div>
+      )}
     </Page>
   )
 }

@@ -63,6 +63,7 @@ addJsonEndpointRoute(
   endpoints.removecontractfromgroup
 )
 addJsonEndpointRoute('/addgroupmember', endpoints.addgroupmember)
+addJsonEndpointRoute('/redeemad', endpoints.redeemad)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)
