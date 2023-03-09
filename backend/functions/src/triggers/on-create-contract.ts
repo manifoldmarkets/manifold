@@ -42,10 +42,10 @@ export const onCreateContract = functions
       coverImageUrl,
     })
 
-    const embeddings = await generateEmbeddings(contract.question)
-    if (!embeddings) return
+    const embedding = await generateEmbeddings(contract.question)
+    if (!embedding) return
 
     await createSupabaseClient()
       .from('contract_embeddings')
-      .insert({ contract_id: contract.id, embeddings })
+      .insert({ contract_id: contract.id, embedding })
   })

@@ -1,21 +1,17 @@
 import * as admin from 'firebase-admin'
-import { initAdmin } from './script-init'
 
+import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
-import { generateEmbeddings } from '../helpers/openai-utils'
-import { createSupabaseClient } from '../supabase/init'
 import { run } from 'common/supabase/utils'
 import { Contract } from 'common/contract'
-import { closestEmbeddingById, saveVector } from '../helpers/pinecone-utils'
+import { createSupabaseClient } from 'shared/supabase/init'
+import { generateEmbeddings } from 'shared/helpers/openai-utils'
 
 const firestore = admin.firestore()
 const db = createSupabaseClient()
 
 async function main() {
-  const blah = await closestEmbeddingById('zoMnPLYgOjpR6enGyI8E')
-  console.log('blah', blah)
-
   const result = await run(db.from('contract_embeddings').select('contract_id'))
 
   const contractIds = new Set(result.data.map((row: any) => row.contract_id))
@@ -34,19 +30,16 @@ async function main() {
 
   for (const contract of contracts) {
     const { id, question } = contract
-    const embeddings = await generateEmbeddings(question)
-    if (!embeddings) {
+    const embedding = await generateEmbeddings(question)
+    if (!embedding) {
       console.log('No embeddings for', question)
       continue
     }
 
-    console.log('Generated', embeddings?.length, 'embeddings for', question)
-    await saveVector(id, embeddings)
+    console.log('Generated', embedding?.length, 'embeddings for', question)
 
     await run(
-      db
-        .from('contract_embeddings')
-        .upsert({ contract_id: id, embeddings: embeddings })
+      db.from('contract_embeddings').upsert({ contract_id: id, embedding })
     )
   }
 }
