@@ -30,7 +30,7 @@ yarn build && \
          --set-secrets SUPABASE_PASSWORD=SUPABASE_PASSWORD:latest \
          --execution-environment gen2 \
          --cpu 1 \
-         --memory 500Mi \
+         --memory 512Mi \
          --concurrency 1000 \
          --min-instances 1 \
          --no-allow-unauthenticated \
