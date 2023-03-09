@@ -37,7 +37,7 @@ import { runTxn, TxnData } from 'shared/run-txn'
 import { ContractResolutionPayoutTxn } from 'common/txn'
 import { runContractPayoutTxn } from 'shared/run-txn'
 
-const payUsersTransactions = async (
+export const payUsersTransactions = async (
   payouts: {
     userId: string
     payout: number
@@ -149,49 +149,25 @@ export const resolveMarket = async (
   creator: User,
   { value, resolutions, probabilityInt, outcome }: ResolutionParams
 ) => {
-  const { creatorId, closeTime, id: contractId } = unresolvedContract
-
-  const resolutionProbability =
-    probabilityInt !== undefined ? probabilityInt / 100 : undefined
-
-  const resolutionProbs = resolutions
-    ? (() => {
-        const total = sum(Object.values(resolutions))
-        return mapValues(resolutions, (p) => p / total)
-      })()
-    : undefined
+  const { closeTime, id: contractId } = unresolvedContract
 
   const resolutionTime = Date.now()
   const newCloseTime = closeTime
     ? Math.min(closeTime, resolutionTime)
     : closeTime
 
-  const betsSnap = await firestore
-    .collection(`contracts/${contractId}/bets`)
-    .get()
-
-  const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-
-  const liquiditiesSnap = await firestore
-    .collection(`contracts/${contractId}/liquidity`)
-    .get()
-
-  const liquidities = liquiditiesSnap.docs.map(
-    (doc) => doc.data() as LiquidityProvision
-  )
-
   const {
-    payouts: traderPayouts,
     creatorPayout,
-    liquidityPayouts,
     collectedFees,
-  } = getPayouts(
+    bets,
+    resolutionProbability,
+    payouts,
+    payoutsWithoutLoans,
+  } = await getDataAndPayoutInfo(
     outcome,
     unresolvedContract,
-    bets,
-    liquidities,
-    resolutionProbs,
-    resolutionProbability
+    resolutions,
+    probabilityInt
   )
 
   const contract = {
@@ -212,28 +188,6 @@ export const resolveMarket = async (
   // mqp: it would be nice to do this but would require some refactoring
   // const updates = await computeContractMetricUpdates(contract, Date.now())
   // contract = { ...contract, ...(updates as any) }
-
-  const openBets = bets.filter((b) => !b.isSold && !b.sale)
-  const loanPayouts = getLoanPayouts(openBets)
-
-  const payoutsWithoutLoans = [
-    { userId: creatorId, payout: creatorPayout, deposit: creatorPayout },
-    ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
-    ...traderPayouts,
-  ]
-  const payouts = [...payoutsWithoutLoans, ...loanPayouts]
-
-  if (!isProd())
-    console.log(
-      'trader payouts:',
-      traderPayouts,
-      'creator payout:',
-      creatorPayout,
-      'liquidity payout:',
-      liquidityPayouts,
-      'loan payouts:',
-      loanPayouts
-    )
 
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -273,6 +227,79 @@ export const resolveMarket = async (
   )
 
   return contract
+}
+
+export const getDataAndPayoutInfo = async (
+  outcome: string | undefined,
+  unresolvedContract: Contract,
+  resolutions: { [key: string]: number } | undefined,
+  probabilityInt: number | undefined
+) => {
+  const { id: contractId, creatorId } = unresolvedContract
+  const liquiditiesSnap = await firestore
+    .collection(`contracts/${contractId}/liquidity`)
+    .get()
+
+  const liquidities = liquiditiesSnap.docs.map(
+    (doc) => doc.data() as LiquidityProvision
+  )
+
+  const betsSnap = await firestore
+    .collection(`contracts/${contractId}/bets`)
+    .get()
+
+  const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
+
+  const resolutionProbability =
+    probabilityInt !== undefined ? probabilityInt / 100 : undefined
+
+  const resolutionProbs = resolutions
+    ? (() => {
+        const total = sum(Object.values(resolutions))
+        return mapValues(resolutions, (p) => p / total)
+      })()
+    : undefined
+  const openBets = bets.filter((b) => !b.isSold && !b.sale)
+  const loanPayouts = getLoanPayouts(openBets)
+
+  const {
+    payouts: traderPayouts,
+    creatorPayout,
+    liquidityPayouts,
+    collectedFees,
+  } = getPayouts(
+    outcome,
+    unresolvedContract,
+    bets,
+    liquidities,
+    resolutionProbs,
+    resolutionProbability
+  )
+  const payoutsWithoutLoans = [
+    { userId: creatorId, payout: creatorPayout, deposit: creatorPayout },
+    ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
+    ...traderPayouts,
+  ]
+  if (!isProd())
+    console.log(
+      'trader payouts:',
+      traderPayouts,
+      'creator payout:',
+      creatorPayout,
+      'liquidity payout:',
+      liquidityPayouts,
+      'loan payouts:',
+      loanPayouts
+    )
+  const payouts = [...payoutsWithoutLoans, ...loanPayouts]
+  return {
+    payoutsWithoutLoans,
+    creatorPayout,
+    collectedFees,
+    bets,
+    resolutionProbability,
+    payouts,
+  }
 }
 
 function getResolutionParams(contract: Contract, body: string) {
