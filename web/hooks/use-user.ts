@@ -1,4 +1,4 @@
-import { useContext, useRef } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { sortBy } from 'lodash'
 import { doc } from 'firebase/firestore'
@@ -14,6 +14,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { listenForValue } from 'web/lib/firebase/utils'
 import { PrivateUser } from 'common/user'
+import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -122,4 +123,20 @@ export const useUserContractMetrics = (userId = '_', contractId: string) => {
   if (userId === '_') return undefined
 
   return data
+}
+
+export const useShouldBlockDestiny = (userId: string | undefined) => {
+  const [shouldBlockDestiny, setShouldBlockDestiny] = useState(true)
+
+  useEffect(() => {
+    if (userId) {
+      getShouldBlockDestiny(userId).then((result) =>
+        setShouldBlockDestiny(result)
+      )
+    } else {
+      setShouldBlockDestiny(true)
+    }
+  }, [userId])
+
+  return shouldBlockDestiny
 }

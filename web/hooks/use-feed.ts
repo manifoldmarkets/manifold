@@ -5,10 +5,9 @@ import { useEffect } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
 import { db } from 'web/lib/supabase/db'
 import { buildArray } from 'common/util/array'
-import { usePrivateUser } from './use-user'
+import { useShouldBlockDestiny, usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { useEvent } from './use-event'
-import { useMemberGroupsSubscription } from './use-group'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 
 const PAGE_SIZE = 20
@@ -35,9 +34,7 @@ export const useFeed = (user: User | null | undefined, key: string) => {
           (res.data as CPMMBinaryContract[] | undefined) ?? []
         )
         setSavedContracts((contracts) =>
-          uniqBy(buildArray(contracts, newContracts), (c) => c.id).filter(
-            (c) => !isContractBlocked(privateUser, c)
-          )
+          uniqBy(buildArray(contracts, newContracts), (c) => c.id)
         )
       })
     }
@@ -47,17 +44,13 @@ export const useFeed = (user: User | null | undefined, key: string) => {
     loadMore()
   }, [loadMore])
 
-  const followedGroups = useMemberGroupsSubscription(user)
-  const shouldFilterDestiny = !followedGroups?.find((g) =>
-    DESTINY_GROUP_SLUGS.includes(g.slug)
+  const shouldBlockDestiny = useShouldBlockDestiny(user?.id)
+  const filteredContracts = savedContracts?.filter(
+    (c) =>
+      !isContractBlocked(privateUser, c) &&
+      (!shouldBlockDestiny ||
+        !c.groupSlugs?.some((s) => DESTINY_GROUP_SLUGS.includes(s)))
   )
-  const filteredContracts = savedContracts
-    ?.filter((c) => !isContractBlocked(privateUser, c))
-    .filter(
-      (c) =>
-        !shouldFilterDestiny ||
-        !c.groupSlugs?.some((s) => DESTINY_GROUP_SLUGS.includes(s))
-    )
 
   return {
     contracts: filteredContracts,
