@@ -15,12 +15,7 @@ import {
   TextChannel,
   User,
 } from 'discord.js'
-import {
-  customEmojiCache,
-  customEmojis,
-  emojis,
-  getBettingEmojisAsStrings,
-} from 'discord-bot/emojis'
+import { customEmojiCache, customEmojis, emojis } from 'discord-bot/emojis'
 import {
   getCurrentMarketDescription,
   getOpenBinaryMarketFromSlug,
@@ -105,7 +100,6 @@ const sendMarketIntro = async (
   market: FullMarket
 ) => {
   await interaction.deferReply()
-  const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
 
   const { coverImageUrl } = market
   const getAttachment = async (url: string, name: string) => {
@@ -137,10 +131,6 @@ const sendMarketIntro = async (
     .setURL(market.url)
     .setDescription(getCurrentMarketDescription(market))
     .setThumbnail(`attachment://cover.png`)
-    .addFields({
-      name: `React to bet`,
-      value: `YES: ${yesBetsEmojis}   NO: ${noBetsEmojis}`,
-    })
     .setTimestamp(market.closeTime)
     .setFooter({
       text: `${market.creatorName}`,
