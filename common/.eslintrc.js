@@ -27,13 +27,17 @@ module.exports = {
           },
         ],
         'unused-imports/no-unused-imports': 'warn',
+        'no-constant-condition': 'off',
       },
     },
   ],
   rules: {
     'no-extra-semi': 'off',
     'no-constant-condition': ['error', { checkLoops: false }],
-    'linebreak-style': ['error', 'unix'],
+    'linebreak-style': [
+      'error',
+      process.platform === 'win32' ? 'windows' : 'unix',
+    ],
     'lodash/import-scope': [2, 'member'],
   },
 }

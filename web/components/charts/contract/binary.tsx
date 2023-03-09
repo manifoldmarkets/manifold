@@ -4,7 +4,7 @@ import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 
 import { Bet } from 'common/bet'
-import { getProbability, getInitialProbability } from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -14,13 +14,15 @@ import {
   formatDateInRange,
   formatPct,
 } from '../helpers'
-import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
+import {
+  ControllableSingleValueHistoryChart,
+  HistoryPoint,
+  viewScale,
+} from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 
 const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
-const MARGIN_X = MARGIN.left + MARGIN.right
-const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const BinaryChartTooltip = (
   props: TooltipProps<Date, HistoryPoint<Partial<Bet>>>
@@ -35,7 +37,7 @@ const BinaryChartTooltip = (
         <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
       )}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-gray-600">{formatPct(prev.y)}</span>
+      <span className="text-ink-600">{formatPct(prev.y)}</span>
     </Row>
   )
 }
@@ -45,46 +47,60 @@ export const BinaryContractChart = (props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
   width: number
   height: number
+  viewScaleProps: viewScale
+  controlledStart?: number
   color?: string
   onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
+  noAxes?: boolean
 }) => {
-  const { contract, width, height, onMouseOver, color } = props
+  const {
+    contract,
+    width,
+    height,
+    viewScaleProps,
+    controlledStart,
+    onMouseOver,
+    color,
+    noAxes,
+  } = props
   const [start, end] = getDateRange(contract)
-  const startP = getInitialProbability(contract)
+  const rangeStart = controlledStart ?? start
   const endP = getProbability(contract)
   const betPoints = useMemo(
     () => sortBy(props.betPoints, (p) => p.x),
     [props.betPoints]
   )
   const data = useMemo(() => {
-    return [
-      { x: start, y: startP },
-      ...betPoints,
-      { x: end ?? Date.now() + DAY_MS, y: endP },
-    ]
-  }, [start, startP, end, endP, betPoints])
+    return [...betPoints, { x: end ?? Date.now() + DAY_MS, y: endP }]
+  }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(
     end,
     last(betPoints)?.x,
     Date.now()
   )
-  const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
-  const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
+  const margin = noAxes ? { top: 0, right: 0, bottom: 0, left: 0 } : MARGIN
+  const marginX = margin.left + margin.right
+  const marginY = margin.top + margin.bottom
+
+  const visibleRange = [rangeStart, rightmostDate]
+  const xScale = scaleTime(visibleRange, [0, width - marginX])
+  const yScale = scaleLinear([0, 1], [height - marginY, 0])
   return (
-    <SingleValueHistoryChart
+    <ControllableSingleValueHistoryChart
       w={width}
       h={height}
-      margin={MARGIN}
+      margin={margin}
       xScale={xScale}
       yScale={yScale}
+      viewScaleProps={viewScaleProps}
       yKind="percent"
       data={data}
       color={color ?? '#11b981'}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}
+      noAxes={noAxes}
     />
   )
 }

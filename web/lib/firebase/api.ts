@@ -1,6 +1,12 @@
 import { auth } from './users'
 import { APIError, getFunctionUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
+import { QfAnswerReq } from 'web/pages/api/v0/qf/answer'
+import { QfPayReq } from 'web/pages/api/v0/qf/pay'
+import { QfAddPoolReq } from 'web/pages/api/v0/qf/add-pool'
+import { QfResolveReq } from 'web/pages/api/v0/qf/resolve'
+import { PrivacyStatusType } from 'common/group'
+import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -113,4 +119,65 @@ export function validateIapReceipt(params: any) {
 
 export function markAllNotifications(params: any) {
   return call(getFunctionUrl('markallnotifications'), 'POST', params)
+}
+
+export function updateMemberRole(params: {
+  groupId: string
+  memberId: string
+  role: string
+}) {
+  return call(getFunctionUrl('updatememberrole'), 'POST', params)
+}
+
+export function addContractToGroup(params: {
+  groupId: string
+  contractId: string
+}) {
+  return call(getFunctionUrl('addcontracttogroup'), 'POST', params)
+}
+
+export function removeContractFromGroup(params: {
+  groupId: string
+  contractId: string
+}) {
+  return call(getFunctionUrl('removecontractfromgroup'), 'POST', params)
+}
+
+export function createQfAnswer(params: QfAnswerReq) {
+  return call('/api/v0/qf/answer', 'POST', params)
+}
+
+export function payQfAnswer(params: QfPayReq) {
+  return call('/api/v0/qf/pay', 'POST', params)
+}
+
+export function addQfAddPool(params: QfAddPoolReq) {
+  return call('/api/v0/qf/add-pool', 'POST', params)
+}
+
+export function resolveQf(params: QfResolveReq) {
+  return call('/api/v0/qf/resolve', 'POST', params)
+}
+
+export function unresolveMarket(params: { marketId: string }) {
+  const { marketId } = params
+  return call(`/api/v0/market/${marketId}/unresolve`, 'POST', params)
+}
+
+export function hideComment(params: HideCommentReq) {
+  return call(`/api/v0/hide-comment`, 'POST', params)
+}
+
+export function updateGroupPrivacy(params: {
+  groupId: string
+  privacy: PrivacyStatusType
+}) {
+  return call(getFunctionUrl('updategroupprivacy'), 'POST', params)
+}
+
+export function addGroupMember(params: { groupId: string; userId: string }) {
+  return call(getFunctionUrl('addgroupmember'), 'POST', params)
+}
+export function registerDiscordId(params: any) {
+  return call(getFunctionUrl('registerdiscordid'), 'POST', params)
 }

@@ -36,14 +36,14 @@ export function ConfirmationButton(props: {
   return (
     <>
       <Modal open={open} setOpen={updateOpen} size="md">
-        <Col className="gap-4 rounded-md bg-white px-4 xs:px-8 py-4 xs:py-6">
+        <Col className="bg-canvas-0 xs:px-8 xs:py-6 gap-4 rounded-md px-4 py-4">
           {children}
-          <Row className="flex justify-between items-center gap-4">
-            <button ref={completeButtonRef} className={clsx('btn normal-case grow max-w-[15rem]', cancelBtn?.className)} onClick={() => updateOpen(false)}>
+          <Row className="flex items-center justify-between gap-4">
+            <button ref={completeButtonRef} className={clsx('btn max-w-[15rem] grow normal-case', cancelBtn?.className)} onClick={() => updateOpen(false)}>
               {cancelBtn?.label ?? 'Cancel'}
             </button>
             <button
-              className={clsx('btn normal-case grow max-w-[15rem]', submitBtn?.className)}
+              className={clsx('btn max-w-[15rem] grow normal-case', submitBtn?.className)}
               onClick={onSubmitWithSuccess ? () => onSubmitWithSuccess().then((success) => updateOpen(!success)) : onSubmit}
             >
               {submitBtn?.label ?? 'Submit'}

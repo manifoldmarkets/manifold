@@ -35,7 +35,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   return (
     <>
       <nav
-        className={clsx('space-x-8 border-b border-gray-200', className)}
+        className={clsx('border-ink-200 space-x-8 border-b', className)}
         aria-label="Tabs"
       >
         {tabs.map((tab, i) => (
@@ -52,8 +52,8 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
             }}
             className={clsx(
               activeIndex === i
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
+                ? 'border-primary-500 text-primary-600'
+                : 'text-ink-500 hover:border-ink-300 hover:text-ink-700 border-transparent',
               'inline-flex cursor-pointer flex-row gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
               labelClassName
             )}

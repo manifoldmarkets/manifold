@@ -1,11 +1,11 @@
 import React from 'react'
 import {
-  DocumentIcon,
+  ChatAlt2Icon,
   FolderIcon,
   PencilIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
-import { LinkIcon } from '@heroicons/react/solid'
+import { LinkIcon, PresentationChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { difference } from 'lodash'
 import { useRouter } from 'next/router'
@@ -41,7 +41,6 @@ import { ReferralsButton } from 'web/components/buttons/referrals-button'
 import { UserCommentsList } from 'web/components/comments/comments-list'
 import { FollowList } from 'web/components/follow-list'
 import { GroupsButton } from 'web/components/groups/groups-button'
-import { SectionHeader } from 'web/components/groups/group-post-section'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Page } from 'web/components/layout/page'
@@ -55,8 +54,13 @@ import { Avatar } from 'web/components/widgets/avatar'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
 import { linkClass, SiteLink } from 'web/components/widgets/site-link'
-import { PostBanBadge, UserBadge } from 'web/components/widgets/user-link'
+import {
+  isFresh,
+  PostBanBadge,
+  UserBadge,
+} from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { Subtitle } from 'web/components/widgets/subtitle'
 
 export const getStaticProps = async (props: {
   params: {
@@ -107,7 +111,7 @@ const DeletedUser = () => {
   return (
     <Page>
       <div className="flex h-full flex-col items-center justify-center">
-        <Title text="Deleted account page" />
+        <Title children="Deleted account page" />
         <p>This user has been deleted.</p>
         <p>If you didn't expect this, let us know on Discord!</p>
         <br />
@@ -148,7 +152,6 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         { shallow: true }
       )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const referralUrl = `https://${DOMAIN}?referrer=${user?.username}`
@@ -164,25 +167,29 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
 
-      <Col className="relative">
-        <Row className="relative px-4 pt-4">
-          <ImageWithBlurredShadow
-            image={
-              <Avatar
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-                size={24}
-                className="bg-white"
-              />
-            }
-          />
-          {isCurrentUser && (
-            <div className="absolute ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
-              <Link href="/profile">
-                <PencilIcon className="h-5" />
+      <Col>
+        <Row className="px-4 pt-4">
+          <div className="relative">
+            <ImageWithBlurredShadow
+              image={
+                <Avatar
+                  username={user.username}
+                  avatarUrl={user.avatarUrl}
+                  size={24}
+                  className="bg-ink-1000"
+                  noLink
+                />
+              }
+            />
+            {isCurrentUser && (
+              <Link
+                className="bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute right-0 bottom-0 rounded-full p-2 shadow-sm"
+                href="/profile"
+              >
+                <PencilIcon className="text-ink-0 h-5 w-5" />
               </Link>
-            </div>
-          )}
+            )}
+          </div>
 
           <Col className="w-full gap-4 pl-5">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
@@ -191,24 +198,29 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   <span className="break-anywhere text-lg font-bold sm:text-2xl">
                     {user.name}
                   </span>
-                  {<UserBadge username={user.username} />}
+                  {
+                    <UserBadge
+                      username={user.username}
+                      fresh={isFresh(user.createdTime)}
+                    />
+                  }
                   {user.isBannedFromPosting && <PostBanBadge />}
                 </div>
-                <Row className="sm:text-md items-center gap-x-3 text-sm ">
-                  <span className={' text-gray-400'}>@{user.username}</span>
+                <Row className="sm:text-md items-center gap-4 text-sm ">
+                  <span className={' text-ink-400'}>@{user.username}</span>
                   {isAdmin && (
-                    <span className={'text-xs sm:text-sm'}>
+                    <span>
                       <a
-                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        className="text-primary-400 mr-2 text-sm hover:underline"
                         href={firestoreUserConsolePath(user.id)}
                       >
-                        user link
+                        firestore user
                       </a>
                       <a
-                        className="p-2 pt-0 text-sm text-gray-500 hover:underline"
+                        className="text-primary-400 text-sm hover:underline"
                         href={firestorePrivateConsolePath(user.id)}
                       >
-                        private link
+                        private user
                       </a>
                     </span>
                   )}
@@ -245,83 +257,90 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
               <Spacer h={2} />
             </>
           )}
-          {(user.website || user.twitterHandle || user.discordHandle) && (
-            <Row className="mb-2 flex-wrap items-center gap-2 sm:gap-4">
-              {user.website && (
-                <SiteLink
-                  href={
-                    'https://' +
-                    user.website.replace('http://', '').replace('https://', '')
-                  }
-                >
-                  <Row className="items-center gap-1">
-                    <LinkIcon className="h-4 w-4" />
-                    <span className="text-sm text-gray-400">
-                      {user.website}
-                    </span>
-                  </Row>
-                </SiteLink>
-              )}
+          <Row className="mb-2 flex-wrap items-center gap-2 sm:gap-4">
+            {user.website && (
+              <SiteLink
+                href={
+                  'https://' +
+                  user.website.replace('http://', '').replace('https://', '')
+                }
+              >
+                <Row className="items-center gap-1">
+                  <LinkIcon className="h-4 w-4" />
+                  <span className="text-ink-400 text-sm">{user.website}</span>
+                </Row>
+              </SiteLink>
+            )}
 
-              {user.twitterHandle && (
-                <SiteLink
-                  href={`https://twitter.com/${user.twitterHandle
-                    .replace('https://www.twitter.com/', '')
-                    .replace('https://twitter.com/', '')
-                    .replace('www.twitter.com/', '')
-                    .replace('twitter.com/', '')}`}
-                >
-                  <Row className="items-center gap-1">
-                    <img
-                      src="/twitter-logo.svg"
-                      className="h-4 w-4"
-                      alt="Twitter"
-                    />
-                    <span className="text-sm text-gray-400">
-                      {user.twitterHandle}
-                    </span>
-                  </Row>
-                </SiteLink>
-              )}
+            {user.twitterHandle && (
+              <SiteLink
+                href={`https://twitter.com/${user.twitterHandle
+                  .replace('https://www.twitter.com/', '')
+                  .replace('https://twitter.com/', '')
+                  .replace('www.twitter.com/', '')
+                  .replace('twitter.com/', '')}`}
+              >
+                <Row className="items-center gap-1">
+                  <img
+                    src="/twitter-logo.svg"
+                    className="h-4 w-4"
+                    alt="Twitter"
+                  />
+                  <span className="text-ink-400 text-sm">
+                    {user.twitterHandle}
+                  </span>
+                </Row>
+              </SiteLink>
+            )}
 
-              {user.discordHandle && (
-                <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
-                  <Row className="items-center gap-1">
-                    <img
-                      src="/discord-logo.svg"
-                      className="h-4 w-4"
-                      alt="Discord"
-                    />
-                    <span className="text-sm text-gray-400">
-                      {user.discordHandle}
-                    </span>
-                  </Row>
-                </SiteLink>
-              )}
+            {user.discordHandle && (
+              <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
+                <Row className="items-center gap-1">
+                  <img
+                    src="/discord-logo.svg"
+                    className="h-4 w-4"
+                    alt="Discord"
+                  />
+                  <span className="text-ink-400 text-sm">
+                    {user.discordHandle}
+                  </span>
+                </Row>
+              </SiteLink>
+            )}
 
-              {isCurrentUser && (
-                <div
-                  className={clsx(
-                    linkClass,
-                    'cursor-pointer text-sm text-gray-400'
-                  )}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    copyToClipboard(referralUrl)
-                    toast.success('Copied your referral link!', {
-                      icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
-                    })
-                    track('copy referral link')
-                  }}
-                >
-                  <Row className="items-center gap-1">
-                    <LinkIcon className="h-4 w-4" />
-                    Referrals (earn {ENV_CONFIG.moneyMoniker}250)
-                  </Row>
-                </div>
-              )}
-            </Row>
-          )}
+            {isCurrentUser && (
+              <div
+                className={clsx(
+                  linkClass,
+                  'text-ink-400 cursor-pointer text-sm'
+                )}
+                onClick={(e) => {
+                  e.preventDefault()
+                  copyToClipboard(referralUrl)
+                  toast.success('Copied your referral link!', {
+                    icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
+                  })
+                  track('copy referral link')
+                }}
+              >
+                <Row className="items-center gap-1">
+                  <LinkIcon className="h-4 w-4" />
+                  Referrals (earn {ENV_CONFIG.moneyMoniker}250)
+                </Row>
+              </div>
+            )}
+
+            <SiteLink
+              href={'/' + user.username + '/calibration'}
+              className={clsx(linkClass, 'text-ink-400 cursor-pointer text-sm')}
+            >
+              <Row className="items-center gap-1">
+                <PresentationChartBarIcon className="h-4 w-4" />
+                Calibration
+              </Row>
+            </SiteLink>
+          </Row>
+
           <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
@@ -343,29 +362,24 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   <>
                     <Spacer h={4} />
                     <PortfolioValueSection userId={user.id} />
-                    <Spacer h={4} />
+                    <Spacer h={8} />
                     <BetsList user={user} />
                   </>
                 ),
               },
               {
                 title: 'Comments',
-                stackedTabIcon: <DocumentIcon className="h-5" />,
+                stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
                   <>
                     {userPosts.length > 0 && (
                       <>
                         <Spacer h={4} />
-
-                        <Row className="flex items-center justify-between">
-                          <SectionHeader label={'Posts'} href={''} />
-
+                        <Row className="mb-3 flex items-center justify-between">
+                          <Subtitle className="!my-0">Posts</Subtitle>
                           {isCurrentUser && (
                             <Link
-                              className={clsx(
-                                'mb-3',
-                                buttonClass('md', 'indigo')
-                              )}
+                              className={clsx(buttonClass('md', 'indigo'))}
                               href={'/create-post'}
                               onClick={() => track('profile click create post')}
                             >
@@ -375,8 +389,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                         </Row>
 
                         <PostCardList posts={userPosts} limit={6} />
-                        <Spacer h={4} />
-                        <SectionHeader label={'Comments'} href={''} />
+                        <Subtitle>Comments</Subtitle>
                       </>
                     )}
                     <Col>
@@ -418,7 +431,7 @@ function ProfilePublicStats(props: {
   return (
     <Row
       className={clsx(
-        'flex-wrap items-center gap-3 text-sm text-gray-600',
+        'text-ink-600 flex-wrap items-center gap-3 text-sm',
         className
       )}
     >
@@ -489,9 +502,9 @@ function FollowsDialog(props: {
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="max-h-[90vh] rounded bg-white p-6 pb-2">
+      <Col className="bg-canvas-0 max-h-[90vh] rounded p-6 pb-2">
         <div className="p-2 pb-1 text-xl">{user.name}</div>
-        <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
+        <div className="text-ink-500 p-2 pt-0 text-sm">@{user.username}</div>
         <Tabs
           tabs={[
             {

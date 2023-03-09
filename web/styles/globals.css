@@ -6,6 +6,64 @@
   html {
     -webkit-tap-highlight-color: transparent;
   }
+  :root {
+    --color-ink-0: 255 255 255;
+    --color-ink-50: 251 251 255;
+    --color-ink-100: 244 244 251;
+    --color-ink-200: 231 231 244;
+    --color-ink-300: 216 216 235;
+    --color-ink-400: 177 177 199;
+    --color-ink-500: 145 145 167;
+    --color-ink-600: 102 102 124;
+    --color-ink-700: 74 74 104;
+    --color-ink-800: 45 45 84;
+    --color-ink-900: 17 17 64;
+    --color-ink-1000: 0 0 0;
+
+    --color-canvas-0: 255 255 255;
+    --color-canvas-50: 251 251 255;
+    --color-canvas-100: 244 244 251;
+
+    --color-primary-50: 238 242 255;
+    --color-primary-100: 224 231 255;
+    --color-primary-200: 199 210 254;
+    --color-primary-300: 165 180 252;
+    --color-primary-400: 129 140 248;
+    --color-primary-500: 99 102 241;
+    --color-primary-600: 79 70 229;
+    --color-primary-700: 67 56 202;
+    --color-primary-800: 55 48 163;
+    --color-primary-900: 49 46 129;
+  }
+  .dark {
+    --color-ink-1000: 255 255 255;
+    --color-ink-900: 251 251 255;
+    --color-ink-800: 244 244 251;
+    --color-ink-700: 231 231 244;
+    --color-ink-600: 216 216 235;
+    --color-ink-500: 177 177 199;
+    --color-ink-400: 145 145 167;
+    --color-ink-300: 102 102 124;
+    --color-ink-200: 74 74 104;
+    --color-ink-100: 45 45 84;
+    --color-ink-50: 17 17 64;
+    --color-ink-0: 0 0 0;
+
+    --color-canvas-0: 30 41 59;
+    --color-canvas-50: 15 23 41;
+    --color-canvas-100: 51 65 85;
+
+    --color-primary-900: 238 242 255;
+    --color-primary-800: 224 231 255;
+    --color-primary-700: 141 152 247;
+    --color-primary-600: 165 180 252;
+    --color-primary-500: 129 140 248;
+    --color-primary-400: 99 102 241;
+    --color-primary-300: 79 70 229;
+    --color-primary-200: 67 56 202;
+    --color-primary-100: 55 48 163;
+    --color-primary-50: 49 46 129;
+  }
 }
 
 @font-face {
@@ -73,7 +131,7 @@
   content: '\1e40';
 }
 
-/* For Webkit-based browsers (Chrome, Safari and Opera) */
+/* For Webkit-inkd browsers (Chrome, Safari and Opera) */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }

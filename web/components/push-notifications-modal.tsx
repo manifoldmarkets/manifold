@@ -41,7 +41,6 @@ export function PushNotificationsModal(props: {
       setOpen(shouldShowOurNotificationPrompt)
     }, 1000)
     return () => clearTimeout(openTimer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     privateUser.pushToken,
     privateUser.interestedInPushNotifications,
@@ -52,12 +51,13 @@ export function PushNotificationsModal(props: {
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
-      <Col className="items-center gap-4 rounded-md bg-white px-8 py-6">
+      <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
         <span className="mb-2 text-lg">
-          Want notifications when a market resolves?
+          Want push notifications when a market resolves or when users reply to
+          you?
         </span>
         <Col className={'gap-2'}>
-          <span className={'text-indigo-700'}>• Can I opt out later?</span>
+          <span className={'text-primary-700'}>• Can I opt out later?</span>
           <span className={'ml-2'}>
             Yes! You can go to the 'Opt Out' section of your notification
             settings and tap the 'Mobile' toggle.
@@ -86,7 +86,6 @@ export function PushNotificationsModal(props: {
                 showSystemNotificationsPrompt()
                 setOpen(false)
               }}
-              color={'blue'}
             >
               Sure
             </Button>

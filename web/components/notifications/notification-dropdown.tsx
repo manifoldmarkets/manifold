@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   DotsVerticalIcon,
   EyeIcon,
@@ -8,7 +9,6 @@ import {
 import clsx from 'clsx'
 import { Notification } from 'common/notification'
 import { getNotificationPreference } from 'common/user-notification-preferences'
-import { useContractFollows } from 'web/hooks/use-follows'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
@@ -39,7 +39,7 @@ export default function NotificationDropdown(props: {
             )}
           />
         }
-        MenuWidth="w-52"
+        menuWidth="w-52"
       />
     )
   }
@@ -92,12 +92,11 @@ function useNotificationPreferenceItem(notification: Notification) {
 function useNotificationFollowItem(notification: Notification) {
   const sourceContractId = notification.sourceContractId
   const sourceContractSlug = notification.sourceContractSlug
-  const followers = useContractFollows(sourceContractId)
+  const [isFollowing, setIsFollowing] = useState(true)
   const user = useUser()
-  if (!user || !sourceContractId || !sourceContractSlug || !followers) {
+  if (!user || !sourceContractId || !sourceContractSlug) {
     return []
   }
-  const isFollowing = followers?.includes(user.id)
   return [
     {
       name: isFollowing ? 'Unfollow this market' : 'Follow this market',
@@ -106,9 +105,15 @@ function useNotificationFollowItem(notification: Notification) {
       ) : (
         <EyeIcon className="h-5 w-5" />
       ),
-      onClick: isFollowing
-        ? () => unfollowMarket(sourceContractId, sourceContractSlug, user)
-        : () => followMarket(sourceContractId, sourceContractSlug, user),
+      onClick: () => {
+        if (isFollowing) {
+          setIsFollowing(false)
+          unfollowMarket(sourceContractId, sourceContractSlug, user)
+        } else {
+          setIsFollowing(true)
+          followMarket(sourceContractId, sourceContractSlug, user)
+        }
+      },
     } as DropdownItem,
   ]
 }

@@ -29,9 +29,10 @@ import { signInWithCredential } from '@firebase/auth'
 import { auth } from '../init'
 import WebView from 'react-native-webview'
 import * as Google from 'expo-auth-session/providers/google'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/src/envs/constants'
 import * as Sentry from 'sentry-expo'
 import { Text } from 'components/text'
+import { log } from 'components/logger'
 
 export const AuthPage = (props: {
   webview: React.RefObject<WebView | undefined>
@@ -65,7 +66,7 @@ export const AuthPage = (props: {
       Sentry.Native.captureException(err, {
         extra: { message: 'google sign in' },
       })
-      console.log('[google sign in] Error : ', err)
+      log('[google sign in] Error : ', err)
     }
     setLoading(false)
   }, [response])
@@ -74,10 +75,10 @@ export const AuthPage = (props: {
     setLoading(true)
     try {
       const { credential, data } = await loginWithApple()
-      console.log('credential', credential)
-      console.log('data', data)
+      log('credential', credential)
+      log('data', data)
       const { user } = await signInWithCredential(auth, credential)
-      console.log('user', user)
+      log('user', user)
       if (data?.email && !user.email) {
         await updateEmail(user, data.email)
       }
@@ -95,7 +96,7 @@ export const AuthPage = (props: {
   }
 
   const loginWithApple = async () => {
-    console.log('Signing in with Apple...')
+    log('Signing in with Apple...')
     const state = Math.random().toString(36).substring(2, 15)
     const rawNonce = Math.random().toString(36).substring(2, 10)
     const requestedScopes = [

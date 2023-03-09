@@ -11,7 +11,7 @@ export default function Custom404() {
   return (
     <Page>
       <div className="flex h-full flex-col items-center justify-center">
-        <Title text="404: Oops!" />
+        <Title children="404: Oops!" />
         <p>Nothing exists at this location.</p>
         <p>If you didn't expect this, let us know on Discord!</p>
         <br />

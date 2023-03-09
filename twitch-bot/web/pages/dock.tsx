@@ -1,14 +1,4 @@
-import {
-  PacketCreateMarket,
-  PacketHandshakeComplete,
-  PacketMarketCreated,
-  PacketPing,
-  PacketPong,
-  PacketRequestResolve,
-  PacketResolved,
-  PacketSelectMarketID,
-  PacketUnfeature
-} from '@common/packets';
+import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated, PacketPing, PacketPong, PacketRequestResolve, PacketResolved, PacketSelectMarketID, PacketUnfeature } from '@common/packets';
 import SocketWrapper from '@common/socket-wrapper';
 import { LiteMarket, LiteUser } from '@common/types/manifold-api-types';
 import { Group } from '@common/types/manifold-internal-types';
@@ -105,7 +95,7 @@ function UpdatedPopup(props: { show: boolean }) {
   return (
     <div
       className={clsx(
-        'bg-primary fixed top-0 z-50 w-full -translate-y-full border-b border-b-green-500 text-center text-base text-white transition-all duration-500',
+        'bg-primary text-ink-0 fixed top-0 z-50 w-full -translate-y-full border-b border-b-green-500 text-center text-base transition-all duration-500',
         state === State.SHOWN && '!translate-y-0 shadow-md'
       )}
     >
@@ -327,7 +317,7 @@ export default () => {
         message={loadingMessage}
         loading={connectionState == ConnectionState.CONNECTING}
         className="bg-base-200"
-        spinnerBorderColor="border-white"
+        spinnerBorderColor="border-ink-1000"
       />
       {initialized && (
         <div className="flex justify-center">
@@ -349,8 +339,8 @@ export default () => {
                   openModalBtn={{
                     label: `Create and feature a question`,
                     className: clsx(
-                      !selectedGroup ? 'btn-disabled' : 'from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700 bg-gradient-to-r border-0 w-full rounded-md',
-                      'uppercase w-full mt-2 py-2.5 font-semibold text-white shadow-sm min-h-11 !h-[unset] text-2xs min-h-0 xs:min-h-11 xs:text-base'
+                      !selectedGroup ? 'btn-disabled' : 'from-primary-500 to-blue-500 hover:from-primary-700 hover:to-blue-700 bg-gradient-to-r border-0 w-full rounded-md',
+                      'uppercase w-full mt-2 py-2.5 font-semibold text-ink-0 shadow-sm min-h-11 !h-[unset] text-2xs min-h-0 xs:min-h-11 xs:text-base'
                     ),
                   }}
                   submitBtn={{
@@ -422,7 +412,7 @@ export default () => {
                   </Transition>
                 ))
               ) : (
-                selectedGroup && <p className="w-full select-none text-center text-gray-400">No applicable markets in this group</p>
+                selectedGroup && <p className="text-ink-400 w-full select-none text-center">No applicable markets in this group</p>
               )}
             </div>
             <Transition
@@ -436,7 +426,7 @@ export default () => {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
+              <div className="bg-canvas-500 fixed inset-0 bg-opacity-75" />
             </Transition>
             {selectedContract && (
               <div
@@ -473,12 +463,12 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
     outcome === 'YES'
       ? 'btn-primary'
       : outcome === 'NO'
-        ? 'bg-red-400 hover:bg-red-500'
-        : outcome === 'CANCEL'
-          ? 'bg-yellow-400 hover:bg-yellow-500'
-          : outcome === 'MKT'
-            ? 'bg-blue-400 hover:bg-blue-500'
-            : 'btn-disabled';
+      ? 'bg-red-400 hover:bg-red-500'
+      : outcome === 'CANCEL'
+      ? 'bg-yellow-400 hover:bg-yellow-500'
+      : outcome === 'MKT'
+      ? 'bg-blue-400 hover:bg-blue-500'
+      : 'btn-disabled';
 
   const resolveClicked = async (): Promise<boolean> => {
     sw.emit(PacketRequestResolve, { outcomeString: outcome });
@@ -489,7 +479,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
   const canResolveMarket = controlUserID === contract.creatorId;
 
   return (
-    <Col className={'xs:px-8 xs:py-6 flex cursor-default justify-end rounded-md bg-white px-4 py-4 shadow-md'} onClick={(e) => e.stopPropagation()}>
+    <Col className={'xs:px-8 xs:py-6 bg-canvas-0 flex cursor-default justify-end rounded-md px-4 py-4 shadow-md'} onClick={(e) => e.stopPropagation()}>
       <Row className="items-center justify-center">
         <div className="xs:whitespace-nowrap xs:text-2xl xs:text-left text-center text-lg">Resolve market</div>
         <div className="grow" />
@@ -497,7 +487,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
       </Row>
 
       <p
-        className="my-3 break-words font-semibold text-indigo-700"
+        className="text-primary-700 my-3 break-words font-semibold"
         style={{
           wordBreak: 'break-word' /* For iOS safari */,
         }}
@@ -507,7 +497,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
 
       {canResolveMarket ? (
         <>
-          <div className="mb-3 text-sm text-gray-500">Outcome</div>
+          <div className="text-ink-500 mb-3 text-sm">Outcome</div>
 
           <YesNoCancelSelector className="mx-auto my-2" selected={outcome} onSelect={setOutcome} btnClassName={isSubmitting ? 'btn-disabled' : ''} />
 
@@ -610,7 +600,6 @@ export function YesNoCancelSelector(props: { selected: Resolution | undefined; o
 
   return (
     <Col className="gap-2">
-      {/* Should ideally use a radio group instead of buttons */}
       <Button color={selected === 'YES' ? 'green' : 'gray'} onClick={() => onSelect('YES')} className={btnClassName}>
         YES
       </Button>
@@ -618,10 +607,6 @@ export function YesNoCancelSelector(props: { selected: Resolution | undefined; o
       <Button color={selected === 'NO' ? 'red' : 'gray'} onClick={() => onSelect('NO')} className={btnClassName}>
         NO
       </Button>
-
-      {/* <Button color={selected === "MKT" ? "blue" : "gray"} onClick={() => onSelect("MKT")} className={clsx(btnClassName, "btn-sm")}>
-                PROB
-            </Button> */}
 
       <Button color={selected === 'CANCEL' ? 'yellow' : 'gray'} onClick={() => onSelect('CANCEL')} className={clsx(btnClassName, 'btn-sm')}>
         N/A
@@ -638,12 +623,12 @@ function Button(props: { className?: string; onClick?: () => void; color: 'green
       type="button"
       className={clsx(
         'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
-        color === 'green' && 'btn-primary text-white',
-        color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
-        color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
-        color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
-        color === 'indigo' && 'bg-indigo-500 text-white hover:bg-indigo-600',
-        color === 'gray' && 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+        color === 'green' && 'btn-primary text-ink-1000',
+        color === 'red' && 'text-ink-0 bg-red-400 hover:bg-red-500',
+        color === 'yellow' && 'text-ink-0 bg-yellow-400 hover:bg-yellow-500',
+        color === 'blue' && 'text-ink-0 bg-blue-400 hover:bg-blue-500',
+        color === 'indigo' && 'text-ink-0 bg-primary-500 hover:bg-primary-600',
+        color === 'gray' && 'bg-ink-200 text-ink-700 hover:bg-ink-300',
         className
       )}
       onClick={(e) => {

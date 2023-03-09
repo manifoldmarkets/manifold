@@ -12,11 +12,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import {
-  getPositionTweet,
-  getWinningTweet,
-  TweetButton,
-} from '../buttons/tweet-button'
+import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -64,7 +60,7 @@ export function BetsSummary(props: {
       <Row className="flex-wrap gap-4 sm:flex-nowrap sm:gap-6">
         {resolution ? (
           <Col>
-            <div className="text-sm text-gray-500">Payout</div>
+            <div className="text-ink-500 text-sm">Payout</div>
             <div className="whitespace-nowrap">
               {formatMoney(payout)}{' '}
               <ProfitBadge profitPercent={profitPercent} />
@@ -72,7 +68,7 @@ export function BetsSummary(props: {
           </Col>
         ) : isBinary ? (
           <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
+            <div className="text-ink-500 whitespace-nowrap text-sm">
               Position{' '}
               <InfoTooltip
                 text={`Number of shares you own on net. 1 ${exampleOutcome} share = ${ENV_CONFIG.moneyMoniker}1 if the market resolves ${exampleOutcome}.`}
@@ -94,7 +90,7 @@ export function BetsSummary(props: {
           </Col>
         ) : (
           <Col className="hidden sm:inline">
-            <div className="whitespace-nowrap text-sm text-gray-500">
+            <div className="text-ink-500 whitespace-nowrap text-sm">
               Expectation{''}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />
             </div>
@@ -103,7 +99,7 @@ export function BetsSummary(props: {
         )}
 
         <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">
+          <div className="text-ink-500 whitespace-nowrap text-sm">
             Cost basis{' '}
             <InfoTooltip text="Cash originally invested in this market, using average cost accounting." />
           </div>
@@ -112,7 +108,7 @@ export function BetsSummary(props: {
 
         {isBinary && !resolution && (
           <Col className="hidden sm:inline">
-            <div className="whitespace-nowrap text-sm text-gray-500">
+            <div className="text-ink-500 whitespace-nowrap text-sm">
               Expectation{' '}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />
             </div>
@@ -121,7 +117,7 @@ export function BetsSummary(props: {
         )}
 
         <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">
+          <div className="text-ink-500 whitespace-nowrap text-sm">
             Profit{' '}
             <InfoTooltip text="Includes both realized & unrealized gains/losses." />
           </div>
@@ -131,23 +127,6 @@ export function BetsSummary(props: {
           </div>
         </Col>
       </Row>
-
-      {!hideTweet && !resolution && Math.abs(position) > 1e-7 && (
-        <Row className={'mt-4 items-center gap-2'}>
-          <div>
-            You're betting {position > 0 ? <YesLabel /> : <NoLabel />}.{' '}
-            <TweetButton
-              tweetText={getPositionTweet(
-                position,
-                invested,
-                contract,
-                username
-              )}
-              className="ml-2"
-            />
-          </div>
-        </Row>
-      )}
 
       {!hideTweet && resolution && profit >= 1 && (
         <Row className={'mt-4 items-center gap-2'}>

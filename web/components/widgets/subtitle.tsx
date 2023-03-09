@@ -1,15 +1,15 @@
 import clsx from 'clsx'
 
-export function Subtitle(props: { text: string; className?: string }) {
-  const { text, className } = props
+export function Subtitle(props: { children: string; className?: string }) {
+  const { children: text, className } = props
   return (
-    <h1
+    <h2
       className={clsx(
-        'mt-6 mb-2 inline-block text-lg text-indigo-500 sm:mt-6 sm:mb-2 sm:text-xl',
+        'text-primary-500 mt-6 mb-2 inline-block text-lg sm:mt-6 sm:mb-2 sm:text-xl',
         className
       )}
     >
       {text}
-    </h1>
+    </h2>
   )
 }

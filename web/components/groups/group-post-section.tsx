@@ -1,31 +1,16 @@
-import {
-  ArrowSmRightIcon,
-  PlusCircleIcon,
-  XCircleIcon,
-} from '@heroicons/react/outline'
-
+import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import PencilIcon from '@heroicons/react/solid/PencilIcon'
-
 import { Contract } from 'common/contract'
-import { Group, groupPath } from 'common/group'
+import { Group } from 'common/group'
 import { Post } from 'common/post'
-import { ReactNode, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getPost } from 'web/lib/firebase/posts'
 import { ContractCard } from '../contract/contract-card'
-
 import Masonry from 'react-masonry-css'
-
-import { REFERRAL_AMOUNT } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { User } from 'common/user'
-import toast from 'react-hot-toast'
 import { useUser } from 'web/hooks/use-user'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { updateGroup } from 'web/lib/firebase/groups'
-import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
-import { CopyLinkButton } from '../buttons/copy-link-button'
-import { ChoicesToggleGroup } from '../choices-toggle-group'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -33,22 +18,18 @@ import { Spacer } from '../layout/spacer'
 import { PinnedSelectModal } from '../pinned-select-modal'
 import { CreatePostForm } from '../posts/create-post'
 import { PostCard, PostCardList } from '../posts/post-card'
-import { Linkify } from '../widgets/linkify'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { SiteLink } from '../widgets/site-link'
-import { UserLink } from '../widgets/user-link'
-import { EditGroupButton } from './edit-group-button'
-import { JoinOrLeaveGroupButton } from './groups-button'
+import { Subtitle } from '../widgets/subtitle'
 
 export function GroupPostSection(props: {
   group: Group
-  isEditable: boolean
+  canEdit: boolean
   posts: Post[]
 }) {
-  const { group, isEditable, posts } = props
+  const { group, canEdit, posts } = props
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
-      <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
+      <GroupFeatured group={group} posts={posts} canEdit={canEdit} />
       <GroupPosts group={group} posts={posts} />
     </Col>
   )
@@ -61,7 +42,7 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
 
   const createPost = (
     <Modal size="xl" open={showCreatePost} setOpen={setShowCreatePost}>
-      <div className="w-full bg-white py-10">
+      <div className="bg-canvas-0 w-full py-10">
         <CreatePostForm group={group} />
       </div>
     </Modal>
@@ -70,22 +51,18 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
   const postList = (
     <div className=" align-start w-full items-start">
       <Row className="flex justify-between">
-        <Col>
-          <SectionHeader label={'Latest Posts'} />
-        </Col>
-        <Col>
-          {user && (
-            <Button onClick={() => setShowCreatePost(!showCreatePost)}>
-              Add a Post
-            </Button>
-          )}
-        </Col>
+        <Subtitle className="!my-0">Latest Posts</Subtitle>
+        {user && (
+          <Button onClick={() => setShowCreatePost(!showCreatePost)}>
+            Add a Post
+          </Button>
+        )}
       </Row>
 
       <div className="mt-2">
         <PostCardList posts={posts} />
         {posts.length === 0 && (
-          <div className="text-center text-gray-500">No posts yet</div>
+          <div className="text-ink-500 text-center">No posts yet</div>
         )}
       </div>
     </div>
@@ -97,9 +74,9 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
 function GroupFeatured(props: {
   group: Group
   posts: Post[]
-  isEditable: boolean
+  canEdit: boolean
 }) {
-  const { group, posts, isEditable } = props
+  const { group, posts, canEdit } = props
   const [pinned, setPinned] = useState<JSX.Element[]>([])
 
   useEffect(() => {
@@ -150,13 +127,13 @@ function GroupFeatured(props: {
 
   if (!group.pinnedItems || group.pinnedItems.length == 0) return <></>
 
-  return isEditable || (group.pinnedItems && group?.pinnedItems.length > 0) ? (
+  return canEdit || (group.pinnedItems && group?.pinnedItems.length > 0) ? (
     <div className="relative">
-      {isEditable && <Spacer h={12} />}
+      {canEdit && <Spacer h={12} />}
       <PinnedItems
         posts={posts}
         group={group}
-        isEditable={isEditable}
+        isEditable={canEdit}
         pinned={pinned}
         onDeleteClicked={onDeleteClicked}
         onSubmit={onSubmit}
@@ -231,7 +208,7 @@ export function PinnedItems(props: {
             <div className="py-2" key="plus-circle">
               <Row
                 className={
-                  'relative gap-3 rounded-lg border-4 border-dotted p-2 hover:cursor-pointer hover:bg-gray-100'
+                  'hover:bg-ink-100 relative gap-3 rounded-lg border-4 border-dotted p-2 hover:cursor-pointer'
                 }
               >
                 <button
@@ -239,7 +216,7 @@ export function PinnedItems(props: {
                   onClick={() => setOpen(true)}
                 >
                   <PlusCircleIcon
-                    className="h-12 w-12 text-gray-600"
+                    className="text-ink-600 h-12 w-12"
                     aria-hidden="true"
                   />
                 </button>
@@ -255,7 +232,7 @@ export function PinnedItems(props: {
         setOpen={setOpen}
         title="Pin a post or market"
         description={
-          <div className={'text-md my-4 text-gray-600'}>{modalMessage}</div>
+          <div className={'text-md text-ink-600 my-4'}>{modalMessage}</div>
         }
         onSubmit={onSubmit}
         groups={groups}
@@ -266,134 +243,14 @@ export function PinnedItems(props: {
   )
 }
 
-export function SectionHeader(props: {
-  label: string
-  href?: string
-  children?: ReactNode
-}) {
-  const { label, href, children } = props
-
-  return (
-    <Row className="mb-3 items-center justify-between">
-      {href ? (
-        <SiteLink
-          className="text-xl"
-          href={href}
-          onClick={() => track('group click section header', { section: href })}
-        >
-          {label}
-          <ArrowSmRightIcon
-            className="mb-0.5 inline h-6 w-6 text-gray-500"
-            aria-hidden="true"
-          />
-        </SiteLink>
-      ) : (
-        <span className="text-xl">{label}</span>
-      )}
-      {children}
-    </Row>
-  )
-}
-
-export function GroupAboutDetails(props: {
-  group: Group
-  creator: User
-  user: User | null | undefined
-  isEditable: boolean
-  isMember: boolean
-}) {
-  const { group, creator, isEditable, user, isMember } = props
-  const anyoneCanJoinChoices: { [key: string]: string } = {
-    Closed: 'false',
-    Open: 'true',
-  }
-  const [anyoneCanJoin, setAnyoneCanJoin] = useState(group.anyoneCanJoin)
-  function updateAnyoneCanJoin(newVal: boolean) {
-    if (group.anyoneCanJoin == newVal || !isEditable) return
-    setAnyoneCanJoin(newVal)
-    toast.promise(updateGroup(group, { ...group, anyoneCanJoin: newVal }), {
-      loading: 'Updating group...',
-      success: 'Updated group!',
-      error: "Couldn't update group",
-    })
-  }
-  const postFix = user ? '?referrer=' + user.username : ''
-  const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
-    group.slug
-  )}${postFix}`
-
-  return (
-    <>
-      <Col className="gap-2 rounded-b bg-white p-2">
-        <Row className={'flex-wrap justify-between'}>
-          <div className={'inline-flex items-center'}>
-            <div className="mr-1 text-gray-500">Created by</div>
-            <UserLink
-              className="text-gray-700"
-              name={creator.name}
-              username={creator.username}
-            />
-          </div>
-          {isEditable ? (
-            <EditGroupButton className={'ml-1'} group={group} />
-          ) : (
-            user && (
-              <Row>
-                <JoinOrLeaveGroupButton
-                  group={group}
-                  user={user}
-                  isMember={isMember}
-                />
-              </Row>
-            )
-          )}
-        </Row>
-        <div className={'block sm:hidden'}>
-          <Linkify text={group.about} />
-        </div>
-        <Row className={'items-center gap-1'}>
-          <span className={'text-gray-500'}>Membership</span>
-          {user && user.id === creator.id ? (
-            <ChoicesToggleGroup
-              currentChoice={anyoneCanJoin.toString()}
-              choicesMap={anyoneCanJoinChoices}
-              setChoice={(choice) =>
-                updateAnyoneCanJoin(choice.toString() === 'true')
-              }
-              toggleClassName={'h-10'}
-              className={'ml-2'}
-            />
-          ) : (
-            <span className={'text-gray-700'}>
-              {anyoneCanJoin ? 'Open to all' : 'Closed (by invite only)'}
-            </span>
-          )}
-        </Row>
-
-        {anyoneCanJoin && user && (
-          <Col className="my-4 px-2">
-            <div className="text-lg">Invite</div>
-            <div className={'mb-2 text-gray-500'}>
-              Invite a friend to this group and get {ENV_CONFIG.moneyMoniker}
-              {REFERRAL_AMOUNT} if they sign up and place a trade!
-            </div>
-
-            <CopyLinkButton url={shareUrl} tracking="copy group share link" />
-          </Col>
-        )}
-      </Col>
-    </>
-  )
-}
-
 function CrossIcon(props: { onClick: () => void }) {
   const { onClick } = props
 
   return (
     <div>
-      <button className=" text-gray-500 hover:text-gray-700" onClick={onClick}>
-        <div className="absolute top-0 left-0 right-0 bottom-0 bg-gray-200 bg-opacity-50">
-          <XCircleIcon className="h-12 w-12 text-gray-600" />
+      <button className=" text-ink-500 hover:text-ink-700" onClick={onClick}>
+        <div className="bg-ink-200 absolute top-0 left-0 right-0 bottom-0 bg-opacity-50">
+          <XCircleIcon className="text-ink-600 h-12 w-12" />
         </div>
       </button>
     </div>

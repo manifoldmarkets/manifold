@@ -5,7 +5,7 @@ slug: /
 
 # About Manifold Markets
 
-This page is outdated. Please visit our new **[About & Help center](https://help.manifold.markets/)**
+This page is outdated. Please visit our new **[Help & About center](https://help.manifold.markets/)**
 
 Manifold Markets lets anyone create a prediction market on any topic. Win virtual play money betting on what you know, from **[chess tournaments](https://manifold.markets/SG/will-magnus-carlsen-lose-any-regula)** to **[lunar collisions](https://manifold.markets/Duncan/will-the-wayward-falcon-9-booster-h)** to **[newsletter subscriber rates](https://manifold.markets/Nu%C3%B1oSempere/how-many-additional-subscribers-wil)** - or learn about the future by creating your own market!
 

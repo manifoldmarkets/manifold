@@ -110,7 +110,7 @@ export function useMemberGroupsSubscription(user: User | null | undefined) {
     undefined,
     {
       key: 'member-groups',
-      store: storageStore(safeLocalStorage()),
+      store: storageStore(safeLocalStorage),
     }
   )
 
@@ -133,7 +133,7 @@ export function useMemberGroupsIdsAndSlugs(userId: string | null | undefined) {
     { id: string; slug: string }[] | undefined
   >(undefined, {
     key: 'member-groups-ids-and-slugs',
-    store: storageStore(safeLocalStorage()),
+    store: storageStore(safeLocalStorage),
   })
 
   useEffect(() => {

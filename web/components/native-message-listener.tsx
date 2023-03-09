@@ -3,6 +3,7 @@ import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getSourceUrl, Notification } from 'common/notification'
 import {
   handlePushNotificationPermissionStatus,
+  markNotificationAsSeen,
   setPushToken,
 } from 'web/lib/firebase/notifications'
 import { useRouter } from 'next/router'
@@ -15,6 +16,7 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { webToNativeMessageType } from 'common/native-message'
 import { useEffect } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
+import { useEvent } from 'web/hooks/use-event'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
@@ -29,7 +31,7 @@ export const NativeMessageListener = () => {
     }
   }, [privateUser, router.query])
 
-  const handleNativeMessage = async (type: string, data: any) => {
+  const handleNativeMessage = useEvent(async (type: string, data: any) => {
     if (type === 'setIsNative') {
       setIsNative(true, data.platform)
       if (privateUser) setInstalledAppPlatform(privateUser, data.platform)
@@ -43,6 +45,7 @@ export const NativeMessageListener = () => {
       await setPushToken(userId, token)
     } else if (type === 'notification') {
       const notification = data as Notification
+      if (privateUser) markNotificationAsSeen(privateUser.id, notification.id)
       const sourceUrl = getSourceUrl(notification)
       console.log('sourceUrl', sourceUrl)
       try {
@@ -60,7 +63,8 @@ export const NativeMessageListener = () => {
         console.log(`Error navigating to link route ${newRoute}`, e)
       }
     }
-  }
+  })
+
   useNativeMessages(
     [
       'setIsNative',
@@ -82,7 +86,7 @@ export const postMessageToNative = (
 ) => {
   const isNative = getIsNative()
   if (!isNative) return
-  ;(window as any).ReactNativeWebView.postMessage(
+  ;(window as any).ReactNativeWebView?.postMessage(
     JSON.stringify({
       type,
       data,

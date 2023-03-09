@@ -18,8 +18,11 @@ export function ExpandButton(props: {
   const { onClick, className, whatToRead } = props
   return (
     <Button
-      color={'indigo-text-only'}
-      className={clsx('z-10 select-none bg-white text-sm', className)}
+      color="override"
+      className={clsx(
+        'text-primary-500 hover:text-primary-700 z-10 select-none bg-inherit text-sm shadow-none',
+        className
+      )}
       onClick={onClick}
       size={'xs'}
     >

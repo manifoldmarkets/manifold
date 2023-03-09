@@ -119,8 +119,9 @@ export function SellPanel(props: {
   const profit = saleValue - costBasis
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
-  const getValue = getMappedValue(contract)
-  const rawDifference = Math.abs(getValue(resultProb) - getValue(initialProb))
+  const rawDifference = Math.abs(
+    getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
+  )
   const displayedDifference =
     contract.outcomeType === 'PSEUDO_NUMERIC'
       ? formatLargeNumber(rawDifference)
@@ -147,7 +148,6 @@ export function SellPanel(props: {
 
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const format = getFormattedMappedValue(contract)
 
   return (
     <>
@@ -167,33 +167,33 @@ export function SellPanel(props: {
       />
 
       <Col className="mt-3 w-full gap-3 text-sm">
-        <Row className="items-center justify-between gap-2 text-gray-500">
+        <Row className="text-ink-500 items-center justify-between gap-2">
           Sale amount
-          <span className="text-gray-700">{formatMoney(saleValue)}</span>
+          <span className="text-ink-700">{formatMoney(saleValue)}</span>
         </Row>
-        <Row className="items-center justify-between gap-2 text-gray-500">
+        <Row className="text-ink-500 items-center justify-between gap-2">
           Profit
-          <span className="text-gray-700">{formatMoney(profit)}</span>
+          <span className="text-ink-700">{formatMoney(profit)}</span>
         </Row>
         <Row className="items-center justify-between">
-          <div className="text-gray-500">
+          <div className="text-ink-500">
             {isPseudoNumeric ? 'Estimated value' : 'Probability'}
           </div>
           <div>
-            {format(initialProb)}
+            {getFormattedMappedValue(contract, initialProb)}
             <span className="mx-2">→</span>
-            {format(resultProb)}
+            {getFormattedMappedValue(contract, resultProb)}
           </div>
         </Row>
         {loanPaid !== 0 && (
           <>
-            <Row className="mt-6 items-center justify-between gap-2 text-gray-500">
+            <Row className="text-ink-500 mt-6 items-center justify-between gap-2">
               Loan repayment
-              <span className="text-gray-700">{formatMoney(-loanPaid)}</span>
+              <span className="text-ink-700">{formatMoney(-loanPaid)}</span>
             </Row>
-            <Row className="items-center justify-between gap-2 text-gray-500">
+            <Row className="text-ink-500 items-center justify-between gap-2">
               Net proceeds
-              <span className="text-gray-700">{formatMoney(netProceeds)}</span>
+              <span className="text-ink-700">{formatMoney(netProceeds)}</span>
             </Row>
           </>
         )}
@@ -209,7 +209,7 @@ export function SellPanel(props: {
         onSubmit={betDisabled ? undefined : submitSell}
         disabled={!!betDisabled}
         size="xl"
-        color="blue"
+        color="indigo"
         actionLabel={`Sell ${Math.floor(soldShares)} shares`}
       />
 
@@ -234,7 +234,7 @@ const getSaleProbChange = (
     balanceByUserId
   )
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
-
-  const getValue = getMappedValue(contract)
-  return Math.abs(getValue(resultProb) - getValue(initialProb))
+  return Math.abs(
+    getMappedValue(contract, resultProb) - getMappedValue(contract, initialProb)
+  )
 }

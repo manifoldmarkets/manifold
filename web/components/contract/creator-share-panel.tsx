@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { REFERRAL_AMOUNT } from 'common/economy'
+import { REFERRAL_AMOUNT, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
 import { CopyLinkButton } from '../buttons/copy-link-button'
@@ -14,10 +14,10 @@ export function CreatorSharePanel(props: { contract: Contract }) {
     <GradientContainer className="mb-8 p-4">
       <div className="mb-6">Share your market</div>
 
-      <div className="mb-2 text-base text-gray-500">
-        Invite traders to participate in your market! Earn a{' '}
-        {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new trader that
-        signs up.
+      <div className="text-ink-500 mb-2 text-base">
+        Earn a {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new sign
+        up and {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each unique trader
+        that bets in your market using your share link.
       </div>
 
       <CopyLinkButton

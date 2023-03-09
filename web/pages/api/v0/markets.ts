@@ -1,10 +1,11 @@
 // Next.js API route support: https://vercel.com/docs/concepts/functions/serverless-functions
+import { toLiteMarket } from 'common/api-market-types'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { listAllContracts } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
-import { toLiteMarket, ValidationError } from './_types'
+import { ValidationError } from './_types'
 import { z } from 'zod'
 import { validate } from './_validate'
+import { getContract, getContracts } from 'web/lib/supabase/contracts'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -18,6 +19,20 @@ const queryParams = z
     before: z.string().optional(),
   })
   .strict()
+
+// mqp: this pagination approach is technically incorrect if multiple contracts
+// have the exact same createdTime, but that's very unlikely
+const getBeforeTime = async (params: z.infer<typeof queryParams>) => {
+  if (params.before) {
+    const beforeContract = await getContract(params.before)
+    if (beforeContract == null) {
+      throw new Error('Contract specified in before parameter not found.')
+    }
+    return beforeContract.createdTime
+  } else {
+    return undefined
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -36,10 +51,11 @@ export default async function handler(
     return res.status(500).json({ error: 'Unknown error during validation' })
   }
 
-  const { limit, before } = params
+  const { limit } = params
 
   try {
-    const contracts = await listAllContracts(limit, before)
+    const beforeTime = await getBeforeTime(params)
+    const contracts = await getContracts({ limit, beforeTime })
     // Serve from Vercel cache, then update. see https://vercel.com/docs/concepts/functions/edge-caching
     res.setHeader('Cache-Control', marketCacheStrategy)
     res.status(200).json(contracts.map(toLiteMarket))

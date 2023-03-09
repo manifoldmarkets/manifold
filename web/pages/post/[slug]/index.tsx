@@ -30,9 +30,9 @@ import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
-import { Subtitle } from 'web/components/widgets/subtitle'
-import { SimpleLinkButton } from 'web/components/buttons/simple-link-button'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
+import { richTextToString } from 'common/util/parse'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -81,7 +81,7 @@ export default function PostPage(props: {
     <Page>
       <SEO
         title={post.title}
-        description={post.subtitle}
+        description={richTextToString(post.content)}
         url={'/post/' + post.slug}
       />
       <div className="mx-auto mt-1 flex w-full max-w-3xl flex-col">
@@ -91,45 +91,39 @@ export default function PostPage(props: {
           onSave={(title) => updatePost(post, { title })}
           disabled={!canEdit}
         >
-          {(value) => <Title className="!my-0 p-2" text={value} />}
+          {(value) => <Title className="!my-0 p-2" children={value} />}
         </EditInPlaceInput>
         <div className="h-2" />
-        <EditInPlaceInput
-          className="-m-px px-2 !text-xl"
-          initialValue={post.subtitle}
-          onSave={(subtitle) => updatePost(post, { subtitle })}
-          disabled={!canEdit}
-        >
-          {(value) => <Subtitle className="!my-0 p-2" text={value} />}
-        </EditInPlaceInput>
         <Row className="mt-4 items-center">
           <Col className="flex-1 px-2">
             <div className={'inline-flex'}>
-              <div className="mr-1 text-gray-500">Created by</div>
+              <div className="text-ink-500 mr-1">Created by</div>
               <UserLink
-                className="text-gray-700"
+                className="text-ink-700"
                 name={creator.name}
                 username={creator.username}
               />
             </div>
           </Col>
           <Row className="items-center gap-2 sm:pr-2">
-            <SimpleLinkButton
-              getUrl={() => shareUrl}
-              tooltip={'Copy link to post'}
+            <CopyLinkButton
+              linkIconOnlyProps={{
+                tooltip: 'Copy link to post',
+              }}
+              url={shareUrl}
             />
           </Row>
         </Row>
 
         <Spacer h={2} />
-        <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
+        <div className="bg-canvas-0 rounded-lg px-6 py-4 sm:py-0">
           <div className="flex w-full flex-col py-2">
             <RichEditPost post={post} canEdit={canEdit} />
           </div>
         </div>
 
         <Spacer h={4} />
-        <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
+        <div className="rounded-lg px-6 py-4 sm:py-0">
           <PostCommentsActivity post={post} comments={comments} tips={tips} />
         </div>
       </div>

@@ -1,6 +1,5 @@
 import { UserAddIcon, UserRemoveIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -8,19 +7,19 @@ import { TextButton } from 'web/components/buttons/text-button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
-import { groupButtonClass } from 'web/pages/group/[...slugs]'
-import { GroupLinkItem } from 'web/pages/groups'
-import { Button } from '../buttons/button'
 import {
   getMemberGroups,
   getMemberGroupsCount,
   SearchGroupInfo,
 } from 'web/lib/supabase/groups'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { groupButtonClass } from 'web/pages/group/[...slugs]'
+import { GroupLinkItem } from 'web/pages/groups'
+import { Button } from '../buttons/button'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -65,14 +64,14 @@ function GroupsDialog(props: {
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
-      <Col className="rounded bg-white p-6">
+      <Col className="bg-canvas-0 rounded p-6">
         <div className="p-2 pb-1 text-xl">{user.name}</div>
-        <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
+        <div className="text-ink-500 p-2 pt-0 text-sm">@{user.username}</div>
         <Col className="gap-2">
           {groups === undefined ? (
             <LoadingIndicator />
           ) : groups.length === 0 ? (
-            <div className="text-gray-500">No groups yet...</div>
+            <div className="text-ink-500">No groups yet...</div>
           ) : (
             groups.map((group) => (
               <Row
@@ -99,7 +98,7 @@ function GroupsDialog(props: {
 }
 
 export function JoinOrLeaveGroupButton(props: {
-  group: Group | SearchGroupInfo
+  group: SearchGroupInfo
   isMember: boolean | undefined
   user: User | undefined | null
   className?: string
@@ -112,9 +111,6 @@ export function JoinOrLeaveGroupButton(props: {
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => setIsMember(props.isMember), [props.isMember])
 
-  if (!group.anyoneCanJoin) {
-    return <></>
-  }
   const unfollow = user
     ? withTracking(() => {
         leaveGroup(group.id, user.id)
@@ -146,7 +142,7 @@ export function JoinOrLeaveGroupButton(props: {
       <Button color="dark-gray" className={className} onClick={unfollow}>
         <Row className="gap-1">
           <UserRemoveIcon className="h-5 w-5" />
-          Unfollow
+          Leave
         </Row>
       </Button>
     )
@@ -163,7 +159,7 @@ export function JoinOrLeaveGroupButton(props: {
     <Button color="indigo" className={className} onClick={follow}>
       <Row className="gap-1">
         <UserAddIcon className="h-5 w-5" />
-        Follow
+        Join
       </Row>
     </Button>
   )

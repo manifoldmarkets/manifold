@@ -174,9 +174,9 @@ export default function ProfilePage(props: {
     <Page>
       <SEO title="Profile" description="User profile settings" url="/profile" />
 
-      <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
+      <Col className="bg-canvas-0 max-w-lg rounded p-6 shadow-md sm:mx-auto">
         <Row className="items-start justify-between">
-          <Title className="!mt-0" text="Edit Profile" />
+          <Title>Edit Profile</Title>
           <Link
             href={`/${user.username}`}
             className={buttonClass('md', 'green')}
@@ -194,7 +194,7 @@ export default function ProfilePage(props: {
                   src={avatarUrl}
                   width={80}
                   height={80}
-                  className="flex items-center justify-center rounded-full bg-gray-400"
+                  className="bg-ink-400 flex items-center justify-center rounded-full"
                 />
                 <input type="file" name="file" onChange={fileHandler} />
               </>
@@ -268,7 +268,7 @@ export default function ProfilePage(props: {
 
           <div>
             <label className="mb-1 block">Email</label>
-            <div className="text-gray-500">{privateUser.email ?? '\u00a0'}</div>
+            <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
           </div>
 
           <div>
@@ -296,7 +296,7 @@ export default function ProfilePage(props: {
                 }}
               >
                 <Col>
-                  <Title text={'Are you sure?'} />
+                  <Title children={'Are you sure?'} />
                   <div>
                     Updating your API key will break any existing applications
                     connected to your account, <b>including the Twitch bot</b>.
@@ -354,7 +354,7 @@ export default function ProfilePage(props: {
                 }}
               >
                 <Col>
-                  <Title text={'Are you sure?'} />
+                  <Title children={'Are you sure?'} />
                   <div>
                     Deleting your account means you will no longer be able to
                     use your account. You will lose access to all of your data.

@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useState } from 'react'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type MultiUserLinkInfo = {
   name: string
@@ -24,7 +25,7 @@ export function MultiUserTransactionLink(props: {
     <span>
       <button
         className={
-          'bg-transparent font-semibold transition-colors hover:text-indigo-500'
+          'hover:text-primary-500 bg-transparent font-semibold transition-colors'
         }
         onClick={(e) => {
           e.stopPropagation()
@@ -44,19 +45,20 @@ export function MultiUserTransactionLink(props: {
 }
 
 export function MultiUserTransactionModal(props: {
-  userInfos: MultiUserLinkInfo[]
+  userInfos: MultiUserLinkInfo[] | null
   modalLabel: string
   open: boolean
   setOpen: (open: boolean) => void
   short?: boolean
 }) {
   const { userInfos, modalLabel, open, setOpen, short } = props
-  const hasUsers = userInfos.length > 0
   return (
     <Modal open={open} setOpen={setOpen} size={'sm'}>
-      <Col className="relative items-start gap-4 rounded-md bg-white p-6">
+      <Col className="bg-canvas-0 text-ink-1000 relative items-start gap-4 rounded-md p-6">
         <span className={'sticky top-0 text-xl'}>{modalLabel}</span>
-        {hasUsers && (
+        {userInfos == null ? (
+          <LoadingIndicator />
+        ) : userInfos.length > 0 ? (
           <Col className="max-h-96 w-full gap-4 overflow-y-auto">
             {userInfos.map((userInfo) => (
               <Row
@@ -81,8 +83,9 @@ export function MultiUserTransactionModal(props: {
               </Row>
             ))}
           </Col>
+        ) : (
+          <div>No one yet...</div>
         )}
-        {!hasUsers && <div>No one yet...</div>}
       </Col>
     </Modal>
   )

@@ -23,8 +23,8 @@ export function LiquidityModal(props: {
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
-      <Col className="gap-2.5 rounded  bg-white p-4 pb-8 sm:gap-4">
-        <Title className="!mt-0 !mb-2" text="💧 Add liquidity" />
+      <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
+        <Title className="!mb-2" children="💧 Add liquidity" />
 
         <div>Total liquidity subsidies: {formatMoney(totalLiquidity)}</div>
         <AddLiquidityPanel contract={contract as CPMMContract} />
@@ -79,10 +79,10 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
 
   return (
     <>
-      <div className="mb-4 text-gray-500">
+      <div className="text-ink-500 mb-4">
         Contribute your {ENV_CONFIG.moneyMoniker} to make this market more
         accurate by subsidizing trading.{' '}
-        <InfoTooltip text="Liquidity is how much money traders can make if they're right. The more traders can earn, the greater the incentive to find the correct probability." />
+        <InfoTooltip text="Liquidity is how much money traders can make if they're right. The higher the stakes for traders, the greater the incentive to find the correct probability." />
       </div>
 
       <Row>
@@ -94,7 +94,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
           disabled={isLoading}
           inputClassName="w-28 mr-4"
         />
-        <Button size="md" color="blue" onClick={submit} disabled={isLoading}>
+        <Button onClick={submit} disabled={isLoading}>
           Add
         </Button>
       </Row>

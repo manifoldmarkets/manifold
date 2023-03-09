@@ -77,7 +77,8 @@ export const generateReact = (doc: JSONContent, extensions: Extensions) => {
     }
     const extension = exts[content.type]
     if (!extension) {
-      throw new Error(`No extension for type "${content.type}" exists.`)
+      return ''
+      // throw new Error(`No extension for type "${content.type}" exists.`)
     }
 
     let children: ReactNode = content.content?.map(recurse) ?? content.text

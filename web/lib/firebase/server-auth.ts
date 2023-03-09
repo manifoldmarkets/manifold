@@ -51,6 +51,12 @@ export const redirectIfLoggedIn = <P extends { [k: string]: any }>(
         return props
       }
     } else {
+      const { nativePlatform } = ctx.query ?? {}
+      if (nativePlatform) {
+        const nativeDest = '/sign-in-waiting'
+        console.debug(`Redirecting native platform to ${nativeDest}.`)
+        return { redirect: { destination: nativeDest, permanent: false } }
+      }
       console.debug(`Redirecting to ${dest}.`)
       return { redirect: { destination: dest, permanent: false } }
     }

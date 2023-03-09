@@ -8,6 +8,8 @@ import clsx from 'clsx'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { VisibilityObserver } from '../widgets/visibility-observer'
 import Masonry from 'react-masonry-css'
+import { Group } from 'common/group'
+import { groupRoleType } from '../groups/group-member-modal'
 
 export function ContractsGrid(props: {
   contracts: Contract[] | undefined
@@ -19,11 +21,15 @@ export function ContractsGrid(props: {
     hideGroupLink?: boolean
     noLinkAvatar?: boolean
   }
-  highlightCards?: string[]
+  highlightContractIds?: string[]
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
   showImageOnTopContract?: boolean
   trackCardViews?: boolean
+  fromGroupProps?: {
+    group: Group
+    userRole: groupRoleType | null
+  }
 }) {
   const {
     contracts,
@@ -31,10 +37,11 @@ export function ContractsGrid(props: {
     loadMore,
     onContractClick,
     cardUIOptions,
-    highlightCards,
+    highlightContractIds,
     trackingPostfix,
     showImageOnTopContract,
     trackCardViews,
+    fromGroupProps,
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
   const onVisibilityUpdated = useCallback(
@@ -52,9 +59,9 @@ export function ContractsGrid(props: {
 
   if (contracts.length === 0) {
     return (
-      <p className="mx-2 text-gray-500">
+      <p className="text-ink-500 mx-2">
         No markets found. Why not{' '}
-        <SiteLink href="/create" className="font-bold text-gray-700">
+        <SiteLink href="/create" className="text-ink-700 font-bold">
           create one?
         </SiteLink>
       </p>
@@ -93,10 +100,11 @@ export function ContractsGrid(props: {
             trackingPostfix={trackingPostfix}
             className={clsx(
               'mb-4 transition-all',
-              highlightCards?.includes(contract.id) &&
-                'bg-gradient-to-b from-indigo-50 via-white to-white outline outline-2 outline-indigo-400'
+              highlightContractIds?.includes(contract.id) &&
+                'via-ink-0to-ink-0bg-gradient-to-b from-primary-50 outline-primary-400 outline outline-2'
             )}
             trackCardViews={trackCardViews}
+            fromGroupProps={fromGroupProps}
           >
             {contract.mechanism === 'cpmm-1' ? (
               <ContractMetricsFooter contract={contract} />

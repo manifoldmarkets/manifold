@@ -4,6 +4,7 @@ import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Col } from './col'
 
 export function Page(props: {
   rightSidebar?: ReactNode
@@ -11,20 +12,30 @@ export function Page(props: {
   children?: ReactNode
   logoSubheading?: string
   touchesTop?: boolean
+  hideSidebar?: boolean
+  maxWidth?: string
 }) {
-  const { children, rightSidebar, className, logoSubheading, touchesTop } =
-    props
+  const {
+    children,
+    rightSidebar,
+    className,
+    logoSubheading,
+    touchesTop,
+    hideSidebar,
+    maxWidth,
+  } = props
 
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
   const TOAST_BOTTOM_PADDING = isMobile ? 70 : 20
   return (
     <>
-      <div
+      <Col
         className={clsx(
           className,
           bottomBarPadding,
-          'mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:max-w-7xl xl:gap-x-8'
+          'text-ink-1000 mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:gap-x-8',
+          maxWidth ? maxWidth : 'xl:max-w-7xl'
         )}
       >
         <Toaster
@@ -33,16 +44,25 @@ export function Page(props: {
             bottom: TOAST_BOTTOM_PADDING,
           }}
         />
-        <Sidebar
-          logoSubheading={logoSubheading}
-          className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex "
-        />
+        {hideSidebar ? (
+          <div className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex" />
+        ) : (
+          <Sidebar
+            logoSubheading={logoSubheading}
+            className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex"
+          />
+        )}
         {/* put right sidebar below main content on small or medium screens */}
-        <div className="lg:col-span-8 xl:contents">
+        <Col className="flex-1 lg:col-span-8 xl:contents">
           <main
             className={clsx(
+              'flex flex-1 flex-col',
               touchesTop ? '' : 'lg:mt-6',
-              rightSidebar ? 'col-span-7' : 'col-span-8'
+              maxWidth
+                ? 'col-span-10'
+                : rightSidebar
+                ? 'col-span-7'
+                : 'col-span-8'
             )}
           >
             {children}
@@ -54,8 +74,8 @@ export function Page(props: {
               </div>
             </aside>
           )}
-        </div>
-      </div>
+        </Col>
+      </Col>
       <BottomNavBar />
     </>
   )

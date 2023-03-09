@@ -1,4 +1,4 @@
-import { IconButton } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import {
   Contract,
   followContract,
@@ -13,8 +13,8 @@ import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { useState } from 'react'
-import { Col } from 'web/components/layout/col'
 import { Tooltip } from '../widgets/tooltip'
+import { Row } from 'web/components/layout/row'
 
 export const FollowMarketButton = (props: {
   contract: Contract
@@ -33,8 +33,8 @@ export const FollowMarketButton = (props: {
       noTap
       noFade
     >
-      <IconButton
-        size="2xs"
+      <Button
+        size="sm"
         onClick={async () => {
           if (!user) return firebaseLogin()
           if (followers?.includes(user.id)) {
@@ -51,15 +51,15 @@ export const FollowMarketButton = (props: {
         }}
       >
         {watching ? (
-          <Col className={'items-center gap-x-2 sm:flex-row'}>
+          <Row className={'items-center gap-x-2 sm:flex-row'}>
             <EyeOffIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-            {/* Unwatch */}
-          </Col>
+            Unfollow
+          </Row>
         ) : (
-          <Col className={'items-center gap-x-2 sm:flex-row'}>
+          <Row className={'items-center gap-x-2 sm:flex-row'}>
             <EyeIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-            {/* Watch */}
-          </Col>
+            Follow
+          </Row>
         )}
         <WatchMarketModal
           open={open}
@@ -68,7 +68,7 @@ export const FollowMarketButton = (props: {
             followers?.includes(user?.id ?? 'nope') ? 'watched' : 'unwatched'
           } a question!`}
         />
-      </IconButton>
+      </Button>
     </Tooltip>
   )
 }

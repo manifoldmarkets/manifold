@@ -1,7 +1,6 @@
 import { Row } from 'web/components/layout/row'
 import { ArrowLeftIcon } from '@heroicons/react/solid'
 import React, { useEffect } from 'react'
-import { Button } from 'web/components/buttons/button'
 import { useRouter } from 'next/router'
 
 export function BackRow() {
@@ -26,15 +25,16 @@ export function BackRow() {
 
   if (!canGoBack) return <div />
   return (
-    <header className="top-2 w-full border-b border-gray-200 lg:hidden">
-      <Row className="items-center justify-between gap-2 bg-white">
+    <header className="border-ink-200 top-2 w-full border-b lg:hidden">
+      <Row className="bg-canvas-0 items-center justify-between gap-2">
         <div className="flex flex-1">
-          <Button color={'gray-white'} className={''} onClick={router.back}>
-            <Row className={'items-center text-xs text-indigo-700'}>
-              <ArrowLeftIcon className="mr-2 h-5 w-5" aria-hidden="true" />
-              Back
-            </Row>
-          </Button>
+          <button
+            className="hover:bg-ink-200 text-primary-700 flex px-3 py-2 text-sm "
+            onClick={router.back}
+          >
+            <ArrowLeftIcon className="mr-2 h-5 w-5" aria-hidden />
+            Back
+          </button>
         </div>
       </Row>
     </header>

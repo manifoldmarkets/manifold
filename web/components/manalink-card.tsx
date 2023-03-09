@@ -7,9 +7,9 @@ import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Claim, Manalink } from 'common/manalink'
-import { ShareIconButton } from './buttons/share-icon-button'
 import { useUserById } from 'web/hooks/use-user'
 import { IconButton } from './buttons/button'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 
 export type ManalinkInfo = {
   expiresTime: number | null
@@ -52,7 +52,7 @@ export function ManalinkCard(props: {
           getManalinkGradient(info)
         )}
       >
-        <Col className="mx-4 mt-2 -mb-4 text-right text-sm text-gray-100">
+        <Col className="text-ink-100 mx-4 mt-2 -mb-4 text-right text-sm">
           <div>
             {maxUses != null
               ? `${maxUses - uses}/${maxUses} uses left`
@@ -74,10 +74,10 @@ export function ManalinkCard(props: {
           )}
           src="/logo-white.svg"
         />
-        <Row className="rounded-b-lg bg-white p-4">
+        <Row className="bg-canvas-0 rounded-b-lg p-4">
           <div
             className={clsx(
-              'mb-1 text-xl text-indigo-500',
+              'text-primary-500 mb-1 text-xl',
               getManalinkAmountColor(info)
             )}
           >
@@ -85,7 +85,7 @@ export function ManalinkCard(props: {
           </div>
         </Row>
       </Col>
-      <div className="text-md mt-2 mb-4 text-gray-500">{message}</div>
+      <div className="text-md text-ink-500 mt-2 mb-4">{message}</div>
     </Col>
   )
 }
@@ -107,7 +107,7 @@ export function ManalinkCardFromView(props: {
         className={clsx(
           'group z-10 rounded-lg drop-shadow-sm transition-all hover:drop-shadow-lg',
           className,
-          link.slug === highlightedSlug ? 'shadow-md shadow-indigo-400' : ''
+          link.slug === highlightedSlug ? 'shadow-primary-400 shadow-md' : ''
         )}
       >
         <Col
@@ -119,11 +119,11 @@ export function ManalinkCardFromView(props: {
         >
           {showDetails && (
             <ClaimsList
-              className="absolute h-full w-full bg-white opacity-90"
+              className="bg-canvas-0 absolute h-full w-full opacity-90"
               link={link}
             />
           )}
-          <Col className="mx-4 mt-2 -mb-4 text-right text-xs text-gray-100">
+          <Col className="text-ink-100 mx-4 mt-2 -mb-4 text-right text-xs">
             <div>
               {maxUses != null
                 ? `${maxUses - claims.length}/${maxUses} uses left`
@@ -142,7 +142,7 @@ export function ManalinkCardFromView(props: {
             src="/logo-white.svg"
           />
         </Col>
-        <Row className="relative w-full rounded-b-lg bg-white px-4 py-2 align-middle text-lg">
+        <Row className="bg-canvas-0 relative w-full rounded-b-lg px-4 py-2 align-middle text-lg">
           <div
             className={clsx(
               'my-auto mb-1 w-full',
@@ -156,22 +156,24 @@ export function ManalinkCardFromView(props: {
             <QrcodeIcon className="h-6 w-6" />
           </IconButton>
 
-          <ShareIconButton
-            toastClassName={'-left-48 min-w-[250%]'}
-            copyPayload={getManalinkUrl(link.slug)}
+          <CopyLinkButton
+            url={getManalinkUrl(link.slug)}
+            linkIconOnlyProps={{
+              tooltip: 'Copy link to Manalink',
+            }}
           />
           <IconButton
             size="xs"
             onClick={() => setShowDetails(!showDetails)}
             className={clsx(
-              showDetails ? ' text-indigo-600 hover:text-indigo-700' : ''
+              showDetails ? ' text-primary-600 hover:text-primary-700' : ''
             )}
           >
             <DotsHorizontalIcon className="h-5 w-5" />
           </IconButton>
         </Row>
       </Col>
-      <div className="mt-2 mb-4 text-xs text-gray-500 md:text-sm">
+      <div className="text-ink-500 mt-2 mb-4 text-xs md:text-sm">
         {message || ''}
       </div>
     </Col>
@@ -213,18 +215,18 @@ function Claim(props: { claim: Claim }) {
   return (
     <Row className="my-1 gap-2 text-xs">
       <div>{who?.name || 'Loading...'}</div>
-      <div className="text-gray-500">{fromNow(claim.claimedTime)}</div>
+      <div className="text-ink-500">{fromNow(claim.claimedTime)}</div>
     </Row>
   )
 }
 
 function getManalinkGradient(info: ManalinkInfo) {
   if (linkClaimed(info)) {
-    return 'from-gray-200 via-gray-400 to-gray-600'
+    return 'from-ink-200 via-ink-400 to-ink-600'
   }
   const { amount } = info
   if (amount < 200) {
-    return 'from-indigo-200 via-indigo-500 to-indigo-800'
+    return 'from-primary-200 via-primary-500 to-primary-800'
   } else if (amount >= 200 && amount < 500) {
     return 'from-fuchsia-200 via-fuchsia-500 to-fuchsia-800'
   } else if (amount >= 500 && amount < 1000) {
@@ -236,11 +238,11 @@ function getManalinkGradient(info: ManalinkInfo) {
 
 function getManalinkAmountColor(info: ManalinkInfo) {
   if (linkClaimed(info)) {
-    return 'text-gray-500'
+    return 'text-ink-500'
   }
   const { amount } = info
   if (amount < 200) {
-    return 'text-indigo-500'
+    return 'text-primary-500'
   } else if (amount >= 200 && amount < 500) {
     return 'text-fuchsia-600'
   } else if (amount >= 500 && amount < 1000) {

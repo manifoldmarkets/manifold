@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
@@ -7,13 +8,13 @@ import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
 import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
-import { useMemberGroups } from 'web/hooks/use-group'
 import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getGroupBySlug, getGroupContractIds } from 'web/lib/firebase/groups'
+import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -27,17 +28,26 @@ import { UserLink } from './widgets/user-link'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie']
 
-export function ActivityLog(props: { count: number; showPills: boolean }) {
+export function ActivityLog(props: {
+  count: number
+  showPills: boolean
+  className?: string
+}) {
+  const { count, showPills, className } = props
+
   const privateUser = usePrivateUser()
   const user = useUser()
+  const [shouldBlockDestiny, setShouldBlockDestiny] = useState(true)
 
-  const memberGroups = useMemberGroups(user?.id)
-  const shouldBlockDestiny =
-    // If signed out, or you don't follow destiny group, block it!
-    !(
-      memberGroups &&
-      memberGroups.some((g) => DESTINY_GROUP_SLUGS.includes(g.slug))
-    )
+  useEffect(() => {
+    if (user) {
+      getShouldBlockDestiny(user.id).then((result) =>
+        setShouldBlockDestiny(result)
+      )
+    } else if (!shouldBlockDestiny) {
+      setShouldBlockDestiny(true)
+    }
+  }, [user?.id])
 
   const [blockedGroupContractIds, setBlockedGroupContractIds] =
     usePersistentState<string[] | undefined>(undefined, {
@@ -64,7 +74,6 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
   )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
-  const { count, showPills } = props
   const rawBets = useLiveBets(count * 3 + 20, {
     filterRedemptions: true,
     filterAntes: true,
@@ -144,60 +153,71 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
     items,
   }))
 
-  if (!allLoaded) return <LoadingIndicator />
-
   return (
-    <Col className="gap-4">
+    <Col className={clsx('gap-4', className)}>
       {showPills && (
-        <Row className="gap-2">
-          <PillButton selected={pill === 'all'} onSelect={() => setPill('all')}>
+        <Row className="mx-2 gap-2 sm:mx-0">
+          <PillButton
+            selected={pill === 'all'}
+            onSelect={() => setPill('all')}
+            xs
+          >
             All
           </PillButton>
           <PillButton
             selected={pill === 'markets'}
             onSelect={() => setPill('markets')}
+            xs
           >
             Markets
           </PillButton>
           <PillButton
             selected={pill === 'comments'}
             onSelect={() => setPill('comments')}
+            xs
           >
             Comments
           </PillButton>
           <PillButton
             selected={pill === 'trades'}
             onSelect={() => setPill('trades')}
+            xs
           >
             Trades
           </PillButton>
         </Row>
       )}
-      <Col className="divide-y border">
-        {groups.map(({ contractId, items }) => {
-          const contract = contractsById[contractId] as Contract
-          return (
-            <Col key={contractId} className="gap-2 bg-white px-6 py-4 ">
-              <ContractMention contract={contract} />
-              {items.map((item) =>
-                'amount' in item ? (
-                  <FeedBet
-                    className="!pt-0"
-                    key={item.id}
-                    contract={contract}
-                    bet={item}
-                    avatarSize="xs"
-                  />
-                ) : 'question' in item ? (
-                  <MarketCreatedLog key={item.id} contract={item} />
-                ) : (
-                  <CommentLog key={item.id} comment={item} />
-                )
-              )}
-            </Col>
-          )
-        })}
-      </Col>
+      {!allLoaded && <LoadingIndicator />}
+      {allLoaded && (
+        <Col className="border-ink-300 divide-ink-300 divide-y-[0.5px] rounded-sm border-[0.5px]">
+          {groups.map(({ contractId, items }) => {
+            const contract = contractsById[contractId] as Contract
+            return (
+              <Col
+                key={contractId}
+                className="bg-canvas-0 focus:bg-canvas-100 lg:hover:bg-canvas-100 gap-2 px-4 py-3"
+              >
+                <ContractMention contract={contract} />
+                {items.map((item) =>
+                  'amount' in item ? (
+                    <FeedBet
+                      className="!pt-0"
+                      key={item.id}
+                      contract={contract}
+                      bet={item}
+                      avatarSize="xs"
+                    />
+                  ) : 'question' in item ? (
+                    <MarketCreatedLog key={item.id} contract={item} />
+                  ) : (
+                    <CommentLog key={item.id} comment={item} />
+                  )
+                )}
+              </Col>
+            )
+          })}
+        </Col>
+      )}
     </Col>
   )
 }
@@ -206,7 +226,7 @@ export const MarketCreatedLog = (props: { contract: Contract }) => {
     props.contract
 
   return (
-    <Row className="items-center gap-2 text-sm text-gray-500">
+    <Row className="text-ink-500 items-center gap-2 text-sm">
       <Avatar
         avatarUrl={creatorAvatarUrl}
         username={creatorUsername}
@@ -214,7 +234,7 @@ export const MarketCreatedLog = (props: { contract: Contract }) => {
       />
       <UserLink name={creatorName} username={creatorUsername} />
       <Row>
-        <div className="text-gray-400">created</div>
+        <div className="text-ink-400">created</div>
         <RelativeTimestamp time={createdTime} />
       </Row>
     </Row>
@@ -232,7 +252,7 @@ export const CommentLog = memo(function FeedComment(props: {
     <Col>
       <Row
         id={comment.id}
-        className="mb-1 items-center gap-2 text-sm text-gray-500"
+        className="text-ink-500 mb-1 items-center gap-2 text-sm"
       >
         <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
         <div>

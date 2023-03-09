@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
@@ -19,7 +20,7 @@ export function BetSignUpPrompt(props: {
       size={size}
       color="gradient"
     >
-      {label ?? 'Sign up to predict!'}
+      {label ?? 'Sign up to trade'}
     </Button>
   ) : null
 }

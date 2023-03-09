@@ -2,7 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { promisify } from 'util'
 import { pipeline } from 'stream'
 import { getFunctionUrl } from 'common/api'
-import fetch, { Headers, Response } from 'node-fetch'
 
 function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
   const result = new Headers()
@@ -36,16 +35,18 @@ export const fetchBackend = (req: NextApiRequest, name: string) => {
   const url = getFunctionUrl(name)
   const headers = getProxiedRequestHeaders(req, [
     'Authorization',
-    'Content-Length',
     'Content-Type',
     'Origin',
   ])
   const hasBody = req.method != 'HEAD' && req.method != 'GET'
-  const body = req.body ? JSON.stringify(req.body) : req
+  const body = req.body
+    ? JSON.stringify(req.body)
+    : (req as unknown as ReadableStream)
   const opts = {
     headers,
     method: req.method,
-    body: hasBody ? body : undefined,
+    duplex: 'half',
+    body: hasBody ? body : null,
   }
   return fetch(url, opts)
 }
@@ -63,6 +64,9 @@ export const forwardResponse = async (
   ])
   res.writeHead(backendRes.status, headers)
   if (backendRes.body != null) {
-    return await promisify(pipeline)(backendRes.body, res)
+    return await promisify(pipeline)(
+      backendRes.body as unknown as NodeJS.ReadableStream,
+      res
+    )
   }
 }

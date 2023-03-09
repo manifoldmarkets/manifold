@@ -1,11 +1,10 @@
-import { ENV_CONFIG } from 'common/envs/constants'
-import { InfoBox } from './widgets/info-box'
+import { SparklesIcon } from '@heroicons/react/solid'
+import { STARTING_BALANCE } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export const PlayMoneyDisclaimer = () => (
-  <InfoBox
-    title={`Play-money predictions`}
-    className="mt-4"
-    text={`Manifold Markets lets you predict on any question using mana (${ENV_CONFIG.moneyMoniker}),
-     our play-money currency. Sign up for free!`}
-  />
+  <div className="text-ink-500 my-1 flex items-start justify-center gap-1.5 px-2 text-sm">
+    <SparklesIcon className="mt-0.5 h-4 w-4 shrink-0" />
+    Get {formatMoney(STARTING_BALANCE)} play money to bet on the answer
+  </div>
 )

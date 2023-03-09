@@ -1,7 +1,6 @@
 import React, { memo, useEffect, useRef, useState } from 'react'
 import { Editor } from '@tiptap/react'
 import { useRouter } from 'next/router'
-import { sum } from 'lodash'
 import clsx from 'clsx'
 
 import { ContractComment } from 'common/comment'
@@ -19,7 +18,6 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { createCommentOnContract } from 'web/lib/firebase/comments'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useEvent } from 'web/hooks/use-event'
 import { Content } from '../widgets/editor'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -31,24 +29,24 @@ import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { toast } from 'react-hot-toast'
 import LinkIcon from 'web/lib/icons/link-icon'
-import { FlagIcon } from '@heroicons/react/outline'
+import { EyeOffIcon, FlagIcon } from '@heroicons/react/outline'
 import { LikeButton } from 'web/components/contract/like-button'
 import { richTextToString } from 'common/util/parse'
 import { buildArray } from 'common/util/array'
+import { hideComment } from 'web/lib/firebase/api'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export type ReplyTo = { id: string; username: string }
 
 export function FeedCommentThread(props: {
   contract: Contract
   threadComments: ContractComment[]
-  tips: CommentTipMap
   parentComment: ContractComment
 }) {
-  const { contract, threadComments, tips, parentComment } = props
+  const { contract, threadComments, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
   const [seeReplies, setSeeReplies] = useState(true)
   const [highlightedId, setHighlightedId] = useState<string>()
-  const user = useUser()
 
   const router = useRouter()
   useEffect(() => {
@@ -69,14 +67,12 @@ export function FeedCommentThread(props: {
   })
 
   return (
-    <Col className="relative w-full items-stretch gap-3 pb-2">
+    <Col className="w-full items-stretch gap-3 pb-2">
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
         comment={parentComment}
         highlighted={highlightedId === parentComment.id}
-        myTip={user ? tips[parentComment.id]?.[user.id] : undefined}
-        totalTip={sum(Object.values(tips[parentComment.id] ?? {}))}
         showLike={true}
         seeReplies={seeReplies}
         numComments={threadComments.length}
@@ -90,8 +86,6 @@ export function FeedCommentThread(props: {
             contract={contract}
             comment={comment}
             highlighted={highlightedId === comment.id}
-            myTip={user ? tips[comment.id]?.[user.id] : undefined}
-            totalTip={sum(Object.values(tips[comment.id] ?? {}))}
             showLike={true}
             onReplyClick={onReplyClick}
           />
@@ -115,8 +109,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   comment: ContractComment
   highlighted?: boolean
   showLike?: boolean
-  myTip?: number
-  totalTip?: number
   seeReplies: boolean
   numComments: number
   onReplyClick?: (comment: ContractComment) => void
@@ -126,15 +118,13 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     contract,
     comment,
     highlighted,
-    myTip,
-    totalTip,
     showLike,
     onReplyClick,
     onSeeReplyClick,
     seeReplies,
     numComments,
   } = props
-  const { text, content, userUsername, userAvatarUrl } = comment
+  const { userUsername, userAvatarUrl } = comment
   const commentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -151,16 +141,14 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       id={comment.id}
       className={clsx(
         commentKind,
-        'relative ml-3 gap-2',
-        highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
+        'gap-2',
+        highlighted ? 'bg-primary-50' : 'hover:bg-canvas-50'
       )}
     >
-      <Col className="-ml-3.5">
-        <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
-      </Col>
+      <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        <Content size="sm" content={content || text} />
+        <HideableContent comment={comment} />
         <Row className="justify-between">
           <ReplyToggle
             seeReplies={seeReplies}
@@ -171,8 +159,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
             onReplyClick={onReplyClick}
             comment={comment}
             showLike={showLike}
-            myTip={myTip}
-            totalTip={totalTip}
             contract={contract}
           />
         </Row>
@@ -181,18 +167,36 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   )
 })
 
+function HideableContent(props: { comment: ContractComment }) {
+  const { comment } = props
+  const { text, content } = comment
+  const [showHidden, setShowHidden] = useState(false)
+  return comment.hidden && !showHidden ? (
+    <div
+      className="hover text-ink-600 text-sm font-thin italic hover:cursor-pointer"
+      onClick={() => {
+        setShowHidden(!showHidden)
+      }}
+    >
+      Comment hidden
+    </div>
+  ) : (
+    <Content size="sm" className="mt-1 grow" content={content || text} />
+  )
+}
+
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
   comment: ContractComment
   showLike?: boolean
-  myTip?: number
-  totalTip?: number
   contract: Contract
 }) {
   const { onReplyClick, comment, showLike, contract } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
+  const isAdmin = useAdmin()
+  const isContractCreator = user?.id === contract.creatorId
 
   return (
     <Row className="grow items-center justify-end">
@@ -248,6 +252,18 @@ export function CommentActions(props: {
               if (user?.id !== comment.userId) setIsModalOpen(true)
               else toast.error(`You can't report your own comment`)
             },
+          },
+          (isAdmin || isContractCreator) && {
+            name: comment.hidden ? 'Unhide' : 'Hide',
+            icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
+            onClick: async () => {
+              const commentPath = `contracts/${contract.id}/comments/${comment.id}`
+              try {
+                await hideComment({ commentPath })
+              } catch (e: any) {
+                toast.error(`Error hiding comment: ${e}`)
+              }
+            },
           }
         )}
       />
@@ -260,20 +276,10 @@ export const FeedComment = memo(function FeedComment(props: {
   comment: ContractComment
   highlighted?: boolean
   showLike?: boolean
-  myTip?: number
-  totalTip?: number
   onReplyClick?: (comment: ContractComment) => void
 }) {
-  const {
-    contract,
-    comment,
-    highlighted,
-    myTip,
-    totalTip,
-    showLike,
-    onReplyClick,
-  } = props
-  const { text, content, userUsername, userAvatarUrl } = comment
+  const { contract, comment, highlighted, showLike, onReplyClick } = props
+  const { userUsername, userAvatarUrl } = comment
   const commentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -287,22 +293,18 @@ export const FeedComment = memo(function FeedComment(props: {
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'relative ml-12 gap-2 ',
-        highlighted ? 'bg-indigo-50' : 'hover:bg-gray-50'
+        'ml-9 gap-2 ',
+        highlighted ? 'bg-primary-50' : 'hover:bg-canvas-50'
       )}
     >
-      <Col className="-ml-3">
-        <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
-      </Col>
+      <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        <Content className="mt-2 grow" size="sm" content={content || text} />
+        <HideableContent comment={comment} />
         <CommentActions
           onReplyClick={onReplyClick}
           comment={comment}
           showLike={showLike}
-          myTip={myTip}
-          totalTip={totalTip}
           contract={contract}
         />
       </Col>
@@ -402,31 +404,29 @@ export function FeedCommentHeader(props: {
   }
   const shouldDisplayOutcome = betOutcome && !comment.answerOutcome
   return (
-    <Row>
-      <div className="mt-0.5 text-sm text-gray-600">
-        <UserLink username={userUsername} name={userName} />{' '}
-        <span className="text-gray-400">
-          <CommentStatus contract={contract} comment={comment} />
-          {bought} {money}
-          {shouldDisplayOutcome && (
-            <>
-              {' '}
-              of{' '}
-              <OutcomeLabel
-                outcome={betOutcome ? betOutcome : ''}
-                contract={contract}
-                truncate="short"
-              />
-            </>
-          )}
-        </span>
-        <CopyLinkDateTimeComponent
-          prefix={contract.creatorUsername}
-          slug={contract.slug}
-          createdTime={createdTime}
-          elementId={comment.id}
-        />
-      </div>
-    </Row>
+    <span className="text-ink-600 mt-0.5 text-sm">
+      <UserLink username={userUsername} name={userName} />
+      <span className="text-ink-400 ml-1">
+        <CommentStatus contract={contract} comment={comment} />
+        {bought} {money}
+        {shouldDisplayOutcome && (
+          <>
+            {' '}
+            of{' '}
+            <OutcomeLabel
+              outcome={betOutcome ? betOutcome : ''}
+              contract={contract}
+              truncate="short"
+            />
+          </>
+        )}
+      </span>
+      <CopyLinkDateTimeComponent
+        prefix={contract.creatorUsername}
+        slug={contract.slug}
+        createdTime={createdTime}
+        elementId={comment.id}
+      />
+    </span>
   )
 }

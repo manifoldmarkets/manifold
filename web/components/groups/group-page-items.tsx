@@ -1,60 +1,69 @@
 import { UserGroupIcon } from '@heroicons/react/solid'
 import { Group } from 'common/group'
-import {
-  default as ClosedDoorIcon,
-  default as OpenDoorIcon,
-} from 'web/lib/icons/open-door-icon'
+import { useState } from 'react'
+import { useRealtimeNumGroupMembers } from 'web/hooks/use-group-supabase'
+import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
+import { GroupMemberModalContent } from './group-member-modal'
+import GroupPrivacyStatusModal, {
+  AdminGroupPrivacyStatusModal,
+  PRIVACY_STATUS_ITEMS,
+} from './group-privacy-modal'
 
-export default function GroupOpenClosedWidget(props: { group: Group }) {
-  const { group } = props
+export default function GroupPrivacyStatusWidget(props: {
+  group: Group
+  canEdit: boolean
+}) {
+  const { group, canEdit } = props
+  const { icon, status } = PRIVACY_STATUS_ITEMS[group.privacyStatus]
+  const [open, setOpen] = useState(false)
   return (
-    <Row className="items-center gap-1 text-sm text-gray-700">
-      {group.anyoneCanJoin && (
-        <>
-          <OpenDoorIcon className="h-4 w-4" />
-          <span>Open</span>
-        </>
+    <>
+      <Row
+        className="text-ink-700 cursor-pointer items-center gap-1 text-sm"
+        onClick={() => setOpen(true)}
+      >
+        {icon}
+        <span>{status}</span>
+      </Row>
+      {!canEdit && (
+        <GroupPrivacyStatusModal
+          open={open}
+          setOpen={setOpen}
+          status={group.privacyStatus}
+        />
       )}
-      {!group.anyoneCanJoin && (
-        <>
-          <ClosedDoorIcon className="h-4 w-4" />
-          <span>Closed</span>
-        </>
+      {canEdit && (
+        <AdminGroupPrivacyStatusModal
+          open={open}
+          setOpen={setOpen}
+          group={group}
+        />
       )}
-    </Row>
+    </>
   )
 }
 
-//for larget groups, getting a too many outstanding requests error
-export function GroupMembersWidget(props: { group: Group }) {
-  const { group } = props
-  // const [open, setOpen] = useState(false)
-  //   const groupMembers = useMembers(group.id)
-  //   const groupMembersItems = groupMembers
-  //     .filter((groupMember) => groupMember)
-  //     .map((groupMember) => {
-  //       return {
-  //         name: groupMember.name,
-  //         username: groupMember.username,
-  //         avatarUrl: groupMember.avatarUrl,
-  //       }
-  //     })
+export function GroupMembersWidget(props: { group: Group; canEdit: boolean }) {
+  const { group, canEdit } = props
+  const [open, setOpen] = useState(false)
+  const numMembers = useRealtimeNumGroupMembers(group.id)
   return (
     <>
-      {/* <button onClick={() => setOpen(true)}> */}
-      <Row className="cursor-pointer items-center gap-1 text-sm text-gray-700">
-        <Row className="items-center gap-1 text-sm text-gray-700"></Row>
-        <UserGroupIcon className="h-4 w-4" />
-        <span>{group.totalMembers} members</span>
-      </Row>
-      {/* </button> */}
-      {/* <MultiUserTransactionModal
-        userInfos={groupMembersItems}
-        modalLabel="Members"
-        open={open}
-        setOpen={setOpen}
-      /> */}
+      <button onClick={() => setOpen(true)}>
+        <Row className="text-ink-700 cursor-pointer items-center gap-1 text-sm">
+          <Row className="text-ink-700 items-center gap-1 text-sm"></Row>
+          <UserGroupIcon className="h-4 w-4" />
+          <span>{numMembers} members</span>
+        </Row>
+      </button>
+      <Modal open={open} setOpen={setOpen}>
+        <GroupMemberModalContent
+          group={group}
+          canEdit={canEdit}
+          numMembers={numMembers}
+        />
+      </Modal>
     </>
   )
 }

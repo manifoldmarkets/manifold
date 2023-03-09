@@ -140,84 +140,90 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
           />
         ) : undefined}
         <div />
-        <Col
-          className={clsx(
-            'gap-4 sm:flex-row sm:items-end',
-            text ? 'justify-between' : 'self-end'
-          )}
-        >
-          {text && (
-            <>
-              <Col className="mt-1 gap-2">
-                <Row className="my-3 justify-between text-left text-sm text-gray-500">
-                  Bet Amount
-                  <span className={'sm:hidden'}>
-                    Balance: {formatMoney(user?.balance ?? 0)}
-                  </span>
-                </Row>{' '}
-                <BuyAmountInput
-                  amount={betAmount}
-                  onChange={setBetAmount}
-                  error={amountError}
-                  setError={setAmountError}
-                  minimumAmount={1}
-                  disabled={isSubmitting}
-                  showSlider={true}
-                />
-              </Col>
-              <Col className="gap-3">
-                <Row className="items-center justify-between text-sm">
-                  <div className="text-gray-500">Probability</div>
-                  <Row>
-                    <div>{formatPercent(0)}</div>
-                    <div className="mx-2">→</div>
-                    <div>{formatPercent(resultProb)}</div>
-                  </Row>
-                </Row>
-
-                <Row className="items-center justify-between gap-4 text-sm">
-                  <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-                    <div>
-                      Estimated <br /> payout if chosen
-                    </div>
-                    <InfoTooltip
-                      text={`Current payout for ${formatWithCommas(
-                        shares
-                      )} / ${formatWithCommas(shares)} shares`}
-                    />
-                  </Row>
-                  <Row className="flex-wrap items-end justify-end gap-2">
-                    <span className="whitespace-nowrap">
-                      {formatMoney(currentPayout)}
+        <Col className={'justify-between sm:flex-row'}>
+          <Row
+            className={clsx('w-full flex-wrap gap-4 sm:max-w-md sm:flex-col')}
+          >
+            {text && (
+              <>
+                <Col className="mt-1 w-full gap-2">
+                  <Row className="text-ink-500 my-3 justify-between text-left text-sm">
+                    Bet Amount
+                    <span className={'sm:hidden'}>
+                      Balance: {formatMoney(user?.balance ?? 0)}
                     </span>
-                    <span>(+{currentReturnPercent})</span>
+                  </Row>{' '}
+                  <BuyAmountInput
+                    inputClassName={'w-32'}
+                    amount={betAmount}
+                    onChange={setBetAmount}
+                    error={amountError}
+                    setError={setAmountError}
+                    minimumAmount={1}
+                    disabled={isSubmitting}
+                    sliderOptions={{ show: true, wrap: false }}
+                  />
+                </Col>
+                <Col className="w-full gap-3 sm:max-w-md">
+                  <Row className="items-center justify-between text-sm">
+                    <div className="text-ink-500">Probability</div>
+                    <Row>
+                      <div>{formatPercent(0)}</div>
+                      <div className="mx-2">→</div>
+                      <div>{formatPercent(resultProb)}</div>
+                    </Row>
                   </Row>
-                </Row>
-              </Col>
-            </>
-          )}
-          {user ? (
-            <Button
-              color="green"
-              size="lg"
-              loading={isSubmitting}
-              disabled={!canSubmit}
-              onClick={withTracking(submitAnswer, 'submit answer')}
-            >
-              Submit
-            </Button>
-          ) : (
-            text && (
+
+                  <Row className="items-center justify-between gap-4 text-sm">
+                    <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
+                      <div>
+                        Estimated <br /> payout if chosen
+                      </div>
+                      <InfoTooltip
+                        text={`Current payout for ${formatWithCommas(
+                          shares
+                        )} / ${formatWithCommas(shares)} shares`}
+                      />
+                    </Row>
+                    <Row className="flex-wrap items-end justify-end gap-2">
+                      <span className="whitespace-nowrap">
+                        {formatMoney(currentPayout)}
+                      </span>
+                      <span>(+{currentReturnPercent})</span>
+                    </Row>
+                  </Row>
+                </Col>
+              </>
+            )}
+          </Row>
+          <Row
+            className={
+              'mt-3 justify-end pl-2 sm:mt-0 sm:min-w-[10rem] sm:flex-col'
+            }
+          >
+            {user ? (
               <Button
                 color="green"
                 size="lg"
-                className="self-end whitespace-nowrap "
-                onClick={withTracking(firebaseLogin, 'answer panel sign in')}
+                loading={isSubmitting}
+                disabled={!canSubmit}
+                onClick={withTracking(submitAnswer, 'submit answer')}
               >
-                Add my answer
+                Submit
               </Button>
-            )
-          )}
+            ) : (
+              text && (
+                <Button
+                  color="green"
+                  size="lg"
+                  className="self-end whitespace-nowrap "
+                  onClick={withTracking(firebaseLogin, 'answer panel sign in')}
+                >
+                  Add my answer
+                </Button>
+              )
+            )}
+          </Row>
         </Col>
       </Col>
     </Col>

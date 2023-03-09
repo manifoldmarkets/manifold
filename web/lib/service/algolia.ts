@@ -26,6 +26,7 @@ export const searchContracts = async (query: string, limit: number) => {
   const { hits } = await searchIndex.search(query, {
     hitsPerPage: limit,
     advancedSyntax: true,
+    facetFilters: ['visibility:public'],
   })
   return hits as any as Contract[]
 }

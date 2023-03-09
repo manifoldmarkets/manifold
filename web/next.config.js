@@ -5,7 +5,6 @@ const ABOUT_PAGE_URL = 'https://help.manifold.markets/'
 /** @type {import('next').NextConfig} */
 module.exports = {
   productionBrowserSourceMaps: true,
-  staticPageGenerationTimeout: 600, // e.g. stats page
   reactStrictMode: true,
   optimizeFonts: false,
   modularizeImports: {
@@ -20,9 +19,9 @@ module.exports = {
       transform: 'lodash/{{member}}',
     },
   },
+  transpilePackages: ['common'],
   experimental: {
     scrollRestoration: true,
-    externalDir: true,
   },
   images: {
     dangerouslyAllowSVG: true,
@@ -66,6 +65,13 @@ module.exports = {
         destination: '/terms.html',
         permanent: true,
       },
+      {
+        source: '/umami',
+        destination:
+          'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets',
+        permanent: false,
+      },
+      // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },
 }

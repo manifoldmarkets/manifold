@@ -121,17 +121,17 @@ export function AnswerBetPanel(props: {
 
         {!isModal && (
           <button
-            className="rounded-full hover:bg-gray-200"
+            className="hover:bg-ink-200 rounded-full"
             onClick={closePanel}
           >
             <XIcon
-              className="mx-auto h-8 w-8 text-gray-500"
+              className="text-ink-500 mx-auto h-8 w-8"
               aria-hidden="true"
             />
           </button>
         )}
       </Row>
-      <Row className="my-3 justify-between text-left text-sm text-gray-500">
+      <Row className="text-ink-500 my-3 justify-between text-left text-sm">
         Amount
         <span>Balance: {formatMoney(user?.balance ?? 0)}</span>
       </Row>
@@ -143,12 +143,12 @@ export function AnswerBetPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        showSlider={true}
+        sliderOptions={{ show: true, wrap: false }}
       />
 
       <Col className="mt-8 w-full gap-3">
         <Row className="items-center justify-between text-sm">
-          <div className="text-gray-500">Probability</div>
+          <div className="text-ink-500">Probability</div>
           <Row>
             <div>{formatPercent(initialProb)}</div>
             <div className="mx-2">→</div>
@@ -157,7 +157,7 @@ export function AnswerBetPanel(props: {
         </Row>
 
         <Row className="items-center justify-between gap-2 text-sm">
-          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+          <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
             {contract.mechanism === 'dpm-2' && shares !== undefined ? (
               <>
                 <div>

@@ -18,7 +18,7 @@ const notification_base_style =
   'relative cursor-pointer text-sm bg-inherit rounded-lg transition-colors'
 export const NESTED_NOTIFICATION_STYLE = clsx(
   notification_base_style,
-  'hover:bg-indigo-50 p-2'
+  'hover:bg-primary-50 p-2'
 )
 export const PARENT_NOTIFICATION_STYLE = clsx(
   notification_base_style,
@@ -26,7 +26,7 @@ export const PARENT_NOTIFICATION_STYLE = clsx(
 )
 export const NOTIFICATION_STYLE = clsx(
   notification_base_style,
-  'p-2 hover:bg-indigo-50'
+  'p-2 hover:bg-primary-50'
 )
 export const NOTIFICATIONS_PER_PAGE = 30
 export function getHighlightClass(highlight: boolean) {
@@ -45,7 +45,7 @@ export function PrimaryNotificationLink(props: {
     return <></>
   }
   return (
-    <span className="font-semibold transition-colors hover:text-indigo-500">
+    <span className="hover:text-primary-500 font-semibold transition-colors">
       {truncatedLength ? truncateText(text, truncatedLength ?? 'xl') : text}
     </span>
   )
@@ -74,7 +74,7 @@ export function QuestionOrGroupLink(props: {
   if (ignoreClick) return <span className={'font-bold '}>{title}</span>
   return (
     <SiteLink
-      className={'relative font-semibold hover:text-indigo-500'}
+      className={'hover:text-primary-500 relative font-semibold'}
       href={getSourceUrl(notification).split('#')[0]}
       onClick={(e) => {
         e.stopPropagation()
@@ -181,7 +181,7 @@ export function NotificationFrame(props: {
 
   const frameObject = (
     <>
-      <Row className="text-sm text-gray-900 md:text-base">
+      <Row className="text-ink-900 text-sm md:text-base">
         <Row className="w-full gap-3">
           <Col className="w-fit">{icon}</Col>
           <Col className="font w-full">
@@ -191,7 +191,7 @@ export function NotificationFrame(props: {
               <div className="-mt-0.5 w-fit md:-mt-1">
                 <RelativeTimestampNoTooltip
                   time={notification.createdTime}
-                  className="-ml-1 text-xs font-light text-gray-900"
+                  className="text-ink-900 text-xs font-light"
                 />
               </div>
             )}
@@ -201,7 +201,7 @@ export function NotificationFrame(props: {
           <Row className="mx-1 w-40 justify-end">
             <RelativeTimestampNoTooltip
               time={notification.createdTime}
-              className="text-xs font-light text-gray-900"
+              className="text-ink-900 text-xs font-light"
             />
           </Row>
         )}
@@ -213,7 +213,7 @@ export function NotificationFrame(props: {
     <Row>
       <Col
         className={clsx(
-          'justify-start text-gray-500 transition-colors group-hover:text-gray-900'
+          'text-ink-500 group-hover:text-ink-900 justify-start transition-colors'
         )}
       >
         <NotificationDropdown
@@ -279,7 +279,7 @@ export function ParentNotificationHeader(props: {
   const { header, highlighted } = props
   const highlightedClass = getHighlightClass(highlighted)
   return (
-    <Row className={clsx('mx-2 items-center justify-start text-gray-900')}>
+    <Row className={clsx('text-ink-900 mx-2 items-center justify-start')}>
       <div className={clsx(highlightedClass, 'line-clamp-3')}>{header}</div>
     </Row>
   )

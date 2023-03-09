@@ -33,8 +33,8 @@ export default function ReferralsPage() {
       />
 
       <Col className="items-center">
-        <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
-          <Title className="!mt-0" text="Refer a friend" />
+        <Col className="bg-canvas-0 h-full rounded p-4 py-8 sm:p-8 sm:shadow-md">
+          <Title>Refer a friend</Title>
           <img
             className="mb-6 block -scale-x-100 self-center"
             src="/logo-flapping-with-money.gif"

@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { BETTOR, User } from 'common/user'
 import { useUser, useUserById } from 'web/hooks/use-user'
@@ -25,33 +24,33 @@ export function FeedLiquidity(props: {
   const isSelf = user?.id === userId
 
   return (
-    <Row className="items-center gap-2 pt-3">
-      {isSelf ? (
-        <Avatar avatarUrl={user.avatarUrl} username={user.username} />
-      ) : bettor ? (
-        <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
-      ) : (
-        <div className="relative px-1">
-          <EmptyAvatar />
-        </div>
-      )}
-      <LiquidityStatusText
-        liquidity={liquidity}
-        isSelf={isSelf}
-        bettor={bettor}
-        className={'flex-1'}
-      />
-    </Row>
+    <div className="to-primary-300 -ml-2 rounded-full bg-gradient-to-r from-pink-300 via-purple-300 p-2">
+      <Row className="bg-ink-100 items-stretch gap-2 rounded-full">
+        {isSelf ? (
+          <Avatar avatarUrl={user.avatarUrl} username={user.username} />
+        ) : bettor ? (
+          <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
+        ) : (
+          <div className="relative px-1">
+            <EmptyAvatar />
+          </div>
+        )}
+        <LiquidityStatusText
+          liquidity={liquidity}
+          isSelf={isSelf}
+          bettor={bettor}
+        />
+      </Row>
+    </div>
   )
 }
 
-export function LiquidityStatusText(props: {
+function LiquidityStatusText(props: {
   liquidity: LiquidityProvision
   isSelf: boolean
   bettor?: User
-  className?: string
 }) {
-  const { liquidity, bettor, isSelf, className } = props
+  const { liquidity, bettor, isSelf } = props
   const { amount, createdTime } = liquidity
 
   // TODO: Withdrawn liquidity will never be shown, since liquidity amounts currently are zeroed out upon withdrawal.
@@ -59,14 +58,14 @@ export function LiquidityStatusText(props: {
   const money = formatMoney(Math.abs(amount))
 
   return (
-    <div className={clsx(className, 'text-sm text-gray-500')}>
+    <div className="text-ink-1000 flex flex-wrap items-center gap-x-1 pr-4 text-sm">
       {bettor ? (
         <UserLink name={bettor.name} username={bettor.username} />
       ) : (
         <span>{isSelf ? 'You' : `A ${BETTOR}`}</span>
-      )}{' '}
-      {bought} a subsidy of {money}
-      <RelativeTimestamp time={createdTime} />
+      )}
+      {bought} a subsidy of <span className="text-primary-700">{money}</span>
+      <RelativeTimestamp time={createdTime} className="text-ink-1000" />
     </div>
   )
 }

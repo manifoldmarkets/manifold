@@ -71,7 +71,7 @@ function DateDocPage(props: { creator: User; post: DateDoc }) {
           </Row>
         </SiteLink>
         <DateDocPost dateDoc={post} creator={creator} />
-        <Col className="gap-4 rounded-lg bg-white px-6 py-4">
+        <Col className="bg-canvas-0 gap-4 rounded-lg px-6 py-4">
           <div className="">Add your endorsement of {creator.name}!</div>
           <PostCommentsActivity post={post} comments={comments} tips={tips} />
         </Col>
@@ -97,19 +97,18 @@ export function DateDocPost(props: {
   const marketUrl = `https://${DOMAIN}/${username}/${contractSlug}`
 
   return (
-    <Col className="gap-6 rounded-lg bg-white px-6 py-6">
+    <Col className="bg-canvas-0 gap-6 rounded-lg px-6 py-6">
       <SiteLink href={link ? `/date-docs/${creator.username}` : undefined}>
         <Col className="gap-6">
-          <Row className="relative justify-between gap-4 text-2xl">
+          <Row className="relative items-center justify-between gap-4 text-2xl">
             <div>
               {name}, {age}
             </div>
 
-            <Col className={clsx(link && 'absolute', 'right-0 px-2')}>
+            <Col>
               <Button
                 size="lg"
                 color="gray-white"
-                className={'flex'}
                 onClick={(e) => {
                   e.preventDefault()
                   copyToClipboard(shareUrl)
@@ -125,12 +124,7 @@ export function DateDocPost(props: {
                   className={clsx('mr-2 h-[24px] w-5')}
                   aria-hidden="true"
                 />
-                <div
-                  className="!hover:no-underline !decoration-0"
-                  style={{ textDecoration: 'none' }}
-                >
-                  Share
-                </div>
+                <div>Share</div>
               </Button>
             </Col>
           </Row>
@@ -138,13 +132,13 @@ export function DateDocPost(props: {
       </SiteLink>
       <RichEditPost post={post} canEdit={!!user && user.id === creator.id} />
       {contractSlug && (
-        <div className="mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-3">
+        <div className="to-primary-300 mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 p-3">
           <iframe
             height="405"
             src={marketUrl}
             title=""
             frameBorder="0"
-            className="w-full rounded-xl bg-white p-10"
+            className="bg-canvas-0 w-full rounded-xl p-10"
           ></iframe>
         </div>
       )}

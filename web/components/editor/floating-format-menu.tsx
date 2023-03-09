@@ -38,7 +38,7 @@ export function FloatingFormatMenu(props: {
   return (
     <BubbleMenu
       editor={editor}
-      className="flex gap-2 rounded-sm bg-slate-700 p-1 text-white"
+      className="text-ink-0 bg-ink-700 flex gap-2 rounded-sm p-1"
     >
       {url === null ? (
         <>
@@ -113,9 +113,11 @@ const IconButton = (props: {
   const { icon: Icon, onClick, isActive, className } = props
   return (
     <button onClick={onClick} type="button">
-      <Icon className={clsx('h-5', isActive && 'text-indigo-200', className)} />
+      <Icon
+        className={clsx('h-5', isActive && 'text-primary-200', className)}
+      />
     </button>
   )
 }
 
-const Divider = () => <div className="mx-0.5 w-[1px] bg-gray-400" />
+const Divider = () => <div className="bg-ink-400 mx-0.5 w-[1px]" />

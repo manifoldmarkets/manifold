@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { flatMap, groupBy, sortBy, sum } from 'lodash'
+import { groupBy, last, sortBy } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
@@ -15,7 +15,6 @@ import { Col } from '../layout/col'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import { useTipTxns } from 'web/hooks/use-tip-txns'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -27,14 +26,16 @@ import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from '../layout/row'
 import {
-  storageStore,
+  inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { Answer } from 'common/answer'
 import { track } from 'web/lib/service/analytics'
-import { ContractMetricsByOutcome } from 'web/lib/firebase/contract-metrics'
+import {
+  ContractMetricsByOutcome,
+  getTotalContractMetricsCount,
+} from 'web/lib/firebase/contract-metrics'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -47,6 +48,7 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
+import { QfTrades } from './qf-overview'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -59,6 +61,7 @@ export function ContractTabs(props: {
   activeIndex: number
   setActiveIndex: (i: number) => void
   totalBets: number
+  totalPositions: number
 }) {
   const {
     contract,
@@ -69,6 +72,7 @@ export function ContractTabs(props: {
     activeIndex,
     setActiveIndex,
     totalBets,
+    userPositionsByOutcome,
   } = props
 
   const contractComments = useComments(contract.id) ?? props.comments
@@ -79,6 +83,8 @@ export function ContractTabs(props: {
       ),
     [contractComments, blockedUserIds]
   )
+
+  const [totalPositions, setTotalPositions] = useState(props.totalPositions)
 
   const commentTitle =
     comments.length === 0
@@ -106,15 +112,7 @@ export function ContractTabs(props: {
     (visibleUserBets.length === 0 ? '' : `${visibleUserBets.length} `) +
     (isMobile ? 'You' : 'Your Trades')
 
-  const outcomes = ['YES', 'NO']
-  const positions =
-    useContractMetrics(contract.id, 100, outcomes) ??
-    props.userPositionsByOutcome
-  const totalPositions = flatMap(Object.values(positions)).length
-  const positionsTitle =
-    totalPositions === 0
-      ? 'Users'
-      : `${shortFormatNumber(totalPositions)} Users`
+  const positionsTitle = shortFormatNumber(totalPositions) + ' Positions'
 
   return (
     <ControlledTabs
@@ -138,10 +136,16 @@ export function ContractTabs(props: {
           ),
         },
 
-        totalPositions > 0 &&
+        totalBets > 0 &&
           contract.outcomeType === 'BINARY' && {
             title: positionsTitle,
-            content: <BinaryUserPositionsTabContent positions={positions} />,
+            content: (
+              <BinaryUserPositionsTabContent
+                positions={userPositionsByOutcome}
+                contractId={contract.id}
+                setTotalPositions={setTotalPositions}
+              />
+            ),
           },
 
         totalBets > 0 && {
@@ -163,6 +167,10 @@ export function ContractTabs(props: {
         contract.outcomeType === 'CERT' && [
           { title: 'Trades', content: <CertTrades contract={contract} /> },
           { title: 'Positions', content: <CertInfo contract={contract} /> },
+        ],
+
+        contract.outcomeType === 'QUADRATIC_FUNDING' && [
+          { title: 'History', content: <QfTrades contract={contract} /> },
         ]
       )}
     />
@@ -171,16 +179,22 @@ export function ContractTabs(props: {
 
 const BinaryUserPositionsTabContent = memo(
   function BinaryUserPositionsTabContent(props: {
+    contractId: string
     positions: ContractMetricsByOutcome
+    setTotalPositions: (count: number) => void
   }) {
-    const { positions } = props
-
+    const { contractId, setTotalPositions } = props
+    const outcomes = ['YES', 'NO']
+    const positions =
+      useContractMetrics(contractId, 100, outcomes) ?? props.positions
     const [page, setPage] = useState(0)
     const pageSize = 20
-    const currentUser = useUser()
-    const followedUsers = useFollows(currentUser?.id)
     const yesPositionsSorted = positions.YES ?? []
     const noPositionsSorted = positions.NO ?? []
+    useEffect(() => {
+      // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
+      getTotalContractMetricsCount(contractId).then(setTotalPositions)
+    }, [positions, setTotalPositions, contractId])
 
     const visibleYesPositions = yesPositionsSorted.slice(
       page * pageSize,
@@ -195,60 +209,11 @@ const BinaryUserPositionsTabContent = memo(
         ? yesPositionsSorted.length
         : noPositionsSorted.length
 
-    const PositionRow = memo(function PositionRow(props: {
-      position: ContractMetric
-      outcome: 'YES' | 'NO'
-    }) {
-      const { position, outcome } = props
-      const { totalShares, userName, userUsername, userAvatarUrl } = position
-      const shares = totalShares[outcome] ?? 0
-      const isMobile = useIsMobile(800)
-
-      return (
-        <Row
-          className={clsx(
-            'items-center justify-between gap-2 rounded-sm border-b p-2',
-            currentUser?.id === position.userId && 'bg-amber-100',
-            followedUsers?.includes(position.userId) && 'bg-blue-50'
-          )}
-        >
-          <Row
-            className={clsx(
-              'max-w-[7rem] shrink items-center gap-2 sm:max-w-none'
-            )}
-          >
-            <Avatar
-              size={'sm'}
-              avatarUrl={userAvatarUrl}
-              username={userUsername}
-            />
-            {userName && userUsername ? (
-              <UserLink
-                short={isMobile}
-                name={userName}
-                username={userUsername}
-              />
-            ) : (
-              <span>Loading..</span>
-            )}
-          </Row>
-          <span
-            className={clsx(
-              outcome === 'YES' ? 'text-teal-500' : 'text-red-700',
-              'shrink-0'
-            )}
-          >
-            {formatWithCommas(Math.floor(shares))}
-          </span>
-        </Row>
-      )
-    })
-
     return (
       <Col className={'w-full '}>
         <Row className={'gap-8'}>
           <Col className={'w-full max-w-sm gap-2'}>
-            <Row className={'justify-end px-2 text-gray-500'}>
+            <Row className={'text-ink-500 justify-end px-2'}>
               <span>
                 <YesLabel /> shares
               </span>
@@ -264,7 +229,7 @@ const BinaryUserPositionsTabContent = memo(
             })}
           </Col>
           <Col className={'w-full max-w-sm gap-2'}>
-            <Row className={'justify-end px-2 text-gray-500'}>
+            <Row className={'text-ink-500 justify-end px-2'}>
               <span>
                 <NoLabel /> shares
               </span>
@@ -291,7 +256,51 @@ const BinaryUserPositionsTabContent = memo(
   }
 )
 
-const CommentsTabContent = memo(function CommentsTabContent(props: {
+const PositionRow = memo(function PositionRow(props: {
+  position: ContractMetric
+  outcome: 'YES' | 'NO'
+}) {
+  const { position, outcome } = props
+  const { totalShares, userName, userUsername, userAvatarUrl } = position
+  const shares = totalShares[outcome] ?? 0
+  const isMobile = useIsMobile(800)
+
+  const currentUser = useUser()
+  const followedUsers = useFollows(currentUser?.id)
+
+  return (
+    <Row
+      className={clsx(
+        'border-ink-300 items-center justify-between gap-2 rounded-sm border-b p-2',
+        currentUser?.id === position.userId && 'bg-amber-500/20',
+        followedUsers?.includes(position.userId) && 'bg-blue-500/20'
+      )}
+    >
+      <Row
+        className={clsx(
+          'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
+        )}
+      >
+        <Avatar size={'sm'} avatarUrl={userAvatarUrl} username={userUsername} />
+        {userName && userUsername ? (
+          <UserLink short={isMobile} name={userName} username={userUsername} />
+        ) : (
+          <span>Loading..</span>
+        )}
+      </Row>
+      <span
+        className={clsx(
+          outcome === 'YES' ? 'text-teal-500' : 'text-red-700',
+          'shrink-0'
+        )}
+      >
+        {formatWithCommas(Math.floor(shares))}
+      </span>
+    </Row>
+  )
+})
+
+export const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
   comments: ContractComment[]
   answerResponse?: Answer
@@ -300,14 +309,13 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 }) {
   const { contract, answerResponse, onCancelAnswerResponse, blockedUserIds } =
     props
-  const tips = useTipTxns({ contractId: contract.id })
   const comments = (useComments(contract.id) ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
 
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
     key: `comments-sort-${contract.id}`,
-    store: storageStore(safeLocalStorage()),
+    store: inMemoryStore(),
   })
   const user = useUser()
 
@@ -353,15 +361,11 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
         sort={sort}
         onSortClick={() => {
           setSort(sort === 'Newest' ? 'Best' : 'Newest')
-          const totalTips = sum(
-            Object.values(tips).map((t) => sum(Object.values(t)))
-          )
           track('change-comments-sort', {
             contractSlug: contract.slug,
             contractName: contract.question,
             totalComments: comments.length,
             totalUniqueTraders: contract.uniqueBettorCount,
-            totalTips,
           })
         }}
       />
@@ -372,7 +376,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           onCancelAnswerResponse={onCancelAnswerResponse}
           topLevelComments={topLevelComments}
           commentsByParent={commentsByParent}
-          tips={tips}
         />
       )}
       {contract.outcomeType !== 'FREE_RESPONSE' &&
@@ -385,7 +388,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
               commentsByParent[parent.id] ?? [],
               (c) => c.createdTime
             )}
-            tips={tips}
           />
         ))}
     </>
@@ -400,7 +402,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const [bets, setBets] = useState(() => props.bets.filter((b) => !b.isAnte))
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
-  const oldestBet = bets[bets.length - 1]
+  const oldestBet = last(bets)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
 
@@ -409,8 +411,6 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       (b) => b.createdTime > (bets[0]?.createdTime ?? 0)
     )
     if (newBets.length > 0) setBets([...newBets, ...bets])
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.bets])
 
   const lps = useLiquidity(contract.id) ?? []
@@ -445,16 +445,17 @@ const BetsTabContent = memo(function BetsTabContent(props: {
 
   const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
   const shouldLoadMore = limit > 0 && bets.length < totalItems
+  const oldestBetTime = oldestBet?.createdTime ?? contract.createdTime
   useEffect(() => {
     if (!shouldLoadMore) return
-    getOlderBets(contract.id, oldestBet.createdTime, limit)
+    getOlderBets(contract.id, oldestBetTime, limit)
       .then((olderBets) => {
         setBets((bets) => [...bets, ...olderBets])
       })
       .catch((err) => {
         console.error(err)
       })
-  }, [contract.id, limit, oldestBet.createdTime, shouldLoadMore])
+  }, [contract.id, limit, oldestBetTime, shouldLoadMore])
 
   const pageItems = sortBy(items, (item) =>
     item.type === 'bet'
@@ -466,7 +467,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
 
   return (
     <>
-      <Col className="mb-4 gap-4">
+      <Col className="mb-4 items-start gap-7">
         {shouldLoadMore ? (
           <LoadingIndicator />
         ) : (
@@ -503,9 +504,9 @@ export function SortRow(props: {
   return (
     <Row className="mb-4 items-center justify-end gap-4">
       <Row className="items-center gap-1">
-        <div className="text-sm text-gray-400">Sort by:</div>
-        <button className="w-20 text-sm text-gray-600" onClick={onSortClick}>
-          <Tooltip text={sort === 'Best' ? 'Most likes first.' : ''}>
+        <div className="text-ink-400 text-sm">Sort by:</div>
+        <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>
+          <Tooltip text={sort === 'Best' ? 'Most likes first' : ''}>
             <Row className="items-center gap-1">
               {sort}
               <TriangleDownFillIcon className=" h-2 w-2" />

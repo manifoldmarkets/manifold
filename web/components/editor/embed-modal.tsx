@@ -76,6 +76,12 @@ const embedPatterns: EmbedPattern[] = [
       `<iframe src="https://strawpoll.com/embed/polls/${id}"></iframe>`,
   },
   {
+    // Tiktok: https://www.tiktok.com/@tiktok/video/6959980000000000001
+    regex: /^https?:\/\/www\.tiktok\.com\/@[^\/]+\/video\/(\d+)/,
+    rewrite: (id) =>
+      `<iframe src="https://www.tiktok.com/embed/v2/${id}"></iframe>`,
+  },
+  {
     regex: /^(https?:\/\/.*)/,
     rewrite: (url) => `<iframe src="${url}"></iframe>`,
   },
@@ -102,10 +108,10 @@ export function EmbedModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className="gap-2 rounded bg-white p-6">
+      <Col className="bg-canvas-0 gap-2 rounded p-6">
         <label
           htmlFor="embed"
-          className="block text-sm font-medium text-gray-700"
+          className="text-ink-700 block text-sm font-medium"
         >
           Embed a Youtube video, Tweet, or other link
         </label>
@@ -113,13 +119,13 @@ export function EmbedModal(props: {
           type="text"
           name="embed"
           id="embed"
-          className="block w-full rounded-md border-gray-300 shadow-sm placeholder:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="border-ink-300 placeholder:text-ink-300 focus:border-primary-500 focus:ring-primary-500 block w-full rounded-md shadow-sm sm:text-sm"
           placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
 
-        {/* TODO: preview embed */}
+        {embed && <div dangerouslySetInnerHTML={{ __html: embed }}></div>}
         <Spacer h={2} />
 
         <Row className="gap-2">

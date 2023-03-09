@@ -10,6 +10,5 @@ export const useTracking = (
   useEffect(() => {
     if (excludeIframe && inIframe()) return
     track(eventName, eventProperties)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventName, excludeIframe])
 }

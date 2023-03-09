@@ -13,10 +13,10 @@ export const Input = forwardRef(
       <input
         ref={ref}
         className={clsx(
-          'invalid:border-scarlet-500 invalid:text-scarlet-900 invalid:placeholder-scarlet-300 h-12 rounded-md border bg-white px-4 shadow-sm transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 md:text-sm',
+          'invalid:border-scarlet-500 invalid:text-scarlet-700 invalid:dark:text-scarlet-300 invalid:placeholder-scarlet-300 disabled:bg-canvas-50 disabled:border-ink-200 disabled:text-ink-500 bg-canvas-0 h-12 rounded-md border px-4 shadow-sm transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed md:text-sm',
           error
-            ? 'border-scarlet-300 text-scarlet-900 placeholder-scarlet-300 focus:border-scarlet-500 focus:ring-scarlet-500' // matches invalid: styles
-            : 'border-gray-300 placeholder-gray-400 focus:border-indigo-500 focus:ring-indigo-500',
+            ? 'border-scarlet-300 text-scarlet-700 dark:text-scarlet-300 placeholder-scarlet-300 focus:border-scarlet-500 focus:ring-scarlet-500' // matches invalid: styles
+            : 'border-ink-300 placeholder-ink-400 focus:border-primary-500 focus:ring-primary-500',
           className
         )}
         {...rest}

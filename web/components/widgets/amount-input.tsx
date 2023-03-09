@@ -10,7 +10,6 @@ import { Input } from './input'
 import 'rc-slider/assets/index.css'
 import { binaryOutcomes } from '../bet/bet-panel'
 import { BetSlider } from 'web/components/bet/bet-slider'
-import { Button, ColorType } from 'web/components/buttons/button'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -22,7 +21,7 @@ export function AmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  showQuickAddColor?: ColorType
+  quickAddClassName?: string
 }) {
   const {
     amount,
@@ -33,7 +32,7 @@ export function AmountInput(props: {
     className,
     inputClassName,
     inputRef,
-    showQuickAddColor,
+    quickAddClassName,
   } = props
 
   const parse = (str: string) => parseInt(str.replace(/\D/g, ''))
@@ -48,16 +47,12 @@ export function AmountInput(props: {
     <>
       <Col className={clsx('relative', error && 'mb-3', className)}>
         <label className="font-sm md:font-lg relative">
-          <span className="absolute top-1/2 my-auto ml-2 -translate-y-1/2 text-gray-400">
+          <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
             {label}
           </span>
-          <Row>
+          <div className="flex">
             <Input
-              className={clsx(
-                'pl-9 !text-lg',
-                showQuickAddColor && 'pr-12',
-                inputClassName
-              )}
+              className={clsx('pl-9 !text-lg', inputClassName)}
               ref={inputRef}
               type="text"
               pattern="[0-9]*"
@@ -76,20 +71,18 @@ export function AmountInput(props: {
                 }
               }}
             />
-            {showQuickAddColor && (
-              <Button
-                size={'xs'}
-                color={showQuickAddColor}
+            {quickAddClassName && (
+              <button
                 className={clsx(
-                  '-ml-11 rounded-l-none',
-                  showQuickAddColor === 'gray-white' && 'text-gray-400'
+                  'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors',
+                  quickAddClassName
                 )}
                 onClick={() => onChange((amount ?? 0) + 10)}
               >
                 +10
-              </Button>
+              </button>
             )}
-          </Row>
+          </div>
         </label>
 
         {error && (
@@ -109,20 +102,23 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   disabled?: boolean
-  showSlider?: boolean
   hideInput?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
   binaryOutcome?: binaryOutcomes
+  sliderOptions?: {
+    show: boolean
+    wrap: boolean
+  }
 }) {
   const {
     amount,
     onChange,
     error,
     setError,
-    showSlider,
+    sliderOptions,
     disabled,
     className,
     inputClassName,
@@ -131,6 +127,7 @@ export function BuyAmountInput(props: {
     binaryOutcome,
     hideInput,
   } = props
+  const { show, wrap } = sliderOptions ?? {}
 
   const user = useUser()
 
@@ -158,8 +155,9 @@ export function BuyAmountInput(props: {
       <Col>
         <Row
           className={clsx(
-            'items-center gap-x-4 gap-y-1 xl:flex-wrap',
-            hideInput ? 'mb-4' : ''
+            'items-center justify-between gap-x-4 gap-y-1 sm:justify-start',
+            hideInput ? 'mb-4' : '',
+            wrap ? 'flex-wrap' : ''
           )}
         >
           {!hideInput && (
@@ -170,18 +168,18 @@ export function BuyAmountInput(props: {
               error={error}
               disabled={disabled}
               className={className}
-              inputClassName={inputClassName}
+              inputClassName={clsx('pr-12', inputClassName)}
               inputRef={inputRef}
-              showQuickAddColor={
+              quickAddClassName={
                 binaryOutcome === 'YES'
-                  ? 'green-white'
+                  ? 'text-teal-500 hover:bg-teal-100'
                   : binaryOutcome === 'NO'
-                  ? 'red-white'
-                  : 'gray-white'
+                  ? 'text-scarlet-300 hover:bg-scarlet-50'
+                  : 'text-ink-500 hover:bg-ink-200'
               }
             />
           )}
-          {showSlider && (
+          {show && (
             <BetSlider
               amount={amount}
               onAmountChange={onAmountChange}
@@ -205,7 +203,7 @@ const BuyMoreFunds = () => {
     <>
       Not enough funds.
       <button
-        className="ml-1 text-indigo-500 hover:underline hover:decoration-indigo-400"
+        className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
         onClick={() => setAddFundsModalOpen(true)}
       >
         Buy more?

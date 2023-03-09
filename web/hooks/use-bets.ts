@@ -11,6 +11,7 @@ import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { useUsersById } from './use-user'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
+import { getBets } from 'web/lib/supabase/bets'
 
 export const useBets = (options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
@@ -75,4 +76,21 @@ export const useOpenLimitBets = (userId: string) => {
   }, [openLimitBets, setSavedBets])
 
   return openLimitBets ?? savedBets
+}
+
+export const useRecentBets = (contractId: string, limit: number) => {
+  const [bets, setBets] = usePersistentState<Bet[] | undefined>(undefined, {
+    key: `recent-bets-${contractId}-${limit}`,
+    store: inMemoryStore(),
+  })
+
+  useEffect(() => {
+    getBets({
+      contractId,
+      limit,
+      order: 'desc',
+    }).then((bets) => setBets(bets.reverse()))
+  }, [contractId, limit, setBets])
+
+  return bets
 }

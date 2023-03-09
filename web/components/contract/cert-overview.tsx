@@ -52,10 +52,10 @@ export function CertInfo(props: { contract: CertContract }) {
   return (
     <Col className="gap-1 md:gap-2">
       <div className="max-w-full px-2">
-        <h2 className="mb-2 text-xl text-indigo-700">Pool</h2>
+        <h2 className="text-primary-700 mb-2 text-xl">Pool</h2>
         {formatLargeNumber(share)} shares <br />
         {formatMoney(mana)}
-        <h2 className="mt-4 mb-2 text-xl text-indigo-700">Positions</h2>
+        <h2 className="text-primary-700 mt-4 mb-2 text-xl">Positions</h2>
         <Table>
           <thead>
             <tr>
@@ -101,7 +101,7 @@ export function CertInfo(props: { contract: CertContract }) {
         </Table>
       </div>
       {isCreator && (
-        <Col className="gap-2 rounded-lg bg-gray-50 p-4">
+        <Col className="bg-canvas-50 gap-2 rounded-lg p-4">
           <Title>Pay Dividend</Title>
           <input
             type="number"
@@ -137,7 +137,7 @@ export function CertOverview(props: { contract: CertContract }) {
 
   return (
     <Col>
-      <div className="flex gap-2">
+      <div className="flex justify-between gap-2">
         <Image
           alt=""
           width={100}
@@ -145,10 +145,7 @@ export function CertOverview(props: { contract: CertContract }) {
           src={contract.coverImageUrl ?? ''}
           className="rounded-md"
         />
-        <div className="flex grow justify-between gap-4">
-          <Title className="!my-0">{contract.question}</Title>
-          <span className="text-4xl">{price}</span>
-        </div>
+        <span className="text-4xl">{price}</span>
       </div>
 
       {/* Show a graph for the trades */}
@@ -235,11 +232,11 @@ function BuySellWidget(props: { contract: CertContract }) {
       >
         <Row>
           <div className="flex-1">
-            <div className="text-xs text-gray-400">Shares</div>
+            <div className="text-ink-400 text-xs">Shares</div>
             {formatLargeNumber(shares)}
           </div>
           <div className="flex-1">
-            <div className="text-xs text-gray-400">Price</div>
+            <div className="text-ink-400 text-xs">Price</div>
             <div className="flex items-center gap-2">
               {price}
               {price !== after && (
@@ -255,7 +252,7 @@ function BuySellWidget(props: { contract: CertContract }) {
         </Row>
         <Row className="items-end justify-between">
           <div>
-            <label className="text-xs text-gray-400">Amount</label>
+            <label className="text-ink-400 text-xs">Amount</label>
             <AmountInput
               inputClassName="!w-32"
               label={ENV_CONFIG.moneyMoniker}

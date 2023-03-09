@@ -53,6 +53,10 @@ service cloud.firestore {
         allow create: if (request.auth == null && userId == 'NO_USER') || userId == request.auth.uid;
         allow read: if userId == request.auth.uid || userId == '_';
       }
+
+      match /weekly-update/{rangeSlug} {
+        allow read;
+      }
     }
 
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
@@ -135,7 +139,7 @@ service cloud.firestore {
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks', 'flaggedByUsernames']);
+                                                                 .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks', 'flaggedByUsernames']);                                                     
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['description', 'closeTime', 'question', 'visibility', 'unlistedById'])
                        && resource.data.creatorId == request.auth.uid;
@@ -216,17 +220,31 @@ service cloud.firestore {
       allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                         && request.resource.data.diff(resource.data)
                         .affectedKeys()
-                        .hasOnly(['name', 'about', 'anyoneCanJoin', 'aboutPostId', 'pinnedItems','bannerUrl' ]);
+                        .hasOnly(['name', 'about', 'aboutPostId', 'pinnedItems','bannerUrl' ]);
       allow delete: if request.auth.uid == resource.data.creatorId;
 
       match /groupContracts/{contractId} {
-        allow write: if isGroupMember() || request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId
+        allow write: 
+        if (
+        request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || 
+        isAdmin() || 
+        (
+        isGroupMember() && 
+        (
+        get(/databases/$(database)/documents/contracts/$(contractId)).data.creatorId == request.auth.uid || 
+        ['admin','contributor'].includes(get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role)
+        )
+        )
+        );
       }
 
       match /groupMembers/{memberId}{
-        allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId && get(/databases/$(database)/documents/groups/$(groupId)).data.anyoneCanJoin);
+        allow read;
+        allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId);
+        allow update: if isAdmin() || request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || get(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid)).data.role == 'admin' || request.auth.uid == resource.data.userId;
         allow delete: if request.auth.uid == resource.data.userId;
       }
+
 
       function isGroupMember() {
         return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));

@@ -4,9 +4,10 @@ export const SizedContainer = (props: {
   fullHeight: number
   mobileHeight: number
   mobileThreshold?: number
+  className?: string
   children: (width: number, height: number) => ReactNode
 }) => {
-  const { children, fullHeight, mobileHeight } = props
+  const { children, fullHeight, mobileHeight, className } = props
   const threshold = props.mobileThreshold ?? 800
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState<number>()
@@ -28,7 +29,7 @@ export const SizedContainer = (props: {
     }
   }, [threshold, fullHeight, mobileHeight])
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className={className}>
       {width != null && height != null ? (
         children(width, height)
       ) : (

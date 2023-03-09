@@ -90,9 +90,9 @@ export const useUserContractMetricsByProfit = (userId = '_', count = 50) => {
 
     const key = `user-contract-metrics-${userId}`
     if (isReady) {
-      safeLocalStorage()?.setItem(key, JSON.stringify(result))
+      safeLocalStorage?.setItem(key, JSON.stringify(result))
     } else if (!result) {
-      const saved = safeLocalStorage()?.getItem(key)
+      const saved = safeLocalStorage?.getItem(key)
       if (saved) {
         savedResult.current = JSON.parse(saved)
       }

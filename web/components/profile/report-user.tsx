@@ -61,9 +61,7 @@ export const ReportUser = (props: {
           <span>Thank you for your report.</span>
           <span>We'll review the user and take action if necessary.</span>
           <Row className={'mt-2 justify-end'}>
-            <Button color={'blue'} onClick={closeModal}>
-              Close
-            </Button>
+            <Button onClick={closeModal}>Close</Button>
           </Row>
         </Col>
       ) : (
@@ -97,7 +95,9 @@ export const ReportUser = (props: {
                 'Add more context and/or provide a link to the content'
               }
               rows={2}
-              className={'-ml-2 rounded-md border border-gray-300 p-2'}
+              className={
+                'border-ink-300 bg-canvas-0 -ml-2 rounded-md border p-2'
+              }
               value={otherReportType}
               onChange={(e) => setOtherReportType(e.target.value)}
             />

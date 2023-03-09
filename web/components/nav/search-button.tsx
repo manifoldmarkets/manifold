@@ -17,7 +17,7 @@ export const SearchButton = (props: { className?: string }) => {
     <button
       onClick={() => setOpen(true)}
       className={clsx(
-        'flex items-center rounded-md border border-gray-300 bg-white p-2 text-sm text-gray-400 hover:border-indigo-300',
+        'border-ink-300 text-ink-400 bg-canvas-0 hover:border-primary-300 flex items-center rounded-md border p-2 text-sm',
         props.className
       )}
     >
@@ -35,11 +35,12 @@ export const MobileSearchButton = (props: { className?: string }) => {
     <Link
       href="/find"
       className={clsx(
-        'bg rounded-md border border-gray-300 bg-white p-2 hover:border-indigo-300',
+        'bg border-ink-300 bg-canvas-0 hover:border-primary-300 flex flex-row gap-2 rounded-md border p-2',
         props.className
       )}
     >
-      <SearchIcon className="h-6 w-6 text-gray-700 sm:text-inherit" />
+      <SearchIcon className="text-ink-500 h-6 w-6 sm:text-inherit" />
+      <div className="text-ink-500">Search</div>
     </Link>
   )
 }

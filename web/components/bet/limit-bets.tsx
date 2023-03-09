@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
@@ -22,8 +23,9 @@ import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
 import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { DepthChart } from '../charts/contract/depth-chart'
 
-export function LimitBets(props: {
+export function YourOrders(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   bets: LimitBet[]
   className?: string
@@ -37,42 +39,20 @@ export function LimitBets(props: {
     (bet) => bet.createdTime
   )
 
+  if (yourBets.length === 0) return null
+
   return (
-    <Col className={className}>
-      {yourBets.length === 0 && (
-        <OrderBookButton
-          className="self-end"
-          limitBets={bets}
-          contract={contract}
-        />
-      )}
+    <Col className={clsx(className, 'gap-2 overflow-hidden')}>
+      <Row className="items-center justify-between">
+        <Subtitle className="!my-0">Your orders</Subtitle>
+      </Row>
 
-      {yourBets.length > 0 && (
-        <Col
-          className={'mt-4 gap-2 overflow-hidden rounded bg-white py-3 sm:px-4'}
-        >
-          <Row className="mt-2 mb-4 items-center justify-between">
-            <Subtitle className="!mt-0 !mb-0" text="Your orders" />
-
-            <OrderBookButton
-              className="self-end"
-              limitBets={bets}
-              contract={contract}
-            />
-          </Row>
-
-          <LimitOrderTable
-            limitBets={yourBets}
-            contract={contract}
-            isYou={true}
-          />
-        </Col>
-      )}
+      <OrderTable limitBets={yourBets} contract={contract} isYou={true} />
     </Col>
   )
 }
 
-export function LimitOrderTable(props: {
+export function OrderTable(props: {
   limitBets: LimitBet[]
   contract: CPMMBinaryContract | PseudoNumericContract
   isYou: boolean
@@ -105,13 +85,14 @@ export function LimitOrderTable(props: {
               <th>Outcome</th>
               <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
               <th>Amount</th>
-              {isYou && (
+              {isYou && limitBets.length > 1 && (
                 <th>
                   <Button
                     loading={isCancelling}
                     size={'2xs'}
                     color={'gray-outline'}
                     onClick={onCancel}
+                    className={'whitespace-normal'}
                   >
                     Cancel all
                   </Button>
@@ -122,7 +103,7 @@ export function LimitOrderTable(props: {
         </thead>
         <tbody>
           {limitBets.map((bet) => (
-            <LimitBet
+            <OrderRow
               key={bet.id}
               bet={bet}
               contract={contract}
@@ -136,7 +117,7 @@ export function LimitOrderTable(props: {
   )
 }
 
-function LimitBet(props: {
+function OrderRow(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   bet: LimitBet
   isYou: boolean
@@ -184,7 +165,7 @@ function LimitBet(props: {
       )}
       <td>
         {isPseudoNumeric
-          ? getFormattedMappedValue(contract)(limitProb)
+          ? getFormattedMappedValue(contract, limitProb)
           : formatPercent(limitProb)}
       </td>
       <td>{formatMoney(orderAmount - amount)}</td>
@@ -226,29 +207,31 @@ export function OrderBookButton(props: {
       <Button
         className={className}
         onClick={() => setOpen(true)}
+        disabled={limitBets.length === 0}
         size="xs"
-        color="blue"
+        color="indigo"
       >
-        Order book ({limitBets.length})
+        {limitBets.length} orders
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="rounded bg-white p-4 py-6">
-          <Title className="!mt-0 inline-flex">
+        <Col className="bg-canvas-0 rounded p-4 py-6">
+          <Title className="flex">
             Order book{' '}
             <InfoTooltip
               text="List of active limit orders by traders wishing to buy YES or NO at a given probability"
               className="ml-1 self-center"
             />
           </Title>
-          <Row className="items-start justify-around gap-2">
-            <LimitOrderTable
+          <DepthChart contract={contract} yesBets={yesBets} noBets={noBets} />
+          <Row className="mt-2 items-start justify-around gap-2">
+            <OrderTable
               limitBets={yesBets}
               contract={contract}
               isYou={false}
               side="YES"
             />
-            <LimitOrderTable
+            <OrderTable
               limitBets={noBets}
               contract={contract}
               isYou={false}

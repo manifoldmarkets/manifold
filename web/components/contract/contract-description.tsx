@@ -33,7 +33,7 @@ export function ContractDescription(props: {
   const isCreator = user?.id === contract.creatorId
 
   return (
-    <div className={clsx('text-gray-700', className)}>
+    <div className={clsx('text-ink-700', className)}>
       {user &&
       (isCreator || isAdmin) &&
       !contract.isResolved &&
@@ -46,7 +46,7 @@ export function ContractDescription(props: {
       ) : (
         <CollapsibleContent
           content={contract.description}
-          contractId={contract.id}
+          stateKey={`isCollapsed-contract-${contract.id}`}
         />
       )}
     </div>
@@ -79,7 +79,6 @@ function ContractActions(props: {
 
   useEffect(() => {
     if (!editing) editor?.commands?.setContent(contract.description)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, contract.description])
 
   return editing ? (
@@ -104,9 +103,8 @@ function ContractActions(props: {
     <>
       <CollapsibleContent
         content={contract.description}
-        contractId={contract.id}
+        stateKey={`isCollapsed-contract-${contract.id}`}
       />
-      <Spacer h={4} />
       <Row className="my-4 items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
         <Button color={'gray'} size={'2xs'} onClick={toggleResolver}>

@@ -1,38 +1,37 @@
-import React, { useState } from 'react'
 import {
-  CashIcon,
-  HomeIcon,
-  SearchIcon,
   BookOpenIcon,
-  ChatIcon,
-  ChartBarIcon,
-  LogoutIcon,
-  BeakerIcon,
-  HeartIcon,
-  LightningBoltIcon,
+  CashIcon,
   DeviceMobileIcon,
+  HomeIcon,
+  LogoutIcon,
+  ScaleIcon,
+  SearchIcon,
 } from '@heroicons/react/outline'
+import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { buildArray } from 'common/util/array'
 import Router, { useRouter } from 'next/router'
+import { useContext, useState } from 'react'
+import { AddFundsModal } from 'web/components/add-funds-modal'
+import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
+import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
+import NotificationsIcon from 'web/components/notifications-icon'
+import { DarkModeContext } from 'web/hooks/dark-mode-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout } from 'web/lib/firebase/users'
-import { ManifoldLogo } from './manifold-logo'
-import { MenuButton } from './menu'
-import { ProfileSummary } from './profile-menu'
-import NotificationsIcon from 'web/components/notifications-icon'
-import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
-import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
+import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { withTracking } from 'web/lib/service/analytics'
-import { buildArray } from 'common/util/array'
+import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SignInButton } from '../buttons/sign-in-button'
-import { SidebarItem } from './sidebar-item'
-import { MoreButton } from './more-button'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
-import { RectangleGroup } from 'web/components/icons/outline'
+import { ManifoldLogo } from './manifold-logo'
+import { MenuButton } from './menu'
+import { MoreButton } from './more-button'
+import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
-import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
+import { SidebarItem } from './sidebar-item'
 
 export default function Sidebar(props: {
   className?: string
@@ -45,25 +44,40 @@ export default function Sidebar(props: {
 
   const user = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
+
+  const { theme, changeTheme } = useContext(DarkModeContext)
+
+  const themeDisplay =
+    theme === 'auto' ? 'Auto' : theme === 'dark' ? 'On' : 'Off'
+
+  const toggleTheme = () => {
+    changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
+  }
 
   const navOptions = isMobile
-    ? getMobileNav(!!user)
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
-  const bottomNavOptions = bottomNav(!!isMobile, !!user)
+  const bottomNavOptions = bottomNav(
+    !!isMobile,
+    !!user,
+    themeDisplay,
+    toggleTheme
+  )
 
   const createMarketButton = user && !user.isBannedFromPosting && (
-    <CreateQuestionButton />
+    <CreateQuestionButton key="create-market-button" />
   )
 
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx('flex h-screen flex-col', className)}
+      className={clsx('flex h-screen flex-col xl:ml-2', className)}
     >
       <ManifoldLogo className="pt-6" twoLine />
       {logoSubheading && (
-        <Row className="pl-2 text-2xl text-indigo-700 sm:mt-3">
+        <Row className="text-primary-700 pl-2 text-2xl sm:mt-3">
           {logoSubheading}
         </Row>
       )}
@@ -77,19 +91,27 @@ export default function Sidebar(props: {
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
-          <SidebarItem key={item.href} item={item} currentPage={currentPage} />
+          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
+
         <MobileAppsQRCodeDialog
+          key="mobile-apps-qr-code"
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}
         />
-        {user === null && <SignInButton className="mt-3" />}
-        {/* {user === null && (
-          <AppBadgesOrGetAppButton size="md" className={'mb-4'} />
-        )} */}
+
+        {user === null && (
+          <SignInButton key="sign-in-button" className="mt-3" />
+        )}
+
         {user && !isMobile && (
           <MenuButton
-            menuItems={getMoreDesktopNavigation(!!user)}
+            key="menu-button"
+            menuItems={getMoreDesktopNavigation(
+              !!user,
+              themeDisplay,
+              toggleTheme
+            )}
             buttonContent={<MoreButton />}
           />
         )}
@@ -102,6 +124,10 @@ export default function Sidebar(props: {
           <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
       </div>
+      <AddFundsModal
+        open={isAddFundsModalOpen}
+        setOpen={setIsAddFundsModalOpen}
+      />
     </nav>
   )
 }
@@ -117,6 +143,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
+      { name: 'Markets', href: '/markets', icon: ScaleIcon },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -125,78 +152,65 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
       !IS_PRIVATE_MANIFOLD && {
         name: 'Leaderboards',
         href: '/leaderboards',
-        icon: ChartBarIcon,
+        icon: TrophyIcon,
       }
     )
 
   return buildArray(
-    { name: 'Home', href: '/home', icon: HomeIcon },
+    { name: 'Home', href: '/', icon: HomeIcon },
+    { name: 'Markets', href: '/markets', icon: ScaleIcon },
     {
       name: 'About',
-      href: 'https://help.manifold.markets/',
+      href: '/?showHelpModal=true',
       icon: BookOpenIcon,
     },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
 }
 
-function getMoreDesktopNavigation(loggedIn: boolean) {
+function getMoreDesktopNavigation(
+  loggedIn: boolean,
+  themeDisplay: string,
+  toggleTheme: () => void
+) {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
+    return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
   }
 
   return buildArray(
-    { name: 'Groups', href: '/groups' },
-    { name: 'Referrals', href: '/referrals' },
-    { name: 'Charity', href: '/charity' },
-    { name: 'Labs', href: '/labs' },
-    // { name: 'Blog', href: 'https://news.manifold.markets' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    {
-      name: 'Help & About',
-      href: 'https://help.manifold.markets/',
-    },
+    { name: 'Dark mode: ' + themeDisplay, onClick: toggleTheme },
+    { name: 'Sitemap', href: '/sitemap' },
     loggedIn && { name: 'Sign out', onClick: logout }
   )
 }
 
-const getMobileNav = (loggedIn: boolean) => {
+// No sidebar when signed out
+const getMobileNav = (toggleModal: () => void) => {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
+    return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
   }
   return buildArray(
-    !loggedIn && {
-      name: 'Help & About',
-      href: 'https://help.manifold.markets/',
-      icon: BookOpenIcon,
-    },
-    loggedIn && { name: 'Search Markets', href: '/search', icon: SearchIcon },
-    { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
-    loggedIn && {
-      name: 'Groups',
-      href: '/groups',
-      icon: RectangleGroup,
-    },
-    loggedIn && {
-      name: 'Referrals',
-      href: '/referrals',
-      icon: LightningBoltIcon,
-    },
-    loggedIn && { name: 'Get mana', href: '/add-funds', icon: CashIcon },
-    { name: 'Charity', href: '/charity', icon: HeartIcon },
-    loggedIn && { name: 'Labs', href: '/labs', icon: BeakerIcon }
+    { name: 'Search', href: '/find', icon: SearchIcon },
+    { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
+    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
+    { name: 'Referrals', icon: GiftIcon, href: '/referrals' },
+    { name: 'Sitemap', icon: MapIcon, href: '/sitemap' }
   )
 }
 
-const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
+const bottomNav = (
+  isMobile: boolean,
+  loggedIn: boolean,
+  themeDisplay: string,
+  toggleTheme: () => void
+) =>
   buildArray(
-    !IS_PRIVATE_MANIFOLD &&
-      loggedIn &&
-      isMobile && {
-        name: 'Discord',
-        href: 'https://discord.gg/eHQBNBqXuh',
-        icon: ChatIcon,
-      },
+    isMobile && {
+      name: 'Dark mode: ' + themeDisplay,
+      icon: MoonIcon,
+      onClick: toggleTheme,
+    },
+
     isMobile &&
       loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )

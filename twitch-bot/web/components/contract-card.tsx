@@ -14,12 +14,12 @@ export default function ContractCard(props: { controlUserID: string; contract: L
   const [isFeatureable, , message] = getMarketDisplayability(contract);
   const canResolveMarket = controlUserID === contract.creatorId;
   return (
-    <Col className={clsx('group relative gap-3 rounded-lg bg-white py-4 p-4 xs:pl-6 pr-5 shadow-md', !isFeatureable && 'bg-gray-100')}>
-      <div className="flex flex-col xs:flex-row">
+    <Col className={clsx('xs:pl-6 bg-canvas-0 group relative gap-3 rounded-lg p-4 py-4 pr-5 shadow-md', !isFeatureable && 'bg-ink-100')}>
+      <div className="xs:flex-row flex flex-col">
         <Col className="relative flex-1 gap-3 pr-1">
           <AvatarDetails contract={contract} />
           <p
-            className={clsx('break-words font-semibold text-indigo-700')}
+            className={clsx('text-primary-700 break-words font-semibold')}
             style={{
               wordBreak: 'break-word' /* For iOS safari */,
             }}
@@ -36,13 +36,13 @@ export default function ContractCard(props: { controlUserID: string; contract: L
             {contract.outcomeType === 'BINARY' && <BinaryResolutionOrChance className="items-center" contract={contract} />}
             <ProbBar previewProb={contract.probability} />
           </Col>
-          <Row className="items-center mt-2">
+          <Row className="mt-2 items-center">
             {!isFeatureable && (
               <div
                 className="tooltip tooltip-right xs:tooltip xs:before:max-w-[15em] pr-1 before:z-50 before:max-w-[calc(100vw-5rem)] before:!transition-[opacity] before:duration-200 before:content-[attr(data-tip)]"
                 data-tip={message}
               >
-                <InformationCircleIcon className="h-5 w-5 text-gray-500" />
+                <InformationCircleIcon className="text-ink-500 h-5 w-5" />
               </div>
             )}
             <ConfirmationButton
@@ -78,7 +78,7 @@ function MiscDetails(props: { contract: LiteMarket; showHotVolume?: boolean; sho
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved;
 
   return (
-    <Row className="items-center gap-3 text-sm text-gray-400 w-full">
+    <Row className="text-ink-400 w-full items-center gap-3 text-sm">
       {showHotVolume ? (
         <Row className="gap-0.5">
           <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
@@ -105,9 +105,9 @@ function AvatarDetails(props: { contract: LiteMarket }) {
   const { creatorName, creatorUsername } = contract;
 
   return (
-    <Row className="items-center gap-2 text-sm text-gray-400">
+    <Row className="text-ink-400 items-center gap-2 text-sm">
       <Avatar username={creatorUsername} avatarUrl={contract.creatorAvatarUrl} size={'xs'} />
-      <p className="break-words hover:underline hover:decoration-indigo-400 hover:decoration-2">{creatorName}</p>
+      <p className="hover:decoration-primary-400 break-words hover:underline hover:decoration-2">{creatorName}</p>
     </Row>
   );
 }
@@ -118,7 +118,7 @@ function ProbBar(props: { previewProb?: number }) {
   const prob = previewProb ?? 0.5;
   return (
     <>
-      <div className={clsx('absolute right-0 top-0 w-1.5 rounded-tr-md transition-all', 'bg-gray-100')} style={{ height: `${100 * (1 - prob)}%` }} />
+      <div className={clsx('absolute right-0 top-0 w-1.5 rounded-tr-md transition-all', 'bg-ink-100')} style={{ height: `${100 * (1 - prob)}%` }} />
       <div
         className={clsx(
           'absolute right-0 bottom-0 w-1.5 rounded-br-md transition-all',
@@ -139,18 +139,18 @@ function BinaryResolutionOrChance(props: { contract: LiteMarket; className?: str
   const textColor = 'text-primary'; //!!!
 
   return (
-    <div className={clsx('text-xl xs:text-3xl', className)}>
+    <div className={clsx('xs:text-3xl text-xl', className)}>
       {resolution ? (
         <div className="xs:flex flex-col items-center">
-          <div className={clsx('text-gray-500 text-base inline')}>Resolved</div>
+          <div className={clsx('text-ink-500 inline text-base')}>Resolved</div>
           <div className="xs:hidden inline"> </div>
           <BinaryContractOutcomeLabel contract={contract} resolution={resolution} />
         </div>
       ) : (
         <div className="xs:flex flex-col items-center">
-          <div className={clsx('inline text-lg xs:text-[length:unset] font-bold xs:font-normal', textColor)}>{(contract.probability * 100).toFixed(0)}%</div>
+          <div className={clsx('xs:text-[length:unset] xs:font-normal inline text-lg font-bold', textColor)}>{(contract.probability * 100).toFixed(0)}%</div>
           <div className="xs:hidden inline"> </div>
-          <div className={clsx('inline -my-1', textColor, 'text-base')}>chance</div>
+          <div className={clsx('-my-1 inline', textColor, 'text-base')}>chance</div>
         </div>
       )}
     </div>

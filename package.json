@@ -3,14 +3,17 @@
   "private": true,
   "workspaces": [
     "common",
-    "functions",
-    "supabase-replicator",
-    "web"
+    "backend/functions",
+    "backend/replicator",
+    "backend/scripts",
+    "backend/shared",
+    "web",
+    "backend/discord-bot"
   ],
   "scripts": {
-    "verify": "(cd web && yarn verify:dir); (cd functions && yarn verify:dir)",
-    "lint": "eslint common --fix ; eslint web --fix ; eslint functions --fix",
-    "_comment": "Place your admin json under /functions/src/ to enable this:",
+    "verify": "yarn --cwd=common verify:dir; yarn --cwd=web verify:dir; yarn --cwd=backend/functions verify:dir; yarn --cwd=backend/shared verify:dir",
+    "lint": "eslint common --fix ; eslint web --fix ; eslint backend/functions --fix",
+    "_comment": "Place your admin json under /backend/functions/ to enable this:",
     "dev:dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS_DEV=./dev-mantic-markets-firebase-adminsdk.json ./dev.sh dev"
   },
   "dependencies": {},
@@ -25,6 +28,8 @@
     "nodemon": "2.0.19",
     "prettier": "2.7.1",
     "ts-node": "10.9.1",
+    "tsc-alias": "1.8.2",
+    "tsconfig-paths": "4.1.2",
     "typescript": "4.9.3"
   }
 }

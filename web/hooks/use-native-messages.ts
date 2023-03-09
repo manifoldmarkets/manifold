@@ -26,6 +26,5 @@ export const useNativeMessages = (
       document.removeEventListener('message', handleNativeMessage)
       window.removeEventListener('message', handleNativeMessage)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 }

@@ -1,0 +1,24 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "config": {
+    "firestore": "dev-mantic-markets.appspot.com"
+  },
+  "scripts": {
+    "build": "yarn compile && yarn --cwd=../shared alias && yarn --cwd=../functions alias && yarn alias",
+    "compile": "tsc -b",
+    "alias": "tsc-alias",
+    "verify": "yarn --cwd=../.. verify",
+    "verify:dir": "npx eslint . --max-warnings 0; tsc -b -v --pretty"
+  },
+  "dependencies": {
+    "firebase-admin": "11.2.0",
+    "commander": "10.0.0",
+    "lodash": "4.17.21"
+  },
+  "devDependencies": {
+    "tsc-alias": "1.8.2",
+    "tsconfig-paths": "4.1.2"
+  },
+  "private": true
+}

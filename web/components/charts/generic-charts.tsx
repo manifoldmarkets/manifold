@@ -30,8 +30,8 @@ import {
   SliceMarker,
   TooltipParams,
   TooltipComponent,
-  computeColorStops,
   formatPct,
+  computeColorStops,
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
 import { formatMoneyNumber } from 'common/util/format'
@@ -321,9 +321,10 @@ export const ControllableSingleValueHistoryChart = <
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
+  noAxes?: boolean
   pct?: boolean
 }) => {
-  const { data, w, h, color, margin, Tooltip } = props
+  const { data, w, h, color, margin, Tooltip, noAxes } = props
   const { viewXScale, setViewXScale, viewYScale, setViewYScale } =
     props.viewScaleProps
   const yKind = props.yKind ?? 'amount'
@@ -339,9 +340,9 @@ export const ControllableSingleValueHistoryChart = <
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
-    const nTicks = h < 200 ? 3 : 5
-    const pctTickValues = getTickValues(min, max, nTicks)
-    const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
+    const nTicks = noAxes ? 0 : h < 200 ? 3 : 5
+    const pctTickValues = noAxes ? [] : getTickValues(min, max, nTicks)
+    const xAxis = axisBottom<Date>(xScale).ticks(noAxes ? 0 : w / 100)
     const yAxis =
       yKind === 'percent'
         ? axisRight<number>(yScale)
@@ -353,7 +354,7 @@ export const ControllableSingleValueHistoryChart = <
             .tickFormat((n) => formatMoneyNumber(n))
         : axisRight<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
-  }, [w, h, yKind, xScale, yScale])
+  }, [w, h, yKind, xScale, yScale, noAxes])
 
   const selector = dataAtTimeSelector(data, xScale)
   const onMouseOver = useEvent((mouseX: number) => {
@@ -450,58 +451,30 @@ export const ControllableSingleValueHistoryChart = <
   )
 }
 
-export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
-  data: P[]
-  w: number
-  h: number
-  color: string | ((p: P) => string)
-  margin: Margin
-  xScale: ScaleTime<number, number>
-  yScale: ScaleContinuousNumeric<number, number>
-  yKind?: ValueKind
-  curve?: CurveFactory
-  onMouseOver?: (p: P | undefined) => void
-  Tooltip?: TooltipComponent<Date, P>
-  pct?: boolean
-}) => {
-  const {
-    data,
-    w,
-    h,
-    color,
-    margin,
-    xScale,
-    yScale,
-    yKind,
-    curve,
-    onMouseOver,
-    Tooltip,
-    pct,
-  } = props
+export const SingleValueHistoryChart = <P extends HistoryPoint>(
+  props: Omit<
+    Parameters<typeof ControllableSingleValueHistoryChart<P>>[0],
+    'viewScaleProps'
+  >
+) => {
+  const viewScaleProps = useSingleValueHistoryChartViewScale()
+
+  return (
+    <ControllableSingleValueHistoryChart
+      {...props}
+      viewScaleProps={viewScaleProps}
+    />
+  )
+}
+
+export const useSingleValueHistoryChartViewScale = () => {
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const [viewYScale, setViewYScale] =
     useState<ScaleContinuousNumeric<number, number>>()
-  const viewScaleProps = {
+  return {
     viewXScale,
     setViewXScale,
     viewYScale,
     setViewYScale,
   }
-  return (
-    <ControllableSingleValueHistoryChart
-      w={w}
-      h={h}
-      margin={margin}
-      xScale={xScale}
-      yScale={yScale}
-      viewScaleProps={viewScaleProps}
-      yKind={yKind}
-      data={data}
-      curve={curve}
-      Tooltip={Tooltip}
-      onMouseOver={onMouseOver}
-      color={color}
-      pct={pct}
-    />
-  )
 }

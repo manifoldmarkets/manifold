@@ -24,9 +24,9 @@ function isDefaultBanner(url: string) {
 export default function BannerImage(props: {
   group: Group
   user: User | undefined | null
-  isEditable: boolean
+  canEdit: boolean
 }) {
-  const { group, user, isEditable } = props
+  const { group, user, canEdit } = props
   const [groupBannerUrl, setGroupBannerUrl] = useState(
     group.bannerUrl ?? DEFAULT_BANNERS[0]
   )
@@ -35,7 +35,7 @@ export default function BannerImage(props: {
     <>
       <figure className="group relative h-60 w-full sm:h-72">
         <div className="absolute top-2 right-4 z-20 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-          {user && isEditable && (
+          {user && canEdit && (
             <BannerDropdown
               group={group}
               open={changeBannerModalOpen}
@@ -112,15 +112,15 @@ export function ChangeBannerModal(props: {
           ))}
         </Row>
         <Row className="w-full items-center">
-          <div className="h-0.5 flex-1 bg-gray-300" />
-          <div className="px-2 text-gray-300">OR</div>
-          <div className="h-0.5 flex-1 bg-gray-300" />
+          <div className="bg-ink-300 h-0.5 flex-1" />
+          <div className="text-ink-300 px-2">OR</div>
+          <div className="bg-ink-300 h-0.5 flex-1" />
         </Row>
 
         <Col className="w-full items-center gap-4">
           <div
             className={clsx(
-              'h-40 w-full rounded bg-gray-200 ring-offset-2 transition-all',
+              'bg-ink-200 h-40 w-full rounded ring-offset-2 transition-all',
               fileLoading ? 'animate-pulse' : '',
               fileUrl
                 ? 'hover:ring-highlight-blue ring-opacity-50 hover:ring'
@@ -136,7 +136,7 @@ export function ChangeBannerModal(props: {
             }}
           >
             {!fileUrl && (
-              <PhotographIcon className="mx-auto mt-10 h-1/2 text-white" />
+              <PhotographIcon className="text-ink-0 mx-auto mt-10 h-1/2" />
             )}
             {fileUrl && (
               <figure className="group relative h-full w-full">
@@ -245,9 +245,9 @@ function BannerDropdown(props: {
             onClick: onChangeBannerClick,
           },
         ]}
-        Icon={<PencilIcon className="h-5 w-5 text-gray-900" />}
-        buttonClass="rounded-md bg-white bg-opacity-50 p-1"
-        MenuWidth="w-60"
+        Icon={<PencilIcon className="text-ink-900 h-5 w-5" />}
+        buttonClass="rounded-md bg-canvas-0 bg-opacity-50 p-1"
+        menuWidth="w-60"
       />
       <ChangeBannerModal
         group={group}

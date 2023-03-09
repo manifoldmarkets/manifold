@@ -1,9 +1,11 @@
-import { Fragment, ReactNode } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import clsx from 'clsx'
+import { Fragment, ReactNode } from 'react'
 
-export const MODAL_CLASS = 'items-center gap-4 rounded-md bg-white px-8 py-6'
-export const SCROLLABLE_MODAL_CLASS = 'max-h-[70vh] min-h-[20rem] overflow-auto'
+export const MODAL_CLASS =
+  'items-center gap-4 rounded-md bg-canvas-0 px-8 py-6 text-ink-1000'
+export const SCROLLABLE_MODAL_CLASS =
+  'max-h-[70vh] min-h-[20rem] !overflow-auto'
 
 // From https://tailwindui.com/components/application-ui/overlays/modals
 export function Modal(props: {
@@ -39,7 +41,7 @@ export function Modal(props: {
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog
-        className="relative z-50"
+        className="text-ink-1000 relative z-50"
         onClose={setOpen}
         // prevent modal from re-opening from bubbled event if Modal is child of the open button
         onClick={(e: any) => e.stopPropagation()}
@@ -53,7 +55,7 @@ export function Modal(props: {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="bg-ink-500 fixed inset-0 bg-opacity-75 transition-opacity" />
         </Transition.Child>
 
         <Transition.Child

@@ -3,12 +3,13 @@ import Link from 'next/link'
 import {
   HomeIcon,
   MenuAlt3Icon,
-  SparklesIcon,
-  SearchIcon,
   XIcon,
+  BookOpenIcon,
+  ScaleIcon,
 } from '@heroicons/react/outline'
+import { DeviceMobileIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
-import { useState, Fragment } from 'react'
+import { useState, Fragment, useEffect } from 'react'
 import Sidebar from './sidebar'
 import { Item } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
@@ -21,18 +22,21 @@ import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { isIOS } from 'web/lib/util/device'
+import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
 const itemClass =
-  'sm:hover:bg-gray-200 block w-full py-1 px-3 text-center sm:hover:text-indigo-700 transition-colors'
-const selectedItemClass = 'bg-gray-100 text-indigo-700'
-const touchItemClass = 'bg-indigo-100'
+  'sm:hover:bg-ink-200 block w-full py-1 px-3 text-center sm:hover:text-primary-700 transition-colors'
+const selectedItemClass = 'bg-ink-100 text-primary-700'
+const touchItemClass = 'bg-primary-100'
 
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Explore', href: '/swipe', icon: SparklesIcon },
+    { name: 'Markets', href: '/markets', icon: ScaleIcon },
     {
       name: 'Profile',
       href: `/${user.username}?tab=portfolio`,
@@ -45,9 +49,16 @@ function getNavigation(user: User) {
   ]
 }
 
-const signedOutNavigation = [
+const signedOutNavigation = (appStoreUrl: string) => [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Explore', href: '/search', icon: SearchIcon },
+  { name: 'Markets', href: '/markets', icon: ScaleIcon },
+  {
+    name: 'Get app',
+    href: appStoreUrl,
+    icon: DeviceMobileIcon,
+  },
+  { name: 'About', href: '/?showHelpModal=true', icon: BookOpenIcon },
+  { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
@@ -59,15 +70,22 @@ export function BottomNavBar() {
 
   const user = useUser()
 
+  const [appStoreUrl, setAppStoreUrl] = useState(APPLE_APP_URL)
+  useEffect(() => {
+    setAppStoreUrl(isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL)
+  }, [])
+
   const isIframe = useIsIframe()
   if (isIframe) {
     return null
   }
 
-  const navigationOptions = user ? getNavigation(user) : signedOutNavigation
+  const navigationOptions = user
+    ? getNavigation(user)
+    : signedOutNavigation(appStoreUrl)
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
+    <nav className="border-ink-200 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem
           key={item.name}
@@ -76,18 +94,24 @@ export function BottomNavBar() {
           user={user}
         />
       ))}
-      <div
-        className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
-        onClick={() => setSidebarOpen(true)}
-      >
-        <MenuAlt3Icon className=" my-1 mx-auto h-6 w-6" aria-hidden="true" />
-        More
-      </div>
-
-      <MobileSidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
+      {!!user && (
+        <>
+          <div
+            className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
+            onClick={() => setSidebarOpen(true)}
+          >
+            <MenuAlt3Icon
+              className=" my-1 mx-auto h-6 w-6"
+              aria-hidden="true"
+            />
+            More
+          </div>
+          <MobileSidebar
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
+        </>
+      )}
     </nav>
   )
 }
@@ -130,9 +154,27 @@ function NavBarItem(props: {
     )
   }
 
+  if (!item.href) {
+    return (
+      <button
+        className={clsx(itemClass, touched && touchItemClass)}
+        onClick={() => {
+          track()
+          item.onClick?.()
+        }}
+        onTouchStart={() => setTouched(true)}
+        onTouchEnd={() => setTouched(false)}
+      >
+        {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
+        {children}
+        {item.name}
+      </button>
+    )
+  }
+
   return (
     <Link
-      href={item.href ?? '#'}
+      href={item.href}
       className={clsx(
         itemClass,
         touched && touchItemClass,
@@ -160,7 +202,7 @@ export function MobileSidebar(props: {
       <Transition.Root show={sidebarOpen} as={Fragment}>
         <Dialog
           as="div"
-          className="fixed inset-0 z-40 flex"
+          className="fixed inset-0 z-50 flex"
           onClose={setSidebarOpen}
         >
           <Transition.Child
@@ -172,7 +214,7 @@ export function MobileSidebar(props: {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Dialog.Overlay className="fixed inset-0 bg-gray-600 bg-opacity-75" />
+            <Dialog.Overlay className="bg-ink-600 fixed inset-0 bg-opacity-75" />
           </Transition.Child>
           <Transition.Child
             as={Fragment}
@@ -183,7 +225,7 @@ export function MobileSidebar(props: {
             leaveFrom="translate-x-0"
             leaveTo="-translate-x-full"
           >
-            <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white">
+            <div className="bg-canvas-0 relative flex w-full max-w-xs flex-1 flex-col">
               <Transition.Child
                 as={Fragment}
                 enter="ease-in-out duration-300"
@@ -196,11 +238,11 @@ export function MobileSidebar(props: {
                 <div className="absolute top-0 right-0 -mr-12 pt-2">
                   <button
                     type="button"
-                    className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                    className="focus:ring-ink-0ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset"
                     onClick={() => setSidebarOpen(false)}
                   >
                     <span className="sr-only">Close sidebar</span>
-                    <XIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                    <XIcon className="text-ink-0 h-6 w-6" aria-hidden="true" />
                   </button>
                 </div>
               </Transition.Child>

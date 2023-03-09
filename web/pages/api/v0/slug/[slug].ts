@@ -1,7 +1,8 @@
+import { FullMarket, toFullMarket } from 'common/api-market-types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
-import { FullMarket, ApiError, toFullMarket } from '../_types'
+import { ApiError } from '../_types'
 
 export default async function handler(
   req: NextApiRequest,

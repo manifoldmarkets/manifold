@@ -1,5 +1,5 @@
 import { formatMoney, manaToUSD } from 'common/util/format'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Button } from './buttons/button'
@@ -19,8 +19,9 @@ import { Card } from 'web/components/widgets/card'
 import { validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
+import { useRouter } from 'next/router'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -29,7 +30,11 @@ export function AddFundsModal(props: {
   const { open, setOpen } = props
 
   return (
-    <Modal open={open} setOpen={setOpen} className="rounded-md bg-white p-8">
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      className="bg-canvas-0 text-ink-1000 rounded-md p-8"
+    >
       <Tabs
         currentPageForAnalytics="buy modal"
         tabs={[
@@ -54,7 +59,7 @@ export function AddFundsModal(props: {
   )
 }
 
-function BuyManaTab(props: { onClose: () => void }) {
+export function BuyManaTab(props: { onClose: () => void }) {
   const { onClose } = props
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
@@ -82,6 +87,12 @@ function BuyManaTab(props: { onClose: () => void }) {
   }
   useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
 
+  const router = useRouter()
+  console.log('route', router.route)
+
+  const [url, setUrl] = useState('https://manifold.markets')
+  useEffect(() => setUrl(window.location.href), [])
+
   return (
     <>
       <div className="mt-6 mb-4">
@@ -89,16 +100,15 @@ function BuyManaTab(props: { onClose: () => void }) {
         <div className="italic">Not redeemable for cash.</div>
       </div>
 
-      <div className="mb-2 text-sm text-gray-500">Amount</div>
+      <div className="text-ink-500 mb-2 text-sm">Amount</div>
       <FundsSelector
         fundAmounts={prices}
         selected={amountSelected}
         onSelect={setAmountSelected}
-        btnClassName={'max-w-[7rem]'}
       />
 
       <div className="mt-6">
-        <div className="mb-1 text-sm text-gray-500">Price USD</div>
+        <div className="text-ink-500 mb-1 text-sm">Price USD</div>
         <div className="text-xl">{manaToUSD(amountSelected)}</div>
       </div>
 
@@ -121,11 +131,7 @@ function BuyManaTab(props: { onClose: () => void }) {
           </Button>
         ) : (
           <form
-            action={checkoutURL(
-              user?.id || '',
-              amountSelected,
-              window.location.href
-            )}
+            action={checkoutURL(user?.id || '', amountSelected, url)}
             method="POST"
           >
             <Button type="submit" color="gradient">
@@ -199,24 +205,15 @@ export function FundsSelector(props: {
   fundAmounts: { [key: string]: number }
   selected: number
   onSelect: (selected: number) => void
-  className?: string
-  btnClassName?: string
 }) {
-  const { selected, onSelect, className, fundAmounts } = props
-  const btnClassName = clsx('!px-2 whitespace-nowrap', props.btnClassName)
+  const { selected, onSelect, fundAmounts } = props
 
   return (
-    <Row className={clsx('flex-wrap gap-3', className)}>
-      {Object.entries(fundAmounts).map(([key, amount]) => (
-        <Button
-          key={amount}
-          color={selected === amount ? 'indigo' : 'gray'}
-          onClick={() => onSelect(amount as any)}
-          className={btnClassName}
-        >
-          {key}
-        </Button>
-      ))}
-    </Row>
+    <ChoicesToggleGroup
+      className="self-start"
+      currentChoice={selected}
+      choicesMap={fundAmounts}
+      setChoice={onSelect as any}
+    />
   )
 }

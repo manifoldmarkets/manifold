@@ -20,10 +20,14 @@ module.exports = {
     ],
     '@next/next/no-img-element': 'off',
     '@next/next/no-typos': 'off',
-    'linebreak-style': ['error', 'unix'],
+    'linebreak-style': [
+      'error',
+      process.platform === 'win32' ? 'windows' : 'unix',
+    ],
     'lodash/import-scope': [2, 'member'],
     'unused-imports/no-unused-imports': 'warn',
-    'linebreak-style': 0,
+    'react-hooks/exhaustive-deps': 'off',
+    'no-constant-condition': 'off',
   },
   ignorePatterns: ['/public/mtg/*'],
   env: {

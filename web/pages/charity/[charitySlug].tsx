@@ -1,6 +1,5 @@
 import { sortBy, sumBy, uniqBy } from 'lodash'
-import clsx from 'clsx'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 import Image from 'next/legacy/image'
 
 import { Col } from 'web/components/layout/col'
@@ -18,11 +17,13 @@ import { useRouter } from 'next/router'
 import Custom404 from '../404'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { Donation } from 'web/components/charity/feed-items'
-import { manaToUSD } from 'common/util/format'
+import { formatMoney, manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
@@ -70,8 +71,8 @@ function CharityPage(props: { charity: Charity }) {
       )}
 
       <Col className="mx-1 w-full items-center sm:px-0">
-        <Col className="max-w-2xl rounded bg-white px-8 py-6">
-          <Title className="!mt-0" text={name} />
+        <Col className="bg-canvas-0 max-w-2xl rounded px-8 py-6">
+          <Title children={name} />
           {/* TODO: donations over time chart */}
           <Row className="justify-between">
             {photo && (
@@ -86,48 +87,17 @@ function CharityPage(props: { charity: Charity }) {
               numSupporters={numSupporters}
             />
           </Row>
-          <h2 className="mt-7 mb-2 text-xl text-indigo-700">About</h2>
-          <Blurb text={description} />
+          <h2 className="text-primary-700 mt-7 mb-2 text-xl">About</h2>
+          <CollapsibleContent
+            content={description}
+            stateKey={`isCollapsed-charity-${charity.id}`}
+          />
           {newToOld.map((txn) => (
             <Donation key={txn.id} txn={txn} />
           ))}
         </Col>
       </Col>
     </Page>
-  )
-}
-
-function Blurb({ text }: { text: string }) {
-  const [open, setOpen] = useState(false)
-
-  // Calculate whether the full blurb is already shown
-  const ref = useRef<HTMLDivElement>(null)
-  const [hideExpander, setHideExpander] = useState(false)
-  useEffect(() => {
-    if (ref.current) {
-      setHideExpander(ref.current.scrollHeight <= ref.current.clientHeight)
-    }
-  }, [])
-
-  return (
-    <>
-      <div
-        className={clsx(
-          'whitespace-pre-line text-gray-500',
-          !open && 'line-clamp-5'
-        )}
-        ref={ref}
-      >
-        {text}
-      </div>
-      <Button
-        color="indigo"
-        onClick={() => setOpen(!open)}
-        className={clsx('my-3', hideExpander && 'invisible')}
-      >
-        {open ? 'Hide' : 'Read more'}
-      </Button>
-    </>
   )
 }
 
@@ -150,7 +120,7 @@ function Details(props: {
         </div>
       )}
       {numSupporters > 0 && (
-        <div className="text-gray-500">{numSupporters} supporters</div>
+        <div className="text-ink-500">{numSupporters} supporters</div>
       )}
       <Linkify text={website} />
     </Col>
@@ -167,7 +137,7 @@ function DonationBox(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
 
-  const donateDisabled = isSubmitting || !amount || !!error
+  const donateDisabled = isSubmitting || !amount || !!error || amount < 100
 
   const onSubmit: React.FormEventHandler = async (e) => {
     if (!user || donateDisabled) return
@@ -194,14 +164,15 @@ function DonationBox(props: {
   }
 
   return (
-    <div className="rounded-lg bg-white py-6 px-8 shadow-lg">
-      <Title text="Donate" className="!mt-0" />
+    <div className="bg-canvas-0 rounded-lg py-6 px-8 shadow-lg">
+      <Title>Donate</Title>
       <form onSubmit={onSubmit}>
         <label
-          className="mb-2 block text-sm text-gray-500"
+          className="text-ink-500 mb-2 block text-sm"
           htmlFor="donate-input"
         >
-          Amount
+          Amount{' '}
+          <InfoTooltip text={`Minimum donation is ${formatMoney(100)}`} />
         </label>
         <BuyAmountInput
           inputClassName="w-full max-w-none donate-input"
@@ -213,7 +184,7 @@ function DonationBox(props: {
 
         <Col className="mt-3 w-full gap-3">
           <Row className="items-center text-sm xl:justify-between">
-            <span className="mr-1 text-gray-500">{charity.name} receives</span>
+            <span className="text-ink-500 mr-1">{charity.name} receives</span>
             <span>{manaToUSD(amount || 0)}</span>
           </Row>
           {/* TODO: matching pool */}
@@ -229,7 +200,7 @@ function DonationBox(props: {
             disabled={donateDisabled}
             loading={isSubmitting}
           >
-            Donate
+            {(amount ?? 0) < 100 ? '$1 minimum' : 'Donate'}
           </Button>
         )}
       </form>

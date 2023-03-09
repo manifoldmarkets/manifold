@@ -30,7 +30,7 @@ export function CreateLinksButton(props: {
   return (
     <>
       <Modal open={open} setOpen={(newOpen) => setOpen(newOpen)}>
-        <Col className="gap-4 rounded-md bg-white px-8 py-6">
+        <Col className="bg-canvas-0 text-ink-1000 gap-4 rounded-md px-8 py-6">
           <CreateManalinkForm
             highlightedSlug={highlightedSlug}
             user={user}
@@ -115,12 +115,12 @@ function CreateManalinkForm(props: {
             setFinishedCreating(true)
           }}
         >
-          <Title className="!my-0" text="Create a Manalink" />
+          <Title className="!my-0" children="Create a Manalink" />
           <div className="flex flex-col flex-wrap gap-x-5 gap-y-2">
             <div className="flex flex-auto flex-col">
               <label className="px-1 py-2">Amount</label>
               <div className="relative">
-                <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
+                <span className="text-ink-400 absolute mx-3 mt-3.5 text-sm">
                   {ENV_CONFIG.moneyMoniker}
                 </span>
                 <Input
@@ -194,7 +194,7 @@ function CreateManalinkForm(props: {
       )}
       {finishedCreating && (
         <>
-          <Title className="!my-0" text="Manalink Created!" />
+          <Title className="!my-0" children="Manalink Created!" />
           <ManalinkCard className="my-4" info={newManalink} preview />
           <CopyLinkButton url={url} />
           <QRCode url={url} className="self-center" />

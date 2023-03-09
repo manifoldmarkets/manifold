@@ -1,17 +1,17 @@
 import {
+  ComponentType,
   ReactNode,
   SVGProps,
   useDeferredValue,
+  useEffect,
   useId,
   useMemo,
   useRef,
-  useEffect,
-  ComponentType,
 } from 'react'
 import { pointer, select } from 'd3-selection'
 import { Axis, AxisScale } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
-import { area, line, CurveFactory } from 'd3-shape'
+import { area, CurveFactory, line } from 'd3-shape'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
 
@@ -354,7 +354,7 @@ export const TooltipContainer = (props: {
       ref={setElem}
       className={clsx(
         className,
-        'pointer-events-none absolute z-10 whitespace-pre rounded border border-gray-200 bg-white/80 p-2 px-4 py-2 text-xs sm:text-sm'
+        'border-ink-200 bg-canvas-0/70 pointer-events-none absolute z-10 whitespace-pre rounded border p-2 px-4 py-2 text-xs sm:text-sm'
       )}
       style={{
         margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,
@@ -364,33 +364,6 @@ export const TooltipContainer = (props: {
       {children}
     </div>
   )
-}
-
-export const computeColorStops = <P,>(
-  data: P[],
-  pc: (p: P) => string,
-  px: (p: P) => number
-) => {
-  const segments: { x: number; color: string }[] = []
-  let currOffset = 0
-  let currColor = pc(data[0])
-  for (const p of data) {
-    const c = pc(p)
-    if (c !== currColor) {
-      segments.push({ x: currOffset, color: currColor })
-      currOffset = px(p)
-      currColor = c
-    }
-  }
-  segments.push({ x: currOffset, color: currColor })
-
-  const stops: { x: number; color: string }[] = []
-  stops.push({ x: segments[0].x, color: segments[0].color })
-  for (const s of segments.slice(1)) {
-    stops.push({ x: s.x, color: stops[stops.length - 1].color })
-    stops.push({ x: s.x, color: s.color })
-  }
-  return stops
 }
 
 export const getDateRange = (contract: Contract) => {
@@ -456,4 +429,30 @@ export const formatDateInRange = (d: Date, start: Date, end: Date) => {
     includeMinute: dayjs(end).diff(start, 'hours') < 2,
   }
   return formatDate(d, opts)
+}
+export const computeColorStops = <P,>(
+  data: P[],
+  pc: (p: P) => string,
+  px: (p: P) => number
+) => {
+  const segments: { x: number; color: string }[] = []
+  let currOffset = px(data[0])
+  let currColor = pc(data[0])
+  for (const p of data) {
+    const c = pc(p)
+    if (c !== currColor) {
+      segments.push({ x: currOffset, color: currColor })
+      currOffset = px(p)
+      currColor = c
+    }
+  }
+  segments.push({ x: currOffset, color: currColor })
+
+  const stops: { x: number; color: string }[] = []
+  stops.push({ x: segments[0].x, color: segments[0].color })
+  for (const s of segments.slice(1)) {
+    stops.push({ x: s.x, color: stops[stops.length - 1].color })
+    stops.push({ x: s.x, color: s.color })
+  }
+  return stops
 }

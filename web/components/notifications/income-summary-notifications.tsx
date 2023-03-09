@@ -2,7 +2,7 @@ import {
   BETTING_STREAK_BONUS_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { Notification } from 'common/notification'
+import { getSourceUrl, Notification } from 'common/notification'
 import { formatMoney } from 'common/util/format'
 import { groupBy, uniqBy } from 'lodash'
 import { useState } from 'react'
@@ -10,6 +10,8 @@ import {
   MultiUserLinkInfo,
   MultiUserTransactionModal,
 } from 'web/components/multi-user-transaction-link'
+
+import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { BettingStreakModal } from '../profile/betting-streak-modal'
 import { LoansModal } from '../profile/loans-modal'
@@ -20,6 +22,7 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
+import { MarketResolvedNotification } from './notification-types'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -116,6 +119,22 @@ export function IncomeNotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (sourceType === 'contract') {
+    return (
+      <MarketResolvedNotification
+        highlighted={highlighted}
+        notification={notification}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'user') {
+    return (
+      <UserJoinedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else return <></>
 }
 
@@ -183,7 +202,7 @@ export function BonusIncomeNotification(props: {
         <NotificationIcon
           symbol={'🎁'}
           symbolBackgroundClass={
-            'bg-gradient-to-br from-indigo-500 to-indigo-300'
+            'bg-gradient-to-br from-primary-500 to-primary-300'
           }
         />
       }
@@ -232,7 +251,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         <NotificationIcon
           symbol={'🔥'}
           symbolBackgroundClass={
-            'bg-gradient-to-br from-indigo-600 to-indigo-300'
+            'bg-gradient-to-br from-primary-600 to-primary-300'
           }
         />
       }
@@ -282,6 +301,71 @@ export function LoanIncomeNotification(props: {
         </span>
       </span>
       <LoansModal isOpen={open} setOpen={setOpen} />
+    </NotificationFrame>
+  )
+}
+
+function UserJoinedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceUserName, sourceUserUsername, sourceSlug, reason, sourceText } =
+    notification
+  let reasonBlock = <span>because of you</span>
+  if (sourceSlug && reason) {
+    reasonBlock = (
+      <>
+        to bet on your market{' '}
+        <QuestionOrGroupLink
+          notification={notification}
+          truncatedLength={'xl'}
+        />
+      </>
+    )
+  } else if (sourceSlug) {
+    reasonBlock = (
+      <>
+        because you shared{' '}
+        <QuestionOrGroupLink
+          notification={notification}
+          truncatedLength={'xl'}
+        />
+      </>
+    )
+  }
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'👋'} />
+      }
+      link={getSourceUrl(notification)}
+      subtitle={
+        sourceText && (
+          <span>
+            As a thank you, we sent you{' '}
+            <span className="text-teal-500">
+              {formatMoney(parseInt(sourceText))}
+            </span>
+            !
+          </span>
+        )
+      }
+    >
+      <div className="line-clamp-3">
+        <UserLink
+          name={sourceUserName || ''}
+          username={sourceUserUsername || ''}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
+        />{' '}
+        joined Manifold Markets {reasonBlock}
+      </div>
     </NotificationFrame>
   )
 }

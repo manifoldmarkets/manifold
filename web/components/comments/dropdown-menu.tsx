@@ -6,18 +6,18 @@ import { Row } from 'web/components/layout/row'
 
 export type DropdownItem = {
   name: string
-  icon: ReactNode
+  icon?: ReactNode
   onClick: () => void | Promise<void>
 }
 
 export default function DropdownMenu(props: {
   Items: DropdownItem[]
   Icon?: ReactNode
-  MenuWidth?: string
+  menuWidth?: string
   buttonClass?: string
   className?: string
 }) {
-  const { Items, Icon, MenuWidth, buttonClass, className } = props
+  const { Items, Icon, menuWidth, buttonClass, className } = props
   const icon = Icon ?? (
     <DotsHorizontalIcon className="h-5 w-5" aria-hidden="true" />
   )
@@ -28,9 +28,12 @@ export default function DropdownMenu(props: {
     >
       <Menu.Button
         className={clsx(
-          'flex items-center rounded-full text-gray-400 hover:text-gray-600',
+          'text-ink-400 hover:text-ink-600 flex items-center rounded-full',
           buttonClass
         )}
+        onClick={(e: any) => {
+          e.stopPropagation()
+        }}
       >
         <span className="sr-only">Open options</span>
         {icon}
@@ -47,8 +50,8 @@ export default function DropdownMenu(props: {
       >
         <Menu.Items
           className={clsx(
-            'absolute right-0 z-30 mt-2 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none',
-            MenuWidth ?? 'w-32'
+            'bg-canvas-0 ring-ink-1000 absolute right-0 z-30 mt-2 origin-top-right rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none',
+            menuWidth ?? 'w-32'
           )}
         >
           <div className="py-1">
@@ -58,12 +61,12 @@ export default function DropdownMenu(props: {
                   <button
                     onClick={item.onClick}
                     className={clsx(
-                      active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                      active ? 'bg-ink-100 text-ink-900' : 'text-ink-700',
                       'block w-full px-4 py-2 text-sm'
                     )}
                   >
                     <Row className={'gap-2'}>
-                      <div className="w-5">{item.icon}</div>
+                      {item.icon && <div className="w-5">{item.icon}</div>}
                       <div className="text-left">{item.name}</div>
                     </Row>
                   </button>

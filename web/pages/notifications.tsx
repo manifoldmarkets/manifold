@@ -23,12 +23,12 @@ import { NotificationItem } from 'web/components/notifications/notification-type
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
 import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
 import {
   NotificationGroup,
-  useGroupedNotifications,
+  useGroupedBalanceChangeNotifications,
+  useGroupedNonBalanceChangeNotifications,
 } from 'web/hooks/use-notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
@@ -49,7 +49,7 @@ export default function Notifications() {
   useEffect(() => {
     const query = { ...router.query }
     if (query.tab === 'settings') {
-      setActiveIndex(1)
+      setActiveIndex(2)
     }
     if (query.section) {
       setNavigateToSection(query.section as string)
@@ -58,17 +58,15 @@ export default function Notifications() {
 
   return (
     <Page>
-      <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
-        <Row className={clsx('hidden w-full justify-between lg:block')}>
-          <Title text={'Notifications'} className="grow" />
-        </Row>
+      <Col className="mx-auto w-full p-2 pb-0">
+        <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
         {isNative ? (
           <div />
         ) : (
           privateUser &&
           !privateUser.hasSeenAppBannerInNotificationsOn && (
-            <Row className="relative rounded-md bg-blue-50 p-2">
+            <Row className="bg-primary-50 relative mb-2 rounded-md py-2 px-4 text-sm">
               <XIcon
                 onClick={() =>
                   updatePrivateUser(privateUser.id, {
@@ -76,10 +74,10 @@ export default function Notifications() {
                   })
                 }
                 className={
-                  'absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full bg-gray-100 sm:p-0.5'
+                  'bg-canvas-100 absolute -top-1 -right-1 h-4 w-4 cursor-pointer rounded-full sm:p-0.5'
                 }
               />
-              <span className={'text-sm sm:text-base'}>
+              <span className={'text-ink-600 text-sm sm:text-base'}>
                 <Row className={'items-center'}>
                   We have a mobile app! Get the Manifold icon on your home
                   screen and push notifications (if you want 'em).
@@ -124,6 +122,10 @@ export default function Notifications() {
                     content: <NotificationsList privateUser={privateUser} />,
                   },
                   {
+                    title: 'Balance Changes',
+                    content: <BalanceChangesList privateUser={privateUser} />,
+                  },
+                  {
                     title: 'Settings',
                     content: (
                       <NotificationSettings
@@ -137,23 +139,26 @@ export default function Notifications() {
             </div>
           </div>
         )}
-      </div>
+      </Col>
     </Page>
   )
 }
 
 function RenderNotificationGroups(props: {
   notificationGroups: NotificationGroup[]
+  totalItems: number
+  page: number
+  setPage: (page: number) => void
 }) {
-  const { notificationGroups } = props
+  const { notificationGroups, page, setPage, totalItems } = props
 
   const grayLine = (
-    <div className="mx-auto h-[1.5px] w-[calc(100%-1rem)] bg-gray-300" />
+    <div className="bg-ink-300 mx-auto h-[1.5px] w-[calc(100%-1rem)]" />
   )
   return (
     <>
       {notificationGroups.map((notification) => (
-        <Fragment key={notification.groupedById + notification.timePeriod}>
+        <Fragment key={notification.groupedById}>
           {notification.notifications.length === 1 ? (
             <>
               <NotificationItem
@@ -166,26 +171,35 @@ function RenderNotificationGroups(props: {
             <>
               <NotificationGroupItem
                 notificationGroup={notification}
-                key={notification.groupedById + notification.timePeriod}
+                key={notification.groupedById}
               />
               {grayLine}
             </>
           )}
         </Fragment>
       ))}
+      {notificationGroups.length > 0 && totalItems > NOTIFICATIONS_PER_PAGE && (
+        <Pagination
+          page={page}
+          itemsPerPage={NOTIFICATIONS_PER_PAGE}
+          totalItems={totalItems}
+          setPage={setPage}
+          scrollToTop
+          // We can't save page to query without more work bc the two tabs have different page states.
+        />
+      )}
     </>
   )
 }
 
 function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
-  const allGroupedNotifications = useGroupedNotifications(privateUser)
+  const allGroupedNotifications =
+    useGroupedNonBalanceChangeNotifications(privateUser)
 
   const [page, setPage] = useState(0)
 
   const paginatedGroupedNotifications = useMemo(() => {
-    if (!allGroupedNotifications) return undefined
-
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
     return allGroupedNotifications.slice(start, end)
@@ -200,15 +214,12 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
     }
   }, [privateUser, isPageVisible])
 
-  if (!paginatedGroupedNotifications || !allGroupedNotifications)
-    return <LoadingIndicator />
-
   return (
     <Col className={'min-h-[100vh] gap-0 text-sm'}>
       {paginatedGroupedNotifications.length === 0 && (
         <div className={'mt-2'}>
-          You don't have any notifications. Try changing your settings to see
-          more.
+          You don't have any notifications, yet. Try changing your settings to
+          see more.
         </div>
       )}
       <PushNotificationsModal
@@ -220,18 +231,40 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
 
       <RenderNotificationGroups
         notificationGroups={paginatedGroupedNotifications}
+        totalItems={allGroupedNotifications.length}
+        page={page}
+        setPage={setPage}
       />
-      {paginatedGroupedNotifications.length > 0 &&
-        allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
-          <Pagination
-            page={page}
-            itemsPerPage={NOTIFICATIONS_PER_PAGE}
-            totalItems={allGroupedNotifications.length}
-            setPage={setPage}
-            scrollToTop
-            savePageToQuery={true}
-          />
-        )}
+    </Col>
+  )
+}
+
+function BalanceChangesList(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
+  const allGroupedNotifications =
+    useGroupedBalanceChangeNotifications(privateUser)
+  const [page, setPage] = useState(0)
+  const paginatedGroupedNotifications = useMemo(() => {
+    const start = page * NOTIFICATIONS_PER_PAGE
+    const end = start + NOTIFICATIONS_PER_PAGE
+    return allGroupedNotifications.slice(start, end)
+  }, [allGroupedNotifications, page])
+
+  return (
+    <Col className={'min-h-[100vh] gap-0 text-sm'}>
+      {paginatedGroupedNotifications.length === 0 && (
+        <div className={'mt-2'}>
+          You don't have any notifications, yet. Try changing your settings to
+          see more.
+        </div>
+      )}
+
+      <RenderNotificationGroups
+        notificationGroups={paginatedGroupedNotifications}
+        totalItems={allGroupedNotifications.length}
+        page={page}
+        setPage={setPage}
+      />
     </Col>
   )
 }

@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 
+import clsx from 'clsx'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
@@ -20,11 +21,11 @@ import { MINUTE_MS } from 'common/util/time'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
-import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { Checkbox } from 'web/components/widgets/checkbox'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -34,6 +35,8 @@ import { createMarket } from 'web/lib/firebase/api'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { QfExplainer } from './contract/qf-overview'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -54,8 +57,10 @@ export type NewQuestionParams = {
 export function NewContractPanel(props: {
   creator: User
   params?: NewQuestionParams
+  fromGroup?: boolean
+  className?: string
 }) {
-  const { creator, params } = props
+  const { creator, params, fromGroup, className } = props
   const { groupId, initValue } = params ?? {}
   const [outcomeType, setOutcomeType] = useState<outcomeType>(
     (params?.outcomeType as outcomeType) ?? 'BINARY'
@@ -201,21 +206,30 @@ export function NewContractPanel(props: {
       })
       editor?.commands.clearContent(true)
       // force clear save, because it can fail if editor unrenders
-      localStorage.removeItem(`text create market`)
+      safeLocalStorage?.removeItem(`text create market`)
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
       setErrorText(
-        (e as any).details || (e as any).message || 'Error creating contract'
+        JSON.stringify(
+          (e as any).details || (e as any).message || 'Error creating contract'
+        )
       )
       setIsSubmitting(false)
     }
   }
 
+  const BONUS_OUTCOME_TYPES = [
+    'BINARY',
+    'FREE_RESPONSE',
+    'MULTIPLE_CHOICE',
+    'PSEUDO_NUMERIC',
+  ]
+
   const [hideOptions, setHideOptions] = useState(true)
 
   return (
-    <div>
+    <div className={clsx(className, 'text-ink-1000')}>
       <div className="flex w-full flex-col">
         <label className="px-1 pt-2 pb-3">
           Question<span className={'text-scarlet-500'}>*</span>
@@ -258,35 +272,38 @@ export function NewContractPanel(props: {
                       'Users can submit their own answers to this market.',
                     PSEUDO_NUMERIC:
                       '[EXPERIMENTAL] Predict the value of a number.',
-                    CERT: '[EXPERIMENTAL] Tradeable shares of a stock',
+                    CERT: '[EXPERIMENTAL] Tradeable shares of a stock.',
+                    QUADRATIC_FUNDING: '',
+                    // '[EXPERIMENTAL] Radically fund projects. ',
                   }[choice] ?? ''
                 setMarketInfoText(text)
                 setOutcomeType(choice as outcomeType)
               }}
               choicesMap={{
-                'Yes / No': 'BINARY',
-                'Multiple choice': 'MULTIPLE_CHOICE',
+                'Yes\xa0/ No': 'BINARY', // non-breaking space
+                'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
+                'Quadratic Funding': 'QUADRATIC_FUNDING',
                 // Only show cert option in dev, for now
                 ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
               }}
-              isSubmitting={isSubmitting}
+              disabled={isSubmitting}
               className={'col-span-4'}
             />
           </Row>
           {marketInfoText && (
-            <div className="mt-3 ml-1 text-sm text-indigo-700">
+            <div className="text-primary-700 mt-3 ml-1 text-sm">
               {marketInfoText}
             </div>
           )}
+          <Spacer h={2} />
+          {outcomeType === 'QUADRATIC_FUNDING' && <QfExplainer />}
 
-          <Spacer h={6} />
-
+          <Spacer h={4} />
           {outcomeType === 'MULTIPLE_CHOICE' && (
             <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
           )}
-
           {outcomeType === 'PSEUDO_NUMERIC' && (
             <>
               <div className="mb-2 flex flex-col items-start">
@@ -364,25 +381,25 @@ export function NewContractPanel(props: {
               </div>
             </>
           )}
-
-          <Spacer h={4} />
-
-          <Row className={'items-end gap-x-2'}>
-            <GroupSelector
-              selectedGroup={selectedGroup}
-              setSelectedGroup={setSelectedGroup}
-              creator={creator}
-              options={{ showSelector: true, showLabel: true }}
-            />
-            {selectedGroup && (
-              <a target="_blank" href={groupPath(selectedGroup.slug)}>
-                <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
-              </a>
-            )}
-          </Row>
-
-          <Spacer h={6} />
-
+          {!fromGroup && (
+            <>
+              <Spacer h={4} />
+              <Row className={'items-end gap-x-2'}>
+                <GroupSelector
+                  selectedGroup={selectedGroup}
+                  setSelectedGroup={setSelectedGroup}
+                  options={{ showSelector: true, showLabel: true }}
+                  isContractCreator={true}
+                />
+                {selectedGroup && (
+                  <a target="_blank" href={groupPath(selectedGroup.slug)}>
+                    <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
+                  </a>
+                )}
+              </Row>
+              <Spacer h={6} />
+            </>
+          )}
           <div className="mb-1 flex flex-col items-start">
             <label className="mb-1 gap-2 px-1 py-2">
               <span>Question closes in </span>
@@ -404,7 +421,7 @@ export function NewContractPanel(props: {
                   '30 days': 30,
                   'This year': daysLeftInTheYear,
                 }}
-                isSubmitting={isSubmitting}
+                disabled={isSubmitting}
                 className={'col-span-4 sm:col-span-2'}
               />
             </Row>
@@ -432,11 +449,18 @@ export function NewContractPanel(props: {
               />
             </Row>
           </div>
-
           <Spacer h={6} />
-
           <Row className="items-center gap-2">
-            <span>Display this market on homepage</span>
+            <span>
+              Publicly listed{' '}
+              <InfoTooltip
+                text={
+                  visibility === 'public'
+                    ? 'Visible on home page and search results'
+                    : "Only visible via link. Won't notify followers"
+                }
+              />
+            </span>
             <ShortToggle
               on={visibility === 'public'}
               setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
@@ -456,16 +480,24 @@ export function NewContractPanel(props: {
             />
           </label>
 
-          <div className="pl-1 text-sm text-gray-700">
-            {formatMoney(ante)} or <span className=" text-teal-500">FREE </span>
-            if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
-            <InfoTooltip
-              text={`You'll earn a bonus of ${formatMoney(
-                UNIQUE_BETTOR_BONUS_AMOUNT
-              )} for each unique trader you get on your market.`}
-            />
+          <div className="text-ink-700 pl-1 text-sm">
+            {formatMoney(ante)}
+            {BONUS_OUTCOME_TYPES.includes(outcomeType) ? (
+              <span>
+                {' '}
+                or <span className=" text-teal-500">FREE </span>
+                if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
+                <InfoTooltip
+                  text={`You'll earn a bonus of ${formatMoney(
+                    UNIQUE_BETTOR_BONUS_AMOUNT
+                  )} for each unique trader you get on your market.`}
+                />
+              </span>
+            ) : (
+              <span className="text-red-500"> - no unique trader bonus</span>
+            )}
           </div>
-          <div className="pl-1 text-gray-500"></div>
+          <div className="text-ink-500 pl-1"></div>
 
           {ante > balance && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
@@ -489,19 +521,22 @@ export function NewContractPanel(props: {
       </Row>
 
       <Spacer h={6} />
-      <Button
-        type="submit"
-        color="indigo"
-        size="xl"
-        loading={isSubmitting}
-        disabled={!isValid || editor?.storage.upload.mutation.isLoading}
-        onClick={(e) => {
-          e.preventDefault()
-          submit()
-        }}
-      >
-        {isSubmitting ? 'Creating...' : 'Create market'}
-      </Button>
+      <Row className="w-full justify-center">
+        <Button
+          className="w-full"
+          type="submit"
+          color="indigo"
+          size="xl"
+          loading={isSubmitting}
+          disabled={!isValid || editor?.storage.upload.mutation.isLoading}
+          onClick={(e) => {
+            e.preventDefault()
+            submit()
+          }}
+        >
+          {isSubmitting ? 'Creating...' : 'Create market'}
+        </Button>
+      </Row>
 
       <Spacer h={6} />
     </div>

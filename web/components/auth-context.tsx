@@ -23,16 +23,17 @@ import { safeLocalStorage } from 'web/lib/util/local'
 export type AuthUser = undefined | null | UserAndPrivateUser
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
 
-// Proxy localStorage in case it's not available (eg in incognito iframe)
-const localStorage = safeLocalStorage()
-
 const ensureDeviceToken = () => {
-  let deviceToken = localStorage.getItem('device-token')
+  let deviceToken = safeLocalStorage?.getItem('device-token')
   if (!deviceToken) {
     deviceToken = randomString()
-    localStorage.setItem('device-token', deviceToken)
+    safeLocalStorage?.setItem('device-token', deviceToken)
   }
   return deviceToken
+}
+const getAdminToken = () => {
+  const deviceToken = safeLocalStorage?.getItem('TEST_CREATE_USER_KEY')
+  return deviceToken ?? ''
 }
 
 const stripUserData = (user: object) => {
@@ -58,6 +59,7 @@ export const setUserCookie = (data: object | undefined) => {
 }
 
 export const AuthContext = createContext<AuthUser>(undefined)
+
 export function AuthProvider(props: {
   children: ReactNode
   serverUser?: AuthUser
@@ -67,8 +69,8 @@ export function AuthProvider(props: {
 
   useEffect(() => {
     if (serverUser === undefined) {
-      const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-      const parsed = cachedUser ? JSON.parse(cachedUser) : null
+      const cachedUser = safeLocalStorage?.getItem(CACHED_USER_KEY)
+      const parsed = cachedUser ? JSON.parse(cachedUser) : undefined
       setAuthUser(parsed)
     }
   }, [setAuthUser, serverUser])
@@ -77,9 +79,9 @@ export function AuthProvider(props: {
     if (authUser) {
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
-      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
+      safeLocalStorage?.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
     } else if (authUser === null) {
-      localStorage.removeItem(CACHED_USER_KEY)
+      safeLocalStorage?.removeItem(CACHED_USER_KEY)
     }
   }, [authUser])
 
@@ -92,7 +94,11 @@ export function AuthProvider(props: {
           let current = await getUserAndPrivateUser(fbUser.uid)
           if (!current.user || !current.privateUser) {
             const deviceToken = ensureDeviceToken()
-            current = (await createUser({ deviceToken })) as UserAndPrivateUser
+            const adminToken = getAdminToken()
+            current = (await createUser({
+              deviceToken,
+              adminToken,
+            })) as UserAndPrivateUser
             setCachedReferralInfoForUser(current.user)
           }
           setAuthUser(current)

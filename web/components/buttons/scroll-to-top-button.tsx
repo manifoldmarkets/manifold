@@ -32,14 +32,14 @@ export function ScrollToTopButton(props: { className?: string }) {
   return (
     <button
       className={clsx(
-        'rounded-full border border-gray-200 bg-gray-50 py-2 pr-3 pl-2 text-sm transition-colors hover:bg-gray-200',
+        'bg-canvas-50 border-ink-200 hover:bg-ink-200 rounded-full border py-2 pr-3 pl-2 text-sm transition-colors',
         visible ? 'inline' : 'hidden',
         className
       )}
       onClick={scrollToTop}
     >
-      <Row className="gap-2 align-middle text-gray-600">
-        <ArrowUpIcon className="h-5 w-5 text-gray-400" />
+      <Row className="text-ink-600 gap-2 align-middle">
+        <ArrowUpIcon className="text-ink-400 h-5 w-5" />
         Scroll to top
       </Row>
     </button>

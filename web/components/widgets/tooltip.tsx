@@ -10,7 +10,7 @@ import {
   useHover,
   useInteractions,
   useRole,
-} from '@floating-ui/react-dom-interactions'
+} from '@floating-ui/react'
 import { Transition } from '@headlessui/react'
 import { ReactNode, useRef, useState } from 'react'
 
@@ -24,8 +24,17 @@ export function Tooltip(props: {
   noTap?: boolean
   noFade?: boolean
   hasSafePolygon?: boolean
+  suppressHydrationWarning?: boolean
 }) {
-  const { text, children, className, noTap, noFade, hasSafePolygon } = props
+  const {
+    text,
+    children,
+    className,
+    noTap,
+    noFade,
+    hasSafePolygon,
+    suppressHydrationWarning,
+  } = props
 
   const arrowRef = useRef(null)
 
@@ -72,7 +81,12 @@ export function Tooltip(props: {
 
   return text ? (
     <>
-      <span className={className} ref={reference} {...getReferenceProps()}>
+      <span
+        suppressHydrationWarning={suppressHydrationWarning}
+        className={className}
+        ref={reference}
+        {...getReferenceProps()}
+      >
         {children}
       </span>
       {/* conditionally render tooltip and fade in/out */}
@@ -88,13 +102,14 @@ export function Tooltip(props: {
         role="tooltip"
         ref={floating}
         style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
-        className="z-20 w-max max-w-xs whitespace-normal rounded bg-slate-700 px-2 py-1 text-center text-sm font-medium text-white"
+        className="text-ink-0 bg-ink-700 z-20 w-max max-w-xs whitespace-normal rounded px-2 py-1 text-center text-sm font-medium"
+        suppressHydrationWarning={suppressHydrationWarning}
         {...getFloatingProps()}
       >
         {text}
         <div
           ref={arrowRef}
-          className="absolute h-2 w-2 rotate-45 bg-slate-700"
+          className="bg-ink-700 absolute h-2 w-2 rotate-45"
           style={{
             top: arrowY != null ? arrowY : '',
             left: arrowX != null ? arrowX : '',

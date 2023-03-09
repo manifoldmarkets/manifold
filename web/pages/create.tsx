@@ -27,7 +27,7 @@ export default function Create() {
       <Page>
         <div className="mx-auto w-full max-w-2xl">
           <div className="rounded-lg px-6 py-4 sm:py-0">
-            <Title className="!mt-0" text="Create a market" />
+            <Title>Create a market</Title>
             <p>Sorry, you are currently banned from creating a market.</p>
           </div>
         </div>
@@ -43,13 +43,13 @@ export default function Create() {
       />
       <div className="mx-auto w-full max-w-2xl">
         <div className="rounded-lg px-6 py-4 sm:py-0">
-          <Title className="!mt-0" text="Create a market" />
+          <Title>Create a market</Title>
 
-          <div className="mb-4 text-gray-700">
+          <div className="text-ink-700 mb-4">
             Set up your own play-money prediction market on any question.{' '}
             <SiteLink
               href="https://help.manifold.markets/manifold-101#ec8a2d8520654fe2be28caf61fb5d0e6"
-              className="text-indigo-700"
+              className="text-primary-700"
             >
               Learn more...
             </SiteLink>

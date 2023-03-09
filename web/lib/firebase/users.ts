@@ -18,12 +18,7 @@ import {
 } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { app, db } from './init'
-import {
-  PortfolioMetrics,
-  PrivateUser,
-  User,
-  UserAndPrivateUser,
-} from 'common/user'
+import { PrivateUser, User, UserAndPrivateUser } from 'common/user'
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
@@ -35,6 +30,8 @@ import { track } from '../service/analytics'
 import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
 import { Contract } from 'common/contract'
+import { nativeSignOut } from 'web/lib/native/native-messages'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 dayjs.extend(utc)
 
@@ -126,7 +123,7 @@ export function writeReferralInfo(
     groupId?: string
   }
 ) {
-  const local = safeLocalStorage()
+  const local = safeLocalStorage
   const cachedReferralUser = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
   const { contractId, explicitReferrer, groupId } = otherOptions || {}
 
@@ -157,7 +154,7 @@ export async function setCachedReferralInfoForUser(user: User | null) {
   const userCreatedTime = dayjs(user.createdTime)
   if (now.diff(userCreatedTime, 'minute') > 5) return
 
-  const local = safeLocalStorage()
+  const local = safeLocalStorage
   const cachedReferralUsername = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
   const cachedReferralContractId = local?.getItem(
     CACHED_REFERRAL_CONTRACT_ID_KEY
@@ -214,10 +211,8 @@ export async function firebaseLogin() {
 }
 
 export async function firebaseLogout() {
-  if (getIsNative()) {
-    // Post the message back to expo
-    postMessageToNative('signOut', {})
-  }
+  if (getIsNative()) nativeSignOut()
+
   await auth.signOut()
 }
 
@@ -414,13 +409,18 @@ export const isContractBlocked = (
 ) => {
   if (!privateUser) return false
 
-  const { blockedContractIds, blockedByUserIds, blockedGroupSlugs } =
-    privateUser
+  const {
+    blockedContractIds,
+    blockedByUserIds,
+    blockedUserIds,
+    blockedGroupSlugs,
+  } = privateUser
 
   return (
     blockedContractIds?.includes(contract.id) ||
     contract.groupSlugs?.some((slug) => blockedGroupSlugs?.includes(slug)) ||
-    blockedByUserIds?.includes(contract.creatorId)
+    blockedByUserIds?.includes(contract.creatorId) ||
+    blockedUserIds?.includes(contract.creatorId)
   )
 }
 

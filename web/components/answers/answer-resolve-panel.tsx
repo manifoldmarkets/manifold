@@ -92,7 +92,7 @@ export function AnswerResolvePanel(props: {
       <Row className="justify-between">
         <div>Resolve your market</div>
         {isAdmin && !isCreator && (
-          <span className="bg-scarlet-50 text-scarlet-500 rounded p-1 text-xs">
+          <span className="bg-scarlet-500/20 text-scarlet-500 rounded p-1 text-xs">
             ADMIN
           </span>
         )}
@@ -103,7 +103,7 @@ export function AnswerResolvePanel(props: {
           onSelect={setResolveOption}
         />
 
-        <Row className="mb-4 justify-end gap-1">
+        <Row className="justify-end gap-1">
           {resolveOption && (
             <Button
               color="gray-white"

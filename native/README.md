@@ -11,9 +11,19 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 ## Developing  
 1. Connect your phone to your computer  
-2. `yarn android:dev` or `yarn ios:dev` or `yarn ios:prod`   
-3. Scan the QR code with the app (it opens automatically after installing)    
-**Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.  
+2. **iOS**: You have to build a dev client: `yarn build:ios:dev` or `yarn build:ios:devdev` and drag it onto your iPhone to install it.
+   - Then you can run `yarn start` and scan the QR code
+   - It's handy to keep dev client builds around in the native directory so you can just drag and drop them onto your phone to install them
+3. **Android**: `yarn android:dev` or `yarn android:prod`   
+4. Scan the QR code with the app (it opens automatically after installing)    
+**Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.
+- Want to see console logs? (Only works on android):
+   - `$ ngrok http 3000` in a separate terminal
+   - Change the `baseUri` in `App.tsx` to the ngrok url
+   - `$ yarn android:prod` to start the app on your device
+   - On your computer, navigate to `chrome://inspect/#devices` in chrome and click inspect on the app
+- Want to see app logs of a production build? (Only works on android):
+   - `$ adb logcat --pid=$(adb shell pidof -s com.markets.manifold)`
 
 
 ## Building  
@@ -33,6 +43,9 @@ We're using Expo to help with android and ios builds. You can find more informat
 - Builds an Android APK for previewing on a device
 - `adb install build_name_here.apk` after it's built to install
 
+`yarn build:ios:prod`
+- Builds an iOS IPA that you can upload to TestFlight
+
 `yarn build:ios:preview`  
 - Builds an iOS IPA for previewing on a device
 - Drag and drop onto your plugged in iPhone Finder window to install
@@ -46,8 +59,15 @@ We're using Expo to help with android and ios builds. You can find more informat
 - Builds an iOS IPA for App Store distribution
 - I think we use Transporter once we have our Apple Business Developer account set up
 
-## OTA updates
+### OTA updates
 `eas update --branch default` to publish an over-the-air update to production 
+
+### Adding Environment Variables
+- Set the variable in `package.json` (used for local development aka `yarn ios:prod`)  
+- Add the key-value pair to the `extra.eas` object in `app.config.js` with value `process.env.YOUR_ENV_VARIABLE` 
+- Set the build variable in `eas.json` for the profile you want (used for eas builds aka `yarn build:ios:prod`)
+- Reference it in js: `Constants.expoConfig?.extra?.eas.YOUR_ENV_VARIABLE`
+- Run `yarn clear` to clear the env variable between builds
 
 # Icons
 find icons [here](https://icons.expo.fyi/)
@@ -61,6 +81,13 @@ find icons [here](https://icons.expo.fyi/)
 ## Monitoring
 - [Sentry](https://sentry.io/organizations/manifold-markets/projects/react-native/?issuesType=new&project=4504040585494528)
 
+### Problems with building android after deleting `android/`
+- `However we cannot choose between the following variants of project :react-native-iap: - amazonDebugRuntimeElements - playDebugRuntimeElements`
+  - Add `missingDimensionStrategy 'store', 'play'` to `android/app/build.gradle` in the `defaultConfig` section
+- `error: cannot find symbol import com.markets.BuildConfig;`
+  - Add `namespace "com.markets.manifold"` in place of `namespace "com.manifold"` to `app/build.gradle`
+  - Add `package com.markets.manifold;` in place of incorrect package at the top of `native/android/app/src/release/java/com/manifold/ReactNativeFlipper.java` 
+
 ## Troubleshooting
 - getting an errors on build/install? like `Error: spawn .../manifold/native/android/gradlew EACCES`
   - Delete the `android` or `ios` folders or run `yarn clean` and try again.
@@ -70,5 +97,4 @@ find icons [here](https://icons.expo.fyi/)
 - Fastlane build failing? Could be a malformed import
 - Pod install erroring out?
   - I had to reinstall cocoapods via [these instructions](https://github.com/expo/expo/issues/20707#issuecomment-1377790160)
-- Problems with building android and seeing: `However we cannot choose between the following variants of project :react-native-iap: - amazonDebugRuntimeElements - playDebugRuntimeElements`
-  - Fix by adding `missingDimensionStrategy 'store', 'play'` to `android/app/build.gradle` in the `defaultConfig` section
+  

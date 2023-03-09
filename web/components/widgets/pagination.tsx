@@ -21,7 +21,7 @@ export function PaginationNextPrev(props: {
       {prev != null && (
         <a
           href={scrollToTop ? '#' : undefined}
-          className="relative inline-flex cursor-pointer select-none items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="border-ink-300 text-ink-700 hover:bg-canvas-50 bg-canvas-0 relative inline-flex cursor-pointer select-none items-center rounded-md border px-4 py-2 text-sm font-medium"
           onClick={onClickPrev}
         >
           {prev ?? 'Previous'}
@@ -30,7 +30,7 @@ export function PaginationNextPrev(props: {
       {next != null && (
         <a
           href={scrollToTop ? '#' : undefined}
-          className="relative ml-3 inline-flex cursor-pointer select-none items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="border-ink-300 text-ink-700 hover:bg-canvas-50 bg-canvas-0 relative ml-3 inline-flex cursor-pointer select-none items-center rounded-md border px-4 py-2 text-sm font-medium"
           onClick={onClickNext}
         >
           {next ?? 'Next'}
@@ -73,7 +73,6 @@ export function Pagination(props: {
     if (scrollToTop) {
       window.scrollTo(0, 0)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageQuery])
 
   const onClick = (page: number) => {
@@ -150,8 +149,8 @@ export function PaginationArrow(props: {
       className={clsx(
         'select-none rounded-lg transition-colors',
         disabled
-          ? 'pointer-events-none text-gray-200'
-          : 'cursor-pointer text-indigo-700 hover:bg-gray-100'
+          ? 'text-ink-200 pointer-events-none'
+          : 'hover:bg-ink-100 text-primary-700 cursor-pointer'
       )}
     >
       {nextOrPrev === 'prev' && (
@@ -171,7 +170,7 @@ export function PageNumbers(props: {
 }) {
   const { pageNumber, setPage, page } = props
   if (pageNumber === PAGE_ELLIPSES || typeof pageNumber === 'string') {
-    return <div className="select-none text-gray-400">{PAGE_ELLIPSES}</div>
+    return <div className="text-ink-400 select-none">{PAGE_ELLIPSES}</div>
   }
   return (
     <button
@@ -179,8 +178,8 @@ export function PageNumbers(props: {
       className={clsx(
         'select-none rounded-lg px-2',
         page === pageNumber
-          ? 'bg-indigo-100 text-indigo-700'
-          : 'text-gray-400 hover:bg-gray-100'
+          ? 'bg-primary-100 text-primary-700'
+          : 'text-ink-400 hover:bg-ink-100'
       )}
     >
       {pageNumber + 1}

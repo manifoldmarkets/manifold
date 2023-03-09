@@ -80,7 +80,7 @@ export default function CreateDateDocPage() {
       <div className="mx-auto w-full max-w-3xl">
         <div className="rounded-lg px-6 py-4 pb-4 sm:py-0">
           <Row className="mb-8 items-center justify-between">
-            <Title className="!my-0 text-blue-500" text="Your Date Doc" />
+            <Title className="!my-0" children="Your Date Doc" />
             <Button
               type="submit"
               loading={isSubmitting}
@@ -90,7 +90,6 @@ export default function CreateDateDocPage() {
                 await saveDateDoc()
                 setIsSubmitting(false)
               }}
-              color="blue"
             >
               {isSubmitting ? 'Publishing...' : 'Publish'}
             </Button>
@@ -122,7 +121,7 @@ export default function CreateDateDocPage() {
                   on={createMarket}
                   setOn={(on) => setCreateMarket(on)}
                 />
-                Create an (unlisted) prediction market attached to the date doc
+                Create a (private) prediction market attached to the date doc
               </Row>
 
               <Col className="gap-2">
@@ -132,7 +131,7 @@ export default function CreateDateDocPage() {
                   onChange={(e) => setQuestion(e.target.value || '')}
                   disabled={!createMarket}
                 />
-                <div className="ml-2 text-gray-500">
+                <div className="text-ink-500 ml-2">
                   Cost: {ENV_CONFIG.moneyMoniker}100
                 </div>
               </Col>

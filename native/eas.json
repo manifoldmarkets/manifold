@@ -4,10 +4,23 @@
   },
   "build": {
     "development": {
+      "developmentClient": true,
       "channel": "dev",
       "distribution": "internal",
       "env": {
         "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
+      },
+      "android": {
+        "credentialsSource": "local"
+      },
+      "ios": {}
+    },
+    "prod-development": {
+      "developmentClient": true,
+      "channel": "dev",
+      "distribution": "internal",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
       },
       "android": {
         "credentialsSource": "local"
@@ -28,7 +41,8 @@
     "production": {
       "channel": "default",
       "env": {
-        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD",
+        "NATIVE_BUILD_TYPE": "PROD"
       },
       "android": {
         "credentialsSource": "local"

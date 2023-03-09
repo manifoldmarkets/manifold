@@ -16,7 +16,6 @@ import { ContractComment } from 'common/comment'
 import { Dictionary, sortBy } from 'lodash'
 import { getAnswerColor } from '../answers/answers-panel'
 import Curve from 'web/public/custom-components/curve'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useChartAnswers } from '../charts/contract/choice'
 
 export function CommentsAnswer(props: {
@@ -52,9 +51,9 @@ export function CommentsAnswer(props: {
           background: color ? color : '#B1B1C7',
         }}
       />
-      <Col className="w-fit bg-gray-100 py-1 pl-2 pr-2">
+      <Col className="bg-ink-100 w-fit py-1 pl-2 pr-2">
         <Row className="gap-2">
-          <div className="text-xs text-gray-400">
+          <div className="text-ink-400 text-xs">
             <UserLink username={username} name={name} /> answered
             <CopyLinkDateTimeComponent
               prefix={contract.creatorUsername}
@@ -76,7 +75,6 @@ export function FreeResponseComments(props: {
   onCancelAnswerResponse?: () => void
   topLevelComments: ContractComment[]
   commentsByParent: Dictionary<[ContractComment, ...ContractComment[]]>
-  tips: CommentTipMap
 }) {
   const {
     contract,
@@ -84,7 +82,6 @@ export function FreeResponseComments(props: {
     onCancelAnswerResponse,
     topLevelComments,
     commentsByParent,
-    tips,
   } = props
   const answersArray = useChartAnswers(contract).map((answer) => answer.text)
   return (
@@ -108,7 +105,6 @@ export function FreeResponseComments(props: {
                 commentsByParent[parent.id] ?? [],
                 (c) => c.createdTime
               )}
-              tips={tips}
             />
           )
         }
@@ -143,7 +139,6 @@ export function FreeResponseComments(props: {
                   commentsByParent[parent.id] ?? [],
                   (c) => c.createdTime
                 )}
-                tips={tips}
               />
             </div>
           </>

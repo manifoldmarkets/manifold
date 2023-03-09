@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import {
+  BalanceChangeNotificationTypes,
   BetFillData,
   ContractResolutionData,
   getSourceUrl,
@@ -7,6 +8,7 @@ import {
   ReactionNotificationTypes,
 } from 'common/notification'
 import { formatMoney } from 'common/util/format'
+import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -19,6 +21,7 @@ import {
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 import { Linkify } from '../widgets/linkify'
 import {
   AvatarNotificationIcon,
@@ -28,7 +31,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { useIsVisible } from 'web/hooks/use-is-visible'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -38,14 +40,8 @@ export function NotificationItem(props: {
   const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted, setHighlighted] = useState(!notification.isSeen)
-  const incomeSourceTypes = [
-    'bonus',
-    'tip',
-    'loan',
-    'betting_streak_bonus',
-    'tip_and_like',
-  ]
-  if (incomeSourceTypes.includes(sourceType)) {
+
+  if (BalanceChangeNotificationTypes.includes(reason)) {
     return (
       <IncomeNotificationItem
         notification={notification}
@@ -159,18 +155,18 @@ export function NotificationItem(props: {
       />
     )
   } else if (sourceType === 'group') {
+    if (reason === 'group_role_changed') {
+      return (
+        <GroupRoleChangedNotification
+          notification={notification}
+          isChildOfGroup={isChildOfGroup}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+        />
+      )
+    }
     return (
-      // not appearing?
       <GroupAddNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'user') {
-    return (
-      <UserJoinedNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -191,6 +187,14 @@ export function NotificationItem(props: {
       <UserLikeNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'profit_loss_updates') {
+    return (
+      <WeeklyUpdateNotification
+        notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
       />
@@ -328,7 +332,7 @@ function SignupBonusNotification(props: {
         <NotificationIcon
           symbol={'✨'}
           symbolBackgroundClass={
-            'bg-gradient-to-br from-indigo-600 to-indigo-300'
+            'bg-gradient-to-br from-primary-600 to-primary-300'
           }
         />
       }
@@ -339,7 +343,7 @@ function SignupBonusNotification(props: {
   )
 }
 
-function MarketResolvedNotification(props: {
+export function MarketResolvedNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
@@ -355,7 +359,7 @@ function MarketResolvedNotification(props: {
   } = notification
   const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
   const profit = userPayout - userInvestment
-  const profitable = profit >= 0 && userInvestment > 0
+  const profitable = profit > 0 && userInvestment > 0
   const [opacity, setOpacity] = useState(highlighted && profitable ? 1 : 0)
   const [isVisible, setIsVisible] = useState(false)
   const { ref } = useIsVisible(() => setIsVisible(true), true)
@@ -368,22 +372,19 @@ function MarketResolvedNotification(props: {
   }, [isVisible, opacity])
 
   const subtitle =
-    userInvestment > 0 ? (
-      sourceText === 'CANCEL' ? (
-        <>
-          Your {formatMoney(userInvestment)} invested has been returned to you
-        </>
-      ) : profitable ? (
-        <>
-          Your {formatMoney(userInvestment)} investment won{' '}
-          <span className="text-teal-600">+{formatMoney(profit)}</span> in
-          profit!
-        </>
-      ) : (
-        <>You lost {formatMoney(Math.abs(profit))}</>
-      )
+    sourceText === 'CANCEL' && userInvestment > 0 ? (
+      <>Your {formatMoney(userInvestment)} invested has been returned to you</>
+    ) : sourceText === 'CANCEL' && Math.abs(userPayout) > 0 ? (
+      <>Your {formatMoney(-userPayout)} in profit has been removed</>
+    ) : profitable ? (
+      <>
+        Your {formatMoney(userInvestment)} investment won{' '}
+        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit!
+      </>
+    ) : userInvestment > 0 ? (
+      <>You lost {formatMoney(Math.abs(profit))}</>
     ) : (
-      <></>
+      <div />
     )
 
   const resolutionDescription = () => {
@@ -425,7 +426,7 @@ function MarketResolvedNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         cancelled {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -443,7 +444,7 @@ function MarketResolvedNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         resolved {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -458,17 +459,18 @@ function MarketResolvedNotification(props: {
       </>
     )
 
-  const confettiBg = highlighted ? (
-    <div
-      ref={ref}
-      className={clsx(
-        ' bg-confetti-animated pointer-events-none absolute inset-0'
-      )}
-      style={{
-        opacity,
-      }}
-    />
-  ) : undefined
+  const confettiBg =
+    highlighted && profitable ? (
+      <div
+        ref={ref}
+        className={clsx(
+          'bg-confetti-animated pointer-events-none absolute inset-0'
+        )}
+        style={{
+          opacity,
+        }}
+      />
+    ) : undefined
 
   return (
     <NotificationFrame
@@ -552,7 +554,7 @@ function NewMarketNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
@@ -602,7 +604,7 @@ function MarketUpdateNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         <span>
           {action}{' '}
@@ -659,7 +661,7 @@ function CommentNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         {reasonText}
         {!isChildOfGroup && (
@@ -701,7 +703,7 @@ function AnswerNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         answered{' '}
         {!isChildOfGroup && (
@@ -738,7 +740,7 @@ function TaggedUserNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         tagged you{' '}
         {!isChildOfGroup && (
@@ -814,7 +816,7 @@ function FollowNotification(props: {
         <AvatarNotificationIcon
           notification={notification}
           symbol={
-            <Col className="h-5 w-5 items-center rounded-lg bg-gradient-to-br from-gray-400 to-gray-200 text-sm">
+            <Col className="from-ink-400 to-ink-200 h-5 w-5 items-center rounded-lg bg-gradient-to-br text-sm">
               ➕
             </Col>
           }
@@ -826,7 +828,7 @@ function FollowNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         followed you
       </>
@@ -862,7 +864,7 @@ function LiquidityNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         added{' '}
         {sourceText && <span>{formatMoney(parseInt(sourceText))} of</span>}{' '}
@@ -900,77 +902,14 @@ function GroupAddNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
-        added you to the group{' '}
-        <span>
-          <PrimaryNotificationLink text={sourceTitle} />
-        </span>
-      </div>
-    </NotificationFrame>
-  )
-}
-
-function UserJoinedNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername, sourceSlug, reason, sourceText } =
-    notification
-  let reasonBlock = <span>because of you</span>
-  if (sourceSlug && reason) {
-    reasonBlock = (
-      <>
-        to bet on your market{' '}
-        <QuestionOrGroupLink
-          notification={notification}
-          truncatedLength={'xl'}
-        />
-      </>
-    )
-  } else if (sourceSlug) {
-    reasonBlock = (
-      <>
-        because you shared{' '}
-        <QuestionOrGroupLink
-          notification={notification}
-          truncatedLength={'xl'}
-        />
-      </>
-    )
-  }
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <AvatarNotificationIcon notification={notification} symbol={'👋'} />
-      }
-      link={getSourceUrl(notification)}
-      subtitle={
-        sourceText && (
+        added you{' '}
+        {!isChildOfGroup && (
           <span>
-            As a thank you, we sent you{' '}
-            <span className="text-teal-500">
-              {formatMoney(parseInt(sourceText))}
-            </span>
-            !
+            to <PrimaryNotificationLink text={sourceTitle} />
           </span>
-        )
-      }
-    >
-      <div className="line-clamp-3">
-        <UserLink
-          name={sourceUserName || ''}
-          username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
-        />{' '}
-        joined Manifold Markets {reasonBlock}
+        )}
       </div>
     </NotificationFrame>
   )
@@ -1004,7 +943,7 @@ function ChallengeNotification(props: {
         <UserLink
           name={sourceUserName || ''}
           username={sourceUserUsername || ''}
-          className={'relative flex-shrink-0 hover:text-indigo-500'}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
         accepted your challenge{' '}
         {!isChildOfGroup && (
@@ -1024,6 +963,82 @@ function ChallengeNotification(props: {
             </span>
           </span>
         )}
+      </>
+    </NotificationFrame>
+  )
+}
+
+function GroupRoleChangedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceUserName, sourceUserUsername, sourceText, sourceTitle } =
+    notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'👥'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <>
+        <UserLink
+          name={sourceUserName || ''}
+          username={sourceUserUsername || ''}
+          className={'hover:text-primary-500 relative flex-shrink-0'}
+        />{' '}
+        {sourceText}{' '}
+        {!isChildOfGroup && (
+          <span>
+            in{' '}
+            <PrimaryNotificationLink text={sourceTitle} truncatedLength="xl" />{' '}
+          </span>
+        )}
+      </>
+    </NotificationFrame>
+  )
+}
+
+function WeeklyUpdateNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { data } = notification
+  const { weeklyProfit } = data as WeeklyPortfolioUpdate
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <NotificationIcon
+          symbol={'✨'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-primary-600 to-primary-300'
+          }
+        />
+      }
+    >
+      <>
+        <span>
+          Your portfolio changed by{' '}
+          <span className={clsx(weeklyProfit > 0 ? 'text-teal-600' : '')}>
+            {formatMoney(Math.abs(weeklyProfit))}
+          </span>{' '}
+          this week. Tap here to see your summary!
+        </span>
       </>
     </NotificationFrame>
   )

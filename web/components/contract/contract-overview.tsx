@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
@@ -8,10 +8,12 @@ import {
   NumericContractChart,
   PseudoNumericContractChart,
 } from 'web/components/charts/contract'
-import { HistoryPoint } from 'web/components/charts/generic-charts'
+import {
+  HistoryPoint,
+  useSingleValueHistoryChartViewScale,
+} from 'web/components/charts/generic-charts'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
-import { Linkify } from '../widgets/linkify'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
@@ -19,21 +21,25 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import BetButton, { SignedInBinaryMobileBetting } from '../bet/bet-button'
+import { SignedInBinaryMobileBetting } from '../bet/bet-button'
 import {
   Contract,
-  CPMMContract,
   FreeResponseContract,
   MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
   BinaryContract,
 } from 'common/contract'
-import { ContractDetails } from './contract-details'
 import { SizedContainer } from 'web/components/sized-container'
 import { CertOverview } from './cert-overview'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
+import { TimeRangePicker } from '../charts/time-range-picker'
+import { Period } from 'web/lib/firebase/users'
+import { useEvent } from 'web/hooks/use-event'
+import { periodDurations } from 'web/lib/util/time'
+import { getDateRange } from '../charts/helpers'
+import { QfOverview } from './qf-overview'
 
 export const ContractOverview = memo(
   (props: {
@@ -53,6 +59,8 @@ export const ContractOverview = memo(
         )
       case 'CERT':
         return <CertOverview contract={contract} />
+      case 'QUADRATIC_FUNDING':
+        return <QfOverview contract={contract} />
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         return <ChoiceOverview contract={contract} bets={bets} />
@@ -60,48 +68,17 @@ export const ContractOverview = memo(
   }
 )
 
-const OverviewQuestion = (props: { text: string }) => (
-  <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
-)
-
-const BetWidget = (props: { contract: CPMMContract }) => {
-  const user = useUser()
-  return (
-    <Col>
-      <BetButton contract={props.contract} />
-      {!user && (
-        <div className="mt-1 text-center text-sm text-gray-500">
-          (with play money!)
-        </div>
-      )}
-    </Col>
-  )
-}
-
 const NumericOverview = (props: { contract: NumericContract }) => {
   const { contract } = props
   return (
-    <Col className="gap-1 md:gap-2">
-      <Col className="gap-3 px-2 sm:gap-4">
-        <ContractDetails contract={contract} />
-        <Row className="justify-between gap-4">
-          <OverviewQuestion text={contract.question} />
-          <NumericResolutionOrExpectation
-            contract={contract}
-            className="hidden items-end xl:flex"
-          />
-        </Row>
-        <NumericResolutionOrExpectation
-          className="items-center justify-between gap-4 xl:hidden"
-          contract={contract}
-        />
-      </Col>
+    <>
+      <NumericResolutionOrExpectation contract={contract} />
       <SizedContainer fullHeight={250} mobileHeight={150}>
         {(w, h) => (
           <NumericContractChart width={w} height={h} contract={contract} />
         )}
       </SizedContainer>
-    </Col>
+    </>
   )
 }
 
@@ -112,45 +89,45 @@ const BinaryOverview = (props: {
   const { contract, betPoints } = props
   const user = useUser()
 
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
+    useTimePicker(contract)
+
   return (
-    <Col className="gap-1 md:gap-2">
-      <Col className="gap-1 px-2">
-        <ContractDetails contract={contract} />
-        <Row className="justify-between gap-4">
-          <OverviewQuestion text={contract.question} />
-          <Row className={'items-center'}>
-            <BinaryResolutionOrChance
-              className="flex items-end"
-              contract={contract}
-              large
-            />
-          </Row>
-        </Row>
-      </Col>
+    <>
+      <Row className="items-end justify-between gap-4">
+        <BinaryResolutionOrChance contract={contract} />
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={setTimePeriod}
+          maxRange={maxRange}
+          color="green"
+        />
+      </Row>
       <SizedContainer fullHeight={250} mobileHeight={150}>
         {(w, h) => (
           <BinaryContractChart
             width={w}
             height={h}
             betPoints={betPoints}
+            viewScaleProps={viewScale}
+            controlledStart={start}
             contract={contract}
           />
         )}
       </SizedContainer>
 
-      {!user ? (
-        <Col className="w-full">
+      {user && tradingAllowed(contract) && (
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
+      )}
+
+      {user === null && (
+        <Col className="mt-1 w-full">
           <BetSignUpPrompt className="xl:self-center" size="xl" />
           <PlayMoneyDisclaimer />
         </Col>
-      ) : (
-        tradingAllowed(contract) && (
-          <Row className={'items-center justify-between gap-4 xl:hidden'}>
-            <SignedInBinaryMobileBetting contract={contract} user={user} />
-          </Row>
-        )
       )}
-    </Col>
+      {user === undefined && <div className="h-[72px] w-full" />}
+    </>
   )
 }
 
@@ -159,38 +136,21 @@ const ChoiceOverview = (props: {
   bets: Bet[]
 }) => {
   const { contract, bets } = props
-  const { question, resolution, slug } = contract
-
-  // TODO(James): Remove hideGraph once market is resolved.
-  const hideGraph = slug === 'which-team-will-win-the-2022-fifa-w'
 
   return (
-    <Col className="gap-1 md:gap-2">
-      <Col className="gap-3 px-2 sm:gap-4">
-        <ContractDetails contract={contract} />
-        <OverviewQuestion text={question} />
-        {resolution && (
-          <Row>
-            <FreeResponseResolutionOrChance
-              contract={contract}
-              truncate="none"
-            />
-          </Row>
+    <>
+      <FreeResponseResolutionOrChance contract={contract} />
+      <SizedContainer fullHeight={350} mobileHeight={250}>
+        {(w, h) => (
+          <ChoiceContractChart
+            width={w}
+            height={h}
+            bets={bets}
+            contract={contract}
+          />
         )}
-      </Col>
-      {!hideGraph && (
-        <SizedContainer fullHeight={350} mobileHeight={250}>
-          {(w, h) => (
-            <ChoiceContractChart
-              width={w}
-              height={h}
-              bets={bets}
-              contract={contract}
-            />
-          )}
-        </SizedContainer>
-      )}
-    </Col>
+      </SizedContainer>
+    </>
   )
 }
 
@@ -199,34 +159,67 @@ const PseudoNumericOverview = (props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
 }) => {
   const { contract, betPoints } = props
+  const { viewScale, currentTimePeriod, setTimePeriod, start, maxRange } =
+    useTimePicker(contract)
+  const user = useUser()
+
   return (
-    <Col className="gap-1 md:gap-2">
-      <Col className="gap-3 px-2 sm:gap-4">
-        <ContractDetails contract={contract} />
-        <Row className="items-center justify-between gap-4">
-          <OverviewQuestion text={contract.question} />
-          <PseudoNumericResolutionOrExpectation
-            contract={contract}
-            className="hidden items-end xl:flex"
-          />
-        </Row>
-        <Row className="items-center justify-between gap-4 xl:hidden">
-          <Row className={'items-center gap-2'}>
-            <PseudoNumericResolutionOrExpectation contract={contract} />
-          </Row>
-          {tradingAllowed(contract) && <BetWidget contract={contract} />}
-        </Row>
-      </Col>
+    <>
+      <Row className="items-end justify-between gap-4">
+        <PseudoNumericResolutionOrExpectation contract={contract} />
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={setTimePeriod}
+          maxRange={maxRange}
+          color="indigo"
+        />
+      </Row>
       <SizedContainer fullHeight={250} mobileHeight={150}>
         {(w, h) => (
           <PseudoNumericContractChart
             width={w}
             height={h}
             betPoints={betPoints}
+            viewScaleProps={viewScale}
+            controlledStart={start}
             contract={contract}
           />
         )}
       </SizedContainer>
-    </Col>
+
+      {user && tradingAllowed(contract) && (
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
+      )}
+
+      {user === null && (
+        <Col className="mt-1 w-full">
+          <BetSignUpPrompt className="xl:self-center" size="xl" />
+          <PlayMoneyDisclaimer />
+        </Col>
+      )}
+      {user === undefined && <div className="h-[72px] w-full" />}
+    </>
   )
+}
+
+export const useTimePicker = (contract: Contract) => {
+  const viewScale = useSingleValueHistoryChartViewScale()
+  const [currentTimePeriod, setCurrentTimePeriod] = useState<Period>('allTime')
+
+  //zooms out of graph if zoomed in upon time selection change
+  const setTimePeriod = useEvent((timePeriod: Period) => {
+    setCurrentTimePeriod(timePeriod)
+    viewScale.setViewXScale(undefined)
+    viewScale.setViewYScale(undefined)
+  })
+
+  const [, endRange] = getDateRange(contract)
+  const end = endRange ?? Date.now()
+  const start =
+    currentTimePeriod === 'allTime'
+      ? undefined
+      : end - periodDurations[currentTimePeriod]
+  const maxRange = end - contract.createdTime
+
+  return { viewScale, currentTimePeriod, setTimePeriod, start, maxRange }
 }

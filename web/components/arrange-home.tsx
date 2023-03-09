@@ -58,9 +58,9 @@ function DraggableList(props: {
         <Col
           {...provided.droppableProps}
           ref={provided.innerRef}
-          className={clsx('flex-1 items-stretch gap-1 rounded bg-gray-100 p-4')}
+          className={clsx('bg-ink-100 flex-1 items-stretch gap-1 rounded p-4')}
         >
-          <Subtitle text={title} className="mx-2 !mt-0 !mb-4" />
+          <Subtitle children={title} className="mx-2 !mt-0 !mb-4" />
           {items.map((item, index) => (
             <Draggable key={item.id} draggableId={item.id} index={index}>
               {(provided, snapshot) => (
@@ -72,7 +72,7 @@ function DraggableList(props: {
                 >
                   <SectionItem
                     className={clsx(
-                      snapshot.isDragging && 'z-[9000] bg-gray-200'
+                      snapshot.isDragging && 'bg-ink-200 z-[9000]'
                     )}
                     item={item}
                     user={user}
@@ -100,12 +100,12 @@ const SectionItem = (props: {
     <Row
       className={clsx(
         className,
-        'items-center justify-between gap-4 rounded bg-white p-2'
+        'bg-canvas-0 items-center justify-between gap-4 rounded p-2'
       )}
     >
       <Row className="items-center gap-4">
         <MenuIcon
-          className="h-5 w-5 flex-shrink-0 text-gray-500"
+          className="text-ink-500 h-5 w-5 flex-shrink-0"
           aria-hidden="true"
         />{' '}
         {item.label}

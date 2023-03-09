@@ -2,7 +2,6 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
-import { Row } from 'web/components/layout/row'
 import React, { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
@@ -31,9 +30,10 @@ export function MoreOptionsUserButton(props: { user: User }) {
         />
       </Button>
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
-        <Col className={'rounded-md bg-white p-4 pt-1'}>
-          {isAdmin && (
-            <Row className={'mt-3 justify-end'}>
+        <Col className={'bg-canvas-0 text-ink-1000 rounded-md p-4 '}>
+          <Title className={'!mb-2 flex justify-between'}>
+            {name}
+            {isAdmin && (
               <Button
                 color={'red'}
                 onClick={() => {
@@ -44,9 +44,8 @@ export function MoreOptionsUserButton(props: { user: User }) {
               >
                 {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
               </Button>
-            </Row>
-          )}
-          <Title className={'!mb-2'}>{name}</Title>
+            )}
+          </Title>
           <UncontrolledTabs
             className={'mb-4'}
             tabs={[

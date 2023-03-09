@@ -8,11 +8,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { Spacer } from 'web/components/layout/spacer'
 import { Row } from 'web/components/layout/row'
 import { Challenge } from 'common/challenge'
-import {
-  getChallenge,
-  getChallengeUrl,
-  useChallenge,
-} from 'web/lib/firebase/challenges'
+import { getChallenge, useChallenge } from 'web/lib/firebase/challenges'
 import { getUserByUsername } from 'web/lib/firebase/users'
 import { User } from 'common/user'
 import { Page } from 'web/components/layout/page'
@@ -24,12 +20,10 @@ import { formatMoney } from 'common/util/format'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Bet } from 'web/lib/firebase/bets'
-import { SEO } from 'web/components/SEO'
 import Custom404 from 'web/pages/404'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { BinaryContract } from 'common/contract'
 import { Title } from 'web/components/widgets/title'
-import { getOpenGraphProps } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contracts'
 import { getBets } from 'web/lib/supabase/bets'
@@ -87,19 +81,8 @@ export default function ChallengePage(props: {
 
   if (!contract || !challenge) return <Custom404 />
 
-  const ogCardProps = getOpenGraphProps(contract)
-  ogCardProps.creatorUsername = challenge.creatorUsername
-  ogCardProps.creatorName = challenge.creatorName
-  ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
-
   return (
     <Page>
-      <SEO
-        title={ogCardProps.question}
-        description={ogCardProps.description}
-        url={getChallengeUrl(challenge).replace('https://', '')}
-        ogCardProps={ogCardProps}
-      />
       {challenge.acceptances.length >= challenge.maxUses ? (
         <ClosedChallengeContent
           contract={contract}
@@ -126,8 +109,8 @@ function FAQ() {
   const [toggleWhatIsMana, setToggleWhatIsMana] = useState(false)
   return (
     <Col className={'items-center gap-4 p-2 md:p-6 lg:items-start'}>
-      <Row className={'text-xl text-indigo-700'}>FAQ</Row>
-      <Row className={'text-lg text-indigo-700'}>
+      <Row className={'text-primary-700 text-xl'}>FAQ</Row>
+      <Row className={'text-primary-700 text-lg'}>
         <span
           className={'mx-2 cursor-pointer'}
           onClick={() => setToggleWhatIsThis(!toggleWhatIsThis)}
@@ -149,7 +132,7 @@ function FAQ() {
           </span>
         </Row>
       )}
-      <Row className={'text-lg text-indigo-700'}>
+      <Row className={'text-primary-700 text-lg'}>
         <span
           className={'mx-2 cursor-pointer'}
           onClick={() => setToggleWhatIsMana(!toggleWhatIsMana)}
@@ -219,17 +202,17 @@ function ClosedChallengeContent(props: {
           numberOfPieces={200}
         />
       )}
-      <Col className=" w-full items-center justify-center rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8 ">
+      <Col className=" border-ink-100 bg-canvas-0 w-full items-center justify-center rounded border-0 py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8 ">
         {resolution ? (
           <>
-            <Title className="!mt-0" text={`🥇 ${winner} wins the bet 🥇`} />
+            <Title>🥇 {winner} wins the bet 🥇</Title>
             <SiteLink href={href} className={'mb-8 text-xl'}>
               {question}
             </SiteLink>
           </>
         ) : (
           <SiteLink href={href} className={'mb-8'}>
-            <span className="text-3xl text-indigo-700">{question}</span>
+            <span className="text-primary-700 text-3xl">{question}</span>
           </SiteLink>
         )}
         <Col
@@ -284,9 +267,9 @@ function OpenChallengeContent(props: {
 
   return (
     <Col className="items-center">
-      <Col className="h-full items-center justify-center rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
+      <Col className="bg-canvas-0 h-full items-center justify-center rounded p-4 py-8 sm:p-8 sm:shadow-md">
         <SiteLink href={href} className={'mb-8'}>
-          <span className="text-3xl text-indigo-700">{question}</span>
+          <span className="text-primary-700 text-3xl">{question}</span>
         </SiteLink>
 
         <Col
@@ -312,7 +295,7 @@ function OpenChallengeContent(props: {
         </Col>
 
         <Spacer h={3} />
-        <Row className={'my-4 text-center text-gray-500'}>
+        <Row className={'text-ink-500 my-4 text-center'}>
           <span>
             {`${creator.name} will bet ${formatMoney(
               creatorAmount

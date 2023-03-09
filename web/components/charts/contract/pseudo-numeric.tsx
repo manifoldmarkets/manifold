@@ -15,7 +15,11 @@ import {
   getRightmostVisibleDate,
   formatDateInRange,
 } from '../helpers'
-import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
+import {
+  HistoryPoint,
+  ControllableSingleValueHistoryChart,
+  viewScale,
+} from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 
@@ -58,7 +62,7 @@ const PseudoNumericChartTooltip = (
         <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
       )}{' '}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-gray-600">{formatLargeNumber(prev.y)}</span>
+      <span className="text-ink-600">{formatLargeNumber(prev.y)}</span>
     </Row>
   )
 }
@@ -68,12 +72,23 @@ export const PseudoNumericContractChart = (props: {
   betPoints: HistoryPoint<Partial<Bet>>[]
   width: number
   height: number
+  viewScaleProps: viewScale
+  controlledStart?: number
   color?: string
   onMouseOver?: (p: HistoryPoint<Partial<Bet>> | undefined) => void
 }) => {
-  const { contract, width, height, color, onMouseOver } = props
+  const {
+    contract,
+    width,
+    height,
+    viewScaleProps,
+    controlledStart,
+    color,
+    onMouseOver,
+  } = props
   const { min, max, isLogScale } = contract
   const [start, end] = getDateRange(contract)
+  const rangeStart = controlledStart ?? start
   const scaleP = useMemo(
     () => getScaleP(min, max, isLogScale),
     [min, max, isLogScale]
@@ -97,19 +112,20 @@ export const PseudoNumericContractChart = (props: {
     last(betPoints)?.x,
     Date.now()
   )
-  const visibleRange = [start, rightmostDate]
+  const visibleRange = [rangeStart, rightmostDate]
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale
     ? scaleLog([Math.max(min, 1), max], [height - MARGIN_Y, 0]).clamp(true)
     : scaleLinear([min, max], [height - MARGIN_Y, 0])
   return (
-    <SingleValueHistoryChart
+    <ControllableSingleValueHistoryChart
       w={width}
       h={height}
       margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
+      viewScaleProps={viewScaleProps}
       data={data}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}

@@ -17,7 +17,7 @@ export const getServerSideProps = redirectIfLoggedOut('/')
 
 function avatarHtml(avatarUrl: string) {
   return `<img
-  class="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center"
+  class="h-10 w-10 rounded-full bg-ink-400 flex items-center justify-center"
   src="${avatarUrl}"
   alt=""
 />`
@@ -66,7 +66,7 @@ function UsersTable() {
             name: 'Username',
             formatter: (cell) =>
               html(`<a
-              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              class="hover:underline hover:decoration-primary-400 hover:decoration-2"
               href="/${cell}">@${cell}</a>`),
           },
           {
@@ -99,7 +99,7 @@ function UsersTable() {
             name: 'ID',
             formatter: (cell) =>
               html(`<a
-              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              class="hover:underline hover:decoration-primary-400 hover:decoration-2"
               href="https://console.firebase.google.com/project/mantic-markets/firestore/data/~2Fusers~2F${cell}">${cell}</a>`),
           },
         ]}
@@ -126,7 +126,7 @@ function _ContractsTable() {
       const questionLink = r(
         <div className="w-60">
           <a
-            className="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+            className="hover:decoration-primary-400 hover:underline hover:decoration-2"
             href={contractPath(contract)}
           >
             {contract.question}
@@ -145,7 +145,7 @@ function _ContractsTable() {
           name: 'Username',
           formatter: (cell) =>
             html(`<a
-              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              class="hover:underline hover:decoration-primary-400 hover:decoration-2"
               target="_blank"
               href="/${cell}">@${cell}</a>`),
         },
@@ -198,7 +198,7 @@ function _ContractsTable() {
           name: 'ID',
           formatter: (cell) =>
             html(`<a
-              class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              class="hover:underline hover:decoration-primary-400 hover:decoration-2"
               target="_blank"
               href="${firestoreConsolePath(cell as string)}">${cell}</a>`),
         },

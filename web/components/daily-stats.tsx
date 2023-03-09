@@ -32,10 +32,15 @@ export function DailyStats(props: {
     setShowLoansModal(showLoansModel)
     const showStreaksModal = Router.query['show'] === 'betting-streak'
     setShowStreakModal(showStreaksModal)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const [showStreakModal, setShowStreakModal] = useState(false)
+
+  // hide daily stats if user created in last 24 hours
+  const justCreated =
+    (user?.createdTime ?? 0) > Date.now() - 1000 * 60 * 60 * 24
+
+  if (justCreated) return <></>
 
   return (
     <Row className={'flex-shrink-0 items-center gap-4'}>
@@ -53,7 +58,7 @@ export function DailyStats(props: {
                 user && !hasCompletedStreakToday(user) && 'grayscale'
               )}
             >
-              <span>🔥{user?.currentBettingStreak ?? 0}</span>
+              <span>🔥 {user?.currentBettingStreak ?? 0}</span>
             </Row>
           </Tooltip>
         </Col>

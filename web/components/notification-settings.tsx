@@ -69,6 +69,7 @@ export function NotificationSettings(props: {
     'unique_bettors_on_your_contract',
     'profit_loss_updates',
     'opt_out_all',
+    'some_comments_on_watched_markets',
     // TODO: add these
     // biggest winner, here are the rest of your markets
 
@@ -80,7 +81,6 @@ export function NotificationSettings(props: {
   ]
   const browserDisabled: Array<notification_preference> = [
     'trending_markets',
-    'profit_loss_updates',
     'onboarding_flow',
     'thank_you_for_purchases',
   ]
@@ -89,9 +89,15 @@ export function NotificationSettings(props: {
     'resolutions_on_watched_markets',
     'resolutions_on_watched_markets_with_shares_in',
     'opt_out_all',
+
+    'all_replies_to_my_comments_on_watched_markets',
+    'all_replies_to_my_answers_on_watched_markets',
+    'all_comments_on_my_markets',
+    'all_answers_on_my_markets',
+    'tagged_user',
+    'some_comments_on_watched_markets',
+
     // TODO: add these
-    // 'all_replies_to_my_comments_on_watched_markets',
-    // 'all_replies_to_my_answers_on_watched_markets',
     // 'limit_order_fills',
     // 'contract_from_followed_user',
     // 'probability_updates_on_watched_markets',
@@ -105,11 +111,12 @@ export function NotificationSettings(props: {
   const comments: SectionData = {
     label: 'New Comments',
     subscriptionTypes: [
-      'all_comments_on_watched_markets',
-      'all_comments_on_contracts_with_shares_in_on_watched_markets',
+      'some_comments_on_watched_markets',
       // TODO: combine these two
       'all_replies_to_my_comments_on_watched_markets',
       'all_replies_to_my_answers_on_watched_markets',
+      'all_comments_on_contracts_with_shares_in_on_watched_markets',
+      'all_comments_on_watched_markets',
     ],
   }
 
@@ -159,6 +166,10 @@ export function NotificationSettings(props: {
       'user_liked_your_content',
     ],
   }
+  const groups: SectionData = {
+    label: 'Groups',
+    subscriptionTypes: ['group_role_changed', 'added_to_group'],
+  }
   const generalOther: SectionData = {
     label: 'Other',
     subscriptionTypes: [
@@ -193,12 +204,12 @@ export function NotificationSettings(props: {
     return (
       <Row
         className={clsx(
-          'my-1 gap-1 text-gray-300',
-          highlight ? 'rounded-md bg-indigo-100 p-1' : ''
+          'text-ink-300 my-1 gap-1',
+          highlight ? 'bg-primary-100 rounded-md p-1' : ''
         )}
       >
         <Col className="ml-3 gap-2 text-sm">
-          <Row className="gap-2 font-medium text-gray-700">
+          <Row className="text-ink-700 gap-2 font-medium">
             <span>{description}</span>
           </Row>
           <Row className={'gap-4'}>
@@ -280,7 +291,7 @@ export function NotificationSettings(props: {
     // due to a private user settings change. Just going to persist expanded state here
     const [expanded, setExpanded] = usePersistentState(expand ?? false, {
       key: 'NotificationsSettingsSection-' + subscriptionTypes.join('-'),
-      store: storageStore(safeLocalStorage()),
+      store: storageStore(safeLocalStorage),
     })
 
     // Not working as the default value for expanded, so using a useEffect
@@ -291,18 +302,18 @@ export function NotificationSettings(props: {
     return (
       <Col className={clsx('ml-2 gap-2')}>
         <Row
-          className={'mt-1 cursor-pointer items-center gap-2 text-gray-600'}
+          className={'text-ink-600 mt-1 cursor-pointer items-center gap-2'}
           onClick={() => setExpanded(!expanded)}
         >
           {icon}
           <span>{label}</span>
 
           {expanded ? (
-            <ChevronUpIcon className="h-5 w-5 text-xs text-gray-500">
+            <ChevronUpIcon className="text-ink-500 h-5 w-5 text-xs">
               Hide
             </ChevronUpIcon>
           ) : (
-            <ChevronDownIcon className="h-5 w-5 text-xs text-gray-500">
+            <ChevronDownIcon className="text-ink-500 h-5 w-5 text-xs">
               Show
             </ChevronDownIcon>
           )}
@@ -352,11 +363,10 @@ export function NotificationSettings(props: {
       !rejectedPushNotificationsOn
     ) {
       return (
-        <Row className="items-center justify-center font-medium text-gray-700">
-          <span className={'rounded-md bg-gray-100 p-2'}>
-            You haven't enabled mobile push notifications. To enable them
+        <Row className="text-ink-700 items-center justify-center font-medium">
+          <span className={'bg-ink-100 rounded-md p-2'}>
+            You haven't enabled mobile push notifications.
             <Button
-              color={'blue'}
               size={'2xs'}
               className={'ml-2 inline-block whitespace-nowrap'}
               onClick={() => {
@@ -367,7 +377,7 @@ export function NotificationSettings(props: {
                 })
               }}
             >
-              click here
+              Turn on
             </Button>
           </span>
         </Row>
@@ -376,8 +386,8 @@ export function NotificationSettings(props: {
 
     // Otherwise, they rejected the system modal, so they've to re-enable it in their settings
     return (
-      <Row className="items-center justify-center text-sm text-gray-700">
-        <span className={'rounded-md bg-gray-100 p-2'}>
+      <Row className="text-ink-700 items-center justify-center text-sm">
+        <span className={'bg-ink-100 rounded-md p-2'}>
           Mobile push notifications are disabled. To enable them, go to your
           phone's notification settings.
         </span>
@@ -389,10 +399,10 @@ export function NotificationSettings(props: {
     <div className={'p-2'}>
       <Col className={'gap-6'}>
         <PushNotificationsBanner privateUser={privateUser} />
-        <Row className={'gap-2 text-xl text-gray-700'}>
+        <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>Notifications for Watched Markets</span>
           <InformationCircleIcon
-            className="-mb-1 h-5 w-5 cursor-pointer text-gray-500"
+            className="text-ink-500 -mb-1 h-5 w-5 cursor-pointer"
             onClick={() => setShowWatchModal(true)}
           />
         </Row>
@@ -406,7 +416,7 @@ export function NotificationSettings(props: {
           data={answers}
         />
         <Section icon={<UserIcon className={'h-6 w-6'} />} data={yourMarkets} />
-        <Row className={'gap-2 text-xl text-gray-700'}>
+        <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>Balance Changes</span>
         </Row>
         <Section
@@ -417,13 +427,14 @@ export function NotificationSettings(props: {
           icon={<CashIcon className={'h-6 w-6'} />}
           data={otherBalances}
         />
-        <Row className={'gap-2 text-xl text-gray-700'}>
+        <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>General</span>
         </Row>
         <Section
-          icon={<UsersIcon className={'h-6 w-6'} />}
+          icon={<UserIcon className={'h-6 w-6'} />}
           data={userInteractions}
         />
+        <Section icon={<UsersIcon className={'h-6 w-6'} />} data={groups} />
         <Section
           icon={<InboxInIcon className={'h-6 w-6'} />}
           data={generalOther}

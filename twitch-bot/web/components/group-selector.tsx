@@ -81,40 +81,40 @@ export function GroupSelector(props: {
           <div className="relative flex w-full justify-items-stretch">
             <Combobox.Input
               spellCheck="false"
-              className="h-12 w-full rounded-md border border-gray-300 bg-white pl-4 pr-8 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-500 disabled:shadow-none"
+              className="border-ink-300 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 disabled:border-ink-200 disabled:bg-ink-50 disabled:text-ink-500 h-12 w-full rounded-md border pl-4 pr-8 text-sm shadow-sm focus:outline-none focus:ring-1 disabled:shadow-none"
               onChange={(event) => setQuery(event.target.value)}
               displayValue={(group: Group) => (group ? group.name : previouslySelectedGroup && previouslySelectedGroup.groupName)}
               placeholder={'Group name'}
               style={{ borderTopRightRadius: '0', borderBottomRightRadius: '0' }}
             />
             <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
-              <SelectorIcon className="h-10 w-5 text-gray-400" aria-hidden="true" />
+              <SelectorIcon className="text-ink-400 h-10 w-5" aria-hidden="true" />
             </Combobox.Button>
 
-            <Combobox.Options className="absolute z-50 mt-[3.2rem] max-h-96 w-full overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+            <Combobox.Options className="bg-canvas-0 ring-ink-1000 absolute z-50 mt-[3.2rem] max-h-96 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none">
               {filteredGroups.map((group: Group) => (
                 <Combobox.Option
                   key={group.id}
                   value={group}
-                  className={({ active }) => clsx('relative h-14 cursor-pointer select-none py-2 pl-4 pr-9', active ? 'bg-indigo-500 text-white' : 'text-gray-900')}
+                  className={({ active }) => clsx('relative h-14 cursor-pointer select-none py-2 pl-4 pr-9', active ? 'text-ink-0 bg-primary-500' : 'text-ink-900')}
                 >
                   {({ active, selected }) => (
                     <>
                       {selected && (
-                        <span className={clsx('absolute inset-y-0 left-2 flex items-center pr-4', active ? 'text-white' : 'text-indigo-600')}>
+                        <span className={clsx('absolute inset-y-0 left-2 flex items-center pr-4', active ? 'text-ink-1000' : 'text-primary-600')}>
                           <CheckIcon className="h-5 w-5" aria-hidden="true" />
                         </span>
                       )}
                       <span className={clsx('ml-5 mt-1 block truncate', selected && 'font-semibold')}>
                         {group.name}
-                        <p className="text-xs font-light italic text-gray-400">{group.slug}</p>
+                        <p className="text-ink-400 text-xs font-light italic">{group.slug}</p>
                       </span>
                     </>
                   )}
                 </Combobox.Option>
               ))}
               <div
-                className="btn btn-sm h-14 w-full justify-start rounded-none border-0 bg-white pl-2 font-normal normal-case text-gray-900 hover:bg-indigo-500 hover:text-white"
+                className="btn btn-sm text-ink-900 bg-canvas-0 hover:text-ink-0 hover:bg-primary-500 h-14 w-full justify-start rounded-none border-0 pl-2 font-normal normal-case"
                 onClick={() => window.open(APIBase.startsWith('https://dev') ? 'https://dev.manifold.markets/groups' : 'https://manifold.markets/groups') /* TODO: Make full generic */}
               >
                 <PlusCircleIcon className="text-primary mr-2 h-5 w-5" />

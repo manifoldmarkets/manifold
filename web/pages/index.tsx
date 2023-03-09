@@ -1,140 +1,119 @@
 import { ReactNode, useEffect, useState } from 'react'
 import Router from 'next/router'
+import { ChartBarIcon } from '@heroicons/react/solid'
+import Link from 'next/link'
 
 import { Page } from 'web/components/layout/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
-import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
+import { ContractsSection } from './home'
 import {
-  inMemoryStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { useGlobalConfig } from 'web/hooks/use-global-config'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Post } from 'common/post'
-import { ActivitySection, FeaturedSection, SearchSection } from './home'
-import { Sort } from 'web/components/contract-search'
-import { ContractCard } from 'web/components/contract/contract-card'
-import { PostCard } from 'web/components/posts/post-card'
-import {
-  useContractsByDailyScore,
-  useTrendingContracts,
-} from 'web/hooks/use-contracts'
-import { Contract } from 'common/contract'
-import { DESTINY_GROUP_SLUGS, ENV_CONFIG } from 'common/envs/constants'
+  DESTINY_GROUP_SLUGS,
+  ENV_CONFIG,
+  HOME_BLOCKED_GROUP_SLUGS,
+} from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
-import Link from 'next/link'
-import { ChartBarIcon, ExclamationCircleIcon } from '@heroicons/react/solid'
 import TestimonialsPanel from './testimonials-panel'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
-import { formatMoney } from 'common/util/format'
+import { CPMMBinaryContract } from 'common/contract'
+import { getTrendingContracts } from 'web/lib/firebase/contracts'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { Button } from 'web/components/buttons/button'
+import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
+import { LogoSEO } from 'web/components/LogoSEO'
+
+const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
+  const contracts = await getTrendingContracts(20)
+
+  const trendingContracts = contracts.filter(
+    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug))
+  )
+
   return {
-    props: {},
+    props: { trendingContracts },
   }
 })
 
-export default function Home() {
+export default function Home(props: {
+  trendingContracts: CPMMBinaryContract[]
+}) {
   useSaveReferral()
   useRedirectAfterLogin()
 
-  const blockedFacetFilters = DESTINY_GROUP_SLUGS.map(
-    (slug) => `groupSlugs:-${slug}`
-  )
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const globalConfig = useGlobalConfig()
-  const trendingContracts = useTrendingContracts(6, blockedFacetFilters)
-  const dailyTrendingContracts = useContractsByDailyScore(
-    6,
-    blockedFacetFilters
-  )
-  const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
-    store: inMemoryStore(),
-    key: 'home-pinned',
-  })
+  const { trendingContracts } = props
 
-  useEffect(() => {
-    const pinnedItems = globalConfig?.pinnedItems
-    if (pinnedItems) {
-      const itemComponents = pinnedItems.map((element) => {
-        if (element.type === 'post') {
-          const post = element.item as Post
-          return <PostCard post={post} pinned={true} />
-        } else if (element.type === 'contract') {
-          const contract = element.item as Contract
-          return <ContractCard contract={contract} pinned={true} />
-        }
-      })
-      setPinned(
-        itemComponents.filter(
-          (element) => element != undefined
-        ) as JSX.Element[]
-      )
-    }
-  }, [globalConfig, setPinned])
-  const isLoading =
-    !trendingContracts || !globalConfig || !pinned || !dailyTrendingContracts
   return (
-    <Page>
-      <SEO
-        title="Manifold Markets"
-        description="Create a play-money prediction market on any topic you care about
-            and bet with your friends on what will happen!"
-      />
-      <Col className="mx-auto mb-8 max-w-3xl gap-4 px-4">
-        <LandingPagePanel />
-        <Row className="w-full gap-2 sm:gap-4">
-          <ExternalInfoCard
-            link="https://help.manifold.markets/"
-            icon={<div className="text-2xl">?</div>}
-            text="About & Help"
-          />
-          <InfoCard
-            link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
-            icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
-            text="What is Mana?"
-            modal={<ManaExplainer />}
-          />
-          <InfoCard
-            link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
-            icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
-            text="What is a Prediction Market?"
-            modal={<PredictionMarketExplainer />}
-          />
-        </Row>
-        {isLoading ? (
-          <LoadingIndicator />
-        ) : (
-          <>
-            <SearchSection
-              key={'score'}
-              label={'Trending'}
-              contracts={trendingContracts}
-              sort={'score' as Sort}
-              icon={'🔥'}
+    <Page hideSidebar>
+      <Col className="mx-auto mb-8 w-full gap-8 px-4">
+        <Col className="gap-4">
+          <Row className="items-center justify-between">
+            <ManifoldLogo />
+            <LogoSEO />
+
+            <div className="hidden items-center gap-2 lg:flex">
+              <Button
+                color="gray-white"
+                size="xs"
+                onClick={() => setIsModalOpen(true)}
+              >
+                Get app
+              </Button>
+              <Button color="gray-white" size="xs" onClick={firebaseLogin}>
+                Sign in
+              </Button>
+              <Button color="indigo" size="xs" onClick={firebaseLogin}>
+                Sign up
+              </Button>
+
+              <MobileAppsQRCodeDialog
+                isModalOpen={isModalOpen}
+                setIsModalOpen={setIsModalOpen}
+              />
+            </div>
+          </Row>
+
+          <LandingPagePanel />
+
+          <Row className="w-full gap-2 sm:gap-4">
+            <InfoCard
+              link="https://help.manifold.markets/introduction-to-manifold-markets/what-are-prediction-markets"
+              icon={<ChartBarIcon className="mx-auto h-8 w-8" />}
+              text="What is a prediction market?"
+              modal={<PredictionMarketExplainer />}
             />
-            <SearchSection
-              key={'daily-trending'}
-              label={'Daily changed'}
-              contracts={dailyTrendingContracts}
-              sort={'daily-score'}
-              icon={'📈'}
+
+            <InfoCard
+              link="https://help.manifold.markets/introduction-to-manifold-markets/what-is-mana-m"
+              icon={<div className="text-2xl">{ENV_CONFIG.moneyMoniker}</div>}
+              text="What is mana?"
+              modal={<ManaExplainer />}
             />
-            <ActivitySection key={'live-feed'} />
-            <FeaturedSection
-              key={'featured'}
-              globalConfig={globalConfig}
-              pinned={pinned}
-              isAdmin={false}
+
+            <ExternalInfoCard
+              link="https://help.manifold.markets/"
+              icon={<div className="text-2xl">?</div>}
+              text="Learn more"
             />
-          </>
-        )}
+          </Row>
+        </Col>
+
+        <ContractsSection
+          className="self-center"
+          label={'Trending'}
+          contracts={trendingContracts}
+          icon={'🔥'}
+        />
+
         <TestimonialsPanel />
       </Col>
     </Page>
@@ -149,17 +128,17 @@ export function ExternalInfoCard(props: {
   const { link, icon, text } = props
   return (
     <Link
-      className="group flex w-1/3 flex-col items-center gap-1 rounded-xl bg-indigo-700 px-4 py-2 text-center text-sm text-white drop-shadow-sm transition-all hover:drop-shadow-lg"
+      className="text-ink-700 border-primary-300 hover:border-primary-700 group flex w-1/3 flex-col items-center gap-1 rounded-xl border px-4 py-2 text-center text-sm drop-shadow-sm transition-all"
       href={link}
       target="_blank"
     >
-      <div className="text-indigo-400 transition-colors group-hover:text-white">
+      <div className="text-primary-300 group-hover:text-primary-700 transition-colors">
         {icon}
       </div>
       <div>
-        {text}
+        <span className="text-ink-700">{text}</span>
         <span>
-          <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-white" />
+          <GoToIcon className="text-primary-300 mb-1 ml-2 inline h-4 w-4" />
         </span>
       </div>
     </Link>
@@ -178,33 +157,33 @@ export function InfoCard(props: {
   return (
     <>
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="rounded-md bg-white px-8 pb-6 pt-0 text-sm font-light md:text-lg">
-          <Title text={text} />
+        <Col className="bg-canvas-0 text-ink-1000 rounded-md px-8 py-6 text-sm font-light md:text-lg">
+          <Title children={text} />
           {modal}
           <Link
             href={link}
-            className="mt-2 text-indigo-700 underline"
+            className="text-primary-700 mt-2 underline"
             target="_blank"
           >
             Learn more{' '}
             <span>
-              <GoToIcon className="mb-1 ml-1 inline h-4 w-4 text-indigo-700" />
+              <GoToIcon className="text-primary-700 mb-1 ml-1 inline h-4 w-4" />
             </span>
           </Link>
         </Col>
       </Modal>
       <button
-        className="group flex w-1/3 flex-col items-center gap-1 rounded-xl bg-indigo-700 px-4 py-2 text-center text-sm text-white drop-shadow-sm transition-all hover:drop-shadow-lg"
+        className="text-ink-700 border-primary-300 hover:border-primary-700 group flex w-1/3 flex-col items-center gap-1 rounded-xl border px-4 py-2 text-center text-sm drop-shadow-sm transition-colors"
         onClick={() => setOpen(true)}
       >
-        <div className="text-indigo-400 transition-colors group-hover:text-white">
+        <div className="text-primary-300 group-hover:text-primary-700 transition-colors">
           {icon}
         </div>
         <div>
-          <div>{text}</div>
+          <div className="text-ink-700">{text}</div>
           {externalLink && (
             <span>
-              <GoToIcon className="mb-1 ml-2 inline h-4 w-4 text-indigo-400" />
+              <GoToIcon className="text-primary-300 mb-1 ml-2 inline h-4 w-4" />
             </span>
           )}
         </div>
@@ -220,25 +199,15 @@ export function ManaExplainer() {
         className="mx-auto mb-8 w-[60%] object-contain"
         src={'/welcome/treasure.png'}
       />
-      <p>
-        <span className="font-normal text-indigo-700">
+      <div>
+        <span className="text-primary-700 mt-4 font-normal">
           Mana ({ENV_CONFIG.moneyMoniker})
         </span>{' '}
-        is the play money you bet with. You can also turn it into a real
-        donation to charity, at a 100:1 ratio.
-      </p>
-      <Row className="mt-4 gap-2 rounded border border-gray-200 bg-gray-50 py-2 pl-2 pr-4 text-sm text-indigo-700">
-        <ExclamationCircleIcon className="h-5 w-5" />
-        Mana can not be traded in for real money.
-      </Row>
-      <div className="mt-4 font-semibold text-gray-400">EXAMPLE</div>
-      <div className="mb-4 border-l-2 border-indigo-700 bg-indigo-50 py-2 px-2">
-        <p>
-          When you donate{' '}
-          <span className="font-semibold">{formatMoney(1000)}</span> to
-          Givewell, Manifold sends them{' '}
-          <span className="font-semibold">$10 USD</span>.
-        </p>
+        is Manifold's play money. Use it to create and bet in markets. The more
+        mana you have, the more you can bet and move the market.
+      </div>
+      <div className="mt-4">
+        Mana <strong>can't be converted to real money</strong>.
       </div>
     </>
   )
@@ -248,14 +217,14 @@ export function PredictionMarketExplainer() {
   return (
     <>
       <p>
-        Prediction markets allow you to bet on the outcome of future events. On
-        Manifold, anyone can create their own prediction market about any
-        question they want!
+        Prediction markets let you bet on the outcome of future events. On
+        Manifold, you can create your own prediction market on any question you
+        want!
       </p>
-      <div className="mt-4 font-semibold text-gray-400">EXAMPLE</div>
-      <div className="mb-4 border-l-2 border-indigo-700 bg-indigo-50 py-2 px-2">
+      <div className="text-ink-400 mt-4 font-semibold">EXAMPLE</div>
+      <div className="border-primary-700 bg-primary-50 mb-4 border-l-2 py-2 px-2 text-sm">
         <p className="mt-2">
-          <span className="font-semibold text-indigo-700">
+          <span className="text-primary-700 font-semibold">
             "Will Democrats win the 2024 US presidential election?"
           </span>
         </p>

@@ -1,8 +1,8 @@
 {
   "functions": {
-    "predeploy": "cd functions && yarn build",
-    "runtime": "nodejs16",
-    "source": "functions/dist",
+    "predeploy": "cd backend/functions && yarn build",
+    "runtime": "nodejs18",
+    "source": "backend/functions/dist",
     "ignore": [
       "node_modules",
       ".git",

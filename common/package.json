@@ -3,19 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "verify": "(cd .. && yarn verify)",
+    "build": "yarn compile && yarn alias",
+    "compile": "tsc -b",
+    "alias": "tsc-alias",
+    "verify": "yarn --cwd=.. verify",
     "verify:dir": "npx eslint . --max-warnings 0",
     "test": "jest"
   },
   "sideEffects": false,
   "dependencies": {
     "@supabase/supabase-js": "2.2.0",
-    "@tiptap/core": "2.0.0-beta.199",
-    "@tiptap/extension-image": "2.0.0-beta.199",
-    "@tiptap/extension-link": "2.0.0-beta.199",
-    "@tiptap/extension-mention": "2.0.0-beta.199",
-    "@tiptap/starter-kit": "2.0.0-beta.199",
-    "@tiptap/suggestion": "2.0.0-beta.199",
+    "@tiptap/core": "2.0.0-beta.204",
+    "@tiptap/extension-image": "2.0.0-beta.204",
+    "@tiptap/extension-link": "2.0.0-beta.204",
+    "@tiptap/extension-mention": "2.0.0-beta.204",
+    "@tiptap/starter-kit": "2.0.0-beta.204",
+    "@tiptap/suggestion": "2.0.0-beta.204",
     "lodash": "4.17.21"
   },
   "devDependencies": {
