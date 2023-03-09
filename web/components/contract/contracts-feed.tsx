@@ -22,7 +22,7 @@ export function ContractsFeed() {
 
       <div className="relative">
         <VisibilityObserver
-          className="pointer-events-none absolute bottom-0 h-screen w-full select-none bg-red-500"
+          className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
           onVisibilityUpdated={(visible) => visible && loadMore()}
         />
       </div>
