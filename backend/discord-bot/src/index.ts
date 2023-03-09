@@ -96,11 +96,17 @@ const init = async () => {
 }
 
 const registerListeners = () => {
-  client.on(Events.MessageReactionAdd, handleOldReaction)
+  client.on(Events.MessageReactionAdd, async (reaction, user) => {
+    handleOldReaction(reaction, user).catch((e) =>
+      console.log('Error handling old reaction', e)
+    )
+  })
 
   client.on(Events.InteractionCreate, (interaction) => {
     if (!interaction.isButton()) return
-    handleButtonPress(interaction)
+    handleButtonPress(interaction).catch((e) =>
+      console.log('Error handling button interaction', e)
+    )
   })
 
   client.on(Events.InteractionCreate, async (interaction) => {
@@ -109,15 +115,17 @@ const registerListeners = () => {
     const command = commandsCollection.get(interaction.commandName)
     if (!command) return
 
-    try {
-      await command.execute(interaction)
-    } catch (error) {
-      console.error(error)
-      await interaction.reply({
-        content: 'There was an error while executing this command :(',
-        ephemeral: true,
-      })
-    }
+    await command.execute(interaction).catch((error) => {
+      console.log('Error executing slash command interaction', error)
+      interaction
+        .reply({
+          content: 'There was an error while executing this command :(',
+          ephemeral: true,
+        })
+        .catch((e) =>
+          console.log('Error replying to slash command interaction', e)
+        )
+    })
   })
 }
 

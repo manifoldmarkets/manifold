@@ -1,7 +1,7 @@
 import { FullMarket } from 'common/api-market-types'
 import { ContractMetrics } from 'common/calculate-metrics'
 import * as console from 'console'
-import { sendPositionsEmbed } from 'discord-bot/commands/leaderboard'
+import { sendPositionsEmbed } from 'discord-bot/leaderboard'
 import { config } from 'discord-bot/constants/config'
 import {
   ButtonInteraction,
