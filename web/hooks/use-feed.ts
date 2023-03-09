@@ -1,4 +1,4 @@
-import { uniqBy } from 'lodash'
+import { uniqBy, shuffle } from 'lodash'
 import { CPMMBinaryContract } from 'common/contract'
 import { User } from 'common/user'
 import { useEffect } from 'react'
@@ -31,7 +31,9 @@ export const useFeed = (user: User | null | undefined, key: string) => {
         n: PAGE_SIZE,
         excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
       }).then((res) => {
-        const newContracts = res.data as CPMMBinaryContract[] | undefined
+        const newContracts = shuffle(
+          (res.data as CPMMBinaryContract[] | undefined) ?? []
+        )
         setSavedContracts((contracts) =>
           uniqBy(buildArray(contracts, newContracts), (c) => c.id).filter(
             (c) => !isContractBlocked(privateUser, c)

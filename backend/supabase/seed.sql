@@ -725,12 +725,74 @@ as $$
   )
   limit count
 $$;
+
+create or replace function get_recommended_contract_set(uid text, n int, excluded_contract_ids text[])
+returns table (data jsonb, score real)
+immutable parallel safe
+language sql
+as $$
+  with recommended_contracts as (
+    select data, score
+    from get_recommended_contract_scores_unseen(uid)
+    left join contracts
+    on contracts.id = contract_id
+    where is_valid_contract(data)
+    and data->>'outcomeType' = 'BINARY'
+    order by score desc
+  ), new_contracts as (
+    select data, score
+    from recommended_contracts
+    where (data->>'createdTime')::bigint > ts_to_millis(now() - interval '1 day')
+    order by score desc
+    limit floor(n / 3)
+  ), closing_soon_contracts as (
+    select data, score
+    from recommended_contracts
+    where (data->>'closeTime')::bigint < ts_to_millis(now() + interval '1 day')
+    and (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
+    order by score desc
+    limit floor(n / 3)
+  ), trending_contracts as (
+    select data, score
+    from recommended_contracts
+    where (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
+    and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '1 day')
+    order by score desc
+    limit ceiling(n / 3)
+  ), trending_filler_contracts as (
+    select data, score
+    from recommended_contracts
+    where (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
+    and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '1 day')
+    order by score desc
+    offset ceiling(n / 3)
+    limit floor(2 * n / 3)
+  ), combined_contracts as (
+    select data, score
+    from new_contracts
+    union all
+    select data, score
+    from closing_soon_contracts
+    union all
+    select data, score
+    from trending_contracts
+    order by score desc
+  )
+
+  select data, score
+  from combined_contracts
+  union all 
+  select data, score
+  from trending_filler_contracts
+  limit n 
+$$;
+
 create or replace function get_recommended_contracts(uid text, n int, excluded_contract_ids text[])
   returns setof jsonb
   language plpgsql
 as $$ begin
   create temp table your_recs on commit drop as (
-    select * from get_recommended_contracts_by_score_excluding(uid, n, excluded_contract_ids)
+    select * from get_recommended_contract_set(uid, n, excluded_contract_ids)
   );
   if (select count(*) from your_recs) = n then
     return query select data from your_recs;
@@ -738,7 +800,7 @@ as $$ begin
     -- Default recommendations from this particular user if none for you.
     return query (
       select data from your_recs union all
-      select data from get_recommended_contracts_by_score_excluding('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', n, excluded_contract_ids)
+      select data from get_recommended_contract_set('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', n, excluded_contract_ids)
       limit n
     );
   end if;
