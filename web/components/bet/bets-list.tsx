@@ -313,7 +313,9 @@ export function BetsList(props: { user: User }) {
                 key={contract.id}
                 contract={contract}
                 metrics={nullableMetricsByContract[contract.id]}
-                displayMetric={sort === 'profit' ? 'profit' : 'value'}
+                displayMetric={
+                  sort === 'profit' || sort === 'loss' ? 'profit' : 'value'
+                }
                 isYourBets={isYourBets}
                 userId={user.id}
               />
