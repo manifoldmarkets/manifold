@@ -105,6 +105,7 @@ export function getCurrentUser(params: any) {
 }
 
 export function createPost(params: {
+  type: string
   title: string
   content: JSONContent
   groupId?: string

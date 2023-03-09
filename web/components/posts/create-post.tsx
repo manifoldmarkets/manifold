@@ -36,6 +36,7 @@ export function CreatePostForm(props: { group?: Group }) {
   async function savePost(title: string) {
     if (!editor) return
     const newPost = {
+      type: 'base',
       title: title,
       content: editor.getJSON(),
       groupId: group?.id,

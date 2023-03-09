@@ -3,6 +3,7 @@ import { User } from 'common/user'
 import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from 'common/util/object'
 import {
+  AdRedeemTxn,
   ContractResolutionPayoutTxn,
   ContractUndoResolutionPayoutTxn,
   Txn,
@@ -100,3 +101,26 @@ export function undoContractPayoutTxn(
   return { status: 'success', data: txnData }
 }
 const firestore = admin.firestore()
+
+export function runRedeemAdRewardTxn(
+  fbTransaction: admin.firestore.Transaction,
+  txnData: Omit<AdRedeemTxn, 'id' | 'createdTime'>
+) {
+  const { amount, toId, fromId } = txnData
+
+  const fromDoc = firestore.doc(`posts/${fromId}`)
+  fbTransaction.update(fromDoc, {
+    totalValue: FieldValue.increment(-amount),
+  })
+
+  const toDoc = firestore.doc(`users/${toId}`)
+  fbTransaction.update(toDoc, {
+    balance: FieldValue.increment(amount),
+  })
+
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
+  return { status: 'success', txn }
+}

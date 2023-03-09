@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { removeUndefinedProps } from 'common/util/object'
 import { createMarketHelper } from './create-market'
 import { DAY_MS } from 'common/util/time'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -34,23 +35,38 @@ const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   )
 )
 
-const postSchema = z.object({
-  title: z.string().min(1).max(MAX_POST_TITLE_LENGTH),
-  content: contentSchema,
-  isGroupAboutPost: z.boolean().optional(),
-  groupId: z.string().optional(),
-
-  // Date doc fields:
-  bounty: z.number().optional(),
-  birthday: z.number().optional(),
-  type: z.string().optional(),
-  question: z.string().optional(),
-})
+const postSchema = z
+  .object({
+    title: z.string().min(1).max(MAX_POST_TITLE_LENGTH),
+    content: contentSchema,
+    isGroupAboutPost: z.boolean().optional(),
+    groupId: z.string().optional(),
+  })
+  .and(
+    z.union([
+      z.object({
+        type: z.literal('date-doc'),
+        bounty: z.number(),
+        birthday: z.number(),
+        question: z.string(),
+      }),
+      z.object({
+        type: z.literal('ad'),
+        totalCost: z.number().min(0),
+        costPerView: z.number().min(0),
+      }),
+      z.object({
+        type: z.literal('base'),
+      }),
+    ])
+  )
 
 export const createpost = newEndpoint({}, async (req, auth) => {
   const firestore = admin.firestore()
-  const { title, content, isGroupAboutPost, groupId, question, ...otherProps } =
-    validate(postSchema, req.body)
+  const { title, content, isGroupAboutPost, groupId, ...otherProps } = validate(
+    postSchema,
+    req.body
+  )
 
   const creator = await getUser(auth.uid)
   if (!creator)
@@ -64,13 +80,13 @@ export const createpost = newEndpoint({}, async (req, auth) => {
 
   // If this is a date doc, create a market for it.
   let contractSlug
-  if (question) {
+  if (otherProps.type === 'date-doc') {
     const closeTime = Date.now() + DAY_MS * 30 * 3
 
     try {
       const result = await createMarketHelper(
         {
-          question,
+          question: otherProps.question,
           closeTime,
           outcomeType: 'BINARY',
           visibility: 'unlisted',
@@ -86,6 +102,34 @@ export const createpost = newEndpoint({}, async (req, auth) => {
     }
   }
 
+  // if this is an advertisement, subtract amount from user's balance and write txn
+  let funds
+  if (otherProps.type === 'ad') {
+    const cost = otherProps.totalCost
+
+    if (!cost) {
+      throw new APIError(403, 'totalCost required')
+    }
+
+    // deduct from user
+    await firestore.runTransaction(async (trans) => {
+      if (cost > creator.balance)
+        throw new APIError(402, `Balance insufficient to pay ${cost}.`)
+
+      const userDoc = await trans.get(
+        firestore.collection('users').doc(creator.id)
+      )
+
+      trans.update(userDoc.ref, {
+        balance: FieldValue.increment(-cost),
+        totalDeposits: FieldValue.increment(-cost),
+      })
+    })
+
+    // init current funds
+    funds = cost
+  }
+
   const post: Post = removeUndefinedProps({
     ...otherProps,
     id: postRef.id,
@@ -96,6 +140,7 @@ export const createpost = newEndpoint({}, async (req, auth) => {
     createdTime: Date.now(),
     content: content,
     contractSlug,
+    funds,
     creatorName: creator.name,
     creatorUsername: creator.username,
     creatorAvatarUrl: creator.avatarUrl,

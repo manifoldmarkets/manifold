@@ -1,6 +1,8 @@
+import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
+import Link from 'next/link'
 import { useEffect, useReducer, useState } from 'react'
-import { Button } from 'web/components/buttons/button'
+import { Button, buttonClass } from 'web/components/buttons/button'
 import { Page } from 'web/components/layout/page'
 import { NoSEO } from 'web/components/NoSEO'
 
@@ -54,6 +56,13 @@ function Ad(props: {
       </div>
 
       {/* comments */}
+
+      <Link
+        href="/ad/create"
+        className={clsx(buttonClass('md', 'gradient'), 'bg-gradient-to-r')}
+      >
+        Create your own advertisement!
+      </Link>
     </div>
   )
 }
