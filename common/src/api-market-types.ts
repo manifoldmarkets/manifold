@@ -7,6 +7,7 @@ import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
+import { getMappedValue } from './pseudo-numeric'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -81,11 +82,14 @@ export function toLiteMarket(contract: Contract): LiteMarket {
   const { p, totalLiquidity } = contract as any
 
   const probability =
-    contract.outcomeType === 'BINARY' ? getProbability(contract) : undefined
+    outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC'
+      ? getProbability(contract)
+      : undefined
 
-  let min, max, isLogScale: any
+  let value, min, max, isLogScale: any
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    ({ min, max, isLogScale } = contract)
+    value = getMappedValue(contract, contract.prob)
+    ;({ min, max, isLogScale } = contract)
   }
 
   return removeUndefinedProps({
@@ -115,6 +119,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolutionTime,
     resolutionProbability,
     lastUpdatedTime,
+    value,
     min,
     max,
     isLogScale,
