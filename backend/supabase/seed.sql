@@ -738,6 +738,10 @@ as $$
     on contracts.id = contract_id
     where is_valid_contract(data)
     and data->>'outcomeType' = 'BINARY'
+    and not exists (
+      select 1 from unnest(excluded_contract_ids) as w
+      where w = contract_id
+    )
     order by score desc
   ), new_contracts as (
     select data, score
