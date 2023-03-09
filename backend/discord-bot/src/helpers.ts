@@ -18,16 +18,20 @@ import {
 } from './emojis.js'
 import { registerHelpMessage, userApiKey } from './storage.js'
 
-const messagesToRefresh = new Set<Message>()
+export const messageEmbedsToRefresh = new Set<{
+  message: Message
+  marketId: string
+}>()
 
 // Refresh probabilities every 10 seconds
 setInterval(async () => {
-  if (messagesToRefresh.size === 0) return
+  if (messageEmbedsToRefresh.size === 0) return
   await Promise.all(
-    Array.from(messagesToRefresh).map(async (message) => {
+    Array.from(messageEmbedsToRefresh).map(async (m) => {
+      const { message, marketId } = m
       if (message.embeds.length === 0) await message.fetch()
-      const isResolved = await refreshMessage(message)
-      if (isResolved) messagesToRefresh.delete(message)
+      const isResolved = await refreshMessage(message, marketId)
+      if (isResolved) messageEmbedsToRefresh.delete(m)
     })
   )
 }, 10 * 1000)
@@ -160,7 +164,7 @@ export const handleBet = async (
     market.probability = newProb
     await sendChannelMessage(channel, market, content)
     await updateMarketStatus(message, market)
-    messagesToRefresh.add(message)
+    messageEmbedsToRefresh.add({ message, marketId: market.id })
   } catch (e) {
     const content = `Error: ${e}`
     await user.send(content)
@@ -191,16 +195,14 @@ const updateMarketStatus = async (message: Message, market: FullMarket) => {
   )
   await message.edit({ embeds: [marketEmbed], files: [] })
 }
-export const refreshMessage = async (message: Message) => {
+export const refreshMessage = async (message: Message, marketId: string) => {
   const previousEmbed = message.embeds[0]
   const marketEmbed = EmbedBuilder.from(previousEmbed)
   if (!previousEmbed || !previousEmbed.url) {
     console.log('No embed or url found')
     return
   }
-  const slug = getSlug(previousEmbed.url)
-  const market = await getMarketFromSlug(slug).catch((e) => null)
-  if (!market) return
+  const market = await getMarketFromId(marketId)
   marketEmbed.setDescription(getCurrentMarketDescription(market))
   const isResolved = market.isResolved
   marketEmbed.setTitle(
@@ -236,6 +238,13 @@ export const getMarketFromSlug = async (slug: string) => {
   const resp = await fetch(`${config.domain}api/v0/slug/${slug}`)
   if (!resp.ok) {
     throw new Error('Market not found with slug: ' + slug)
+  }
+  return (await resp.json()) as FullMarket
+}
+export const getMarketFromId = async (id: string) => {
+  const resp = await fetch(`${config.domain}api/v0/market/${id}`)
+  if (!resp.ok) {
+    throw new Error('Market not found with id: ' + id)
   }
   return (await resp.json()) as FullMarket
 }

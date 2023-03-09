@@ -134,7 +134,6 @@ const handleOldReaction = async (
   if (shouldIgnoreMessageFromGuild(guildId)) return
 
   const marketInfo = await getMarketInfoFromMessageId(message.id)
-  console.log('got market info from supabase', marketInfo)
   if (!marketInfo) return
 
   console.log('checking old reaction for proper details')
@@ -148,9 +147,7 @@ const handleOldReaction = async (
         })
     : pReaction
   if (!reaction) return
-  console.log('got reaction emoji id', reaction.emoji.id)
   const emojiKey = getAnyHandledEmojiKey(reaction)
-  console.log('got emoji key', emojiKey)
   if (!emojiKey) return
 
   const user = pUser.partial

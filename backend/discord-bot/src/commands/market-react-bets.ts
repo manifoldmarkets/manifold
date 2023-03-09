@@ -23,6 +23,7 @@ import {
   getOpenBinaryMarketFromSlug,
   getSlug,
   handleReaction,
+  messageEmbedsToRefresh,
   shouldIgnoreMessageFromGuild,
 } from 'discord-bot/helpers'
 import {
@@ -72,24 +73,28 @@ export const replyWithMarketToBetOn = async (
   interaction: ChatInputCommandInteraction | StringSelectMenuInteraction,
   market: FullMarket
 ) => {
-  const message = await sendMarketIntro(interaction, market)
-  const channel = interaction.channel as TextChannel
-  await saveMarketToMessageId(
-    message.id,
-    market.id,
-    getSlug(market.url),
-    channel.id
-  )
+  try {
+    const message = await sendMarketIntro(interaction, market)
+    const channel = interaction.channel as TextChannel
+    await saveMarketToMessageId(
+      message.id,
+      market.id,
+      getSlug(market.url),
+      channel.id
+    )
 
-  const filter = (reaction: MessageReaction, user: User) => {
-    if (user.id === message.author.id) return false
-    return !!reaction.emoji
+    const filter = (reaction: MessageReaction, user: User) => {
+      if (user.id === message.author.id) return false
+      return !!reaction.emoji
+    }
+
+    const collector = message.createReactionCollector({ filter, dispose: true })
+    collector.on('collect', async (reaction, user) => {
+      await handleReaction(reaction, user, channel, market)
+    })
+  } catch (error) {
+    console.log('error on send market embed', error, 'for link', market.url)
   }
-
-  const collector = message.createReactionCollector({ filter, dispose: true })
-  collector.on('collect', async (reaction, user) => {
-    await handleReaction(reaction, user, channel, market)
-  })
 }
 
 const sendMarketIntro = async (
@@ -145,7 +150,7 @@ const sendMarketIntro = async (
 
   // Let client listener know we've this message in memory
   messagesHandledViaInteraction.add(message.id)
-
+  messageEmbedsToRefresh.add({ message, marketId: market.id })
   // Add emoji reactions
   for (const emoji of emojis) {
     if (customEmojis.includes(emoji)) {
