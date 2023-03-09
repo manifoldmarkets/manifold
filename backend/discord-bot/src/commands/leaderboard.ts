@@ -10,6 +10,7 @@ import {
 } from 'discord-bot/helpers'
 import {
   AttachmentBuilder,
+  ButtonInteraction,
   ChatInputCommandInteraction,
   EmbedBuilder,
   SlashCommandBuilder,
@@ -54,8 +55,8 @@ async function execute(interaction: ChatInputCommandInteraction) {
   await sendPositionsEmbed(interaction, market, contractMetrics)
 }
 
-const sendPositionsEmbed = async (
-  interaction: ChatInputCommandInteraction,
+export const sendPositionsEmbed = async (
+  interaction: ChatInputCommandInteraction | ButtonInteraction,
   market: FullMarket,
   positions: ContractMetrics[]
 ) => {
@@ -77,7 +78,7 @@ const sendPositionsEmbed = async (
   const marketEmbed = new EmbedBuilder()
   marketEmbed
     .setColor(0x0099ff)
-    .setTitle('Best and worst positions for ' + market.question)
+    .setTitle('Winners & Losers on ' + market.question)
     .setFields([
       { name: 'User', value: usernamesField, inline: true },
       { name: 'Profit', value: positionsField, inline: true },

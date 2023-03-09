@@ -1,8 +1,10 @@
 import { FullMarket } from 'common/api-market-types'
 import { ContractMetrics } from 'common/calculate-metrics'
 import * as console from 'console'
+import { sendPositionsEmbed } from 'discord-bot/commands/leaderboard'
 import { config } from 'discord-bot/constants/config'
 import {
+  ButtonInteraction,
   EmbedBuilder,
   hyperlink,
   Message,
@@ -16,7 +18,11 @@ import {
   getBetEmojiKey,
   getBettingEmojisAsStrings,
 } from './emojis.js'
-import { registerHelpMessage, userApiKey } from './storage.js'
+import {
+  getMarketInfoFromMessageId,
+  registerHelpMessage,
+  userApiKey,
+} from './storage.js'
 
 export const messageEmbedsToRefresh = new Set<{
   message: Message
@@ -60,20 +66,6 @@ export const handleReaction = async (
     console.log('Not a handled emoji')
     return
   }
-  // Market description
-  if (name === 'ℹ️') {
-    const content = `Market details: ${market.textDescription}`
-    await user.send(content)
-    return
-  }
-
-  // Help
-  if (name === '❓') {
-    const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
-    const content = `This is a market for the question "${market.question}". You can bet YES by reacting with these emojis: ${yesBetsEmojis} and NO with these: ${noBetsEmojis}. The emoji numbers correspond to the amount of mana used per bet.`
-    await user.send(content)
-    return
-  }
   // The embeds don't load unless we fetch the message every time even though the message is not marked as partial
   // seems related to: https://github.com/discordjs/discord.js/issues/7697#issuecomment-1073432737
   const message =
@@ -111,20 +103,19 @@ export const handleBet = async (
 
     if (!apiKey) {
       await user.send(registerHelpMessage(user.id))
-      const userReactions = message.reactions.cache.filter(
-        (r) =>
-          (r.emoji.id ?? r.emoji.name) ===
-          (reaction.emoji.id ?? reaction.emoji.name)
-      )
-      try {
-        for (const react of userReactions.values()) {
-          await react.users.fetch()
-          if (react.users.cache.has(user.id)) await react.users.remove(user.id)
-        }
-      } catch (error) {
-        console.error('Failed to remove reactions.')
+    }
+    const userReactions = message.reactions.cache.filter(
+      (r) =>
+        (r.emoji.id ?? r.emoji.name) ===
+        (reaction.emoji.id ?? reaction.emoji.name)
+    )
+    try {
+      for (const react of userReactions.values()) {
+        await react.users.fetch()
+        if (react.users.cache.has(user.id)) await react.users.remove(user.id)
       }
-      return
+    } catch (error) {
+      console.error('Failed to remove reactions.')
     }
 
     const outcome = buyOutcome
@@ -148,21 +139,18 @@ export const handleBet = async (
     }
     const bet = await resp.json()
     const newProb = bet.probAfter
-    const truncatedQuestion =
-      market.question.length > 69
-        ? `${market.question.substring(0, 66)}...`
-        : market.question
+
+    const status = `bought M$${amount} ${buyOutcome} at ${Math.round(
+      newProb * 100
+    )}% `
     const messageLink = hyperlink(
-      `${truncatedQuestion}`,
+      `${status}`,
       `https://discord.com/channels/${channel.guildId}/${channel.id}/${messageId}`
     )
-
-    const content = `${user.toString()} bought M$${amount} ${buyOutcome} on ${messageLink} Now ${Math.round(
-      newProb * 100
-    )}%`
+    const content = `${user.toString()} ${messageLink}`
 
     market.probability = newProb
-    await sendChannelMessage(channel, market, content)
+    await sendChannelMessage(channel, content)
     await updateMarketStatus(message, market)
     messageEmbedsToRefresh.add({ message, marketId: market.id })
   } catch (e) {
@@ -223,7 +211,6 @@ export const refreshMessage = async (message: Message, marketId: string) => {
 
 export const sendChannelMessage = async (
   channel: TextChannel,
-  market: FullMarket,
   content: string
 ) => {
   const marketEmbed = new EmbedBuilder().setDescription(content)
@@ -282,4 +269,38 @@ export function truncateText(text: string, slice: number) {
     return text
   }
   return text.slice(0, slice) + '...'
+}
+
+export const handleButtonPress = async (interaction: ButtonInteraction) => {
+  const { customId } = interaction
+  const message = await interaction.message.fetch().then((m) => m)
+  if (!message) return
+  const marketInfo = await getMarketInfoFromMessageId(message.id)
+  if (!marketInfo) return
+  // Help
+  if (customId === 'question') {
+    const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
+    const content = `This is a prediction market from [Manifold Markets](${config.domain}). You can bet that the event will happen (YES) by reacting with these emojis: ${yesBetsEmojis} and that it won't (NO) with these: ${noBetsEmojis}. The emoji numbers correspond to the amount of mana used, (i.e. your conviction) per bet.`
+    await interaction.reply({ content, ephemeral: true })
+    return
+  }
+  const market = await getMarketFromId(marketInfo.market_id)
+  // Market description
+  if (customId === 'details') {
+    const content = `Market details: ${market.textDescription}`
+    await interaction.reply({ content, ephemeral: true })
+    return
+  }
+  if (customId === 'leaderboard') {
+    const { contractMetrics, market } = await getTopAndBottomPositions(
+      marketInfo.market_slug,
+      'profit'
+    ).catch(async (error) => {
+      console.log('Failed to get positions', error)
+      await interaction.reply({ content: error.message, ephemeral: true })
+      return { contractMetrics: [], market: null }
+    })
+    if (!contractMetrics || !market) return
+    await sendPositionsEmbed(interaction, market, contractMetrics)
+  }
 }

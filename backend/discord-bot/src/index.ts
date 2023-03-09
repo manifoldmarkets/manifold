@@ -25,6 +25,7 @@ import {
 } from './emojis.js'
 import {
   getOpenBinaryMarketFromSlug,
+  handleButtonPress,
   handleReaction,
   shouldIgnoreMessageFromGuild,
 } from './helpers.js'
@@ -96,6 +97,11 @@ const init = async () => {
 
 const registerListeners = () => {
   client.on(Events.MessageReactionAdd, handleOldReaction)
+
+  client.on(Events.InteractionCreate, (interaction) => {
+    if (!interaction.isButton()) return
+    handleButtonPress(interaction)
+  })
 
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isChatInputCommand()) return

@@ -3,7 +3,10 @@ import { filterDefined } from 'common/util/array'
 import { Command } from 'discord-bot/command'
 import { config } from 'discord-bot/constants/config'
 import {
+  ActionRowBuilder,
   AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ChatInputCommandInteraction,
   EmbedBuilder,
   MessageReaction,
@@ -144,6 +147,7 @@ const sendMarketIntro = async (
       iconURL: `attachment://author.png`,
     })
   const message = await interaction.editReply({
+    components: [getButtonRow()],
     embeds: [marketEmbed],
     files: filterDefined([cover, author]),
   })
@@ -160,6 +164,22 @@ const sendMarketIntro = async (
   }
 
   return message
+}
+const getButtonRow = () => {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('details')
+      .setLabel('Details')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId('leaderboard')
+      .setLabel(`Who's winning?`)
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId('question')
+      .setLabel('What?')
+      .setStyle(ButtonStyle.Secondary)
+  )
 }
 
 export const marketCommand = {
