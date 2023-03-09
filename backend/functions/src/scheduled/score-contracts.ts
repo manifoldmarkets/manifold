@@ -78,9 +78,8 @@ export async function scoreContractsInternal() {
       !wasCreatedToday
     ) {
       const { prob, probChanges } = contract
-      const logOddsChange = Math.abs(
-        logit(prob + probChanges.day) - logit(prob)
-      )
+      let logOddsChange = Math.abs(logit(prob + probChanges.day) - logit(prob))
+      if (isNaN(logOddsChange)) logOddsChange = 1
       dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
     }
 
