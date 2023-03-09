@@ -139,15 +139,19 @@ export const handleBet = async (
     }
     const bet = await resp.json()
     const newProb = bet.probAfter
-
     const status = `bought M$${amount} ${buyOutcome} at ${Math.round(
       newProb * 100
-    )}% `
-    const messageLink = hyperlink(
-      `${status}`,
+    )}%`
+    const maxLength = 62
+    const truncatedQuestionTitle = truncateText(
+      market.question,
+      Math.max(maxLength - status.length, 5)
+    )
+    const linkedMessageContent = hyperlink(
+      `${status} on ${truncatedQuestionTitle}`,
       `https://discord.com/channels/${channel.guildId}/${channel.id}/${messageId}`
     )
-    const content = `${user.toString()} ${messageLink}`
+    const content = `${user.toString()} ${linkedMessageContent}`
 
     market.probability = newProb
     await sendChannelMessage(channel, content)
