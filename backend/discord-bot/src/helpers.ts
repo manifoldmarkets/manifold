@@ -18,6 +18,20 @@ import {
 } from './emojis.js'
 import { registerHelpMessage, userApiKey } from './storage.js'
 
+const messagesToRefresh = new Set<Message>()
+
+// Refresh probabilities every 10 seconds
+setInterval(async () => {
+  if (messagesToRefresh.size === 0) return
+  await Promise.all(
+    Array.from(messagesToRefresh).map(async (message) => {
+      if (message.embeds.length === 0) await message.fetch()
+      const isResolved = await refreshMessage(message)
+      if (isResolved) messagesToRefresh.delete(message)
+    })
+  )
+}, 10 * 1000)
+
 export const shouldIgnoreMessageFromGuild = (guildId: string | null) => {
   if (config.guildId && guildId !== config.guildId) {
     console.log('Not handling message or reaction from guild id', guildId)
@@ -130,7 +144,6 @@ export const handleBet = async (
     }
     const bet = await resp.json()
     const newProb = bet.probAfter
-    console.log(market.question.length)
     const truncatedQuestion =
       market.question.length > 69
         ? `${market.question.substring(0, 66)}...`
@@ -143,9 +156,11 @@ export const handleBet = async (
     const content = `${user.toString()} bought M$${amount} ${buyOutcome} on ${messageLink} Now ${Math.round(
       newProb * 100
     )}%`
+
     market.probability = newProb
     await sendChannelMessage(channel, market, content)
     await updateMarketStatus(message, market)
+    messagesToRefresh.add(message)
   } catch (e) {
     const content = `Error: ${e}`
     await user.send(content)
@@ -159,7 +174,7 @@ export const getCurrentMarketDescription = (market: FullMarket) => {
   let content = currentProbText(market.probability ?? 0)
   if (closed) {
     content = market.isResolved
-      ? `Market resolved ${market.resolution}`
+      ? `Resolved ${market.resolution}`
       : `Market closed at ${Math.round(
           (market.probability ?? 0) * 100
         )}% chance.`
@@ -175,6 +190,33 @@ const updateMarketStatus = async (message: Message, market: FullMarket) => {
     market.question + ` ${Math.round((market.probability ?? 0) * 100)}% chance`
   )
   await message.edit({ embeds: [marketEmbed], files: [] })
+}
+export const refreshMessage = async (message: Message) => {
+  const previousEmbed = message.embeds[0]
+  const marketEmbed = EmbedBuilder.from(previousEmbed)
+  if (!previousEmbed || !previousEmbed.url) {
+    console.log('No embed or url found')
+    return
+  }
+  const slug = getSlug(previousEmbed.url)
+  const market = await getMarketFromSlug(slug).catch((e) => null)
+  if (!market) return
+  marketEmbed.setDescription(getCurrentMarketDescription(market))
+  const isResolved = market.isResolved
+  marketEmbed.setTitle(
+    market.question +
+      (!isResolved
+        ? ` ${Math.round((market.probability ?? 0) * 100)}% chance`
+        : '')
+  )
+  if (isResolved) {
+    message.reactions
+      .removeAll()
+      .catch((error) => console.error('Failed to clear reactions: ', error))
+    marketEmbed.setFields([])
+  }
+  await message.edit({ embeds: [marketEmbed], files: [] })
+  return isResolved
 }
 
 export const sendChannelMessage = async (
@@ -205,19 +247,20 @@ export const getOpenBinaryMarketFromSlug = async (slug: string) => {
     const status = market.isResolved ? 'resolved' : 'closed'
     throw new Error(`Market is ${status}, no longer accepting bets`)
   }
-  const isClosed = (market.closeTime ?? 0) < Date.now()
-  console.log('market', market.id, 'is closed?', isClosed)
   if (market.outcomeType !== 'BINARY') {
     throw new Error('Only Yes/No markets are supported')
   }
   return market
 }
 
-export const getTopAndBottomPositions = async (slug: string) => {
+export const getTopAndBottomPositions = async (
+  slug: string,
+  orderBy: 'profit' | 'shares'
+) => {
   const market = await getMarketFromSlug(slug)
   const NUM_POSITIONS = 5
   const resp = await fetch(
-    `${config.domain}api/v0/market/${market.id}/positions?top=${NUM_POSITIONS}&bottom=${NUM_POSITIONS}`
+    `${config.domain}api/v0/market/${market.id}/positions?top=${NUM_POSITIONS}&bottom=${NUM_POSITIONS}&order=${orderBy}`
   )
   if (!resp.ok) {
     throw new Error('Positions not found with slug: ' + slug)

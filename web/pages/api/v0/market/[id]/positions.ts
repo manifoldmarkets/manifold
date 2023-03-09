@@ -13,21 +13,30 @@ export default async function handler(
   res: NextApiResponse<ContractMetric[] | ApiError>
 ) {
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
-  const { id, top, bottom } = req.query
+  const { id, top, bottom, order } = req.query
   const contractId = id as string
   const contract = await getContractFromId(contractId)
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })
     return
   }
-  const positions = await getContractMetricsForContractId(contractId, db)
+  if (order && !['profit', 'shares'].includes(order as string)) {
+    res.status(400).json({ error: 'Invalid order, must be shares or profit' })
+    return
+  }
+
+  const contractMetrics = await getContractMetricsForContractId(
+    contractId,
+    db,
+    order ? (order as 'profit' | 'shares') : undefined
+  )
   res.setHeader('Cache-Control', marketCacheStrategy)
   if (top && !bottom) {
     const topPositions = parseInt(top as string)
-    res.status(200).json(positions.slice(0, topPositions))
+    res.status(200).json(contractMetrics.slice(0, topPositions))
   } else if (bottom && !top) {
     const bottomPositions = parseInt(bottom as string)
-    res.status(200).json(positions.slice(-bottomPositions))
+    res.status(200).json(contractMetrics.slice(-bottomPositions))
   } else if (top && bottom) {
     const topPositions = parseInt(top as string)
     const bottomPositions = parseInt(bottom as string)
@@ -35,13 +44,13 @@ export default async function handler(
       .status(200)
       .json(
         uniqBy(
-          positions
+          contractMetrics
             .slice(0, topPositions)
-            .concat(positions.slice(-bottomPositions)),
+            .concat(contractMetrics.slice(-bottomPositions)),
           (cm) => cm.userId
         )
       )
   } else {
-    return res.status(200).json(positions)
+    return res.status(200).json(contractMetrics)
   }
 }

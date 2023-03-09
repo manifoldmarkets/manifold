@@ -170,16 +170,34 @@ export async function getTotalContractMetrics(
 
 export async function getContractMetricsForContractId(
   contractId: string,
-  db: SupabaseClient
+  db: SupabaseClient,
+  order?: 'profit' | 'shares'
 ) {
-  const { data } = await run(
-    db
+  let q = db
+    .from('user_contract_metrics')
+    .select('*')
+    .eq('contract_id', contractId)
+
+  if (order === 'shares') {
+    const noSharesQuery = db
       .from('user_contract_metrics')
       .select('*')
       .eq('contract_id', contractId)
-      .gt('data->invested', 0)
-      .neq('data->profit', null)
-      .order('data->profit' as any, { ascending: false })
-  )
+      .eq(`data->hasNoShares`, true)
+      .order(`data->totalShares->NO` as any, { ascending: false })
+
+    q = q
+      .eq(`data->hasYesShares`, true)
+      .order(`data->totalShares->YES` as any, { ascending: false })
+
+    const { data: yesData } = await run(q)
+    const { data: noData } = await run(noSharesQuery)
+    return yesData.concat(noData).map((d) => d.data) as ContractMetrics[]
+  }
+
+  q = q
+    .neq(`data->profit`, null)
+    .order(`data->profit` as any, { ascending: false })
+  const { data } = await run(q)
   return data.map((d) => d.data) as ContractMetrics[]
 }

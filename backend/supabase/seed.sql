@@ -81,6 +81,12 @@ create index if not exists user_contract_metrics_contract_id on user_contract_me
 create index if not exists user_contract_metrics_weekly_profit on user_contract_metrics ((data->'from'->'week'->'profit'))
  where (data->'from'->'week'->'profit') is not null;
 create index if not exists user_contract_metrics_user_id on user_contract_metrics (user_id);
+create index if not exists user_contract_metrics_has_no_shares on user_contract_metrics (contract_id)
+ where ((data)->>'hasNoShares') = 'true'
+create index if not exists user_contract_metrics_has_yes_shares on user_contract_metrics (contract_id)
+ where ((data)->>'hasYesShares') = 'true'
+create index user_contract_metrics_profit on user_contract_metrics (contract_id)
+ where ((data)->>'profit') is not null and ((data)->>'profit')::float > 0
 alter table user_contract_metrics cluster on user_contract_metrics_pkey;
 
 create table if not exists user_follows (

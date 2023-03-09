@@ -16,7 +16,7 @@ import {
 } from 'discord.js'
 
 const data = new SlashCommandBuilder()
-  .setName('positions')
+  .setName('leaderboard')
   .setDescription('Get the best and worst positions for a market')
   .addStringOption((option) =>
     option
@@ -43,7 +43,8 @@ async function execute(interaction: ChatInputCommandInteraction) {
     return
   }
   const { contractMetrics, market } = await getTopAndBottomPositions(
-    slug
+    slug,
+    'profit'
   ).catch(async (error) => {
     console.log('Failed to get positions', error)
     await interaction.reply({ content: error.message, ephemeral: true })
@@ -90,7 +91,7 @@ const sendPositionsEmbed = async (
   })
 }
 
-export const positionsCommand = {
+export const leaderboardCommand = {
   data,
   execute,
 } as Command

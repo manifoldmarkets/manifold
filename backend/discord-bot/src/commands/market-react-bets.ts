@@ -1,4 +1,5 @@
 import { FullMarket } from 'common/api-market-types'
+import { filterDefined } from 'common/util/array'
 import { Command } from 'discord-bot/command'
 import { config } from 'discord-bot/constants/config'
 import {
@@ -100,14 +101,21 @@ const sendMarketIntro = async (
 
   const { coverImageUrl } = market
   const getAttachment = async (url: string, name: string) => {
-    const blob = await fetch(url).then((r) => r.blob())
-    const arrayBuffer = await blob.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    return new AttachmentBuilder(buffer, { name })
+    try {
+      const blob = await fetch(url).then((r) => r.blob())
+      const arrayBuffer = await blob.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      return new AttachmentBuilder(buffer, { name })
+    } catch (error) {
+      console.log('error on get attachment', error)
+      return undefined
+    }
   }
   const fallbackImage = 'https://manifold.markets/logo-cover.png'
   const [cover, author] = await Promise.all([
-    getAttachment(coverImageUrl ?? fallbackImage, 'cover.png'),
+    getAttachment(coverImageUrl ?? fallbackImage, 'cover.png').catch(() =>
+      getAttachment(fallbackImage, 'cover.png')
+    ),
     getAttachment(market.creatorAvatarUrl ?? fallbackImage, 'author.png'),
   ])
 
@@ -130,10 +138,9 @@ const sendMarketIntro = async (
       text: `${market.creatorName}`,
       iconURL: `attachment://author.png`,
     })
-
   const message = await interaction.editReply({
     embeds: [marketEmbed],
-    files: [cover, author],
+    files: filterDefined([cover, author]),
   })
 
   // Let client listener know we've this message in memory
