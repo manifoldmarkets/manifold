@@ -369,6 +369,12 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
       return { contractMetrics: [], market: null }
     })
     if (!contractMetrics || !market) return
-    await sendPositionsEmbed(interaction, market, contractMetrics, message)
+    await sendPositionsEmbed(
+      interaction,
+      market,
+      contractMetrics,
+      message,
+      marketInfo.thread_id
+    )
   }
 }

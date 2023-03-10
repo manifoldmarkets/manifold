@@ -16,7 +16,8 @@ export const sendPositionsEmbed = async (
   interaction: ChatInputCommandInteraction | ButtonInteraction,
   market: FullMarket,
   positions: ContractMetrics[],
-  message: Message
+  message: Message,
+  threadId?: string
 ) => {
   await interaction.deferReply({ ephemeral: true })
   if (!interaction.channel) {
@@ -58,7 +59,8 @@ export const sendPositionsEmbed = async (
     market,
     marketEmbed,
     message.id,
-    [cover]
+    [cover],
+    threadId
   )
   const linkedMessageContent = hyperlink(
     `the thread`,
