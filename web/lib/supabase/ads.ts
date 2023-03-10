@@ -25,5 +25,5 @@ export async function getSkippedAdIds(userId: string) {
     .eq('data->>name', 'Skip ad')
 
   const { data } = await run(query)
-  return data.map((r) => r.data.adId)
+  return data.map((r) => (r.data as any).adId)
 }
