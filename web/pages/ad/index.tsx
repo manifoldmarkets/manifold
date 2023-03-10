@@ -4,13 +4,22 @@ import { useEffect, useReducer, useState } from 'react'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { Page } from 'web/components/layout/page'
 import { NoSEO } from 'web/components/NoSEO'
-import { getAllAds } from 'web/lib/supabase/posts'
+import {
+  getAllAds,
+  getSkippedAdIds,
+  getWatchedAdIds,
+} from 'web/lib/supabase/posts'
 import type { Ad as AdType } from 'common/src/ad'
 import { Content } from 'web/components/widgets/editor'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { PostCommentsActivity } from '../post/[slug]'
 import { UserLink } from 'web/components/widgets/user-link'
+import { redeemAd } from 'web/lib/firebase/api'
+import { useUser } from 'web/hooks/use-user'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { track } from 'web/lib/service/analytics'
+import { uniq } from 'lodash'
 
 export async function getStaticProps() {
   const ads = await getAllAds()
@@ -18,15 +27,30 @@ export async function getStaticProps() {
 }
 
 export default function AdsPage(props: { ads: AdType[] }) {
-  const [i, next] = useReducer((num) => num + 1, 0)
+  const user = useUser()
 
-  const current = props.ads[i]
+  const [oldAdIds, setOldAdIds] = useState<string[]>()
+  useEffect(() => {
+    if (user) {
+      Promise.all([getWatchedAdIds(user.id), getSkippedAdIds(user.id)]).then(
+        ([watched, skipped]) => setOldAdIds(uniq(watched.concat(skipped)))
+      )
+    }
+  }, [user?.id])
+
+  const isLoading = oldAdIds == undefined
+  const newAds = props.ads.filter((ad) => !oldAdIds?.includes(ad.id))
+
+  const [i, next] = useReducer((num) => num + 1, 0)
+  const current = newAds[i]
 
   return (
     <Page>
       <NoSEO />
+      {isLoading && <LoadingIndicator />}
+
       {current ? (
-        <Ad ad={current} onNext={next} onClaim={next} key={current.id} />
+        <Ad ad={current} onNext={next} key={current.id} />
       ) : (
         <>
           <span className="w-full py-4 text-center">No more ads</span>
@@ -39,8 +63,8 @@ export default function AdsPage(props: { ads: AdType[] }) {
 
 const WAIT_TIME = 15 // 15 sec
 
-function Ad(props: { ad: AdType; onNext: () => void; onClaim: () => void }) {
-  const { ad, onNext, onClaim } = props
+function Ad(props: { ad: AdType; onNext: () => void }) {
+  const { ad, onNext } = props
   const { costPerView, content } = ad
 
   const counter = useCounter()
@@ -48,6 +72,17 @@ function Ad(props: { ad: AdType; onNext: () => void; onClaim: () => void }) {
 
   const comments = useCommentsOnPost(ad.id) ?? []
   const tips = useTipTxns({ postId: ad.id })
+
+  const skip = () => {
+    track('Skip ad', { adId: ad.id })
+    onNext()
+  }
+
+  const claim = async () => {
+    track('Redeem ad', { adId: ad.id })
+    redeemAd({ adId: ad.id })
+    onNext()
+  }
 
   return (
     <div className="flex flex-col">
@@ -66,7 +101,7 @@ function Ad(props: { ad: AdType; onNext: () => void; onClaim: () => void }) {
         <div className="flex w-full items-center justify-between md:w-[400px]">
           {timeLeft < 0 ? (
             <Button
-              onClick={onClaim}
+              onClick={claim}
               color="gradient"
               className="outline-canvas-0 w-full outline"
             >
@@ -80,7 +115,7 @@ function Ad(props: { ad: AdType; onNext: () => void; onClaim: () => void }) {
               <Button
                 color="override"
                 className="hover:bg-ink-500/50 z-10 shadow-none"
-                onClick={onNext}
+                onClick={skip}
               >
                 Skip
               </Button>

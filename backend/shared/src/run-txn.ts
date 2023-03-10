@@ -110,12 +110,13 @@ export function runRedeemAdRewardTxn(
 
   const fromDoc = firestore.doc(`posts/${fromId}`)
   fbTransaction.update(fromDoc, {
-    totalValue: FieldValue.increment(-amount),
+    funds: FieldValue.increment(-amount),
   })
 
   const toDoc = firestore.doc(`users/${toId}`)
   fbTransaction.update(toDoc, {
     balance: FieldValue.increment(amount),
+    totalDeposits: FieldValue.increment(amount),
   })
 
   const newTxnDoc = firestore.collection(`txns/`).doc()
