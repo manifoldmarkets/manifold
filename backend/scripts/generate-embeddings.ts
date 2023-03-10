@@ -35,9 +35,7 @@ async function main() {
     console.log('Generated embeddings for', id, ':', question)
 
     await run(
-      db
-        .from('contract_embeddings')
-        .upsert({ contract_id: id, embedding, created_at: Date.now() })
+      db.from('contract_embeddings').upsert({ contract_id: id, embedding })
     ).catch((err) => console.error(err))
   }
 }
