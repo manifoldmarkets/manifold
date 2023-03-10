@@ -20,7 +20,9 @@ type AnyTxnType =
   | QfPayment
   | QfAddPool
   | QfDividend
-type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
+  | AdCreate
+  | AdRedeem
+type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
   id: string
@@ -35,26 +37,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   amount: number
   token: 'M$' | 'SHARE' // | 'USD' | MarketOutcome
 
-  category:
-    | 'CHARITY'
-    | 'MANALINK'
-    | 'TIP'
-    | 'REFERRAL'
-    | 'UNIQUE_BETTOR_BONUS'
-    | 'BETTING_STREAK_BONUS'
-    | 'CANCEL_UNIQUE_BETTOR_BONUS'
-    | 'MANA_PURCHASE'
-    | 'SIGNUP_BONUS'
-    | 'CERT_MINT' // Create a new cert
-    | 'CERT_TRANSFER' // Transfer cert ownership
-    | 'CERT_PAY_MANA' // Transfer mana for a cert
-    | 'CERT_DIVIDEND' // Cert holder pays out dividends
-    | 'CERT_BURN' // Destroy a cert
-    | 'CONTRACT_RESOLUTION_PAYOUT' // Contract resolution pays out to a user
-    | 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
-    | 'QF_PAYMENT' // Pay one of the entries in a QF pool
-    | 'QF_ADD_POOL' // Fund a QF pool
-    | 'QF_DIVIDEND' // Pay out QF dividends
+  category: AnyTxnType['category']
 
   // Any extra data
   data?: { [key: string]: any }
@@ -226,6 +209,18 @@ type QfDividend = {
   toType: 'USER'
 }
 
+type AdCreate = {
+  category: 'AD_CREATE'
+  fromType: 'USER'
+  toType: 'AD'
+}
+
+type AdRedeem = {
+  category: 'AD_REDEEM'
+  fromType: 'AD'
+  toType: 'USER'
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -247,3 +242,5 @@ export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
 export type QfAddPoolTxn = QfTxn & QfAddPool
 export type QfDividendTxn = QfTxn & QfDividend
+export type AdCreateTxn = Txn & AdCreate
+export type AdRedeemTxn = Txn & AdRedeem
