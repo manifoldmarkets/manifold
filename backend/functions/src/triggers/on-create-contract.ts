@@ -1,17 +1,20 @@
 import * as functions from 'firebase-functions'
+import { JSONContent } from '@tiptap/core'
 
 import { getUser } from 'shared/utils'
 import { createNewContractNotification } from '../create-notification'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { JSONContent } from '@tiptap/core'
 import { addUserToContractFollowers } from '../follow-market'
 
 import { dreamWithDefaultParams } from 'shared/dream-utils'
-import { getImagePrompt } from 'shared/helpers/openai-utils'
+import { getImagePrompt, generateEmbeddings } from 'shared/helpers/openai-utils'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 export const onCreateContract = functions
-  .runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY', 'OPENAI_API_KEY'] })
+  .runWith({
+    secrets: ['MAILGUN_KEY', 'DREAM_KEY', 'OPENAI_API_KEY', 'SUPABASE_KEY'],
+  })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
     const contract = snapshot.data() as Contract
@@ -38,4 +41,11 @@ export const onCreateContract = functions
     await snapshot.ref.update({
       coverImageUrl,
     })
+
+    const embedding = await generateEmbeddings(contract.question)
+    if (!embedding) return
+
+    await createSupabaseClient()
+      .from('contract_embeddings')
+      .insert({ contract_id: contract.id, embedding })
   })
