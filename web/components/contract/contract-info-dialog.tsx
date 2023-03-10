@@ -444,7 +444,7 @@ const ChangeCoverImageButton = (props: { contract: Contract }) => {
       onFiles={uploadMutation.mutate}
       className="flex gap-1 bg-black/20 p-2 text-white transition-all [text-shadow:_0_1px_0_rgb(0_0_0)] hover:bg-black/40"
     >
-      Edit
+      Change
       {uploadMutation.isLoading && <LoadingIndicator size="md" />}
     </FileUploadButton>
   )
