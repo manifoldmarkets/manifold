@@ -20,6 +20,7 @@ import { useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
 import { uniq } from 'lodash'
+import clsx from 'clsx'
 
 export async function getStaticProps() {
   const ads = await getAllAds()
@@ -85,44 +86,39 @@ function Ad(props: { ad: AdType; onNext: () => void }) {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex w-full max-w-2xl flex-col self-center">
       {/* post */}
-      <div className="bg-canvas-0 p-6">
+      <div className="bg-canvas-0 rounded-lg p-4 sm:p-6">
         <Content size="lg" content={content} />
       </div>
 
-      <div className="mx-2 mt-1 mb-4">
+      <div className="mx-4 mt-1 mb-4">
         <span className="text-ink-500 mr-1">Created by</span>
         <UserLink username={ad.creatorUsername} name={ad.creatorName} />
       </div>
 
       {/* timer claim box */}
-      <div className="to-primary-400 relative my-5 flex w-full justify-center rounded-md bg-yellow-200 bg-gradient-to-r from-pink-300 via-purple-300 p-4">
-        <div className="flex w-full items-center justify-between md:w-[400px]">
-          {timeLeft < 0 ? (
-            <Button
-              onClick={claim}
-              color="gradient"
-              className="outline-canvas-0 w-full outline"
-            >
-              Claim {formatMoney(costPerView)} and continue
-            </Button>
-          ) : (
-            <>
-              <span className="z-10">
+      <div className="to-primary-400 relative my-5 flex w-full justify-center overflow-hidden rounded-md bg-yellow-200 bg-gradient-to-r from-pink-300 via-purple-300">
+        {timeLeft < 0 ? (
+          <button
+            onClick={claim}
+            className="flex w-full justify-center p-6 transition-colors hover:bg-slate-900/20"
+          >
+            Claim {formatMoney(costPerView)} and continue
+          </button>
+        ) : (
+          <>
+            <TimerBar duration={WAIT_TIME} />
+            <div className="z-10 flex w-full items-center justify-between py-4 px-6">
+              <span>
                 Claim {formatMoney(costPerView)} in {timeLeft + 1} seconds
               </span>
-              <Button
-                color="override"
-                className="hover:bg-ink-500/50 z-10 shadow-none"
-                onClick={skip}
-              >
+              <Button color="red" onClick={skip}>
                 Skip
               </Button>
-              <TimerBar duration={WAIT_TIME} />
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* comments */}
@@ -149,20 +145,21 @@ const TimerBar = (props: { duration: number }) => {
   const { duration } = props
 
   return (
-    <div className="absolute inset-0 flex overflow-hidden rounded-t-md">
+    <div className="absolute inset-0 flex overflow-hidden">
       <div
         className="animate-progress"
-        style={{
-          animationDuration: `${duration}s`,
-        }}
+        style={{ animationDuration: `${duration}s` }}
       />
-      <div className="grow bg-slate-900/20" />
+      <div className="bg-canvas-0 grow" />
     </div>
   )
 }
 
 const CreateBanner = () => (
-  <Link href="/ad/create" className={buttonClass('xl', 'indigo')}>
+  <Link
+    href="/ad/create"
+    className={clsx(buttonClass('xl', 'indigo'), 'self-center')}
+  >
     Create your own advertisement!
   </Link>
 )

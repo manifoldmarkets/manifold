@@ -84,7 +84,7 @@ export default function PostPage(props: {
         description={richTextToString(post.content)}
         url={'/post/' + post.slug}
       />
-      <div className="mx-auto mt-1 flex w-full max-w-3xl flex-col">
+      <div className="mx-auto mt-1 flex w-full max-w-2xl flex-col">
         <EditInPlaceInput
           className="-m-px px-2 !text-3xl"
           initialValue={post.title}
