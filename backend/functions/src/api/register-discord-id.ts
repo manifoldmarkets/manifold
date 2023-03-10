@@ -10,7 +10,7 @@ const bodySchema = z.object({
 })
 
 export const registerdiscordid = newEndpoint(
-  { secrets: ['SUPABASE_KEY'] },
+  { memory: '256MiB', secrets: ['SUPABASE_KEY'] },
   async (req, auth) => {
     const { discordId } = validate(bodySchema, req.body)
     const firestore = admin.firestore()
@@ -31,9 +31,11 @@ export const registerdiscordid = newEndpoint(
       })
     }
     const db = createSupabaseClient()
-    const { error } = await db
-      .from('discord_users')
-      .upsert({ discord_user_id: discordId, api_key: apiKey })
+    const { error } = await db.from('discord_users').upsert({
+      discord_user_id: discordId,
+      api_key: apiKey,
+      user_id: auth.uid,
+    })
     if (error) throw new APIError(400, error.message)
 
     return { success: true, update }
