@@ -1,19 +1,29 @@
 import { FullMarket } from 'common/api-market-types'
 import { ContractMetrics } from 'common/calculate-metrics'
+import { sendThreadEmbed } from 'discord-bot/helpers'
 
 import {
   AttachmentBuilder,
   ButtonInteraction,
   ChatInputCommandInteraction,
   EmbedBuilder,
+  hyperlink,
+  Message,
+  TextChannel,
 } from 'discord.js'
 
 export const sendPositionsEmbed = async (
   interaction: ChatInputCommandInteraction | ButtonInteraction,
   market: FullMarket,
-  positions: ContractMetrics[]
+  positions: ContractMetrics[],
+  message: Message
 ) => {
-  await interaction.deferReply()
+  await interaction.deferReply({ ephemeral: true })
+  if (!interaction.channel) {
+    return await interaction.editReply({
+      content: 'This command can only be used in a channel.',
+    })
+  }
 
   const { coverImageUrl } = market
   const getAttachment = async (url: string, name: string) => {
@@ -23,24 +33,40 @@ export const sendPositionsEmbed = async (
     return new AttachmentBuilder(buffer, { name })
   }
   const fallbackImage = 'https://manifold.markets/logo-cover.png'
+
   const cover = await getAttachment(coverImageUrl ?? fallbackImage, 'cover.png')
-  const usernamesField = positions.map((p) => p.userName + '\n').join('')
+
   const positionsField = positions
-    .map((p) => 'M$' + Math.round(p.profit) + '\n')
+    .map((p) => {
+      const profit = Math.round(p.profit)
+      const prefix = profit > 0 ? 'M' : '-M'
+      return `${prefix}${Math.abs(profit)} | ${p.userName} \n`
+    })
     .join('')
   const marketEmbed = new EmbedBuilder()
   marketEmbed
     .setColor(0x0099ff)
-    .setTitle('Winners & Losers on ' + market.question)
+    .setTitle('Profit & loss leaderboard for ' + market.question)
     .setFields([
-      { name: 'User', value: usernamesField, inline: true },
-      { name: 'Profit', value: positionsField, inline: true },
+      { name: 'Profit | Username', value: positionsField, inline: true },
     ])
     .setURL(market.url)
     .setThumbnail(`attachment://cover.png`)
-
+  const channel = interaction.channel as TextChannel
+  const { thread, message: leaderboardMessage } = await sendThreadEmbed(
+    channel,
+    market,
+    marketEmbed,
+    message.id,
+    [cover]
+  )
+  const linkedMessageContent = hyperlink(
+    `the thread`,
+    `https://discord.com/channels/${channel.guildId}/${thread.id}/${leaderboardMessage.id}`
+  )
   return await interaction.editReply({
-    embeds: [marketEmbed],
-    files: [cover],
+    content: `I sent the leaderboard to the ${linkedMessageContent} for you!`,
+    options: { ephemeral: true },
+    embeds: [],
   })
 }

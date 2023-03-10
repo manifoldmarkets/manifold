@@ -1,15 +1,17 @@
 import { FullMarket } from 'common/api-market-types'
 import { ContractMetrics } from 'common/calculate-metrics'
+import { randomString } from 'common/util/random'
 import * as console from 'console'
 import { sendPositionsEmbed } from 'discord-bot/leaderboard'
 import { config } from 'discord-bot/constants/config'
 import {
+  AttachmentBuilder,
   ButtonInteraction,
   EmbedBuilder,
-  hyperlink,
   Message,
   MessageReaction,
   TextChannel,
+  ThreadChannel,
   User,
 } from 'discord.js'
 import {
@@ -21,6 +23,8 @@ import {
 import {
   getMarketInfoFromMessageId,
   registerHelpMessage,
+  saveThreadIdToMessageId,
+  updateThreadLastUpdatedTime,
   userApiKey,
 } from './storage.js'
 
@@ -28,6 +32,7 @@ export const messageEmbedsToRefresh = new Set<{
   message: Message
   marketId: string
 }>()
+const discordMessageIdsToThreads: { [key: string]: ThreadChannel } = {}
 
 // Refresh probabilities every 10 seconds
 setInterval(async () => {
@@ -58,7 +63,8 @@ export const handleReaction = async (
   reaction: MessageReaction,
   user: User,
   channel: TextChannel,
-  market: FullMarket
+  market: FullMarket,
+  threadId?: string
 ) => {
   const { name } = reaction.emoji
   console.log(`Collected ${name} from user id: ${user.id}`)
@@ -80,7 +86,7 @@ export const handleReaction = async (
   if (!message) return
 
   // Attempt to place a bet
-  await handleBet(reaction, user, channel, message, market)
+  await handleBet(reaction, user, channel, message, market, threadId)
 }
 
 export const handleBet = async (
@@ -88,7 +94,8 @@ export const handleBet = async (
   user: User,
   channel: TextChannel,
   message: Message,
-  market: FullMarket
+  market: FullMarket,
+  threadId?: string
 ) => {
   const emojiKey = getBetEmojiKey(reaction)
   if (!emojiKey) return
@@ -103,21 +110,21 @@ export const handleBet = async (
 
     if (!apiKey) {
       await user.send(registerHelpMessage(user.id))
-    }
-    const userReactions = message.reactions.cache.filter(
-      (r) =>
-        (r.emoji.id ?? r.emoji.name) ===
-        (reaction.emoji.id ?? reaction.emoji.name)
-    )
-    try {
-      for (const react of userReactions.values()) {
-        await react.users.fetch()
-        if (react.users.cache.has(user.id)) await react.users.remove(user.id)
-      }
-    } catch (error) {
-      console.error('Failed to remove reactions.')
-    }
 
+      const userReactions = message.reactions.cache.filter(
+        (r) =>
+          (r.emoji.id ?? r.emoji.name) ===
+          (reaction.emoji.id ?? reaction.emoji.name)
+      )
+      try {
+        for (const react of userReactions.values()) {
+          await react.users.fetch()
+          if (react.users.cache.has(user.id)) await react.users.remove(user.id)
+        }
+      } catch (error) {
+        console.error('Failed to remove reactions.')
+      }
+    }
     const outcome = buyOutcome
     // send json post request to api
     const resp = await fetch(`${config.domain}api/v0/bet`, {
@@ -142,19 +149,10 @@ export const handleBet = async (
     const status = `bought M$${amount} ${buyOutcome} at ${Math.round(
       newProb * 100
     )}%`
-    const maxLength = 62
-    const truncatedQuestionTitle = truncateText(
-      market.question,
-      Math.max(maxLength - status.length, 5)
-    )
-    const linkedMessageContent = hyperlink(
-      `${status} on ${truncatedQuestionTitle}`,
-      `https://discord.com/channels/${channel.guildId}/${channel.id}/${messageId}`
-    )
-    const content = `${user.toString()} ${linkedMessageContent}`
+    const content = `${user.toString()} ${status}`
 
     market.probability = newProb
-    await sendChannelMessage(channel, content)
+    await sendThreadMessage(channel, market, content, messageId, threadId)
     await updateMarketStatus(message, market)
     messageEmbedsToRefresh.add({ message, marketId: market.id })
   } catch (e) {
@@ -219,6 +217,72 @@ export const sendChannelMessage = async (
 ) => {
   const marketEmbed = new EmbedBuilder().setDescription(content)
   await channel.send({ embeds: [marketEmbed] })
+}
+
+const getOrCreateThread = async (
+  channel: TextChannel,
+  marketName: string,
+  messageId: string,
+  threadId?: string
+) => {
+  const name = marketName.slice(0, 40) + '-' + randomString(5)
+  if (discordMessageIdsToThreads[messageId])
+    return discordMessageIdsToThreads[messageId]
+  if (threadId) {
+    await channel.threads.fetch({ active: true }, { cache: true })
+    const thread = channel.threads.cache.find((t) => t.id === threadId)
+    if (thread) return thread
+  }
+
+  const thread = await channel.threads.create({
+    name,
+    autoArchiveDuration: 60,
+    reason: 'Activity feed for market: ' + name,
+  })
+  discordMessageIdsToThreads[messageId] = thread
+  await saveThreadIdToMessageId(messageId, thread.id)
+  return thread
+}
+
+export const sendThreadMessage = async (
+  channel: TextChannel,
+  market: FullMarket,
+  content: string,
+  messageId: string,
+  threadId?: string
+) => {
+  // get the thread id from supabase if we have one
+  const thread = await getOrCreateThread(
+    channel,
+    market.question,
+    messageId,
+    threadId
+  )
+  await Promise.all([
+    thread.send({ content, allowedMentions: { repliedUser: false } }),
+    updateThreadLastUpdatedTime(messageId),
+  ])
+}
+export const sendThreadEmbed = async (
+  channel: TextChannel,
+  market: FullMarket,
+  content: EmbedBuilder,
+  messageId: string,
+  files?: AttachmentBuilder[],
+  threadId?: string
+) => {
+  // get the thread id from supabase if we have one
+  const thread = await getOrCreateThread(
+    channel,
+    market.question,
+    messageId,
+    threadId
+  )
+  const [message, _] = await Promise.all([
+    thread.send({ embeds: [content], files }),
+    updateThreadLastUpdatedTime(messageId),
+  ])
+  return { thread, message }
 }
 
 export const getSlug = (link: string) => {
@@ -305,6 +369,6 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
       return { contractMetrics: [], market: null }
     })
     if (!contractMetrics || !market) return
-    await sendPositionsEmbed(interaction, market, contractMetrics)
+    await sendPositionsEmbed(interaction, market, contractMetrics, message)
   }
 }
