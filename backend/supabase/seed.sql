@@ -756,46 +756,20 @@ as $$
     where (data->>'createdTime')::bigint > ts_to_millis(now() - interval '1 day')
     order by score desc
     limit floor(n / 3)
-  ), closing_soon_contracts as (
-    select data, score
-    from recommended_contracts
-    where (data->>'closeTime')::bigint < ts_to_millis(now() + interval '1 day')
-    and (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
-    order by score desc
-    limit floor(n / 3)
   ), trending_contracts as (
     select data, score
     from recommended_contracts
     where (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
-    and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '1 day')
     order by score desc
-    limit ceiling(n / 3)
-  ), trending_filler_contracts as (
-    select data, score
-    from recommended_contracts
-    where (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
-    and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '1 day')
-    order by score desc
-    offset ceiling(n / 3)
-    limit floor(2 * n / 3)
-  ), combined_contracts as (
-    select data, score
-    from new_contracts
-    union all
-    select data, score
-    from closing_soon_contracts
-    union all
-    select data, score
-    from trending_contracts
-    order by score desc
+    limit n - (select count(*) from new_contracts)
   )
 
   select data, score
-  from combined_contracts
-  union all 
+  from new_contracts
+  union all
   select data, score
-  from trending_filler_contracts
-  limit n 
+  from trending_contracts
+  order by score desc
 $$;
 
 create or replace function get_recommended_contracts(uid text, n int, excluded_contract_ids text[])
