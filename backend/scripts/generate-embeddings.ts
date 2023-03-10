@@ -14,16 +14,17 @@ async function main() {
   console.log('Got', contractIds.size, 'markets with preexisting embeddings')
 
   const { data: contracts } = await run(
-    db
-      .from('contracts')
-      .select('id, data')
-      .not('id', 'in', '(' + [...contractIds].join(',') + ')')
-  )
+    db.from('contracts').select('id, data')
+    // doesn't work if too many contracts
+    // .not('id', 'in', '(' + [...contractIds].join(',') + ')')
+  ).catch((err) => (console.error(err), { data: [] }))
 
   console.log('Got', contracts.length, 'markets to process')
 
   for (const contract of contracts) {
     const { id, data } = contract
+    if (contractIds.has(id)) continue
+
     const { question } = data as { question: string }
     const embedding = await generateEmbeddings(question)
     if (!embedding || embedding.length < 1500) {
