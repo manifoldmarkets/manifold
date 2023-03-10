@@ -1,13 +1,13 @@
 import Router, { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 
-import { Group, groupPath } from 'common/group'
+import { Group, groupPath, PrivacyStatusType } from 'common/group'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Leaderboard } from 'web/components/leaderboard'
 import { SEO } from 'web/components/SEO'
-import { useGroup } from 'web/hooks/use-group'
+import { useGroup, useIsGroupMember } from 'web/hooks/use-group'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Contract } from 'web/lib/firebase/contracts'
@@ -17,7 +17,7 @@ import {
   getUsersBlockFacetFilters,
   User,
 } from 'web/lib/firebase/users'
-import Custom404 from '../../404'
+import Custom404, { Custom404Content } from '../../404'
 
 import {
   ArrowLeftIcon,
@@ -27,7 +27,7 @@ import {
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { GroupComment } from 'common/comment'
-import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { ENV_CONFIG, HOUSE_BOT_USERNAME, isAdmin } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
 import toast from 'react-hot-toast'
@@ -46,124 +46,159 @@ import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useRealtimeRole } from 'web/hooks/use-group-supabase'
+import { useRealtimeGroup, useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { usePost, usePosts } from 'web/hooks/use-post'
+import { usePosts } from 'web/hooks/use-post'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { addContractToGroup } from 'web/lib/firebase/api'
+import { addContractToGroup, getUserIsGroupMember } from 'web/lib/firebase/api'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
-import { getPost, listPosts } from 'web/lib/firebase/posts'
+import { listPosts } from 'web/lib/firebase/posts'
+import { getGroupPrivacyBySlug } from 'web/lib/supabase/group'
+import { getPost } from 'web/lib/supabase/post'
+import { useRealtimePost } from 'web/hooks/use-post-supabase'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
-export const getStaticProps = fromPropz(getStaticPropz)
-export async function getStaticPropz(props: { params: { slugs: string[] } }) {
+
+type GroupParams = {
+  group: Group | null
+  creator: User | null
+  topTraders: { user: User; score: number }[]
+  topCreators: { user: User; score: number }[]
+  messages: GroupComment[] | null
+  aboutPost: Post | null
+  posts: Post[]
+}
+
+export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
+  const groupSlug = slugs[0]
+  const groupPrivacy = await getGroupPrivacyBySlug(groupSlug)
+  if (groupPrivacy === 'private') {
+    return {
+      props: {
+        groupPrivacy,
+        slugs,
+      },
+    }
+  } else {
+    const group = await getGroupBySlug(slugs[0])
+    const creatorPromise = group ? getUser(group.creatorId) : null
+    const cachedTopTraderIds =
+      (group && group.cachedLeaderboard?.topTraders) ?? []
+    const cachedTopCreatorIds =
+      (group && group.cachedLeaderboard?.topCreators) ?? []
+    // const topTraders = await toTopUsers(cachedTopTraderIds)
+    // const topCreators = await toTopUsers(cachedTopCreatorIds)
+    const creator = await creatorPromise
+    const aboutPost = group?.aboutPostId
+      ? await getPost(group.aboutPostId)
+      : null
 
-  const group = await getGroupBySlug(slugs[0])
-  const creatorPromise = group ? getUser(group.creatorId) : null
-
-  const messages = group && (await listAllCommentsOnGroup(group.id))
-
-  const cachedTopTraderIds =
-    (group && group.cachedLeaderboard?.topTraders) ?? []
-  const cachedTopCreatorIds =
-    (group && group.cachedLeaderboard?.topCreators) ?? []
-  const topTraders = await toTopUsers(cachedTopTraderIds)
-
-  const topCreators = await toTopUsers(cachedTopCreatorIds)
-
-  const creator = await creatorPromise
-
-  const aboutPost = group?.aboutPostId ? await getPost(group.aboutPostId) : null
-  const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
-    (p) => p != null
-  ) as Post[]
-  return {
-    props: {
-      group,
-      creator,
-      topTraders,
-      topCreators,
-      messages,
-      aboutPost,
-      posts,
-    },
-
-    revalidate: 60, // regenerate after a minute
+    const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
+      (p) => p != null
+    ) as Post[]
+    return {
+      props: {
+        groupPrivacy,
+        slugs,
+        groupParams: {
+          group: group ?? null,
+          creator: creator ?? null,
+          // topTraders: topTraders??[],
+          // topCreators: [],
+          aboutPost: aboutPost ?? null,
+          posts: posts ?? [],
+        },
+        revalidate: 60, // regenerate after a minute
+      },
+    }
   }
 }
+
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 const groupSubpages = [undefined, 'markets', 'about', 'leaderboards'] as const
 
 export default function GroupPage(props: {
-  group: Group | null
-  memberIds: string[]
-  creator: User | null
-  topTraders: { user: User; score: number }[]
-  topCreators: { user: User; score: number }[]
-  messages: GroupComment[]
-  suggestedFilter: 'open' | 'all'
-  aboutPost: Post | null
-  posts: Post[]
+  groupPrivacy: PrivacyStatusType
+  slugs: string[]
+  groupParams?: GroupParams
 }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    group: null,
-    creator: null,
-    topTraders: [],
-    topCreators: [],
-    messages: [],
-    aboutPost: null,
-    posts: [],
-  }
-  const { creator, topTraders, topCreators, posts } = props
-
-  const router = useRouter()
-
-  const { slugs } = router.query as { slugs: string[] }
-  const page = slugs?.[1] as typeof groupSubpages[number]
-  const tabIndex = ['markets', 'about', 'leaderboards'].indexOf(
-    page === 'about' ? 'about' : page ?? 'markets'
-  )
-
-  const group = useGroup(props.group?.id) ?? props.group
-  const aboutPost = usePost(group?.aboutPostId) ?? props.aboutPost
-
-  let groupPosts = usePosts(group?.postIds ?? []) ?? posts
-
-  if (aboutPost != null) {
-    groupPosts = [aboutPost, ...groupPosts]
-  }
-
+  const { groupPrivacy, slugs, groupParams } = props
   const user = useUser()
-  const privateUser = usePrivateUser()
-  const userRole = useRealtimeRole(group?.id)
-  const isManifoldAdmin = useAdmin()
-  const [activeIndex, setActiveIndex] = useState(tabIndex)
-  useEffect(() => {
-    setActiveIndex(tabIndex)
-  }, [tabIndex])
-
-  useSaveReferral(user, {
-    defaultReferrerUsername: creator?.username,
-    groupId: group?.id,
-  })
-
-  const [writingNewAbout, setWritingNewAbout] = useState(false)
-  const bannerRef = useRef<HTMLDivElement | null>(null)
-  const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
-  const isMobile = useIsMobile()
-  if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
-    return <Custom404 />
-  }
-  const maxLeaderboardSize = 50
-  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
-
-  const chatEmbed = <ChatEmbed group={group} />
   return (
-    <Page rightSidebar={chatEmbed} touchesTop={true}>
+    <Page touchesTop={true}>
+      {groupPrivacy == 'private' && (
+        <PrivateGroupPage slugs={slugs} user={user} />
+      )}
+      {groupPrivacy != 'private' && groupParams && (
+        <NonPrivateGroupPage
+          groupPrivacy={groupPrivacy}
+          slugs={slugs}
+          user={user}
+          groupParams={groupParams}
+        />
+      )}
+    </Page>
+  )
+}
+
+export function InaccessiblePrivateGroup() {
+  return <div>You do not have access to this group!</div>
+}
+
+export function PrivateGroupPage(props: {
+  slugs: string[]
+  user?: User | null
+}) {
+  const { slugs, user } = props
+  if (!user) {
+    return <InaccessiblePrivateGroup />
+  }
+  const isMember = useIsGroupMember(slugs[0], user.id)
+  if (!isMember) {
+    return <InaccessiblePrivateGroup />
+  } else return <>private and has access</>
+}
+
+export function NonPrivateGroupPage(props: {
+  groupPrivacy: PrivacyStatusType
+  slugs: string[]
+  user?: User | null
+  groupParams: GroupParams
+}) {
+  const { groupPrivacy, slugs, user, groupParams } = props
+  const page = slugs?.[1] as typeof groupSubpages[number]
+  const isManifoldAdmin = useAdmin()
+  const { group, creator } = groupParams
+  const userRole = useRealtimeRole(group?.id)
+  if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
+    return <Custom404Content />
+  }
+  const addContractButton =
+    isManifoldAdmin && user ? (
+      <AddContractButton
+        group={group}
+        user={user}
+        userRole={'admin'}
+        className="fill-ink-0"
+      />
+    ) : user &&
+      (groupPrivacy == 'public' ||
+        (groupPrivacy == 'curated' &&
+          (userRole == 'admin' || userRole == 'moderator'))) ? (
+      <AddContractButton
+        group={group}
+        user={user}
+        userRole={userRole ?? undefined}
+        className="fill-ink-0"
+      />
+    ) : undefined
+
+  return (
+    <>
       <SEO
         title={group.name}
         description={
@@ -173,26 +208,54 @@ export default function GroupPage(props: {
         url={groupPath(group.slug)}
         image={group.bannerUrl}
       />
-      {user && isManifoldAdmin && (
-        <AddContractButton
-          group={group}
-          user={user}
-          userRole={'admin'}
-          className="fill-ink-0 fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
-        />
-      )}
-      {user &&
-        !isManifoldAdmin &&
-        (group.privacyStatus == 'public' ||
-          (group.privacyStatus == 'curated' &&
-            (userRole == 'admin' || userRole == 'moderator'))) && (
-          <AddContractButton
-            group={group}
-            user={user}
-            userRole={userRole ?? undefined}
-            className="fill-ink-0 fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
-          />
-        )}
+      <GroupPageSkeleton
+        slugs={slugs}
+        addContractButton={addContractButton}
+        user={user}
+        groupParams={groupParams}
+      />
+    </>
+  )
+}
+
+export function GroupPageSkeleton(props: {
+  slugs: string[]
+  addContractButton: ReactNode
+  userRole?: groupRoleType
+  user?: User | null
+  groupParams?: GroupParams
+}) {
+  const { slugs, addContractButton, userRole, user, groupParams } = props
+  const isManifoldAdmin = useAdmin()
+  const group = useRealtimeGroup(slugs[0]) ?? groupParams?.group
+  if (!group) {
+    return <></>
+  }
+  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
+  const isMobile = useIsMobile()
+  const privateUser = usePrivateUser()
+  const [writingNewAbout, setWritingNewAbout] = useState(false)
+  const bannerRef = useRef<HTMLDivElement | null>(null)
+  const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
+  const aboutPost = group?.aboutPostId
+    ? useRealtimePost(group.aboutPostId)
+    : groupParams?.aboutPost
+
+  const page = slugs?.[1] as typeof groupSubpages[number]
+  const tabIndex = ['markets', 'about', 'leaderboards'].indexOf(
+    page === 'about' ? 'about' : page ?? 'markets'
+  )
+  const [activeIndex, setActiveIndex] = useState(tabIndex)
+
+  const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts
+  console.log('aboutpostid:', group.aboutPostId)
+  console.log('aboutpost:', aboutPost)
+
+  return (
+    <>
+      <div className=" fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-24rem)]">
+        {addContractButton}
+      </div>
       {isMobile && (
         <TopGroupNavBar
           group={group}
@@ -285,7 +348,7 @@ export default function GroupPage(props: {
                   includeProbSorts
                   fromGroupProps={{
                     group: group,
-                    userRole: isManifoldAdmin ? 'admin' : userRole,
+                    userRole: isManifoldAdmin ? 'admin' : userRole ?? null,
                   }}
                 />
               ),
@@ -307,7 +370,7 @@ export default function GroupPage(props: {
                   <div className="text-ink-500 mb-4">
                     Updated every 15 minutes
                   </div>
-                  <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
+                  {/* <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
                     <GroupLeaderboard
                       topUsers={topTraders}
                       title={`🏅 Top ${BETTORS}`}
@@ -321,14 +384,14 @@ export default function GroupPage(props: {
                       maxToShow={maxLeaderboardSize}
                       noFormatting={true}
                     />
-                  </div>
+                  </div> */}
                 </Col>
               ),
             },
           ]}
         />
       </div>
-    </Page>
+    </>
   )
 }
 

@@ -25,6 +25,7 @@ import { useTrendingContracts } from './use-contracts'
 import { storageStore, usePersistentState } from './use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useStoreItems } from './use-store'
+import { getUserIsGroupMember } from 'web/lib/firebase/api'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -204,4 +205,15 @@ export function useGroupContractIds(groupId: string) {
 
 export function useGroups(groupIds: string[]) {
   return useStoreItems(groupIds, listenForGroup, { loadOnce: true })
+}
+
+export function useIsGroupMember(groupSlug: string, userId: string) {
+  const [isMember, setIsMember] = useState<any>(false)
+  useEffect(() => {
+    console.log(userId)
+    getUserIsGroupMember({ groupSlug: groupSlug }).then((result) =>
+      setIsMember(result)
+    )
+  }, [groupSlug, userId])
+  return isMember
 }

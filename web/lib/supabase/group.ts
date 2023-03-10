@@ -123,3 +123,27 @@ export async function searchUserInGroup(
     'member_id'
   ).slice(0, limit)
 }
+
+export async function getGroupPrivacyBySlug(groupSlug: string) {
+  const { data: groupPrivacy } = await run(
+    db
+      .from('groups')
+      .select('data->>privacyStatus')
+      .eq('data->>slug', groupSlug)
+  )
+  return groupPrivacy[0].privacyStatus
+}
+
+export async function getGroupFromSlug(groupSlug: string) {
+  const { data: group } = await run(
+    db.from('groups').select('data').eq('data->>slug', groupSlug)
+  )
+  return group[0]
+}
+
+export async function getGroupPost(postId: string) {
+  const { data: post } = await run(
+    db.from('posts').select('data').eq('data->>slug', postId)
+  )
+  return post[0]
+}

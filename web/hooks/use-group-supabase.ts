@@ -1,7 +1,9 @@
 import { JSONContent } from '@tiptap/core'
+import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
+import { getGroup } from 'web/lib/firebase/groups'
 import { db } from 'web/lib/supabase/db'
 import {
   getGroupMemberIds,
@@ -237,4 +239,40 @@ export async function setTranslatedMemberRole(
   } else {
     setRole(null)
   }
+}
+
+export function useRealtimeGroup(groupSlug: string) {
+  const [group, setGroup] = useState<Group | null>(null)
+  function fetchGroup() {
+    getGroup(groupSlug)
+      .then((result) => {
+        setGroup(result)
+      })
+      .catch((e) => console.log(e))
+  }
+
+  useEffect(() => {
+    fetchGroup()
+  }, [])
+
+  useEffect(() => {
+    const channel = db.channel('group-realtime')
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'groups',
+        filter: `data->>slug=eq.${groupSlug}`,
+      },
+      (payload) => {
+        fetchGroup()
+      }
+    )
+    channel.subscribe(async (status) => {})
+    return () => {
+      db.removeChannel(channel)
+    }
+  }, [db])
+  return group
 }

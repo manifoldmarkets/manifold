@@ -178,6 +178,11 @@ export function updateGroupPrivacy(params: {
 export function addGroupMember(params: { groupId: string; userId: string }) {
   return call(getFunctionUrl('addgroupmember'), 'POST', params)
 }
+
 export function registerDiscordId(params: any) {
   return call(getFunctionUrl('registerdiscordid'), 'POST', params)
+}
+
+export function getUserIsGroupMember(params: { groupSlug: string }) {
+  return call(getFunctionUrl('getuserisgroupmember'), 'POST', params)
 }
