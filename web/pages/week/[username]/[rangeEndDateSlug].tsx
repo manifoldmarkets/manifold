@@ -11,7 +11,7 @@ import {
   WeeklyPortfolioUpdateOGCardProps,
 } from 'common/weekly-portfolio-update'
 import { query, where } from 'firebase/firestore'
-import { chunk, orderBy, sum } from 'lodash'
+import { chunk, orderBy, sortBy, sum } from 'lodash'
 import React, { useMemo } from 'react'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import {
@@ -80,7 +80,7 @@ export async function getStaticProps(props: {
   return {
     props: {
       user,
-      profitPoints,
+      profitPoints: sortBy(profitPoints, (p) => p.x),
       weeklyPortfolioUpdateString:
         JSON.stringify(weeklyPortfolioUpdate) ?? '{}',
       contractsString: JSON.stringify(contracts),
@@ -134,12 +134,10 @@ export default function RangePerformancePage(props: {
   const graphPoints = useMemo(() => {
     if (profitPoints.length === 0) return []
     const firstPointToScaleBy = profitPoints[0]?.y ?? 0
-    return profitPoints
-      .sort((p) => -p.x)
-      .map((p) => {
-        const y = p.y - firstPointToScaleBy
-        return { x: p.x, y, obj: p.obj }
-      })
+    return profitPoints.map((p) => {
+      const y = p.y - firstPointToScaleBy
+      return { x: p.x, y, obj: p.obj }
+    })
   }, [profitPoints])
 
   const endDate = createdTime ? new Date(createdTime) : new Date()

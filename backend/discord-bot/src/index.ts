@@ -25,6 +25,7 @@ import {
 } from './emojis.js'
 import {
   getOpenBinaryMarketFromSlug,
+  handleButtonPress,
   handleReaction,
   shouldIgnoreMessageFromGuild,
 } from './helpers.js'
@@ -95,7 +96,18 @@ const init = async () => {
 }
 
 const registerListeners = () => {
-  client.on(Events.MessageReactionAdd, handleOldReaction)
+  client.on(Events.MessageReactionAdd, async (reaction, user) => {
+    handleOldReaction(reaction, user).catch((e) =>
+      console.log('Error handling old reaction', e)
+    )
+  })
+
+  client.on(Events.InteractionCreate, (interaction) => {
+    if (!interaction.isButton()) return
+    handleButtonPress(interaction).catch((e) =>
+      console.log('Error handling button interaction', e)
+    )
+  })
 
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isChatInputCommand()) return
@@ -103,15 +115,17 @@ const registerListeners = () => {
     const command = commandsCollection.get(interaction.commandName)
     if (!command) return
 
-    try {
-      await command.execute(interaction)
-    } catch (error) {
-      console.error(error)
-      await interaction.reply({
-        content: 'There was an error while executing this command :(',
-        ephemeral: true,
-      })
-    }
+    await command.execute(interaction).catch((error) => {
+      console.log('Error executing slash command interaction', error)
+      interaction
+        .reply({
+          content: 'There was an error while executing this command :(',
+          ephemeral: true,
+        })
+        .catch((e) =>
+          console.log('Error replying to slash command interaction', e)
+        )
+    })
   })
 }
 
@@ -134,7 +148,6 @@ const handleOldReaction = async (
   if (shouldIgnoreMessageFromGuild(guildId)) return
 
   const marketInfo = await getMarketInfoFromMessageId(message.id)
-  console.log('got market info from supabase', marketInfo)
   if (!marketInfo) return
 
   console.log('checking old reaction for proper details')
@@ -148,9 +161,7 @@ const handleOldReaction = async (
         })
     : pReaction
   if (!reaction) return
-  console.log('got reaction emoji id', reaction.emoji.id)
   const emojiKey = getAnyHandledEmojiKey(reaction)
-  console.log('got emoji key', emojiKey)
   if (!emojiKey) return
 
   const user = pUser.partial
@@ -185,5 +196,11 @@ const handleOldReaction = async (
   if (!market) return
   console.log('got market', market.url)
 
-  await handleReaction(reaction, user, channel as TextChannel, market)
+  await handleReaction(
+    reaction,
+    user,
+    channel as TextChannel,
+    market,
+    marketInfo.thread_id
+  )
 }

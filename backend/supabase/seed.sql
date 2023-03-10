@@ -81,6 +81,12 @@ create index if not exists user_contract_metrics_contract_id on user_contract_me
 create index if not exists user_contract_metrics_weekly_profit on user_contract_metrics ((data->'from'->'week'->'profit'))
  where (data->'from'->'week'->'profit') is not null;
 create index if not exists user_contract_metrics_user_id on user_contract_metrics (user_id);
+create index if not exists user_contract_metrics_has_no_shares on user_contract_metrics (contract_id)
+ where ((data)->>'hasNoShares') = 'true'
+create index if not exists user_contract_metrics_has_yes_shares on user_contract_metrics (contract_id)
+ where ((data)->>'hasYesShares') = 'true'
+create index user_contract_metrics_profit on user_contract_metrics (contract_id)
+ where ((data)->>'profit') is not null and ((data)->>'profit')::float > 0
 alter table user_contract_metrics cluster on user_contract_metrics_pkey;
 
 create table if not exists user_follows (
@@ -159,6 +165,7 @@ create index if not exists contracts_creator_id on contracts ((data->>'creatorId
 create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
 /* serves API recent markets endpoint */
 create index if not exists contracts_created_time on contracts ((to_jsonb(data)->>'createdTime') desc);
+create index if not exists contracts_close_time on contracts ((to_jsonb(data)->>'closeTime') desc);
 
 alter table contracts cluster on contracts_creator_id;
 
@@ -738,6 +745,10 @@ as $$
     on contracts.id = contract_id
     where is_valid_contract(data)
     and data->>'outcomeType' = 'BINARY'
+    and not exists (
+      select 1 from unnest(excluded_contract_ids) as w
+      where w = contract_id
+    )
     order by score desc
   ), new_contracts as (
     select data, score
@@ -745,46 +756,20 @@ as $$
     where (data->>'createdTime')::bigint > ts_to_millis(now() - interval '1 day')
     order by score desc
     limit floor(n / 3)
-  ), closing_soon_contracts as (
-    select data, score
-    from recommended_contracts
-    where (data->>'closeTime')::bigint < ts_to_millis(now() + interval '1 day')
-    and (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
-    order by score desc
-    limit floor(n / 3)
   ), trending_contracts as (
     select data, score
     from recommended_contracts
     where (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
-    and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '1 day')
     order by score desc
-    limit ceiling(n / 3)
-  ), trending_filler_contracts as (
-    select data, score
-    from recommended_contracts
-    where (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
-    and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '1 day')
-    order by score desc
-    offset ceiling(n / 3)
-    limit floor(2 * n / 3)
-  ), combined_contracts as (
-    select data, score
-    from new_contracts
-    union all
-    select data, score
-    from closing_soon_contracts
-    union all
-    select data, score
-    from trending_contracts
-    order by score desc
+    limit n - (select count(*) from new_contracts)
   )
 
   select data, score
-  from combined_contracts
-  union all 
+  from new_contracts
+  union all
   select data, score
-  from trending_filler_contracts
-  limit n 
+  from trending_contracts
+  order by score desc
 $$;
 
 create or replace function get_recommended_contracts(uid text, n int, excluded_contract_ids text[])

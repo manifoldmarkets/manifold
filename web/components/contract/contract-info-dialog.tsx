@@ -1,4 +1,4 @@
-import { DotsHorizontalIcon } from '@heroicons/react/outline'
+import { CheckIcon, DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { capitalize } from 'lodash'
@@ -57,6 +57,7 @@ export const Stats = (props: {
     : false
 
   const [unresolveText, setUnresolveText] = useState('')
+  const [unresolving, setUnresolving] = useState(false)
 
   const {
     createdTime,
@@ -221,24 +222,31 @@ export const Stats = (props: {
               <tr className="bg-scarlet-500/20">
                 <td>Unresolve</td>
                 <td>
-                  {/* To prevent accidental unresolve, users must type in 'UNRESOLVE' first */}
-                  <Input
-                    className="w-40 text-xs"
-                    type="text"
-                    placeholder="UNRESOLVE"
-                    value={unresolveText}
-                    onChange={(e) => setUnresolveText(e.target.value)}
-                  />
-                  <Button
-                    onClick={() => {
-                      unresolveMarket({ marketId: id })
-                    }}
-                    disabled={unresolveText !== 'UNRESOLVE'}
-                    size="2xs"
-                    color="red"
-                  >
-                    ✔️
-                  </Button>
+                  <Row className={'gap-2'}>
+                    {/* To prevent accidental unresolve, users must type in 'UNRESOLVE' first */}
+                    <Input
+                      className="w-40 text-xs"
+                      type="text"
+                      placeholder="UNRESOLVE"
+                      value={unresolveText}
+                      onChange={(e) => setUnresolveText(e.target.value)}
+                    />
+                    <Button
+                      onClick={() => {
+                        if (unresolving) return
+                        setUnresolving(true)
+                        unresolveMarket({ marketId: id }).then(() => {
+                          setUnresolving(false)
+                          setUnresolveText('')
+                        })
+                      }}
+                      disabled={unresolveText !== 'UNRESOLVE' || unresolving}
+                      size="2xs"
+                      color="red"
+                    >
+                      <CheckIcon className=" text-ink-100 h-4 w-4" />
+                    </Button>
+                  </Row>
                 </td>
               </tr>
             )}
@@ -436,7 +444,7 @@ const ChangeCoverImageButton = (props: { contract: Contract }) => {
       onFiles={uploadMutation.mutate}
       className="flex gap-1 bg-black/20 p-2 text-white transition-all [text-shadow:_0_1px_0_rgb(0_0_0)] hover:bg-black/40"
     >
-      Edit
+      Change
       {uploadMutation.isLoading && <LoadingIndicator size="md" />}
     </FileUploadButton>
   )

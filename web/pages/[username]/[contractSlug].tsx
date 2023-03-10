@@ -317,9 +317,9 @@ export function ContractPageContent(
       <Row className="w-full items-start gap-8 self-center">
         <Col
           className={clsx(
-            'bg-canvas-0 mb-4 w-full max-w-3xl rounded px-4 py-4 md:px-8 md:py-8 xl:mb-14 xl:w-[70%]',
+            'bg-canvas-0 mb-4 w-full max-w-3xl rounded px-4 py-4 md:px-8 md:py-8 xl:w-[70%]',
             // Keep content in view when scrolling related markets on desktop.
-            'sticky bottom-0 self-end'
+            'sticky bottom-0 min-h-screen self-end'
           )}
         >
           <Col className="gap-3 sm:gap-4">

@@ -1,8 +1,12 @@
 import { FullMarket } from 'common/api-market-types'
+import { filterDefined } from 'common/util/array'
 import { Command } from 'discord-bot/command'
 import { config } from 'discord-bot/constants/config'
 import {
+  ActionRowBuilder,
   AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ChatInputCommandInteraction,
   EmbedBuilder,
   MessageReaction,
@@ -11,17 +15,13 @@ import {
   TextChannel,
   User,
 } from 'discord.js'
-import {
-  customEmojiCache,
-  customEmojis,
-  emojis,
-  getBettingEmojisAsStrings,
-} from 'discord-bot/emojis'
+import { customEmojiCache, customEmojis, emojis } from 'discord-bot/emojis'
 import {
   getCurrentMarketDescription,
   getOpenBinaryMarketFromSlug,
   getSlug,
   handleReaction,
+  messageEmbedsToRefresh,
   shouldIgnoreMessageFromGuild,
 } from 'discord-bot/helpers'
 import {
@@ -71,24 +71,28 @@ export const replyWithMarketToBetOn = async (
   interaction: ChatInputCommandInteraction | StringSelectMenuInteraction,
   market: FullMarket
 ) => {
-  const message = await sendMarketIntro(interaction, market)
-  const channel = interaction.channel as TextChannel
-  await saveMarketToMessageId(
-    message.id,
-    market.id,
-    getSlug(market.url),
-    channel.id
-  )
+  try {
+    const message = await sendMarketIntro(interaction, market)
+    const channel = interaction.channel as TextChannel
+    await saveMarketToMessageId(
+      message.id,
+      market.id,
+      getSlug(market.url),
+      channel.id
+    )
 
-  const filter = (reaction: MessageReaction, user: User) => {
-    if (user.id === message.author.id) return false
-    return !!reaction.emoji
+    const filter = (reaction: MessageReaction, user: User) => {
+      if (user.id === message.author.id) return false
+      return !!reaction.emoji
+    }
+
+    const collector = message.createReactionCollector({ filter, dispose: true })
+    collector.on('collect', async (reaction, user) => {
+      await handleReaction(reaction, user, channel, market)
+    })
+  } catch (error) {
+    console.log('error on send market embed', error, 'for link', market.url)
   }
-
-  const collector = message.createReactionCollector({ filter, dispose: true })
-  collector.on('collect', async (reaction, user) => {
-    await handleReaction(reaction, user, channel, market)
-  })
 }
 
 const sendMarketIntro = async (
@@ -96,18 +100,24 @@ const sendMarketIntro = async (
   market: FullMarket
 ) => {
   await interaction.deferReply()
-  const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
 
   const { coverImageUrl } = market
   const getAttachment = async (url: string, name: string) => {
-    const blob = await fetch(url).then((r) => r.blob())
-    const arrayBuffer = await blob.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    return new AttachmentBuilder(buffer, { name })
+    try {
+      const blob = await fetch(url).then((r) => r.blob())
+      const arrayBuffer = await blob.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      return new AttachmentBuilder(buffer, { name })
+    } catch (error) {
+      console.log('error on get attachment', error)
+      return undefined
+    }
   }
   const fallbackImage = 'https://manifold.markets/logo-cover.png'
   const [cover, author] = await Promise.all([
-    getAttachment(coverImageUrl ?? fallbackImage, 'cover.png'),
+    getAttachment(coverImageUrl ?? fallbackImage, 'cover.png').catch(() =>
+      getAttachment(fallbackImage, 'cover.png')
+    ),
     getAttachment(market.creatorAvatarUrl ?? fallbackImage, 'author.png'),
   ])
 
@@ -121,24 +131,20 @@ const sendMarketIntro = async (
     .setURL(market.url)
     .setDescription(getCurrentMarketDescription(market))
     .setThumbnail(`attachment://cover.png`)
-    .addFields({
-      name: `React to bet`,
-      value: `YES: ${yesBetsEmojis}   NO: ${noBetsEmojis}`,
-    })
     .setTimestamp(market.closeTime)
     .setFooter({
       text: `${market.creatorName}`,
       iconURL: `attachment://author.png`,
     })
-
   const message = await interaction.editReply({
+    components: [getButtonRow()],
     embeds: [marketEmbed],
-    files: [cover, author],
+    files: filterDefined([cover, author]),
   })
 
   // Let client listener know we've this message in memory
   messagesHandledViaInteraction.add(message.id)
-
+  messageEmbedsToRefresh.add({ message, marketId: market.id })
   // Add emoji reactions
   for (const emoji of emojis) {
     if (customEmojis.includes(emoji)) {
@@ -148,6 +154,22 @@ const sendMarketIntro = async (
   }
 
   return message
+}
+const getButtonRow = () => {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('details')
+      .setLabel('Details')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId('leaderboard')
+      .setLabel(`Who's winning?`)
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId('question')
+      .setLabel('What?')
+      .setStyle(ButtonStyle.Secondary)
+  )
 }
 
 export const marketCommand = {

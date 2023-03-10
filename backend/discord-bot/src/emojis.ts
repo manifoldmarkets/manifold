@@ -7,20 +7,15 @@ type emojiDetails = {
 
 // Custom emojis use id, not name
 export const bettingEmojis: { [key: string]: emojiDetails } = {
+  '1083425137480712213': { outcome: 'YES', amount: 5 },
   '1075904553758756914': { outcome: 'YES', amount: 10 },
-  '1075828981720416296': { outcome: 'YES', amount: 50 },
-  '1029761176336334918': { outcome: 'YES', amount: 100 },
+  '1083425136570544228': { outcome: 'YES', amount: 25 },
+  '1083425138961285201': { outcome: 'NO', amount: 5 },
   '1075904582909165720': { outcome: 'NO', amount: 10 },
-  '1075829025093722146': { outcome: 'NO', amount: 50 },
-  '1082707352983183360': { outcome: 'NO', amount: 100 },
+  '1083425134943158334': { outcome: 'NO', amount: 25 },
 }
 export const customEmojis = Object.keys(bettingEmojis)
 export const customEmojiCache: { [key: string]: GuildEmoji } = {}
-
-export const otherEmojis: { [key: string]: string } = {
-  ℹ️: 'Get the market details sent to you',
-  '❓': 'What is this?',
-}
 
 export const getEmoji = (emojiKey: string) => {
   if (customEmojis.includes(emojiKey)) {
@@ -28,9 +23,7 @@ export const getEmoji = (emojiKey: string) => {
   } else return emojiKey
 }
 
-export const emojis = Object.keys(bettingEmojis).concat(
-  Object.keys(otherEmojis)
-)
+export const emojis = Object.keys(bettingEmojis)
 
 export const getBetEmojiKey = (reaction: MessageReaction) => {
   const emojiKey = customEmojis.includes(reaction.emoji.id ?? '_')
@@ -44,13 +37,7 @@ export const getAnyHandledEmojiKey = (reaction: MessageReaction) => {
   const emojiKey = customEmojis.includes(reaction.emoji.id ?? '_')
     ? reaction.emoji.id
     : reaction.emoji.name
-  if (
-    !emojiKey ||
-    !Object.keys(bettingEmojis)
-      .concat(Object.keys(otherEmojis))
-      .includes(emojiKey)
-  )
-    return
+  if (!emojiKey || !Object.keys(bettingEmojis).includes(emojiKey)) return
   return emojiKey
 }
 

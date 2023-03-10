@@ -11,3 +11,4 @@ pubsub-debug.log
 firestore_export*
 
 tsconfig.tsbuildinfo
+*/emails.csv

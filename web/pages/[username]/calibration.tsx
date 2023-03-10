@@ -103,7 +103,10 @@ export default function CalibrationPage(props: {
               title:
                 user?.name +
                 "'s bet calibration" +
-                (score !== undefined ? ` (score: ${score})` : ''),
+                (score !== undefined
+                  ? ` <br><sub>Grade: ${getGrade(score)}, Score: ${score}</sub>`
+                  : ''),
+              subtitle: 'blah',
               xaxis: { title: 'Probability after bet' },
               yaxis: { title: 'Resolution probability' },
             }}
@@ -293,4 +296,19 @@ const calculateScore = (
 
   const raw = score / n
   return (-100 * Math.round(raw * 1e4)) / 1e4
+}
+
+const getGrade = (score: number) => {
+  if (score > -0.05) return 'S'
+  if (score >= -0.15) return 'A+'
+  if (score >= -0.5) return 'A'
+  if (score >= -1) return 'A-'
+  if (score >= -1.5) return 'B+'
+  if (score >= -2.5) return 'B'
+  if (score >= -4) return 'B-'
+  if (score >= -5.5) return 'C+'
+  if (score >= -7) return 'C'
+  if (score >= -8.5) return 'C-'
+  if (score >= -10) return 'D'
+  else return 'F'
 }
