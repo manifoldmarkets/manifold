@@ -10,7 +10,6 @@ import { z } from 'zod'
 import { removeUndefinedProps } from 'common/util/object'
 import { createMarketHelper } from './create-market'
 import { DAY_MS } from 'common/util/time'
-import { FieldValue } from 'firebase-admin/firestore'
 import { runTxn } from 'shared/run-txn'
 import { AdCreateTxn } from 'common/txn'
 
