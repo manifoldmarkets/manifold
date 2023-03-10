@@ -236,7 +236,7 @@ function ContractSmolView(props: {
       </Row>
       <Details contract={contract} />
 
-      <div className="min-h-0 flex-1" ref={setElem}>
+      <div className="text-ink-1000 min-h-0 flex-1" ref={setElem}>
         {graphWidth != null && graphHeight != null && (
           <ContractChart
             contract={contract}
