@@ -27,6 +27,7 @@ export const redeemad = newEndpoint({}, async (req, auth) => {
 
   const data = post.data() as Ad
 
+  // TODO: calculate this from the txns instead
   const { funds, costPerView } = data
   if (funds < costPerView) {
     throw new APIError(403, 'Ad does not have enough funds to pay out')
