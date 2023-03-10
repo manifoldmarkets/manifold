@@ -14,5 +14,10 @@ export const DarkModeContext = createContext<DarkModeContextProps>({
 
 export const useIsDarkMode = () => {
   const { theme } = useContext(DarkModeContext)
-  return theme === 'dark'
+  return (
+    theme === 'dark' ||
+    (theme === 'auto' &&
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
+  )
 }

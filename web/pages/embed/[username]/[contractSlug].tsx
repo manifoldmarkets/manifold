@@ -33,6 +33,7 @@ import {
 import { getBets, getBetFields } from 'web/lib/supabase/bets'
 import { NoSEO } from 'web/components/NoSEO'
 import { ContractSEO } from 'web/pages/[username]/[contractSlug]'
+import { useIsDarkMode } from 'web/hooks/dark-mode-context'
 
 type HistoryData = { bets?: Bet[]; points?: HistoryPoint<Partial<Bet>>[] }
 
@@ -201,7 +202,8 @@ function ContractSmolView(props: {
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
   const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
-  const questionColor = textColor ?? 'rgb(67, 56, 202)' // text-primary-700
+
+  const isDarkMode = useIsDarkMode()
 
   return (
     <Col className="bg-canvas-0 h-[100vh] w-full p-4">
@@ -210,8 +212,11 @@ function ContractSmolView(props: {
           <a
             href={href}
             target="_blank"
-            className="text-xl md:text-2xl"
-            style={{ color: questionColor }}
+            className="text-primary-700 text-xl md:text-2xl"
+            style={{
+              color: textColor,
+              filter: isDarkMode && textColor ? 'invert(1)' : undefined,
+            }}
           >
             {question}
           </a>
