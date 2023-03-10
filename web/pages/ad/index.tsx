@@ -8,7 +8,7 @@ import {
   getAllAds,
   getSkippedAdIds,
   getWatchedAdIds,
-} from 'web/lib/supabase/posts'
+} from 'web/lib/supabase/ads'
 import type { Ad as AdType } from 'common/src/ad'
 import { Content } from 'web/components/widgets/editor'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
