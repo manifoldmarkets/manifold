@@ -10,7 +10,7 @@ const bodySchema = z.object({
 })
 
 export const registerdiscordid = newEndpoint(
-  { memory: '256MiB', secrets: ['SUPABASE_KEY'] },
+  { secrets: ['SUPABASE_KEY'] },
   async (req, auth) => {
     const { discordId } = validate(bodySchema, req.body)
     const firestore = admin.firestore()
