@@ -11,6 +11,8 @@ import { removeUndefinedProps } from 'common/util/object'
 import { createMarketHelper } from './create-market'
 import { DAY_MS } from 'common/util/time'
 import { FieldValue } from 'firebase-admin/firestore'
+import { runTxn } from 'shared/run-txn'
+import { AdCreateTxn } from 'common/txn'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -113,17 +115,19 @@ export const createpost = newEndpoint({}, async (req, auth) => {
 
     // deduct from user
     await firestore.runTransaction(async (trans) => {
-      if (cost > creator.balance)
-        throw new APIError(402, `Balance insufficient to pay ${cost}.`)
-
-      const userDoc = await trans.get(
-        firestore.collection('users').doc(creator.id)
-      )
-
-      trans.update(userDoc.ref, {
-        balance: FieldValue.increment(-cost),
-        totalDeposits: FieldValue.increment(-cost),
-      })
+      const result = await runTxn(trans, {
+        category: 'AD_CREATE',
+        fromType: 'USER',
+        fromId: creator.id,
+        toType: 'AD',
+        toId: postRef.id,
+        amount: cost,
+        token: 'M$',
+        description: 'Creating ad',
+      } as AdCreateTxn)
+      if (result.status == 'error') {
+        throw new APIError(500, result.message ?? 'An unknown error occurred')
+      }
     })
 
     // init current funds

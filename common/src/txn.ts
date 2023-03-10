@@ -20,6 +20,7 @@ type AnyTxnType =
   | QfPayment
   | QfAddPool
   | QfDividend
+  | AdCreate
   | AdRedeem
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
@@ -208,6 +209,12 @@ type QfDividend = {
   toType: 'USER'
 }
 
+type AdCreate = {
+  category: 'AD_CREATE'
+  fromType: 'USER'
+  toType: 'AD'
+}
+
 type AdRedeem = {
   category: 'AD_REDEEM'
   fromType: 'AD'
@@ -235,4 +242,5 @@ export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
 export type QfAddPoolTxn = QfTxn & QfAddPool
 export type QfDividendTxn = QfTxn & QfDividend
+export type AdCreateTxn = Txn & AdCreate
 export type AdRedeemTxn = Txn & AdRedeem
