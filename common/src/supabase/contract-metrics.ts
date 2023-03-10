@@ -1,4 +1,4 @@
-import { chunk, Dictionary, flatMap, groupBy, orderBy, uniqBy } from 'lodash'
+import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
 import { run, selectFrom, selectJson, SupabaseClient } from './utils'
 import { ContractMetrics } from '../calculate-metrics'
 import { getContracts } from './contracts'
@@ -7,16 +7,15 @@ import { ContractMetric } from 'common/contract-metric'
 
 export async function getUserContractMetrics(
   userId: string,
+  contractId: string,
   db: SupabaseClient
 ) {
   const { data } = await run(
-    selectJson(db, 'user_contract_metrics').eq('user_id', userId)
+    selectJson(db, 'user_contract_metrics')
+      .eq('user_id', userId)
+      .eq('contract_id', contractId)
   )
-  return orderBy(
-    data.map((r) => r.data),
-    (cm) => cm.lastBetTime ?? 0,
-    'desc'
-  )
+  return data.map((r) => r.data) as ContractMetrics[]
 }
 
 export async function getUserContractMetricsWithContracts(
