@@ -210,7 +210,6 @@ export function useGroups(groupIds: string[]) {
 export function useIsGroupMember(groupSlug: string, userId: string) {
   const [isMember, setIsMember] = useState<any>(false)
   useEffect(() => {
-    console.log(userId)
     getUserIsGroupMember({ groupSlug: groupSlug }).then((result) =>
       setIsMember(result)
     )

@@ -3,9 +3,9 @@ import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
-import { getGroup } from 'web/lib/firebase/groups'
 import { db } from 'web/lib/supabase/db'
 import {
+  getGroupFromSlug,
   getGroupMemberIds,
   getGroupMembers,
   getGroupOfRole,
@@ -244,7 +244,7 @@ export async function setTranslatedMemberRole(
 export function useRealtimeGroup(groupSlug: string) {
   const [group, setGroup] = useState<Group | null>(null)
   function fetchGroup() {
-    getGroup(groupSlug)
+    getGroupFromSlug(groupSlug)
       .then((result) => {
         setGroup(result)
       })

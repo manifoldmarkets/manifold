@@ -24,13 +24,13 @@ import { Subtitle } from '../widgets/subtitle'
 export function GroupPostSection(props: {
   group: Group
   canEdit: boolean
-  posts: Post[]
+  // posts: Post[]
 }) {
-  const { group, canEdit, posts } = props
+  const { group, canEdit } = props
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
-      <GroupFeatured group={group} posts={posts} canEdit={canEdit} />
-      <GroupPosts group={group} posts={posts} />
+      {/* <GroupFeatured group={group} posts={posts} canEdit={canEdit} />
+      <GroupPosts group={group} posts={posts} /> */}
     </Col>
   )
 }

@@ -3,6 +3,7 @@ import { run } from 'common/supabase/utils'
 import { User } from '../firebase/users'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { uniqBy } from 'lodash'
+import { Group } from 'common/group'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
@@ -138,12 +139,5 @@ export async function getGroupFromSlug(groupSlug: string) {
   const { data: group } = await run(
     db.from('groups').select('data').eq('data->>slug', groupSlug)
   )
-  return group[0]
-}
-
-export async function getGroupPost(postId: string) {
-  const { data: post } = await run(
-    db.from('posts').select('data').eq('data->>slug', postId)
-  )
-  return post[0]
+  return group[0].data as Group
 }

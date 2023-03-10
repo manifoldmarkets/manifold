@@ -1,3 +1,4 @@
+import { Group } from 'common/group'
 import { Post } from 'common/post'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
@@ -24,7 +25,7 @@ export function useRealtimePost(postId: string) {
       {
         event: '*',
         schema: 'public',
-        table: 'groups',
+        table: 'posts',
         filter: `id=eq.${postId}`,
       },
       (payload) => {
@@ -36,5 +37,15 @@ export function useRealtimePost(postId: string) {
       db.removeChannel(channel)
     }
   }, [db])
+  return post
+}
+
+export function usePost(postId: string) {
+  const [post, setPost] = useState<Post | null>(null)
+  useEffect(() => {
+    getPost(postId).then((result) => {
+      setPost(result)
+    })
+  }, [postId])
   return post
 }
