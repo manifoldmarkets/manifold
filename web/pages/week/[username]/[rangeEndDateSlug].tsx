@@ -80,7 +80,7 @@ export async function getStaticProps(props: {
   return {
     props: {
       user,
-      profitPoints: sortBy(profitPoints, (p) => -p.x),
+      profitPoints: sortBy(profitPoints, (p) => p.x),
       weeklyPortfolioUpdateString:
         JSON.stringify(weeklyPortfolioUpdate) ?? '{}',
       contractsString: JSON.stringify(contracts),
