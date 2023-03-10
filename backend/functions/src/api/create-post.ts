@@ -57,9 +57,7 @@ const postSchema = z
         totalCost: z.number().min(0),
         costPerView: z.number().min(0),
       }),
-      z.object({
-        type: z.literal('base'),
-      }),
+      z.object({}), //base
     ])
   )
 
@@ -82,7 +80,7 @@ export const createpost = newEndpoint({}, async (req, auth) => {
 
   // If this is a date doc, create a market for it.
   let contractSlug
-  if (otherProps.type === 'date-doc') {
+  if ('type' in otherProps && otherProps.type === 'date-doc') {
     const closeTime = Date.now() + DAY_MS * 30 * 3
 
     try {
@@ -106,7 +104,7 @@ export const createpost = newEndpoint({}, async (req, auth) => {
 
   // if this is an advertisement, subtract amount from user's balance and write txn
   let funds
-  if (otherProps.type === 'ad') {
+  if ('type' in otherProps && otherProps.type === 'ad') {
     const cost = otherProps.totalCost
 
     if (!cost) {

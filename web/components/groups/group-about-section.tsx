@@ -81,7 +81,6 @@ export async function savePost(
   if (!editor) return
   // TODO: this should not be a post, should just be rich text field on the group.
   const newPost = {
-    type: 'base',
     title: group.name,
     content: editor.getJSON(),
     isGroupAboutPost: true,
