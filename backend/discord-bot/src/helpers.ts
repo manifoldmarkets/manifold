@@ -1,9 +1,14 @@
 import { FullMarket } from 'common/api-market-types'
-import { ContractMetrics } from 'common/calculate-metrics'
 import { randomString } from 'common/util/random'
 import * as console from 'console'
-import { sendPositionsEmbed } from 'discord-bot/leaderboard'
+import {
+  getMarketFromId,
+  getMyPositionInMarket,
+  getTopAndBottomPositions,
+  placeBet,
+} from 'discord-bot/api'
 import { config } from 'discord-bot/constants/config'
+import { sendPositionsEmbed } from 'discord-bot/leaderboard'
 import {
   AttachmentBuilder,
   ButtonInteraction,
@@ -22,10 +27,10 @@ import {
 } from './emojis.js'
 import {
   getMarketInfoFromMessageId,
+  getUserInfo,
   registerHelpMessage,
   saveThreadIdToMessageId,
   updateThreadLastUpdatedTime,
-  userApiKey,
 } from './storage.js'
 
 export const messageEmbedsToRefresh = new Set<{
@@ -102,43 +107,27 @@ export const handleBet = async (
   const messageId = reaction.message.id
   const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
   console.log('betting', amount, buyOutcome, 'on', market.id, 'for', user.tag)
-  try {
-    const apiKey = await userApiKey(user.id).catch((e) => {
-      console.log('Failed to get user api key', e)
-      return null
-    })
 
-    if (!apiKey) {
-      await user.send(registerHelpMessage(user.id))
-
-      const userReactions = message.reactions.cache.filter(
-        (r) =>
-          (r.emoji.id ?? r.emoji.name) ===
-          (reaction.emoji.id ?? reaction.emoji.name)
-      )
-      try {
-        for (const react of userReactions.values()) {
-          await react.users.fetch()
-          if (react.users.cache.has(user.id)) await react.users.remove(user.id)
-        }
-      } catch (error) {
-        console.error('Failed to remove reactions.')
+  const api = await getUserInfo(user).catch(async () => {
+    await user.send(registerHelpMessage(user.id))
+    const userReactions = message.reactions.cache.filter(
+      (r) =>
+        (r.emoji.id ?? r.emoji.name) ===
+        (reaction.emoji.id ?? reaction.emoji.name)
+    )
+    try {
+      for (const react of userReactions.values()) {
+        await react.users.fetch()
+        if (react.users.cache.has(user.id)) await react.users.remove(user.id)
       }
+    } catch (error) {
+      console.error('Error: failed to remove reactions:', error)
     }
-    const outcome = buyOutcome
-    // send json post request to api
-    const resp = await fetch(`${config.domain}api/v0/bet`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Key ${apiKey}`,
-      },
-      body: JSON.stringify({
-        amount,
-        contractId: market.id,
-        outcome,
-      }),
-    })
+  })
+  if (!api) return
+  try {
+    const resp = await placeBet(api, market.id, amount, buyOutcome)
+
     if (!resp.ok) {
       const content = `Error: ${resp.statusText}`
       await user.send(content)
@@ -156,7 +145,7 @@ export const handleBet = async (
     await updateMarketStatus(message, market)
     messageEmbedsToRefresh.add({ message, marketId: market.id })
   } catch (e) {
-    const content = `Error: ${e}`
+    const content = `Error placing bet: ${e}`
     await user.send(content)
   }
 }
@@ -289,49 +278,6 @@ export const getSlug = (link: string) => {
   return link.split('/').pop()?.split('?')[0].split('#')[0] ?? ''
 }
 
-export const getMarketFromSlug = async (slug: string) => {
-  const resp = await fetch(`${config.domain}api/v0/slug/${slug}`)
-  if (!resp.ok) {
-    throw new Error('Market not found with slug: ' + slug)
-  }
-  return (await resp.json()) as FullMarket
-}
-export const getMarketFromId = async (id: string) => {
-  const resp = await fetch(`${config.domain}api/v0/market/${id}`)
-  if (!resp.ok) {
-    throw new Error('Market not found with id: ' + id)
-  }
-  return (await resp.json()) as FullMarket
-}
-
-export const getOpenBinaryMarketFromSlug = async (slug: string) => {
-  const market = await getMarketFromSlug(slug)
-
-  if (market.isResolved || (market.closeTime ?? 0) < Date.now()) {
-    const status = market.isResolved ? 'resolved' : 'closed'
-    throw new Error(`Market is ${status}, no longer accepting bets`)
-  }
-  if (market.outcomeType !== 'BINARY') {
-    throw new Error('Only Yes/No markets are supported')
-  }
-  return market
-}
-
-export const getTopAndBottomPositions = async (
-  slug: string,
-  orderBy: 'profit' | 'shares'
-) => {
-  const market = await getMarketFromSlug(slug)
-  const NUM_POSITIONS = 5
-  const resp = await fetch(
-    `${config.domain}api/v0/market/${market.id}/positions?top=${NUM_POSITIONS}&bottom=${NUM_POSITIONS}&order=${orderBy}`
-  )
-  if (!resp.ok) {
-    throw new Error('Positions not found with slug: ' + slug)
-  }
-  const contractMetrics = (await resp.json()) as ContractMetrics[]
-  return { market, contractMetrics }
-}
 export function truncateText(text: string, slice: number) {
   if (text.length <= slice + 3) {
     return text
@@ -353,6 +299,35 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
     return
   }
   const market = await getMarketFromId(marketInfo.market_id)
+  // Market description
+  if (customId === 'my-position') {
+    const api = await getUserInfo(interaction.user).catch((e) => {
+      interaction.reply({
+        content: registerHelpMessage(interaction.user.id),
+        ephemeral: true,
+      })
+    })
+    if (!api) return
+    const contractMetrics = await getMyPositionInMarket(
+      api,
+      marketInfo.market_id
+    )
+    if (!contractMetrics || contractMetrics.length === 0) {
+      await interaction.reply({
+        content: 'You have no position in this market',
+        ephemeral: true,
+      })
+      return
+    }
+    const { profit, hasShares, hasYesShares, totalShares } = contractMetrics[0]
+    const type = hasYesShares ? 'YES' : 'NO'
+    const content = `Shares: ${
+      hasShares ? Math.round(totalShares[type]) : 0
+    } ${type} \nProfit: M${Math.round(profit)}`
+
+    await interaction.reply({ content, ephemeral: true })
+    return
+  }
   // Market description
   if (customId === 'details') {
     const content = `Market details: ${market.textDescription}`

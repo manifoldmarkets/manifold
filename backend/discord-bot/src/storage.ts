@@ -1,7 +1,9 @@
 import { createClient } from 'common/supabase/utils'
+import { Api } from 'discord-bot/api'
 import { config } from 'discord-bot/constants/config'
+import { User } from 'discord.js'
 
-const discordIdsToApiKeys: { [k: string]: string } = {}
+const discordIdsToApis: { [k: string]: Api } = {}
 type DiscordMessageMarketInfo = {
   market_id: string
   market_slug: string
@@ -14,35 +16,33 @@ if (!key) throw new Error('No SUPABASE_KEY env var set.')
 const supabaseInstanceId = config.supabaseInstanceId
 if (!supabaseInstanceId) throw new Error('No supabaseInstanceId in config.')
 export const supabase = createClient(supabaseInstanceId, key)
-export const messagesHandledViaInteraction: Set<string> = new Set()
-export const channelMarkets: { [k: string]: string } = {}
+export const messagesHandledViaCollector: Set<string> = new Set()
 export const registerHelpMessage = (discordId: string) =>
-  `In order to bet with me go to ${config.domain}register-on-discord?discordId=${discordId}`
+  `In order to bet with me click this link: ${config.domain}register-on-discord?discordId=${discordId}.
+If you don't have an account yet, you can easily make one at the link!`
 
-export const userApiKey = async (discordUserId: string) => {
-  const storedKey = discordIdsToApiKeys[discordUserId] ?? null
+export const getUserInfo = async (discordUser: User) => {
+  const storedKey = discordIdsToApis[discordUser.id] ?? null
   if (storedKey) return storedKey
-  const key = await getApiKeyFromDiscordId(discordUserId)
-  if (key) discordIdsToApiKeys[discordUserId] = key
-  return key
+  const info = await getApiKeyFromDiscordId(discordUser)
+  discordIdsToApis[discordUser.id] = info
+  return info
 }
-export const writeApiKeyToDiscordUserId = async (
-  apiKey: string,
-  discordUserId: string
-) => {
-  discordIdsToApiKeys[discordUserId] = apiKey
-  const { error } = await supabase
-    .from('discord_users')
-    .insert({ discord_user_id: discordUserId, api_key: apiKey })
-  console.log('write api key error', error)
-  return error
-}
-export const getApiKeyFromDiscordId = async (discordUserId: string) => {
+export const getApiKeyFromDiscordId = async (discordUser: User) => {
   const { data, error } = await supabase
     .from('discord_users')
-    .select('api_key')
-    .eq('discord_user_id', discordUserId)
-  return error ? null : (data[0]?.api_key as string) ?? null
+    .select('api_key, user_id')
+    .eq('discord_user_id', discordUser.id)
+  if (error || !data || data.length === 0) {
+    console.log('error or no api key. Error:', error)
+    if (error) await discordUser.send('Error:' + error.message)
+    throw new Error('No api key found for user: ' + discordUser.id)
+  }
+  return {
+    manifoldUserId: data[0].user_id,
+    apiKey: data[0].api_key,
+    discordUser: discordUser,
+  } as Api
 }
 
 export const getMarketInfoFromMessageId = async (messageId: string) => {

@@ -1,5 +1,6 @@
 import { REST } from '@discordjs/rest'
 import * as console from 'console'
+import { getOpenBinaryMarketFromSlug } from 'discord-bot/api'
 import { Command } from 'discord-bot/command'
 import { commands } from 'discord-bot/commands'
 
@@ -24,7 +25,6 @@ import {
   getAnyHandledEmojiKey,
 } from './emojis.js'
 import {
-  getOpenBinaryMarketFromSlug,
   handleButtonPress,
   handleReaction,
   shouldIgnoreMessageFromGuild,
@@ -32,7 +32,7 @@ import {
 import { startListener } from './server.js'
 import {
   getMarketInfoFromMessageId,
-  messagesHandledViaInteraction,
+  messagesHandledViaCollector,
 } from './storage.js'
 const commandsCollection = new Collection<string, Command>()
 const client = new Client({
@@ -138,31 +138,32 @@ const handleOldReaction = async (
   pUser: User | PartialUser
 ) => {
   const { message } = pReaction
-  const ignore = messagesHandledViaInteraction.has(message.id)
+
+  // Check if the collector is handling this message already
+  const ignore = messagesHandledViaCollector.has(message.id)
   if (ignore) {
     console.log('ignoring reaction with message id:', message.id)
     return
   }
+
+  // Check if it's a dev guild
   const guildId =
     message.guildId === null ? (await message.fetch()).guildId : message.guildId
   if (shouldIgnoreMessageFromGuild(guildId)) return
 
-  const marketInfo = await getMarketInfoFromMessageId(message.id)
-  if (!marketInfo) return
-
-  console.log('checking old reaction for proper details')
-
+  // Check if it's one of our handled emojis
   const reaction = pReaction.partial
-    ? await pReaction
-        .fetch()
-        .then((r) => r)
-        .catch((e) => {
-          console.log('Failed to fetch reaction', e)
-        })
+    ? await pReaction.fetch().catch((e) => {
+        console.log('Failed to fetch reaction', e)
+      })
     : pReaction
   if (!reaction) return
   const emojiKey = getAnyHandledEmojiKey(reaction)
   if (!emojiKey) return
+
+  // Check if the message has a market matched to it
+  const marketInfo = await getMarketInfoFromMessageId(message.id)
+  if (!marketInfo) return
 
   const user = pUser.partial
     ? await pUser

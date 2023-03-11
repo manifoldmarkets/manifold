@@ -1,5 +1,6 @@
 import { FullMarket } from 'common/api-market-types'
 import { filterDefined } from 'common/util/array'
+import { getOpenBinaryMarketFromSlug } from 'discord-bot/api'
 import { Command } from 'discord-bot/command'
 import { config } from 'discord-bot/constants/config'
 import {
@@ -18,14 +19,13 @@ import {
 import { customEmojiCache, customEmojis, emojis } from 'discord-bot/emojis'
 import {
   getCurrentMarketDescription,
-  getOpenBinaryMarketFromSlug,
   getSlug,
   handleReaction,
   messageEmbedsToRefresh,
   shouldIgnoreMessageFromGuild,
 } from 'discord-bot/helpers'
 import {
-  messagesHandledViaInteraction,
+  messagesHandledViaCollector,
   saveMarketToMessageId,
 } from 'discord-bot/storage'
 
@@ -143,7 +143,7 @@ const sendMarketIntro = async (
   })
 
   // Let client listener know we've this message in memory
-  messagesHandledViaInteraction.add(message.id)
+  messagesHandledViaCollector.add(message.id)
   messageEmbedsToRefresh.add({ message, marketId: market.id })
   // Add emoji reactions
   for (const emoji of emojis) {
@@ -162,12 +162,16 @@ const getButtonRow = () => {
       .setLabel('Details')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
+      .setCustomId('my-position')
+      .setEmoji('💰') // other ideas: 💰, 📈, 📉
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
       .setCustomId('leaderboard')
-      .setLabel(`Who's winning?`)
+      .setEmoji('🏆')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId('question')
-      .setLabel('What?')
+      .setEmoji('❓')
       .setStyle(ButtonStyle.Secondary)
   )
 }
