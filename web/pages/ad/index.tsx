@@ -24,7 +24,7 @@ import clsx from 'clsx'
 
 export async function getStaticProps() {
   const ads = await getAllAds()
-  return { props: { ads } }
+  return { props: { ads }, revalidate: 60 }
 }
 
 export default function AdsPage(props: { ads: AdType[] }) {
