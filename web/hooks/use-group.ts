@@ -13,7 +13,7 @@ import {
   listGroups,
   topFollowedGroupsQuery,
 } from 'web/lib/firebase/groups'
-import { getUser } from 'web/lib/firebase/users'
+import { auth, getUser } from 'web/lib/firebase/users'
 import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
 import { keyBy, uniq, uniqBy } from 'lodash'
@@ -26,6 +26,7 @@ import { storageStore, usePersistentState } from './use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useStoreItems } from './use-store'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
+import { useUser } from './use-user'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -207,12 +208,15 @@ export function useGroups(groupIds: string[]) {
   return useStoreItems(groupIds, listenForGroup, { loadOnce: true })
 }
 
-export function useIsGroupMember(groupSlug: string, userId: string) {
+export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = useState<any>(false)
+  const user = useUser()
   useEffect(() => {
-    getUserIsGroupMember({ groupSlug: groupSlug }).then((result) =>
-      setIsMember(result)
-    )
-  }, [groupSlug, userId])
+    if (user) {
+      getUserIsGroupMember({ groupSlug: groupSlug }).then((result) =>
+        setIsMember(result)
+      )
+    }
+  }, [groupSlug, user])
   return isMember
 }

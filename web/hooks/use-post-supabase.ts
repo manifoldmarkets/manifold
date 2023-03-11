@@ -4,48 +4,54 @@ import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { getPost } from 'web/lib/supabase/post'
 
-export function useRealtimePost(postId: string) {
+export function useRealtimePost(postId?: string) {
   const [post, setPost] = useState<Post | null>(null)
   function fetchPost() {
-    getPost(postId)
-      .then((result) => {
-        setPost(result)
-      })
-      .catch((e) => console.log(e))
+    if (postId) {
+      getPost(postId)
+        .then((result) => {
+          setPost(result)
+        })
+        .catch((e) => console.log(e))
+    }
   }
 
   useEffect(() => {
     fetchPost()
-  }, [])
+  }, [postId])
 
   useEffect(() => {
-    const channel = db.channel('post-realtime')
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'posts',
-        filter: `id=eq.${postId}`,
-      },
-      (payload) => {
-        fetchPost()
+    if (postId) {
+      const channel = db.channel('post-realtime')
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts',
+          filter: `id=eq.${postId}`,
+        },
+        (payload) => {
+          fetchPost()
+        }
+      )
+      channel.subscribe(async (status) => {})
+      return () => {
+        db.removeChannel(channel)
       }
-    )
-    channel.subscribe(async (status) => {})
-    return () => {
-      db.removeChannel(channel)
     }
-  }, [db])
+  }, [db, postId])
   return post
 }
 
-export function usePost(postId: string) {
+export function usePost(postId?: string) {
   const [post, setPost] = useState<Post | null>(null)
   useEffect(() => {
-    getPost(postId).then((result) => {
-      setPost(result)
-    })
+    if (postId) {
+      getPost(postId).then((result) => {
+        setPost(result)
+      })
+    }
   }, [postId])
   return post
 }

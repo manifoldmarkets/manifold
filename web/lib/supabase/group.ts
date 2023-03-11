@@ -3,7 +3,7 @@ import { run } from 'common/supabase/utils'
 import { User } from '../firebase/users'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { uniqBy } from 'lodash'
-import { Group } from 'common/group'
+import { Group, PrivacyStatusType } from 'common/group'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {

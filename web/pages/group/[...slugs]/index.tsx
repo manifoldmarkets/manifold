@@ -17,6 +17,7 @@ import { Custom404Content } from '../../404'
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
+  LockClosedIcon,
   PlusCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
@@ -53,6 +54,7 @@ import { getGroupFromSlug, getGroupPrivacyBySlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
 import { usePost, useRealtimePost } from 'web/hooks/use-post-supabase'
 import { getUser } from 'web/lib/supabase/user'
+import { AddContractButton } from 'web/components/groups/add-contract-to-group-button'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
@@ -124,76 +126,43 @@ export default function GroupPage(props: {
   groupParams?: GroupParams
 }) {
   const { groupPrivacy, slugs, groupParams } = props
-  const user = useUser()
   return (
     <Page touchesTop={true}>
-      {groupPrivacy == 'private' && (
-        <PrivateGroupPage slugs={slugs} user={user} />
-      )}
+      {groupPrivacy == 'private' && <PrivateGroupPage slugs={slugs} />}
       {groupPrivacy != 'private' && groupParams && (
-        <NonPrivateGroupPage
-          groupPrivacy={groupPrivacy}
-          slugs={slugs}
-          user={user}
-          groupParams={groupParams}
-        />
+        <NonPrivateGroupPage slugs={slugs} groupParams={groupParams} />
       )}
     </Page>
   )
 }
 
 export function InaccessiblePrivateGroup() {
-  return <div>You do not have access to this group!</div>
+  return (
+    <Col className="mt-24 h-full w-full items-center justify-center lg:mt-0">
+      <LockClosedIcon className="text-ink-400 h-36 w-36" />
+      <div>You do not have access to this group!</div>
+    </Col>
+  )
 }
 
-export function PrivateGroupPage(props: {
-  slugs: string[]
-  user?: User | null
-}) {
-  const { slugs, user } = props
-  if (!user) {
-    return <InaccessiblePrivateGroup />
-  }
-  const isMember = useIsGroupMember(slugs[0], user.id)
-  console.log('is member?', isMember)
+export function PrivateGroupPage(props: { slugs: string[] }) {
+  const { slugs } = props
+  const isMember = useIsGroupMember(slugs[0])
   if (!isMember) {
     return <InaccessiblePrivateGroup />
-  } else return <GroupPageContent slugs={slugs} user={user} />
+  } else return <GroupPageContent slugs={slugs} />
 }
 
 export function NonPrivateGroupPage(props: {
-  groupPrivacy: PrivacyStatusType
   slugs: string[]
-  user?: User | null
   groupParams: GroupParams
 }) {
-  const { groupPrivacy, slugs, user, groupParams } = props
+  const { slugs, groupParams } = props
   const page = slugs?.[1] as typeof groupSubpages[number]
-  const isManifoldAdmin = useAdmin()
   const { group, creator } = groupParams
-  const userRole = useRealtimeRole(group?.id)
   if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
     return <Custom404Content />
   }
-  const addContractButton =
-    isManifoldAdmin && user ? (
-      <AddContractButton
-        group={group}
-        user={user}
-        userRole={'admin'}
-        className="fill-ink-0"
-      />
-    ) : user &&
-      (groupPrivacy == 'public' ||
-        (groupPrivacy == 'curated' &&
-          (userRole == 'admin' || userRole == 'moderator'))) ? (
-      <AddContractButton
-        group={group}
-        user={user}
-        userRole={userRole ?? undefined}
-        className="fill-ink-0"
-      />
-    ) : undefined
 
   return (
     <>
@@ -206,36 +175,27 @@ export function NonPrivateGroupPage(props: {
         url={groupPath(group.slug)}
         image={group.bannerUrl}
       />
-      <GroupPageContent
-        slugs={slugs}
-        addContractButton={addContractButton}
-        user={user}
-        groupParams={groupParams}
-      />
+      <GroupPageContent slugs={slugs} groupParams={groupParams} />
     </>
   )
 }
 
 export function GroupPageContent(props: {
   slugs: string[]
-  addContractButton?: ReactNode
-  userRole?: groupRoleType
-  user?: User | null
   groupParams?: GroupParams
 }) {
-  const { slugs, addContractButton, userRole, user, groupParams } = props
+  const { slugs, groupParams } = props
+  const user = useUser()
   const isManifoldAdmin = useAdmin()
   const group = useRealtimeGroup(slugs[0]) ?? groupParams?.group
+  const userRole = useRealtimeRole(group?.id)
   const isMobile = useIsMobile()
   const privateUser = usePrivateUser()
   const [writingNewAbout, setWritingNewAbout] = useState(false)
   const bannerRef = useRef<HTMLDivElement | null>(null)
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
-  // const aboutPost = group?.aboutPostId
-  //    ? useRealtimePost(group.aboutPostId)
-  //   : groupParams?.aboutPost
-
-  const aboutPost = groupParams?.aboutPost
+  const aboutPost =
+    useRealtimePost(group?.aboutPostId) ?? groupParams?.aboutPost
 
   const page = slugs?.[1] as typeof groupSubpages[number]
   const tabIndex = ['markets', 'about', 'leaderboards'].indexOf(
@@ -243,7 +203,7 @@ export function GroupPageContent(props: {
   )
   const [activeIndex, setActiveIndex] = useState(tabIndex)
 
-  // const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts
+  const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts ?? []
 
   const topTraders =
     groupParams?.topTraders ??
@@ -258,9 +218,12 @@ export function GroupPageContent(props: {
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   return (
     <>
-      <div className=" fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-24rem)]">
-        {addContractButton}
-      </div>
+      <AddContractButton
+        group={group}
+        user={user}
+        userRole={userRole}
+        className=" fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-24rem)]"
+      />
       {isMobile && (
         <TopGroupNavBar
           group={group}
@@ -363,7 +326,7 @@ export function GroupPageContent(props: {
               content: (
                 <GroupPostSection
                   group={group}
-                  // posts={groupPosts}
+                  posts={groupPosts}
                   canEdit={isManifoldAdmin || userRole === 'admin'}
                 />
               ),
@@ -521,59 +484,6 @@ function GroupLeaderboard(props: {
       ]}
       maxToShow={maxToShow}
     />
-  )
-}
-
-function AddContractButton(props: {
-  group: Group
-  user: User
-  userRole?: groupRoleType
-  className?: string
-}) {
-  const { group, user, className, userRole } = props
-  const [open, setOpen] = useState(false)
-
-  async function onSubmit(contracts: Contract[]) {
-    await Promise.all(
-      contracts.map((contract) =>
-        addContractToGroup({
-          groupId: group.id,
-          contractId: contract.id,
-        }).catch((e) => console.log(e))
-      )
-    )
-      .then(() =>
-        toast('Succesfully added markets!', {
-          icon: <CheckCircleIcon className={'h-5 w-5 text-green-500'} />,
-        })
-      )
-      .catch(() =>
-        toast('Error adding markets. Try again?', {
-          icon: <XCircleIcon className={'h-5 w-5 text-red-500'} />,
-        })
-      )
-  }
-
-  return (
-    <div className={className}>
-      <IconButton
-        size="md"
-        onClick={() => setOpen(true)}
-        className="drop-shadow hover:drop-shadow-lg"
-      >
-        <div className="bg-canvas-0 relative h-12 w-12 rounded-full">
-          <PlusCircleIcon className="text-primary-700 absolute -left-2 -top-2 h-16 w-16 drop-shadow" />
-        </div>
-      </IconButton>
-      <AddMarketToGroupModal
-        group={group}
-        user={user}
-        open={open}
-        setOpen={setOpen}
-        onAddMarkets={onSubmit}
-        userRole={userRole}
-      />
-    </div>
   )
 }
 

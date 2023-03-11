@@ -9,6 +9,7 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { UncontrolledTabs } from '../layout/tabs'
 import { NewContractPanel } from '../new-contract-panel'
+import { AddContractToGroupPermissionType } from './add-contract-to-group-button'
 import { groupRoleType } from './group-member-modal'
 
 export function AddMarketToGroupModal(props: {
@@ -17,9 +18,9 @@ export function AddMarketToGroupModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   onAddMarkets: (contracts: Contract[]) => void | Promise<void>
-  userRole?: groupRoleType
+  addPermission: AddContractToGroupPermissionType
 }) {
-  const { group, user, open, setOpen, onAddMarkets, userRole } = props
+  const { group, user, open, setOpen, onAddMarkets, addPermission } = props
   const [groupContractIds, setGroupContractIds] = useState<string[]>([])
   useEffect(() => {
     getGroupContractIds(group.id).then((ids) =>
@@ -32,14 +33,17 @@ export function AddMarketToGroupModal(props: {
         <div className="bg-primary-100 text-primary-800 fixed inset-x-0 top-0 z-40 w-full rounded-t-md py-2 px-8">
           {group.name}
         </div>
-        {group.privacyStatus == 'public' &&
-          userRole != 'admin' &&
-          userRole != 'moderator' && (
-            <Col className="w-full pt-4">
-              <NewContractFromGroup group={group} user={user} />
-            </Col>
-          )}
-        {(userRole === 'admin' || userRole === 'moderator') && (
+        {addPermission == 'private' && (
+          <Col className="w-full pt-4">
+            <NewPrivateContractFromGroup group={group} user={user} />
+          </Col>
+        )}
+        {addPermission == 'new' && (
+          <Col className="w-full pt-4">
+            <NewContractFromGroup group={group} user={user} />
+          </Col>
+        )}
+        {addPermission == 'any' && (
           <Col className="-mt-1 w-full pt-4">
             <UncontrolledTabs
               tabs={[
@@ -90,4 +94,12 @@ export function NewContractFromGroup(props: { group: Group; user: User }) {
       fromGroup={true}
     />
   )
+}
+
+export function NewPrivateContractFromGroup(props: {
+  group: Group
+  user: User
+}) {
+  const { group, user } = props
+  return <>Coming soon to a city near you!</>
 }
