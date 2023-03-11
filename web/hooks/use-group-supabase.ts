@@ -23,7 +23,7 @@ export function useRealtimeRole(groupId: string | undefined) {
   const isManifoldAdmin = useAdmin()
   useEffect(() => {
     setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
-  }, [user])
+  }, [user, isManifoldAdmin, groupId])
   useEffect(() => {
     const channel = db.channel('user-group-role-realtime')
     channel.on(
