@@ -1,4 +1,4 @@
-import { Group } from 'common/group'
+import { Group, PrivacyStatusType } from 'common/group'
 import { run } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
@@ -132,7 +132,8 @@ export async function getGroupPrivacyBySlug(groupSlug: string) {
       .select('data->>privacyStatus')
       .eq('data->>slug', groupSlug)
   )
-  return groupPrivacy[0].privacyStatus
+  return (groupPrivacy[0] as unknown as { privacyStatus: PrivacyStatusType })
+    .privacyStatus
 }
 
 export async function getGroupFromSlug(groupSlug: string) {
