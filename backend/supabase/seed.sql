@@ -1147,3 +1147,26 @@ where uph.user_id in (select unnest(uids)) and
 (data->'timestamp')::bigint > start
 group by uph.user_id
 $$;
+
+create or replace function search_contract_embeddings (
+  query_embedding vector(1536),
+  similarity_threshold float,
+  match_count int
+)
+returns table (
+  contract_id text,
+  similarity float
+)
+language plpgsql
+as $$
+begin
+  return query
+  select
+    contract_embeddings.contract_id as contract_id,
+    1 - (contract_embeddings.embedding <#> query_embedding) as similarity
+  from contract_embeddings
+  where 1 - (contract_embeddings.embedding <#> query_embedding) > similarity_threshold
+  order by contract_embeddings.embedding <#> query_embedding
+  limit match_count;
+end;
+$$;
