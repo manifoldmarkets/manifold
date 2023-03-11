@@ -10,7 +10,6 @@ import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { UncontrolledTabs } from '../layout/tabs'
 import { NewContractPanel } from '../new-contract-panel'
 import { AddContractToGroupPermissionType } from './add-contract-to-group-button'
-import { groupRoleType } from './group-member-modal'
 
 export function AddMarketToGroupModal(props: {
   group: Group
@@ -35,7 +34,7 @@ export function AddMarketToGroupModal(props: {
         </div>
         {addPermission == 'private' && (
           <Col className="w-full pt-4">
-            <NewPrivateContractFromGroup group={group} user={user} />
+            <NewPrivateContractFromGroup />
           </Col>
         )}
         {addPermission == 'new' && (
@@ -96,10 +95,6 @@ export function NewContractFromGroup(props: { group: Group; user: User }) {
   )
 }
 
-export function NewPrivateContractFromGroup(props: {
-  group: Group
-  user: User
-}) {
-  const { group, user } = props
+export function NewPrivateContractFromGroup() {
   return <>Coming soon to a city near you!</>
 }

@@ -278,12 +278,12 @@ export function useRealtimeGroup(groupSlug: string) {
   return group
 }
 
-export function useGroupCreator(creatorId?: string) {
+export function useGroupCreator(group?: Group | null) {
   const [creator, setCreator] = useState<User | null>(null)
   useEffect(() => {
-    if (creatorId) {
-      getUser(creatorId).then((result) => setCreator(result))
+    if (group && group.creatorId) {
+      getUser(group.creatorId).then((result) => setCreator(result))
     }
-  }, [creatorId])
+  }, [group])
   return creator
 }

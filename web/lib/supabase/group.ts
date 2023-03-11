@@ -1,9 +1,9 @@
-import { db } from './db'
+import { Group } from 'common/group'
 import { run } from 'common/supabase/utils'
-import { User } from '../firebase/users'
-import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { uniqBy } from 'lodash'
-import { Group, PrivacyStatusType } from 'common/group'
+import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
+import { User } from '../firebase/users'
+import { db } from './db'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {

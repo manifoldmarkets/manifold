@@ -1,9 +1,9 @@
 import { LockClosedIcon } from '@heroicons/react/solid'
 import { useIsGroupMember } from 'web/hooks/use-group'
-import { GroupPageContent } from 'web/pages/group/[...slugs]'
 import { Col } from '../layout/col'
 import * as unlocking from '../../public/lottie/unlocking-icon.json'
 import Lottie from 'react-lottie'
+import { GroupPageContent } from 'web/pages/group/[...slugs]'
 
 export function LoadingPrivateGroup() {
   return (

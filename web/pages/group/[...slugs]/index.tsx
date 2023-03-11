@@ -1,5 +1,5 @@
 import Router, { useRouter } from 'next/router'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Group, groupPath, PrivacyStatusType } from 'common/group'
 import { formatMoney } from 'common/util/format'
@@ -7,38 +7,27 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Leaderboard } from 'web/components/leaderboard'
 import { SEO } from 'web/components/SEO'
-import { useGroup, useIsGroupMember } from 'web/hooks/use-group'
-import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Contract } from 'web/lib/firebase/contracts'
-import { auth, getUsersBlockFacetFilters, User } from 'web/lib/firebase/users'
+import { getUsersBlockFacetFilters, User } from 'web/lib/firebase/users'
 import { Custom404Content } from '../../404'
 
-import {
-  ArrowLeftIcon,
-  CheckCircleIcon,
-  LockClosedIcon,
-  PlusCircleIcon,
-  XCircleIcon,
-} from '@heroicons/react/solid'
+import { ArrowLeftIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { GroupComment } from 'common/comment'
-import { ENV_CONFIG, HOUSE_BOT_USERNAME, isAdmin } from 'common/envs/constants'
+import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
-import toast from 'react-hot-toast'
-import { IconButton } from 'web/components/buttons/button'
 import { ContractSearch } from 'web/components/contract-search'
-import { AddMarketToGroupModal } from 'web/components/groups/add-market-modal'
+import { AddContractButton } from 'web/components/groups/add-contract-to-group-button'
 import { GroupAboutSection } from 'web/components/groups/group-about-section'
 import BannerImage from 'web/components/groups/group-banner-image'
-import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { GroupOptions } from 'web/components/groups/group-options'
 import GroupPrivacyStatusWidget, {
   GroupMembersWidget,
 } from 'web/components/groups/group-page-items'
 import { GroupPostSection } from 'web/components/groups/group-post-section'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import { PrivateGroupPage } from 'web/components/groups/private-group'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -50,17 +39,12 @@ import {
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePosts } from 'web/hooks/use-post'
+import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { addContractToGroup, getUserIsGroupMember } from 'web/lib/firebase/api'
-import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { listPosts } from 'web/lib/firebase/posts'
 import { getGroupFromSlug, getGroupPrivacyBySlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
-import { usePost, useRealtimePost } from 'web/hooks/use-post-supabase'
 import { getUser } from 'web/lib/supabase/user'
-import { AddContractButton } from 'web/components/groups/add-contract-to-group-button'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { PrivateGroupPage } from 'web/components/groups/private-group'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
@@ -191,15 +175,17 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     useRealtimePost(group?.aboutPostId) ?? groupParams?.aboutPost
 
   const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts ?? []
-  const creator =
-    groupParams?.creator || useGroupCreator(group?.creatorId) || null
+  const creator = useGroupCreator(group) ?? groupParams?.creator
 
   const topTraders =
+    useToTopUsers((group && group.cachedLeaderboard?.topTraders) ?? []) ??
     groupParams?.topTraders ??
-    useToTopUsers((group && group.cachedLeaderboard?.topTraders) ?? [])
+    []
+
   const topCreators =
+    useToTopUsers((group && group.cachedLeaderboard?.topCreators) ?? []) ??
     groupParams?.topCreators ??
-    useToTopUsers((group && group.cachedLeaderboard?.topCreators) ?? [])
+    []
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator?.username,
@@ -210,7 +196,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     return <></>
   }
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
-  if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
+  if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404Content />
   }
   return (
@@ -479,17 +465,12 @@ const toTopUsers = async (
 
 function useToTopUsers(
   cachedUserIds: { userId: string; score: number }[]
-): UserStats[] {
+): UserStats[] | null {
   const [topUsers, setTopUsers] = useState<UserStats[]>([])
   useEffect(() => {
-    let tempTopUsers: { user: User | null; score: number }[] = []
-    cachedUserIds.map((e) => {
-      getUser(e.userId).then((user) => {
-        tempTopUsers.push({ user, score: e.score ?? 0 })
-      })
-    })
-
-    setTopUsers((tempTopUsers) => tempTopUsers.filter((e) => e.user != null))
+    toTopUsers(cachedUserIds).then((result) =>
+      setTopUsers(result as UserStats[])
+    )
   }, [cachedUserIds])
-  return topUsers
+  return topUsers && topUsers.length > 0 ? topUsers : null
 }
