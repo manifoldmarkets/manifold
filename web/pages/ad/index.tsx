@@ -50,12 +50,16 @@ export default function AdsPage(props: { ads: AdType[] }) {
       <NoSEO />
       {isLoading && <LoadingIndicator />}
 
-      {current ? (
-        <Ad ad={current} onNext={next} key={current.id} />
-      ) : (
+      {!isLoading && (
         <>
-          <span className="w-full py-4 text-center">No more ads</span>
-          <CreateBanner />
+          {current ? (
+            <Ad ad={current} onNext={next} key={current.id} />
+          ) : (
+            <>
+              <span className="w-full py-4 text-center">No more ads</span>
+              <CreateBanner />
+            </>
+          )}
         </>
       )}
     </Page>
