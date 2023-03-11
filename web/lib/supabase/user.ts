@@ -6,5 +6,9 @@ export async function getUser(userId: string) {
   const { data: user } = await run(
     db.from('users').select('data').eq('id', userId)
   )
-  return user[0].data as User
+  if (user && user.length > 0) {
+    return user[0].data as User
+  } else {
+    return null
+  }
 }

@@ -13,6 +13,7 @@ import {
   getNumGroupMembers,
   MEMBER_LOAD_NUM,
 } from 'web/lib/supabase/group'
+import { getUser } from 'web/lib/supabase/user'
 import { useAdmin } from './use-admin'
 import { useUser } from './use-user'
 
@@ -275,4 +276,14 @@ export function useRealtimeGroup(groupSlug: string) {
     }
   }, [db])
   return group
+}
+
+export function useGroupCreator(creatorId?: string) {
+  const [creator, setCreator] = useState<User | null>(null)
+  useEffect(() => {
+    if (creatorId) {
+      getUser(creatorId).then((result) => setCreator(result))
+    }
+  }, [creatorId])
+  return creator
 }

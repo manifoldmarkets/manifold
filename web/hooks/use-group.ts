@@ -209,13 +209,15 @@ export function useGroups(groupIds: string[]) {
 }
 
 export function useIsGroupMember(groupSlug: string) {
-  const [isMember, setIsMember] = useState<any>(false)
+  const [isMember, setIsMember] = useState<any>(undefined)
   const user = useUser()
   useEffect(() => {
     if (user) {
-      getUserIsGroupMember({ groupSlug: groupSlug }).then((result) =>
-        setIsMember(result)
-      )
+      setTimeout(() => {
+        getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
+          setIsMember(result)
+        })
+      }, 1000)
     }
   }, [groupSlug, user])
   return isMember
