@@ -72,7 +72,7 @@ export function DepthChart(props: {
       >
         <VictoryAxis
           tickFormat={(t) => `${Math.round(t * 100)}%`}
-          tickCount={10}
+          tickCount={6}
           label="Chance"
           axisLabelComponent={<VictoryLabel dy={10} />}
           style={axisStyle}

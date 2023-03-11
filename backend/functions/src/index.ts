@@ -98,6 +98,7 @@ const registerDiscordId = toCloudFunction(endpoints.registerdiscordid)
 const getUserIsGroupMemberFunction = toCloudFunction(
   endpoints.getuserisgroupmember
 )
+const redeemAd = toCloudFunction(endpoints.redeemad)
 
 export {
   healthFunction as health,
@@ -136,4 +137,5 @@ export {
   addGroupMemberFunction as addgroupmember,
   registerDiscordId as registerdiscordid,
   getUserIsGroupMemberFunction as getuserisgroupmember,
+  redeemAd as redeemad,
 }

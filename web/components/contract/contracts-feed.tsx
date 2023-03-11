@@ -20,10 +20,12 @@ export function ContractsFeed() {
         ))}
       </Col>
 
-      <VisibilityObserver
-        className="relative -top-96"
-        onVisibilityUpdated={(visible) => visible && loadMore()}
-      />
+      <div className="relative">
+        <VisibilityObserver
+          className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
+          onVisibilityUpdated={(visible) => visible && loadMore()}
+        />
+      </div>
 
       {contracts.length === 0 ? (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">

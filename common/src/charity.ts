@@ -845,7 +845,6 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
     Following their initial research, their team now partners with NGOs to help farmers introduce higher welfare farming methods in the second-highest fish producing country in the world, India.
     
     As of December 30 2022, they have potentially helped 1.14 and 1.4 million fish and shrimp respectively, with every $1 potentially helping 1.3 fish and every $100 13 fish.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Cavendish Labs',
@@ -857,7 +856,6 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
 1. Alignment. How do we make sure that AI does what we want? We’ve spent some time thinking about ELK and inverse scaling; however, we think that AGI will most likely be achieved through some sort of model-based RL framework, so that is our current focus. For instance, we know how to induce provable guarantees of behaviour in supervised learning; could we do something similar in RL?
 2. Pandemic prevention. A lot of people have heard of the Far-UVC light idea; however, understanding why it works, and whether it works safely, is useful for developing other broad-spectrum viral prevention tools, as well as preventing the engineering of UV-resistant viruses.
 3. Diagnostic development. We're interested in designing a low-cost and simple-to-use platform for LAMP reactions so that generalized diagnostic capabilities are more widespread. We envision a world where it is both cheap and easy to run a panel of tests so one can swiftly determine the exact virus behind an infection.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Internet Archive',
@@ -867,7 +865,6 @@ The organization reports for the year 2021 to have prevented 14.1 million uninte
     description: `The Internet Archive, a 501(c)(3) non-profit, is building a digital library of Internet sites and other cultural artifacts in digital form. Like a paper library, we provide free access to researchers, historians, scholars, people with print disabilities, and the general public. Our mission is to provide Universal Access to All Knowledge.
 
 We began in 1996 by archiving the Internet itself, a medium that was just beginning to grow in use. Like newspapers, the content published on the web was ephemeral - but unlike newspapers, no one was saving it. Today we have 26+ years of web history accessible through the Wayback Machine and we work with 1,000+ library and other partners through our Archive-It program to identify important web pages.`,
-    tags: ['New'] as const,
   },
   {
     name: 'Camfed',
@@ -876,7 +873,6 @@ We began in 1996 by archiving the Internet itself, a medium that was just beginn
     preview: `Camfed supports girls to learn, thrive and lead change.`,
     description: `Camfed (also known as the Campaign for Female Education) was founded in 1993 and operates in Zimbabwe, Zambia, Ghana, Tanzania and Malawi with the goal of educating women. 
     Education is a very important resourse that is unfortunately not always made available, especially to women. Allowing someone to get an education allows them to do great things.`,
-    tags: ['New'] as const,
   },
   {
     name: 'The Fred Hollows Foundation',
@@ -885,6 +881,21 @@ We began in 1996 by archiving the Internet itself, a medium that was just beginn
     preview: `Fred Hollows Foundation focuses on preventable and treatable diseases such as cataract, trachoma and diabetic retinopathy`,
     description: `The Fred Hollows Foundation has a very clear goal: we’re putting an end to avoidable blindness. 
     When this day comes, people in developing countries will get the same quality eye care the rest of the world takes for granted – and we won’t stop until this is done.`,
+  },
+  {
+    name: 'The Shrimp Welfare Project',
+    website: 'https://www.shrimpwelfareproject.org/',
+    photo: 'https://i.imgur.com/1TugXgS.png',
+    preview: `Shrimp Welfare Project aims to improve the lives of billions of farmed shrimps`,
+    description: `~400 billion shrimps are farmed each year. This is more than 5x the total number of all farmed land animals put together. Many of them suffer from conditions which can and should be addressed, such as:
+Risk of disease - Diseases that exist within the normal microflora of shrimps can thrive under high stocking densities, enabling pathogenic outbreaks. This is detrimental not only to the farmed shrimps but can cause large spillover events if best management practices are not followed. The indiscriminate use of antibiotics to stop diseases promotes the emergence of antibiotic-resistant bacteria. Part of the solution in this case is prevention through best welfare practices.
+
+Water quality - Oxygen and ammonia levels, temperature, salinity and pH are key to the welfare of all aquatic animals, including shrimps. Incorrect water management can lead to not only the contamination of nearby bodies of water and salinization and acidification of the soil, but also to compromised immune systems in shrimps and, in extreme cases, to death by suffocation or poisoning.
+
+Eyestalk ablation - Some hatcheries still practice crushing or cutting off the eyestalk of female shrimps to induce rapid maturation. Recent studies have demonstrated that avoiding eyestalk ablation can result in broodstock living longer and their offspring being more resistant to stress. Therefore, eliminating this practice is in the best interest of shrimps but also of the shrimp farming industry.
+
+They are highly neglected. Shrimp Welfare Project is the first organization focusing exclusively on the welfare of these animals. This has been made possible, in part, thanks to organizations such as Charity Entrepreneurship and Rethink Priorities raising the issue of invertebrate suffering.     
+    `,
     tags: ['New'] as const,
   },
 ].map((charity) => {

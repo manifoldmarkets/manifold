@@ -90,9 +90,9 @@ export const PROD_CONFIG: EnvConfig = {
     'manticmarkets@gmail.com', // Manifold
     'iansphilips@gmail.com', // Ian
     'd4vidchee@gmail.com', // D4vid
-    'federicoruizcassarino@gmail.com', // Fede
     'ingawei@gmail.com', //Inga
     'marshall@pol.rs', // Marshall
+    'etherizecloud@gmail.com', // ian's dev-only email
   ],
   visibility: 'PUBLIC',
 

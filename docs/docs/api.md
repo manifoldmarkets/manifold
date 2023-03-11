@@ -164,6 +164,7 @@ Requires no authorization.
     pool: { outcome: number } // For CPMM markets, the number of shares in the liquidity pool. For DPM markets, the amount of mana invested in each answer.
     p?: number // CPMM markets only, probability constant in y^p * n^(1-p) = k
     totalLiquidity?: number // CPMM markets only, the amount of mana deposited into the liquidity pool
+    value?: number // PSEUDO_NUMERIC markets only, the current market value, which is mapped from probability using min, max, and isLogScale.
     min?: number // PSEUDO_NUMERIC markets only, the minimum resolvable value
     max?: number // PSEUDO_NUMERIC markets only, the maximum resolvable value
     isLogScale?: bool // PSEUDO_NUMERIC markets only, if true `number = (max - min + 1)^probability + minstart - 1`, otherwise `number = min + (max - min) * probability`

@@ -13,6 +13,8 @@ import { getBlockGroupDropdownItem } from './hide-group-item'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { useState } from 'react'
 import { AddMemberModal } from './add-member-modal'
+import { referralQuery } from 'common/util/share'
+import { useUser } from 'web/hooks/use-user'
 
 export function GroupOptions(props: {
   group: Group
@@ -22,8 +24,10 @@ export function GroupOptions(props: {
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
   const { group, groupUrl, privateUser, canEdit, setWritingNewAbout } = props
+
   const [openAddMemberModal, setOpenAddMemberModal] = useState(false)
   let groupOptionItems = [] as DropdownItem[]
+
   if (canEdit) {
     groupOptionItems = groupOptionItems.concat({
       name: 'Add members',
@@ -46,11 +50,15 @@ export function GroupOptions(props: {
       })
     }
   }
+
+  const user = useUser()
+  const shareUrl = user ? groupUrl + referralQuery(user.username) : groupUrl
+
   return (
     <>
       <Row className="items-center gap-2">
         <CopyLinkButton
-          url={groupUrl}
+          url={shareUrl}
           linkIconOnlyProps={{
             tooltip: `Copy link to ${group.name}`,
             className: groupButtonClass,

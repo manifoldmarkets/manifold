@@ -2,8 +2,7 @@ import { memo, ReactNode } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
-import { UserIcon } from '@heroicons/react/outline'
-import { FireIcon } from '@heroicons/react/solid'
+import { ClockIcon, SparklesIcon, UserIcon } from '@heroicons/react/outline'
 import { JSONContent } from '@tiptap/core'
 
 import { Row } from '../layout/row'
@@ -58,6 +57,7 @@ import { ContractStatusLabel } from './contracts-list-entry'
 import { LikeButton } from './like-button'
 import { CommentsButton } from '../swipe/swipe-comments'
 import { BetRow } from '../bet/bet-row'
+import { fromNow } from 'web/lib/util/time'
 
 export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
@@ -525,7 +525,6 @@ export function ContractCardNew(props: {
     question,
     description,
     coverImageUrl,
-    uniqueBettorCount,
     outcomeType,
     mechanism,
   } = contract
@@ -574,21 +573,7 @@ export function ContractCardNew(props: {
           />
         </Row>
         <div className="flex-1" />
-        {!isClosed && contract.elasticity < 0.5 ? (
-          <Tooltip text={'High-stakes'} className={'z-10'}>
-            <FireIcon className="h-5 w-5 text-blue-700" />
-          </Tooltip>
-        ) : null}
-        <Tooltip
-          text={`${uniqueBettorCount} unique traders`}
-          placement="bottom"
-          className={'z-10'}
-        >
-          <Row className={'shrink-0 items-center gap-2'}>
-            <UserIcon className="h-5 w-5" />
-            <div className="">{uniqueBettorCount || '0'}</div>
-          </Row>
-        </Tooltip>
+        <ReasonChosen contract={contract} />
       </Row>
 
       <div
@@ -649,6 +634,51 @@ export function ContractCardNew(props: {
         <YourMetricsFooter metrics={metrics} />
       )}
     </Link>
+  )
+}
+
+function ReasonChosen(props: { contract: Contract }) {
+  const { contract } = props
+  const { createdTime, closeTime, uniqueBettorCount } = contract
+
+  const now = Date.now()
+  const reason =
+    createdTime > now - DAY_MS
+      ? 'New'
+      : closeTime && closeTime < now + DAY_MS
+      ? 'Closing soon'
+      : 'Trending'
+
+  return (
+    <Row className="gap-2">
+      <div className="font-semibold">{reason}</div>{' '}
+      <Row className="shrink-0 items-center gap-1 whitespace-nowrap text-sm">
+        {reason === 'Closing soon' && (
+          <>
+            <ClockIcon className="h-5 w-5" />
+            {fromNow(closeTime || 0)}
+          </>
+        )}
+        {reason === 'New' && (
+          <>
+            <SparklesIcon className="h-5 w-5" />
+            {fromNow(createdTime)}
+          </>
+        )}
+        {reason === 'Trending' && (
+          <Tooltip
+            text={`${uniqueBettorCount ?? 0} unique traders`}
+            placement="bottom"
+            className={'z-10'}
+          >
+            <Row className={'shrink-0 items-center gap-1'}>
+              <UserIcon className="h-5 w-5" />
+              <div>{uniqueBettorCount ?? 0}</div>
+            </Row>
+          </Tooltip>
+        )}
+      </Row>
+    </Row>
   )
 }
 

@@ -63,7 +63,7 @@ export const editorExtensions = (simple = false): Extensions =>
 
 export const proseClass = (size: 'sm' | 'md' | 'lg') =>
   clsx(
-    'prose max-w-none leading-relaxed',
+    'prose dark:prose-invert max-w-none leading-relaxed',
     'prose-a:text-primary-700 prose-a:no-underline',
     size === 'sm' ? 'prose-sm' : 'text-md',
     size !== 'lg' && 'prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0',

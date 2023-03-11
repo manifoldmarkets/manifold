@@ -69,6 +69,23 @@ export interface Database {
           fs_updated_time?: string
         }
       }
+      contract_embeddings: {
+        Row: {
+          contract_id: string
+          created_at: string
+          embedding: unknown
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          embedding: unknown
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          embedding?: unknown
+        }
+      }
       contract_follows: {
         Row: {
           contract_id: string
@@ -185,14 +202,17 @@ export interface Database {
         Row: {
           api_key: string
           discord_user_id: string
+          user_id: string | null
         }
         Insert: {
           api_key: string
           discord_user_id: string
+          user_id?: string | null
         }
         Update: {
           api_key?: string
           discord_user_id?: string
+          user_id?: string | null
         }
       }
       group_contracts: {
@@ -540,6 +560,35 @@ export interface Database {
       }
     }
     Views: {
+      contracts_view: {
+        Row: {
+          close_time: number | null
+          created_time: number | null
+          creator_id: string | null
+          id: string | null
+          is_resolved: boolean | null
+          outcome_type: string | null
+          visibility: string | null
+        }
+        Insert: {
+          close_time?: never
+          created_time?: never
+          creator_id?: never
+          id?: string | null
+          is_resolved?: never
+          outcome_type?: never
+          visibility?: never
+        }
+        Update: {
+          close_time?: never
+          created_time?: never
+          creator_id?: never
+          id?: string | null
+          is_resolved?: never
+          outcome_type?: never
+          visibility?: never
+        }
+      }
       group_role: {
         Row: {
           avatar_url: string | null
@@ -705,13 +754,25 @@ export interface Database {
           score: number
         }[]
       }
-      get_recommended_contract_set: {
-        Args: {
-          uid: string
-          n: number
-        }
-        Returns: Json[]
-      }
+      get_recommended_contract_set:
+        | {
+            Args: {
+              uid: string
+              n: number
+            }
+            Returns: Json[]
+          }
+        | {
+            Args: {
+              uid: string
+              n: number
+              excluded_contract_ids: string[]
+            }
+            Returns: {
+              data: Json
+              score: number
+            }[]
+          }
       get_recommended_contracts: {
         Args: {
           uid: string
@@ -735,6 +796,17 @@ export interface Database {
           uid: string
           count: number
           excluded_contract_ids: string[]
+        }
+        Returns: {
+          data: Json
+          score: number
+        }[]
+      }
+      get_recommended_new_contracts: {
+        Args: {
+          uid: string
+          n: number
+          start: number
         }
         Returns: {
           data: Json

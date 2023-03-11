@@ -9,23 +9,23 @@ export function formatNumericProbability(
   return formatLargeNumber(value)
 }
 
-export const getMappedValue = (contract: Contract, p: number) => {
-  if (contract.outcomeType !== 'PSEUDO_NUMERIC') return p
+export const getMappedValue = (contract: Contract, prob: number) => {
+  if (contract.outcomeType !== 'PSEUDO_NUMERIC') return prob
 
   const { min, max, isLogScale } = contract
 
   if (isLogScale) {
-    const logValue = p * Math.log10(max - min + 1)
+    const logValue = prob * Math.log10(max - min + 1)
     return 10 ** logValue + min - 1
   }
 
-  return p * (max - min) + min
+  return prob * (max - min) + min
 }
 
-export const getFormattedMappedValue = (contract: Contract, p: number) => {
-  if (contract.outcomeType !== 'PSEUDO_NUMERIC') return formatPercent(p)
+export const getFormattedMappedValue = (contract: Contract, prob: number) => {
+  if (contract.outcomeType !== 'PSEUDO_NUMERIC') return formatPercent(prob)
 
-  const value = getMappedValue(contract, p)
+  const value = getMappedValue(contract, prob)
   return formatLargeNumber(value)
 }
 

@@ -200,7 +200,7 @@ function DonationBox(props: {
             disabled={donateDisabled}
             loading={isSubmitting}
           >
-            Donate
+            {(amount ?? 0) < 100 ? '$1 minimum' : 'Donate'}
           </Button>
         )}
       </form>

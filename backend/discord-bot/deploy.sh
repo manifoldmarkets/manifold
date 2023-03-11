@@ -31,7 +31,7 @@ yarn build && \
          --set-secrets SUPABASE_KEY=SUPABASE_KEY:latest \
          --execution-environment gen2 \
          --cpu ${GCLOUD_CPU} \
-         --memory 2Gi \
+         --memory 512Mi \
          --concurrency 1000 \
          --min-instances 1 \
          --max-instances 1 \

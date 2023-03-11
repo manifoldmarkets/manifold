@@ -81,6 +81,12 @@ create index if not exists user_contract_metrics_contract_id on user_contract_me
 create index if not exists user_contract_metrics_weekly_profit on user_contract_metrics ((data->'from'->'week'->'profit'))
  where (data->'from'->'week'->'profit') is not null;
 create index if not exists user_contract_metrics_user_id on user_contract_metrics (user_id);
+create index if not exists user_contract_metrics_has_no_shares on user_contract_metrics (contract_id)
+ where ((data)->>'hasNoShares') = 'true'
+create index if not exists user_contract_metrics_has_yes_shares on user_contract_metrics (contract_id)
+ where ((data)->>'hasYesShares') = 'true'
+create index user_contract_metrics_profit on user_contract_metrics (contract_id)
+ where ((data)->>'profit') is not null and ((data)->>'profit')::float > 0
 alter table user_contract_metrics cluster on user_contract_metrics_pkey;
 
 create table if not exists user_follows (
@@ -159,6 +165,7 @@ create index if not exists contracts_creator_id on contracts ((data->>'creatorId
 create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
 /* serves API recent markets endpoint */
 create index if not exists contracts_created_time on contracts ((to_jsonb(data)->>'createdTime') desc);
+create index if not exists contracts_close_time on contracts ((to_jsonb(data)->>'closeTime') desc);
 
 alter table contracts cluster on contracts_creator_id;
 
@@ -725,12 +732,52 @@ as $$
   )
   limit count
 $$;
+
+create or replace function get_recommended_contract_set(uid text, n int, excluded_contract_ids text[])
+returns table (data jsonb, score real)
+immutable parallel safe
+language sql
+as $$
+  with recommended_contracts as (
+    select data, score
+    from get_recommended_contract_scores_unseen(uid)
+    left join contracts
+    on contracts.id = contract_id
+    where is_valid_contract(data)
+    and data->>'outcomeType' = 'BINARY'
+    and not exists (
+      select 1 from unnest(excluded_contract_ids) as w
+      where w = contract_id
+    )
+    order by score desc
+  ), new_contracts as (
+    select data, score
+    from recommended_contracts
+    where (data->>'createdTime')::bigint > ts_to_millis(now() - interval '1 day')
+    order by score desc
+    limit floor(n / 3)
+  ), trending_contracts as (
+    select data, score
+    from recommended_contracts
+    where (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
+    order by score desc
+    limit n - (select count(*) from new_contracts)
+  )
+
+  select data, score
+  from new_contracts
+  union all
+  select data, score
+  from trending_contracts
+  order by score desc
+$$;
+
 create or replace function get_recommended_contracts(uid text, n int, excluded_contract_ids text[])
   returns setof jsonb
   language plpgsql
 as $$ begin
   create temp table your_recs on commit drop as (
-    select * from get_recommended_contracts_by_score_excluding(uid, n, excluded_contract_ids)
+    select * from get_recommended_contract_set(uid, n, excluded_contract_ids)
   );
   if (select count(*) from your_recs) = n then
     return query select data from your_recs;
@@ -738,7 +785,7 @@ as $$ begin
     -- Default recommendations from this particular user if none for you.
     return query (
       select data from your_recs union all
-      select data from get_recommended_contracts_by_score_excluding('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', n, excluded_contract_ids)
+      select data from get_recommended_contract_set('Nm2QY6MmdnOu1HJUBcoG2OV2dQF2', n, excluded_contract_ids)
       limit n
     );
   end if;
@@ -977,6 +1024,7 @@ $$;
 create table if not exists discord_users (
     discord_user_id text not null,
     api_key text not null,
+    user_id text not null,
     primary key(discord_user_id)
 );
 alter table discord_users enable row level security;
@@ -1098,4 +1146,27 @@ from user_portfolio_history as uph
 where uph.user_id in (select unnest(uids)) and
 (data->'timestamp')::bigint > start
 group by uph.user_id
+$$;
+
+create or replace function search_contract_embeddings (
+  query_embedding vector(1536),
+  similarity_threshold float,
+  match_count int
+)
+returns table (
+  contract_id text,
+  similarity float
+)
+language plpgsql
+as $$
+begin
+  return query
+  select
+    contract_embeddings.contract_id as contract_id,
+    1 - (contract_embeddings.embedding <#> query_embedding) as similarity
+  from contract_embeddings
+  where 1 - (contract_embeddings.embedding <#> query_embedding) > similarity_threshold
+  order by contract_embeddings.embedding <#> query_embedding
+  limit match_count;
+end;
 $$;

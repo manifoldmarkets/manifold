@@ -10,6 +10,23 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration)
 
+export const generateEmbeddings = async (question: string) => {
+  let response
+  try {
+    response = await openai.createEmbedding({
+      model: 'text-embedding-ada-002',
+      input: question,
+    })
+  } catch (e: any) {
+    console.error('Error generating embeddings. Do you have an OpenAI API key?', e.message)
+    return undefined
+  }
+
+  if (response.status !== 200) return undefined
+
+  return response.data.data[0].embedding
+}
+
 export const getGroupForMarket = async (question: string) => {
   const groups = await getGroups()
 

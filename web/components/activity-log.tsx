@@ -12,9 +12,12 @@ import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import {
+  useShouldBlockDestiny,
+  usePrivateUser,
+  useUser,
+} from 'web/hooks/use-user'
 import { getGroupBySlug, getGroupContractIds } from 'web/lib/firebase/groups'
-import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -37,17 +40,7 @@ export function ActivityLog(props: {
 
   const privateUser = usePrivateUser()
   const user = useUser()
-  const [shouldBlockDestiny, setShouldBlockDestiny] = useState(true)
-
-  useEffect(() => {
-    if (user) {
-      getShouldBlockDestiny(user.id).then((result) =>
-        setShouldBlockDestiny(result)
-      )
-    } else if (!shouldBlockDestiny) {
-      setShouldBlockDestiny(true)
-    }
-  }, [user?.id])
+  const shouldBlockDestiny = useShouldBlockDestiny(user?.id)
 
   const [blockedGroupContractIds, setBlockedGroupContractIds] =
     usePersistentState<string[] | undefined>(undefined, {

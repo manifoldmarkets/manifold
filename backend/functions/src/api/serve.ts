@@ -64,6 +64,7 @@ addJsonEndpointRoute(
 )
 addJsonEndpointRoute('/addgroupmember', endpoints.addgroupmember)
 addJsonEndpointRoute('/getuserisgroupmember', endpoints.getuserisgroupmember)
+addJsonEndpointRoute('/redeemad', endpoints.redeemad)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)

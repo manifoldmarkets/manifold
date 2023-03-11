@@ -26,7 +26,6 @@ export default function CreateDateDocPage() {
   useRedirectIfSignedOut()
 
   const title = `${user?.name}'s Date Doc`
-  const subtitle = 'Manifold dating docs'
   const [birthday, setBirthday] = useState<undefined | string>(undefined)
   const [createMarket, setCreateMarket] = useState(true)
   const [question, setQuestion] = useState(
@@ -59,7 +58,6 @@ export default function CreateDateDocPage() {
       | 'creatorName'
     > & { question?: string } = removeUndefinedProps({
       title,
-      subtitle,
       content: editor.getJSON(),
       bounty: 0,
       birthday: birthdayTime,
@@ -97,7 +95,7 @@ export default function CreateDateDocPage() {
 
           <Col className="gap-8">
             <Col className="max-w-[160px] justify-start gap-4">
-              <div className="">Birthday</div>
+              <div>Birthday</div>
               <Input
                 type={'date'}
                 onClick={(e) => e.stopPropagation()}
@@ -109,9 +107,7 @@ export default function CreateDateDocPage() {
             </Col>
 
             <Col className="gap-4">
-              <div className="">
-                Tell us about you! What are you looking for?
-              </div>
+              <div>Tell us about you! What are you looking for?</div>
               <TextEditor editor={editor} />
             </Col>
 
