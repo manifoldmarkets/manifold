@@ -19,6 +19,6 @@ export function getFunctionUrl(name: string) {
     return `http://localhost:5001/${projectId}/${region}/${name}`
   } else {
     const { cloudRunId, cloudRunRegion } = ENV_CONFIG
-    return `https://${name}-${cloudRunId}-${cloudRunRegion}.a.run.app`
+    return `https://api-${cloudRunId}-${cloudRunRegion}.a.run.app/${name}`
   }
 }
