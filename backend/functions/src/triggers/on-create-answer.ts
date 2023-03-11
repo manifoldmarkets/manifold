@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import { getContract, getUser } from 'shared/utils'
-import { createCommentOrAnswerOrUpdatedContractNotification } from '../create-notification'
+import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 
 export const onCreateAnswer = functions.firestore

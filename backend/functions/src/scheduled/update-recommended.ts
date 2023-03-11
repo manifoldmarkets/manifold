@@ -1,8 +1,8 @@
 import * as functions from 'firebase-functions'
+import { onRequest } from 'firebase-functions/v2/https'
 import { groupBy } from 'lodash'
 
 import { invokeFunction } from 'shared/utils'
-import { newEndpointNoAuth } from '../api/helpers'
 import {
   LATENT_FEATURES_COUNT,
   getMarketRecommendations,
@@ -25,17 +25,11 @@ export const scheduleUpdateRecommended = functions.pubsub
     }
   })
 
-export const updaterecommended = newEndpointNoAuth(
-  {
-    timeoutSeconds: 3600,
-    cpu: 4,
-    memory: '2GiB',
-    minInstances: 0,
-    secrets: ['SUPABASE_PASSWORD'],
-  },
-  async (_req) => {
+export const updaterecommended = onRequest(
+  { timeoutSeconds: 3600, cpu: 4, memory: '2GiB', minInstances: 0 },
+  async (_req, res) => {
     await updateRecommendedMarkets()
-    return { success: true }
+    res.status(200).json({ success: true })
   }
 )
 

@@ -16,7 +16,7 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { filterDefined } from 'common/util/array'
 import { Follow } from 'common/follow'
 import { countBy, uniq, uniqBy } from 'lodash'
-import { sendInterestingMarketsEmail } from '../emails'
+import { sendInterestingMarketsEmail } from 'shared/emails'
 import { getTrendingContracts } from 'shared/utils'
 
 const GROUP_SLUGS_TO_IGNORE_IN_TRENDING = [

@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { getUser } from 'shared/utils'
-import { createFollowOrMarketSubsidizedNotification } from '../create-notification'
+import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
 import { FieldValue } from 'firebase-admin/firestore'
 
 export const onFollowUser = functions.firestore

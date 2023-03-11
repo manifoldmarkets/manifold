@@ -14,9 +14,9 @@ import { getLargestPosition } from 'common/calculate'
 import {
   createCommentOrAnswerOrUpdatedContractNotification,
   replied_users_info,
-} from '../create-notification'
+} from 'shared/create-notification'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { addUserToContractFollowers } from '../follow-market'
+import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 
