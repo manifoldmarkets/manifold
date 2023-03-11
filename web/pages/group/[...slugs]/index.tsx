@@ -60,6 +60,7 @@ import { usePost, useRealtimePost } from 'web/hooks/use-post-supabase'
 import { getUser } from 'web/lib/supabase/user'
 import { AddContractButton } from 'web/components/groups/add-contract-to-group-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { PrivateGroupPage } from 'web/components/groups/private-group'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
@@ -139,33 +140,6 @@ export default function GroupPage(props: {
       )}
     </Page>
   )
-}
-
-export function LoadingPrivateGroup() {
-  return (
-    <Col className="mt-24 h-full w-full items-center justify-center lg:mt-0">
-      <LoadingIndicator className="text-ink-400 h-36 w-36" />
-      <div>Checking access...</div>
-    </Col>
-  )
-}
-
-export function InaccessiblePrivateGroup() {
-  return (
-    <Col className="mt-24 h-full w-full items-center justify-center lg:mt-0">
-      <LockClosedIcon className="text-ink-400 h-36 w-36" />
-      <div>You do not have access to this group!</div>
-    </Col>
-  )
-}
-
-export function PrivateGroupPage(props: { slugs: string[] }) {
-  const { slugs } = props
-  const isMember = useIsGroupMember(slugs[0])
-  if (isMember === undefined) {
-    return <LoadingPrivateGroup />
-  } else if (isMember === false) return <InaccessiblePrivateGroup />
-  else return <GroupPageContent />
 }
 
 export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
