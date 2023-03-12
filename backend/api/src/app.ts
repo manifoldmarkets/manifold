@@ -109,4 +109,9 @@ app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/redeemad', ...apiRoute(redeemad))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)
-app.post('/stripewebhook', allowCors, stripewebhook, express.raw())
+app.post(
+  '/stripewebhook',
+  allowCors,
+  express.raw({ type: '*/*' }),
+  stripewebhook
+)
