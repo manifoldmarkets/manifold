@@ -12,7 +12,7 @@
     "verify:dir": "npx eslint . --max-warnings 0; tsc -b -v --pretty"
   },
   "dependencies": {
-    "firebase-admin": "11.2.0",
+    "firebase-admin": "11.5.0",
     "commander": "10.0.0",
     "lodash": "4.17.21"
   },

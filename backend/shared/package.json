@@ -18,7 +18,7 @@
     "firebase-admin": "11.5.0",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
-    "pg-promise": "11.0.2",
+    "pg-promise": "11.4.1",
     "dayjs": "1.11.4",
     "openai": "3.0.1"
   },

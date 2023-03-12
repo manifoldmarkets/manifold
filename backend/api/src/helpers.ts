@@ -1,8 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { Request, RequestHandler, Response, NextFunction } from 'express'
-import { error } from 'firebase-functions/logger'
-import { HttpsOptions } from 'firebase-functions/v2/https'
+import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
 import { APIError } from 'common/api'
@@ -42,7 +40,7 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
         return { kind: 'jwt', data: await auth.verifyIdToken(payload) }
       } catch (err) {
         // This is somewhat suspicious, so get it into the firebase console
-        error('Error verifying Firebase JWT: ', err)
+        console.error('Error verifying Firebase JWT: ', err)
         throw new APIError(403, 'Error validating token.')
       }
     case 'Key':
@@ -80,11 +78,6 @@ export const zTimestamp = () => {
   return z.preprocess((arg) => {
     return typeof arg == 'number' ? new Date(arg) : undefined
   }, z.date())
-}
-
-export type EndpointDefinition = {
-  opts: EndpointOptions & { method: string }
-  handler: RequestHandler
 }
 
 export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
@@ -132,9 +125,4 @@ export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
       next(e)
     }
   }
-}
-
-export interface EndpointOptions extends HttpsOptions {
-  method?: string
-  secrets?: string[]
 }
