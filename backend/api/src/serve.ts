@@ -1,6 +1,6 @@
 import { initAdmin } from 'shared/init-admin'
 
-const LOCAL_DEV = process.env.GCLOUD_PROJECT == null
+const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 if (LOCAL_DEV) {
   initAdmin()
 }
