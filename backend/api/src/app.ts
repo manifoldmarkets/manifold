@@ -1,20 +1,6 @@
 import * as cors from 'cors'
 import * as express from 'express'
-import {
-  ErrorRequestHandler,
-  RequestHandler,
-  Request,
-  Response,
-  NextFunction,
-} from 'express'
-import {
-  lookupUser,
-  parseCredentials,
-  AuthedHandler,
-  AuthedUser,
-  Handler,
-  EndpointDefinition,
-} from './helpers'
+import { ErrorRequestHandler, RequestHandler } from 'express'
 import {
   CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
@@ -39,7 +25,7 @@ import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { closemarket } from './close-market'
 import { unsubscribe } from './unsubscribe'
-import { stripewebhook, createcheckoutsession } from './stripe'
+import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
 import { getcurrentuser } from './get-current-user'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
