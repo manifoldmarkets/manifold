@@ -14,6 +14,9 @@ import { getDefaultNotificationPreferences } from 'common/user-notification-pref
 import { removeUndefinedProps } from 'common/util/object'
 import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
 import { getStorage } from 'firebase-admin/storage'
+import { DEV_CONFIG } from 'common/envs/dev'
+import { PROD_CONFIG } from 'common/envs/prod'
+import { isProd } from 'shared/utils'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -56,9 +59,11 @@ export const createuser = authEndpoint(async (req, auth) => {
     username += randomString(4)
   }
 
+  const bucket = getStorage().bucket(getStorageBucketId())
   const avatarUrl = fbUser.photoURL
     ? fbUser.photoURL
-    : await generateAvatarUrl(auth.uid, name, getStorage().bucket())
+    : await generateAvatarUrl(auth.uid, name, bucket)
+
   const deviceUsedBefore =
     !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
 
@@ -124,4 +129,10 @@ export const numberUsersWithIp = async (ipAddress: string) => {
     .get()
 
   return snap.docs.length
+}
+
+function getStorageBucketId() {
+  return isProd()
+    ? PROD_CONFIG.firebaseConfig.storageBucket
+    : DEV_CONFIG.firebaseConfig.storageBucket
 }
