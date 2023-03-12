@@ -185,7 +185,13 @@ export const tryOrLogError = async <T>(task: Promise<T>) => {
 }
 
 export const isProd = () => {
-  return admin.instanceId().app.options.projectId === 'mantic-markets'
+  // mqp: kind of hacky rn. the first clause is for cloud run API service,
+  // second clause is for local scripts and cloud functions
+  if (process.env.ENVIRONMENT) {
+    return process.env.ENVIRONMENT == 'PROD'
+  } else {
+    return admin.app().options.projectId === 'mantic-markets'
+  }
 }
 
 export const getDoc = async <T>(collection: string, doc: string) => {
