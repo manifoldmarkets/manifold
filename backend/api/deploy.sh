@@ -37,4 +37,4 @@ yarn build && \
          --cpu 1 \
          --memory 512Mi \
          --concurrency 1000 \
-         --min-instances 1
+         --min-instances 2
