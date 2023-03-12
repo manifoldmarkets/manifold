@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from 'common/contract'
 import { getPrivateUser, getUserByUsername, isProd } from 'shared/utils'
-import { createMarketClosedNotification } from '../create-notification'
+import { createMarketClosedNotification } from 'shared/create-notification'
 import { DAY_MS } from 'common/util/time'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5

@@ -1,4 +1,5 @@
 import * as functions from 'firebase-functions'
+import { onRequest } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
 import { groupBy, keyBy, sortBy } from 'lodash'
 import {
@@ -13,9 +14,8 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
-import { createLoanIncomeNotification } from '../create-notification'
+import { createLoanIncomeNotification } from 'shared/create-notification'
 import { filterDefined } from 'common/util/array'
-import { newEndpointNoAuth } from '../api/helpers'
 import { mapAsync } from 'common/util/promise'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
@@ -34,11 +34,11 @@ export const scheduleUpdateLoans = functions.pubsub
     }
   })
 
-export const updateloans = newEndpointNoAuth(
+export const updateloans = onRequest(
   { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
-  async (_req) => {
+  async (_req, res) => {
     await updateLoansCore()
-    return { success: true }
+    res.status(200).json({ success: true })
   }
 )
 

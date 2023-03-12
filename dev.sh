@@ -25,7 +25,7 @@ then
       -n FIRESTORE,FUNCTIONS,NEXT,TS \
       -c green,white,magenta,cyan \
       "yarn --cwd=backend/functions localDbScript" \
-      "cross-env FIRESTORE_EMULATOR_HOST=localhost:8080 yarn --cwd=backend/functions dev" \
+      "yarn --cwd=backend/api dev" \
       "cross-env NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8088 \
                NEXT_PUBLIC_FIREBASE_EMULATE=TRUE \
                NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
@@ -35,7 +35,7 @@ else
   npx concurrently \
       -n FUNCTIONS,NEXT,TS \
       -c white,magenta,cyan \
-      "yarn --cwd=backend/functions dev" \
+      "yarn --cwd=backend/api dev" \
       "cross-env NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8088 \
                NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
                yarn --cwd=web serve" \

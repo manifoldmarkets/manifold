@@ -18,7 +18,7 @@ import {
   OverallPerformanceData,
   emailMoneyFormat,
   sendWeeklyPortfolioUpdateEmail,
-} from '../emails'
+} from 'shared/emails'
 import { contractUrl } from 'shared/utils'
 import { Txn } from 'common/txn'
 import { Reaction, ReactionTypes } from 'common/reaction'

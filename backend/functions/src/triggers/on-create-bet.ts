@@ -9,7 +9,7 @@ import {
   createBettingStreakBonusNotification,
   createUniqueBettorBonusNotification,
   createReferralNotification,
-} from '../create-notification'
+} from 'shared/create-notification'
 import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
 import {
@@ -34,7 +34,7 @@ import {
 } from 'common/txn'
 import { addHouseSubsidy } from 'shared/helpers/add-house-subsidy'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { addUserToContractFollowers } from '../follow-market'
+import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxn, TxnData } from 'shared/run-txn'
 import { Group } from 'common/group'

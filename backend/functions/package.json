@@ -15,7 +15,6 @@
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "dev": "nodemon -r tsconfig-paths/register --watch src -e ts --watch ../../common/src --watch ../shared/src --exec \"yarn build && node lib/api/serve.js\"",
     "localDbScript": "firebase emulators:start --only functions,firestore,pubsub --import=./firestore_export",
     "serve": "firebase use dev && yarn build && firebase emulators:start --only functions,firestore,pubsub --import=./firestore_export",
     "db:update-local-from-remote": "yarn db:backup-remote && gsutil -m rsync -r gs://$npm_package_config_firestore/firestore_export ./firestore_export",
@@ -28,7 +27,6 @@
   "main": "backend/functions/lib/index.js",
   "dependencies": {
     "@amplitude/node": "1.10.0",
-    "@flat/in-app-purchase": "FlatIO/in-app-purchase#1.13.5",
     "@google-cloud/functions-framework": "3.1.2",
     "@google-cloud/pubsub": "3.2.1",
     "@supabase/supabase-js": "2.2.0",
@@ -39,25 +37,19 @@
     "@tiptap/html": "2.0.0-beta.204",
     "@tiptap/starter-kit": "2.0.0-beta.204",
     "@tiptap/suggestion": "2.0.0-beta.204",
-    "commander": "10.0.0",
-    "cors": "2.8.5",
     "dayjs": "1.11.4",
     "expo-server-sdk": "3.6.0",
-    "express": "4.18.1",
     "firebase-admin": "11.5.0",
     "firebase-functions": "4.2.1",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "marked": "4.1.1",
     "openai": "3.2.1",
-    "pg-promise": "11.3.0",
-    "stripe": "8.194.0",
-    "zod": "3.17.2"
+    "pg-promise": "11.4.1"
   },
   "devDependencies": {
     "@types/mailgun-js": "0.22.12",
-    "@types/marked": "4.0.7",
-    "puppeteer": "18.0.5"
+    "@types/marked": "4.0.7"
   },
   "private": true
 }

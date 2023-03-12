@@ -1,8 +1,8 @@
 import * as functions from 'firebase-functions'
 import { getContract, getUser, log } from 'shared/utils'
-import { createFollowOrMarketSubsidizedNotification } from '../create-notification'
+import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { addUserToContractFollowers } from '../follow-market'
+import { addUserToContractFollowers } from 'shared/follow-market'
 import { FIXED_ANTE } from 'common/economy'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,

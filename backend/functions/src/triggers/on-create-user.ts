@@ -10,7 +10,7 @@ import {
   sendInterestingMarketsEmail,
   sendPersonalFollowupEmail,
   sendWelcomeEmail,
-} from '../emails'
+} from 'shared/emails'
 
 export const onCreateUser = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
