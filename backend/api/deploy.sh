@@ -2,6 +2,11 @@
 
 SERVICE_NAME="api"
 
+if [ -z "$1" ]; then
+echo "Usage: the first argument to be 'dev' or 'prod'"
+exit 1
+fi
+
 ENV=${1:-dev}
 case $ENV in
     dev)
