@@ -8,16 +8,35 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { ApiError } from '../../_types'
+import { validate } from 'web/pages/api/v0/_validate'
+import { z } from 'zod'
+import { ApiError, ValidationError } from '../../_types'
 import { marketCacheStrategy } from '../../markets'
 
+const queryParams = z.object({
+  id: z.string(),
+  userId: z.string().optional().optional(),
+  top: z.number().optional().or(z.string().regex(/\d+/).transform(Number)),
+  bottom: z.number().optional().or(z.string().regex(/\d+/).transform(Number)),
+  order: z.string().optional(),
+})
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ContractMetric[] | ApiError>
+  res: NextApiResponse<ContractMetric[] | ValidationError | ApiError>
 ) {
   await applyCorsHeaders(req, res, CORS_UNRESTRICTED)
-  const { id, userId } = req.query
-  const contractId = id as string
+  let params: z.infer<typeof queryParams>
+  try {
+    params = validate(queryParams, req.query)
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      return res.status(400).json(e)
+    }
+    console.error(`Unknown error during validation: ${e}`)
+    return res.status(500).json({ error: 'Unknown error during validation' })
+  }
+
+  const { id: contractId, userId } = params
   const contract = await getContractFromId(contractId)
   if (!contract) {
     res.status(404).json({ error: 'Contract not found' })
@@ -29,7 +48,7 @@ export default async function handler(
   if (userId) {
     try {
       const contractMetrics = await getUserContractMetrics(
-        userId as string,
+        userId,
         contractId,
         db
       )
@@ -40,7 +59,7 @@ export default async function handler(
     }
   }
 
-  const { top, bottom, order } = req.query
+  const { top, bottom, order } = params
   if (order && !['profit', 'shares'].includes(order as string)) {
     res.status(400).json({ error: 'Invalid order, must be shares or profit' })
     return
@@ -55,21 +74,17 @@ export default async function handler(
     )
 
     if (top && !bottom) {
-      const topPositions = parseInt(top as string)
-      return res.status(200).json(contractMetrics.slice(0, topPositions))
+      return res.status(200).json(contractMetrics.slice(0, top))
     } else if (bottom && !top) {
-      const bottomPositions = parseInt(bottom as string)
-      return res.status(200).json(contractMetrics.slice(-bottomPositions))
+      return res.status(200).json(contractMetrics.slice(-bottom))
     } else if (top && bottom) {
-      const topPositions = parseInt(top as string)
-      const bottomPositions = parseInt(bottom as string)
       return res
         .status(200)
         .json(
           uniqBy(
             contractMetrics
-              .slice(0, topPositions)
-              .concat(contractMetrics.slice(-bottomPositions)),
+              .slice(0, top)
+              .concat(contractMetrics.slice(-bottom)),
             (cm) => cm.userId
           )
         )
