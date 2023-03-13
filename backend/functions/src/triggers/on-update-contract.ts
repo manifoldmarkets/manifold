@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import { getUser, getContractPath, revalidateStaticProps } from 'shared/utils'
-import { createCommentOrAnswerOrUpdatedContractNotification } from '../create-notification'
+import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
 import { Contract } from 'common/contract'
 import * as admin from 'firebase-admin'
 

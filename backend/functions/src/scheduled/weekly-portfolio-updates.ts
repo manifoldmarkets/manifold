@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { orderBy, sortBy, sum } from 'lodash'
 
 import { getUsersContractMetricsOrderedByProfit } from 'common/supabase/contract-metrics'
-import { createWeeklyPortfolioUpdateNotification } from '../create-notification'
+import { createWeeklyPortfolioUpdateNotification } from 'shared/create-notification'
 import { getUsernameById } from 'common/supabase/users'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'

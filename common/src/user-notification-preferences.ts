@@ -1,6 +1,6 @@
 import { filterDefined } from './util/array'
 import { notification_reason_types, NotificationReason } from './notification'
-import { getFunctionUrl } from './api'
+import { getApiUrl } from './api'
 import { DOMAIN } from './envs/constants'
 import { PrivateUser } from './user'
 
@@ -228,7 +228,7 @@ export const getNotificationDestinationsForUser = (
   reason: NotificationReason
 ) => {
   const notificationSettings = privateUser.notificationPreferences
-  const unsubscribeEndpoint = getFunctionUrl('unsubscribe')
+  const unsubscribeEndpoint = getApiUrl('unsubscribe')
   try {
     const notificationPreference = getNotificationPreference(reason)
     const destinations = notificationSettings[notificationPreference] ?? []

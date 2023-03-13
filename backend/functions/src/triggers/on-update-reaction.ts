@@ -8,7 +8,7 @@ import { getUser } from 'shared/utils'
 import {
   createLikeNotification,
   createTopLevelLikedCommentNotification,
-} from '../create-notification'
+} from 'shared/create-notification'
 
 const firestore = admin.firestore()
 const MINIMUM_LIKES_TO_NOTIFY = 1

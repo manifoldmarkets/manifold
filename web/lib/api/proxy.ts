@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { promisify } from 'util'
 import { pipeline } from 'stream'
-import { getFunctionUrl } from 'common/api'
+import { getApiUrl } from 'common/api'
 
 function getProxiedRequestHeaders(req: NextApiRequest, whitelist: string[]) {
   const result = new Headers()
@@ -32,7 +32,7 @@ function getProxiedResponseHeaders(res: Response, whitelist: string[]) {
 }
 
 export const fetchBackend = (req: NextApiRequest, name: string) => {
-  const url = getFunctionUrl(name)
+  const url = getApiUrl(name)
   const headers = getProxiedRequestHeaders(req, [
     'Authorization',
     'Content-Type',

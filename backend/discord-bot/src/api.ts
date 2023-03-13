@@ -17,7 +17,10 @@ export const getMarketFromSlug = async (slug: string) => {
   return (await resp.json()) as FullMarket
 }
 export const getMarketFromId = async (id: string) => {
-  const resp = await fetch(`${config.domain}api/v0/market/${id}`)
+  const resp = await fetch(`${config.domain}api/v0/market/${id}`).catch((e) => {
+    console.error('Error on getMarketFromId', e)
+    throw e
+  })
   if (!resp.ok) {
     throw new Error('Market not found with id: ' + id)
   }
@@ -79,4 +82,24 @@ export const getMyPositionInMarket = async (api: Api, marketId: string) => {
     throw new Error('Position not found with market id: ' + marketId)
   }
   return (await resp.json()) as ContractMetrics[]
+}
+
+export const createMarket = async (
+  api: Api,
+  question: string,
+  description: string
+) => {
+  return await fetch(`${config.domain}api/v0/market`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Key ${api.apiKey}`,
+    },
+    body: JSON.stringify({
+      question,
+      description,
+      initialProb: 50,
+      outcomeType: 'BINARY',
+    }),
+  })
 }

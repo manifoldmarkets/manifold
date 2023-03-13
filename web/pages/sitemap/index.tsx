@@ -120,6 +120,12 @@ export default function LabsPage() {
           />
 
           <LabCard
+            title="👀 Classifieds"
+            description="Read ads for mana. Or pay mana to promote your markets or anything else you want."
+            href="/ad"
+          />
+
+          <LabCard
             title="🏆 CSPI/Salem tournament"
             description="Special contest on politics and current events"
             href="https://salemcenter.manifold.markets/"

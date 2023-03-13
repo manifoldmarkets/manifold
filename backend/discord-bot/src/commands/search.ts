@@ -2,13 +2,14 @@ import { FullMarket, LiteMarket } from 'common/api-market-types'
 import { floatingEqual } from 'common/util/math'
 import { MINUTE_MS } from 'common/util/time'
 import { Command } from 'discord-bot/command'
-import { replyWithMarketToBetOn } from 'discord-bot/commands/market-react-bets'
+import { replyWithMarketToBetOn } from 'discord-bot/commands/react-to-bet-on-market'
 import { config } from 'discord-bot/constants/config'
 
 import { shouldIgnoreMessageFromGuild, truncateText } from 'discord-bot/helpers'
 import {
   ActionRowBuilder,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
   ChatInputCommandInteraction,
   SlashCommandBuilder,
@@ -17,10 +18,11 @@ import {
 } from 'discord.js'
 const MARKETS_PER_PAGE = 5
 const DROPDOWN_PLACEHOLDER = 'Select a market from the dropdown'
-const interactionToPageAndMarkets = new Map<
+const searchMessageIdToSearchState = new Map<
   string,
   { page: number; markets: LiteMarket[] }
 >()
+export const searchButtonTypes = ['back', 'next', 'done']
 
 const data = new SlashCommandBuilder()
   .setName('search')
@@ -45,7 +47,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply(
       'Error searching markets, please try again later.'
     )
-    console.log('Error searching markets', error)
+    console.error('Error searching markets', error)
     return
   })
   if (!markets) return
@@ -53,8 +55,6 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply('No markets found, try different keywords.')
     return
   }
-  const page = 0
-  interactionToPageAndMarkets.set(interaction.id, { page, markets })
 
   const stringSelectRow =
     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
@@ -72,26 +72,30 @@ async function execute(interaction: ChatInputCommandInteraction) {
     content: 'Searching markets for terms: ' + keywords,
     components: [stringSelectRow, getButtonRow(0, markets.length)],
   })
-
+  const page = 0
+  searchMessageIdToSearchState.set(message.id, { page, markets })
   const collector = message.createMessageComponentCollector({
     time: 10 * MINUTE_MS,
   })
 
   collector.on('collect', async (i) => {
+    console.log('collected', i.customId)
     // Handle button clicks
     if (i.customId === 'done') {
-      interactionToPageAndMarkets.delete(interaction.id)
-      await interaction.deleteReply()
+      searchMessageIdToSearchState.delete(message.id)
+      await interaction.deleteReply().catch((e) => {
+        console.error('Error deleting search reply', e)
+      })
       return
     }
     if (['next', 'back'].includes(i.customId)) {
-      let page = interactionToPageAndMarkets.get(interaction.id)?.page ?? 0
+      let page = searchMessageIdToSearchState.get(message.id)?.page ?? 0
       page = limit(
         i.customId === 'next' ? page + 1 : page - 1,
         0,
         Math.round(markets.length / MARKETS_PER_PAGE) - 1
       )
-      interactionToPageAndMarkets.set(interaction.id, { page, markets })
+      searchMessageIdToSearchState.set(message.id, { page, markets })
       const newSelectRow =
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
           new StringSelectMenuBuilder()
@@ -123,9 +127,9 @@ async function execute(interaction: ChatInputCommandInteraction) {
   })
 
   collector.on('end', async () => {
-    const stillExists = interactionToPageAndMarkets.has(interaction.id)
+    const stillExists = searchMessageIdToSearchState.has(message.id)
     if (stillExists) {
-      interactionToPageAndMarkets.delete(interaction.id)
+      searchMessageIdToSearchState.delete(message.id)
       await interaction.deleteReply()
     }
   })
@@ -178,17 +182,17 @@ const getButtonRow = (page: number, maxItems: number) => {
 
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId('back')
+      .setCustomId(searchButtonTypes[0])
       .setLabel('Back')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(page === 0),
     new ButtonBuilder()
-      .setCustomId('next')
+      .setCustomId(searchButtonTypes[1])
       .setLabel('Next')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(floatingEqual(page, maxPage)),
     new ButtonBuilder()
-      .setCustomId('done')
+      .setCustomId(searchButtonTypes[2])
       .setLabel('Done')
       .setStyle(ButtonStyle.Secondary)
   )
@@ -198,3 +202,24 @@ const getMarketItem = (market: FullMarket) => ({
   description: getMarketDescription(market),
   value: market.url,
 })
+
+export const handleSearchButtonInteraction = async (
+  interaction: ButtonInteraction
+) => {
+  // Recent searches handled via collector
+  if (searchMessageIdToSearchState.has(interaction.message.id)) return
+  // Otherwise, it's a stale interaction from a previous cloud run instance
+  else {
+    await interaction.message
+      .delete()
+      .catch((e) => {
+        console.log('Could not delete old search results', e.message)
+      })
+      .then(async () => {
+        await interaction.reply({
+          content: 'That search expired, try a new one by typing /search!',
+          ephemeral: true,
+        })
+      })
+  }
+}

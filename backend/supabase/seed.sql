@@ -82,11 +82,11 @@ create index if not exists user_contract_metrics_weekly_profit on user_contract_
  where (data->'from'->'week'->'profit') is not null;
 create index if not exists user_contract_metrics_user_id on user_contract_metrics (user_id);
 create index if not exists user_contract_metrics_has_no_shares on user_contract_metrics (contract_id)
- where ((data)->>'hasNoShares') = 'true'
+ where ((data)->>'hasNoShares') = 'true';
 create index if not exists user_contract_metrics_has_yes_shares on user_contract_metrics (contract_id)
- where ((data)->>'hasYesShares') = 'true'
-create index user_contract_metrics_profit on user_contract_metrics (contract_id)
- where ((data)->>'profit') is not null and ((data)->>'profit')::float > 0
+ where ((data)->>'hasYesShares') = 'true';
+create index if not exists user_contract_metrics_profit on user_contract_metrics (contract_id)
+ where ((data)->>'profit') is not null and ((data)->>'profit')::float > 0;
 alter table user_contract_metrics cluster on user_contract_metrics_pkey;
 
 create table if not exists user_follows (
@@ -198,7 +198,7 @@ create index if not exists contract_bets_bet_id on contract_bets (bet_id);
 /* serving stats page, recent bets API */
 create index if not exists contract_bets_created_time_global on contract_bets (
     (to_jsonb(data)->>'createdTime') desc
-)
+);
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (
     contract_id,
@@ -1163,10 +1163,42 @@ begin
   return query
   select
     contract_embeddings.contract_id as contract_id,
-    1 - (contract_embeddings.embedding <#> query_embedding) as similarity
+    1 - (contract_embeddings.embedding <=> query_embedding) as similarity
   from contract_embeddings
-  where 1 - (contract_embeddings.embedding <#> query_embedding) > similarity_threshold
-  order by contract_embeddings.embedding <#> query_embedding
+  where 1 - (contract_embeddings.embedding <=> query_embedding) > similarity_threshold
+  order by contract_embeddings.embedding <=> query_embedding
   limit match_count;
 end;
+$$;
+
+create index on contract_embeddings 
+using ivfflat (embedding vector_cosine_ops)
+with (lists = 100);
+
+create or replace function closest_contract_embeddings (
+  input_contract_id text,
+  similarity_threshold float,
+  match_count int
+)
+returns table (
+  contract_id text,
+  similarity float,
+  data jsonb
+)
+language sql
+as $$
+ WITH embedding AS (
+  SELECT embedding
+  FROM contract_embeddings
+  WHERE contract_id = input_contract_id
+ )
+  SELECT contract_id, similarity, data
+  FROM search_contract_embeddings(
+    (SELECT embedding FROM embedding),
+    similarity_threshold,
+    match_count
+  )
+  join contracts
+  on contract_id = contracts.id
+  where contract_id != input_contract_id
 $$;

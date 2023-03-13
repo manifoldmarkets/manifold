@@ -16,7 +16,7 @@ import { Contract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
-import { getFunctionUrl } from 'common/api'
+import { getCloudRunServiceUrl } from 'common/api'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -34,7 +34,7 @@ export function htmlToRichText(html: string) {
 }
 
 export const invokeFunction = async (name: string, body?: unknown) => {
-  const response = await fetch(getFunctionUrl(name), {
+  const response = await fetch(getCloudRunServiceUrl(name), {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -185,7 +185,13 @@ export const tryOrLogError = async <T>(task: Promise<T>) => {
 }
 
 export const isProd = () => {
-  return admin.instanceId().app.options.projectId === 'mantic-markets'
+  // mqp: kind of hacky rn. the first clause is for cloud run API service,
+  // second clause is for local scripts and cloud functions
+  if (process.env.ENVIRONMENT) {
+    return process.env.ENVIRONMENT == 'PROD'
+  } else {
+    return admin.app().options.projectId === 'mantic-markets'
+  }
 }
 
 export const getDoc = async <T>(collection: string, doc: string) => {

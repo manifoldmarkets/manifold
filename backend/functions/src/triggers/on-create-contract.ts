@@ -2,10 +2,10 @@ import * as functions from 'firebase-functions'
 import { JSONContent } from '@tiptap/core'
 
 import { getUser } from 'shared/utils'
-import { createNewContractNotification } from '../create-notification'
+import { createNewContractNotification } from 'shared/create-notification'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { addUserToContractFollowers } from '../follow-market'
+import { addUserToContractFollowers } from 'shared/follow-market'
 
 import { dreamWithDefaultParams } from 'shared/dream-utils'
 import { getImagePrompt, generateEmbeddings } from 'shared/helpers/openai-utils'

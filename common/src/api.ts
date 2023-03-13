@@ -11,14 +11,15 @@ export class APIError extends Error {
   }
 }
 
-export function getFunctionUrl(name: string) {
-  if (process.env.NEXT_PUBLIC_FUNCTIONS_URL) {
-    return `${process.env.NEXT_PUBLIC_FUNCTIONS_URL}/${name}`
-  } else if (process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
-    const { projectId, region } = ENV_CONFIG.firebaseConfig
-    return `http://localhost:5001/${projectId}/${region}/${name}`
+export function getCloudRunServiceUrl(name: string) {
+  const { cloudRunId, cloudRunRegion } = ENV_CONFIG
+  return `https://${name}-${cloudRunId}-${cloudRunRegion}.a.run.app`
+}
+
+export function getApiUrl(name: string) {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return `${process.env.NEXT_PUBLIC_API_URL}/${name}`
   } else {
-    const { cloudRunId, cloudRunRegion } = ENV_CONFIG
-    return `https://${name}-${cloudRunId}-${cloudRunRegion}.a.run.app`
+    return `${getCloudRunServiceUrl('api')}/${name}`
   }
 }
