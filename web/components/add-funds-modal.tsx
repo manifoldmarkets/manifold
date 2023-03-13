@@ -8,14 +8,12 @@ import { getNativePlatform } from 'web/lib/native/is-native'
 import { Tabs } from './layout/tabs'
 import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
 import { postMessageToNative } from 'web/components/native-message-listener'
-import { SINGULAR_BET } from 'common/user'
 import {
   BETTING_STREAK_BONUS_MAX,
   REFERRAL_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import Link from 'next/link'
-import { Card } from 'web/components/widgets/card'
 import { validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
