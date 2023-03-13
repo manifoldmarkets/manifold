@@ -52,6 +52,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     )
     .setLabel('Market description')
     .setStyle(TextInputStyle.Paragraph)
+    .setRequired(false)
 
   // An action row only holds one text input,
   // so you need one action row per text input.
