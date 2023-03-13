@@ -10,7 +10,6 @@ import {
   onSnapshot,
   orderBy,
   query,
-  Query,
   setDoc,
   startAfter,
   updateDoc,
@@ -31,7 +30,6 @@ import { postMessageToNative } from 'web/components/native-message-listener'
 import { getIsNative } from 'web/lib/native/is-native'
 import { Contract } from 'common/contract'
 import { nativeSignOut } from 'web/lib/native/native-messages'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 dayjs.extend(utc)
 
@@ -295,19 +293,6 @@ export async function follow(userId: string, followedUserId: string) {
 export async function unfollow(userId: string, unfollowedUserId: string) {
   const followDoc = doc(collection(users, userId, 'follows'), unfollowedUserId)
   await deleteDoc(followDoc)
-}
-
-export function getPortfolioHistory(userId: string, since: number) {
-  return getValues<PortfolioMetrics>(getPortfolioHistoryQuery(userId, since))
-}
-
-export function getPortfolioHistoryQuery(userId: string, since: number) {
-  return query(
-    collectionGroup(db, 'portfolioHistory'),
-    where('userId', '==', userId),
-    where('timestamp', '>=', since),
-    orderBy('timestamp', 'asc')
-  ) as Query<PortfolioMetrics>
 }
 
 export function listenForFollows(
