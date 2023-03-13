@@ -1,11 +1,11 @@
-import { getFunctionUrl } from 'common/api'
+import { getApiUrl } from 'common/api'
 
 export const checkoutURL = (
   userId: string,
   manticDollarQuantity: number,
   referer = ''
 ) => {
-  const endpoint = getFunctionUrl('createcheckoutsession')
+  const endpoint = getApiUrl('createcheckoutsession')
   return `${endpoint}?userId=${userId}&manticDollarQuantity=${manticDollarQuantity}&referer=${encodeURIComponent(
     referer
   )}`

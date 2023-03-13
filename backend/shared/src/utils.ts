@@ -16,7 +16,7 @@ import { Contract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
-import { getFunctionUrl } from 'common/api'
+import { getCloudRunServiceUrl } from 'common/api'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -34,7 +34,7 @@ export function htmlToRichText(html: string) {
 }
 
 export const invokeFunction = async (name: string, body?: unknown) => {
-  const response = await fetch(getFunctionUrl(name), {
+  const response = await fetch(getCloudRunServiceUrl(name), {
     headers: {
       'Content-Type': 'application/json',
     },
