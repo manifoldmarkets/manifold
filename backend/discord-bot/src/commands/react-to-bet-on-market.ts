@@ -160,7 +160,11 @@ const sendMarketIntro = async (
 
   // Let client listener know we've this message in memory
   messagesHandledViaCollector.add(message.id)
-  messageEmbedsToRefresh.add({ message, marketId: market.id })
+  messageEmbedsToRefresh.add({
+    message,
+    marketId: market.id,
+    createdTime: Date.now(),
+  })
   // Add emoji reactions
   for (const emoji of emojis) {
     if (customEmojis.includes(emoji)) {
