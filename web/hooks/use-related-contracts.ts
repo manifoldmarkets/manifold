@@ -76,40 +76,20 @@ export const useRelatedMarkets = (
   })
 
   useEffect(() => {
-    // Load more once, since it mostly overlaps with the initial contracts.
-    loadMore()
+    if (initialContracts.length === 0) loadMore()
   }, [])
 
   return { contracts: savedContracts, loadMore }
 }
 
 export async function getInitialRelatedMarkets(contract: Contract) {
-  const { groupSlugs } = contract
-  const groupSlugsToUse = (groupSlugs ?? []).filter(
-    (slug) => !['spam', 'improperly-resolved'].includes(slug)
-  )
-  const [{ data: groupData }, { data: creatorData }, { data: relatedData }] =
-    await Promise.all([
-      db.rpc('search_contracts_by_group_slugs' as any, {
-        group_slugs: groupSlugsToUse,
-        lim: GROUPS_PAGE_SIZE,
-        start: 0,
-      }),
-      db.rpc('search_contracts_by_group_slugs_for_creator' as any, {
-        creator_id: contract.creatorId,
-        group_slugs: groupSlugsToUse,
-        lim: GROUPS_PAGE_SIZE,
-        start: 0,
-      }),
-      db.rpc('get_related_contracts' as any, {
-        cid: contract.id,
-        lim: RELATED_PAGE_SIZE,
-        start: 0,
-      }),
-    ])
+  const { data } = await db.rpc('closest_contract_embeddings' as any, {
+    input_contract_id: contract.id,
+    similarity_threshold: 0.7,
+    match_count: 10,
+  })
 
-  const contracts: Contract[] = buildArray(groupData, creatorData, relatedData)
-  return uniqBy(contracts, (c) => c.id)
-    .filter((c) => c.id !== contract.id)
-    .slice(0, 10)
+  const contracts = data?.map((c: any) => c.data) as Contract[]
+
+  return contracts
 }

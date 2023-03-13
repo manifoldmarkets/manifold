@@ -1196,7 +1196,7 @@ as $$
   FROM search_contract_embeddings(
     (SELECT embedding FROM embedding),
     similarity_threshold,
-    match_count
+    match_count + 1
   )
   join contracts
   on contract_id = contracts.id
