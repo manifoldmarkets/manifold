@@ -4,19 +4,11 @@ import { getOpenBinaryMarketFromSlug } from 'discord-bot/api'
 import { Command } from 'discord-bot/command'
 import { config } from 'discord-bot/constants/config'
 import {
-  ActionRowBuilder,
-  AttachmentBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ChatInputCommandInteraction,
-  EmbedBuilder,
-  MessageReaction,
-  SlashCommandBuilder,
-  StringSelectMenuInteraction,
-  TextChannel,
-  User,
-} from 'discord.js'
-import { customEmojiCache, customEmojis, emojis } from 'discord-bot/emojis'
+  customEmojiCache,
+  customEmojis,
+  emojis,
+  getAnyHandledEmojiKey,
+} from 'discord-bot/emojis'
 import {
   getCurrentMarketDescription,
   getSlug,
@@ -25,9 +17,27 @@ import {
   shouldIgnoreMessageFromGuild,
 } from 'discord-bot/helpers'
 import {
+  getMarketInfoFromMessageId,
   messagesHandledViaCollector,
   saveMarketToMessageId,
 } from 'discord-bot/storage'
+import {
+  ActionRowBuilder,
+  AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ChatInputCommandInteraction,
+  Client,
+  EmbedBuilder,
+  MessageReaction,
+  ModalSubmitInteraction,
+  PartialMessageReaction,
+  PartialUser,
+  SlashCommandBuilder,
+  StringSelectMenuInteraction,
+  TextChannel,
+  User,
+} from 'discord.js'
 
 const data = new SlashCommandBuilder()
   .setName('market')
@@ -68,7 +78,10 @@ async function execute(interaction: ChatInputCommandInteraction) {
 }
 
 export const replyWithMarketToBetOn = async (
-  interaction: ChatInputCommandInteraction | StringSelectMenuInteraction,
+  interaction:
+    | ChatInputCommandInteraction
+    | StringSelectMenuInteraction
+    | ModalSubmitInteraction,
   market: FullMarket
 ) => {
   try {
@@ -96,7 +109,10 @@ export const replyWithMarketToBetOn = async (
 }
 
 const sendMarketIntro = async (
-  interaction: ChatInputCommandInteraction | StringSelectMenuInteraction,
+  interaction:
+    | ChatInputCommandInteraction
+    | StringSelectMenuInteraction
+    | ModalSubmitInteraction,
   market: FullMarket
 ) => {
   await interaction.deferReply()
@@ -173,6 +189,80 @@ const getButtonRow = () => {
       .setCustomId('question')
       .setEmoji('❓')
       .setStyle(ButtonStyle.Secondary)
+  )
+}
+
+export const handleOldReaction = async (
+  pReaction: MessageReaction | PartialMessageReaction,
+  pUser: User | PartialUser,
+  client: Client
+) => {
+  const { message } = pReaction
+
+  // Check if the collector is handling this message already
+  const ignore = messagesHandledViaCollector.has(message.id)
+  if (ignore) {
+    console.log('ignoring reaction with message id:', message.id)
+    return
+  }
+
+  // Check if it's a dev guild
+  const guildId =
+    message.guildId === null ? (await message.fetch()).guildId : message.guildId
+  if (shouldIgnoreMessageFromGuild(guildId)) return
+
+  // Check if it's one of our handled emojis
+  const reaction = pReaction.partial
+    ? await pReaction.fetch().catch((e) => {
+        console.error('Failed to fetch reaction', e)
+      })
+    : pReaction
+  if (!reaction) return
+  const emojiKey = getAnyHandledEmojiKey(reaction)
+  if (!emojiKey) return
+
+  // Check if the message has a market matched to it
+  const marketInfo = await getMarketInfoFromMessageId(message.id)
+  if (!marketInfo) return
+
+  const user = pUser.partial
+    ? await pUser
+        .fetch()
+        .then((u) => u)
+        .catch((e) => {
+          console.error('Failed to fetch user', e)
+        })
+    : pUser
+  if (!user) return
+
+  const channelId = marketInfo.channel_id ?? reaction.message.channelId
+  const hasCachedChannel = client.channels.cache.has(channelId)
+  const channel = hasCachedChannel
+    ? client.channels.cache.get(channelId)
+    : await client.channels
+        .fetch(channelId)
+        .then((c) => c)
+        .catch((e) => {
+          console.error('Failed to fetch channel', e)
+        })
+
+  console.log('got channel', channel?.id)
+  if (!channel || !channel.isTextBased()) return
+
+  const market = await getOpenBinaryMarketFromSlug(
+    marketInfo.market_slug
+  ).catch((e) => {
+    console.error('Failed to fetch market', e)
+  })
+  if (!market) return
+  console.log('got market', market.url)
+
+  await handleReaction(
+    reaction,
+    user,
+    channel as TextChannel,
+    market,
+    marketInfo.thread_id
   )
 }
 

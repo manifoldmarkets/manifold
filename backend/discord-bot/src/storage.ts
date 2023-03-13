@@ -18,7 +18,7 @@ if (!supabaseInstanceId) throw new Error('No supabaseInstanceId in config.')
 export const supabase = createClient(supabaseInstanceId, key)
 export const messagesHandledViaCollector: Set<string> = new Set()
 export const registerHelpMessage = (discordId: string) =>
-  `In order to bet with me click this link: ${config.domain}register-on-discord?discordId=${discordId}.
+  `In order to use me click this link: ${config.domain}register-on-discord?discordId=${discordId}.
 If you don't have an account yet, you can easily make one at the link!`
 
 export const getUserInfo = async (discordUser: User) => {

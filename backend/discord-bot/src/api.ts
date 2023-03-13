@@ -83,3 +83,23 @@ export const getMyPositionInMarket = async (api: Api, marketId: string) => {
   }
   return (await resp.json()) as ContractMetrics[]
 }
+
+export const createMarket = async (
+  api: Api,
+  question: string,
+  description: string
+) => {
+  return await fetch(`${config.domain}api/v0/market`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Key ${api.apiKey}`,
+    },
+    body: JSON.stringify({
+      question,
+      description,
+      initialProb: 50,
+      outcomeType: 'BINARY',
+    }),
+  })
+}
