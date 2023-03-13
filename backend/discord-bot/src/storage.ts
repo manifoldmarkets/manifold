@@ -1,7 +1,12 @@
 import { createClient } from 'common/supabase/utils'
 import { Api } from 'discord-bot/api'
 import { config } from 'discord-bot/constants/config'
-import { User } from 'discord.js'
+import {
+  ButtonInteraction,
+  ChatInputCommandInteraction,
+  ModalSubmitInteraction,
+  User,
+} from 'discord.js'
 
 const discordIdsToApis: { [k: string]: Api } = {}
 type DiscordMessageMarketInfo = {
@@ -21,10 +26,26 @@ export const registerHelpMessage = (discordId: string) =>
   `In order to use me click this link: ${config.domain}register-on-discord?discordId=${discordId}.
 If you don't have an account yet, you can easily make one at the link!`
 
-export const getUserInfo = async (discordUser: User) => {
+export const getUserInfo = async (
+  discordUser: User,
+  interaction?:
+    | ChatInputCommandInteraction
+    | ModalSubmitInteraction
+    | ButtonInteraction
+) => {
   const storedKey = discordIdsToApis[discordUser.id] ?? null
   if (storedKey) return storedKey
-  const info = await getApiKeyFromDiscordId(discordUser)
+  const info = await getApiKeyFromDiscordId(discordUser).catch((e) => {
+    if (interaction) {
+      interaction.reply({
+        content: registerHelpMessage(discordUser.id),
+        ephemeral: true,
+      })
+    } else {
+      discordUser.send(registerHelpMessage(discordUser.id))
+    }
+    throw e
+  })
   discordIdsToApis[discordUser.id] = info
   return info
 }

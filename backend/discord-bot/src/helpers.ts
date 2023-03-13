@@ -33,7 +33,6 @@ import {
 import {
   getMarketInfoFromMessageId,
   getUserInfo,
-  registerHelpMessage,
   saveThreadIdToMessageId,
   updateThreadLastUpdatedTime,
 } from './storage.js'
@@ -120,7 +119,6 @@ export const handleBet = async (
   console.log('betting', amount, buyOutcome, 'on', market.id, 'for', user.tag)
 
   const api = await getUserInfo(user).catch(async () => {
-    await user.send(registerHelpMessage(user.id))
     const userReactions = message.reactions.cache.filter(
       (r) =>
         (r.emoji.id ?? r.emoji.name) ===
@@ -334,12 +332,7 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
 
   // User position and profit
   if (customId === 'my-position') {
-    const api = await getUserInfo(interaction.user).catch(() => {
-      interaction.reply({
-        content: registerHelpMessage(interaction.user.id),
-        ephemeral: true,
-      })
-    })
+    const api = await getUserInfo(interaction.user, interaction)
     if (!api) return
     const contractMetrics = await getMyPositionInMarket(
       api,

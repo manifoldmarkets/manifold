@@ -22,7 +22,7 @@ const searchMessageIdToSearchState = new Map<
   string,
   { page: number; markets: LiteMarket[] }
 >()
-export const searchButtonTypes = ['next', 'back', 'done']
+export const searchButtonTypes = ['back', 'next', 'done']
 
 const data = new SlashCommandBuilder()
   .setName('search')
@@ -182,12 +182,12 @@ const getButtonRow = (page: number, maxItems: number) => {
 
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(searchButtonTypes[1])
+      .setCustomId(searchButtonTypes[0])
       .setLabel('Back')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(page === 0),
     new ButtonBuilder()
-      .setCustomId(searchButtonTypes[0])
+      .setCustomId(searchButtonTypes[1])
       .setLabel('Next')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(floatingEqual(page, maxPage)),

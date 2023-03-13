@@ -7,7 +7,7 @@ import {
 import { createMarket } from 'discord-bot/api'
 import { Command } from 'discord-bot/command'
 import { replyWithMarketToBetOn } from 'discord-bot/commands/react-to-bet-on-market'
-import { getUserInfo, registerHelpMessage } from 'discord-bot/storage'
+import { getUserInfo } from 'discord-bot/storage'
 import {
   ActionRowBuilder,
   ChatInputCommandInteraction,
@@ -28,12 +28,7 @@ const data = new SlashCommandBuilder()
 
 async function execute(interaction: ChatInputCommandInteraction) {
   if (shouldIgnoreMessageFromGuild(interaction.guildId)) return
-  const api = await getUserInfo(interaction.user).catch(() => {
-    interaction.reply({
-      content: registerHelpMessage(interaction.user.id),
-      ephemeral: true,
-    })
-  })
+  const api = await getUserInfo(interaction.user, interaction)
   if (!api) return
 
   // Create the modal
@@ -80,12 +75,7 @@ export const handleCreateMarket = async (
   interaction: ModalSubmitInteraction
 ) => {
   if (interaction.customId !== 'creationModal') return
-  const api = await getUserInfo(interaction.user).catch(() => {
-    interaction.reply({
-      content: registerHelpMessage(interaction.user.id),
-      ephemeral: true,
-    })
-  })
+  const api = await getUserInfo(interaction.user, interaction)
   if (!api) return
   const question = interaction.fields.getTextInputValue('marketQuestionTitle')
   const description = interaction.fields.getTextInputValue(
