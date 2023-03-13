@@ -1,7 +1,12 @@
 import { createClient } from 'common/supabase/utils'
 import { Api } from 'discord-bot/api'
 import { config } from 'discord-bot/constants/config'
-import { User } from 'discord.js'
+import {
+  ButtonInteraction,
+  ChatInputCommandInteraction,
+  ModalSubmitInteraction,
+  User,
+} from 'discord.js'
 
 const discordIdsToApis: { [k: string]: Api } = {}
 type DiscordMessageMarketInfo = {
@@ -18,13 +23,29 @@ if (!supabaseInstanceId) throw new Error('No supabaseInstanceId in config.')
 export const supabase = createClient(supabaseInstanceId, key)
 export const messagesHandledViaCollector: Set<string> = new Set()
 export const registerHelpMessage = (discordId: string) =>
-  `In order to bet with me click this link: ${config.domain}register-on-discord?discordId=${discordId}.
+  `In order to use me click this link: ${config.domain}register-on-discord?discordId=${discordId}.
 If you don't have an account yet, you can easily make one at the link!`
 
-export const getUserInfo = async (discordUser: User) => {
+export const getUserInfo = async (
+  discordUser: User,
+  interaction?:
+    | ChatInputCommandInteraction
+    | ModalSubmitInteraction
+    | ButtonInteraction
+) => {
   const storedKey = discordIdsToApis[discordUser.id] ?? null
   if (storedKey) return storedKey
-  const info = await getApiKeyFromDiscordId(discordUser)
+  const info = await getApiKeyFromDiscordId(discordUser).catch((e) => {
+    if (interaction) {
+      interaction.reply({
+        content: registerHelpMessage(discordUser.id),
+        ephemeral: true,
+      })
+    } else {
+      discordUser.send(registerHelpMessage(discordUser.id))
+    }
+    throw e
+  })
   discordIdsToApis[discordUser.id] = info
   return info
 }
@@ -34,8 +55,10 @@ export const getApiKeyFromDiscordId = async (discordUser: User) => {
     .select('api_key, user_id')
     .eq('discord_user_id', discordUser.id)
   if (error || !data || data.length === 0) {
-    console.log('error or no api key. Error:', error)
-    if (error) await discordUser.send('Error:' + error.message)
+    if (error) {
+      console.error('error on get api key:', error)
+      await discordUser.send('Error:' + error.message)
+    } else console.log('No api key found for user', discordUser.id)
     throw new Error('No api key found for user: ' + discordUser.id)
   }
   return {
@@ -65,7 +88,7 @@ export const saveMarketToMessageId = async (
     market_slug: marketSlug,
     channel_id: channelId,
   })
-  if (error) console.log('write market to message error', error)
+  if (error) console.error('write market to message error', error)
   return error
 }
 export const saveThreadIdToMessageId = async (
@@ -81,7 +104,7 @@ export const saveThreadIdToMessageId = async (
       last_updated_thread_time: Date.now(),
     })
     .eq('message_id', messageId)
-  if (error) console.log('write thread id to message error', error)
+  if (error) console.error('write thread id to message error', error)
   return error
 }
 export const updateThreadLastUpdatedTime = async (messageId: string) => {
@@ -92,6 +115,6 @@ export const updateThreadLastUpdatedTime = async (messageId: string) => {
       last_updated_thread_time: Date.now(),
     })
     .eq('message_id', messageId)
-  if (error) console.log('write thread id to message error', error)
+  if (error) console.error('write thread id to message error', error)
   return error
 }

@@ -1,5 +1,6 @@
 import { FullMarket } from 'common/api-market-types'
 import { randomString } from 'common/util/random'
+import { DAY_MS } from 'common/util/time'
 import * as console from 'console'
 import {
   getMarketFromId,
@@ -7,6 +8,10 @@ import {
   getTopAndBottomPositions,
   placeBet,
 } from 'discord-bot/api'
+import {
+  handleSearchButtonInteraction,
+  searchButtonTypes,
+} from 'discord-bot/commands/search'
 import { config } from 'discord-bot/constants/config'
 import { sendPositionsEmbed } from 'discord-bot/leaderboard'
 import {
@@ -28,7 +33,6 @@ import {
 import {
   getMarketInfoFromMessageId,
   getUserInfo,
-  registerHelpMessage,
   saveThreadIdToMessageId,
   updateThreadLastUpdatedTime,
 } from './storage.js'
@@ -36,6 +40,7 @@ import {
 export const messageEmbedsToRefresh = new Set<{
   message: Message
   marketId: string
+  createdTime: number
 }>()
 const discordMessageIdsToThreads: { [key: string]: ThreadChannel } = {}
 
@@ -44,7 +49,12 @@ setInterval(async () => {
   if (messageEmbedsToRefresh.size === 0) return
   await Promise.all(
     Array.from(messageEmbedsToRefresh).map(async (m) => {
-      const { message, marketId } = m
+      const { message, marketId, createdTime } = m
+      // Discard messages that are older than 2 days
+      if (Date.now() - createdTime > 2 * DAY_MS) {
+        messageEmbedsToRefresh.delete(m)
+        return
+      }
       if (message.embeds.length === 0) await message.fetch()
       const isResolved = await refreshMessage(message, marketId)
       if (isResolved) messageEmbedsToRefresh.delete(m)
@@ -85,7 +95,7 @@ export const handleReaction = async (
           .fetch()
           .then((m) => m)
           .catch((e) => {
-            console.log('Failed to fetch message', e)
+            console.error('Failed to fetch message', e)
           })
       : reaction.message
   if (!message) return
@@ -109,7 +119,6 @@ export const handleBet = async (
   console.log('betting', amount, buyOutcome, 'on', market.id, 'for', user.tag)
 
   const api = await getUserInfo(user).catch(async () => {
-    await user.send(registerHelpMessage(user.id))
     const userReactions = message.reactions.cache.filter(
       (r) =>
         (r.emoji.id ?? r.emoji.name) ===
@@ -143,7 +152,11 @@ export const handleBet = async (
     market.probability = newProb
     await sendThreadMessage(channel, market, content, messageId, threadId)
     await updateMarketStatus(message, market)
-    messageEmbedsToRefresh.add({ message, marketId: market.id })
+    messageEmbedsToRefresh.add({
+      message,
+      marketId: market.id,
+      createdTime: Date.now(),
+    })
   } catch (e) {
     const content = `Error placing bet: ${e}`
     await user.send(content)
@@ -287,10 +300,27 @@ export function truncateText(text: string, slice: number) {
 
 export const handleButtonPress = async (interaction: ButtonInteraction) => {
   const { customId } = interaction
-  const message = await interaction.message.fetch().then((m) => m)
+
+  // Search button interactions
+  if (searchButtonTypes.includes(customId)) {
+    await handleSearchButtonInteraction(interaction)
+    return
+  }
+
+  // We have to fetch the message before getting its details
+  const message = await interaction.message
+    .fetch()
+    .then((m) => m)
+    .catch((e) => {
+      console.log('Error fetching message', e.message)
+      return undefined
+    })
   if (!message) return
+
+  // React to bet on market button interactions
   const marketInfo = await getMarketInfoFromMessageId(message.id)
   if (!marketInfo) return
+
   // Help
   if (customId === 'question') {
     const { yesBetsEmojis, noBetsEmojis } = getBettingEmojisAsStrings()
@@ -299,14 +329,10 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
     return
   }
   const market = await getMarketFromId(marketInfo.market_id)
-  // Market description
+
+  // User position and profit
   if (customId === 'my-position') {
-    const api = await getUserInfo(interaction.user).catch((e) => {
-      interaction.reply({
-        content: registerHelpMessage(interaction.user.id),
-        ephemeral: true,
-      })
-    })
+    const api = await getUserInfo(interaction.user, interaction)
     if (!api) return
     const contractMetrics = await getMyPositionInMarket(
       api,
@@ -328,18 +354,21 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
     await interaction.reply({ content, ephemeral: true })
     return
   }
+
   // Market description
   if (customId === 'details') {
     const content = `Market details: ${market.textDescription}`
     await interaction.reply({ content, ephemeral: true })
     return
   }
+
+  // Market top and bottom positions
   if (customId === 'leaderboard') {
     const { contractMetrics, market } = await getTopAndBottomPositions(
       marketInfo.market_slug,
       'profit'
     ).catch(async (error) => {
-      console.log('Failed to get positions', error)
+      console.error('Failed to get positions', error)
       await interaction.reply({ content: error.message, ephemeral: true })
       return { contractMetrics: [], market: null }
     })

@@ -1,39 +1,24 @@
 import { REST } from '@discordjs/rest'
 import * as console from 'console'
-import { getOpenBinaryMarketFromSlug } from 'discord-bot/api'
 import { Command } from 'discord-bot/command'
 import { commands } from 'discord-bot/commands'
+import { handleCreateMarket } from 'discord-bot/commands/create'
+import { handleOldReaction } from 'discord-bot/commands/react-to-bet-on-market'
 
 import {
   Client,
   Collection,
   Events,
   GatewayIntentBits,
-  MessageReaction,
-  PartialMessageReaction,
   Partials,
-  PartialUser,
   Routes,
-  TextChannel,
-  User,
 } from 'discord.js'
 import * as process from 'process'
 import { config } from './constants/config.js'
-import {
-  customEmojiCache,
-  customEmojis,
-  getAnyHandledEmojiKey,
-} from './emojis.js'
-import {
-  handleButtonPress,
-  handleReaction,
-  shouldIgnoreMessageFromGuild,
-} from './helpers.js'
+import { customEmojiCache, customEmojis } from './emojis.js'
+import { handleButtonPress } from './helpers.js'
 import { startListener } from './server.js'
-import {
-  getMarketInfoFromMessageId,
-  messagesHandledViaCollector,
-} from './storage.js'
+
 const commandsCollection = new Collection<string, Command>()
 const client = new Client({
   intents: [
@@ -43,16 +28,11 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.GuildEmojisAndStickers,
   ],
-  partials: [
-    Partials.Message,
-    Partials.Channel,
-    Partials.Reaction,
-    Partials.User,
-  ],
+  partials: [Partials.Message, Partials.Reaction, Partials.User],
 })
 
 const init = async () => {
-  const { clientId } = config
+  const { clientId, guildId } = config
   const token = process.env.DISCORD_BOT_TOKEN
   if (!token) throw new Error('No DISCORD_BOT_TOKEN env var set.')
 
@@ -79,9 +59,18 @@ const init = async () => {
 
   console.log('Refreshing slash commands... ')
   try {
-    await rest.put(Routes.applicationCommands(clientId), {
-      body: commandsCollection.mapValues((c) => c.data.toJSON()),
-    })
+    if (guildId) {
+      console.log('Refreshing guild specific commands')
+      // Guild specific commands
+      await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+        body: commandsCollection.mapValues((c) => c.data.toJSON()),
+      })
+    } else {
+      // Commands for all guilds (prod)
+      await rest.put(Routes.applicationCommands(clientId), {
+        body: commandsCollection.mapValues((c) => c.data.toJSON()),
+      })
+    }
 
     console.log(
       'Refreshed command:',
@@ -90,118 +79,54 @@ const init = async () => {
         .join(', ')}`
     )
   } catch (error) {
-    console.log('ERROR')
-    console.error(error)
+    console.error('Error on refresh slash commands', error)
   }
 }
 
 const registerListeners = () => {
   client.on(Events.MessageReactionAdd, async (reaction, user) => {
-    handleOldReaction(reaction, user).catch((e) =>
-      console.log('Error handling old reaction', e)
-    )
-  })
-
-  client.on(Events.InteractionCreate, (interaction) => {
-    if (!interaction.isButton()) return
-    handleButtonPress(interaction).catch((e) =>
-      console.log('Error handling button interaction', e)
+    handleOldReaction(reaction, user, client).catch((e) =>
+      console.error('Error handling old reaction', e)
     )
   })
 
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isChatInputCommand()) return
-
-    const command = commandsCollection.get(interaction.commandName)
-    if (!command) return
-
-    await command.execute(interaction).catch((error) => {
-      console.log('Error executing slash command interaction', error)
-      interaction
-        .reply({
-          content: 'There was an error while executing this command :(',
+    if (interaction.isButton()) {
+      handleButtonPress(interaction).catch((e) =>
+        console.error('Error handling button interaction', e)
+      )
+    } else if (interaction.isModalSubmit()) {
+      handleCreateMarket(interaction).catch((e) =>
+        console.log('Error handling create market interaction', e)
+      )
+    } else if (interaction.isChatInputCommand()) {
+      if (!interaction.guild) {
+        await interaction.reply({
+          content: 'This command can only be used in a server',
           ephemeral: true,
         })
-        .catch((e) =>
-          console.log('Error replying to slash command interaction', e)
-        )
-    })
+        return
+      }
+
+      const command = commandsCollection.get(interaction.commandName)
+      if (!command) return
+      try {
+        await command.execute(interaction)
+      } catch (e) {
+        console.error('Error executing slash command interaction', e)
+        interaction
+          .reply({
+            content: 'There was an error while executing this command :(',
+            ephemeral: true,
+          })
+          .catch((e) =>
+            console.error('Error replying to slash command interaction', e)
+          )
+      }
+    }
   })
 }
 
 init().then(registerListeners)
 // If we're running on GCP, start the server to let the cloud function know we're ready
 if (process.env.GOOGLE_CLOUD_PROJECT) startListener()
-
-const handleOldReaction = async (
-  pReaction: MessageReaction | PartialMessageReaction,
-  pUser: User | PartialUser
-) => {
-  const { message } = pReaction
-
-  // Check if the collector is handling this message already
-  const ignore = messagesHandledViaCollector.has(message.id)
-  if (ignore) {
-    console.log('ignoring reaction with message id:', message.id)
-    return
-  }
-
-  // Check if it's a dev guild
-  const guildId =
-    message.guildId === null ? (await message.fetch()).guildId : message.guildId
-  if (shouldIgnoreMessageFromGuild(guildId)) return
-
-  // Check if it's one of our handled emojis
-  const reaction = pReaction.partial
-    ? await pReaction.fetch().catch((e) => {
-        console.log('Failed to fetch reaction', e)
-      })
-    : pReaction
-  if (!reaction) return
-  const emojiKey = getAnyHandledEmojiKey(reaction)
-  if (!emojiKey) return
-
-  // Check if the message has a market matched to it
-  const marketInfo = await getMarketInfoFromMessageId(message.id)
-  if (!marketInfo) return
-
-  const user = pUser.partial
-    ? await pUser
-        .fetch()
-        .then((u) => u)
-        .catch((e) => {
-          console.log('Failed to fetch user', e)
-        })
-    : pUser
-  if (!user) return
-
-  const channelId = marketInfo.channel_id ?? reaction.message.channelId
-  const hasCachedChannel = client.channels.cache.has(channelId)
-  const channel = hasCachedChannel
-    ? client.channels.cache.get(channelId)
-    : await client.channels
-        .fetch(channelId)
-        .then((c) => c)
-        .catch((e) => {
-          console.log('Failed to fetch channel', e)
-        })
-
-  console.log('got channel', channel?.id)
-  if (!channel || !channel.isTextBased()) return
-
-  const market = await getOpenBinaryMarketFromSlug(
-    marketInfo.market_slug
-  ).catch((e) => {
-    console.log('Failed to fetch market', e)
-  })
-  if (!market) return
-  console.log('got market', market.url)
-
-  await handleReaction(
-    reaction,
-    user,
-    channel as TextChannel,
-    market,
-    marketInfo.thread_id
-  )
-}
