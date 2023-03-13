@@ -1136,18 +1136,6 @@ where ucm.user_id in (select unnest(uids))
 group by ucm.user_id
 $$;
 
-create or replace function get_portfolio_histories_grouped_by_user_ids_from(uids text[],start bigint)
-returns table(user_id text, portfolio_metrics jsonb[])
-immutable parallel safe
-language sql
-as $$
-select uph.user_id, array_agg(uph.data) as portfolio_metrics
-from user_portfolio_history as uph
-where uph.user_id in (select unnest(uids)) and
-(data->'timestamp')::bigint > start
-group by uph.user_id
-$$;
-
 create or replace function search_contract_embeddings (
   query_embedding vector(1536),
   similarity_threshold float,
@@ -1196,7 +1184,7 @@ as $$
   FROM search_contract_embeddings(
     (SELECT embedding FROM embedding),
     similarity_threshold,
-    match_count
+    match_count + 1
   )
   join contracts
   on contract_id = contracts.id

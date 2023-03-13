@@ -126,6 +126,12 @@ export default function LabsPage() {
           />
 
           <LabCard
+            title="💬 Discord Bot"
+            description="Create, trade, and share markets directly from Discord"
+            href="/discord-bot"
+          />
+
+          <LabCard
             title="🏆 CSPI/Salem tournament"
             description="Special contest on politics and current events"
             href="https://salemcenter.manifold.markets/"

@@ -167,3 +167,5 @@ export const HOME_BLOCKED_GROUP_SLUGS = [
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
+
+export const DISCORD_INVITE_LINK = 'https://discord.com/invite/eHQBNBqXuh'

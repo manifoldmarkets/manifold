@@ -20,6 +20,7 @@ import {
 import { Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { buildOgUrl } from 'common/util/og'
+import { removeUndefinedProps } from 'common/util/object'
 
 export type PerContractInvestmentsData = {
   questionTitle: string
@@ -487,7 +488,11 @@ export const sendInterestingMarketsEmail = async (
 }
 
 function imageSourceUrl(contract: Contract) {
-  return buildOgUrl(getContractOGProps(contract), 'market')
+  // TODO: get bet points into image so interesting markets can see the image
+  return buildOgUrl(
+    removeUndefinedProps(getContractOGProps(contract)),
+    'market'
+  )
 }
 
 export const sendNewFollowedMarketEmail = async (
