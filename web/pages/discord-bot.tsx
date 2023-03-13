@@ -17,18 +17,16 @@ export default function DiscordBot() {
       <Col className={'w-full items-center '}>
         <Col className={'bg-canvas-0 gap-3 p-4'}>
           <Title>Our Discord Bot</Title>
-          <Row className={'text-primary-700 text-xl'}>Why?</Row>
-          <span className={'mx-4'}>
+          <Col className={'mx-4'}>
             <li>
-              You want an easy way to introduce your friends to prediction
-              markets.
+              Want an easy way to introduce your friends to prediction markets?
             </li>
-            <li>You want to put skin in the game instead of just arguing.</li>
+            <li>Want to put skin in the game instead of just arguing?</li>
             <li>
-              Your discord server is full of degens and you want to make some
-              money off of them.
+              Got a discord server full of degens and want to make some money
+              off of them?
             </li>
-          </span>
+          </Col>
           <Row className={'text-primary-700 text-xl'}>What is it?</Row>
           <span className={'mx-4'}>
             The Manifold Markets Discord Bot allows you to trade, search, and
