@@ -11,7 +11,7 @@ import {
   formatMoney,
   formatWithCommas,
 } from 'common/util/format'
-import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
   BinaryContract,
@@ -21,6 +21,7 @@ import {
   MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
+  contractPath,
 } from 'common/contract'
 import {
   BinaryContractOutcomeLabel,

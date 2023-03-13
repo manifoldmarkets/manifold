@@ -13,9 +13,9 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { sortBy, sum } from 'lodash'
+import { sum } from 'lodash'
 import { coll, getValues, listenForValue, listenForValues } from './utils'
-import { BinaryContract, Contract } from 'common/contract'
+import { BinaryContract, Contract, contractPath } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getLiquidity } from 'common/calculate-cpmm-multi'
@@ -25,19 +25,11 @@ export const contracts = coll<Contract>('contracts')
 
 export type { Contract }
 
-export function contractPath(contract: Contract) {
-  return `/${contract.creatorUsername}/${contract.slug}`
-}
-
 export function contractPathWithoutContract(
   creatorUsername: string,
   slug: string
 ) {
   return `/${creatorUsername}/${slug}`
-}
-
-export function homeContractPath(contract: Contract) {
-  return `/home?c=${contract.slug}`
 }
 
 export function contractUrl(contract: Contract) {
@@ -92,42 +84,12 @@ export async function deleteContract(contractId: string) {
   await deleteDoc(doc(contracts, contractId))
 }
 
-export async function listContracts(creatorId: string): Promise<Contract[]> {
-  const q = query(
-    contracts,
-    where('creatorId', '==', creatorId),
-    orderBy('createdTime', 'desc')
-  )
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => doc.data())
-}
-
 export const tournamentContractsByGroupSlugQuery = (slug: string) =>
   query(
     contracts,
     where('groupSlugs', 'array-contains', slug),
     orderBy('popularityScore', 'desc')
   )
-
-export async function listContractsByGroupSlug(
-  slug: string
-): Promise<Contract[]> {
-  const q = query(contracts, where('groupSlugs', 'array-contains', slug))
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => doc.data())
-}
-
-export async function listTaggedContractsCaseInsensitive(
-  tag: string
-): Promise<Contract[]> {
-  const q = query(
-    contracts,
-    where('lowercaseTags', 'array-contains', tag.toLowerCase()),
-    orderBy('createdTime', 'desc')
-  )
-  const snapshot = await getDocs(q)
-  return snapshot.docs.map((doc) => doc.data())
-}
 
 export async function listAllContracts(
   n: number,
@@ -230,39 +192,4 @@ export async function getTrendingContracts(maxContracts = 10) {
   return await getValues<Contract>(
     query(trendingContractsQuery, limit(maxContracts))
   )
-}
-
-export async function getContractsBySlugs(slugs: string[]) {
-  const q = query(contracts, where('slug', 'in', slugs))
-  const snapshot = await getDocs(q)
-  const data = snapshot.docs.map((doc) => doc.data())
-  return sortBy(data, (contract) => -1 * contract.volume24Hours)
-}
-
-export const getTopCreatorContracts = async (
-  creatorId: string,
-  count: number
-) => {
-  const creatorContractsQuery = query(
-    contracts,
-    where('isResolved', '==', false),
-    where('creatorId', '==', creatorId),
-    orderBy('popularityScore', 'desc'),
-    limit(count)
-  )
-  return await getValues<Contract>(creatorContractsQuery)
-}
-
-export const getTopGroupContracts = async (
-  groupSlug: string,
-  count: number
-) => {
-  const creatorContractsQuery = query(
-    contracts,
-    where('groupSlugs', 'array-contains', groupSlug),
-    where('isResolved', '==', false),
-    orderBy('popularityScore', 'desc'),
-    limit(count)
-  )
-  return await getValues<Contract>(creatorContractsQuery)
 }
