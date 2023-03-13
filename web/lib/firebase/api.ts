@@ -188,5 +188,5 @@ export function registerDiscordId(params: any) {
 }
 
 export function getUserIsGroupMember(params: { groupSlug: string }) {
-  return call(getFunctionUrl('getuserisgroupmember'), 'POST', params)
+  return call(getApiUrl('getuserisgroupmember'), 'POST', params)
 }
