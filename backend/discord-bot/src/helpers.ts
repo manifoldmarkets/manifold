@@ -85,7 +85,7 @@ export const handleReaction = async (
           .fetch()
           .then((m) => m)
           .catch((e) => {
-            console.log('Failed to fetch message', e)
+            console.error('Failed to fetch message', e)
           })
       : reaction.message
   if (!message) return
@@ -289,6 +289,7 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
   const { customId } = interaction
   const message = await interaction.message.fetch().then((m) => m)
   if (!message) return
+  console.log('Button pressed', customId)
   const marketInfo = await getMarketInfoFromMessageId(message.id)
   if (!marketInfo) return
   // Help
@@ -339,7 +340,7 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
       marketInfo.market_slug,
       'profit'
     ).catch(async (error) => {
-      console.log('Failed to get positions', error)
+      console.error('Failed to get positions', error)
       await interaction.reply({ content: error.message, ephemeral: true })
       return { contractMetrics: [], market: null }
     })

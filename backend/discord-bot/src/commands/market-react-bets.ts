@@ -58,7 +58,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
   }
   const market = await getOpenBinaryMarketFromSlug(slug).catch(
     async (error) => {
-      console.log('Failed to get market', error)
+      console.error('Failed to get market', error)
       await interaction.reply({ content: error.message })
       return
     }
@@ -91,7 +91,7 @@ export const replyWithMarketToBetOn = async (
       await handleReaction(reaction, user, channel, market)
     })
   } catch (error) {
-    console.log('error on send market embed', error, 'for link', market.url)
+    console.error('error on send market embed', error, 'for link', market.url)
   }
 }
 
@@ -109,7 +109,7 @@ const sendMarketIntro = async (
       const buffer = Buffer.from(arrayBuffer)
       return new AttachmentBuilder(buffer, { name })
     } catch (error) {
-      console.log('error on get attachment', error)
+      console.error('error on get attachment', error)
       return undefined
     }
   }
@@ -159,7 +159,7 @@ const getButtonRow = () => {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId('details')
-      .setLabel('Details')
+      .setEmoji('ℹ️')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId('my-position')

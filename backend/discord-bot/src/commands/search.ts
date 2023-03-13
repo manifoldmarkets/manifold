@@ -45,7 +45,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply(
       'Error searching markets, please try again later.'
     )
-    console.log('Error searching markets', error)
+    console.error('Error searching markets', error)
     return
   })
   if (!markets) return

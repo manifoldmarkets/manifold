@@ -43,12 +43,7 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.GuildEmojisAndStickers,
   ],
-  partials: [
-    Partials.Message,
-    Partials.Channel,
-    Partials.Reaction,
-    Partials.User,
-  ],
+  partials: [Partials.Message, Partials.Reaction, Partials.User],
 })
 
 const init = async () => {
@@ -90,40 +85,46 @@ const init = async () => {
         .join(', ')}`
     )
   } catch (error) {
-    console.log('ERROR')
-    console.error(error)
+    console.error('Error on refresh slash commands', error)
   }
 }
 
 const registerListeners = () => {
   client.on(Events.MessageReactionAdd, async (reaction, user) => {
     handleOldReaction(reaction, user).catch((e) =>
-      console.log('Error handling old reaction', e)
+      console.error('Error handling old reaction', e)
     )
   })
 
   client.on(Events.InteractionCreate, (interaction) => {
     if (!interaction.isButton()) return
     handleButtonPress(interaction).catch((e) =>
-      console.log('Error handling button interaction', e)
+      console.error('Error handling button interaction', e)
     )
   })
 
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isChatInputCommand()) return
+    console.log('Received interaction', interaction)
+    if (!interaction.guild) {
+      await interaction.reply({
+        content: 'This command can only be used in a server',
+      })
+      return
+    }
 
     const command = commandsCollection.get(interaction.commandName)
     if (!command) return
 
     await command.execute(interaction).catch((error) => {
-      console.log('Error executing slash command interaction', error)
+      console.error('Error executing slash command interaction', error)
       interaction
         .reply({
           content: 'There was an error while executing this command :(',
           ephemeral: true,
         })
         .catch((e) =>
-          console.log('Error replying to slash command interaction', e)
+          console.error('Error replying to slash command interaction', e)
         )
     })
   })
@@ -154,7 +155,7 @@ const handleOldReaction = async (
   // Check if it's one of our handled emojis
   const reaction = pReaction.partial
     ? await pReaction.fetch().catch((e) => {
-        console.log('Failed to fetch reaction', e)
+        console.error('Failed to fetch reaction', e)
       })
     : pReaction
   if (!reaction) return
@@ -170,7 +171,7 @@ const handleOldReaction = async (
         .fetch()
         .then((u) => u)
         .catch((e) => {
-          console.log('Failed to fetch user', e)
+          console.error('Failed to fetch user', e)
         })
     : pUser
   if (!user) return
@@ -183,7 +184,7 @@ const handleOldReaction = async (
         .fetch(channelId)
         .then((c) => c)
         .catch((e) => {
-          console.log('Failed to fetch channel', e)
+          console.error('Failed to fetch channel', e)
         })
 
   console.log('got channel', channel?.id)
@@ -192,7 +193,7 @@ const handleOldReaction = async (
   const market = await getOpenBinaryMarketFromSlug(
     marketInfo.market_slug
   ).catch((e) => {
-    console.log('Failed to fetch market', e)
+    console.error('Failed to fetch market', e)
   })
   if (!market) return
   console.log('got market', market.url)
