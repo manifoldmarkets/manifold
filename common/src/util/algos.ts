@@ -4,6 +4,7 @@ export function binarySearch(
   comparator: (x: number) => number
 ) {
   let mid = 0
+  let i = 0
   while (true) {
     mid = min + (max - min) / 2
 
@@ -16,6 +17,14 @@ export function binarySearch(
       max = mid
     } else {
       min = mid
+    }
+
+    i++
+    if (i > 100000) {
+      throw new Error(
+        'Binary search exceeded max iterations' +
+          JSON.stringify({ min, max, mid, i }, null, 2)
+      )
     }
   }
   return mid
