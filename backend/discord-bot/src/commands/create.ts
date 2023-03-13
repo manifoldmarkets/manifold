@@ -1,10 +1,9 @@
-import { toFullMarket } from 'common/api-market-types'
 import {
   Contract,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
 } from 'common/contract'
-import { createMarket } from 'discord-bot/api'
+import { createMarket, getMarketFromId } from 'discord-bot/api'
 import { Command } from 'discord-bot/command'
 import { replyWithMarketToBetOn } from 'discord-bot/commands/react-to-bet-on-market'
 import { getUserInfo } from 'discord-bot/storage'
@@ -84,8 +83,9 @@ export const handleCreateMarket = async (
   )
   const resp = await createMarket(api, question, description)
   if (resp.status === 200) {
-    const market = (await resp.json()) as Contract
-    await replyWithMarketToBetOn(interaction, toFullMarket(market))
+    const contract = (await resp.json()) as Contract
+    const market = await getMarketFromId(contract.id)
+    await replyWithMarketToBetOn(interaction, market)
   } else {
     await interaction.reply({
       content: 'Error creating market',
