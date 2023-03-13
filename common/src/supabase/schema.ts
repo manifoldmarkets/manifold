@@ -616,12 +616,54 @@ export interface Database {
       }
     }
     Functions: {
+      blah: {
+        Args: {
+          input_contract_id: string
+          similarity_threshold: number
+          match_count: number
+        }
+        Returns: {
+          data: Json
+        }[]
+      }
       calculate_distance: {
         Args: {
           row1: unknown
           row2: unknown
         }
         Returns: number
+      }
+      closest_contract_embeddings: {
+        Args: {
+          input_contract_id: string
+          similarity_threshold: number
+          match_count: number
+        }
+        Returns: {
+          contract_id: string
+          similarity: number
+          data: Json
+        }[]
+      }
+      closest_contract_embeddings_mqp: {
+        Args: {
+          input_contract_id: string
+          similarity_threshold: number
+          match_count: number
+        }
+        Returns: number
+      }
+      closest_contract_embeddings2: {
+        Args: {
+          input_contract_id: string
+          similarity_threshold: number
+          match_count: number
+        }
+        Returns: {
+          contract_id: string
+          similarity: number
+          data: Json
+        }[]
       }
       dot: {
         Args: {
@@ -724,16 +766,6 @@ export interface Database {
           contract_id: string
           bets: Json[]
           contract: Json
-        }[]
-      }
-      get_portfolio_histories_grouped_by_user_ids_from: {
-        Args: {
-          uids: string[]
-          start: number
-        }
-        Returns: {
-          user_id: string
-          portfolio_metrics: Json[]
         }[]
       }
       get_recommended_contract_scores: {
@@ -979,6 +1011,28 @@ export interface Database {
         Returns: {
           id: number
           succeeded: boolean
+        }[]
+      }
+      search_contract_embeddings: {
+        Args: {
+          query_embedding: unknown
+          similarity_threshold: number
+          match_count: number
+        }
+        Returns: {
+          contract_id: string
+          similarity: number
+        }[]
+      }
+      search_contract_embeddings_mqp: {
+        Args: {
+          query_embedding: unknown
+          similarity_threshold: number
+          match_count: number
+        }
+        Returns: {
+          contract_id: string
+          similarity: number
         }[]
       }
       search_contracts_by_group_slugs: {
