@@ -46,9 +46,7 @@ export function AddFundsModal(props: {
             title: "I'm Broke",
             content: (
               <>
-                <div className="mt-6 mb-4">
-                  Here are some other ways to get mana:
-                </div>
+                <div className="mt-6 mb-4">Other ways to get mana:</div>
                 <OtherWaysToGetMana />
               </>
             ),
@@ -145,43 +143,32 @@ export function BuyManaTab(props: { onClose: () => void }) {
   )
 }
 
-export const OtherWaysToGetMana = (props: { includeBuyNote?: boolean }) => {
-  const { includeBuyNote } = props
+export const OtherWaysToGetMana = () => {
   return (
-    <ul className="space-y-2 text-sm">
+    <ul className="border-ink-100 border-t">
+      <Item url="/ad">
+        👀 Read classfieds for
+        <span className={'mx-1 font-bold'}>{formatMoney(10)}</span>per ad
+      </Item>
       <Item>
-        Place your first {SINGULAR_BET} of the day to get your streak bonus (up
-        to
+        🔥 Streak bonus (up to
         <span className={'mx-1 font-bold'}>
           {formatMoney(BETTING_STREAK_BONUS_MAX)}
         </span>
-        per day!)
+        per day)
       </Item>
       <Item url="/referrals">
-        Refer a friend and get
+        👋 Refer a friend for
         <span className={'mx-1 font-bold'}>{formatMoney(REFERRAL_AMOUNT)}</span>
-        per signup after they place their first trade
+        after their first trade
       </Item>
       <Item url="/create">
-        Make a market and get
+        📈 Make a market for
         <span className={'mx-1 font-bold'}>
           {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)}
         </span>
         per unique trader
       </Item>
-      <Item url="https://discord.gg/3Zuth9792G">
-        Come by our discord and ask nicely. We pay new users for sharing their
-        experiences!
-      </Item>
-      <Item url="https://github.com/manifoldmarkets/manifold">
-        Contribute to our codebase, even something simple, and we'll pay you a
-        bounty
-      </Item>
-      {includeBuyNote && (
-        <Item>
-          Visit our website in your browser to buy mana with a credit card.
-        </Item>
-      )}
     </ul>
   )
 }
@@ -189,13 +176,13 @@ export const OtherWaysToGetMana = (props: { includeBuyNote?: boolean }) => {
 const Item = (props: { children: React.ReactNode; url?: string }) => {
   const { children, url } = props
   return (
-    <li>
+    <li className="border-ink-100 border-b">
       {url ? (
         <Link href={url}>
-          <Card className="p-2">{children}</Card>
+          <div className="hover:bg-primary-100 py-3">{children}</div>
         </Link>
       ) : (
-        <Card className="pointer-events-none cursor-auto p-2">{children}</Card>
+        <div className="py-3">{children}</div>
       )}
     </li>
   )
