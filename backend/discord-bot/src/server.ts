@@ -11,7 +11,7 @@ const server = http.createServer((req, res) => {
   )
 })
 
-export const startListener = () =>
+export const startServerForGCP = () =>
   server.listen(parseInt(port), hostname, () => {
     console.log(`Server running at http://${hostname}:${port}/`)
   })

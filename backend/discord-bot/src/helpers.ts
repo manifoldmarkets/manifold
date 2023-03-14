@@ -25,10 +25,9 @@ import {
   User,
 } from 'discord.js'
 import {
-  bettingEmojis,
   getAnyHandledEmojiKey,
-  getBetEmojiKey,
   getBettingEmojisAsStrings,
+  getBetInfoFromReaction,
 } from './emojis.js'
 import {
   getMarketInfoFromMessageId,
@@ -112,11 +111,10 @@ export const handleBet = async (
   market: FullMarket,
   threadId?: string
 ) => {
-  const emojiKey = getBetEmojiKey(reaction)
-  if (!emojiKey) return
   const messageId = reaction.message.id
-  const { amount, outcome: buyOutcome } = bettingEmojis[emojiKey]
-  console.log('betting', amount, buyOutcome, 'on', market.id, 'for', user.tag)
+  const { outcome, amount } = getBetInfoFromReaction(reaction)
+  if (!outcome || !amount) return
+  console.log('betting', amount, outcome, 'on', market.id, 'for', user.tag)
 
   const api = await getUserInfo(user).catch(async () => {
     const userReactions = message.reactions.cache.filter(
@@ -135,7 +133,7 @@ export const handleBet = async (
   })
   if (!api) return
   try {
-    const resp = await placeBet(api, market.id, amount, buyOutcome)
+    const resp = await placeBet(api, market.id, amount, outcome)
 
     if (!resp.ok) {
       const content = `Error: ${resp.statusText}`
@@ -144,7 +142,7 @@ export const handleBet = async (
     }
     const bet = await resp.json()
     const newProb = bet.probAfter
-    const status = `bought M$${amount} ${buyOutcome} at ${Math.round(
+    const status = `bought M$${amount} ${outcome} at ${Math.round(
       newProb * 100
     )}%`
     const content = `${user.toString()} ${status}`
@@ -361,7 +359,7 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
     const description =
       textDescription.length > 1995
         ? textDescription.slice(0, 1995) + '...'
-        : ''
+        : textDescription
     const content = `${
       description.length > 0 ? description : 'No market description provided :('
     }`
