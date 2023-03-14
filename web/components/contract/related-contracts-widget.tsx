@@ -1,6 +1,5 @@
 import { Contract } from 'common/contract'
 import Link from 'next/link'
-import Image from 'next/image'
 import { memo } from 'react'
 import clsx from 'clsx'
 
@@ -67,13 +66,8 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
   onContractClick?: (contract: Contract) => void
 }) {
   const { contract, onContractClick } = props
-  const {
-    creatorUsername,
-    creatorAvatarUrl,
-    coverImageUrl,
-    question,
-    creatorCreatedTime,
-  } = contract
+  const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
+    contract
 
   const isClient = useIsClient()
 
@@ -105,18 +99,6 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
           {question}
         </div>
       </Row>
-
-      {coverImageUrl && (
-        <div className="relative h-32">
-          <Image
-            fill
-            alt={question}
-            sizes="100vw"
-            className="object-cover opacity-90"
-            src={coverImageUrl ?? ''}
-          />
-        </div>
-      )}
     </Link>
   )
 })
