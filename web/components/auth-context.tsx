@@ -17,6 +17,7 @@ import { setCookie } from 'web/lib/util/cookie'
 import { UserAndPrivateUser } from 'common/user'
 import { nativePassUsers, nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -98,6 +99,7 @@ export function AuthProvider(props: {
             current = (await createUser({
               deviceToken,
               adminToken,
+              visitedContractIds: getSavedContractVisitsLocally(),
             })) as UserAndPrivateUser
             setCachedReferralInfoForUser(current.user)
           }

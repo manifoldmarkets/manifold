@@ -77,6 +77,7 @@ import {
   getUseBetLimit,
   shouldUseBetPoints,
 } from 'web/components/contract/contract-page-helpers'
+import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -263,6 +264,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     },
     true
   )
+  useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
   const lastBetTime = first(contractParams.historyData.bets)?.createdTime

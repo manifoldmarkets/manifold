@@ -12,9 +12,10 @@ import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
 import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
-import { getUser, getUserByUsername } from 'shared/utils'
+import { log, getUser, getUserByUsername } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
@@ -59,84 +60,114 @@ export const changeUser = async (
     avatarUrl?: string
   }
 ) => {
+  const pg = createSupabaseDirectClient()
   const firestore = admin.firestore()
+  const bulkWriter = firestore.bulkWriter()
+
   if (update.username) update.username = cleanUsername(update.username)
   if (update.name) update.name = cleanDisplayName(update.name)
 
-  // Update contracts, comments, and answers outside of a transaction to avoid contention.
-  // Using bulkWriter to supports >500 writes at a time
-  const contractSnap = await firestore
-    .collection('contracts')
-    .where('creatorId', '==', user.id)
-    .select()
-    .get()
+  const userRef = firestore.collection('users').doc(user.id)
+  bulkWriter.update(userRef, removeUndefinedProps(update))
 
+  log('Updating denormalized user data on contracts...')
+  const contractRows = await pg.manyOrNone(
+    `select id from contracts where data->>'creatorId' = $1`,
+    [user.id]
+  )
   const contractUpdate: Partial<Contract> = removeUndefinedProps({
     creatorName: update.name,
     creatorUsername: update.username,
     creatorAvatarUrl: update.avatarUrl,
   })
+  for (const row of contractRows) {
+    const ref = firestore.collection('contracts').doc(row.id)
+    bulkWriter.update(ref, contractUpdate)
+  }
+  log(`Updated ${contractRows.length} contracts.`)
 
-  const commentSnap = await firestore
-    .collectionGroup('comments')
-    .where('userId', '==', user.id)
-    .select()
-    .get()
-
+  log('Updating denormalized user data on comments...')
+  const commentRows = await pg.manyOrNone(
+    `select contract_id, comment_id from contract_comments where data->>'userId' = $1`,
+    [user.id]
+  )
   const commentUpdate: Partial<Comment> = removeUndefinedProps({
     userName: update.name,
     userUsername: update.username,
     userAvatarUrl: update.avatarUrl,
   })
+  for (const row of commentRows) {
+    const ref = firestore
+      .collection('contracts')
+      .doc(row.contract_id)
+      .collection('comments')
+      .doc(row.comment_id)
+    bulkWriter.update(ref, commentUpdate)
+  }
+  log(`Updated ${commentRows.length} comments.`)
 
-  const betsSnap = await firestore
-    .collectionGroup('bets')
-    .where('userId', '==', user.id)
-    .select()
-    .get()
-  const betsUpdate: Partial<Bet> = removeUndefinedProps({
+  log('Updating denormalized user data on bets...')
+  const betRows = await pg.manyOrNone(
+    `select contract_id, bet_id from contract_bets where data->>'userId' = $1`,
+    [user.id]
+  )
+  const betUpdate: Partial<Bet> = removeUndefinedProps({
     userName: update.name,
     userUsername: update.username,
     userAvatarUrl: update.avatarUrl,
   })
+  for (const row of betRows) {
+    const ref = firestore
+      .collection('contracts')
+      .doc(row.contract_id)
+      .collection('bets')
+      .doc(row.bet_id)
+    bulkWriter.update(ref, betUpdate)
+  }
+  log(`Updated ${betRows.length} bets.`)
 
-  const contractMetricsSnap = await firestore
-    .collection(`users/${user.id}/contract-metrics`)
-    .get()
-
+  log('Updating denormalized user data on contract metrics docs...')
+  const contractMetricsRows = await pg.manyOrNone(
+    `select contract_id from user_contract_metrics where user_id = $1`,
+    [user.id]
+  )
   const contractMetricsUpdate: Partial<ContractMetric> = removeUndefinedProps({
     userName: update.name,
     userUsername: update.username,
     userAvatarUrl: update.avatarUrl,
   })
+  for (const row of contractMetricsRows) {
+    const ref = firestore
+      .collection('users')
+      .doc(user.id)
+      .collection('contract-metrics')
+      .doc(row.contract_id)
+    bulkWriter.update(ref, contractMetricsUpdate)
+  }
+  log(`Updated ${contractMetricsRows.length} contract metrics docs.`)
 
-  const bulkWriter = firestore.bulkWriter()
-  const userRef = firestore.collection('users').doc(user.id)
-  bulkWriter.update(userRef, removeUndefinedProps(update))
-  commentSnap.docs.forEach((d) => bulkWriter.update(d.ref, commentUpdate))
-  contractSnap.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
-  betsSnap.docs.forEach((d) => bulkWriter.update(d.ref, betsUpdate))
-  contractMetricsSnap.docs.forEach((d) =>
-    bulkWriter.update(d.ref, contractMetricsUpdate)
+  log('Updating denormalized user data on answers...')
+  const answerRows = await pg.manyOrNone(
+    `select contract_id, answer_id from contract_answers where data->>'userId' = $1`,
+    [user.id]
   )
-
-  const answerSnap = await firestore
-    .collectionGroup('answers')
-    .where('userId', '==', user.id)
-    .get()
   const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
-  answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
+  for (const row of answerRows) {
+    const ref = firestore
+      .collection('contracts')
+      .doc(row.contract_id)
+      .collection('answers')
+      .doc(row.answer_id)
+    bulkWriter.update(ref, answerUpdate)
+  }
 
-  const answerContractIds = uniq(
-    answerSnap.docs.map((a) => a.get('contractId') as string)
-  )
-
-  const docRefs = answerContractIds.map((c) =>
-    firestore.collection('contracts').doc(c)
-  )
+  const answerContractIds = uniq(answerRows.map((r) => r.contract_id as string))
   // firestore.getall() will fail with zero params, so add this check
-  if (docRefs.length > 0) {
-    const answerContracts = await firestore.getAll(...docRefs)
+  if (answerContractIds.length > 0) {
+    const refs = answerContractIds.map((c) =>
+      firestore.collection('contracts').doc(c)
+    )
+    const answerContracts = await firestore.getAll(...refs)
     for (const doc of answerContracts) {
       const contract = doc.data() as ChoiceContract
       for (const a of contract.answers) {
@@ -149,7 +180,8 @@ export const changeUser = async (
       bulkWriter.update(doc.ref, { answers: contract.answers })
     }
   }
+  log(`Updated ${answerRows.length} answers.`)
 
   await bulkWriter.flush()
-  console.log('Done writing!')
+  log('Done writing!')
 }
