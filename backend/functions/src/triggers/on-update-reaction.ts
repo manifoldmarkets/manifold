@@ -1,6 +1,7 @@
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { richTextToString } from 'common/util/parse'
+import { DAY_MS } from 'common/util/time'
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { Reaction } from 'common/reaction'
@@ -85,8 +86,9 @@ const handleTopLevelCommentLike = async (
     .get()
   if (!commentSnap.exists) return
   const comment = commentSnap.data() as Comment
-  // Only notify on top-level comments (for now)
-  if (comment.replyToCommentId) return
+  // Only notify of recent, top-level comments (for now)
+  if (comment.replyToCommentId || comment.createdTime < Date.now() - 2 * DAY_MS)
+    return
   const user = await getUser(comment.userId)
   if (!user) return
   const contractSnap = await firestore
