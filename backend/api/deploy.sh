@@ -39,7 +39,7 @@ yarn build && \
          --set-secrets STRIPE_WEBHOOKSECRET=STRIPE_WEBHOOKSECRET:latest \
          --set-secrets TEST_CREATE_USER_KEY=TEST_CREATE_USER_KEY:latest \
          --execution-environment gen2 \
-         --cpu 1 \
-         --memory 512Mi \
+         --cpu 2 \
+         --memory 2Gi \
          --concurrency 1000 \
-         --min-instances 2
+         --min-instances 1
