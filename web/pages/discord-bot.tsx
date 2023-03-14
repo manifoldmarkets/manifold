@@ -33,7 +33,7 @@ export default function DiscordBot() {
                 color={'gradient-pink'}
                 onClick={() => {
                   window.open(
-                    'https://discord.com/api/oauth2/authorize?client_id=1074829857537663098&permissions=326417901632&scope=bot%20applications.commands'
+                    'https://discord.com/api/oauth2/authorize?client_id=1074829857537663098&permissions=328565385280&scope=bot%20applications.commands'
                   )
                 }}
               >
