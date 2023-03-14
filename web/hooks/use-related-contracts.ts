@@ -89,7 +89,7 @@ export async function getInitialRelatedMarkets(contract: Contract) {
     match_count: 10,
   })
 
-  const contracts = data?.map((c: any) => c.data) as Contract[]
+  const contracts = (data ?? []).map((c: any) => c.data) as Contract[]
 
   return contracts
 }
