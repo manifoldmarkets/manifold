@@ -1,4 +1,3 @@
-import { Group } from 'common/group'
 import { Post } from 'common/post'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'

@@ -13,7 +13,7 @@ import {
   listGroups,
   topFollowedGroupsQuery,
 } from 'web/lib/firebase/groups'
-import { auth, getUser } from 'web/lib/firebase/users'
+import { getUser } from 'web/lib/firebase/users'
 import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
 import { keyBy, uniq, uniqBy } from 'lodash'
