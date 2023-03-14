@@ -72,7 +72,7 @@ export const changeUser = async (
 
   log('Updating denormalized user data on contracts...')
   const contractRows = await pg.manyOrNone(
-    `select id from contracts where data->'creatorId' = $1`,
+    `select id from contracts where data->>'creatorId' = $1`,
     [user.id]
   )
   const contractUpdate: Partial<Contract> = removeUndefinedProps({
@@ -88,7 +88,7 @@ export const changeUser = async (
 
   log('Updating denormalized user data on comments...')
   const commentRows = await pg.manyOrNone(
-    `select contract_id, commment_id from contract_comments where data->'userId' = $1`,
+    `select contract_id, comment_id from contract_comments where data->>'userId' = $1`,
     [user.id]
   )
   const commentUpdate: Partial<Comment> = removeUndefinedProps({
@@ -108,7 +108,7 @@ export const changeUser = async (
 
   log('Updating denormalized user data on bets...')
   const betRows = await pg.manyOrNone(
-    `select contract_id, bet_id from contract_bets where data->'userId' = $1`,
+    `select contract_id, bet_id from contract_bets where data->>'userId' = $1`,
     [user.id]
   )
   const betUpdate: Partial<Bet> = removeUndefinedProps({
@@ -128,7 +128,7 @@ export const changeUser = async (
 
   log('Updating denormalized user data on contract metrics docs...')
   const contractMetricsRows = await pg.manyOrNone(
-    `select contract_id from contract_metrics where user_id = $1`,
+    `select contract_id from user_contract_metrics where user_id = $1`,
     [user.id]
   )
   const contractMetricsUpdate: Partial<ContractMetric> = removeUndefinedProps({
@@ -148,7 +148,7 @@ export const changeUser = async (
 
   log('Updating denormalized user data on answers...')
   const answerRows = await pg.manyOrNone(
-    `select contract_id, answer_id from contract_answers where data->'userId' = $1`,
+    `select contract_id, answer_id from contract_answers where data->>'userId' = $1`,
     [user.id]
   )
   const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
