@@ -11,7 +11,13 @@ export async function getAverageContractEmbedding(
     from contract_embeddings
     where contract_id in ($1:list)`,
     [contractIds],
-    (r: { average_embedding: number }) => r.average_embedding
+    (r: { average_embedding: number }) => {
+      if (r.average_embedding === null) {
+        console.error('No average of embeddings for', contractIds)
+        return getDefaultEmbedding()
+      }
+      return r.average_embedding
+    }
   )
 }
 

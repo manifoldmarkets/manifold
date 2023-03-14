@@ -68,6 +68,7 @@ import {
   useRelatedMarkets,
 } from 'web/hooks/use-related-contracts'
 import { track } from 'web/lib/service/analytics'
+import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 
 const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -240,6 +241,7 @@ export function ContractPageContent(
     },
     true
   )
+  useSaveContractVisitsLocally(user === null, contract.id)
 
   // Static props load bets in descending order by time
   const lastBetTime = first(props.historyData.bets)?.createdTime
