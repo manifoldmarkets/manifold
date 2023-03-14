@@ -32,7 +32,13 @@ export function useRealtimePost(postId?: string) {
           filter: `id=eq.${postId}`,
         },
         (payload) => {
-          fetchPost()
+          console.log(payload)
+          if (payload.eventType === 'UPDATE') {
+            setPost(payload.new.data)
+          }
+          if (payload.eventType === 'DELETE') {
+            setPost(null)
+          }
         }
       )
       channel.subscribe(async (status) => {})

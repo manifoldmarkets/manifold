@@ -192,13 +192,13 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     groupId: group?.id,
   })
 
-  if (!group) {
+  if (group === undefined) {
     return <></>
   }
-  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404Content />
   }
+  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
   return (
     <>
       <AddContractButton

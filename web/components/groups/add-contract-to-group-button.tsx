@@ -14,33 +14,29 @@ import { AddMarketToGroupModal } from './add-market-modal'
 import { groupRoleType } from './group-member-modal'
 
 export type AddContractToGroupPermissionType =
-  | 'private'
-  | 'new'
-  | 'any'
-  | 'none'
+  | 'private' // user can add a private contract (only new, only belongs in group)
+  | 'new' // user can add a new contract
+  | 'any' // user can add a new or existing contract
+  | 'none' // user cannot add any contract
 
 export function getAddContractToGroupPermission(
   privacyStatus: PrivacyStatusType,
   userRole: groupRoleType | null
 ): AddContractToGroupPermissionType {
   if (
-    privacyStatus == 'private' &&
-    (userRole == 'admin' || userRole == 'moderator')
-  ) {
-    return 'private'
-  }
-  if (
-    privacyStatus == 'public' &&
-    userRole != 'admin' &&
-    userRole != 'moderator'
-  ) {
-    return 'new'
-  }
-  if (
     privacyStatus != 'private' &&
     (userRole === 'admin' || userRole === 'moderator')
   ) {
     return 'any'
+  }
+  if (privacyStatus == 'public') {
+    return 'new'
+  }
+  if (
+    privacyStatus == 'private' &&
+    (userRole == 'admin' || userRole == 'moderator')
+  ) {
+    return 'private'
   }
   return 'none'
 }

@@ -267,7 +267,10 @@ export function useRealtimeGroup(groupSlug: string) {
         filter: `data->>slug=eq.${groupSlug}`,
       },
       (payload) => {
-        fetchGroup()
+        console.log('GROUP PAYLOAD', payload)
+        if (payload.eventType === 'UPDATE') {
+          setGroup(payload.new.data)
+        }
       }
     )
     channel.subscribe(async (status) => {})

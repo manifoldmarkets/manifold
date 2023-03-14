@@ -208,16 +208,22 @@ export function useGroups(groupIds: string[]) {
   return useStoreItems(groupIds, listenForGroup, { loadOnce: true })
 }
 
-export function useIsGroupMember(groupSlug: string) {
+export function useIsGroupMember(groupSlug: string, delay: number) {
   const [isMember, setIsMember] = useState<any>(undefined)
   const user = useUser()
   useEffect(() => {
-    if (user) {
-      setTimeout(() => {
-        getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
-          setIsMember(result)
-        })
-      }, 1000)
+    // if there is no user
+    if (user === null) {
+      setIsMember(false)
+    } else if (user) {
+      // need this timeout (1 sec works) or else get "must be signed in to make API calls" error
+      setTimeout(
+        () =>
+          getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
+            setIsMember(result)
+          }),
+        delay
+      )
     }
   }, [groupSlug, user])
   return isMember
