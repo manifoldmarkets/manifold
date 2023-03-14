@@ -5,7 +5,7 @@
     "firestore": "dev-mantic-markets.appspot.com"
   },
   "scripts": {
-    "build": "yarn compile && yarn --cwd=../shared alias && yarn --cwd=../functions alias && yarn alias",
+    "build": "yarn compile && yarn --cwd=../../common alias && yarn --cwd=../shared alias && yarn --cwd=../functions alias && yarn --cwd=../api alias && yarn alias",
     "compile": "tsc -b",
     "alias": "tsc-alias",
     "verify": "yarn --cwd=../.. verify",
