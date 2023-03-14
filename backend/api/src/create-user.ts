@@ -17,17 +17,24 @@ import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { isProd } from 'shared/utils'
+import {
+  getAverageContractEmbedding,
+  getDefaultEmbedding,
+} from 'shared/helpers/embeddings'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
   adminToken: z.string().optional(),
+  visitedContractIds: z.array(z.string()).optional(),
 })
 
 export const createuser = authEndpoint(async (req, auth) => {
-  const { deviceToken: preDeviceToken, adminToken } = validate(
-    bodySchema,
-    req.body
-  )
+  const {
+    deviceToken: preDeviceToken,
+    adminToken,
+    visitedContractIds,
+  } = validate(bodySchema, req.body)
   const firebaseUser = await admin.auth().getUser(auth.uid)
   const isTestUser = firebaseUser.providerData[0].providerId === 'password'
   if (isTestUser && adminToken !== process.env.TEST_CREATE_USER_KEY) {
@@ -68,6 +75,16 @@ export const createuser = authEndpoint(async (req, auth) => {
     !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
 
   const balance = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
+
+  const pg = createSupabaseDirectClient()
+  const interestEmbedding = visitedContractIds
+    ? await getAverageContractEmbedding(pg, visitedContractIds)
+    : getDefaultEmbedding()
+
+  await pg.none(
+    `insert into user_embeddings (user_id, interest_embedding) values ($1, $2)`,
+    [auth.uid, interestEmbedding]
+  )
 
   // Only undefined prop should be avatarUrl
   const user: User = removeUndefinedProps({
