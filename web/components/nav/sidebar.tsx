@@ -142,8 +142,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         name: 'Classifieds',
         icon: SpeakerphoneIcon,
         href: '/ad',
-      },
-      { name: 'Sitemap', href: '/sitemap', icon: MapIcon }
+      }
     )
 
   return buildArray(
@@ -189,5 +188,6 @@ const bottomNav = (
           : SparklesIcon,
       onClick: toggleTheme,
     },
+    { name: 'Sitemap', href: '/sitemap', icon: MapIcon },
     loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )
