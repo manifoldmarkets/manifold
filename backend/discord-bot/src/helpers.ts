@@ -165,7 +165,8 @@ const currentProbText = (prob: number) =>
 
 export const getCurrentMarketDescription = (market: FullMarket) => {
   const closed = (market.closeTime ?? 0) <= Date.now()
-  let content = currentProbText(market.probability ?? 0)
+  let content = currentProbText(market.probability ?? 0) + '. React to differ.'
+
   if (closed) {
     content = market.isResolved
       ? `Resolved ${market.resolution}`
