@@ -35,7 +35,7 @@ $ yarn build && node lib/script.js
 
 ## Environment variables
 
-Copy the keys from the google secrets file:
+Copy the keys from the google secrets page:
 
 Dev: https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
 Prod: https://console.cloud.google.com/security/secret-manager?project=mantic-markets

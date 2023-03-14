@@ -3,7 +3,7 @@
 SERVICE_NAME="api"
 
 if [ -z "$1" ]; then
-echo "Usage: the first argument to be 'dev' or 'prod'"
+echo "Usage: the first argument should be 'dev' or 'prod'"
 exit 1
 fi
 
