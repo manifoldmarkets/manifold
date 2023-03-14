@@ -1,5 +1,5 @@
 import * as mailgun from 'mailgun-js'
-import { tryOrLogError } from 'shared/utils'
+import { tryOrLogError } from 'shared/helpers/try-or-log-error'
 
 const initMailgun = () => {
   const apiKey = process.env.MAILGUN_KEY as string

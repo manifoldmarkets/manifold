@@ -3,7 +3,7 @@
 import * as admin from 'firebase-admin'
 import { initAdmin } from 'shared/init-admin'
 import { isProd, log } from 'shared/utils'
-import { getSlug } from 'functions/api/create-group'
+import { getSlug } from 'api/create-group'
 import { Group, GroupLink } from 'common/group'
 import { uniq } from 'lodash'
 import { Contract } from 'common/contract'

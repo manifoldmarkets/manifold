@@ -2,7 +2,7 @@
 ![image](img/ss.png)  
 Bet directly from your Discord server!
 ## Adding the bot to your server
-All you have to do is visit [this link](https://discord.com/api/oauth2/authorize?client_id=1074829857537663098&permissions=326417901632&scope=bot%20applications.commands) and choose the server you'd like to add the bot to.
+All you have to do is visit [this link](https://discord.com/api/oauth2/authorize?client_id=1074829857537663098&permissions=328565385280&scope=bot%20applications.commands) and choose the server you'd like to add the bot to.
 
 ## Development
 ### Setup

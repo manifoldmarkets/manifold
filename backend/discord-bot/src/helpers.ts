@@ -357,7 +357,14 @@ export const handleButtonPress = async (interaction: ButtonInteraction) => {
 
   // Market description
   if (customId === 'details') {
-    const content = `Market details: ${market.textDescription}`
+    const { textDescription } = market
+    const description =
+      textDescription.length > 1995
+        ? textDescription.slice(0, 1995) + '...'
+        : ''
+    const content = `${
+      description.length > 0 ? description : 'No market description provided :('
+    }`
     await interaction.reply({ content, ephemeral: true })
     return
   }

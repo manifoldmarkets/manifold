@@ -1,4 +1,7 @@
-import { DISCORD_INVITE_LINK } from 'common/envs/constants'
+import {
+  DISCORD_BOT_INVITE_LINK,
+  DISCORD_INVITE_LINK,
+} from 'common/envs/constants'
 import React from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -32,9 +35,7 @@ export default function DiscordBot() {
                 size={'lg'}
                 color={'gradient-pink'}
                 onClick={() => {
-                  window.open(
-                    'https://discord.com/api/oauth2/authorize?client_id=1074829857537663098&permissions=326417901632&scope=bot%20applications.commands'
-                  )
+                  window.open(DISCORD_BOT_INVITE_LINK)
                 }}
               >
                 Add our bot to your server!
@@ -65,9 +66,7 @@ export default function DiscordBot() {
               color={'gradient-pink'}
               size={'lg'}
               onClick={() => {
-                window.open(
-                  'https://discord.com/api/oauth2/authorize?client_id=1074829857537663098&permissions=326417901632&scope=bot%20applications.commands'
-                )
+                window.open(DISCORD_BOT_INVITE_LINK)
               }}
             >
               Add our bot to your server!
