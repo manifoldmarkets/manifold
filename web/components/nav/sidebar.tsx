@@ -6,11 +6,18 @@ import {
   LogoutIcon,
   ScaleIcon,
   SearchIcon,
+  MapIcon,
+  MoonIcon,
+  SpeakerphoneIcon,
+  SunIcon,
+  SparklesIcon,
 } from '@heroicons/react/outline'
-import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
+// import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
+import { formatMoney } from 'common/util/format'
+import { capitalize } from 'lodash'
 import Router, { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { AddFundsModal } from 'web/components/add-funds-modal'
@@ -48,9 +55,6 @@ export default function Sidebar(props: {
 
   const { theme, changeTheme } = useContext(DarkModeContext)
 
-  const themeDisplay =
-    theme === 'auto' ? 'Auto' : theme === 'dark' ? 'On' : 'Off'
-
   const toggleTheme = () => {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
@@ -59,12 +63,7 @@ export default function Sidebar(props: {
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
-  const bottomNavOptions = bottomNav(
-    !!isMobile,
-    !!user,
-    themeDisplay,
-    toggleTheme
-  )
+  const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
 
   const createMarketButton = user && !user.isBannedFromPosting && (
     <CreateQuestionButton key="create-market-button" />
@@ -104,18 +103,6 @@ export default function Sidebar(props: {
           <SignInButton key="sign-in-button" className="mt-3" />
         )}
 
-        {user && !isMobile && (
-          <MenuButton
-            key="menu-button"
-            menuItems={getMoreDesktopNavigation(
-              !!user,
-              themeDisplay,
-              toggleTheme
-            )}
-            buttonContent={<MoreButton />}
-          />
-        )}
-
         {createMarketButton}
       </div>
       <div className="mt-auto mb-6 flex flex-col gap-1">
@@ -149,11 +136,17 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         href: `/notifications`,
         icon: NotificationsIcon,
       },
-      !IS_PRIVATE_MANIFOLD && {
+      {
         name: 'Leaderboards',
         href: '/leaderboards',
         icon: TrophyIcon,
-      }
+      },
+      {
+        name: 'Classifieds',
+        icon: SpeakerphoneIcon,
+        href: '/ad',
+      },
+      { name: 'Sitemap', href: '/sitemap', icon: MapIcon }
     )
 
   return buildArray(
@@ -168,49 +161,36 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   )
 }
 
-function getMoreDesktopNavigation(
-  loggedIn: boolean,
-  themeDisplay: string,
-  toggleTheme: () => void
-) {
-  if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
-  }
-
-  return buildArray(
-    { name: 'Dark mode: ' + themeDisplay, onClick: toggleTheme },
-    { name: 'Sitemap', href: '/sitemap' },
-    loggedIn && { name: 'Sign out', onClick: logout }
-  )
-}
-
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
-  if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon }]
-  }
   return buildArray(
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
-    { name: 'Referrals', icon: GiftIcon, href: '/referrals' },
+    {
+      name: `Classifieds - earn ${formatMoney(10)} per view!`,
+      icon: SpeakerphoneIcon,
+      href: '/ad',
+    },
     { name: 'Sitemap', icon: MapIcon, href: '/sitemap' }
   )
 }
 
 const bottomNav = (
-  isMobile: boolean,
   loggedIn: boolean,
-  themeDisplay: string,
+  theme: 'light' | 'dark' | 'auto',
   toggleTheme: () => void
 ) =>
   buildArray(
-    isMobile && {
-      name: 'Dark mode: ' + themeDisplay,
-      icon: MoonIcon,
+    {
+      name: theme === 'auto' ? 'System theme' : capitalize(theme) + ' theme',
+      icon:
+        theme === 'light'
+          ? SunIcon
+          : theme === 'dark'
+          ? MoonIcon
+          : SparklesIcon,
       onClick: toggleTheme,
     },
-
-    isMobile &&
-      loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
+    loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )
