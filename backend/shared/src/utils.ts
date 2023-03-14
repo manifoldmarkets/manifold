@@ -1,22 +1,22 @@
+import { generateJSON } from '@tiptap/html'
+import { getCloudRunServiceUrl } from 'common/api'
+import { Contract } from 'common/contract'
+import { Group } from 'common/group'
+import { Post } from 'common/post'
+import { PrivateUser, User } from 'common/user'
+import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
 import {
-  CollectionReference,
   CollectionGroup,
+  CollectionReference,
   DocumentData,
   FieldValue,
   Query,
-  QuerySnapshot,
   QueryDocumentSnapshot,
+  QuerySnapshot,
   Transaction,
 } from 'firebase-admin/firestore'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
-import { generateJSON } from '@tiptap/html'
-import { extensions } from 'common/util/parse'
-import { Contract } from 'common/contract'
-import { PrivateUser, User } from 'common/user'
-import { Group } from 'common/group'
-import { Post } from 'common/post'
-import { getCloudRunServiceUrl } from 'common/api'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -173,15 +173,6 @@ export const processPartitioned = async <T extends DocumentData, U>(
     )
   }
   return results
-}
-
-export const tryOrLogError = async <T>(task: Promise<T>) => {
-  try {
-    return await task
-  } catch (e) {
-    console.error(e)
-    return null
-  }
 }
 
 export const isProd = () => {

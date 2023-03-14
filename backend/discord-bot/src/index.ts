@@ -14,6 +14,7 @@ import {
   Routes,
 } from 'discord.js'
 import * as process from 'process'
+import { track } from 'discord-bot/analytics'
 import { config } from './constants/config.js'
 import { customEmojiCache, customEmojis } from './emojis.js'
 import { handleButtonPress } from './helpers.js'
@@ -91,14 +92,23 @@ const registerListeners = () => {
   })
 
   client.on(Events.InteractionCreate, async (interaction) => {
+    const { guildId, user } = interaction
     if (interaction.isButton()) {
       handleButtonPress(interaction).catch((e) =>
         console.error('Error handling button interaction', e)
       )
+      await track(user.id, 'button press', {
+        guildId,
+        customId: interaction.customId,
+      })
     } else if (interaction.isModalSubmit()) {
       handleCreateMarket(interaction).catch((e) =>
         console.log('Error handling create market interaction', e)
       )
+      await track(user.id, 'modal submit', {
+        guildId,
+        customId: interaction.customId,
+      })
     } else if (interaction.isChatInputCommand()) {
       if (!interaction.guild) {
         await interaction.reply({
@@ -123,6 +133,10 @@ const registerListeners = () => {
             console.error('Error replying to slash command interaction', e)
           )
       }
+      await track(user.id, 'slash command', {
+        guildId,
+        commandName: interaction.commandName,
+      })
     }
   })
 }

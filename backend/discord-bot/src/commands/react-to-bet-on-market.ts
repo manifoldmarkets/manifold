@@ -38,6 +38,7 @@ import {
   TextChannel,
   User,
 } from 'discord.js'
+import { track } from 'discord-bot/analytics'
 
 const data = new SlashCommandBuilder()
   .setName('market')
@@ -228,6 +229,11 @@ export const handleOldReaction = async (
   // Check if the message has a market matched to it
   const marketInfo = await getMarketInfoFromMessageId(message.id)
   if (!marketInfo) return
+  await track(pUser.id, 'react to bet', {
+    guildId,
+    marketSlug: marketInfo.market_slug,
+    emoji: reaction.emoji.name,
+  })
 
   const user = pUser.partial
     ? await pUser
