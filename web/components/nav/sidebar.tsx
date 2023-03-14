@@ -139,7 +139,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         icon: TrophyIcon,
       },
       {
-        name: 'Classifieds',
+        name: 'Ads',
         icon: SpeakerphoneIcon,
         href: '/ad',
       }
@@ -164,7 +164,7 @@ const getMobileNav = (toggleModal: () => void) => {
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     {
-      name: `Classifieds - earn ${formatMoney(10)} per view!`,
+      name: `Ads - earn ${formatMoney(10)} per view!`,
       icon: SpeakerphoneIcon,
       href: '/ad',
     },

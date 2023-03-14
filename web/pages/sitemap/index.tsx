@@ -120,7 +120,7 @@ export default function LabsPage() {
           />
 
           <LabCard
-            title="👀 Classifieds"
+            title="👀 Ads"
             description="Read ads for mana. Or pay mana to promote your markets or anything else you want."
             href="/ad"
           />
