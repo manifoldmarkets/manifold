@@ -556,9 +556,11 @@ as $$
   FROM search_contract_embeddings(
     (SELECT embedding FROM embedding),
     similarity_threshold,
-    match_count + 1
+    match_count + 5
   )
   join contracts
   on contract_id = contracts.id
-  where contract_id != input_contract_id
+  where contract_id != input_contract_id and not (data->>'isResolved')::boolean
+  order by similarity * similarity * log(coalesce((data->>'popularityScore')::real, 0.0) + 100) desc
+  limit match_count;
 $$;
