@@ -67,7 +67,11 @@ import {
   getContractFromSlug,
   getContractVisibilityFromSlug,
 } from 'web/lib/supabase/contracts'
-import { visibility } from 'common/contract'
+import {
+  BinaryContract,
+  PseudoNumericContract,
+  visibility,
+} from 'common/contract'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import { getAllComments } from 'web/lib/supabase/comments'
 import { getUser } from 'web/lib/supabase/user'
@@ -87,7 +91,7 @@ export const CONTRACT_BET_FILTER: BetFilter = {
 
 type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
 
-type ContractParams = {
+export type ContractParams = {
   contract: Contract | null
   historyData: HistoryData
   pointsString?: string
@@ -145,7 +149,9 @@ export async function getStaticProps(ctx: {
     if (useBetPoints && contract) {
       const firstPoint = {
         x: contract.createdTime,
-        y: getInitialProbability(contract),
+        y: getInitialProbability(
+          contract as BinaryContract | PseudoNumericContract
+        ),
       }
       betPoints.push(firstPoint)
       betPoints.reverse()

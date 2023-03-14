@@ -1,5 +1,10 @@
 import { getInitialProbability } from 'common/calculate'
-import { AnyContractType, Contract } from 'common/contract'
+import {
+  AnyContractType,
+  BinaryContract,
+  Contract,
+  PseudoNumericContract,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
@@ -15,7 +20,10 @@ import {
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
-import { ContractPageContent } from 'web/pages/[username]/[contractSlug]'
+import {
+  ContractPageContent,
+  ContractParams,
+} from 'web/pages/[username]/[contractSlug]'
 import {
   InaccessiblePrivateThing,
   LoadingPrivateThing,
@@ -78,7 +86,9 @@ export function getContractParams(contractSlug: string) {
   if (useBetPoints && contract) {
     const firstPoint = {
       x: contract.createdTime,
-      y: getInitialProbability(contract),
+      y: getInitialProbability(
+        contract as BinaryContract | PseudoNumericContract
+      ),
     }
     betPoints.push(firstPoint)
     betPoints.reverse()
@@ -104,7 +114,7 @@ export function getContractParams(contractSlug: string) {
     topContractMetrics,
     creatorTwitter: creator?.twitterHandle,
     relatedContracts,
-  })
+  }) as ContractParams
 }
 
 export function useBinaryContractUserContractMetrics(
