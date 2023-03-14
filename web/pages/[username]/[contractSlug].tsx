@@ -6,15 +6,11 @@ import { ContractOverview } from 'web/components/contract/contract-overview'
 import { Col } from 'web/components/layout/col'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Spacer } from 'web/components/layout/spacer'
-import {
-  Contract,
-  getContractFromSlug,
-  tradingAllowed,
-} from 'web/lib/firebase/contracts'
+import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import { Bet, BetFilter, getTotalBetCount } from 'web/lib/firebase/bets'
-import { getBets } from 'web/lib/supabase/bets'
+import { Bet, BetFilter } from 'web/lib/firebase/bets'
+import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -56,7 +52,6 @@ import { db } from 'web/lib/supabase/db'
 import { QfResolutionPanel } from 'web/components/contract/qf-overview'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
 import { getInitialProbability } from 'common/calculate'
-import { getUser } from 'web/lib/firebase/users'
 import Head from 'next/head'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ContractDetails } from 'web/components/contract/contract-details'
@@ -68,8 +63,22 @@ import {
   useRelatedMarkets,
 } from 'web/hooks/use-related-contracts'
 import { track } from 'web/lib/service/analytics'
+import {
+  getContractFromSlug,
+  getContractVisibilityFromSlug,
+} from 'web/lib/supabase/contracts'
+import { visibility } from 'common/contract'
+import { PrivateContractPage } from 'web/components/contract/private-contract'
+import { getAllComments } from 'web/lib/supabase/comments'
+import { getUser } from 'web/lib/supabase/user'
+import {
+  getBetPoints,
+  getHistoryDataBets,
+  getUseBetLimit,
+  shouldUseBetPoints,
+} from 'web/components/contract/contract-page-helpers'
 
-const CONTRACT_BET_FILTER: BetFilter = {
+export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
   filterChallenges: true,
   filterAntes: false,
@@ -77,93 +86,7 @@ const CONTRACT_BET_FILTER: BetFilter = {
 
 type HistoryData = { bets: Bet[]; points: HistoryPoint<Partial<Bet>>[] }
 
-export const getStaticProps = fromPropz(getStaticPropz)
-export async function getStaticPropz(ctx: {
-  params: { username: string; contractSlug: string }
-}) {
-  const { contractSlug } = ctx.params
-  const contract = (await getContractFromSlug(contractSlug)) || null
-  const contractId = contract?.id
-  const totalBets = contractId ? await getTotalBetCount(contractId) : 0
-  const useBetPoints =
-    contract?.outcomeType === 'BINARY' ||
-    contract?.outcomeType === 'PSEUDO_NUMERIC'
-  // Prioritize newer bets via descending order
-  const bets = contractId
-    ? await getBets({
-        contractId,
-        ...CONTRACT_BET_FILTER,
-        limit: useBetPoints ? 50000 : 4000,
-        order: 'desc',
-      })
-    : []
-  const includeAvatar = totalBets < 1000
-  const betPoints = useBetPoints
-    ? bets.map(
-        (bet) =>
-          removeUndefinedProps({
-            x: bet.createdTime,
-            y: bet.probAfter,
-            obj: includeAvatar
-              ? { userAvatarUrl: bet.userAvatarUrl }
-              : undefined,
-          }) as HistoryPoint<Partial<Bet>>
-      )
-    : []
-  const comments = contractId ? await listAllComments(contractId, 100) : []
-
-  const userPositionsByOutcome =
-    contractId && contract?.outcomeType === 'BINARY'
-      ? await getBinaryContractUserContractMetrics(contractId, 100)
-      : {}
-  const topContractMetrics = contract?.resolution
-    ? await getTopContractMetrics(contract.id, 10)
-    : []
-  const totalPositions =
-    contractId && contract?.outcomeType === 'BINARY'
-      ? await getTotalContractMetrics(contractId, db)
-      : 0
-
-  if (useBetPoints && contract) {
-    const firstPoint = {
-      x: contract.createdTime,
-      y: getInitialProbability(contract),
-    }
-    betPoints.push(firstPoint)
-    betPoints.reverse()
-  }
-  const pointsString = pointsToBase64(compressPoints(betPoints))
-
-  const creator = contract && (await getUser(contract.creatorId))
-
-  const relatedContracts = contract
-    ? await getInitialRelatedMarkets(contract)
-    : []
-
-  return {
-    props: removeUndefinedProps({
-      contract,
-      historyData: {
-        bets: useBetPoints ? bets.slice(0, 100) : bets,
-        points: betPoints,
-      },
-      pointsString,
-      comments,
-      userPositionsByOutcome,
-      totalPositions,
-      totalBets,
-      topContractMetrics,
-      creatorTwitter: creator?.twitterHandle,
-      relatedContracts,
-    }),
-  }
-}
-
-export async function getStaticPaths() {
-  return { paths: [], fallback: 'blocking' }
-}
-
-export default function ContractPage(props: {
+type ContractParams = {
   contract: Contract | null
   historyData: HistoryData
   pointsString?: string
@@ -172,56 +95,156 @@ export default function ContractPage(props: {
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
-  creatorTwitter: string | undefined
+  creatorTwitter?: string
   relatedContracts: Contract[]
+}
+
+export async function getStaticProps(ctx: {
+  params: { username: string; contractSlug: string }
 }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    contract: null,
-    historyData: { bets: [], points: [] },
-    pointsString: '',
-    comments: [],
-    userPositionsByOutcome: {},
-    totalBets: 0,
-    topContractMetrics: [],
-    totalPositions: 0,
-    relatedContracts: [],
+  const { contractSlug } = ctx.params
+  const visibility = await getContractVisibilityFromSlug(contractSlug)
+  if (visibility === 'private') {
+    return {
+      props: {
+        visibility,
+        contractSlug,
+      },
+    }
+  } else {
+    const contract = (await getContractFromSlug(contractSlug)) || null
+    const contractId = contract?.id
+    const totalBets = contractId ? await getTotalBetCount(contractId) : 0
+    const useBetPoints = shouldUseBetPoints(contract)
+    // Prioritize newer bets via descending order
+    const bets = contractId
+      ? await getBets({
+          contractId,
+          ...CONTRACT_BET_FILTER,
+          limit: getUseBetLimit(useBetPoints),
+          order: 'desc',
+        })
+      : []
+    const includeAvatar = totalBets < 1000
+    const betPoints = useBetPoints ? getBetPoints(bets, includeAvatar) : []
+    const comments = contractId ? await getAllComments(contractId, 100) : []
+
+    const userPositionsByOutcome =
+      contractId && contract?.outcomeType === 'BINARY'
+        ? await getBinaryContractUserContractMetrics(contractId, 100)
+        : {}
+    const topContractMetrics = contract?.resolution
+      ? await getTopContractMetrics(contract.id, 10)
+      : []
+    const totalPositions =
+      contractId && contract?.outcomeType === 'BINARY'
+        ? await getTotalContractMetrics(contractId, db)
+        : 0
+
+    if (useBetPoints && contract) {
+      const firstPoint = {
+        x: contract.createdTime,
+        y: getInitialProbability(contract),
+      }
+      betPoints.push(firstPoint)
+      betPoints.reverse()
+    }
+    const pointsString = pointsToBase64(compressPoints(betPoints))
+
+    const creator = contract && (await getUser(contract.creatorId))
+
+    const relatedContracts = contract
+      ? await getInitialRelatedMarkets(contract)
+      : []
+
+    return {
+      props: {
+        visibility,
+        contractSlug,
+        contractParams: removeUndefinedProps({
+          contract,
+          historyData: {
+            bets: getHistoryDataBets(useBetPoints, bets),
+            points: betPoints,
+          },
+          pointsString,
+          comments,
+          userPositionsByOutcome,
+          totalPositions,
+          totalBets,
+          topContractMetrics,
+          creatorTwitter: creator?.twitterHandle,
+          relatedContracts,
+        }),
+      },
+    }
   }
+}
+
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export default function ContractPage(props: {
+  visibility: visibility
+  contractSlug: string
+  contractParams?: ContractParams
+}) {
+  const { visibility, contractSlug, contractParams } = props
+  return (
+    <Page maxWidth="max-w-[1400px]">
+      {visibility == 'private' && (
+        <PrivateContractPage contractSlug={contractSlug} />
+      )}
+      {visibility != 'private' && contractParams && (
+        <NonPrivateContractPage contractParams={contractParams} />
+      )}
+    </Page>
+  )
+}
+
+export function NonPrivateContractPage(props: {
+  contractParams: ContractParams
+}) {
+  const { contract, historyData, pointsString } = props.contractParams
 
   const inIframe = useIsIframe()
   if (inIframe) {
-    return <ContractEmbedPage {...props} />
+    return <ContractEmbedPage contract={contract} historyData={historyData} />
   }
-
-  const { contract } = props
-
   if (!contract) {
     return <Custom404 />
   }
-
-  return <ContractPageContent key={contract.id} {...{ ...props, contract }} />
+  return (
+    <>
+      <ContractSEO contract={contract} points={pointsString} />
+      <ContractPageContent
+        key={contract.id}
+        contractParams={props.contractParams}
+      />
+    </>
+  )
 }
 
-export function ContractPageContent(
-  props: Parameters<typeof ContractPage>[0] & {
-    contract: Contract
-  }
-) {
+export function ContractPageContent(props: { contractParams: ContractParams }) {
+  const { contractParams } = props
   const {
     userPositionsByOutcome,
     comments,
     totalPositions,
-    pointsString,
     creatorTwitter,
     relatedContracts,
-  } = props
-  const contract = useContract(props.contract?.id) ?? props.contract
+  } = contractParams
+  const contract =
+    useContract(contractParams.contract?.id) ??
+    (contractParams.contract as Contract)
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
   const [topContractMetrics, setTopContractMetrics] = useState<
     ContractMetric[]
-  >(props.topContractMetrics)
+  >(contractParams.topContractMetrics)
 
   useEffect(() => {
     // If the contract resolves while the user is on the page, get the top contract metrics
@@ -242,27 +265,27 @@ export function ContractPageContent(
   )
 
   // Static props load bets in descending order by time
-  const lastBetTime = first(props.historyData.bets)?.createdTime
+  const lastBetTime = first(contractParams.historyData.bets)?.createdTime
   const newBets = useBets({
     contractId: contract.id,
     afterTime: lastBetTime,
     ...CONTRACT_BET_FILTER,
   })
-  const totalBets = props.totalBets + (newBets?.length ?? 0)
+  const totalBets = contractParams.totalBets + (newBets?.length ?? 0)
   const bets = useMemo(
-    () => props.historyData.bets.concat(newBets ?? []),
-    [props.historyData.bets, newBets]
+    () => contractParams.historyData.bets.concat(newBets ?? []),
+    [contractParams.historyData.bets, newBets]
   )
   const betPoints = useMemo(
     () =>
-      props.historyData.points.concat(
+      contractParams.historyData.points.concat(
         newBets?.map((bet) => ({
           x: bet.createdTime,
           y: bet.probAfter,
           obj: { userAvatarUrl: bet.userAvatarUrl },
         })) ?? []
       ),
-    [props.historyData.points, newBets]
+    [contractParams.historyData.points, newBets]
   )
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
@@ -304,8 +327,7 @@ export function ContractPageContent(
   )
 
   return (
-    <Page maxWidth="max-w-[1400px]">
-      <ContractSEO contract={contract} points={pointsString} />
+    <>
       {creatorTwitter && (
         <Head>
           <meta name="twitter:creator" content={`@${creatorTwitter}`} />
@@ -448,7 +470,7 @@ export function ContractPageContent(
       />
       <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
-    </Page>
+    </>
   )
 }
 

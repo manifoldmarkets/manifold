@@ -1,4 +1,4 @@
-import { CPMMContract } from 'common/contract'
+import { CPMMContract, visibility } from 'common/contract'
 import { run, selectJson, SupabaseClient } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { Contract } from '../firebase/contracts'
@@ -75,4 +75,22 @@ export async function getYourTrendingContracts(
   })
 
   return data?.map((d) => (d as any).data as Contract)
+}
+
+export async function getContractFromSlug(contractSlug: string) {
+  const { data: contract } = await run(
+    db.from('contracts').select('data').eq('data->>slug', contractSlug)
+  )
+  return (contract[0] as unknown as { data: Contract }).data
+}
+
+export async function getContractVisibilityFromSlug(contractSlug: string) {
+  const { data: contractVisibility } = await run(
+    db
+      .from('contracts')
+      .select('data->>visibility')
+      .eq('data->>slug', contractSlug)
+  )
+  return (contractVisibility[0] as unknown as { visibility: visibility })
+    .visibility
 }
