@@ -15,7 +15,7 @@ async function main(question: string) {
   await run(
     db
       .from('contract_embeddings')
-      .insert({ contract_id: 'sxlef', embeddings: embeddings })
+      .insert({ contract_id: 'sxlef', embedding: embeddings })
   )
     .then((res: any) => console.log('inserted embeddings', res))
     .catch((e) => console.log('error', e))
