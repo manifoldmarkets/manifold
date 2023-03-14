@@ -12,7 +12,7 @@ import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
 import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
-import { getUser, getUserByUsername } from 'shared/utils'
+import { log, getUser, getUserByUsername } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -70,6 +70,7 @@ export const changeUser = async (
   const userRef = firestore.collection('users').doc(user.id)
   bulkWriter.update(userRef, removeUndefinedProps(update))
 
+  log('Updating denormalized user data on contracts...')
   const contractRows = await pg.manyOrNone(
     `select id from contracts where data->'creatorId' = $1`,
     [user.id]
@@ -83,7 +84,9 @@ export const changeUser = async (
     const ref = firestore.collection('contracts').doc(row.id)
     bulkWriter.update(ref, contractUpdate)
   }
+  log(`Updated ${contractRows.length} contracts.`)
 
+  log('Updating denormalized user data on comments...')
   const commentRows = await pg.manyOrNone(
     `select contract_id, commment_id from contract_comments where data->'userId' = $1`,
     [user.id]
@@ -101,8 +104,10 @@ export const changeUser = async (
       .doc(row.comment_id)
     bulkWriter.update(ref, commentUpdate)
   }
+  log(`Updated ${commentRows.length} comments.`)
 
-  const betsRows = await pg.manyOrNone(
+  log('Updating denormalized user data on bets...')
+  const betRows = await pg.manyOrNone(
     `select contract_id, bet_id from contract_bets where data->'userId' = $1`,
     [user.id]
   )
@@ -111,7 +116,7 @@ export const changeUser = async (
     userUsername: update.username,
     userAvatarUrl: update.avatarUrl,
   })
-  for (const row of betsRows) {
+  for (const row of betRows) {
     const ref = firestore
       .collection('contracts')
       .doc(row.contract_id)
@@ -119,7 +124,9 @@ export const changeUser = async (
       .doc(row.bet_id)
     bulkWriter.update(ref, betUpdate)
   }
+  log(`Updated ${betRows.length} bets.`)
 
+  log('Updating denormalized user data on contract metrics docs...')
   const contractMetricsRows = await pg.manyOrNone(
     `select contract_id from contract_metrics where user_id = $1`,
     [user.id]
@@ -137,7 +144,9 @@ export const changeUser = async (
       .doc(row.contract_id)
     bulkWriter.update(ref, contractMetricsUpdate)
   }
+  log(`Updated ${contractMetricsRows.length} contract metrics docs.`)
 
+  log('Updating denormalized user data on answers...')
   const answerRows = await pg.manyOrNone(
     `select contract_id, answer_id from contract_answers where data->'userId' = $1`,
     [user.id]
@@ -171,7 +180,8 @@ export const changeUser = async (
       bulkWriter.update(doc.ref, { answers: contract.answers })
     }
   }
+  log(`Updated ${answerRows.length} answers.`)
 
   await bulkWriter.flush()
-  console.log('Done writing!')
+  log('Done writing!')
 }
