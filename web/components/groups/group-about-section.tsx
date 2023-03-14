@@ -39,7 +39,7 @@ function GroupAboutModalContent(props: {
 export function GroupAboutSection(props: {
   group: Group
   canEdit: boolean
-  post: Post | null
+  post: Post | null | undefined
   writingNewAbout: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {
@@ -76,7 +76,7 @@ export function GroupAboutSection(props: {
 export async function savePost(
   editor: Editor | null,
   group: Group,
-  post: Post | null
+  post?: Post | null
 ) {
   if (!editor) return
   // TODO: this should not be a post, should just be rich text field on the group.
@@ -86,7 +86,7 @@ export async function savePost(
     isGroupAboutPost: true,
   }
 
-  if (post == null) {
+  if (!post) {
     const result = await createPost(newPost).catch((e) => {
       console.error(e)
       return e
@@ -103,7 +103,7 @@ export async function savePost(
 
 function EditableGroupAbout(props: {
   group: Group
-  post: Post | null
+  post?: Post | null
   writingNewAbout: boolean
   setWritingNewAbout: (writingNewAbout: boolean) => void
 }) {

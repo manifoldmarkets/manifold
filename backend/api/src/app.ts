@@ -40,6 +40,7 @@ import { removecontractfromgroup } from './remove-contract-from-group'
 import { updategroupprivacy } from './update-group-privacy'
 import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
+import { getuserisgroupmember } from './get-user-is-group-member'
 import { redeemad } from './redeem-ad-reward'
 
 const allowCors: RequestHandler = cors({
@@ -106,6 +107,7 @@ app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
 app.post('/addcontracttogroup', ...apiRoute(addcontracttogroup))
 app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
+app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/redeemad', ...apiRoute(redeemad))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)

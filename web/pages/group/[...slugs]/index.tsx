@@ -1,169 +1,139 @@
 import Router, { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 
-import { Group, groupPath } from 'common/group'
+import { Group, groupPath, PrivacyStatusType } from 'common/group'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Leaderboard } from 'web/components/leaderboard'
 import { SEO } from 'web/components/SEO'
-import { useGroup } from 'web/hooks/use-group'
-import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Contract } from 'web/lib/firebase/contracts'
-import { getGroupBySlug } from 'web/lib/firebase/groups'
-import {
-  getUser,
-  getUsersBlockFacetFilters,
-  User,
-} from 'web/lib/firebase/users'
-import Custom404 from '../../404'
+import { getUsersBlockFacetFilters, User } from 'web/lib/firebase/users'
+import { Custom404Content } from '../../404'
 
-import {
-  ArrowLeftIcon,
-  CheckCircleIcon,
-  PlusCircleIcon,
-  XCircleIcon,
-} from '@heroicons/react/solid'
+import { ArrowLeftIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { GroupComment } from 'common/comment'
 import { ENV_CONFIG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { BETTORS, PrivateUser } from 'common/user'
-import toast from 'react-hot-toast'
-import { IconButton } from 'web/components/buttons/button'
 import { ContractSearch } from 'web/components/contract-search'
-import { AddMarketToGroupModal } from 'web/components/groups/add-market-modal'
+import { AddContractButton } from 'web/components/groups/add-contract-to-group-button'
 import { GroupAboutSection } from 'web/components/groups/group-about-section'
 import BannerImage from 'web/components/groups/group-banner-image'
-import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { GroupOptions } from 'web/components/groups/group-options'
 import GroupPrivacyStatusWidget, {
   GroupMembersWidget,
 } from 'web/components/groups/group-page-items'
 import { GroupPostSection } from 'web/components/groups/group-post-section'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
+import { PrivateGroupPage } from 'web/components/groups/private-group'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useRealtimeRole } from 'web/hooks/use-group-supabase'
+import {
+  useGroupCreator,
+  useRealtimeGroup,
+  useRealtimeRole,
+} from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { usePost, usePosts } from 'web/hooks/use-post'
+import { usePosts } from 'web/hooks/use-post'
+import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { addContractToGroup } from 'web/lib/firebase/api'
-import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
-import { getPost, listPosts } from 'web/lib/firebase/posts'
+import { listPosts } from 'web/lib/firebase/posts'
+import { getGroupFromSlug, getGroupPrivacyBySlug } from 'web/lib/supabase/group'
+import { getPost } from 'web/lib/supabase/post'
+import { getUser } from 'web/lib/supabase/user'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
-export const getStaticProps = fromPropz(getStaticPropz)
-export async function getStaticPropz(props: { params: { slugs: string[] } }) {
+const MAX_LEADERBOARD_SIZE = 50
+
+type GroupParams = {
+  group: Group | null
+  creator: User | null
+  topTraders: { user: User; score: number }[]
+  topCreators: { user: User; score: number }[]
+  messages: GroupComment[] | null
+  aboutPost: Post | null
+  posts: Post[]
+}
+
+export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
+  const groupSlug = slugs[0]
+  const groupPrivacy = await getGroupPrivacyBySlug(groupSlug)
+  if (groupPrivacy === 'private') {
+    return {
+      props: {
+        groupPrivacy,
+        slugs,
+      },
+    }
+  } else {
+    const group = await getGroupFromSlug(slugs[0])
+    const creatorPromise = group ? getUser(group.creatorId) : null
+    const cachedTopTraderIds =
+      (group && group.cachedLeaderboard?.topTraders) ?? []
+    const cachedTopCreatorIds =
+      (group && group.cachedLeaderboard?.topCreators) ?? []
+    const topTraders = await toTopUsers(cachedTopTraderIds)
+    const topCreators = await toTopUsers(cachedTopCreatorIds)
+    const creator = await creatorPromise
+    const aboutPost = group?.aboutPostId
+      ? await getPost(group.aboutPostId)
+      : null
 
-  const group = await getGroupBySlug(slugs[0])
-  const creatorPromise = group ? getUser(group.creatorId) : null
-
-  const messages = group && (await listAllCommentsOnGroup(group.id))
-
-  const cachedTopTraderIds =
-    (group && group.cachedLeaderboard?.topTraders) ?? []
-  const cachedTopCreatorIds =
-    (group && group.cachedLeaderboard?.topCreators) ?? []
-  const topTraders = await toTopUsers(cachedTopTraderIds)
-
-  const topCreators = await toTopUsers(cachedTopCreatorIds)
-
-  const creator = await creatorPromise
-
-  const aboutPost = group?.aboutPostId ? await getPost(group.aboutPostId) : null
-  const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
-    (p) => p != null
-  ) as Post[]
-  return {
-    props: {
-      group,
-      creator,
-      topTraders,
-      topCreators,
-      messages,
-      aboutPost,
-      posts,
-    },
-
-    revalidate: 60, // regenerate after a minute
+    const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
+      (p) => p != null
+    ) as Post[]
+    return {
+      props: {
+        groupPrivacy,
+        slugs,
+        groupParams: {
+          group: group ?? null,
+          creator: creator ?? null,
+          topTraders: topTraders ?? [],
+          topCreators: topCreators ?? [],
+          aboutPost: aboutPost ?? null,
+          posts: posts ?? [],
+        },
+        revalidate: 60, // regenerate after a minute
+      },
+    }
   }
 }
+
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 const groupSubpages = [undefined, 'markets', 'about', 'leaderboards'] as const
 
 export default function GroupPage(props: {
-  group: Group | null
-  memberIds: string[]
-  creator: User | null
-  topTraders: { user: User; score: number }[]
-  topCreators: { user: User; score: number }[]
-  messages: GroupComment[]
-  suggestedFilter: 'open' | 'all'
-  aboutPost: Post | null
-  posts: Post[]
+  groupPrivacy: PrivacyStatusType
+  slugs: string[]
+  groupParams?: GroupParams
 }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    group: null,
-    creator: null,
-    topTraders: [],
-    topCreators: [],
-    messages: [],
-    aboutPost: null,
-    posts: [],
-  }
-  const { creator, topTraders, topCreators, posts } = props
-
-  const router = useRouter()
-
-  const { slugs } = router.query as { slugs: string[] }
-  const page = slugs?.[1] as typeof groupSubpages[number]
-  const tabIndex = ['markets', 'about', 'leaderboards'].indexOf(
-    page === 'about' ? 'about' : page ?? 'markets'
-  )
-
-  const group = useGroup(props.group?.id) ?? props.group
-  const aboutPost = usePost(group?.aboutPostId) ?? props.aboutPost
-
-  let groupPosts = usePosts(group?.postIds ?? []) ?? posts
-
-  if (aboutPost != null) {
-    groupPosts = [aboutPost, ...groupPosts]
-  }
-
-  const user = useUser()
-  const privateUser = usePrivateUser()
-  const userRole = useRealtimeRole(group?.id)
-  const isManifoldAdmin = useAdmin()
-  const [activeIndex, setActiveIndex] = useState(tabIndex)
-  useEffect(() => {
-    setActiveIndex(tabIndex)
-  }, [tabIndex])
-
-  useSaveReferral(user, {
-    defaultReferrerUsername: creator?.username,
-    groupId: group?.id,
-  })
-
-  const [writingNewAbout, setWritingNewAbout] = useState(false)
-  const bannerRef = useRef<HTMLDivElement | null>(null)
-  const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
-  const isMobile = useIsMobile()
-  if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
-    return <Custom404 />
-  }
-  const maxLeaderboardSize = 50
-  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
-
-  const chatEmbed = <ChatEmbed group={group} />
+  const { groupPrivacy, slugs, groupParams } = props
   return (
-    <Page rightSidebar={chatEmbed} touchesTop={true}>
+    <Page touchesTop={true}>
+      {groupPrivacy == 'private' && <PrivateGroupPage slugs={slugs} />}
+      {groupPrivacy != 'private' && groupParams && (
+        <NonPrivateGroupPage groupParams={groupParams} />
+      )}
+    </Page>
+  )
+}
+
+export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
+  const { groupParams } = props
+  const { group } = groupParams
+  if (group === null) {
+    return <Custom404Content />
+  }
+  return (
+    <>
       <SEO
         title={group.name}
         description={
@@ -173,26 +143,70 @@ export default function GroupPage(props: {
         url={groupPath(group.slug)}
         image={group.bannerUrl}
       />
-      {user && isManifoldAdmin && (
-        <AddContractButton
-          group={group}
-          user={user}
-          userRole={'admin'}
-          className="fill-ink-0 fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
-        />
-      )}
-      {user &&
-        !isManifoldAdmin &&
-        (group.privacyStatus == 'public' ||
-          (group.privacyStatus == 'curated' &&
-            (userRole == 'admin' || userRole == 'moderator'))) && (
-          <AddContractButton
-            group={group}
-            user={user}
-            userRole={userRole ?? undefined}
-            className="fill-ink-0 fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-19rem)]"
-          />
-        )}
+      <GroupPageContent groupParams={groupParams} />
+    </>
+  )
+}
+
+export function GroupPageContent(props: { groupParams?: GroupParams }) {
+  const { groupParams } = props
+
+  const router = useRouter()
+  const { slugs } = router.query as { slugs: string[] }
+  const page = slugs?.[1] as typeof groupSubpages[number]
+  const tabIndex = ['markets', 'about', 'leaderboards'].indexOf(
+    page === 'about' ? 'about' : page ?? 'markets'
+  )
+  const [activeIndex, setActiveIndex] = useState(tabIndex)
+  useEffect(() => {
+    setActiveIndex(tabIndex)
+  }, [tabIndex])
+
+  const user = useUser()
+  const isManifoldAdmin = useAdmin()
+  const group = useRealtimeGroup(slugs[0]) ?? groupParams?.group
+  const userRole = useRealtimeRole(group?.id)
+  const isMobile = useIsMobile()
+  const privateUser = usePrivateUser()
+  const [writingNewAbout, setWritingNewAbout] = useState(false)
+  const bannerRef = useRef<HTMLDivElement | null>(null)
+  const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
+  const aboutPost =
+    useRealtimePost(group?.aboutPostId) ?? groupParams?.aboutPost
+
+  const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts ?? []
+  const creator = useGroupCreator(group) ?? groupParams?.creator
+
+  const topTraders =
+    useToTopUsers((group && group.cachedLeaderboard?.topTraders) ?? []) ??
+    groupParams?.topTraders ??
+    []
+
+  const topCreators =
+    useToTopUsers((group && group.cachedLeaderboard?.topCreators) ?? []) ??
+    groupParams?.topCreators ??
+    []
+
+  useSaveReferral(user, {
+    defaultReferrerUsername: creator?.username,
+    groupId: group?.id,
+  })
+
+  if (group === undefined) {
+    return <></>
+  }
+  if (group === null || !groupSubpages.includes(page) || slugs[2]) {
+    return <Custom404Content />
+  }
+  const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
+  return (
+    <>
+      <AddContractButton
+        group={group}
+        user={user}
+        userRole={userRole}
+        className=" fixed bottom-16 right-2 z-50 lg:right-[17.5%] lg:bottom-4 xl:right-[calc(50%-26rem)]"
+      />
       {isMobile && (
         <TopGroupNavBar
           group={group}
@@ -285,7 +299,7 @@ export default function GroupPage(props: {
                   includeProbSorts
                   fromGroupProps={{
                     group: group,
-                    userRole: isManifoldAdmin ? 'admin' : userRole,
+                    userRole: isManifoldAdmin ? 'admin' : userRole ?? null,
                   }}
                 />
               ),
@@ -312,13 +326,13 @@ export default function GroupPage(props: {
                       topUsers={topTraders}
                       title={`🏅 Top ${BETTORS}`}
                       header="Profit"
-                      maxToShow={maxLeaderboardSize}
+                      maxToShow={MAX_LEADERBOARD_SIZE}
                     />
                     <GroupLeaderboard
                       topUsers={topCreators}
                       title="🏅 Top creators"
                       header="Number of traders"
-                      maxToShow={maxLeaderboardSize}
+                      maxToShow={MAX_LEADERBOARD_SIZE}
                       noFormatting={true}
                     />
                   </div>
@@ -328,7 +342,7 @@ export default function GroupPage(props: {
           ]}
         />
       </div>
-    </Page>
+    </>
   )
 }
 
@@ -399,27 +413,6 @@ export function TopGroupNavBar(props: {
   )
 }
 
-// For now, just embed the DestinyGG chat embed on their group page
-function ChatEmbed(props: { group: Group }) {
-  const { group } = props
-  const destinyGroupId = 'W2ES30fRo6CCbPNwMTTj'
-  if (group.id === destinyGroupId) {
-    return (
-      <div className="h-[90vh]">
-        <iframe
-          src="https://www.destiny.gg/embed/chat"
-          width="100%"
-          height="100%"
-          frameBorder="0"
-          scrolling="no"
-          allowFullScreen
-        />
-      </div>
-    )
-  }
-  return null
-}
-
 function GroupLeaderboard(props: {
   topUsers: { user: User; score: number }[]
   title: string
@@ -456,62 +449,11 @@ function GroupLeaderboard(props: {
   )
 }
 
-function AddContractButton(props: {
-  group: Group
-  user: User
-  userRole?: groupRoleType
-  className?: string
-}) {
-  const { group, user, className, userRole } = props
-  const [open, setOpen] = useState(false)
-
-  async function onSubmit(contracts: Contract[]) {
-    await Promise.all(
-      contracts.map((contract) =>
-        addContractToGroup({
-          groupId: group.id,
-          contractId: contract.id,
-        }).catch((e) => console.log(e))
-      )
-    )
-      .then(() =>
-        toast('Succesfully added markets!', {
-          icon: <CheckCircleIcon className={'h-5 w-5 text-green-500'} />,
-        })
-      )
-      .catch(() =>
-        toast('Error adding markets. Try again?', {
-          icon: <XCircleIcon className={'h-5 w-5 text-red-500'} />,
-        })
-      )
-  }
-
-  return (
-    <div className={className}>
-      <IconButton
-        size="md"
-        onClick={() => setOpen(true)}
-        className="drop-shadow hover:drop-shadow-lg"
-      >
-        <div className="bg-canvas-0 relative h-12 w-12 rounded-full">
-          <PlusCircleIcon className="text-primary-700 absolute -left-2 -top-2 h-16 w-16 drop-shadow" />
-        </div>
-      </IconButton>
-      <AddMarketToGroupModal
-        group={group}
-        user={user}
-        open={open}
-        setOpen={setOpen}
-        onAddMarkets={onSubmit}
-        userRole={userRole}
-      />
-    </div>
-  )
-}
+type UserStats = { user: User; score: number }
 
 const toTopUsers = async (
   cachedUserIds: { userId: string; score: number }[]
-): Promise<{ user: User; score: number }[]> =>
+): Promise<{ user: User | null; score: number }[]> =>
   (
     await Promise.all(
       cachedUserIds.map(async (e) => {
@@ -520,3 +462,15 @@ const toTopUsers = async (
       })
     )
   ).filter((e) => e.user != null)
+
+function useToTopUsers(
+  cachedUserIds: { userId: string; score: number }[]
+): UserStats[] | null {
+  const [topUsers, setTopUsers] = useState<UserStats[]>([])
+  useEffect(() => {
+    toTopUsers(cachedUserIds).then((result) =>
+      setTopUsers(result as UserStats[])
+    )
+  }, [cachedUserIds])
+  return topUsers && topUsers.length > 0 ? topUsers : null
+}

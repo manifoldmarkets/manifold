@@ -1,9 +1,11 @@
 import { JSONContent } from '@tiptap/core'
+import { Group } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { groupRoleType } from 'web/components/groups/group-member-modal'
 import { db } from 'web/lib/supabase/db'
 import {
+  getGroupFromSlug,
   getGroupMemberIds,
   getGroupMembers,
   getGroupOfRole,
@@ -11,6 +13,7 @@ import {
   getNumGroupMembers,
   MEMBER_LOAD_NUM,
 } from 'web/lib/supabase/group'
+import { getUser } from 'web/lib/supabase/user'
 import { useAdmin } from './use-admin'
 import { useUser } from './use-user'
 
@@ -20,7 +23,7 @@ export function useRealtimeRole(groupId: string | undefined) {
   const isManifoldAdmin = useAdmin()
   useEffect(() => {
     setTranslatedMemberRole(groupId, isManifoldAdmin, setUserRole, user)
-  }, [user])
+  }, [user, isManifoldAdmin, groupId])
   useEffect(() => {
     const channel = db.channel('user-group-role-realtime')
     channel.on(
@@ -237,4 +240,53 @@ export async function setTranslatedMemberRole(
   } else {
     setRole(null)
   }
+}
+
+export function useRealtimeGroup(groupSlug: string) {
+  const [group, setGroup] = useState<Group | null>(null)
+  function fetchGroup() {
+    getGroupFromSlug(groupSlug)
+      .then((result) => {
+        setGroup(result)
+      })
+      .catch((e) => console.log(e))
+  }
+
+  useEffect(() => {
+    fetchGroup()
+  }, [])
+
+  useEffect(() => {
+    const channel = db.channel('group-realtime')
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'groups',
+        filter: `data->>slug=eq.${groupSlug}`,
+      },
+      (payload) => {
+        console.log('GROUP PAYLOAD', payload)
+        if (payload.eventType === 'UPDATE') {
+          setGroup(payload.new.data)
+        }
+      }
+    )
+    channel.subscribe(async (status) => {})
+    return () => {
+      db.removeChannel(channel)
+    }
+  }, [db])
+  return group
+}
+
+export function useGroupCreator(group?: Group | null) {
+  const [creator, setCreator] = useState<User | null>(null)
+  useEffect(() => {
+    if (group && group.creatorId) {
+      getUser(group.creatorId).then((result) => setCreator(result))
+    }
+  }, [group])
+  return creator
 }

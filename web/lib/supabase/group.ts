@@ -1,8 +1,9 @@
-import { db } from './db'
+import { Group, PrivacyStatusType } from 'common/group'
 import { run } from 'common/supabase/utils'
-import { User } from '../firebase/users'
-import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { uniqBy } from 'lodash'
+import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
+import { User } from '../firebase/users'
+import { db } from './db'
 
 // functions called for one group
 export async function getNumGroupMembers(groupId: string) {
@@ -122,4 +123,22 @@ export async function searchUserInGroup(
     [...exactData, ...prefixData, ...containsData],
     'member_id'
   ).slice(0, limit)
+}
+
+export async function getGroupPrivacyBySlug(groupSlug: string) {
+  const { data: groupPrivacy } = await run(
+    db
+      .from('groups')
+      .select('data->>privacyStatus')
+      .eq('data->>slug', groupSlug)
+  )
+  return (groupPrivacy[0] as unknown as { privacyStatus: PrivacyStatusType })
+    .privacyStatus
+}
+
+export async function getGroupFromSlug(groupSlug: string) {
+  const { data: group } = await run(
+    db.from('groups').select('data').eq('data->>slug', groupSlug)
+  )
+  return group[0].data as Group
 }
