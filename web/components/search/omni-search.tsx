@@ -39,8 +39,8 @@ export const OmniSearch = (props: {
     <Combobox
       as="div"
       onChange={({ slug }: Option) => {
-        setOpen?.(false)
         router.push(slug)
+        setOpen?.(false)
         onSelect?.()
       }}
       className={clsx('bg-canvas-0 relative flex flex-col', className)}
@@ -162,20 +162,42 @@ const SectionTitle = (props: { children: ReactNode }) => (
   <h2 className="text-ink-500 mt-2 mb-1 px-1 text-sm">{props.children}</h2>
 )
 
-const ResultOption = (props: { value: Option; children: ReactNode }) => (
-  <Combobox.Option value={props.value}>
-    {({ active }) => (
-      <div
-        className={clsx(
-          'mb-1 cursor-pointer select-none rounded-md px-3 py-2',
-          active && 'bg-primary-100 text-primary-800'
-        )}
-      >
-        {props.children}
-      </div>
-    )}
-  </Combobox.Option>
-)
+const ResultOption = (props: { value: Option; children: ReactNode }) => {
+  const { value, children } = props
+
+  return (
+    <Combobox.Option value={value}>
+      {({ active }) => (
+        <div
+          // modify click event before it bubbles higher to trick Combobox into thinking this is a normal click event
+          onClick={(e) => {
+            e.defaultPrevented = false
+          }}
+        >
+          <a
+            className={clsx(
+              'mb-1 block cursor-pointer select-none rounded-md px-3 py-2',
+              active && 'bg-primary-100 text-primary-800'
+            )}
+            onClick={(e) => {
+              if (e.ctrlKey || e.shiftKey || e.metaKey || e.button === 1) {
+                // if openned in new tab/window don't switch this page
+                e.stopPropagation()
+              } else {
+                // if click normally, don't hard refresh. Let Combobox onChange handle routing instead of this <a>
+                e.preventDefault()
+              }
+              return true
+            }}
+            href={value.slug}
+          >
+            {children}
+          </a>
+        </div>
+      )}
+    </Combobox.Option>
+  )
+}
 
 const MarketResults = (props: { markets: Contract[] }) => {
   const markets = props.markets
