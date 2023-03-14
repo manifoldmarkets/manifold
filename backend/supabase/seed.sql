@@ -375,6 +375,36 @@ create policy "admin write access" on contract_recommendation_features
   to service_role;
 create index if not exists contract_recommendation_features_freshness_score on contract_recommendation_features (freshness_score desc);
 
+create table if not exists user_embeddings (
+    user_id text not null primary key,
+    created_at timestamp not null default now(),
+    interest_embedding vector(1536) not null
+);
+alter table user_embeddings enable row level security;
+drop policy if exists "public read" on user_embeddings;
+create policy "public read" on user_embeddings for select using (true);
+drop policy if exists "admin write access" on user_embeddings;
+create policy "admin write access" on user_embeddings
+  as PERMISSIVE FOR ALL
+  to service_role;
+
+create table if not exists contract_embeddings (
+    contract_id text not null primary key,
+    created_at timestamp not null default now(),
+    embedding vector(1536) not null
+);
+alter table contract_embeddings enable row level security;
+drop policy if exists "public read" on contract_embeddings;
+create policy "public read" on contract_embeddings for select using (true);
+drop policy if exists "admin write access" on contract_embeddings;
+create policy "admin write access" on contract_embeddings
+  as PERMISSIVE FOR ALL
+  to service_role;
+
+create index if not exists contract_embeddings_embedding on contract_embeddings 
+  using ivfflat (embedding vector_cosine_ops)
+  with (lists = 100);
+
 begin;
   drop publication if exists supabase_realtime;
   create publication supabase_realtime;

@@ -531,10 +531,6 @@ begin
 end;
 $$;
 
-create index on contract_embeddings 
-using ivfflat (embedding vector_cosine_ops)
-with (lists = 100);
-
 create or replace function closest_contract_embeddings (
   input_contract_id text,
   similarity_threshold float,
