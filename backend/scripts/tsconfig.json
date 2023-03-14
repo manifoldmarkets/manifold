@@ -10,6 +10,7 @@
     "paths": {
       "common/*": ["../../common/src/*", "../../../common/lib/*"],
       "functions/*": ["../functions/src/*", "../../functions/lib/*"],
+      "api/*": ["../api/src/*", "../../api/lib/*"],
       "shared/*": ["../shared/src/*", "../../shared/lib/*"],
       "scripts/*": ["./src/*"]
     }
@@ -26,6 +27,9 @@
     },
     {
       "path": "../functions"
+    },
+    {
+      "path": "../api"
     }
   ],
   "compileOnSave": true

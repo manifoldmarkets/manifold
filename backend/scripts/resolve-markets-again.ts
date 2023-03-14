@@ -3,7 +3,7 @@ initAdmin()
 
 import { zip } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { resolveMarket } from 'functions/api/resolve-market'
+import { resolveMarket } from 'api/resolve-market'
 import { getContract, getUser } from 'shared/utils'
 
 if (require.main === module) {

@@ -2,7 +2,7 @@ import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
 import { getUserByUsername } from 'shared/utils'
-import { changeUser } from 'functions/api/change-user-info'
+import { changeUser } from 'api/change-user-info'
 
 async function main() {
   const username = process.argv[2]
