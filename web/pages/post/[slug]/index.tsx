@@ -37,7 +37,6 @@ import { getUsersWhoSkipped, getUsersWhoWatched } from 'web/lib/supabase/ads'
 import { formatMoney } from 'common/util/format'
 import { Ad } from 'common/ad'
 import { TimerClaimBox } from 'web/pages/ad'
-import { redeemAd } from 'web/lib/firebase/api'
 import { useRouter } from 'next/router'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
