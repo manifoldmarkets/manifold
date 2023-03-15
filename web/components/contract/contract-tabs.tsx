@@ -1,14 +1,17 @@
 import clsx from 'clsx'
+import { ContractMetrics } from 'common/calculate-metrics'
+import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { groupBy, last, sortBy } from 'lodash'
+import { capitalize, groupBy, last, partition, sortBy } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
+import { db } from 'web/lib/supabase/db'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FreeResponseComments } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { Bet } from 'common/bet'
-import { AnyContractType, Contract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { ContractBetsTable } from '../bet/bets-list'
 import { ControlledTabs } from '../layout/tabs'
 import { Col } from '../layout/col'
@@ -42,13 +45,18 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetric } from 'common/contract-metric'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
-import { formatWithCommas, shortFormatNumber } from 'common/util/format'
+import {
+  formatMoney,
+  formatWithCommas,
+  shortFormatNumber,
+} from 'common/util/format'
 import { useBets } from 'web/hooks/use-bets'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { getTotalBetCount } from 'web/lib/firebase/bets'
 import { QfTrades } from './qf-overview'
+import { User } from 'common/user'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -184,13 +192,38 @@ const BinaryUserPositionsTabContent = memo(
     setTotalPositions: (count: number) => void
   }) {
     const { contractId, setTotalPositions } = props
-    const outcomes = ['YES', 'NO']
-    const positions =
-      useContractMetrics(contractId, 100, outcomes) ?? props.positions
     const [page, setPage] = useState(0)
     const pageSize = 20
-    const yesPositionsSorted = positions.YES ?? []
-    const noPositionsSorted = positions.NO ?? []
+    const outcomes = ['YES', 'NO']
+    const currentUser = useUser()
+    const followedUsers = useFollows(currentUser?.id)
+    const [contractMetricsByProfit, setContractMetricsByProfit] = useState<
+      ContractMetrics[] | undefined
+    >()
+    const [sortBy, setSortBy] = useState<'profit' | 'shares'>('shares')
+
+    useEffect(() => {
+      if (sortBy === 'profit' && contractMetricsByProfit === undefined) {
+        getContractMetricsForContractId(contractId, db, sortBy).then(
+          setContractMetricsByProfit
+        )
+      }
+    }, [contractId, contractMetricsByProfit, sortBy])
+
+    const [positiveProfitPositions, negativeProfitPositions] = useMemo(() => {
+      const [positiveProfitPositions, negativeProfitPositions] = partition(
+        contractMetricsByProfit ?? [],
+        (cm) => cm.profit > 0
+      )
+      return [positiveProfitPositions, negativeProfitPositions.reverse()]
+    }, [contractMetricsByProfit])
+
+    const positions =
+      useContractMetrics(contractId, 100, outcomes) ?? props.positions
+    const yesPositionsSorted =
+      sortBy === 'shares' ? positions.YES ?? [] : positiveProfitPositions
+    const noPositionsSorted =
+      sortBy === 'shares' ? positions.NO ?? [] : negativeProfitPositions
     useEffect(() => {
       // Let's use firebase here as supabase can be slightly out of date, leading to incorrect counts
       getTotalContractMetricsCount(contractId).then(setTotalPositions)
@@ -211,35 +244,76 @@ const BinaryUserPositionsTabContent = memo(
 
     return (
       <Col className={'w-full '}>
+        <Row className={'mb-2 items-center justify-end gap-2'}>
+          {sortBy === 'profit' && contractMetricsByProfit === undefined && (
+            <LoadingIndicator spinnerClassName={'border-ink-500'} size={'sm'} />
+          )}
+          <SortRow
+            sort={capitalize(sortBy)}
+            onSortClick={() => {
+              setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
+              setPage(0)
+            }}
+          />
+        </Row>
+
         <Row className={'gap-8'}>
           <Col className={'w-full max-w-sm gap-2'}>
             <Row className={'text-ink-500 justify-end px-2'}>
-              <span>
-                <YesLabel /> shares
-              </span>
+              {sortBy === 'profit' ? (
+                <span className={'text-ink-500'}>Profit</span>
+              ) : (
+                <span>
+                  <YesLabel /> shares
+                </span>
+              )}
             </Row>
             {visibleYesPositions.map((position) => {
+              const outcome = 'YES'
               return (
                 <PositionRow
-                  key={position.userId + '-YES'}
-                  outcome={'YES'}
+                  key={position.userId + outcome}
                   position={position}
+                  outcome={outcome}
+                  currentUser={currentUser}
+                  followedUsers={followedUsers}
+                  numberToShow={
+                    sortBy === 'shares'
+                      ? formatWithCommas(
+                          Math.floor(position.totalShares[outcome] ?? 0)
+                        )
+                      : formatMoney(position.profit)
+                  }
                 />
               )
             })}
           </Col>
           <Col className={'w-full max-w-sm gap-2'}>
             <Row className={'text-ink-500 justify-end px-2'}>
-              <span>
-                <NoLabel /> shares
-              </span>
+              {sortBy === 'profit' ? (
+                <span className={'text-ink-500'}>Loss</span>
+              ) : (
+                <span>
+                  <NoLabel /> shares
+                </span>
+              )}
             </Row>
             {visibleNoPositions.map((position) => {
+              const outcome = 'NO'
               return (
                 <PositionRow
-                  key={position.userId + '-NO'}
+                  key={position.userId + outcome}
                   position={position}
-                  outcome={'NO'}
+                  outcome={outcome}
+                  currentUser={currentUser}
+                  followedUsers={followedUsers}
+                  numberToShow={
+                    sortBy === 'shares'
+                      ? formatWithCommas(
+                          Math.floor(position.totalShares[outcome] ?? 0)
+                        )
+                      : formatMoney(position.profit)
+                  }
                 />
               )
             })}
@@ -259,14 +333,13 @@ const BinaryUserPositionsTabContent = memo(
 const PositionRow = memo(function PositionRow(props: {
   position: ContractMetric
   outcome: 'YES' | 'NO'
+  numberToShow: string
+  currentUser: User | undefined | null
+  followedUsers: string[] | undefined
 }) {
-  const { position, outcome } = props
-  const { totalShares, userName, userUsername, userAvatarUrl } = position
-  const shares = totalShares[outcome] ?? 0
+  const { position, outcome, currentUser, followedUsers, numberToShow } = props
+  const { userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
-
-  const currentUser = useUser()
-  const followedUsers = useFollows(currentUser?.id)
 
   return (
     <Row
@@ -294,7 +367,7 @@ const PositionRow = memo(function PositionRow(props: {
           'shrink-0'
         )}
       >
-        {formatWithCommas(Math.floor(shares))}
+        {numberToShow}
       </span>
     </Row>
   )
@@ -354,21 +427,21 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   return (
     <>
       {user && <ContractCommentInput className="mb-5" contract={contract} />}
-
-      <SortRow
-        comments={comments}
-        contract={contract}
-        sort={sort}
-        onSortClick={() => {
-          setSort(sort === 'Newest' ? 'Best' : 'Newest')
-          track('change-comments-sort', {
-            contractSlug: contract.slug,
-            contractName: contract.question,
-            totalComments: comments.length,
-            totalUniqueTraders: contract.uniqueBettorCount,
-          })
-        }}
-      />
+      {comments.length > 0 && (
+        <SortRow
+          sort={sort}
+          onSortClick={() => {
+            setSort(sort === 'Newest' ? 'Best' : 'Newest')
+            track('change-comments-sort', {
+              contractSlug: contract.slug,
+              contractName: contract.question,
+              totalComments: comments.length,
+              totalUniqueTraders: contract.uniqueBettorCount,
+            })
+          }}
+        />
+      )}
+      <div className={'mt-2'} />
       {contract.outcomeType === 'FREE_RESPONSE' && (
         <FreeResponseComments
           contract={contract}
@@ -491,20 +564,12 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   )
 })
 
-export function SortRow(props: {
-  comments: ContractComment[]
-  contract: Contract<AnyContractType>
-  sort: 'Best' | 'Newest'
-  onSortClick: () => void
-}) {
-  const { comments, sort, onSortClick } = props
-  if (comments.length <= 0) {
-    return <></>
-  }
+export function SortRow(props: { sort: string; onSortClick: () => void }) {
+  const { sort, onSortClick } = props
   return (
-    <Row className="mb-4 items-center justify-end gap-4">
+    <Row className="items-center justify-end gap-4">
       <Row className="items-center gap-1">
-        <div className="text-ink-400 text-sm">Sort by:</div>
+        <span className="text-ink-400 text-sm">Sort by:</span>
         <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>
           <Tooltip text={sort === 'Best' ? 'Most likes first' : ''}>
             <Row className="items-center gap-1">
