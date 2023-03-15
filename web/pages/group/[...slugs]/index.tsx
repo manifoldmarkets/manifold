@@ -44,7 +44,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listPosts } from 'web/lib/firebase/posts'
 import { getGroupFromSlug, getGroupPrivacyBySlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
-import { getUser } from 'web/lib/supabase/user'
+import { getUser, getUsers } from 'web/lib/supabase/user'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
@@ -453,15 +453,16 @@ type UserStats = { user: User; score: number }
 
 const toTopUsers = async (
   cachedUserIds: { userId: string; score: number }[]
-): Promise<{ user: User | null; score: number }[]> =>
-  (
-    await Promise.all(
-      cachedUserIds.map(async (e) => {
-        const user = await getUser(e.userId)
-        return { user, score: e.score ?? 0 }
-      })
-    )
-  ).filter((e) => e.user != null)
+): Promise<{ user: User | null; score: number }[]> => {
+  const userData = await getUsers(cachedUserIds.map((u) => u.userId))
+  const usersById = Object.fromEntries(userData.map((u) => [u.id, u as User]))
+  return cachedUserIds
+    .map((e) => ({
+      user: usersById[e.userId],
+      score: e.score,
+    }))
+    .filter((e) => e.user != null)
+}
 
 function useToTopUsers(
   cachedUserIds: { userId: string; score: number }[]

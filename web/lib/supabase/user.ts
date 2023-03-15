@@ -12,3 +12,12 @@ export async function getUser(userId: string) {
     return null
   }
 }
+
+export async function getUsers(userIds: string[]) {
+  const { data } = await run(db.from('users').select('data').in('id', userIds))
+  if (data && data.length > 0) {
+    return data.map((d) => d.data as User)
+  } else {
+    return []
+  }
+}
