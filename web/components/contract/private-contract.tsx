@@ -7,11 +7,11 @@ import {
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
-import { compressPoints, pointsToBase64 } from 'common/util/og'
+import { removeUndefinedProps } from 'common/util/object'
 import { useEffect, useState } from 'react'
 import { useBetCount, useBets } from 'web/hooks/use-bets-supabase'
 import { useComments } from 'web/hooks/use-comments-supabase'
-import { useContractFromSlug } from 'web/hooks/use-contract-supabase'
+import { usePrivateContract } from 'web/hooks/use-contracts'
 import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import {
@@ -30,14 +30,9 @@ import {
 import {
   getBetPoints,
   getHistoryDataBets,
-  getPointsString,
   getUseBetLimit,
   shouldUseBetPoints,
 } from './contract-page-helpers'
-import { removeUndefinedProps } from 'common/util/object'
-import Custom404 from 'web/pages/404'
-import { usePrivateContract } from 'web/hooks/use-contracts'
-import { Any } from '@react-spring/types'
 
 export function PrivateContractPage(props: { contractSlug: string }) {
   const { contractSlug } = props
@@ -56,31 +51,31 @@ export function ContractParamsPageContent(props: {
   contract: Contract<AnyContractType>
 }) {
   const { contract } = props
-  const contractParams = getContractParams(contract)
+  const contractParams = useContractParams(contract)
   return <ContractPageContent contractParams={contractParams} />
 }
 
-export function getContractParams(contract: Contract) {
-  const contractId = contract?.id
+export function useContractParams(contract: Contract) {
+  const contractId = contract.id
   const useBetPoints = shouldUseBetPoints(contract)
-  const totalBets = contractId ? useBetCount(contractId) : 0
-  const bets = contractId
-    ? useBets(contractId, getUseBetLimit(useBetPoints))
-    : []
+  const totalBets = useBetCount(contractId)
+  const bets = useBets(contractId, getUseBetLimit(useBetPoints))
   const includeAvatar = totalBets < 1000
   const betPoints = useBetPoints ? getBetPoints(bets, includeAvatar) : []
-  const comments = contractId ? useComments(contractId, 100) : []
+  const comments = useComments(contractId, 100)
   const userPositionsByOutcome =
     contractId && contract?.outcomeType === 'BINARY'
       ? getBinaryContractUserContractMetrics(contractId, 100)
       : {}
-  const topContractMetrics = contract?.resolution
-    ? useTopContractMetrics(contract?.id, 10)
-    : []
-  const totalPositions =
-    contractId && contract?.outcomeType === 'BINARY'
-      ? useTotalPositions(contractId)
-      : 0
+  const topContractMetrics = useTopContractMetrics(
+    contractId,
+    10,
+    contract.resolution
+  )
+  const totalPositions = useTotalPositions(
+    contractId,
+    contract.outcomeType === 'BINARY'
+  )
 
   if (useBetPoints && contract) {
     const firstPoint = {
@@ -92,9 +87,9 @@ export function getContractParams(contract: Contract) {
     betPoints.push(firstPoint)
     betPoints.reverse()
   }
-  const creator = contract && useUserById(contract.creatorId)
+  const creator = useUserById(contract.creatorId)
 
-  const relatedContracts = contract ? useRelatedContracts(contract) : []
+  const relatedContracts = useRelatedContracts(contract)
 
   return removeUndefinedProps({
     contract,
@@ -116,7 +111,10 @@ export function useBinaryContractUserContractMetrics(
   contractId: string,
   limit: number
 ) {
-  const [userPositionsByOutcome, setUserPositionsByOutcome] = useState<{}>({})
+  const [userPositionsByOutcome, setUserPositionsByOutcome] = useState<{
+    YES: ContractMetric[]
+    NO: ContractMetric[]
+  }>({ YES: [], NO: [] })
 
   useEffect(() => {
     if (contractId) {
@@ -129,13 +127,17 @@ export function useBinaryContractUserContractMetrics(
   return userPositionsByOutcome
 }
 
-export function useTopContractMetrics(contractId: string, limit: number) {
+export function useTopContractMetrics(
+  contractId: string,
+  limit: number,
+  contractResolution?: string
+) {
   const [topContractMetrics, setTopContractMetrics] = useState<
     ContractMetric[]
   >([])
 
   useEffect(() => {
-    if (contractId) {
+    if (contractId && contractResolution) {
       getTopContractMetrics(contractId, limit).then((result) =>
         setTopContractMetrics(result)
       )
@@ -145,11 +147,11 @@ export function useTopContractMetrics(contractId: string, limit: number) {
   return topContractMetrics
 }
 
-export function useTotalPositions(contractId: string) {
+export function useTotalPositions(contractId: string, shouldUse: boolean) {
   const [totalPositions, setTotalPositions] = useState<number>(0)
 
   useEffect(() => {
-    if (contractId) {
+    if (contractId && shouldUse) {
       getTotalContractMetrics(contractId, db).then((result) =>
         setTotalPositions(result)
       )

@@ -1,87 +1,85 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { first } from 'lodash'
 import clsx from 'clsx'
+import { first } from 'lodash'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { ContractOverview } from 'web/components/contract/contract-overview'
-import { Col } from 'web/components/layout/col'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { Spacer } from 'web/components/layout/spacer'
-import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
-import { SEO } from 'web/components/SEO'
-import { Page } from 'web/components/layout/page'
-import { Bet, BetFilter } from 'web/lib/firebase/bets'
-import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
-import Custom404 from '../404'
-import { AnswersPanel } from 'web/components/answers/answers-panel'
-import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
-import { useIsIframe } from 'web/hooks/use-is-iframe'
-import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { useBets } from 'web/hooks/use-bets'
-import { AlertBox } from 'web/components/widgets/alert-box'
-import { useTracking } from 'web/hooks/use-tracking'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
-import { ContractDescription } from 'web/components/contract/contract-description'
-import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
-import { useAdmin } from 'web/hooks/use-admin'
-import { UserBetsSummary } from 'web/components/bet/bet-summary'
-import { listAllComments } from 'web/lib/firebase/comments'
-import { ContractComment } from 'common/comment'
-import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { Answer } from 'common/answer'
-import { useEvent } from 'web/hooks/use-event'
-import { useContract } from 'web/hooks/use-contracts'
-import {
-  getBinaryContractUserContractMetrics,
-  ContractMetricsByOutcome,
-  getTopContractMetrics,
-} from 'web/lib/firebase/contract-metrics'
-import { removeUndefinedProps } from 'common/util/object'
-import { ContractMetric } from 'common/contract-metric'
-import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
-import { HistoryPoint } from 'web/components/charts/generic-charts'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { BackRow } from 'web/components/contract/back-row'
-import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
-import { ResolutionPanel } from 'web/components/resolution-panel'
-import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
-import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
-import { QfResolutionPanel } from 'web/components/contract/qf-overview'
-import { compressPoints, pointsToBase64 } from 'common/util/og'
 import { getInitialProbability } from 'common/calculate'
-import Head from 'next/head'
-import { Linkify } from 'web/components/widgets/linkify'
-import { ContractDetails } from 'web/components/contract/contract-details'
-import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
-import { Row } from 'web/components/layout/row'
-import {
-  getInitialRelatedMarkets,
-  useRelatedMarkets,
-} from 'web/hooks/use-related-contracts'
-import { track } from 'web/lib/service/analytics'
-import {
-  getContractFromSlug,
-  getContractVisibilityFromSlug,
-} from 'web/lib/supabase/contracts'
+import { ContractComment } from 'common/comment'
 import {
   BinaryContract,
   PseudoNumericContract,
   visibility,
 } from 'common/contract'
-import { PrivateContractPage } from 'web/components/contract/private-contract'
-import { getAllComments } from 'web/lib/supabase/comments'
-import { getUser } from 'web/lib/supabase/user'
+import { ContractMetric } from 'common/contract-metric'
+import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
+import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
+import { removeUndefinedProps } from 'common/util/object'
+import { compressPoints, pointsToBase64 } from 'common/util/og'
+import Head from 'next/head'
+import { AnswersPanel } from 'web/components/answers/answers-panel'
+import { UserBetsSummary } from 'web/components/bet/bet-summary'
+import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
+import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
+import { HistoryPoint } from 'web/components/charts/generic-charts'
+import { BackRow } from 'web/components/contract/back-row'
+import { ContractDescription } from 'web/components/contract/contract-description'
+import { ContractDetails } from 'web/components/contract/contract-details'
+import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
+import { ContractOverview } from 'web/components/contract/contract-overview'
 import {
   getBetPoints,
   getHistoryDataBets,
   getUseBetLimit,
   shouldUseBetPoints,
 } from 'web/components/contract/contract-page-helpers'
+import { ContractTabs } from 'web/components/contract/contract-tabs'
+import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
+import { PrivateContractPage } from 'web/components/contract/private-contract'
+import { QfResolutionPanel } from 'web/components/contract/qf-overview'
+import { RelatedContractsList } from 'web/components/contract/related-contracts-widget'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
+import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
+import { ResolutionPanel } from 'web/components/resolution-panel'
+import { SEO } from 'web/components/SEO'
+import { AlertBox } from 'web/components/widgets/alert-box'
+import { Linkify } from 'web/components/widgets/linkify'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useBets } from 'web/hooks/use-bets'
+import { useContract } from 'web/hooks/use-contracts'
+import { useEvent } from 'web/hooks/use-event'
+import { useIsIframe } from 'web/hooks/use-is-iframe'
+import {
+  getInitialRelatedMarkets,
+  useRelatedMarkets,
+} from 'web/hooks/use-related-contracts'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useTracking } from 'web/hooks/use-tracking'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { Bet, BetFilter } from 'web/lib/firebase/bets'
+import {
+  ContractMetricsByOutcome,
+  getBinaryContractUserContractMetrics,
+  getTopContractMetrics,
+} from 'web/lib/firebase/contract-metrics'
+import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
+import { track } from 'web/lib/service/analytics'
+import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
+import { getAllComments } from 'web/lib/supabase/comments'
+import {
+  getContractFromSlug,
+  getContractVisibilityFromSlug,
+} from 'web/lib/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
+import { getUser } from 'web/lib/supabase/user'
+import Custom404 from '../404'
+import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
