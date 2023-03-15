@@ -95,7 +95,7 @@ export const onCreateBet = functions
       bettor
     )
     await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
-    await updateUserInterestEmbedding(pg, bettor.id)
+    // await updateUserInterestEmbedding(pg, bettor.id)
     // Referrals should always be handled before the betting streak bc they both use lastBetTime
     handleReferral(bettor, eventId).then(async () => {
       await updateBettingStreak(bettor, bet, contract, eventId)
