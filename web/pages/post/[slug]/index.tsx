@@ -113,17 +113,15 @@ export default function PostPage(props: {
         </EditInPlaceInput>
         <div className="h-2" />
         <Row className="mt-4 items-center">
-          <Col className="flex-1 px-2">
-            <div className={'inline-flex'}>
-              <div className="text-ink-500 mr-1">Created by</div>
-              <UserLink
-                className="text-ink-700"
-                name={creator.name}
-                username={creator.username}
-              />
-            </div>
-          </Col>
-          <Row className="items-center gap-2 sm:pr-2">
+          <div className="flex px-2">
+            <div className="text-ink-500 mr-1">Created by</div>
+            <UserLink
+              className="text-ink-700"
+              name={creator.name}
+              username={creator.username}
+            />
+          </div>
+          <Row className="items-center sm:pr-2">
             <CopyLinkButton
               linkIconOnlyProps={{
                 tooltip: 'Copy link to post',
