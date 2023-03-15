@@ -357,7 +357,8 @@ export function MarketResolvedNotification(props: {
     sourceUserUsername,
     sourceContractTitle,
   } = notification
-  const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
+  const { userInvestment, userPayout, profitRank, totalShareholders } =
+    (data as ContractResolutionData) ?? {}
   const profit = userPayout - userInvestment
   const profitable = profit > 0 && userInvestment > 0
   const [opacity, setOpacity] = useState(highlighted && profitable ? 1 : 0)
@@ -370,7 +371,12 @@ export function MarketResolvedNotification(props: {
         setOpacity(opacity - 0.02)
       }, opacity * 100)
   }, [isVisible, opacity])
-
+  console.log(data)
+  const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
+  const comparison =
+    profitRank && totalShareholders && betterThan > 0
+      ? `you outperformed ${betterThan} other${betterThan > 1 ? 's' : ''}!`
+      : ''
   const subtitle =
     sourceText === 'CANCEL' && userInvestment > 0 ? (
       <>Your {formatMoney(userInvestment)} invested has been returned to you</>
@@ -378,11 +384,15 @@ export function MarketResolvedNotification(props: {
       <>Your {formatMoney(-userPayout)} in profit has been removed</>
     ) : profitable ? (
       <>
-        Your {formatMoney(userInvestment)} investment won{' '}
-        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit!
+        Your {formatMoney(userInvestment)} won{' '}
+        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit
+        {comparison ? `, and ${comparison}` : ``}
       </>
     ) : userInvestment > 0 ? (
-      <>You lost {formatMoney(Math.abs(profit))}</>
+      <>
+        You lost {formatMoney(Math.abs(profit))}
+        {comparison ? `, but ${comparison}` : ``}
+      </>
     ) : (
       <div />
     )

@@ -299,6 +299,9 @@ export type ContractResolutionData = {
   outcome: string
   userPayout: number
   userInvestment: number
+  profitRank?: number
+  totalShareholders?: number
+  profit?: number
 }
 
 export function getSourceIdForLinkComponent(

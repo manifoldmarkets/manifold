@@ -16,7 +16,7 @@ export async function updateContractMetricsForUsers(
 
   Object.entries(betsByUser).forEach(([userId, bets]) => {
     const metrics = calculateUserMetrics(contract, bets)
-    writer.update(
+    writer.set(
       firestore.collection(`users/${userId}/contract-metrics`).doc(contract.id),
       metrics
     )

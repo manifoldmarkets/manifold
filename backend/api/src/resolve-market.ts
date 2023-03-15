@@ -200,9 +200,9 @@ export const resolveMarket = async (
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
 
-  const userInvestments = mapValues(
+  const userIdToContractMetrics = mapValues(
     groupBy(bets, (bet) => bet.userId),
-    (bets) => getContractBetMetrics(contract, bets).invested
+    (bets) => getContractBetMetrics(contract, bets)
   )
 
   await createContractResolvedNotifications(
@@ -212,13 +212,9 @@ export const resolveMarket = async (
     probabilityInt,
     value,
     {
-      bets,
-      userInvestments,
+      userIdToContractMetrics,
       userPayouts: userPayoutsWithoutLoans,
-      creator,
       creatorPayout,
-      contract,
-      outcome,
       resolutionProbability,
       resolutions,
     }
