@@ -195,7 +195,7 @@ export function CommentInputTextArea(props: {
   }, [editor])
 
   return (
-    <TextEditor editor={editor}>
+    <TextEditor editor={editor} simple>
       {user && !isSubmitting && (
         <button
           className="text-ink-400 hover:text-ink-600 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"

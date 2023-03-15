@@ -41,22 +41,20 @@ export default function Create() {
         description="Create a play-money prediction market on any question."
         url="/create"
       />
-      <div className="mx-auto w-full max-w-2xl">
-        <div className="rounded-lg px-6 py-4 sm:py-0">
-          <Title>Create a market</Title>
+      <div className="mx-auto w-full max-w-2xl px-6 py-4 lg:py-0">
+        <Title>Create a market</Title>
 
-          <div className="text-ink-700 mb-4">
-            Set up your own play-money prediction market on any question.{' '}
-            <SiteLink
-              href="https://help.manifold.markets/manifold-101#ec8a2d8520654fe2be28caf61fb5d0e6"
-              className="text-primary-700"
-            >
-              Learn more...
-            </SiteLink>
-          </div>
-
-          <NewContractPanel params={params} creator={user} />
+        <div className="text-ink-700 mb-4">
+          Set up your own play-money prediction market on any question.{' '}
+          <SiteLink
+            href="https://help.manifold.markets/manifold-101#ec8a2d8520654fe2be28caf61fb5d0e6"
+            className="text-primary-700"
+          >
+            Learn more...
+          </SiteLink>
         </div>
+
+        <NewContractPanel params={params} creator={user} />
       </div>
     </Page>
   )
