@@ -167,7 +167,7 @@ const getMobileNav = (toggleModal: () => void) => {
       name: `Ads - earn ${formatMoney(10)} per view!`,
       icon: SpeakerphoneIcon,
       href: '/ad',
-    },
+    }
   )
 }
 
