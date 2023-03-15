@@ -42,6 +42,17 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
     const contract = contractSnap.data() as Contract
     const firebaseUser = await admin.auth().getUser(auth.uid)
 
+    if (contract.visibility == 'private') {
+      throw new APIError(400, 'You cannot add a group to a private contract')
+    }
+
+    if (group.privacyStatus == 'private') {
+      throw new APIError(
+        400,
+        'You cannot an unassociated market to a private group'
+      )
+    }
+
     // check if contract already exists in group
     if (
       contract.groupLinks &&

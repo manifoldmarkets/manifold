@@ -41,7 +41,7 @@ import { updategroupprivacy } from './update-group-privacy'
 import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
-import { getcanaccesscontract } from './get-can-access-contract'
+import { getprivatecontractbyslug } from './get-private-contract-by-slug'
 import { redeemad } from './redeem-ad-reward'
 
 const allowCors: RequestHandler = cors({
@@ -109,7 +109,7 @@ app.post('/addcontracttogroup', ...apiRoute(addcontracttogroup))
 app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
-app.post('/getcanaccesscontract', ...apiRoute(getcanaccesscontract))
+app.post('/getprivatecontractbyslug', ...apiRoute(getprivatecontractbyslug))
 app.post('/redeemad', ...apiRoute(redeemad))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)

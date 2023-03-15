@@ -244,7 +244,8 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   } = contractParams
   const contract =
     useContract(contractParams.contract?.id) ??
-    (contractParams.contract as Contract)
+    (contractParams.contract as Contract) ??
+    null
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()

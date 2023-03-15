@@ -15,13 +15,13 @@ import {
   newIndex,
   trendingIndex,
 } from 'web/lib/service/algolia'
-import { CPMMBinaryContract } from 'common/contract'
+import { AnyContractType, CPMMBinaryContract } from 'common/contract'
 import { zipObject } from 'lodash'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useStore, useStoreItems } from './use-store'
 import { filterDefined } from 'common/util/array'
 import { useUser } from './use-user'
-import { getCanAccessContract } from 'web/lib/firebase/api'
+import { getPrivateContractBySlug } from 'web/lib/firebase/api'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -171,25 +171,27 @@ export const useContracts = (
   return useStoreItems(filterDefined(contractIds), listenForContract, options)
 }
 
-export function useCanAccessContract(contractSlug: string, delay: number) {
-  const [canAccess, setCanAccess] = useState<any>(undefined)
+export function usePrivateContract(contractSlug: string, delay: number) {
+  const [privateContract, setPrivateContract] = useState<
+    Contract<AnyContractType> | undefined | null
+  >(undefined)
   const user = useUser()
   useEffect(() => {
     // if there is no user
     if (user === null) {
-      setCanAccess(false)
+      setPrivateContract(null)
     } else if (user) {
       // need this timeout (1 sec works) or else get "must be signed in to make API calls" error
       setTimeout(
         () =>
-          getCanAccessContract({ contractSlug: contractSlug }).then(
+          getPrivateContractBySlug({ contractSlug: contractSlug }).then(
             (result) => {
-              setCanAccess(result)
+              setPrivateContract(result as Contract<AnyContractType>)
             }
           ),
         delay
       )
     }
   }, [contractSlug, user])
-  return canAccess
+  return privateContract
 }

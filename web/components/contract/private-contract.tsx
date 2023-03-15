@@ -12,7 +12,6 @@ import { useEffect, useState } from 'react'
 import { useBetCount, useBets } from 'web/hooks/use-bets-supabase'
 import { useComments } from 'web/hooks/use-comments-supabase'
 import { useContractFromSlug } from 'web/hooks/use-contract-supabase'
-import { useCanAccessContract } from 'web/hooks/use-contracts'
 import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import {
@@ -36,32 +35,32 @@ import {
   shouldUseBetPoints,
 } from './contract-page-helpers'
 import { removeUndefinedProps } from 'common/util/object'
+import Custom404 from 'web/pages/404'
+import { usePrivateContract } from 'web/hooks/use-contracts'
+import { Any } from '@react-spring/types'
 
 export function PrivateContractPage(props: { contractSlug: string }) {
   const { contractSlug } = props
-  const canAccess = useCanAccessContract(contractSlug, 1000)
+  const contract = usePrivateContract(contractSlug, 1000)
 
-  if (canAccess === undefined) {
+  if (contract === undefined) {
     return <LoadingPrivateThing />
-  } else if (canAccess === false)
+  } else if (contract === null)
     return <InaccessiblePrivateThing thing="market" />
   else {
-    return (
-      <ContractPageContent contractParams={getContractParams(contractSlug)} />
-    )
+    return <ContractParamsPageContent contract={contract} />
   }
 }
 
-// export function AccessGantedPrivateContractPage(props: {
-//   contractSlug: string
-// }) {
-//   const { contractSlug } = props
-//   const canAccess = useCanAccessContract(contractSlug, 1000)
+export function ContractParamsPageContent(props: {
+  contract: Contract<AnyContractType>
+}) {
+  const { contract } = props
+  const contractParams = getContractParams(contract)
+  return <ContractPageContent contractParams={contractParams} />
+}
 
-// }
-
-export function getContractParams(contractSlug: string) {
-  const contract = useContractFromSlug(contractSlug)
+export function getContractParams(contract: Contract) {
   const contractId = contract?.id
   const useBetPoints = shouldUseBetPoints(contract)
   const totalBets = contractId ? useBetCount(contractId) : 0
@@ -76,7 +75,7 @@ export function getContractParams(contractSlug: string) {
       ? getBinaryContractUserContractMetrics(contractId, 100)
       : {}
   const topContractMetrics = contract?.resolution
-    ? useTopContractMetrics(contract.id, 10)
+    ? useTopContractMetrics(contract?.id, 10)
     : []
   const totalPositions =
     contractId && contract?.outcomeType === 'BINARY'
@@ -93,9 +92,6 @@ export function getContractParams(contractSlug: string) {
     betPoints.push(firstPoint)
     betPoints.reverse()
   }
-
-  const pointsString = getPointsString(betPoints)
-
   const creator = contract && useUserById(contract.creatorId)
 
   const relatedContracts = contract ? useRelatedContracts(contract) : []
@@ -106,7 +102,6 @@ export function getContractParams(contractSlug: string) {
       bets: getHistoryDataBets(useBetPoints, bets),
       points: betPoints,
     },
-    pointsString,
     comments,
     userPositionsByOutcome,
     totalPositions,

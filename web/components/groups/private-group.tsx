@@ -37,7 +37,7 @@ export function InaccessiblePrivateThing(props: { thing: string }) {
   return (
     <Col className="mt-24 h-full w-full items-center justify-center lg:mt-0">
       <LockClosedIcon className="text-ink-400 h-36 w-36" />
-      <div>`You do not have access to this ${thing}!`</div>
+      <div>You do not have access to this {thing}!</div>
     </Col>
   )
 }
