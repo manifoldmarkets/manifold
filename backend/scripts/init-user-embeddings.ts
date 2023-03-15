@@ -4,9 +4,9 @@ initAdmin()
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 
-const pg = createSupabaseDirectClient()
-
 async function main() {
+  const pg = createSupabaseDirectClient()
+
   console.log('Starting init-user-embeddings.ts...')
   const userIds = await pg.map(
     'select id from users',

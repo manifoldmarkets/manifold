@@ -8,10 +8,10 @@ import {
 } from 'shared/supabase/init'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 
-const db = createSupabaseClient()
-const pg = createSupabaseDirectClient()
-
 async function main() {
+  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
+
   const result = await run(db.from('contract_embeddings').select('contract_id'))
 
   const contractIds = new Set(result.data.map((row: any) => row.contract_id))
