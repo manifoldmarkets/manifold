@@ -163,6 +163,7 @@ const getMobileNav = (toggleModal: () => void) => {
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
+    { name: 'Share with friends', href: '/referrals', icon: CashIcon }, // remove this and I will beat you — SG
     {
       name: `Ads - earn ${formatMoney(10)} per view!`,
       icon: SpeakerphoneIcon,
