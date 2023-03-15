@@ -38,7 +38,6 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxn, TxnData } from 'shared/run-txn'
 import { Group } from 'common/group'
-import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'functions/secrets'
 
