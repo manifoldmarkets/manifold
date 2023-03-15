@@ -31,11 +31,7 @@ import { PrivateGroupPage } from 'web/components/groups/private-group'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { useAdmin } from 'web/hooks/use-admin'
-import {
-  useGroupCreator,
-  useRealtimeGroup,
-  useRealtimeRole,
-} from 'web/hooks/use-group-supabase'
+import { useGroupCreator, useRealtimeRole } from 'web/hooks/use-group-supabase'
 import { useIntersection } from 'web/hooks/use-intersection'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePosts } from 'web/hooks/use-post'
@@ -164,7 +160,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
 
   const user = useUser()
   const isManifoldAdmin = useAdmin()
-  const group = useRealtimeGroup(slugs[0]) ?? groupParams?.group
+  const group = groupParams?.group
   const userRole = useRealtimeRole(group?.id)
   const isMobile = useIsMobile()
   const privateUser = usePrivateUser()
