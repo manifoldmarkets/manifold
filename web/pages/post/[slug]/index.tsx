@@ -33,6 +33,12 @@ import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
 import { richTextToString } from 'common/util/parse'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { getUsersWhoSkipped, getUsersWhoWatched } from 'web/lib/supabase/ads'
+import { formatMoney } from 'common/util/format'
+import { Ad } from 'common/ad'
+import { TimerClaimBox } from 'web/pages/ad'
+import { redeemAd } from 'web/lib/firebase/api'
+import { useRouter } from 'next/router'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -41,11 +47,22 @@ export async function getStaticProps(props: { params: { slug: string } }) {
   const creator = post ? await getUser(post.creatorId) : null
   const comments = post && (await listAllCommentsOnPost(post.id))
 
+  let watched: string[] = []
+  let skipped: string[] = []
+  if (post?.type === 'ad') {
+    ;[watched, skipped] = await Promise.all([
+      getUsersWhoWatched(post.id),
+      getUsersWhoSkipped(post.id),
+    ])
+  }
+
   return {
     props: {
       post,
       creator,
       comments,
+      watchedCount: watched.length,
+      skippedCount: skipped.length,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -60,8 +77,10 @@ export default function PostPage(props: {
   post: Post | null
   creator: User
   comments: PostComment[]
+  watchedCount?: number
+  skippedCount?: number
 }) {
-  const { creator } = props
+  const { creator, watchedCount, skippedCount } = props
   const postId = props.post?.id ?? '_'
   const post = usePost(postId) ?? props.post
 
@@ -122,12 +141,57 @@ export default function PostPage(props: {
           </div>
         </div>
 
+        {post.type === 'ad' && (
+          <AdSection
+            ad={post as Ad}
+            watchedCount={watchedCount ?? 0}
+            skippedCount={skippedCount ?? 0}
+            user={user}
+          />
+        )}
+
         <Spacer h={4} />
         <div className="rounded-lg px-6 py-4 sm:py-0">
           <PostCommentsActivity post={post} comments={comments} tips={tips} />
         </div>
       </div>
     </Page>
+  )
+}
+
+function AdSection(props: {
+  ad: Ad
+  skippedCount: number
+  watchedCount: number
+  user: User | null | undefined
+}) {
+  const { ad, skippedCount, watchedCount, user } = props
+  const router = useRouter()
+
+  return (
+    <>
+      {ad.creatorId !== user?.id && ad.funds > ad.costPerView && (
+        <>
+          <div className="mt-4 w-full text-center">
+            This post is promoted! Reward for reading:
+          </div>
+          <TimerClaimBox
+            ad={ad}
+            onNext={() => router.push('/ad')}
+            className="mt-2"
+          />
+        </>
+      )}
+      <div className="bg-canvas-0 mt-4 flex justify-between gap-4 rounded-md p-4">
+        <span>Ad Analytics</span>
+        <span>
+          {watchedCount} watches, {skippedCount} skips
+        </span>
+        <span>
+          {formatMoney(ad.funds)} left at {formatMoney(ad.costPerView)} per view
+        </span>
+      </div>
+    </>
   )
 }
 

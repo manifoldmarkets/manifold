@@ -2,6 +2,7 @@ import { JSONContent } from '@tiptap/core'
 
 export type Post = {
   id: string
+  type?: string
   title: string
   /** @deprecated */
   subtitle?: string
