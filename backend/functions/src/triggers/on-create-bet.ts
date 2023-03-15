@@ -45,7 +45,7 @@ const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
 
 export const onCreateBet = functions
-  .runWith({ secrets: ['MAILGUN_KEY', 'API_SECRET'] })
+  .runWith({ secrets: ['MAILGUN_KEY', 'API_SECRET', 'SUPABASE_PASSWORD'] })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
     const pg = createSupabaseDirectClient()
