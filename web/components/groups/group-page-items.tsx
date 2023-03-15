@@ -1,5 +1,5 @@
 import { UserGroupIcon } from '@heroicons/react/solid'
-import { Group, PrivacyStatusType } from 'common/group'
+import { Group } from 'common/group'
 import { useState } from 'react'
 import { useRealtimeNumGroupMembers } from 'web/hooks/use-group-supabase'
 import { Modal } from '../layout/modal'
