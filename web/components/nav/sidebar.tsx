@@ -168,7 +168,6 @@ const getMobileNav = (toggleModal: () => void) => {
       icon: SpeakerphoneIcon,
       href: '/ad',
     },
-    { name: 'Sitemap', icon: MapIcon, href: '/sitemap' }
   )
 }
 
