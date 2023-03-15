@@ -38,6 +38,8 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { runTxn, TxnData } from 'shared/run-txn'
 import { Group } from 'common/group'
+import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -46,6 +48,8 @@ export const onCreateBet = functions
   .runWith({ secrets: ['MAILGUN_KEY', 'API_SECRET'] })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
+    const pg = createSupabaseDirectClient()
+
     const { contractId } = context.params as {
       contractId: string
     }
@@ -90,6 +94,7 @@ export const onCreateBet = functions
       bettor
     )
     await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
+    await updateUserInterestEmbedding(pg, bettor.id)
     // Referrals should always be handled before the betting streak bc they both use lastBetTime
     handleReferral(bettor, eventId).then(async () => {
       await updateBettingStreak(bettor, bet, contract, eventId)

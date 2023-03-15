@@ -2,10 +2,7 @@ import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import {
-  getAverageContractEmbedding,
-  getInterestedContractIds,
-} from 'shared/helpers/embeddings'
+import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 
 const pg = createSupabaseDirectClient()
 
@@ -18,17 +15,7 @@ async function main() {
   )
   for (const userId of userIds) {
     console.log('userId', userId)
-    await pg.task('get-user-embedding', async (pg) => {
-      const interestedContractIds = await getInterestedContractIds(pg, userId)
-      const userEmbedding = await getAverageContractEmbedding(
-        pg,
-        interestedContractIds
-      )
-      await pg.none(
-        'insert into user_embeddings (user_id, interest_embedding) values ($1, $2) on conflict (user_id) do update set interest_embedding = $2',
-        [userId, userEmbedding]
-      )
-    })
+    await updateUserInterestEmbedding(pg, userId)
   }
 }
 
