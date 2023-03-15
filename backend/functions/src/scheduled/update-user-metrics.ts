@@ -21,6 +21,7 @@ import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
+import { secrets } from 'functions/secrets'
 
 const firestore = admin.firestore()
 
@@ -28,7 +29,7 @@ export const updateUserMetrics = functions
   .runWith({
     memory: '1GB',
     timeoutSeconds: 540,
-    secrets: ['API_SECRET', 'SUPABASE_PASSWORD'],
+    secrets,
   })
   .pubsub.schedule('every 1 minutes')
   .onRun(async () => {

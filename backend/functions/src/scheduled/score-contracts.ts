@@ -13,12 +13,13 @@ import {
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { logit } from 'common/util/math'
 import { bulkUpdate } from 'shared/supabase/utils'
+import { secrets } from 'functions/secrets'
 
 export const scoreContracts = functions
   .runWith({
     memory: '1GB',
     timeoutSeconds: 540,
-    secrets: ['SUPABASE_KEY', 'SUPABASE_PASSWORD'],
+    secrets,
   })
   .pubsub.schedule('every 1 hours')
   .onRun(async () => {

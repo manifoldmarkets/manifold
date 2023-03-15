@@ -40,12 +40,13 @@ import { runTxn, TxnData } from 'shared/run-txn'
 import { Group } from 'common/group'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { secrets } from 'functions/secrets'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
 
 export const onCreateBet = functions
-  .runWith({ secrets: ['MAILGUN_KEY', 'API_SECRET', 'SUPABASE_PASSWORD'] })
+  .runWith({ secrets })
   .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
     const pg = createSupabaseDirectClient()

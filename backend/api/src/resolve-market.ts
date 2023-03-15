@@ -115,8 +115,6 @@ const pseudoNumericSchema = z.union([
   }),
 ])
 
-const opts = { secrets: ['MAILGUN_KEY', 'API_SECRET'] }
-
 export const resolvemarket = authEndpoint(async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
   const contractDoc = firestore.doc(`contracts/${contractId}`)

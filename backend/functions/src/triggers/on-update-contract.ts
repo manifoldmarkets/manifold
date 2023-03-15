@@ -6,9 +6,10 @@ import * as admin from 'firebase-admin'
 
 import { GroupContractDoc } from 'common/group'
 import { isEqual } from 'lodash'
+import { secrets } from 'functions/secrets'
 
 export const onUpdateContract = functions
-  .runWith({ secrets: ['API_SECRET'] })
+  .runWith({ secrets })
   .firestore.document('contracts/{contractId}')
   .onUpdate(async (change, context) => {
     const contract = change.after.data() as Contract

@@ -10,10 +10,11 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { dreamWithDefaultParams } from 'shared/dream-utils'
 import { getImagePrompt, generateEmbeddings } from 'shared/helpers/openai-utils'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { secrets } from 'functions/secrets'
 
 export const onCreateContract = functions
   .runWith({
-    secrets: ['MAILGUN_KEY', 'DREAM_KEY', 'OPENAI_API_KEY', 'SUPABASE_KEY'],
+    secrets,
   })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {

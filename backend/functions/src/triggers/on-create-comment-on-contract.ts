@@ -19,6 +19,7 @@ import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
+import { secrets } from 'functions/secrets'
 
 const firestore = admin.firestore()
 
@@ -84,7 +85,7 @@ async function getPriorContractBets(
 
 export const onCreateCommentOnContract = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540 })
-  .runWith({ secrets: ['MAILGUN_KEY', 'API_SECRET'] })
+  .runWith({ secrets })
   .firestore.document('contracts/{contractId}/comments/{commentId}')
   .onCreate(async (change, context) => {
     const { contractId } = context.params as {

@@ -15,6 +15,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
+import { secrets } from 'functions/secrets'
 
 const firestore = admin.firestore()
 
@@ -427,7 +428,7 @@ export const updateStats = functions
   .runWith({
     memory: '2GB',
     timeoutSeconds: 540,
-    secrets: ['SUPABASE_PASSWORD'],
+    secrets,
   })
   .pubsub.schedule('every 60 minutes')
   .onRun(updateStatsCore)

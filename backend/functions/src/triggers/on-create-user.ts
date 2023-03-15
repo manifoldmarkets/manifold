@@ -11,9 +11,10 @@ import {
   sendPersonalFollowupEmail,
   sendWelcomeEmail,
 } from 'shared/emails'
+import { secrets } from 'functions/secrets'
 
 export const onCreateUser = functions
-  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .runWith({ secrets })
   .firestore.document('users/{userId}')
   .onCreate(async (snapshot) => {
     const user = snapshot.data() as User
