@@ -21,6 +21,9 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
 import { uniq } from 'lodash'
 import clsx from 'clsx'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { postPath } from 'web/lib/firebase/posts'
 
 export async function getStaticProps() {
   const ads = await getAllAds()
@@ -72,15 +75,23 @@ function Ad(props: { ad: AdType; onNext: () => void }) {
   const comments = useCommentsOnPost(ad.id) ?? []
   const tips = useTipTxns({ postId: ad.id })
 
+  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(ad.slug)}`
+
   return (
     <div className="flex w-full max-w-2xl flex-col self-center">
       <div className="bg-canvas-0 rounded-lg p-4 sm:p-6">
         <Content size="lg" content={ad.content} />
       </div>
 
-      <div className="mx-4 mt-1 mb-4">
-        <span className="text-ink-500 mr-1">Created by</span>
-        <UserLink username={ad.creatorUsername} name={ad.creatorName} />
+      <div className="mx-4 mt-1 mb-4 flex justify-between">
+        <div>
+          <span className="text-ink-500 mr-1">Created by</span>
+          <UserLink username={ad.creatorUsername} name={ad.creatorName} />
+        </div>
+        <CopyLinkButton
+          url={shareUrl}
+          linkIconOnlyProps={{ tooltip: 'Copy link to ad' }}
+        />
       </div>
 
       <TimerClaimBox ad={ad} onNext={onNext} className="my-5" />
