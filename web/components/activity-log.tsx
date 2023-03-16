@@ -115,7 +115,9 @@ export function ActivityLog(props: {
       ...bets.map((b) => b.contractId),
       ...comments.map((c) => c.contractId),
     ])
-  ).concat(newContracts ?? [])
+  )
+    .concat(newContracts ?? [])
+    .filter((c) => c.visibility !== 'unlisted')
   const contractsById = keyBy(contracts, 'id')
 
   const startIndex =
