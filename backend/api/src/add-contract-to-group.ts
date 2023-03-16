@@ -49,7 +49,7 @@ export const addcontracttogroup = authEndpoint(async (req, auth) => {
     if (group.privacyStatus == 'private') {
       throw new APIError(
         400,
-        'You cannot an unassociated market to a private group'
+        'You cannot add an existing public market to a private group'
       )
     }
 
