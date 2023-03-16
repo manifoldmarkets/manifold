@@ -293,7 +293,10 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                   defaultFilter="all"
                   additionalFilter={{
                     groupSlug: group.slug,
-                    facetFilters: getUsersBlockFacetFilters(privateUser, true),
+                    facetFilters: [
+                      ...getUsersBlockFacetFilters(privateUser, true),
+                      'visibility:public',
+                    ],
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
