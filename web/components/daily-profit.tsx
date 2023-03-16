@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
-import { getUserEventsCount } from 'web/lib/supabase/user-events'
+import { getUserEventsCount } from 'common/supabase/user-events'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'

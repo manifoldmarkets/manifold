@@ -13,27 +13,11 @@ import { NativeShareData } from 'common/native-share-data'
 import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
 import { getIsNative } from 'web/lib/native/is-native'
-
-// This list makes it easier to track all the different share/copy link events, esp. for the quests flow
-const CopyLinkEventNames = [
-  'copy market link',
-  'copy creator market link',
-  'copy dream link',
-  'copy group link',
-  'copy manalink',
-  'copy ad link',
-  'copy post link',
-  'copy referral link',
-  'copy weekly profit link',
-  'copy twitch link',
-  'copy styles link',
-] as const
-
-type CopyLinkEvent = typeof CopyLinkEventNames[number]
+import { ShareEventName, ShareEvent } from 'common/events'
 
 export function CopyLinkButton(props: {
   url: string
-  eventTrackingName: CopyLinkEvent
+  eventTrackingName: ShareEventName
   linkIconOnlyProps?: {
     tooltip: string
     className?: string
@@ -65,7 +49,7 @@ export function CopyLinkButton(props: {
       setTimeout(() => setIconPressed(false), 1000)
       copyToClipboard(url)
     }
-    track(eventTrackingName, { url, type: 'copy sharing link' })
+    track(eventTrackingName, { url, type: 'copy sharing link' } as ShareEvent)
   }
 
   const Button = (props: { onClick: () => void }) => {
