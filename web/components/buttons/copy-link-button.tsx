@@ -82,9 +82,7 @@ export function CopyLinkButton(props: {
         bgPressed ? 'bg-primary-50 text-primary-500 transition-none' : ''
       )}
     >
-      <div className="ml-3 w-full max-w-xs select-all truncate sm:max-w-full">
-        {displayUrl ?? url}
-      </div>
+      <div className="ml-3 w-full select-all truncate">{displayUrl ?? url}</div>
       <Button onClick={onClick} />
     </Row>
   )
