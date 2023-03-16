@@ -4,6 +4,7 @@ import { APIError, authEndpoint, validate } from './helpers'
 const bodySchema = z.object({
   contractSlug: z.string(),
 })
+import { getUserIsMember } from 'shared/helpers/get-user-is-member'
 
 export const getprivatecontractbyslug = authEndpoint(async (req, auth) => {
   const { contractSlug } = validate(bodySchema, req.body)
@@ -43,15 +44,7 @@ export const getprivatecontractbyslug = authEndpoint(async (req, auth) => {
   const groupId = contract.groupLinks[0].groupId
 
   // checks if user is member
-  const userCanAccess = (
-    await pg.one(
-      `select exists(
-        select * from group_role
-        where group_id = '${groupId}'
-        and member_id='${auth.uid}'
-        )`
-    )
-  ).exists
+  const userCanAccess = await getUserIsMember(pg, groupId, auth.uid)
 
   if (userCanAccess) {
     return contract

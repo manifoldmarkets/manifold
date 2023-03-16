@@ -1,6 +1,10 @@
 import { AnyContractType, Contract } from 'common/contract'
 import { useEffect, useState } from 'react'
-import { getContractFromSlug } from 'web/lib/supabase/contracts'
+import {
+  getContractFromSlug,
+  getContractParams,
+} from 'web/lib/supabase/contracts'
+import { ContractParams } from 'web/pages/[username]/[contractSlug]'
 
 export const useContractFromSlug = (contractSlug: string | undefined) => {
   const [contract, setContract] = useState<Contract | undefined>(undefined)
@@ -14,4 +18,26 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
   }, [contractSlug])
 
   return contract as Contract<AnyContractType>
+}
+
+export const useContractParams = (contract: Contract) => {
+  const [contractParams, setContractParams] = useState<ContractParams>({
+    contract: contract,
+    historyData: {
+      bets: [],
+      points: [],
+    },
+    comments: [],
+    userPositionsByOutcome: {},
+    totalPositions: 0,
+    totalBets: 0,
+    topContractMetrics: [],
+    relatedContracts: [],
+  })
+
+  useEffect(() => {
+    getContractParams(contract).then((result) => setContractParams(result))
+  }, [contract])
+
+  return contractParams
 }

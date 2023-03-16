@@ -74,6 +74,7 @@ import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { getAllComments } from 'web/lib/supabase/comments'
 import {
   getContractFromSlug,
+  getContractParams,
   getContractVisibilityFromSlug,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
@@ -116,71 +117,13 @@ export async function getStaticProps(ctx: {
     }
   } else {
     const contract = (await getContractFromSlug(contractSlug)) || null
-    const contractId = contract?.id
-    const totalBets = contractId ? await getTotalBetCount(contractId) : 0
-    const useBetPoints = shouldUseBetPoints(contract)
-    // Prioritize newer bets via descending order
-    const bets = contractId
-      ? await getBets({
-          contractId,
-          ...CONTRACT_BET_FILTER,
-          limit: getUseBetLimit(useBetPoints),
-          order: 'desc',
-        })
-      : []
-    const includeAvatar = totalBets < 1000
-    const betPoints = useBetPoints ? getBetPoints(bets, includeAvatar) : []
-    const comments = contractId ? await getAllComments(contractId, 100) : []
-
-    const userPositionsByOutcome =
-      contractId && contract?.outcomeType === 'BINARY'
-        ? await getBinaryContractUserContractMetrics(contractId, 100)
-        : {}
-    const topContractMetrics = contract?.resolution
-      ? await getTopContractMetrics(contract.id, 10)
-      : []
-    const totalPositions =
-      contractId && contract?.outcomeType === 'BINARY'
-        ? await getTotalContractMetrics(contractId, db)
-        : 0
-
-    if (useBetPoints && contract) {
-      const firstPoint = {
-        x: contract.createdTime,
-        y: getInitialProbability(
-          contract as BinaryContract | PseudoNumericContract
-        ),
-      }
-      betPoints.push(firstPoint)
-      betPoints.reverse()
-    }
-    const pointsString = pointsToBase64(compressPoints(betPoints))
-
-    const creator = contract && (await getUser(contract.creatorId))
-
-    const relatedContracts = contract
-      ? await getInitialRelatedMarkets(contract)
-      : []
+    const contractParams = await getContractParams(contract)
 
     return {
       props: {
         visibility,
         contractSlug,
-        contractParams: removeUndefinedProps({
-          contract,
-          historyData: {
-            bets: getHistoryDataBets(useBetPoints, bets),
-            points: betPoints,
-          },
-          pointsString,
-          comments,
-          userPositionsByOutcome,
-          totalPositions,
-          totalBets,
-          topContractMetrics,
-          creatorTwitter: creator?.twitterHandle,
-          relatedContracts,
-        }),
+        contractParams: contractParams,
       },
     }
   }
@@ -242,8 +185,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
   } = contractParams
   const contract =
     useContract(contractParams.contract?.id) ??
-    (contractParams.contract as Contract) ??
-    null
+    (contractParams.contract as Contract)
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()
