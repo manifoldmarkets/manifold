@@ -214,7 +214,7 @@ const getPortfolioHistorySnapshots = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select distinct on (user_id) *
+      `select distinct on (user_id) user_id, ts, investment_value, balance, total_deposits
       from user_portfolio_history
       where ts < $2 and user_id in ($1:list)
       order by user_id, ts desc`,
