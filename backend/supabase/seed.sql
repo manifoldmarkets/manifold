@@ -61,11 +61,8 @@ create table if not exists user_portfolio_history (
 alter table user_portfolio_history enable row level security;
 drop policy if exists "public read" on user_portfolio_history;
 create policy "public read" on user_portfolio_history for select using (true);
-create index if not exists user_portfolio_history_gin on user_portfolio_history using GIN (data);
-create index if not exists user_portfolio_history_timestamp on user_portfolio_history (user_id, (to_jsonb(data->'timestamp')) desc);
-create index if not exists user_portfolio_history_user_timestamp on user_portfolio_history (user_id, ((data->'timestamp')::bigint) desc);
 create index if not exists user_portfolio_history_user_ts on user_portfolio_history (user_id, ts desc);
-alter table user_portfolio_history cluster on user_portfolio_history_user_timestamp;
+alter table user_portfolio_history cluster on user_portfolio_history_user_ts;
 
 create or replace function user_portfolio_history_populate_cols()
   returns trigger
