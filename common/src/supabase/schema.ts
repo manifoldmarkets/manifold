@@ -457,21 +457,33 @@ export interface Database {
       }
       user_portfolio_history: {
         Row: {
-          data: Json
-          fs_updated_time: string
+          balance: number | null
+          data: Json | null
+          fs_updated_time: string | null
+          investment_value: number | null
           portfolio_id: string
+          total_deposits: number | null
+          ts: string | null
           user_id: string
         }
         Insert: {
-          data: Json
-          fs_updated_time: string
+          balance?: number | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          investment_value?: number | null
           portfolio_id: string
+          total_deposits?: number | null
+          ts?: string | null
           user_id: string
         }
         Update: {
-          data?: Json
-          fs_updated_time?: string
+          balance?: number | null
+          data?: Json | null
+          fs_updated_time?: string | null
+          investment_value?: number | null
           portfolio_id?: string
+          total_deposits?: number | null
+          ts?: string | null
           user_id?: string
         }
       }
