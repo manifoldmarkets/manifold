@@ -1,25 +1,6 @@
-import { getInitialProbability } from 'common/calculate'
-import {
-  AnyContractType,
-  BinaryContract,
-  Contract,
-  PseudoNumericContract,
-} from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
-import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
-import { removeUndefinedProps } from 'common/util/object'
-import { useEffect, useState } from 'react'
-import { useBetCount, useBets } from 'web/hooks/use-bets-supabase'
-import { useComments } from 'web/hooks/use-comments-supabase'
+import { AnyContractType, Contract } from 'common/contract'
 import { useContractParams } from 'web/hooks/use-contract-supabase'
 import { usePrivateContract } from 'web/hooks/use-contracts'
-import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
-import { useUserById } from 'web/hooks/use-user-supabase'
-import {
-  getBinaryContractUserContractMetrics,
-  getTopContractMetrics,
-} from 'web/lib/firebase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
 import {
   ContractPageContent,
   ContractParams,
@@ -28,12 +9,6 @@ import {
   InaccessiblePrivateThing,
   LoadingPrivateThing,
 } from '../groups/private-group'
-import {
-  getBetPoints,
-  getHistoryDataBets,
-  getUseBetLimit,
-  shouldUseBetPoints,
-} from './contract-page-helpers'
 
 export function PrivateContractPage(props: { contractSlug: string }) {
   const { contractSlug } = props
@@ -53,5 +28,9 @@ export function ContractParamsPageContent(props: {
 }) {
   const { contract } = props
   const contractParams = useContractParams(contract)
-  return <ContractPageContent contractParams={contractParams} />
+  return (
+    <ContractPageContent
+      contractParams={contractParams as ContractParams & { contract: Contract }}
+    />
+  )
 }

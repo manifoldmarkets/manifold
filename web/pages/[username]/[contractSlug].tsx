@@ -3,19 +3,12 @@ import { first } from 'lodash'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Answer } from 'common/answer'
-import { getInitialProbability } from 'common/calculate'
 import { ContractComment } from 'common/comment'
-import {
-  BinaryContract,
-  PseudoNumericContract,
-  visibility,
-} from 'common/contract'
+import { visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
-import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { removeUndefinedProps } from 'common/util/object'
-import { compressPoints, pointsToBase64 } from 'common/util/og'
 import Head from 'next/head'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
@@ -27,12 +20,6 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { ContractDetails } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
-import {
-  getBetPoints,
-  getHistoryDataBets,
-  getUseBetLimit,
-  shouldUseBetPoints,
-} from 'web/components/contract/contract-page-helpers'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
@@ -52,10 +39,7 @@ import { useBets } from 'web/hooks/use-bets'
 import { useContract } from 'web/hooks/use-contracts'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
-import {
-  getInitialRelatedMarkets,
-  useRelatedMarkets,
-} from 'web/hooks/use-related-contracts'
+import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
@@ -65,20 +49,15 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Bet, BetFilter } from 'web/lib/firebase/bets'
 import {
   ContractMetricsByOutcome,
-  getBinaryContractUserContractMetrics,
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
-import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
-import { getAllComments } from 'web/lib/supabase/comments'
 import {
   getContractFromSlug,
   getContractParams,
   getContractVisibilityFromSlug,
 } from 'web/lib/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
-import { getUser } from 'web/lib/supabase/user'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 
@@ -162,19 +141,23 @@ export function NonPrivateContractPage(props: {
   }
   if (!contract) {
     return <Custom404 />
-  }
-  return (
-    <>
-      <ContractSEO contract={contract} points={pointsString} />
-      <ContractPageContent
-        key={contract.id}
-        contractParams={props.contractParams}
-      />
-    </>
-  )
+  } else
+    return (
+      <>
+        <ContractSEO contract={contract} points={pointsString} />
+        <ContractPageContent
+          key={contract.id}
+          contractParams={
+            props.contractParams as ContractParams & { contract: Contract }
+          }
+        />
+      </>
+    )
 }
 
-export function ContractPageContent(props: { contractParams: ContractParams }) {
+export function ContractPageContent(props: {
+  contractParams: ContractParams & { contract: Contract }
+}) {
   const { contractParams } = props
   const {
     userPositionsByOutcome,
@@ -184,8 +167,7 @@ export function ContractPageContent(props: { contractParams: ContractParams }) {
     relatedContracts,
   } = contractParams
   const contract =
-    useContract(contractParams.contract?.id) ??
-    (contractParams.contract as Contract)
+    useContract(contractParams.contract?.id) ?? contractParams.contract
   const user = useUser()
   const contractMetrics = useSavedContractMetrics(contract)
   const privateUser = usePrivateUser()

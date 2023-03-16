@@ -1,35 +1,35 @@
+import { getInitialProbability } from 'common/calculate'
 import {
   BinaryContract,
   CPMMContract,
   PseudoNumericContract,
   visibility,
 } from 'common/contract'
+import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
 import { run, selectJson, SupabaseClient } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
+import { compressPoints, pointsToBase64 } from 'common/util/og'
 import {
   getBetPoints,
   getHistoryDataBets,
+  getUseBetLimit,
   shouldUseBetPoints,
 } from 'web/components/contract/contract-page-helpers'
+import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
+import { getUser } from 'web/lib/supabase/user'
 import {
   ContractParams,
   CONTRACT_BET_FILTER,
 } from 'web/pages/[username]/[contractSlug]'
-import { Contract } from '../firebase/contracts'
-import { getBets, getTotalBetCount } from './bets'
-import { getUseBetLimit } from 'web/components/contract/contract-page-helpers'
-import { db } from './db'
-import { getAllComments } from './comments'
 import {
   getBinaryContractUserContractMetrics,
   getTopContractMetrics,
 } from '../firebase/contract-metrics'
-import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
-import { getInitialProbability } from 'common/calculate'
-import { getUser } from 'web/lib/supabase/user'
-import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
-import { compressPoints, pointsToBase64 } from 'common/util/og'
+import { Contract } from '../firebase/contracts'
+import { getBets, getTotalBetCount } from './bets'
+import { getAllComments } from './comments'
+import { db } from './db'
 
 export const getContract = async (id: string) => {
   const q = selectJson(db, 'contracts').eq('id', id)
@@ -122,7 +122,22 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
     .visibility
 }
 
-export async function getContractParams(contract: Contract) {
+export async function getContractParams(contract: Contract | null) {
+  if (!contract) {
+    return {
+      contract: null,
+      historyData: {
+        bets: [],
+        points: [],
+      },
+      comments: [],
+      userPositionsByOutcome: {},
+      totalPositions: 0,
+      totalBets: 0,
+      topContractMetrics: [],
+      relatedContracts: [],
+    }
+  }
   const contractId = contract?.id
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
   const useBetPoints = shouldUseBetPoints(contract)
