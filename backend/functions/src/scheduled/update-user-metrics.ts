@@ -214,12 +214,21 @@ const getPortfolioHistorySnapshots = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select distinct on (user_id) user_id, data
+      `select distinct on (user_id) *
       from user_portfolio_history
-      where (data->'timestamp')::bigint < $2 and user_id in ($1:list)
-      order by user_id, (data->'timestamp')::bigint desc`,
+      where ts < $2 and user_id in ($1:list)
+      order by user_id, ts desc`,
       [userIds, when],
-      (r) => [r.user_id as string, r.data as PortfolioMetrics]
+      (r) => [
+        r.user_id as string,
+        {
+          userId: r.user_id as string,
+          timestamp: Date.parse(r.ts as string),
+          investmentValue: parseFloat(r.investment_value as string),
+          balance: parseFloat(r.balance as string),
+          totalDeposits: parseFloat(r.total_deposits as string),
+        } as PortfolioMetrics,
+      ]
     )
   )
 }
