@@ -127,6 +127,7 @@ export default function PostPage(props: {
                 tooltip: 'Copy link to post',
               }}
               url={shareUrl}
+              eventTrackingName={'copy post link'}
             />
           </Row>
         </Row>

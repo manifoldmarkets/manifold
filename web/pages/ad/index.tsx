@@ -92,6 +92,7 @@ function Ad(props: { ad: AdType; onNext: () => void }) {
         <CopyLinkButton
           url={shareUrl}
           linkIconOnlyProps={{ tooltip: 'Copy link to ad' }}
+          eventTrackingName={'copy ad link'}
         />
       </div>
 

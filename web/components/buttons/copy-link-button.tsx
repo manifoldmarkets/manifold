@@ -14,16 +14,33 @@ import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
 import { getIsNative } from 'web/lib/native/is-native'
 
+// This list makes it easier to track all the different share/copy link events, esp. for the quests flow
+const CopyLinkEventNames = [
+  'copy market link',
+  'copy creator market link',
+  'copy dream link',
+  'copy group link',
+  'copy manalink',
+  'copy ad link',
+  'copy post link',
+  'copy referral link',
+  'copy weekly profit link',
+  'copy twitch link',
+  'copy styles link',
+] as const
+
+type CopyLinkEvent = typeof CopyLinkEventNames[number]
+
 export function CopyLinkButton(props: {
   url: string
+  eventTrackingName: CopyLinkEvent
   linkIconOnlyProps?: {
     tooltip: string
     className?: string
   }
   displayUrl?: string
-  tracking?: string
 }) {
-  const { url, displayUrl, tracking, linkIconOnlyProps } = props
+  const { url, displayUrl, eventTrackingName, linkIconOnlyProps } = props
   const { className, tooltip } = linkIconOnlyProps ?? {}
   // TODO: this is resulting in hydration errors on mobile dev
   const isNative = getIsNative()
@@ -48,7 +65,7 @@ export function CopyLinkButton(props: {
       setTimeout(() => setIconPressed(false), 1000)
       copyToClipboard(url)
     }
-    track(tracking ?? 'copy share link')
+    track(eventTrackingName, { url, type: 'copy sharing link' })
   }
 
   const Button = (props: { onClick: () => void }) => {

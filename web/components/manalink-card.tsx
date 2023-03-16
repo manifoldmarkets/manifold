@@ -161,6 +161,7 @@ export function ManalinkCardFromView(props: {
             linkIconOnlyProps={{
               tooltip: 'Copy link to Manalink',
             }}
+            eventTrackingName={'copy manalink'}
           />
           <IconButton
             size="xs"

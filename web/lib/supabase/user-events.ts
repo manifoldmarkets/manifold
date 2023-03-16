@@ -1,21 +1,26 @@
-import { run, selectJson } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
+import { SupabaseClient } from 'common/supabase/utils'
 
-export async function getUserEvents(
+export async function getUserEventsCount(
   userId: string,
-  eventName: string,
-  afterTime?: number,
-  beforeTime?: number
+  eventNames: string[],
+  startTime: number,
+  endTime: number,
+  db: SupabaseClient
 ) {
-  let q = selectJson(db, 'user_events')
+  let q = db
+    .from('user_events')
+    .select('*', { head: true, count: 'exact' })
     .eq('user_id', userId)
-    .eq('data->>name', eventName)
+    .lt('data->>timestamp', endTime)
+    .gt('data->>timestamp', startTime)
+  if (eventNames.length === 1) {
+    q = q.eq('data->>name', eventNames[0])
+  } else {
+    q = q.in('data->>name', eventNames)
+  }
 
-  if (beforeTime) {
-    q = q.lt('data->>timestamp', beforeTime)
-  }
-  if (afterTime) {
-    q = q.gt('data->>timestamp', afterTime)
-  }
-  return (await run(q)).data.map((r) => r.data)
+  const { count, error } = await q
+  if (error != null) throw error
+
+  return count ?? 0
 }

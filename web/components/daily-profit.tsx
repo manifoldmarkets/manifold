@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
-import { getUserEvents } from 'web/lib/supabase/user-events'
+import { getUserEventsCount } from 'web/lib/supabase/user-events'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -67,9 +67,13 @@ export const DailyProfit = memo(function DailyProfit(props: {
     today.setHours(0, 0, 0, 0)
     const todayMs = today.getTime()
     const todayMsEnd = todayMs + DAY_MS
-    getUserEvents(user.id, DAILY_PROFIT_CLICK_EVENT, todayMs, todayMsEnd).then(
-      (events) => setSeen(events.length > 0)
-    )
+    getUserEventsCount(
+      user.id,
+      [DAILY_PROFIT_CLICK_EVENT],
+      todayMs,
+      todayMsEnd,
+      db
+    ).then((count) => setSeen(count > 0))
   }, [user])
 
   // Other emoji options: ⌛ 💰 🕛
