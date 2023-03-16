@@ -47,6 +47,7 @@ import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ContractCardNew } from 'web/components/contract/contract-card'
+import { useContract } from 'web/hooks/use-contracts'
 
 export default function Home() {
   const isClient = useIsClient()
