@@ -1,10 +1,9 @@
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import Link from 'next/link'
 import { memo } from 'react'
 import clsx from 'clsx'
 
 import { useEvent } from 'web/hooks/use-event'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { VisibilityObserver } from '../widgets/visibility-observer'

@@ -15,12 +15,16 @@ import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { PostCommentsActivity } from '../post/[slug]'
 import { UserLink } from 'web/components/widgets/user-link'
-import { redeemAd } from 'web/lib/firebase/api'
+import { APIError, redeemAd } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
 import { uniq } from 'lodash'
 import clsx from 'clsx'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { postPath } from 'web/lib/firebase/posts'
+import toast from 'react-hot-toast'
 
 export async function getStaticProps() {
   const ads = await getAllAds()
@@ -40,7 +44,7 @@ export default function AdsPage(props: { ads: AdType[] }) {
   }, [user?.id])
 
   const isLoading = oldAdIds == undefined
-  const newAds = props.ads.filter((ad) => !oldAdIds?.includes(ad.id))
+  const newAds = props.ads
 
   const [i, next] = useReducer((num) => num + 1, 0)
   const current = newAds[i]
@@ -66,17 +70,50 @@ export default function AdsPage(props: { ads: AdType[] }) {
   )
 }
 
-const WAIT_TIME = 15 // 15 sec
-
 function Ad(props: { ad: AdType; onNext: () => void }) {
   const { ad, onNext } = props
-  const { costPerView, content } = ad
-
-  const counter = useCounter()
-  const timeLeft = WAIT_TIME - counter
 
   const comments = useCommentsOnPost(ad.id) ?? []
   const tips = useTipTxns({ postId: ad.id })
+
+  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(ad.slug)}`
+
+  return (
+    <div className="flex w-full max-w-2xl flex-col self-center">
+      <div className="bg-canvas-0 rounded-lg p-4 sm:p-6">
+        <Content size="lg" content={ad.content} />
+      </div>
+
+      <div className="mx-4 mt-1 mb-4 flex justify-between">
+        <div>
+          <span className="text-ink-500 mr-1">Created by</span>
+          <UserLink username={ad.creatorUsername} name={ad.creatorName} />
+        </div>
+        <CopyLinkButton
+          url={shareUrl}
+          linkIconOnlyProps={{ tooltip: 'Copy link to ad' }}
+          eventTrackingName={'copy ad link'}
+        />
+      </div>
+
+      <TimerClaimBox ad={ad} onNext={onNext} className="my-5" />
+
+      <PostCommentsActivity post={ad} comments={comments} tips={tips} />
+
+      <div className="h-8" />
+      <CreateBanner />
+    </div>
+  )
+}
+
+const WAIT_TIME = 15 // 15 sec
+
+export const TimerClaimBox = (props: {
+  ad: AdType
+  onNext: () => void
+  className?: string
+}) => {
+  const { ad, onNext, className } = props
 
   const skip = () => {
     track('Skip ad', { adId: ad.id })
@@ -84,52 +121,42 @@ function Ad(props: { ad: AdType; onNext: () => void }) {
   }
 
   const claim = async () => {
-    track('Redeem ad', { adId: ad.id })
     redeemAd({ adId: ad.id })
+      .catch((e: APIError) => toast.error(e.message))
+      .then(() => track('Redeem ad', { adId: ad.id }))
+
     onNext()
   }
 
+  const counter = useCounter()
+  const timeLeft = WAIT_TIME - counter
   return (
-    <div className="flex w-full max-w-2xl flex-col self-center">
-      {/* post */}
-      <div className="bg-canvas-0 rounded-lg p-4 sm:p-6">
-        <Content size="lg" content={content} />
-      </div>
-
-      <div className="mx-4 mt-1 mb-4">
-        <span className="text-ink-500 mr-1">Created by</span>
-        <UserLink username={ad.creatorUsername} name={ad.creatorName} />
-      </div>
-
-      {/* timer claim box */}
-      <div className="to-primary-400 relative my-5 flex w-full justify-center overflow-hidden rounded-md bg-yellow-200 bg-gradient-to-r from-pink-300 via-purple-300">
-        {timeLeft < 0 ? (
-          <button
-            onClick={claim}
-            className="flex w-full justify-center p-6 transition-colors hover:bg-slate-900/20"
-          >
-            Claim {formatMoney(costPerView)} and continue
-          </button>
-        ) : (
-          <>
-            <TimerBar duration={WAIT_TIME} />
-            <div className="z-10 flex w-full items-center justify-between py-4 px-6">
-              <span>
-                Claim {formatMoney(costPerView)} in {timeLeft + 1} seconds
-              </span>
-              <Button color="red" onClick={skip}>
-                Skip
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* comments */}
-      <PostCommentsActivity post={ad} comments={comments} tips={tips} />
-
-      <div className="h-8" />
-      <CreateBanner />
+    <div
+      className={clsx(
+        'to-primary-400 relative flex w-full justify-center overflow-hidden rounded-md bg-yellow-200 bg-gradient-to-r from-pink-300 via-purple-300',
+        className
+      )}
+    >
+      {timeLeft < 0 ? (
+        <button
+          onClick={claim}
+          className="flex w-full justify-center p-6 transition-colors hover:bg-slate-900/20"
+        >
+          Claim {formatMoney(ad.costPerView)} and continue
+        </button>
+      ) : (
+        <>
+          <TimerBar duration={WAIT_TIME} />
+          <div className="z-10 flex w-full items-center justify-between py-4 px-6">
+            <span>
+              Claim {formatMoney(ad.costPerView)} in {timeLeft + 1} seconds
+            </span>
+            <Button color="red" onClick={skip}>
+              Skip
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   )
 }

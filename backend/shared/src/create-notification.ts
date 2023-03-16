@@ -1,3 +1,4 @@
+import { getContractBetMetrics } from 'common/calculate'
 import * as admin from 'firebase-admin'
 import {
   BetFillData,
@@ -950,13 +951,11 @@ export const createContractResolvedNotifications = async (
   probabilityInt: number | undefined,
   resolutionValue: number | undefined,
   resolutionData: {
-    bets: Bet[]
-    userInvestments: { [userId: string]: number }
+    userIdToContractMetrics: {
+      [userId: string]: ReturnType<typeof getContractBetMetrics>
+    }
     userPayouts: { [userId: string]: number }
-    creator: User
     creatorPayout: number
-    contract: Contract
-    outcome: string
     resolutionProbability?: number
     resolutions?: { [outcome: string]: number }
   }
@@ -978,6 +977,21 @@ export const createContractResolvedNotifications = async (
     if (resolutionText === 'MKT' && resolutionValue)
       resolutionText = `${resolutionValue}`
   }
+  const {
+    userIdToContractMetrics,
+    userPayouts,
+    creatorPayout,
+    resolutionProbability,
+    resolutions,
+  } = resolutionData
+
+  const sortedProfits = Object.entries(userIdToContractMetrics)
+    .map(([userId, metrics]) => {
+      const profit = metrics.profit ?? 0
+      return { userId, profit }
+    })
+    .sort((a, b) => b.profit - a.profit)
+
   const constructNotification = (
     userId: string,
     reason: notification_reason_types
@@ -1003,8 +1017,11 @@ export const createContractResolvedNotifications = async (
       sourceTitle: contract.question,
       data: {
         outcome,
-        userInvestment: resolutionData.userInvestments[userId] ?? 0,
-        userPayout: resolutionData.userPayouts[userId] ?? 0,
+        userInvestment: userIdToContractMetrics?.[userId]?.invested ?? 0,
+        userPayout: userPayouts[userId] ?? 0,
+        profitRank: sortedProfits.findIndex((p) => p.userId === userId) + 1,
+        totalShareholders: sortedProfits.length,
+        profit: userIdToContractMetrics?.[userId]?.profit ?? 0,
       } as ContractResolutionData,
     }
   }
@@ -1040,14 +1057,14 @@ export const createContractResolvedNotifications = async (
       await sendMarketResolutionEmail(
         reason,
         privateUser,
-        resolutionData.userInvestments[userId] ?? 0,
-        resolutionData.userPayouts[userId] ?? 0,
+        userIdToContractMetrics?.[userId]?.invested ?? 0,
+        userPayouts[userId] ?? 0,
         creator,
-        resolutionData.creatorPayout,
+        creatorPayout,
         contract,
-        resolutionData.outcome,
-        resolutionData.resolutionProbability,
-        resolutionData.resolutions
+        outcome,
+        resolutionProbability,
+        resolutions
       )
 
     if (sendToMobile) {
@@ -1072,17 +1089,16 @@ export const createContractResolvedNotifications = async (
   // We ignore whether users are still watching a market if they have a payout, mainly
   // bc market resolutions changes their profits, and they'll likely want to know, esp. if NA resolution
   const usersToNotify = uniq(
-    [
-      ...contractFollowersIds,
-      ...Object.keys(resolutionData.userPayouts),
-    ].filter((id) => id !== creator.id)
+    [...contractFollowersIds, ...Object.keys(userPayouts)].filter(
+      (id) => id !== creator.id
+    )
   )
 
   await Promise.all(
     usersToNotify.map((id) =>
       sendNotificationsIfSettingsPermit(
         id,
-        resolutionData.userInvestments[id]
+        userIdToContractMetrics?.[id]?.invested
           ? 'resolution_on_contract_with_users_shares_in'
           : 'resolution_on_contract_you_follow'
       )

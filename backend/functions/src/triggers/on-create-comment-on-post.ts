@@ -1,8 +1,9 @@
 import * as functions from 'firebase-functions'
+import { secrets } from 'functions/secrets'
 import { getPost } from 'shared/utils'
 
 export const onCreateCommentOnPost = functions
-  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .runWith({ secrets })
   .firestore.document('posts/{postId}/comments/{commentId}')
   .onCreate(async (snapshot, context) => {
     const { postId } = context.params as {

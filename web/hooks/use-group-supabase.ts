@@ -242,42 +242,16 @@ export async function setTranslatedMemberRole(
   }
 }
 
-export function useRealtimeGroup(groupSlug: string) {
+export function useGroupFromSlug(groupSlug: string) {
   const [group, setGroup] = useState<Group | null>(null)
-  function fetchGroup() {
+  useEffect(() => {
     getGroupFromSlug(groupSlug)
       .then((result) => {
         setGroup(result)
       })
       .catch((e) => console.log(e))
-  }
+  }, [groupSlug])
 
-  useEffect(() => {
-    fetchGroup()
-  }, [])
-
-  useEffect(() => {
-    const channel = db.channel('group-realtime')
-    channel.on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'groups',
-        filter: `data->>slug=eq.${groupSlug}`,
-      },
-      (payload) => {
-        console.log('GROUP PAYLOAD', payload)
-        if (payload.eventType === 'UPDATE') {
-          setGroup(payload.new.data)
-        }
-      }
-    )
-    channel.subscribe(async (status) => {})
-    return () => {
-      db.removeChannel(channel)
-    }
-  }, [db])
   return group
 }
 

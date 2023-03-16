@@ -5,10 +5,11 @@ import { Contract } from 'common/contract'
 import { getPrivateUser, getUserByUsername, isProd } from 'shared/utils'
 import { createMarketClosedNotification } from 'shared/create-notification'
 import { DAY_MS } from 'common/util/time'
+import { secrets } from 'functions/secrets'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
 export const marketCloseNotifications = functions
-  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB', timeoutSeconds: 540 })
+  .runWith({ secrets, memory: '4GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 1 hours')
   .onRun(async () => {
     isProd()

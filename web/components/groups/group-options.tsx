@@ -63,6 +63,7 @@ export function GroupOptions(props: {
             tooltip: `Copy link to ${group.name}`,
             className: groupButtonClass,
           }}
+          eventTrackingName="copy group link"
         />
         {privateUser && (
           <DropdownMenu

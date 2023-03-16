@@ -7,10 +7,10 @@ import {
   FreeResponseContract,
   MultipleChoiceContract,
   RESOLUTIONS,
+  contractPath,
 } from 'common/contract'
 import { Bet } from 'common/bet'
 import {
-  getContractPath,
   getUser,
   getValues,
   isProd,
@@ -115,8 +115,6 @@ const pseudoNumericSchema = z.union([
   }),
 ])
 
-const opts = { secrets: ['MAILGUN_KEY', 'API_SECRET'] }
-
 export const resolvemarket = authEndpoint(async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
   const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -198,13 +196,13 @@ export const resolveMarket = async (
 
   await updateContractMetricsForUsers(contract, bets)
   await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
-  await revalidateStaticProps(getContractPath(contract))
+  await revalidateStaticProps(contractPath(contract))
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
 
-  const userInvestments = mapValues(
+  const userIdToContractMetrics = mapValues(
     groupBy(bets, (bet) => bet.userId),
-    (bets) => getContractBetMetrics(contract, bets).invested
+    (bets) => getContractBetMetrics(contract, bets)
   )
 
   await createContractResolvedNotifications(
@@ -214,13 +212,9 @@ export const resolveMarket = async (
     probabilityInt,
     value,
     {
-      bets,
-      userInvestments,
+      userIdToContractMetrics,
       userPayouts: userPayoutsWithoutLoans,
-      creator,
       creatorPayout,
-      contract,
-      outcome,
       resolutionProbability,
       resolutions,
     }

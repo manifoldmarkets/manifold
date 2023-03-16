@@ -2,12 +2,16 @@ import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
 import { run } from 'common/supabase/utils'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 
-const db = createSupabaseClient()
-
 async function main() {
+  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
+
   const result = await run(db.from('contract_embeddings').select('contract_id'))
 
   const contractIds = new Set(result.data.map((row: any) => row.contract_id))
@@ -34,9 +38,12 @@ async function main() {
 
     console.log('Generated embeddings for', id, ':', question)
 
-    await run(
-      db.from('contract_embeddings').upsert({ contract_id: id, embedding })
-    ).catch((err) => console.error(err))
+    await pg
+      .none(
+        'insert into contract_embeddings (contract_id, embedding) values ($1, $2) on conflict (contract_id) do nothing',
+        [id, embedding]
+      )
+      .catch((err) => console.error(err))
   }
 }
 

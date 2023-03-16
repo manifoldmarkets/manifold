@@ -470,7 +470,7 @@ function SetUpBot(props: {
 
             <CopyLinkButton
               url={'https://manifold.markets/twitch?referrer=' + user?.username}
-              tracking="copy share link"
+              eventTrackingName="copy twitch link"
             />
           </Col>
         )}

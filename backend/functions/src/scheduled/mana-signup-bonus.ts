@@ -19,10 +19,11 @@ import {
 import { APIError } from 'common/api'
 import { userOptedOutOfBrowserNotifications } from 'common/user-notification-preferences'
 import { runTxn, TxnData } from 'shared/run-txn'
+import { secrets } from 'functions/secrets'
 
 // TODO: delete email mana signup bonus
 export const manasignupbonus = functions
-  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .runWith({ secrets })
   .pubsub.schedule('0 9 * * 1-7')
   .onRun(async () => {
     await sendOneWeekManaBonuses()

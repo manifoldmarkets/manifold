@@ -36,7 +36,10 @@ export default function StylePage() {
       />
       <EditorExample />
       <Subtitle>Copy Link</Subtitle>
-      <CopyLinkButton url="www.example.com" />
+      <CopyLinkButton
+        url="www.example.com"
+        eventTrackingName={'copy styles link'}
+      />
     </Page>
   )
 }

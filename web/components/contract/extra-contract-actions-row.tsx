@@ -33,6 +33,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
         linkIconOnlyProps={{
           tooltip: 'Copy link to market',
         }}
+        eventTrackingName="copy market link"
       />
 
       <ContractInfoDialog contract={contract} user={user} />

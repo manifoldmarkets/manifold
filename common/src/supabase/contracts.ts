@@ -17,7 +17,7 @@ export const getContracts = async (
   return results.flatMap((result) => result.data.map((r) => r.data))
 }
 
-export const getUnresolvedContracts = async (
+export const getUnresolvedContractsCount = async (
   creatorId: string,
   db: SupabaseClient
 ) => {
@@ -30,6 +30,21 @@ export const getUnresolvedContracts = async (
         isResolved: false,
       })
       .lt('data->>closeTime', Date.now())
+  )
+  return count
+}
+
+export const getRecentContractsCount = async (
+  creatorId: string,
+  startDate: number,
+  db: SupabaseClient
+) => {
+  const { count } = await run(
+    db
+      .from('contracts')
+      .select('*', { head: true, count: 'exact' })
+      .eq('data->>creatorId', creatorId)
+      .gte('data->>createdTime', startDate)
   )
   return count
 }

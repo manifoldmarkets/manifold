@@ -18,6 +18,7 @@ import { Follow } from 'common/follow'
 import { countBy, uniq, uniqBy } from 'lodash'
 import { sendInterestingMarketsEmail } from 'shared/emails'
 import { getTrendingContracts } from 'shared/utils'
+import { secrets } from 'functions/secrets'
 
 const GROUP_SLUGS_TO_IGNORE_IN_TRENDING = [
   'manifold-features',
@@ -28,7 +29,7 @@ const USERS_TO_EMAIL = 500
 
 // This should(?) work until we have ~60k users (500 * 120)
 export const weeklyMarketsEmails = functions
-  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB', timeoutSeconds: 540 })
+  .runWith({ secrets, memory: '4GB', timeoutSeconds: 540 })
   // every minute on Monday for 2 hours starting at 12pm PT (UTC -07:00)
   .pubsub.schedule('* 19-20 * * 1')
   .timeZone('Etc/UTC')

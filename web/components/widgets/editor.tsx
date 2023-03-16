@@ -162,14 +162,15 @@ function isValidIframe(text: string) {
 
 export function TextEditor(props: {
   editor: Editor | null
+  simple?: boolean // show heading in toolbar
   children?: ReactNode // additional toolbar buttons
 }) {
-  const { editor, children } = props
+  const { editor, simple, children } = props
 
   return (
     // matches input styling
     <div className="border-ink-300 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 w-full overflow-hidden rounded-lg border shadow-sm transition-colors focus-within:ring-1">
-      <FloatingFormatMenu editor={editor} advanced={!children} />
+      <FloatingFormatMenu editor={editor} advanced={!simple} />
       <div
         className={clsx(
           children ? 'min-h-[4.25em]' : 'min-h-[7.5em]', // 1 em padding + line height (1.625) * line count

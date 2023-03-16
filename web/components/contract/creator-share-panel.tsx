@@ -22,7 +22,7 @@ export function CreatorSharePanel(props: { contract: Contract }) {
 
       <CopyLinkButton
         url={getShareUrl(contract, contract.creatorUsername)}
-        tracking="copy creator share link"
+        eventTrackingName="copy creator market link"
       />
       <Spacer h={8} />
       <TweetButton

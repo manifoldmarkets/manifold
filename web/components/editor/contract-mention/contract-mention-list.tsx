@@ -1,8 +1,7 @@
 import { SuggestionProps } from '@tiptap/suggestion'
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { Avatar } from '../../widgets/avatar'
 
 // copied from https://tiptap.dev/api/nodes/mention#usage

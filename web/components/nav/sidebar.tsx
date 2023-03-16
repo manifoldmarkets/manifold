@@ -11,6 +11,7 @@ import {
   SpeakerphoneIcon,
   SunIcon,
   SparklesIcon,
+  StarIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -163,12 +164,12 @@ const getMobileNav = (toggleModal: () => void) => {
     { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
+    { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     {
       name: `Ads - earn ${formatMoney(10)} per view!`,
       icon: SpeakerphoneIcon,
       href: '/ad',
-    },
-    { name: 'Sitemap', icon: MapIcon, href: '/sitemap' }
+    }
   )
 }
 

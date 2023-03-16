@@ -61,6 +61,7 @@ import {
 } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
+import { ShareEvent } from 'common/events'
 
 export const getStaticProps = async (props: {
   params: {
@@ -320,7 +321,10 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   toast.success('Copied your referral link!', {
                     icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
                   })
-                  track('copy referral link')
+                  track('copy referral link', {
+                    url: referralUrl,
+                    type: 'copy sharing link',
+                  } as ShareEvent)
                 }}
               >
                 <Row className="items-center gap-1">

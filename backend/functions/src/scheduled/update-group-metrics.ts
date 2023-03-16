@@ -5,9 +5,10 @@ import { groupBy, mapValues, sortBy } from 'lodash'
 import { log } from 'shared/utils'
 import { getIds } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { secrets } from 'functions/secrets'
 
 export const updateGroupMetrics = functions
-  .runWith({ timeoutSeconds: 540, secrets: ['SUPABASE_PASSWORD'] })
+  .runWith({ timeoutSeconds: 540, secrets })
   .pubsub.schedule('every 15 minutes')
   .onRun(async () => {
     await updateGroupMetricsCore()

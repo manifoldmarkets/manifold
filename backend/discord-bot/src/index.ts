@@ -18,7 +18,7 @@ import { track } from 'discord-bot/analytics'
 import { config } from './constants/config.js'
 import { customEmojiCache, customEmojis } from './emojis.js'
 import { handleButtonPress } from './helpers.js'
-import { startListener } from './server.js'
+import { startServerForGCP } from './server.js'
 
 const commandsCollection = new Collection<string, Command>()
 const client = new Client({
@@ -141,6 +141,10 @@ const registerListeners = () => {
   })
 }
 
-init().then(registerListeners)
-// If we're running on GCP, start the server to let the cloud function know we're ready
-if (process.env.GOOGLE_CLOUD_PROJECT) startListener()
+init()
+  .then(() => {
+    registerListeners()
+    // If we're running on GCP, start the server to let the cloud function know we're ready
+    if (process.env.GOOGLE_CLOUD_PROJECT) startServerForGCP()
+  })
+  .catch((e) => console.error('Error initializing bot', e))

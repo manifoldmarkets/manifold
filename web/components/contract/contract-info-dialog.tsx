@@ -389,7 +389,7 @@ export function ContractInfoDialog(props: {
 
                       <CopyLinkButton
                         url={getShareUrl(contract, user?.username)}
-                        tracking="copy market share link"
+                        eventTrackingName="copy market link"
                       />
                     </Col>
                   ),

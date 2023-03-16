@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 import { compact } from 'lodash'
 import {
   getContract,
-  getContractPath,
   getUser,
   getValues,
   revalidateStaticProps,
@@ -17,8 +16,9 @@ import {
 } from 'shared/create-notification'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
+import { secrets } from 'functions/secrets'
 
 const firestore = admin.firestore()
 
@@ -84,7 +84,7 @@ async function getPriorContractBets(
 
 export const onCreateCommentOnContract = functions
   .runWith({ memory: '4GB', timeoutSeconds: 540 })
-  .runWith({ secrets: ['MAILGUN_KEY', 'API_SECRET'] })
+  .runWith({ secrets })
   .firestore.document('contracts/{contractId}/comments/{commentId}')
   .onCreate(async (change, context) => {
     const { contractId } = context.params as {
@@ -101,7 +101,7 @@ export const onCreateCommentOnContract = functions
       contractQuestion: contract.question,
     })
 
-    await revalidateStaticProps(getContractPath(contract))
+    await revalidateStaticProps(contractPath(contract))
 
     const comment = change.data() as ContractComment
     const lastCommentTime = comment.createdTime

@@ -28,13 +28,14 @@ import {
 } from 'common/supabase/contract-metrics'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getContracts, getContractsByUsers } from 'common/supabase/contracts'
+import { secrets } from 'functions/secrets'
 
 const USERS_TO_EMAIL = 600
 const WEEKLY_MOVERS_TO_SEND = 6
 // This should(?) work until we have ~70k users (500 * 120)
 export const weeklyPortfolioUpdateEmails = functions
   .runWith({
-    secrets: ['MAILGUN_KEY', 'SUPABASE_KEY'],
+    secrets,
     memory: '4GB',
     timeoutSeconds: 540,
   })

@@ -8,6 +8,8 @@ import clsx from 'clsx'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
+  Contract,
+  contractPath,
   outcomeType,
   visibility,
 } from 'common/contract'
@@ -32,7 +34,6 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { createMarket } from 'web/lib/firebase/api'
-import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'

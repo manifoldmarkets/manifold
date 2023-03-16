@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
-import { getUserEvents } from 'web/lib/supabase/user-events'
+import { getUserEventsCount } from 'common/supabase/user-events'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -67,9 +67,13 @@ export const DailyProfit = memo(function DailyProfit(props: {
     today.setHours(0, 0, 0, 0)
     const todayMs = today.getTime()
     const todayMsEnd = todayMs + DAY_MS
-    getUserEvents(user.id, DAILY_PROFIT_CLICK_EVENT, todayMs, todayMsEnd).then(
-      (events) => setSeen(events.length > 0)
-    )
+    getUserEventsCount(
+      user.id,
+      [DAILY_PROFIT_CLICK_EVENT],
+      todayMs,
+      todayMsEnd,
+      db
+    ).then((count) => setSeen(count > 0))
   }, [user])
 
   // Other emoji options: ⌛ 💰 🕛
@@ -78,9 +82,9 @@ export const DailyProfit = memo(function DailyProfit(props: {
       <button
         className={clsx(
           'rounded-md py-1 text-center transition-colors disabled:cursor-not-allowed',
-          !seen
-            ? 'from-amber-400 via-yellow-200 to-amber-400 px-1.5 text-yellow-600 transition-all hover:from-yellow-400 hover:via-yellow-100 hover:to-yellow-400 enabled:bg-gradient-to-tr'
-            : ''
+          seen
+            ? ''
+            : 'px-1.5 text-amber-500 shadow shadow-amber-700 transition-all hover:from-yellow-400 hover:via-yellow-100 hover:to-yellow-200 enabled:bg-gradient-to-tr'
         )}
         onClick={withTracking(() => {
           setOpen(true)

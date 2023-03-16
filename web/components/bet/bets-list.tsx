@@ -12,11 +12,7 @@ import {
 } from 'common/util/format'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
-import {
-  Contract,
-  contractPath,
-  getBinaryProbPercent,
-} from 'web/lib/firebase/contracts'
+import { Contract, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { sellBet } from 'web/lib/firebase/api'
 import { ConfirmationButton } from '../buttons/confirmation-button'
@@ -29,7 +25,7 @@ import {
   getOutcomeProbability,
   resolvedPayout,
 } from 'common/calculate'
-import { DPMContract, NumericContract } from 'common/contract'
+import { DPMContract, NumericContract, contractPath } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { LimitBet } from 'common/bet'

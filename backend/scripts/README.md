@@ -35,14 +35,15 @@ $ yarn build && node lib/script.js
 
 ## Environment variables
 
-First, print them out using the firebase command line tool:
+Copy the keys from the google secrets page:
 
-```shell
-$ firebase functions:secrets:access SUPABASE_KEY
-```
+Dev: https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
+Prod: https://console.cloud.google.com/security/secret-manager?project=mantic-markets
+
 
 Then, save them locally in e.g. `~/.zshrc` or `~/.bashrc`:
 
 ```
 export SUPABASE_KEY=ABCDE12345
+export SUPABASE_PASSWORD=12345ABCD
 ```

@@ -27,3 +27,22 @@ export async function getSkippedAdIds(userId: string) {
   const { data } = await run(query)
   return data.map((r) => (r.data as any).adId)
 }
+
+export async function getUsersWhoWatched(adId: string) {
+  const query = selectFrom(db, 'txns', 'toId')
+    .eq('data->>category', 'AD_REDEEM')
+    .eq('data ->>fromId', adId)
+  const { data } = await run(query)
+  return data.map(({ toId }) => toId) ?? []
+}
+
+export async function getUsersWhoSkipped(adId: string) {
+  const query = db
+    .from('user_events')
+    .select('user_id')
+    .eq('data->>name', 'Skip ad')
+    .eq('data->>adId', adId)
+
+  const { data } = await run(query)
+  return data.map((r) => r['user_id']) ?? []
+}

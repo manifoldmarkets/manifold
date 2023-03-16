@@ -13,12 +13,13 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getAll } from 'shared/supabase/utils'
+import { secrets } from 'functions/secrets'
 
 export const updateContractMetrics = functions
   .runWith({
     memory: '1GB',
     timeoutSeconds: 540,
-    secrets: ['SUPABASE_PASSWORD'],
+    secrets,
   })
   .pubsub.schedule('every 15 minutes')
   .onRun(async () => {

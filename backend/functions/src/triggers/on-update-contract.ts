@@ -1,14 +1,15 @@
 import * as functions from 'firebase-functions'
-import { getUser, getContractPath, revalidateStaticProps } from 'shared/utils'
+import { getUser, revalidateStaticProps } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import * as admin from 'firebase-admin'
 
 import { GroupContractDoc } from 'common/group'
 import { isEqual } from 'lodash'
+import { secrets } from 'functions/secrets'
 
 export const onUpdateContract = functions
-  .runWith({ secrets: ['API_SECRET'] })
+  .runWith({ secrets })
   .firestore.document('contracts/{contractId}')
   .onUpdate(async (change, context) => {
     const contract = change.after.data() as Contract
@@ -113,8 +114,8 @@ const getPropsThatTriggerRevalidation = (contract: Contract) => {
 }
 
 async function revalidateContractStaticProps(contract: Contract) {
-  await revalidateStaticProps(getContractPath(contract))
-  await revalidateStaticProps(`/embed${getContractPath(contract)}`)
+  await revalidateStaticProps(contractPath(contract))
+  await revalidateStaticProps(`/embed${contractPath(contract)}`)
 }
 
 const firestore = admin.firestore()

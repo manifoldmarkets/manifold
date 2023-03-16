@@ -9,6 +9,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { PrivateUser } from 'common/user'
+import { secrets } from 'functions/secrets'
 
 const firestore = admin.firestore()
 const now = new Date()
@@ -18,7 +19,7 @@ const getDateSlug = () =>
 const USERS_TO_SAVE = 300
 // Saving metrics should work until our users are greater than USERS_TO_SAVE * 2*60 users
 export const saveWeeklyContractMetrics = functions
-  .runWith({ memory: '4GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 60 })
+  .runWith({ memory: '4GB', secrets, timeoutSeconds: 60 })
   // every minute for 2 hours Friday 4am PT (UTC -08:00)
   .pubsub.schedule('* 13-14 * * 5')
   .timeZone('Etc/UTC')
@@ -27,7 +28,7 @@ export const saveWeeklyContractMetrics = functions
   })
 
 export const sendWeeklyPortfolioUpdate = functions
-  .runWith({ memory: '8GB', secrets: ['SUPABASE_KEY'], timeoutSeconds: 540 })
+  .runWith({ memory: '8GB', secrets, timeoutSeconds: 540 })
   // every Friday at 12pm PT (UTC -08:00)
   .pubsub.schedule('0 20 * * 5')
   .timeZone('Etc/UTC')

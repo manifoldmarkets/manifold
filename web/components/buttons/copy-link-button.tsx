@@ -13,17 +13,18 @@ import { NativeShareData } from 'common/native-share-data'
 import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
 import { getIsNative } from 'web/lib/native/is-native'
+import { ShareEventName, ShareEvent } from 'common/events'
 
 export function CopyLinkButton(props: {
   url: string
+  eventTrackingName: ShareEventName
   linkIconOnlyProps?: {
     tooltip: string
     className?: string
   }
   displayUrl?: string
-  tracking?: string
 }) {
-  const { url, displayUrl, tracking, linkIconOnlyProps } = props
+  const { url, displayUrl, eventTrackingName, linkIconOnlyProps } = props
   const { className, tooltip } = linkIconOnlyProps ?? {}
   // TODO: this is resulting in hydration errors on mobile dev
   const isNative = getIsNative()
@@ -48,7 +49,7 @@ export function CopyLinkButton(props: {
       setTimeout(() => setIconPressed(false), 1000)
       copyToClipboard(url)
     }
-    track(tracking ?? 'copy share link')
+    track(eventTrackingName, { url, type: 'copy sharing link' } as ShareEvent)
   }
 
   const Button = (props: { onClick: () => void }) => {

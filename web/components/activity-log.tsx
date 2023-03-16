@@ -3,7 +3,7 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
-import { keyBy, range, groupBy, sortBy } from 'lodash'
+import { keyBy, range, groupBy, sortBy, partition, uniq } from 'lodash'
 import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
@@ -29,7 +29,7 @@ import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 
-const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie']
+const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
 export function ActivityLog(props: {
   count: number
@@ -90,11 +90,24 @@ export function ActivityLog(props: {
   const newContracts = (rawContracts ?? []).filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&
-      !blockedUserIds.includes(c.creatorId)
+      !blockedUserIds.includes(c.creatorId) &&
+      c.visibility === 'public'
   )
 
   const [pill, setPill] = useState<'all' | 'markets' | 'comments' | 'trades'>(
     'all'
+  )
+
+  const [contracts, unlistedContracts] = partition(
+    filterDefined(
+      useContracts(
+        uniq([
+          ...bets.map((b) => b.contractId),
+          ...comments.map((c) => c.contractId),
+        ])
+      )
+    ).concat(newContracts ?? []),
+    (c) => c.visibility === 'public'
   )
 
   const items = sortBy(
@@ -108,14 +121,14 @@ export function ActivityLog(props: {
     (i) => i.createdTime
   )
     .reverse()
-    .filter((i) => i.createdTime < Date.now())
+    .filter(
+      (i) =>
+        i.createdTime < Date.now() &&
+        ('contractId' in i
+          ? unlistedContracts.some((c) => c.id !== i.contractId)
+          : true)
+    )
 
-  const contracts = filterDefined(
-    useContracts([
-      ...bets.map((b) => b.contractId),
-      ...comments.map((c) => c.contractId),
-    ])
-  ).concat(newContracts ?? [])
   const contractsById = keyBy(contracts, 'id')
 
   const startIndex =
