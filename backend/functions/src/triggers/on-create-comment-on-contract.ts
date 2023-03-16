@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 import { compact } from 'lodash'
 import {
   getContract,
-  getContractPath,
   getUser,
   getValues,
   revalidateStaticProps,
@@ -17,7 +16,7 @@ import {
 } from 'shared/create-notification'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { secrets } from 'functions/secrets'
 
@@ -102,7 +101,7 @@ export const onCreateCommentOnContract = functions
       contractQuestion: contract.question,
     })
 
-    await revalidateStaticProps(getContractPath(contract))
+    await revalidateStaticProps(contractPath(contract))
 
     const comment = change.data() as ContractComment
     const lastCommentTime = comment.createdTime

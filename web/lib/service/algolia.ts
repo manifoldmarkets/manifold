@@ -17,9 +17,6 @@ export const getIndexName = (sort: string) => {
 
 export const trendingIndex = searchClient.initIndex(getIndexName('score'))
 export const newIndex = searchClient.initIndex(getIndexName('newest'))
-export const dailyScoreIndex = searchClient.initIndex(
-  getIndexName('daily-score')
-)
 
 const searchIndex = searchClient.initIndex(searchIndexName)
 export const searchContracts = async (query: string, limit: number) => {

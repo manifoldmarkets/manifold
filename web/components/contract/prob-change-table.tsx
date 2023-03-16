@@ -1,7 +1,12 @@
 import { sortBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { Contract, CPMMBinaryContract, CPMMContract } from 'common/contract'
+import {
+  Contract,
+  CPMMBinaryContract,
+  CPMMContract,
+  contractPath,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { ContractCardWithPosition } from './contract-card'
 import { User } from 'common/user'
@@ -10,7 +15,6 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { forwardRef } from 'react'
 import { useContract } from 'web/hooks/use-contracts'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { Avatar } from '../widgets/avatar'
 import { Row } from '../layout/row'
 import { formatPercentShort } from 'common/util/format'
