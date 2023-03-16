@@ -3,7 +3,7 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
-import { keyBy, range, groupBy, sortBy } from 'lodash'
+import { keyBy, range, groupBy, sortBy, partition } from 'lodash'
 import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
@@ -90,14 +90,15 @@ export function ActivityLog(props: {
   const newContracts = (rawContracts ?? []).filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&
-      !blockedUserIds.includes(c.creatorId)
+      !blockedUserIds.includes(c.creatorId) &&
+      c.visibility === 'public'
   )
 
   const [pill, setPill] = useState<'all' | 'markets' | 'comments' | 'trades'>(
     'all'
   )
 
-  const items = sortBy(
+  const unfilteredItems = sortBy(
     pill === 'all'
       ? [...bets, ...comments, ...(newContracts ?? [])]
       : pill === 'comments'
@@ -110,14 +111,21 @@ export function ActivityLog(props: {
     .reverse()
     .filter((i) => i.createdTime < Date.now())
 
-  const contracts = filterDefined(
-    useContracts([
-      ...bets.map((b) => b.contractId),
-      ...comments.map((c) => c.contractId),
-    ])
+  const [contracts, unlistedContracts] = partition(
+    filterDefined(
+      useContracts([
+        ...bets.map((b) => b.contractId),
+        ...comments.map((c) => c.contractId),
+      ])
+    ).concat(newContracts ?? []),
+    (c) => c.visibility === 'public'
   )
-    .concat(newContracts ?? [])
-    .filter((c) => c.visibility !== 'unlisted')
+  const items = unfilteredItems.filter((i) =>
+    'contractId' in i
+      ? unlistedContracts.some((c) => c.id !== i.contractId)
+      : true
+  )
+
   const contractsById = keyBy(contracts, 'id')
 
   const startIndex =
