@@ -50,8 +50,12 @@ alter table users cluster on users_pkey;
 create table if not exists user_portfolio_history (
     user_id text not null,
     portfolio_id text not null,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
+    ts timestamp not null,
+    investment_value numeric not null,
+    balance numeric not null,
+    total_deposits numeric not null,
+    data jsonb null,
+    fs_updated_time timestamp null,
     primary key(user_id, portfolio_id)
 );
 alter table user_portfolio_history enable row level security;
@@ -60,7 +64,30 @@ create policy "public read" on user_portfolio_history for select using (true);
 create index if not exists user_portfolio_history_gin on user_portfolio_history using GIN (data);
 create index if not exists user_portfolio_history_timestamp on user_portfolio_history (user_id, (to_jsonb(data->'timestamp')) desc);
 create index if not exists user_portfolio_history_user_timestamp on user_portfolio_history (user_id, ((data->'timestamp')::bigint) desc);
+create index if not exists user_portfolio_history_user_ts on user_portfolio_history (user_id, ts desc);
 alter table user_portfolio_history cluster on user_portfolio_history_user_timestamp;
+
+create or replace function user_portfolio_history_populate_cols()
+  returns trigger
+  language plpgsql
+as
+$$
+begin
+  if new.data is not null then
+    new.ts := millis_to_ts(((new.data)->'timestamp')::bigint);
+    new.investment_value := ((new.data)->'investmentValue')::numeric;
+    new.balance := ((new.data)->'balance')::numeric;
+    new.total_deposits := ((new.data)->'totalDeposits')::numeric;
+  end if;
+  return new;
+end
+$$;
+
+drop trigger if exists user_portfolio_history_populate on user_portfolio_history;
+create trigger user_portfolio_history_populate
+before insert or update on user_portfolio_history
+for each row
+execute function user_portfolio_history_populate_cols();
 
 create table if not exists user_contract_metrics (
     user_id text not null,
@@ -401,7 +428,7 @@ create policy "admin write access" on contract_embeddings
   as PERMISSIVE FOR ALL
   to service_role;
 
-create index if not exists contract_embeddings_embedding on contract_embeddings 
+create index if not exists contract_embeddings_embedding on contract_embeddings
   using ivfflat (embedding vector_cosine_ops)
   with (lists = 100);
 
