@@ -515,7 +515,6 @@ begin
     when 'manalinks' then cast((null, 'id') as table_spec)
     when 'posts' then cast((null, 'id') as table_spec)
     when 'test' then cast((null, 'id') as table_spec)
-    when 'user_portfolio_history' then cast(('user_id', 'portfolio_id') as table_spec)
     when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)
     else null
   end;
