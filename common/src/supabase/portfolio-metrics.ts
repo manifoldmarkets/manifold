@@ -1,4 +1,4 @@
-import { run, selectFrom, SupabaseClient } from './utils'
+import { run, SupabaseClient } from './utils'
 import { sortBy } from 'lodash'
 
 export async function getPortfolioHistory(
