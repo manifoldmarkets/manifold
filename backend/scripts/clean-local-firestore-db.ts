@@ -49,12 +49,7 @@ async function deleteTopLevelCollections() {
 //  but in the end I used an old, smaller firestore export and using this wasn't necessary.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function deleteUsersSubcollections() {
-  const deleteSubCollections = [
-    'contract-metrics',
-    'notifications',
-    'portfolioHistory',
-    'events',
-  ]
+  const deleteSubCollections = ['contract-metrics', 'notifications', 'events']
   const userSnap = await firestore.collection('users').get()
   const users = userSnap.docs.map((d) => d.data() as User)
   const usersToDelete = users.filter(

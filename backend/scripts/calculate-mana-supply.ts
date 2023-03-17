@@ -36,6 +36,7 @@ async function calculateManaSupply() {
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {
+  /* mqp: needs to be ported to supabase now
   const query = firestore
     .collection('users')
     .doc(userId)
@@ -52,7 +53,9 @@ const loadPortfolioHistory = async (userId: string, now: number) => {
     getValues<PortfolioMetrics>(
       query.where('timestamp', '<', now - 30 * DAY_MS)
     ),
-  ])
+    ])
+  */
+  const portfolioMetrics = [[], [], [], []]
   const [current, day, week, month] = portfolioMetrics.map(
     (p) => p[0] as PortfolioMetrics | undefined
   )

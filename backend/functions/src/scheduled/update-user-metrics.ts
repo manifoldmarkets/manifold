@@ -21,6 +21,7 @@ import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
+import { bulkInsert } from 'shared/supabase/utils'
 import { secrets } from 'functions/secrets'
 
 const firestore = admin.firestore()
@@ -46,7 +47,7 @@ export async function updateUserMetricsCore() {
 
   log('Loading users...')
   const users = await pg.map(
-    `select data from users order by data->'metricsLastUpdated' asc nulls first limit 500`,
+    `select data from users order by data->'metricsLastUpdated' asc nulls first limit 5000`,
     [],
     (r) => r.data as User
   )
@@ -94,6 +95,7 @@ export async function updateUserMetricsCore() {
 
   log('Computing metric updates...')
   const userUpdates = []
+  const portfolioUpdates = []
   for (const user of users) {
     const userContracts = contractsByCreator[user.id] ?? []
     const newMetricRelevantBets = metricRelevantBets[user.id] ?? []
@@ -138,7 +140,14 @@ export async function updateUserMetricsCore() {
 
     const userDoc = firestore.collection('users').doc(user.id)
     if (didPortfolioChange) {
-      writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
+      portfolioUpdates.push({
+        user_id: user.id,
+        portfolio_id: userDoc.collection('portfolioHistory').doc().id,
+        ts: new Date(newPortfolio.timestamp).toISOString(),
+        investment_value: newPortfolio.investmentValue,
+        balance: newPortfolio.balance,
+        total_deposits: newPortfolio.totalDeposits,
+      })
     }
 
     const contractMetricsCollection = userDoc.collection('contract-metrics')
@@ -162,7 +171,12 @@ export async function updateUserMetricsCore() {
     }
   }
 
-  log('Committing writes...')
+  log('Inserting Supabase portfolio history entries...')
+  if (portfolioUpdates.length > 0) {
+    await bulkInsert(pg, 'user_portfolio_history', portfolioUpdates)
+  }
+
+  log('Committing Firestore writes...')
   await writer.close()
 
   await revalidateStaticProps('/leaderboards')
@@ -214,12 +228,21 @@ const getPortfolioHistorySnapshots = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select distinct on (user_id) user_id, data
+      `select distinct on (user_id) user_id, ts, investment_value, balance, total_deposits
       from user_portfolio_history
-      where (data->'timestamp')::bigint < $2 and user_id in ($1:list)
-      order by user_id, (data->'timestamp')::bigint desc`,
-      [userIds, when],
-      (r) => [r.user_id as string, r.data as PortfolioMetrics]
+      where ts < $2 and user_id in ($1:list)
+      order by user_id, ts desc`,
+      [userIds, new Date(when).toISOString()],
+      (r) => [
+        r.user_id as string,
+        {
+          userId: r.user_id as string,
+          timestamp: Date.parse(r.ts as string),
+          investmentValue: parseFloat(r.investment_value as string),
+          balance: parseFloat(r.balance as string),
+          totalDeposits: parseFloat(r.total_deposits as string),
+        } as PortfolioMetrics,
+      ]
     )
   )
 }
