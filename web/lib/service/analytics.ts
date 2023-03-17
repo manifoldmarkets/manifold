@@ -4,6 +4,10 @@ import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { saveUserEvent } from '../firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
+import { ShareEvent } from 'common/events'
+import { User } from 'common/user'
+import { completeQuest } from 'web/lib/firebase/api'
+import { QuestType } from 'common/quest'
 
 const loadAmplitude = () => import('@amplitude/analytics-browser')
 let amplitudeLib: ReturnType<typeof loadAmplitude> | undefined
@@ -86,4 +90,19 @@ export async function setOnceUserProperty(property: string, value: string) {
   const identifyObj = new amplitude.Identify()
   identifyObj.setOnce(property, value)
   await amplitude.identify(identifyObj).promise
+}
+
+// TODO: pass user to complete the sharing quest if they just hit the thresholds
+export async function trackShareEvent(
+  eventName: string,
+  url: string,
+  eventProperties?: any,
+  user?: User
+) {
+  const shareEventData: Omit<ShareEvent, 'timestamp' | 'name'> = {
+    url,
+    type: 'copy sharing link',
+  }
+  await track(eventName, { ...shareEventData, ...eventProperties })
+  if (user) completeQuest({ questType: 'SHARES' as QuestType }).catch(() => {})
 }

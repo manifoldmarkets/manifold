@@ -51,14 +51,15 @@ export function DailyStats(props: {
   useEffect(() => {
     if (incompleteQuestTypes.length === 0) return
     // TODO: move the complete quest call to follow completing one of the quest actions
-    setTimeout(() => {
-      Promise.all(
-        incompleteQuestTypes.map(
-          (questType) =>
-            questType !== 'BETTING_STREAK' && completeQuest({ questType })
-        )
+    Promise.all(
+      incompleteQuestTypes.map(
+        (questType) =>
+          questType !== 'BETTING_STREAK' &&
+          completeQuest({ questType }).catch((e) => {
+            console.log('error completing quest', e)
+          })
       )
-    }, 1000)
+    )
   }, [JSON.stringify(incompleteQuestTypes)])
 
   const [showQuestsModal, setShowQuestsModal] = useState(false)
@@ -161,7 +162,7 @@ function QuestsModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
+      <div className="bg-canvas-0 text-ink-1000 rounded-lg p-3">
         <Col className={'mb-6 items-center justify-center gap-2'}>
           <Title className={'!mb-1'}> Your Quests </Title>
           <span className="text-ink-700 text-sm">
@@ -177,7 +178,11 @@ function QuestsModal(props: {
         <Col className={'mb-4 gap-6'}>
           <QuestRow
             emoji={'🔥'}
-            title={'Make a prediction once per day'}
+            title={
+              (user.currentBettingStreak ?? 0) > 0
+                ? `Continue your ${user.currentBettingStreak}-day prediction streak`
+                : 'Make a prediction once per day'
+            }
             complete={streakComplete}
             status={`(${streakStatus.currentCount}/${streakStatus.requiredCount})`}
             reward={Math.min(
@@ -187,17 +192,17 @@ function QuestsModal(props: {
           />
           <QuestRow
             emoji={'📤'}
-            title={`Share ${shareStatus.requiredCount} unique links per week`}
+            title={`Share ${shareStatus.requiredCount} markets this week`}
             complete={shareComplete}
             status={`(${shareStatus.currentCount}/${shareStatus.requiredCount})`}
             reward={QUEST_DETAILS.SHARES.rewardAmount}
             info={
-              'Share any link to unique content such as a market, comment, group, or your referral link!'
+              'Share a market, comment, group, or your referral link with a friend!'
             }
           />
           <QuestRow
             emoji={'📈'}
-            title={`Create ${createStatus.requiredCount} market per week`}
+            title={`Create ${createStatus.requiredCount} market this week`}
             complete={createComplete}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
