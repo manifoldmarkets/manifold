@@ -41,6 +41,13 @@ export const removecontractfromgroup = authEndpoint(async (req, auth) => {
     const contract = contractSnap.data() as Contract
     const firebaseUser = await admin.auth().getUser(auth.uid)
 
+    if (group.privacyStatus == 'private' || contract.visibility == 'private') {
+      throw new APIError(
+        400,
+        'You can not remove a private market from a private group!'
+      )
+    }
+
     // checks if have permission to add a contract to the group
     if (!isManifoldId(auth.uid) && !isAdmin(firebaseUser.email)) {
       if (!groupMember) {
