@@ -1,6 +1,5 @@
 import { Contract } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { SiteLink } from '../widgets/site-link'
 import { ContractCard, ContractMetricsFooter } from './contract-card'
 import { ShowTime } from './contract-details'
 import { useCallback } from 'react'
@@ -58,14 +57,7 @@ export function ContractsGrid(props: {
   }
 
   if (contracts.length === 0) {
-    return (
-      <p className="text-ink-500 mx-2">
-        No markets found. Why not{' '}
-        <SiteLink href="/create" className="text-ink-700 font-bold">
-          create one?
-        </SiteLink>
-      </p>
-    )
+    return null // handle empty state outside of component
   }
 
   const lastIndex =
