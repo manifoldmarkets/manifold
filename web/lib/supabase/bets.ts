@@ -138,3 +138,16 @@ export const useRecentlyBetOnContracts = (userId: string) => {
 
   return { contracts: savedContracts, loadMore }
 }
+
+export async function getTotalBetCount(contractId: string) {
+  const { count } = await run(
+    db
+      .from('contract_bets')
+      .select('*', { head: true, count: 'exact' })
+      .eq('contract_id', contractId)
+      .eq('data->>isChallenge', false)
+      .eq('data->>isRedemption', false)
+      .eq('data->>isAnte', false)
+  )
+  return count as number
+}

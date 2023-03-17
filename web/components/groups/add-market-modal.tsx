@@ -34,7 +34,7 @@ export function AddMarketToGroupModal(props: {
         </div>
         {addPermission == 'private' && (
           <Col className="w-full pt-4">
-            <NewPrivateContractFromGroup />
+            <NewContractFromGroup group={group} user={user} />
           </Col>
         )}
         {addPermission == 'new' && (
@@ -86,15 +86,11 @@ export function NewContractFromGroup(props: { group: Group; user: User }) {
         description: '',
         closeTime: '',
         outcomeType: 'BINARY',
-        visibility: 'public',
+        visibility: group.privacyStatus === 'private' ? 'private' : 'public',
         groupId: group.id,
       }}
       creator={user}
       fromGroup={true}
     />
   )
-}
-
-export function NewPrivateContractFromGroup() {
-  return <>Coming soon to a city near you!</>
 }
