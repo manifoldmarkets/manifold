@@ -111,9 +111,9 @@ export async function updateUserMetricsCore() {
       currPortfolio.investmentValue !== newPortfolio.investmentValue
 
     const allTimeProfit =
-      currPortfolio.balance +
-      currPortfolio.investmentValue -
-      currPortfolio.totalDeposits
+      newPortfolio.balance +
+      newPortfolio.investmentValue -
+      newPortfolio.totalDeposits
     const newProfit = {
       daily: allTimeProfit - (yesterdayProfits[user.id] ?? allTimeProfit),
       weekly: allTimeProfit - (weeklyProfits[user.id] ?? allTimeProfit),
