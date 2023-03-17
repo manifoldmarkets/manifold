@@ -196,7 +196,7 @@ create or replace function ts_to_millis(ts timestamptz)
     language sql
     immutable parallel safe
 as $$
-select extract(epoch from ts)::bigint * 1000
+select (extract(epoch from ts) * 1000)::bigint
 $$;
 
 create or replace function millis_to_ts(millis bigint)
@@ -204,7 +204,7 @@ create or replace function millis_to_ts(millis bigint)
     language sql
     immutable parallel safe
 as $$
-select to_timestamp(millis / 1000)
+select to_timestamp(millis / 1000.0)
 $$;
 
 create or replace function millis_interval(start_millis bigint, end_millis bigint)
