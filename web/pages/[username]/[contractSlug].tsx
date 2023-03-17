@@ -63,6 +63,7 @@ import {
 } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import dayjs from 'dayjs'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,

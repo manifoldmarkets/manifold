@@ -117,7 +117,7 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
     db
       .from('contracts')
       .select('data->>visibility')
-      .eq('data->>slug', contractSlug)
+      .contains('data', { slug: contractSlug })
   )
 
   if (contractVisibility && contractVisibility.length > 0) {
