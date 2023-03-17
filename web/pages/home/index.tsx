@@ -251,8 +251,12 @@ export const ContractsSection = memo(function ContractsSection(props: {
     <Col className={className}>
       <HomeSectionHeader label={label} icon={icon} />
       <Col className="divide-ink-300 border-ink-300 max-w-2xl divide-y rounded border">
-        {contracts.map((contract) => (
-          <ContractCardNew key={contract.id} contract={contract} hideImage />
+        {contracts.map((contract, i) => (
+          <ContractCardNew
+            key={contract.id}
+            contract={contract}
+            hideImage={i % 2 === 0}
+          />
         ))}
       </Col>
     </Col>

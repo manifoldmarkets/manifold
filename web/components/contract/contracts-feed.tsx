@@ -15,8 +15,12 @@ export function ContractsFeed() {
   return (
     <Col>
       <Col className="divide-ink-300 border-ink-300 divide-y-[0.5px] border-[0.5px]">
-        {contracts.map((contract) => (
-          <ContractCardNew key={contract.id} contract={contract} hideImage />
+        {contracts.map((contract, i) => (
+          <ContractCardNew
+            key={contract.id}
+            contract={contract}
+            hideImage={i % 2 === 0}
+          />
         ))}
       </Col>
 
