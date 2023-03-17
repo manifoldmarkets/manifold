@@ -193,9 +193,8 @@ export function getUserIsGroupMember(params: { groupSlug: string }) {
 
 export function completeQuest(params: any) {
   return call(getApiUrl('completequest'), 'POST', params)
-
+}
 
 export function getPrivateContractBySlug(params: { contractSlug: string }) {
   return call(getApiUrl('getprivatecontractbyslug'), 'POST', params)
-
 }
