@@ -63,7 +63,7 @@ export function DailyStats(props: {
       incompleteQuestTypes.map(
         (questType) =>
           questType !== 'BETTING_STREAK' &&
-          completeQuest({ questType, userId: user.id }).catch((e) => {
+          completeQuest({ questType }).catch((e) => {
             console.log('error completing quest', e)
           })
       )

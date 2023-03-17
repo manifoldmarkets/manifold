@@ -45,7 +45,6 @@ export async function track(eventName: string, eventProperties?: any) {
     amplitude.track(eventName, eventProperties).promise,
     saveUserEvent(userId, eventName, props),
   ])
-  return { userId }
 }
 
 // Convenience functions:
@@ -101,10 +100,9 @@ export async function trackShareEvent(
     url,
     type: 'copy sharing link',
   }
-  const { userId } = await track(eventName, {
+  await track(eventName, {
     ...shareEventData,
     ...eventProperties,
   })
-  if (userId)
-    completeQuest({ questType: 'SHARES' as QuestType, userId }).catch(() => {})
+  completeQuest({ questType: 'SHARES' as QuestType }).catch(() => {})
 }
