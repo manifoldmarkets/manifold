@@ -101,7 +101,7 @@ export async function trackShareEvent(
     url,
     type: 'copy sharing link',
   }
-  const userId = await track(eventName, {
+  const { userId } = await track(eventName, {
     ...shareEventData,
     ...eventProperties,
   })

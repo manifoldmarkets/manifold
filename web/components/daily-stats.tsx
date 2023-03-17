@@ -26,7 +26,7 @@ import { filterDefined } from 'common/util/array'
 
 export const dailyStatsClass = 'text-lg py-1'
 export const unseenDailyStatsClass =
-  'px-1.5 text-amber-500 shadow shadow-amber-700 transition-colors transition-all hover:from-yellow-400 hover:via-yellow-100 hover:to-yellow-200 enabled:bg-gradient-to-tr'
+  'px-1.5 text-blue-600 shadow shadow-blue-700 transition-colors transition-all hover:from-blue-400 hover:via-blue-100 hover:to-blue-200 enabled:bg-gradient-to-tr'
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 export function DailyStats(props: {
   user: User | null | undefined
