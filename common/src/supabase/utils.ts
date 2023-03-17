@@ -17,6 +17,9 @@ import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 export type Schema = Database['public']
 export type Tables = Schema['Tables']
+export type PlainTables = {
+  [table in keyof Tables]: Tables[table]['Row']
+}
 export type TableName = keyof Tables
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 

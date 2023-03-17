@@ -42,6 +42,7 @@ import { addgroupmember } from './add-group-member'
 import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
 import { redeemad } from './redeem-ad-reward'
+import { getRecommendedContracts } from './get-recommended-contracts'
 
 const allowCors: RequestHandler = cors({
   origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_VERCEL, CORS_ORIGIN_LOCALHOST],
@@ -109,6 +110,7 @@ app.post('/removecontractfromgroup', ...apiRoute(removecontractfromgroup))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/redeemad', ...apiRoute(redeemad))
+app.post('/get-recommended-contracts', ...apiRoute(getRecommendedContracts))
 
 app.post('/createcheckoutsession', allowCors, createcheckoutsession)
 app.post(
