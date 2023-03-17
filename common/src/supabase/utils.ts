@@ -119,3 +119,14 @@ export function selectFrom<
   const builder = db.from(table).select<string, TResult>(query)
   return builder
 }
+
+export function millisToTs(millis: number) {
+  return new Date(millis).toISOString()
+}
+
+export function tsToMillis(ts: string) {
+  // mqp: hack for temporary unwise choice of postgres timestamp without time zone type
+  // -- we have to make it look like an ISO9601 date or the JS date constructor will
+  // assume that it's in local time. will fix this up soon
+  return Date.parse(ts + '+0000')
+}
