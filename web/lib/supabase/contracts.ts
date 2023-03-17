@@ -122,10 +122,10 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
     .visibility
 }
 
-export async function getContractParams(contract: Contract | null) {
+export async function getContractParams(contract: Contract) {
   if (!contract) {
     return {
-      contract: null,
+      contract: contract,
       historyData: {
         bets: [],
         points: [],
