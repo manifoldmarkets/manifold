@@ -96,7 +96,7 @@ function getKSamples() {
   shuffleArray(allCards)
   window.console.log(allCards)
   for (let j = 0; j < allCards.length; j++) {
-    userKey = allCards[j]
+    key = allCards[j]
     value = allData[key]
     if (usedCounters.has(key)) {
       continue
