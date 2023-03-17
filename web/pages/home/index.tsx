@@ -181,7 +181,7 @@ function HomeSectionHeader(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-900 sticky top-0 z-20 my-1 mx-2 items-center justify-between pb-2 pl-1 lg:-ml-1',
+        'text-ink-900 sticky top-0 z-20 items-center justify-between px-1 pb-3 sm:px-0',
         BACKGROUND_COLOR
       )}
     >
