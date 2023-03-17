@@ -26,6 +26,11 @@ export const usePrivateUser = () => {
   return authUser ? authUser.privateUser : authUser
 }
 
+export const useAuthUser = () => {
+  const authUser = useContext(AuthContext)
+  return authUser
+}
+
 export const useUserById = (userId: string | undefined) => {
   return useStore(userId, listenForUser)
 }

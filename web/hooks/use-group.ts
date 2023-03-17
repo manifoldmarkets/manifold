@@ -26,7 +26,7 @@ import { storageStore, usePersistentState } from './use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useStoreItems } from './use-store'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
-import { useUser } from './use-user'
+import { useAuthUser, useUser } from './use-user'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -208,23 +208,18 @@ export function useGroups(groupIds: string[]) {
   return useStoreItems(groupIds, listenForGroup, { loadOnce: true })
 }
 
-export function useIsGroupMember(groupSlug: string, delay: number) {
+export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = useState<any>(undefined)
-  const user = useUser()
+  const authUser = useAuthUser()
   useEffect(() => {
     // if there is no user
-    if (user === null) {
+    if (authUser === null) {
       setIsMember(false)
-    } else if (user) {
-      // need this timeout (1 sec works) or else get "must be signed in to make API calls" error
-      setTimeout(
-        () =>
-          getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
-            setIsMember(result)
-          }),
-        delay
-      )
+    } else if (authUser && authUser.authLoaded) {
+      getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
+        setIsMember(result)
+      })
     }
-  }, [groupSlug, user])
+  }, [groupSlug, authUser])
   return isMember
 }
