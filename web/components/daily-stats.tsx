@@ -184,6 +184,7 @@ function QuestsModal(props: {
           />
         </Col>
         <Col className={'mb-4 gap-6'}>
+          <Row className={'text-primary-700 '}>Daily</Row>
           <QuestRow
             emoji={'🔥'}
             title={
@@ -198,6 +199,7 @@ function QuestsModal(props: {
               BETTING_STREAK_BONUS_MAX
             )}
           />
+          <Row className={'text-primary-700'}>Weekly</Row>
           <QuestRow
             emoji={'📤'}
             title={`Share ${shareStatus.requiredCount} markets this week`}
