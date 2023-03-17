@@ -181,7 +181,7 @@ function HomeSectionHeader(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-900 sticky top-0 z-20 my-1 mx-2 items-center justify-between pb-2 pl-1 lg:-ml-1',
+        'text-ink-900 sticky top-0 z-20 items-center justify-between px-1 pb-3 sm:px-0',
         BACKGROUND_COLOR
       )}
     >
@@ -251,8 +251,12 @@ export const ContractsSection = memo(function ContractsSection(props: {
     <Col className={className}>
       <HomeSectionHeader label={label} icon={icon} />
       <Col className="divide-ink-300 border-ink-300 max-w-2xl divide-y rounded border">
-        {contracts.map((contract) => (
-          <ContractCardNew key={contract.id} contract={contract} hideImage />
+        {contracts.map((contract, i) => (
+          <ContractCardNew
+            key={contract.id}
+            contract={contract}
+            hideImage={i % 2 === 0}
+          />
         ))}
       </Col>
     </Col>

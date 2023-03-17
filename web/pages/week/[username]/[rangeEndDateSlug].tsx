@@ -225,7 +225,7 @@ export default function RangePerformancePage(props: {
         <Title children="Also betting on" />
         {relatedMarkets ? (
           <ContractsGrid
-            contracts={relatedMarkets ?? []}
+            contracts={relatedMarkets}
             trackingPostfix=" weekly update related"
             loadMore={loadMore}
           />

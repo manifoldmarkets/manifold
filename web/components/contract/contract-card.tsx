@@ -608,7 +608,7 @@ export function ContractCardNew(props: {
         )}
 
         <Row
-          className="z-20 ml-auto items-center gap-2"
+          className="ml-auto items-center gap-2"
           onClick={(e) => {
             // Don't navigate to the contract page when clicking buttons.
             e.preventDefault()

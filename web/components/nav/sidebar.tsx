@@ -31,8 +31,6 @@ import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SignInButton } from '../buttons/sign-in-button'
-import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
@@ -77,13 +75,7 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col xl:ml-2', className)}
     >
-      <ManifoldLogo className="pt-6" twoLine />
-      {logoSubheading && (
-        <Row className="text-primary-700 pl-2 text-2xl sm:mt-3">
-          {logoSubheading}
-        </Row>
-      )}
-      <Spacer h={6} />
+      <ManifoldLogo className="py-6" twoLine />
 
       {user === undefined && <div className="h-[56px]" />}
 

@@ -43,7 +43,7 @@ export function InaccessiblePrivateGroup() {
 
 export function PrivateGroupPage(props: { slugs: string[] }) {
   const { slugs } = props
-  const isMember = useIsGroupMember(slugs[0], 1000)
+  const isMember = useIsGroupMember(slugs[0])
   if (isMember === undefined) {
     return <LoadingPrivateGroup />
   } else if (isMember === false) return <InaccessiblePrivateGroup />
