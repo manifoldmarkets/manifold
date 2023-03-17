@@ -54,8 +54,6 @@ create table if not exists user_portfolio_history (
     investment_value numeric not null,
     balance numeric not null,
     total_deposits numeric not null,
-    data jsonb null,
-    fs_updated_time timestamp null,
     primary key(user_id, portfolio_id)
 );
 alter table user_portfolio_history enable row level security;
@@ -63,28 +61,6 @@ drop policy if exists "public read" on user_portfolio_history;
 create policy "public read" on user_portfolio_history for select using (true);
 create index if not exists user_portfolio_history_user_ts on user_portfolio_history (user_id, ts desc);
 alter table user_portfolio_history cluster on user_portfolio_history_user_ts;
-
-create or replace function user_portfolio_history_populate_cols()
-  returns trigger
-  language plpgsql
-as
-$$
-begin
-  if new.data is not null then
-    new.ts := millis_to_ts(((new.data)->'timestamp')::bigint);
-    new.investment_value := ((new.data)->'investmentValue')::numeric;
-    new.balance := ((new.data)->'balance')::numeric;
-    new.total_deposits := ((new.data)->'totalDeposits')::numeric;
-  end if;
-  return new;
-end
-$$;
-
-drop trigger if exists user_portfolio_history_populate on user_portfolio_history;
-create trigger user_portfolio_history_populate
-before insert or update on user_portfolio_history
-for each row
-execute function user_portfolio_history_populate_cols();
 
 create table if not exists user_contract_metrics (
     user_id text not null,

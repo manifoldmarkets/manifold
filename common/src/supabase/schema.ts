@@ -458,8 +458,6 @@ export interface Database {
       user_portfolio_history: {
         Row: {
           balance: number | null
-          data: Json | null
-          fs_updated_time: string | null
           investment_value: number | null
           portfolio_id: string
           total_deposits: number | null
@@ -468,8 +466,6 @@ export interface Database {
         }
         Insert: {
           balance?: number | null
-          data?: Json | null
-          fs_updated_time?: string | null
           investment_value?: number | null
           portfolio_id: string
           total_deposits?: number | null
@@ -478,8 +474,6 @@ export interface Database {
         }
         Update: {
           balance?: number | null
-          data?: Json | null
-          fs_updated_time?: string | null
           investment_value?: number | null
           portfolio_id?: string
           total_deposits?: number | null
