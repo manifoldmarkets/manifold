@@ -6,6 +6,7 @@ import { buildArray, filterDefined } from 'common/util/array'
 import { keyBy, range, groupBy, sortBy, partition, uniq } from 'lodash'
 import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useLiveComments } from 'web/hooks/use-comments'
 import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
 import {
@@ -67,7 +68,7 @@ export function ActivityLog(props: {
   )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
-  const rawBets = useLiveBets(count * 3 + 20, {
+  const rawBets = useRealtimeBets(count * 3 + 20, {
     filterRedemptions: true,
     filterAntes: true,
   })
