@@ -5,4 +5,3 @@ out
 tsconfig.tsbuildinfo
 .env*
 .vercel
-testing

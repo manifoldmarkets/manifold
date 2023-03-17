@@ -125,15 +125,6 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
   let min, max, initialProb, isLogScale, answers
 
-  if (visibility == 'private') {
-    if (!groupId) {
-      throw new APIError(
-        400,
-        'Private markets cannot exist outside a private group.'
-      )
-    }
-  }
-
   if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
     let initialValue
     ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
@@ -189,15 +180,6 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
           : undefined
         : undefined
 
-    if (
-      (group.privacyStatus == 'private' && visibility != 'private') ||
-      (group.privacyStatus != 'private' && visibility == 'private')
-    ) {
-      throw new APIError(
-        400,
-        `Both "${group.name}" and market must be of the same private visibility.`
-      )
-    }
     if (
       !canUserAddGroupToMarket({
         userId: auth.uid,

@@ -5,7 +5,7 @@ import * as unlocking from '../../public/lottie/unlocking-icon.json'
 import Lottie from 'react-lottie'
 import { GroupPageContent } from 'web/pages/group/[...slugs]'
 
-export function LoadingPrivateThing() {
+export function LoadingPrivateGroup() {
   return (
     <Col className="mt-24 h-full w-full items-center justify-center lg:mt-0">
       <Lottie
@@ -32,12 +32,11 @@ export function LoadingPrivateThing() {
   )
 }
 
-export function InaccessiblePrivateThing(props: { thing: string }) {
-  const { thing } = props
+export function InaccessiblePrivateGroup() {
   return (
     <Col className="mt-24 h-full w-full items-center justify-center lg:mt-0">
       <LockClosedIcon className="text-ink-400 h-36 w-36" />
-      <div>You do not have access to this {thing}!</div>
+      <div>You do not have access to this group!</div>
     </Col>
   )
 }
@@ -46,8 +45,7 @@ export function PrivateGroupPage(props: { slugs: string[] }) {
   const { slugs } = props
   const isMember = useIsGroupMember(slugs[0], 1000)
   if (isMember === undefined) {
-    return <LoadingPrivateThing />
-  } else if (isMember === false)
-    return <InaccessiblePrivateThing thing="group" />
+    return <LoadingPrivateGroup />
+  } else if (isMember === false) return <InaccessiblePrivateGroup />
   else return <GroupPageContent />
 }

@@ -7,9 +7,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useSavedContractMetrics = (contract: Contract) => {
   const user = useUser()
-  const contractMetrics = contract
-    ? useUserContractMetrics(user?.id, contract.id)
-    : null
+  const contractMetrics = useUserContractMetrics(user?.id, contract.id)
   const [savedMetrics, setSavedMetrics] = usePersistentState<
     ContractMetrics | undefined
   >(undefined, {
