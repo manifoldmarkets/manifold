@@ -190,6 +190,12 @@ export function registerDiscordId(params: any) {
 export function getUserIsGroupMember(params: { groupSlug: string }) {
   return call(getApiUrl('getuserisgroupmember'), 'POST', params)
 }
+
 export function completeQuest(params: any) {
   return call(getApiUrl('completequest'), 'POST', params)
+
+
+export function getPrivateContractBySlug(params: { contractSlug: string }) {
+  return call(getApiUrl('getprivatecontractbyslug'), 'POST', params)
+
 }
