@@ -5,7 +5,7 @@ import { getUserEventsCount } from 'common/supabase/user-events'
 import { db } from 'web/lib/supabase/db'
 import dayjs from 'dayjs'
 
-export const useIsSeen = (
+export const useHasSeen = (
   user: User | null | undefined,
   eventNames: string[],
   timePeriod: 'day' | 'week'

@@ -27,7 +27,7 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
-import { useIsSeen } from 'web/hooks/use-is-seen'
+import { useHasSeen } from 'web/hooks/use-has-seen'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -63,7 +63,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
     return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
   }, [data])
   // const dailyProfit = 10
-  const [seenToday, setSeenToday] = useIsSeen(
+  const [seenToday, setSeenToday] = useHasSeen(
     user,
     [DAILY_PROFIT_CLICK_EVENT],
     'day'

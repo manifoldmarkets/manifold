@@ -18,7 +18,7 @@ import {
   BETTING_STREAK_BONUS_MAX,
 } from 'common/economy'
 import { ProgressBar } from 'web/components/progress-bar'
-import { useIsSeen } from 'web/hooks/use-is-seen'
+import { useHasSeen } from 'web/hooks/use-has-seen'
 import { track } from 'web/lib/service/analytics'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { sum } from 'lodash'
@@ -36,7 +36,7 @@ export function DailyStats(props: {
 }) {
   const { user, showLoans } = props
   const authorized = useIsAuthorized()
-  const [seenToday, setSeenToday] = useIsSeen(
+  const [seenToday, setSeenToday] = useHasSeen(
     user,
     [QUEST_STATS_CLICK_EVENT],
     'week'
