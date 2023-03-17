@@ -51,10 +51,13 @@ import {
   ContractMetricsByOutcome,
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
-import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
+import {
+  Contract,
+  getContractFromSlug,
+  tradingAllowed,
+} from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import {
-  getContractFromSlug,
   getContractParams,
   getContractVisibilityFromSlug,
 } from 'web/lib/supabase/contracts'
