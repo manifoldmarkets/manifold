@@ -6,9 +6,7 @@ import { useMemberGroupIds } from 'web/hooks/use-group'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
-import {
-  PillButton,
-} from 'web/components/buttons/pill-button'
+import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 
