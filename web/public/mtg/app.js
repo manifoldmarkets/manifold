@@ -96,7 +96,7 @@ function getKSamples() {
   shuffleArray(allCards)
   window.console.log(allCards)
   for (let j = 0; j < allCards.length; j++) {
-    key = allCards[j]
+    userKey = allCards[j]
     value = allData[key]
     if (usedCounters.has(key)) {
       continue
@@ -120,7 +120,7 @@ function getKSamples() {
   let count = 0
   shuffleArray(cardNames)
   for (let j = 0; j < cardNames.length; j++) {
-    key = cardNames[j]
+    userKey = cardNames[j]
     value = cardNames[key]
     if (usedCounters.has(key)) {
       continue
@@ -151,7 +151,7 @@ function createNewArtistMap() {
   shuffleArray(allCards)
   window.console.log(allCards)
   for (let j = 0; j < allCards.length; j++) {
-    key = allCards[j]
+    userKey = allCards[j]
     value = allData[key]
     if (usedCounters.has(key)) {
       continue

@@ -4,52 +4,81 @@ import clsx from 'clsx'
 
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
-import { usePrivateUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { formatMoney } from 'common/util/format'
-import {
-  BettingStreakModal,
-  hasCompletedStreakToday,
-} from 'web/components/profile/betting-streak-modal'
+import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { LoansModal } from 'web/components/profile/loans-modal'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { DailyProfit } from 'web/components/daily-profit'
+import { QUEST_DETAILS, QUEST_TYPES } from 'common/quest'
+import { Modal } from 'web/components/layout/modal'
+import { Title } from 'web/components/widgets/title'
+import {
+  BETTING_STREAK_BONUS_AMOUNT,
+  BETTING_STREAK_BONUS_MAX,
+} from 'common/economy'
+import { completeQuest } from 'web/lib/firebase/api'
+import { ProgressBar } from 'web/components/progress-bar'
+import { useIsSeen } from 'web/hooks/use-is-seen'
+import { track } from 'web/lib/service/analytics'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { sum } from 'lodash'
+import { filterDefined } from 'common/util/array'
 
-export const dailyStatsClass = 'items-center text-lg'
+export const dailyStatsClass = 'items-center text-lg py-1'
+export const unseenDailyStatsClass =
+  'px-1.5 text-amber-500 shadow shadow-amber-700 transition-colors transition-all hover:from-yellow-400 hover:via-yellow-100 hover:to-yellow-200 enabled:bg-gradient-to-tr'
+const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 export function DailyStats(props: {
   user: User | null | undefined
   showLoans?: boolean
 }) {
   const { user, showLoans } = props
-
-  const privateUser = usePrivateUser()
-  const streaks = privateUser?.notificationPreferences?.betting_streaks ?? []
-  const streaksHidden = streaks.length === 0
-
+  const [seenToday, setSeenToday] = useIsSeen(
+    user,
+    [QUEST_STATS_CLICK_EVENT],
+    'week'
+  )
   const [showLoansModal, setShowLoansModal] = useState(false)
   useEffect(() => {
     const showLoansModel = Router.query['show'] === 'loans'
     setShowLoansModal(showLoansModel)
-    const showStreaksModal = Router.query['show'] === 'betting-streak'
-    setShowStreakModal(showStreaksModal)
   }, [])
 
-  const [showStreakModal, setShowStreakModal] = useState(false)
+  const { incompleteQuestTypes } = user
+    ? getQuestCompletionStatus(user)
+    : { incompleteQuestTypes: [] }
+  useEffect(() => {
+    if (incompleteQuestTypes.length === 0) return
+    // TODO: move the complete quest call to follow completing one of the quest actions
+    setTimeout(() => {
+      Promise.all(
+        incompleteQuestTypes.map(
+          (questType) =>
+            questType !== 'BETTING_STREAK' && completeQuest({ questType })
+        )
+      )
+    }, 1000)
+  }, [JSON.stringify(incompleteQuestTypes)])
+
+  const [showQuestsModal, setShowQuestsModal] = useState(false)
 
   // hide daily stats if user created in last 24 hours
   const justCreated =
     (user?.createdTime ?? 0) > Date.now() - 1000 * 60 * 60 * 24
 
-  if (justCreated) return <></>
+  if (justCreated || !user) return <></>
+  const { allQuestsComplete, totalQuestsCompleted, totalQuests } =
+    getQuestCompletionStatus(user)
 
   return (
     <Row className={'flex-shrink-0 items-center gap-4'}>
       <DailyProfit user={user} />
 
-      {!streaksHidden && (
+      {allQuestsComplete ? (
         <Col
           className="cursor-pointer"
-          onClick={() => setShowStreakModal(true)}
+          onClick={() => setShowQuestsModal(true)}
         >
           <Tooltip text={'Prediction streak'}>
             <Row
@@ -62,6 +91,25 @@ export function DailyStats(props: {
             </Row>
           </Tooltip>
         </Col>
+      ) : (
+        <button
+          className={clsx(
+            'cursor-pointer rounded-md py-1',
+            dailyStatsClass,
+            seenToday ? '' : unseenDailyStatsClass
+          )}
+          onClick={() => {
+            setShowQuestsModal(true)
+            track(QUEST_STATS_CLICK_EVENT)
+            setSeenToday(true)
+          }}
+        >
+          <Tooltip text={'Your quests'}>
+            <Row>
+              <span>🧭 {`${totalQuestsCompleted}/${totalQuests}`}</span>
+            </Row>
+          </Tooltip>
+        </button>
       )}
       {showLoans && (
         <Col
@@ -85,13 +133,165 @@ export function DailyStats(props: {
       {showLoansModal && (
         <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
       )}
-      {showStreakModal && (
-        <BettingStreakModal
-          isOpen={showStreakModal}
-          setOpen={setShowStreakModal}
-          currentUser={user}
+      {showQuestsModal && (
+        <QuestsModal
+          open={showQuestsModal}
+          setOpen={setShowQuestsModal}
+          user={user}
         />
       )}
     </Row>
   )
+}
+
+function QuestsModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+  user: User
+}) {
+  const { open, setOpen, user } = props
+  const { totalQuestsCompleted, totalQuests, questToCompletionStatus } =
+    getQuestCompletionStatus(user)
+  const streakStatus = questToCompletionStatus['BETTING_STREAK']
+  const streakComplete = streakStatus.currentCount >= streakStatus.requiredCount
+  const shareStatus = questToCompletionStatus['SHARES']
+  const shareComplete = shareStatus.currentCount >= shareStatus.requiredCount
+  const createStatus = questToCompletionStatus['MARKETS_CREATED']
+  const createComplete = createStatus.currentCount >= createStatus.requiredCount
+
+  return (
+    <Modal open={open} setOpen={setOpen} size={'lg'}>
+      <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
+        <Col className={'mb-6 items-center justify-center'}>
+          <Title className={'!mb-1'}> Your Quests </Title>
+          <span className="text-ink-700 mb-2 text-sm">
+            {`🧭 ${totalQuestsCompleted}/${totalQuests}`} completed
+          </span>
+          <ProgressBar
+            color={'bg-indigo-500'}
+            value={totalQuestsCompleted / totalQuests}
+            max={1}
+            className={'mb-1 w-1/2'}
+          />
+        </Col>
+        <Col className={'mb-4 gap-4'}>
+          <QuestRow
+            emoji={'🔥'}
+            title={'Make a prediction once per day'}
+            complete={streakComplete}
+            status={`(${streakStatus.currentCount}/${streakStatus.requiredCount})`}
+            reward={Math.min(
+              BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
+              BETTING_STREAK_BONUS_MAX
+            )}
+          />
+          <QuestRow
+            emoji={'📤'}
+            title={`Share ${shareStatus.requiredCount} unique links per week`}
+            complete={shareComplete}
+            status={`(${shareStatus.currentCount}/${shareStatus.requiredCount})`}
+            reward={QUEST_DETAILS.SHARES.rewardAmount}
+            info={
+              'Share any link to unique content such as a market, comment, group, or your referral link!'
+            }
+          />
+          <QuestRow
+            emoji={'📈'}
+            title={`Create ${createStatus.requiredCount} market per week`}
+            complete={createComplete}
+            status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
+            reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
+          />
+        </Col>
+      </div>
+    </Modal>
+  )
+}
+const QuestRow = (props: {
+  emoji: string
+  title: string
+  complete: boolean
+  status: string
+  reward: number
+  info?: string
+}) => {
+  const { title, complete, status, reward, emoji, info } = props
+  return (
+    <Row className={'justify-start justify-between gap-2'}>
+      <Col>
+        <Row className={'gap-8'}>
+          <span className={clsx('text-4xl', complete ? '' : 'grayscale')}>
+            {emoji}
+          </span>
+          <Col>
+            <span className={clsx('text-lg')}>
+              {title}
+              {info && (
+                <InfoTooltip className={'!mb-1 ml-1 !h-4 !w-4'} text={info} />
+              )}
+            </span>
+            <span
+              className={clsx(
+                'text-ink-500 text-sm',
+                complete && 'text-indigo-500'
+              )}
+            >
+              {complete ? 'Complete!' : status}
+            </span>
+          </Col>
+        </Row>
+      </Col>
+      <Col className={'items-center justify-center'}>
+        <span
+          className={clsx(
+            'text-lg ',
+            complete ? 'text-teal-600' : 'text-ink-500'
+          )}
+        >
+          +{formatMoney(reward)}
+        </span>
+      </Col>
+    </Row>
+  )
+}
+
+const getQuestCompletionStatus = (user: User) => {
+  const questToCompletionStatus = Object.fromEntries(
+    QUEST_TYPES.map((t) => [t, { requiredCount: 0, currentCount: 0 }])
+  )
+
+  for (const questType of QUEST_TYPES) {
+    const questData = QUEST_DETAILS[questType]
+    if (questType === 'BETTING_STREAK')
+      questToCompletionStatus[questType] = {
+        requiredCount: questData.requiredCount,
+        currentCount: hasCompletedStreakToday(user) ? 1 : 0,
+      }
+    else
+      questToCompletionStatus[questType] = {
+        requiredCount: questData.requiredCount,
+        currentCount: user[questData.userKey] ?? 0,
+      }
+  }
+  const totalQuestsCompleted = sum(
+    Object.values(questToCompletionStatus).map((v) =>
+      v.currentCount >= v.requiredCount ? 1 : 0
+    )
+  )
+  const incompleteQuestTypes = filterDefined(
+    Object.entries(questToCompletionStatus).map(([k, v]) =>
+      v.currentCount < v.requiredCount ? k : null
+    )
+  )
+
+  const totalQuests = Object.keys(questToCompletionStatus).length
+  const allQuestsComplete = totalQuestsCompleted === totalQuests
+
+  return {
+    questToCompletionStatus,
+    totalQuestsCompleted,
+    totalQuests,
+    allQuestsComplete,
+    incompleteQuestTypes,
+  }
 }

@@ -24,7 +24,7 @@ import {
 } from './notification-helpers'
 import { MarketResolvedNotification } from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
-import { QUEST_REWARD_DETAILS } from 'common/quest'
+import { QUEST_DETAILS } from 'common/quest'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -267,7 +267,7 @@ export function QuestIncomeNotification(props: {
       <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
-          text={`completing the ${QUEST_REWARD_DETAILS[questType].title} quest`}
+          text={`completing the ${QUEST_DETAILS[questType].title} quest`}
         />
       </span>
     </NotificationFrame>
