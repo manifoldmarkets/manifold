@@ -26,6 +26,11 @@ export const usePrivateUser = () => {
   return authUser ? authUser.privateUser : authUser
 }
 
+export const useIsAuthorized = () => {
+  const authUser = useContext(AuthContext)
+  return authUser && authUser.authLoaded
+}
+
 export const useUserById = (userId: string | undefined) => {
   return useStore(userId, listenForUser)
 }
