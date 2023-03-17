@@ -87,7 +87,7 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
   const visibility = await getContractVisibilityFromSlug(contractSlug)
-  if (visibility === 'private') {
+  if (visibility === 'private' || !visibility) {
     return {
       props: {
         visibility,
@@ -118,6 +118,9 @@ export default function ContractPage(props: {
   contractParams?: ContractParams
 }) {
   const { visibility, contractSlug, contractParams } = props
+  if (!visibility) {
+    return <Custom404 />
+  }
   return (
     <Page maxWidth="max-w-[1400px]">
       {visibility == 'private' && (

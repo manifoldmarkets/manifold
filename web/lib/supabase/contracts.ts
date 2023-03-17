@@ -1,3 +1,4 @@
+import { Bet } from 'common/bet'
 import { getInitialProbability } from 'common/calculate'
 import {
   BinaryContract,
@@ -10,24 +11,22 @@ import { run, selectJson, SupabaseClient } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
-import {
-  getBetPoints,
-  getHistoryDataBets,
-  getUseBetLimit,
-  shouldUseBetPoints,
-} from 'web/components/contract/contract-page-helpers'
+import { HistoryPoint } from 'web/components/charts/generic-charts'
 import { getInitialRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { getUser } from 'web/lib/supabase/user'
 import {
   ContractParams,
   CONTRACT_BET_FILTER,
 } from 'web/pages/[username]/[contractSlug]'
+import { getTotalBetCount } from '../firebase/bets'
+import { listAllComments } from '../firebase/comments'
 import {
   getBinaryContractUserContractMetrics,
   getTopContractMetrics,
 } from '../firebase/contract-metrics'
 import { Contract } from '../firebase/contracts'
-import { getBets, getTotalBetCount } from './bets'
+import { getBets } from './bets'
+// import { getBets, getTotalBetCount } from './bets'
 import { getAllComments } from './comments'
 import { db } from './db'
 
@@ -108,7 +107,10 @@ export async function getContractFromSlug(contractSlug: string) {
   const { data: contract } = await run(
     db.from('contracts').select('data').eq('data->>slug', contractSlug)
   )
-  return (contract[0] as unknown as { data: Contract }).data
+  if (contract && contract.length > 0) {
+    return (contract[0] as unknown as { data: Contract }).data
+  }
+  return undefined
 }
 
 export async function getContractVisibilityFromSlug(contractSlug: string) {
@@ -118,14 +120,18 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
       .select('data->>visibility')
       .eq('data->>slug', contractSlug)
   )
-  return (contractVisibility[0] as unknown as { visibility: visibility })
-    .visibility
+
+  if (contractVisibility && contractVisibility.length > 0) {
+    return (contractVisibility[0] as unknown as { visibility: visibility })
+      .visibility
+  }
+  return undefined
 }
 
-export async function getContractParams(contract: Contract) {
+export async function getContractParams(contract: Contract | null) {
   if (!contract) {
     return {
-      contract: contract,
+      contract: null,
       historyData: {
         bets: [],
         points: [],
@@ -139,20 +145,39 @@ export async function getContractParams(contract: Contract) {
     }
   }
   const contractId = contract?.id
+
+  // DEBUG: supabase/firebase
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
-  const useBetPoints = shouldUseBetPoints(contract)
-  // Prioritize newer bets via descending order
+  const shouldUseBetPoints =
+    contract?.outcomeType === 'BINARY' ||
+    contract?.outcomeType === 'PSEUDO_NUMERIC'
+
+  // DEBUG: supabase/firebase
+  // in original code, prioritize newer bets via descending order
   const bets = contractId
     ? await getBets({
         contractId,
         ...CONTRACT_BET_FILTER,
-        limit: getUseBetLimit(useBetPoints),
+        limit: shouldUseBetPoints ? 50000 : 4000,
         order: 'desc',
       })
     : []
-  const includeAvatar = totalBets < 1000
-  const betPoints = useBetPoints ? getBetPoints(bets, includeAvatar) : []
-  const comments = contractId ? await getAllComments(contractId, 100) : []
+  const betPoints = shouldUseBetPoints
+    ? bets.map(
+        (bet) =>
+          removeUndefinedProps({
+            x: bet.createdTime,
+            y: bet.probAfter,
+            obj:
+              totalBets < 1000
+                ? { userAvatarUrl: bet.userAvatarUrl }
+                : undefined,
+          }) as HistoryPoint<Partial<Bet>>
+      )
+    : []
+
+  // DEBUG: supabase/firebase
+  const comments = contractId ? await listAllComments(contractId, 100) : []
 
   const userPositionsByOutcome =
     contractId && contract?.outcomeType === 'BINARY'
@@ -166,7 +191,7 @@ export async function getContractParams(contract: Contract) {
       ? await getTotalContractMetrics(contractId, db)
       : 0
 
-  if (useBetPoints && contract) {
+  if (shouldUseBetPoints && contract) {
     const firstPoint = {
       x: contract.createdTime,
       y: getInitialProbability(
@@ -191,7 +216,7 @@ export async function getContractParams(contract: Contract) {
   return removeUndefinedProps({
     contract,
     historyData: {
-      bets: getHistoryDataBets(useBetPoints, bets),
+      bets: shouldUseBetPoints ? bets.slice(0, 100) : bets,
       points: betPoints,
     },
     pointsString,
