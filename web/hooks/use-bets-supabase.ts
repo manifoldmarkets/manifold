@@ -1,6 +1,8 @@
 import { Bet } from 'common/bet'
+import { Contract } from 'common/contract'
 import { useEffect, useState } from 'react'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
+import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { CONTRACT_BET_FILTER } from 'web/pages/[username]/[contractSlug]'
 
 export function useBets(contractId: string, limit: number) {

@@ -1,3 +1,4 @@
+import { ContractComment } from 'common/comment'
 import { Json } from 'common/supabase/schema'
 import { useEffect, useState } from 'react'
 import { getAllComments } from 'web/lib/supabase/comments'
