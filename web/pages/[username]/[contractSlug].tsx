@@ -89,9 +89,7 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  // const visibility = await getContractVisibilityFromSlug(contractSlug)
-  const contract = (await getContractFromSlug(contractSlug)) || null
-  const visibility = contract?.visibility
+  const visibility = await getContractVisibilityFromSlug(contractSlug)
   if (visibility === 'private' || !visibility) {
     return {
       props: {
