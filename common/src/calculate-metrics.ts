@@ -16,7 +16,6 @@ import { removeUndefinedProps } from './util/object'
 import { buy, getProb, shortSell } from './calculate-cpmm-multi'
 import { average, logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 const computeInvestmentValue = (
   bets: Bet[],
@@ -225,42 +224,6 @@ export const calculateNewPortfolioMetrics = (
     userId: user.id,
   }
   return newPortfolio
-}
-
-const calculateProfitForPeriod = (
-  startingPortfolio: PortfolioMetrics | undefined,
-  currentProfit: number
-) => {
-  if (startingPortfolio === undefined) {
-    return currentProfit
-  }
-
-  const startingProfit = calculatePortfolioProfit(startingPortfolio)
-
-  return currentProfit - startingProfit
-}
-
-export const calculatePortfolioProfit = (portfolio: PortfolioMetrics) => {
-  return portfolio.investmentValue + portfolio.balance - portfolio.totalDeposits
-}
-
-export const calculateNewProfit = (
-  portfolioHistory: Record<
-    'current' | 'day' | 'week' | 'month',
-    PortfolioMetrics | undefined
-  >,
-  newPortfolio: PortfolioMetrics
-) => {
-  const allTimeProfit = calculatePortfolioProfit(newPortfolio)
-
-  const newProfit = {
-    daily: calculateProfitForPeriod(portfolioHistory.day, allTimeProfit),
-    weekly: calculateProfitForPeriod(portfolioHistory.week, allTimeProfit),
-    monthly: calculateProfitForPeriod(portfolioHistory.month, allTimeProfit),
-    allTime: allTimeProfit,
-  }
-
-  return newProfit
 }
 
 export const calculateMetricsByContract = (
