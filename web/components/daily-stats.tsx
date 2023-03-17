@@ -17,7 +17,6 @@ import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
 } from 'common/economy'
-import { completeQuest } from 'web/lib/firebase/api'
 import { ProgressBar } from 'web/components/progress-bar'
 import { useIsSeen } from 'web/hooks/use-is-seen'
 import { track } from 'web/lib/service/analytics'
@@ -44,23 +43,6 @@ export function DailyStats(props: {
     const showLoansModel = Router.query['show'] === 'loans'
     setShowLoansModal(showLoansModel)
   }, [])
-
-  const { incompleteQuestTypes } = user
-    ? getQuestCompletionStatus(user)
-    : { incompleteQuestTypes: [] }
-  useEffect(() => {
-    if (incompleteQuestTypes.length === 0) return
-    // TODO: move the complete quest call to follow completing one of the quest actions
-    Promise.all(
-      incompleteQuestTypes.map(
-        (questType) =>
-          questType !== 'BETTING_STREAK' &&
-          completeQuest({ questType }).catch((e) => {
-            console.log('error completing quest', e)
-          })
-      )
-    )
-  }, [JSON.stringify(incompleteQuestTypes)])
 
   const [showQuestsModal, setShowQuestsModal] = useState(false)
 

@@ -5,7 +5,6 @@ import { saveUserEvent } from '../firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
-import { User } from 'common/user'
 import { completeQuest } from 'web/lib/firebase/api'
 import { QuestType } from 'common/quest'
 
@@ -46,6 +45,7 @@ export async function track(eventName: string, eventProperties?: any) {
     amplitude.track(eventName, eventProperties).promise,
     saveUserEvent(userId, eventName, props),
   ])
+  return { userId }
 }
 
 // Convenience functions:
@@ -92,17 +92,19 @@ export async function setOnceUserProperty(property: string, value: string) {
   await amplitude.identify(identifyObj).promise
 }
 
-// TODO: pass user to complete the sharing quest if they just hit the thresholds
 export async function trackShareEvent(
   eventName: string,
   url: string,
-  eventProperties?: any,
-  user?: User
+  eventProperties?: any
 ) {
   const shareEventData: Omit<ShareEvent, 'timestamp' | 'name'> = {
     url,
     type: 'copy sharing link',
   }
-  await track(eventName, { ...shareEventData, ...eventProperties })
-  if (user) completeQuest({ questType: 'SHARES' as QuestType }).catch(() => {})
+  const userId = await track(eventName, {
+    ...shareEventData,
+    ...eventProperties,
+  })
+  if (userId)
+    completeQuest({ questType: 'SHARES' as QuestType, userId }).catch(() => {})
 }
