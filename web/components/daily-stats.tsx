@@ -23,7 +23,9 @@ import { track } from 'web/lib/service/analytics'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { sum } from 'lodash'
 import { filterDefined } from 'common/util/array'
-
+import { completeQuest } from 'web/lib/firebase/api'
+import { useIsAuthorized } from 'web/hooks/use-user'
+const MS_TO_STOP_CHECKING = 1679378400000
 export const dailyStatsClass = 'text-lg py-1'
 export const unseenDailyStatsClass =
   'px-1.5 text-blue-600 shadow shadow-blue-700 transition-colors transition-all hover:from-blue-400 hover:via-blue-100 hover:to-blue-200 enabled:bg-gradient-to-tr'
@@ -33,6 +35,7 @@ export function DailyStats(props: {
   showLoans?: boolean
 }) {
   const { user, showLoans } = props
+  const authorized = useIsAuthorized()
   const [seenToday, setSeenToday] = useIsSeen(
     user,
     [QUEST_STATS_CLICK_EVENT],
@@ -43,6 +46,29 @@ export function DailyStats(props: {
     const showLoansModel = Router.query['show'] === 'loans'
     setShowLoansModal(showLoansModel)
   }, [])
+
+  // We're just using this useEffect until the first real week starts, aka this Monday, 2023/03/21
+  const { incompleteQuestTypes } = user
+    ? getQuestCompletionStatus(user)
+    : { incompleteQuestTypes: [] }
+  useEffect(() => {
+    if (
+      incompleteQuestTypes.length === 0 ||
+      !authorized ||
+      Date.now() > MS_TO_STOP_CHECKING ||
+      !user?.id
+    )
+      return
+    Promise.all(
+      incompleteQuestTypes.map(
+        (questType) =>
+          questType !== 'BETTING_STREAK' &&
+          completeQuest({ questType, userId: user.id }).catch((e) => {
+            console.log('error completing quest', e)
+          })
+      )
+    )
+  }, [JSON.stringify(incompleteQuestTypes), authorized, user?.id])
 
   const [showQuestsModal, setShowQuestsModal] = useState(false)
 
