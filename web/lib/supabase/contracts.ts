@@ -27,7 +27,6 @@ import {
 import { Contract } from '../firebase/contracts'
 import { getBets } from './bets'
 // import { getBets, getTotalBetCount } from './bets'
-import { getAllComments } from './comments'
 import { db } from './db'
 
 export const getContract = async (id: string) => {
