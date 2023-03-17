@@ -62,12 +62,13 @@ export const DailyProfit = memo(function DailyProfit(props: {
     if (!data) return 0
     return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
   }, [data])
-
+  // const dailyProfit = 10
   const [seenToday, setSeenToday] = useIsSeen(
     user,
     [DAILY_PROFIT_CLICK_EVENT],
     'day'
   )
+  if (!user) return <div />
 
   return (
     <>
@@ -82,13 +83,21 @@ export const DailyProfit = memo(function DailyProfit(props: {
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Tooltip text={'Daily profit'}>
-          <Row
-            className={clsx(
-              dailyStatsClass,
-              dailyProfit > 0 && seenToday && 'text-teal-500'
-            )}
-          >
-            <span>💰 {formatMoney(dailyProfit)}</span>
+          <Row className={clsx(dailyStatsClass, 'items-center')}>
+            <span className={clsx()}>{formatMoney(user.balance)}</span>
+            <span
+              className={clsx(
+                'ml-1 text-xs',
+                seenToday
+                  ? dailyProfit > 0
+                    ? 'text-teal-600'
+                    : 'text-ink-500'
+                  : ''
+              )}
+            >
+              {dailyProfit > 0 ? '+' : ''}
+              {Math.round(dailyProfit)}
+            </span>
           </Row>
         </Tooltip>
       </button>

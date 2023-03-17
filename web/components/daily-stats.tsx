@@ -25,7 +25,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { sum } from 'lodash'
 import { filterDefined } from 'common/util/array'
 
-export const dailyStatsClass = 'items-center text-lg py-1'
+export const dailyStatsClass = 'text-lg py-1'
 export const unseenDailyStatsClass =
   'px-1.5 text-amber-500 shadow shadow-amber-700 transition-colors transition-all hover:from-yellow-400 hover:via-yellow-100 hover:to-yellow-200 enabled:bg-gradient-to-tr'
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
@@ -162,9 +162,9 @@ function QuestsModal(props: {
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
-        <Col className={'mb-6 items-center justify-center'}>
+        <Col className={'mb-6 items-center justify-center gap-2'}>
           <Title className={'!mb-1'}> Your Quests </Title>
-          <span className="text-ink-700 mb-2 text-sm">
+          <span className="text-ink-700 text-sm">
             {`🧭 ${totalQuestsCompleted}/${totalQuests}`} completed
           </span>
           <ProgressBar
@@ -174,7 +174,7 @@ function QuestsModal(props: {
             className={'mb-1 w-1/2'}
           />
         </Col>
-        <Col className={'mb-4 gap-4'}>
+        <Col className={'mb-4 gap-6'}>
           <QuestRow
             emoji={'🔥'}
             title={'Make a prediction once per day'}
@@ -217,14 +217,14 @@ const QuestRow = (props: {
 }) => {
   const { title, complete, status, reward, emoji, info } = props
   return (
-    <Row className={'justify-start justify-between gap-2'}>
+    <Row className={'justify-between'}>
       <Col>
-        <Row className={'gap-8'}>
+        <Row className={'gap-4 sm:gap-6'}>
           <span className={clsx('text-4xl', complete ? '' : 'grayscale')}>
             {emoji}
           </span>
           <Col>
-            <span className={clsx('text-lg')}>
+            <span className={clsx('sm:text-xl')}>
               {title}
               {info && (
                 <InfoTooltip className={'!mb-1 ml-1 !h-4 !w-4'} text={info} />
@@ -241,10 +241,10 @@ const QuestRow = (props: {
           </Col>
         </Row>
       </Col>
-      <Col className={'items-center justify-center'}>
+      <Col className={''}>
         <span
           className={clsx(
-            'text-lg ',
+            'text-lg sm:text-xl',
             complete ? 'text-teal-600' : 'text-ink-500'
           )}
         >
