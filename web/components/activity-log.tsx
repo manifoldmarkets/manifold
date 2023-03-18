@@ -5,11 +5,12 @@ import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import { keyBy, range, groupBy, sortBy, partition, uniq } from 'lodash'
 import { memo, useEffect, useState } from 'react'
-import { useLiveBets } from 'web/hooks/use-bets'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
-import { useLiveComments } from 'web/hooks/use-comments'
-import { useRealtimeContracts } from 'web/hooks/use-contract-supabase'
-import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
+import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
+import {
+  useContracts,
+  useRealtimeContracts,
+} from 'web/hooks/use-contract-supabase'
 import {
   inMemoryStore,
   usePersistentState,
@@ -19,7 +20,7 @@ import {
   usePrivateUser,
   useUser,
 } from 'web/hooks/use-user'
-import { getGroupBySlug, getGroupContractIds } from 'web/lib/firebase/groups'
+import { getGroupContractIds, getGroupFromSlug } from 'web/lib/supabase/group'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -56,7 +57,7 @@ export function ActivityLog(props: {
       shouldBlockDestiny && DESTINY_GROUP_SLUGS
     )
 
-    Promise.all(blockedGroupSlugs.map(getGroupBySlug))
+    Promise.all(blockedGroupSlugs.map(getGroupFromSlug))
       .then((groups) =>
         Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
       )
@@ -80,7 +81,7 @@ export function ActivityLog(props: {
       !BOT_USERNAMES.includes(bet.userUsername) &&
       !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
   )
-  const rawComments = useLiveComments(count * 3)
+  const rawComments = useRealtimeComments(count * 3)
   const comments = (rawComments ?? []).filter(
     (c) =>
       c.commentType === 'contract' &&
@@ -100,15 +101,16 @@ export function ActivityLog(props: {
     'all'
   )
 
+  const allContracts = useContracts(
+    uniq([
+      ...bets.map((b) => b.contractId),
+      ...comments.map((c) => c.contractId),
+    ])
+  )
+
+  console.log(allContracts)
   const [contracts, unlistedContracts] = partition(
-    filterDefined(
-      useContracts(
-        uniq([
-          ...bets.map((b) => b.contractId),
-          ...comments.map((c) => c.contractId),
-        ])
-      )
-    ).concat(newContracts ?? []),
+    filterDefined(allContracts).concat(newContracts ?? []),
     (c) => c.visibility === 'public'
   )
 

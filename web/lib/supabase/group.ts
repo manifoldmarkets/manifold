@@ -72,7 +72,7 @@ export async function getGroupContractIds(groupId: string) {
   const groupContractIds = await run(
     db.from('group_contracts').select('contract_id').eq('group_id', groupId)
   )
-  return groupContractIds.data
+  return groupContractIds.data.map((gids) => gids.contract_id)
 }
 
 export async function searchUserInGroup(
@@ -130,7 +130,7 @@ export async function getGroupPrivacyBySlug(groupSlug: string) {
     db
       .from('groups')
       .select('data->>privacyStatus')
-      .eq('data->>slug', groupSlug)
+      .contains('data', { slug: groupSlug })
   )
   return (groupPrivacy[0] as unknown as { privacyStatus: PrivacyStatusType })
     .privacyStatus
@@ -138,7 +138,10 @@ export async function getGroupPrivacyBySlug(groupSlug: string) {
 
 export async function getGroupFromSlug(groupSlug: string) {
   const { data: group } = await run(
-    db.from('groups').select('data').eq('data->>slug', groupSlug)
+    db.from('groups').select('data').contains('data', { slug: groupSlug })
   )
-  return group[0].data as Group
+  if (group && group.length > 0) {
+    return group[0].data as Group
+  }
+  return null
 }

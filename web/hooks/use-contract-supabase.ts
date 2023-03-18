@@ -2,11 +2,27 @@ import { AnyContractType, Contract } from 'common/contract'
 import { useEffect, useState } from 'react'
 import {
   getContractFromSlug,
+  getContractIds,
   getContractParams,
   getContracts,
 } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { ContractParams } from 'web/pages/[username]/[contractSlug]'
+import { useEffectCheckEquality } from './use-effect-check-equality'
+
+export const useContracts = (contractIds: string[]) => {
+  const [contracts, setContracts] = useState<Contract[]>([])
+
+  useEffectCheckEquality(() => {
+    if (contractIds) {
+      getContractIds(contractIds).then((result) => {
+        setContracts(result)
+      })
+    }
+  }, [contractIds])
+
+  return contracts
+}
 
 export const useContractFromSlug = (contractSlug: string | undefined) => {
   const [contract, setContract] = useState<Contract | undefined>(undefined)
