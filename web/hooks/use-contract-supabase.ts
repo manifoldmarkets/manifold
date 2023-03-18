@@ -22,7 +22,7 @@ export const useContractFromSlug = (contractSlug: string | undefined) => {
 
 export const useContractParams = (contract: Contract) => {
   const [contractParams, setContractParams] = useState<ContractParams>({
-    contract: null,
+    contract: contract,
     historyData: {
       bets: [],
       points: [],

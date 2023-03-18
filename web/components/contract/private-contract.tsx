@@ -13,11 +13,12 @@ import {
 export function PrivateContractPage(props: { contractSlug: string }) {
   const { contractSlug } = props
   const contract = usePrivateContract(contractSlug, 1000)
+  console.log(contract)
 
   if (contract === undefined) {
     return <LoadingPrivateThing />
-  } else if (contract === null)
-    return <InaccessiblePrivateThing thing="market" />
+  }
+  if (contract === null) return <InaccessiblePrivateThing thing="market" />
   else {
     return <ContractParamsPageContent contract={contract} />
   }
