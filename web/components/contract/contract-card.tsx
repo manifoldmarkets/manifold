@@ -560,7 +560,7 @@ export function ContractCardNew(props: {
       )}
     >
       <div className="px-4">
-        <Row className="text-ink-500 items-center gap-3 text-sm">
+        <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
           <Row className="z-10 gap-2">
             <Avatar
               username={creatorUsername}
