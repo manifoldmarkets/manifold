@@ -37,7 +37,7 @@ export const useContractParams = (contract: Contract) => {
 
   useEffect(() => {
     getContractParams(contract).then((result) => setContractParams(result))
-  }, [contract])
+  }, [contract.id])
 
   return contractParams
 }

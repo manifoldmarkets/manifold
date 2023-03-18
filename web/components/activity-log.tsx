@@ -126,7 +126,7 @@ export function ActivityLog(props: {
       (i) =>
         i.createdTime < Date.now() &&
         ('contractId' in i
-          ? unlistedContracts.some((c) => c.id !== i.contractId)
+          ? !unlistedContracts.some((c) => c.id === i.contractId)
           : true)
     )
 

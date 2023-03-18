@@ -10,7 +10,6 @@ export function Page(props: {
   rightSidebar?: ReactNode
   className?: string
   children?: ReactNode
-  logoSubheading?: string
   touchesTop?: boolean
   hideSidebar?: boolean
   maxWidth?: string
@@ -19,7 +18,6 @@ export function Page(props: {
     children,
     rightSidebar,
     className,
-    logoSubheading,
     touchesTop,
     hideSidebar,
     maxWidth,
@@ -47,10 +45,7 @@ export function Page(props: {
         {hideSidebar ? (
           <div className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex" />
         ) : (
-          <Sidebar
-            logoSubheading={logoSubheading}
-            className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex"
-          />
+          <Sidebar className="sticky top-0 hidden self-start pl-2 lg:col-span-2 lg:flex" />
         )}
         {/* put right sidebar below main content on small or medium screens */}
         <Col className="flex-1 lg:col-span-8 xl:contents">

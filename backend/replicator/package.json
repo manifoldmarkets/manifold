@@ -14,7 +14,7 @@
     "watch": "tsc -w",
     "alias": "tsc-alias",
     "regen-types": "supabase gen types typescript --project-id pxidrgkatumlvfqaxcll --schema public > ../../common/src/supabase/schema.ts",
-    "regen-types-dev": "supabase gen types typescript --project-id mfodonznyfxllcezufgr --schema public > ../../common/src/supabase.schema.ts"
+    "regen-types-dev": "supabase gen types typescript --project-id mfodonznyfxllcezufgr --schema public > ../../common/src/supabase/schema.ts"
   },
   "engines": {
     "node": ">=16.0.0"

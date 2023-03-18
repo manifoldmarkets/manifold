@@ -21,7 +21,10 @@ import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
-export type AuthUser = undefined | null | UserAndPrivateUser
+export type AuthUser =
+  | undefined
+  | null
+  | (UserAndPrivateUser & { authLoaded: boolean })
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
 
 const ensureDeviceToken = () => {
@@ -72,7 +75,8 @@ export function AuthProvider(props: {
     if (serverUser === undefined) {
       const cachedUser = safeLocalStorage?.getItem(CACHED_USER_KEY)
       const parsed = cachedUser ? JSON.parse(cachedUser) : undefined
-      setAuthUser(parsed)
+      if (parsed) setAuthUser({ ...parsed, authLoaded: false })
+      else setAuthUser(parsed)
     }
   }, [setAuthUser, serverUser])
 
@@ -103,7 +107,7 @@ export function AuthProvider(props: {
             })) as UserAndPrivateUser
             setCachedReferralInfoForUser(current.user)
           }
-          setAuthUser(current)
+          setAuthUser({ ...current, authLoaded: true })
           nativePassUsers(
             JSON.stringify({
               fbUser: fbUser.toJSON(),
