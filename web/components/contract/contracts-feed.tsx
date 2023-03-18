@@ -16,10 +16,7 @@ export function ContractsFeed() {
     <Col>
       <Col className="divide-ink-300 border-ink-300 divide-y-[0.5px] border-[0.5px]">
         {contracts.map((contract) => (
-          <ContractCardNew
-            key={contract.id}
-            contract={contract}
-          />
+          <ContractCardNew key={contract.id} contract={contract} />
         ))}
       </Col>
 
