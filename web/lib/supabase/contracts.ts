@@ -104,7 +104,7 @@ export async function getYourTrendingContracts(
 
 export async function getContractFromSlug(contractSlug: string) {
   const { data: contract } = await run(
-    db.from('contracts').select('data').eq('data->>slug', contractSlug)
+    db.from('contracts').select('data').contains('data', { slug: contractSlug })
   )
   if (contract && contract.length > 0) {
     return (contract[0] as unknown as { data: Contract }).data
