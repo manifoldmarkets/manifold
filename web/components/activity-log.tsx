@@ -3,7 +3,7 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
-import { keyBy, range, groupBy, sortBy, partition, uniq } from 'lodash'
+import { groupBy, keyBy, partition, range, sortBy, uniq } from 'lodash'
 import { memo, useEffect, useState } from 'react'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
@@ -16,8 +16,8 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import {
-  useShouldBlockDestiny,
   usePrivateUser,
+  useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
 import { getGroupContractIds, getGroupFromSlug } from 'web/lib/supabase/group'
