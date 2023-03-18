@@ -39,6 +39,9 @@ export function useRealtimeBets(limit: number, options?: BetFilter) {
       }
     )
     channel.subscribe(async (status) => {})
+    return () => {
+      db.removeChannel(channel)
+    }
   }, [db])
   return bets
 }

@@ -95,6 +95,9 @@ export function useRealtimeContracts(limit: number) {
       }
     )
     channel.subscribe(async (status) => {})
+    return () => {
+      db.removeChannel(channel)
+    }
   }, [db])
 
   return contracts

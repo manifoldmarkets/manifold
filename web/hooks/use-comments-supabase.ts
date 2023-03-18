@@ -51,6 +51,9 @@ export function useRealtimeComments(limit: number) {
       }
     )
     channel.subscribe(async (status) => {})
+    return () => {
+      db.removeChannel(channel)
+    }
   }, [db])
 
   return comments
