@@ -54,6 +54,7 @@ import {
 import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import {
+  getContractFromSlug,
   getContractParams,
   getContractVisibilityFromSlug,
 } from 'web/lib/supabase/contracts'
