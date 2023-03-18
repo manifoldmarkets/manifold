@@ -632,7 +632,7 @@ export function ContractCardNew(props: {
             fill
             alt={descriptionString}
             sizes="100vw"
-            className="object-cover opacity-80"
+            className="object-cover opacity-80 group-hover:opacity-40"
             src={coverImageUrl ?? ''}
           />
         </div>
@@ -694,7 +694,7 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className=" items-center gap-4 rounded p-2 text-sm">
+    <Row className=" border-ink-200 items-center gap-4 rounded border p-2 text-sm">
       <Row className="items-center gap-2">
         <span className="text-ink-500">Your position</span>
         <div className="text-ink-600">
