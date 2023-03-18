@@ -77,7 +77,7 @@ function HomeDashboard() {
 
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-6 py-2 pb-8 sm:px-2 lg:pr-4">
+      <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
         <Row className={'w-full items-center justify-between gap-4'}>
           <Title children="Home" className="!my-0 hidden sm:block" />
           <SearchButton className="hidden flex-1 md:flex lg:hidden" />

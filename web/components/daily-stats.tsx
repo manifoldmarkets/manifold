@@ -81,7 +81,7 @@ export function DailyStats(props: {
     getQuestCompletionStatus(user)
 
   return (
-    <Row className={'flex-shrink-0 items-center gap-4'}>
+    <Row className={'z-30 flex-shrink-0 items-center gap-4'}>
       <DailyProfit user={user} />
 
       {allQuestsComplete ? (
