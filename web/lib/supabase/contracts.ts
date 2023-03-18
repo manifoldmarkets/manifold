@@ -18,13 +18,13 @@ import {
   ContractParams,
   CONTRACT_BET_FILTER,
 } from 'web/pages/[username]/[contractSlug]'
-import { listAllComments } from '../firebase/comments'
 import {
   getBinaryContractUserContractMetrics,
   getTopContractMetrics,
 } from '../firebase/contract-metrics'
 import { Contract } from '../firebase/contracts'
 import { getBets, getTotalBetCount } from './bets'
+import { getAllComments } from './comments'
 // import { getBets, getTotalBetCount } from './bets'
 import { db } from './db'
 
@@ -144,13 +144,11 @@ export async function getContractParams(contract: Contract | null) {
   }
   const contractId = contract?.id
 
-  // DEBUG: supabase/firebase
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
   const shouldUseBetPoints =
     contract?.outcomeType === 'BINARY' ||
     contract?.outcomeType === 'PSEUDO_NUMERIC'
 
-  // DEBUG: supabase/firebase
   // in original code, prioritize newer bets via descending order
   const bets = contractId
     ? await getBets({
@@ -174,8 +172,7 @@ export async function getContractParams(contract: Contract | null) {
       )
     : []
 
-  // DEBUG: supabase/firebase
-  const comments = contractId ? await listAllComments(contractId, 100) : []
+  const comments = contractId ? await getAllComments(contractId, 100) : []
 
   const userPositionsByOutcome =
     contractId && contract?.outcomeType === 'BINARY'
