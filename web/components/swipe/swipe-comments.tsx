@@ -90,7 +90,7 @@ export function CommentsButton(props: {
         }}
       >
         <Row className="items-center gap-2 p-2">
-          <ChatIcon className={clsx(size === 'lg' ? 'h-8 w-8' : 'h-5 w-5')} />
+          <ChatIcon className={clsx(size === 'lg' ? 'h-8 w-8' : 'h-6 w-6')} />
           {comments.length > 0 && (
             <div
               className={clsx(

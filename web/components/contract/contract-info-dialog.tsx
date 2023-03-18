@@ -312,7 +312,7 @@ export function ContractInfoDialog(props: {
       <Tooltip text="Market details" placement="bottom" noTap noFade>
         <IconButton size="2xs" onClick={() => setOpen(true)}>
           <DotsHorizontalIcon
-            className={clsx('h-5 w-5 flex-shrink-0')}
+            className={clsx('h-6 w-6 flex-shrink-0')}
             aria-hidden="true"
           />
         </IconButton>

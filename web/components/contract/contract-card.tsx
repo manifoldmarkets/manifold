@@ -603,7 +603,6 @@ export function ContractCardNew(props: {
               e.preventDefault()
             }}
           >
-            <CommentsButton contract={contract} color="gray" size="md" />
             <LikeButton
               contentId={contract.id}
               contentCreatorId={contract.creatorId}
@@ -617,6 +616,8 @@ export function ContractCardNew(props: {
               color="gray"
               className={'!mx-0 gap-2 drop-shadow-sm'}
             />
+
+            <CommentsButton contract={contract} color="gray" size="md" />
           </Row>
         </Row>
 
