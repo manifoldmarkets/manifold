@@ -51,10 +51,13 @@ import {
   ContractMetricsByOutcome,
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
-import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
+import {
+  Contract,
+  getContractFromSlug,
+  tradingAllowed,
+} from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import {
-  getContractFromSlug,
   getContractParams,
   getContractVisibilityFromSlug,
 } from 'web/lib/supabase/contracts'
@@ -87,7 +90,13 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
   const visibility = await getContractVisibilityFromSlug(contractSlug)
-  if (visibility === 'private' || !visibility) {
+  if (
+    visibility === 'private'
+    // Note (James): Removed the below condition so that new contracts which are not yet
+    // replicated to supabase will still render as public contracts.
+    // We should think of a better solution.
+    // || !visibility
+  ) {
     return {
       props: {
         visibility,
@@ -102,7 +111,7 @@ export async function getStaticProps(ctx: {
       props: {
         visibility,
         contractSlug,
-        contractParams: contractParams,
+        contractParams,
       },
     }
   }
