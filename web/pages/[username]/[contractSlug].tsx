@@ -51,11 +51,7 @@ import {
   ContractMetricsByOutcome,
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
-import {
-  Contract,
-  getContractFromSlug,
-  tradingAllowed,
-} from 'web/lib/firebase/contracts'
+import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
 import {
   getContractParams,
