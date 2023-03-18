@@ -18,14 +18,13 @@ import {
   ContractParams,
   CONTRACT_BET_FILTER,
 } from 'web/pages/[username]/[contractSlug]'
-import { getTotalBetCount } from '../firebase/bets'
 import { listAllComments } from '../firebase/comments'
 import {
   getBinaryContractUserContractMetrics,
   getTopContractMetrics,
 } from '../firebase/contract-metrics'
 import { Contract } from '../firebase/contracts'
-import { getBets } from './bets'
+import { getBets, getTotalBetCount } from './bets'
 // import { getBets, getTotalBetCount } from './bets'
 import { db } from './db'
 
