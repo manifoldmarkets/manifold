@@ -199,6 +199,10 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
     return <Custom404Content />
   }
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
+  const contractVisibilityFilter =
+    group.privacyStatus == 'private'
+      ? 'visibility:private'
+      : 'visibility:public'
   return (
     <>
       <AddContractButton
@@ -295,7 +299,7 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                     groupSlug: group.slug,
                     facetFilters: [
                       ...getUsersBlockFacetFilters(privateUser, true),
-                      'visibility:public',
+                      contractVisibilityFilter,
                     ],
                   }}
                   persistPrefix={`group-${group.slug}`}
