@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react'
 import {
   getContractFromSlug,
   getContractParams,
+  getContracts,
 } from 'web/lib/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
 import { ContractParams } from 'web/pages/[username]/[contractSlug]'
 
 export const useContractFromSlug = (contractSlug: string | undefined) => {
@@ -40,4 +42,44 @@ export const useContractParams = (contract: Contract) => {
   }, [contract.id])
 
   return contractParams
+}
+
+export function useRealtimeContracts(limit: number) {
+  const [contracts, setContracts] = useState<Contract[]>([])
+  const [newContract, setNewContract] = useState<Contract | undefined>(
+    undefined
+  )
+
+  useEffect(() => {
+    getContracts({ limit, order: 'desc' })
+      .then((result) => setContracts(result))
+      .catch((e) => console.log(e))
+  }, [])
+
+  useEffect(() => {
+    const channel = db.channel('live-contracts')
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'contracts',
+      },
+      (payload) => {
+        if (payload) {
+          const payloadContract = payload.new.data as Contract
+          setNewContract(payloadContract)
+        }
+      }
+    )
+    channel.subscribe(async (status) => {})
+  }, [db])
+
+  useEffect(() => {
+    // if new bet exists, and is not already in bets, pushes it to front
+    if (newContract && !contracts.some((c) => c.id == newContract.id)) {
+      setContracts([newContract].concat(contracts.slice(0, -1)))
+    }
+  }, [newContract, contracts])
+  return contracts
 }

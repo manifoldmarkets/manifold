@@ -30,7 +30,6 @@ export function useRealtimeBets(limit: number, options?: BetFilter) {
         if (payload) {
           const payloadBet = payload.new.data as Bet
           if (!betShouldBeFiltered(payloadBet, options)) {
-            console.log(payloadBet.isRedemption)
             setNewBet(payloadBet)
           }
         }

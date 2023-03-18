@@ -1,4 +1,4 @@
-import { run } from 'common/supabase/utils'
+import { run, selectJson } from 'common/supabase/utils'
 import { db } from './db'
 
 export async function getAllComments(contractId: string, maxCount: number) {
@@ -11,4 +11,15 @@ export async function getAllComments(contractId: string, maxCount: number) {
       .limit(maxCount)
   )
   return comments.map((comment) => comment.data)
+}
+
+export async function getComments(limit: number) {
+  let q = selectJson(db, 'contract_comments')
+  q = q
+    .order('fs_updated_time', {
+      ascending: false,
+    } as any)
+    .limit(limit)
+  const { data } = await run(q)
+  return data.map((c) => c.data)
 }

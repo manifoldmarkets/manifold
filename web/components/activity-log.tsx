@@ -8,6 +8,7 @@ import { memo, useEffect, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useLiveComments } from 'web/hooks/use-comments'
+import { useRealtimeContracts } from 'web/hooks/use-contract-supabase'
 import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
 import {
   inMemoryStore,
@@ -87,7 +88,7 @@ export function ActivityLog(props: {
       !blockedUserIds.includes(c.userId)
   ) as ContractComment[]
 
-  const rawContracts = useLiveContracts(count * 3)
+  const rawContracts = useRealtimeContracts(count * 3)
   const newContracts = (rawContracts ?? []).filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&
