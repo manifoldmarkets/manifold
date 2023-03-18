@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { track } from 'web/lib/service/analytics'
+import { trackShareEvent } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import clsx from 'clsx'
@@ -13,7 +13,7 @@ import { NativeShareData } from 'common/native-share-data'
 import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
 import { getIsNative } from 'web/lib/native/is-native'
-import { ShareEventName, ShareEvent } from 'common/events'
+import { ShareEventName } from 'common/events'
 
 export function CopyLinkButton(props: {
   url: string
@@ -49,7 +49,7 @@ export function CopyLinkButton(props: {
       setTimeout(() => setIconPressed(false), 1000)
       copyToClipboard(url)
     }
-    track(eventTrackingName, { url, type: 'copy sharing link' } as ShareEvent)
+    trackShareEvent(eventTrackingName, url)
   }
 
   const Button = (props: { onClick: () => void }) => {

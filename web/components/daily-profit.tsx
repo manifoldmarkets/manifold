@@ -1,7 +1,6 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
-import { getUserEventsCount } from 'common/supabase/user-events'
+import { HOUR_MS } from 'common/util/time'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -16,7 +15,10 @@ import { Title } from 'web/components/widgets/title'
 import { keyBy, partition, sortBy, sum } from 'lodash'
 import { _ as r, Grid } from 'gridjs-react'
 import { ContractMention } from 'web/components/contract/contract-mention'
-import { dailyStatsClass } from 'web/components/daily-stats'
+import {
+  dailyStatsClass,
+  unseenDailyStatsClass,
+} from 'web/components/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
 import {
   storageStore,
@@ -25,6 +27,7 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
+import { useHasSeen } from 'web/hooks/use-has-seen'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -32,7 +35,6 @@ export const DailyProfit = memo(function DailyProfit(props: {
 }) {
   const { user } = props
   const [open, setOpen] = useState(false)
-  const [seen, setSeen] = useState(true)
 
   const refreshContractMetrics = useCallback(async () => {
     if (user)
@@ -60,45 +62,42 @@ export const DailyProfit = memo(function DailyProfit(props: {
     if (!data) return 0
     return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
   }, [data])
+  // const dailyProfit = 10
+  const [seenToday, setSeenToday] = useHasSeen(
+    user,
+    [DAILY_PROFIT_CLICK_EVENT],
+    'day'
+  )
+  if (!user) return <div />
 
-  useEffect(() => {
-    if (!user) return
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayMs = today.getTime()
-    const todayMsEnd = todayMs + DAY_MS
-    getUserEventsCount(
-      user.id,
-      [DAILY_PROFIT_CLICK_EVENT],
-      todayMs,
-      todayMsEnd,
-      db
-    ).then((count) => setSeen(count > 0))
-  }, [user])
-
-  // Other emoji options: ⌛ 💰 🕛
   return (
     <>
       <button
         className={clsx(
-          'rounded-md py-1 text-center transition-colors disabled:cursor-not-allowed',
-          seen
-            ? ''
-            : 'px-1.5 text-amber-500 shadow shadow-amber-700 transition-all hover:from-yellow-400 hover:via-yellow-100 hover:to-yellow-200 enabled:bg-gradient-to-tr'
+          'rounded-md text-center',
+          seenToday ? '' : unseenDailyStatsClass
         )}
         onClick={withTracking(() => {
           setOpen(true)
-          setSeen(true)
+          setSeenToday(true)
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Tooltip text={'Daily profit'}>
-          <Row
-            className={clsx(
-              dailyStatsClass,
-              dailyProfit > 0 && seen && 'text-teal-500'
-            )}
-          >
-            <span>💰 {formatMoney(dailyProfit)}</span>
+          <Row className={clsx(dailyStatsClass, 'items-center')}>
+            <span className={clsx()}>{formatMoney(user.balance)}</span>
+            <span
+              className={clsx(
+                'ml-1 text-xs',
+                seenToday
+                  ? dailyProfit > 0
+                    ? 'text-teal-600'
+                    : 'text-ink-500'
+                  : ''
+              )}
+            >
+              {dailyProfit > 0 ? '+' : ''}
+              {Math.round(dailyProfit)}
+            </span>
           </Row>
         </Tooltip>
       </button>

@@ -40,6 +40,7 @@ const ShareEventNames = [
   'copy weekly profit link',
   'copy twitch link',
   'copy styles link',
+  'copy comment link',
 ] as const
 
 export type ShareEventName = typeof ShareEventNames[number]

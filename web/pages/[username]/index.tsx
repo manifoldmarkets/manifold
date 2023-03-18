@@ -31,7 +31,7 @@ import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
-import { track } from 'web/lib/service/analytics'
+import { track, trackShareEvent } from 'web/lib/service/analytics'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { BetsList } from 'web/components/bet/bets-list'
 import { buttonClass } from 'web/components/buttons/button'
@@ -61,7 +61,6 @@ import {
 } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
-import { ShareEvent } from 'common/events'
 
 export const getStaticProps = async (props: {
   params: {
@@ -321,10 +320,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   toast.success('Copied your referral link!', {
                     icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
                   })
-                  track('copy referral link', {
-                    url: referralUrl,
-                    type: 'copy sharing link',
-                  } as ShareEvent)
+                  trackShareEvent('copy referral link', referralUrl)
                 }}
               >
                 <Row className="items-center gap-1">

@@ -59,6 +59,7 @@ export type notification_source_types =
   | 'comment_like'
   | 'contract_like'
   | 'weekly_portfolio_update'
+  | 'quest_reward'
 
 export type notification_source_update_types =
   | 'created'

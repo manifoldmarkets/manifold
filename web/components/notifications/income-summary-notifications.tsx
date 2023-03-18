@@ -24,7 +24,7 @@ import {
 } from './notification-helpers'
 import { MarketResolvedNotification } from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
-import { QUEST_REWARD_DETAILS } from 'common/quest'
+import { QUEST_DETAILS } from 'common/quest'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -87,7 +87,7 @@ export function IncomeNotificationItem(props: {
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
-  const { sourceType, reason } = notification
+  const { sourceType } = notification
 
   if (sourceType === 'tip' || sourceType === 'tip_and_like') {
     return (
@@ -98,22 +98,21 @@ export function IncomeNotificationItem(props: {
       />
     )
   } else if (sourceType === 'bonus') {
-    if (reason === 'quest_payout') {
-      return (
-        <QuestIncomeNotification
-          notification={notification}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-        />
-      )
-    } else
-      return (
-        <BonusIncomeNotification
-          notification={notification}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-        />
-      )
+    return (
+      <BonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'quest_reward') {
+    return (
+      <QuestIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (sourceType === 'betting_streak_bonus') {
     return (
       <BettingStreakBonusIncomeNotification
@@ -257,7 +256,7 @@ export function QuestIncomeNotification(props: {
       isChildOfGroup={true}
       icon={
         <NotificationIcon
-          symbol={'🎁'}
+          symbol={'🧭'}
           symbolBackgroundClass={
             'bg-gradient-to-br from-primary-500 to-primary-300'
           }
@@ -267,7 +266,7 @@ export function QuestIncomeNotification(props: {
       <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
-          text={`completing the ${QUEST_REWARD_DETAILS[questType].title} quest`}
+          text={`completing the ${QUEST_DETAILS[questType].title} quest`}
         />
       </span>
     </NotificationFrame>
