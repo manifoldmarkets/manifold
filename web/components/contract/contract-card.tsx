@@ -554,85 +554,89 @@ export function ContractCardNew(props: {
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'group flex flex-col gap-2 whitespace-nowrap rounded-sm py-3 px-4',
+        'group flex flex-col gap-2 whitespace-nowrap rounded-sm pt-6',
         'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
         className
       )}
     >
-      <Row className="text-ink-500 items-center gap-3 text-sm">
-        <Row className="z-10 gap-2">
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size="xs"
-          />
-          <UserLink
-            name={creatorName}
-            username={creatorUsername}
-            className="text-ink-500 h-[24px] text-sm"
-            createdTime={creatorCreatedTime}
-          />
+      <div className="px-4">
+        <Row className="text-ink-500 items-center gap-3 text-sm">
+          <Row className="z-10 gap-2">
+            <Avatar
+              username={creatorUsername}
+              avatarUrl={creatorAvatarUrl}
+              size="xs"
+            />
+            <UserLink
+              name={creatorName}
+              username={creatorUsername}
+              className="text-ink-500 h-[24px] text-sm"
+              createdTime={creatorCreatedTime}
+            />
+          </Row>
+          <div className="flex-1" />
+          <ReasonChosen contract={contract} />
         </Row>
-        <div className="flex-1" />
-        <ReasonChosen contract={contract} />
-      </Row>
 
-      <div
-        className={clsx(
-          'break-anywhere whitespace-normal font-medium',
-          textColor
+        <div
+          className={clsx(
+            'break-anywhere my-2 whitespace-normal font-medium',
+            textColor
+          )}
+        >
+          {question}
+        </div>
+
+        <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
+          <div className="text-base font-semibold">
+            <ContractStatusLabel contract={contract} chanceLabel />
+          </div>
+
+          {user !== null && isBinaryCpmm && (
+            <BetRow buttonClassName="z-10" contract={contract} />
+          )}
+
+          <Row
+            className="ml-auto items-center gap-2"
+            onClick={(e) => {
+              // Don't navigate to the contract page when clicking buttons.
+              e.preventDefault()
+            }}
+          >
+            <CommentsButton contract={contract} color="gray" size="md" />
+            <LikeButton
+              contentId={contract.id}
+              contentCreatorId={contract.creatorId}
+              user={user}
+              contentType={'contract'}
+              totalLikes={contract.likedByUserCount ?? 0}
+              contract={contract}
+              contentText={question}
+              showTotalLikesUnder
+              size="md"
+              color="gray"
+              className={'!mx-0 gap-2 drop-shadow-sm'}
+            />
+          </Row>
+        </Row>
+
+        {isBinaryCpmm && metrics && metrics.hasShares && (
+          <YourMetricsFooter metrics={metrics} />
         )}
-      >
-        {question}
       </div>
 
-      {!hideImage && coverImageUrl && (
-        <div className="relative h-36">
+      {!hideImage && coverImageUrl ? (
+        <div className="relative h-40">
           <Image
             fill
             alt={descriptionString}
             sizes="100vw"
-            className="object-cover opacity-90"
+            className="object-cover opacity-80"
             src={coverImageUrl ?? ''}
           />
         </div>
-      )}
-
-      <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
-        <div className="text-base font-semibold">
-          <ContractStatusLabel contract={contract} chanceLabel />
-        </div>
-
-        {user !== null && isBinaryCpmm && (
-          <BetRow buttonClassName="z-10" contract={contract} />
-        )}
-
-        <Row
-          className="ml-auto items-center gap-2"
-          onClick={(e) => {
-            // Don't navigate to the contract page when clicking buttons.
-            e.preventDefault()
-          }}
-        >
-          <CommentsButton contract={contract} color="gray" size="md" />
-          <LikeButton
-            contentId={contract.id}
-            contentCreatorId={contract.creatorId}
-            user={user}
-            contentType={'contract'}
-            totalLikes={contract.likedByUserCount ?? 0}
-            contract={contract}
-            contentText={question}
-            showTotalLikesUnder
-            size="md"
-            color="gray"
-            className={'!mx-0 gap-2 drop-shadow-sm'}
-          />
-        </Row>
-      </Row>
-
-      {isBinaryCpmm && metrics && metrics.hasShares && (
-        <YourMetricsFooter metrics={metrics} />
+      ) : (
+        <Spacer h={4} />
       )}
     </Link>
   )
@@ -689,7 +693,7 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="bg-canvas-50 items-center gap-4 rounded p-2 text-sm">
+    <Row className=" items-center gap-4 rounded p-2 text-sm">
       <Row className="items-center gap-2">
         <span className="text-ink-500">Your position</span>
         <div className="text-ink-600">
