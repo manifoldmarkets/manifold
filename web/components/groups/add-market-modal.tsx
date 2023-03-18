@@ -22,9 +22,7 @@ export function AddMarketToGroupModal(props: {
   const { group, user, open, setOpen, onAddMarkets, addPermission } = props
   const [groupContractIds, setGroupContractIds] = useState<string[]>([])
   useEffect(() => {
-    getGroupContractIds(group.id).then((ids) =>
-      setGroupContractIds(ids.map((contractId: any) => contractId.contract_id))
-    )
+    getGroupContractIds(group.id).then((ids) => setGroupContractIds(ids))
   }, [group.id])
   return (
     <Modal open={open} setOpen={setOpen} size="lg">

@@ -25,8 +25,18 @@ import {
 import { Contract } from '../firebase/contracts'
 import { getBets, getTotalBetCount } from './bets'
 import { getAllComments } from './comments'
-// import { getBets, getTotalBetCount } from './bets'
 import { db } from './db'
+
+export async function getContractIds(contractIds: string[]) {
+  const { data } = await run(
+    db.from('contracts').select('data').in('id', contractIds)
+  )
+  if (data && data.length > 0) {
+    return data.map((d) => d.data as Contract)
+  } else {
+    return []
+  }
+}
 
 export const getContract = async (id: string) => {
   const q = selectJson(db, 'contracts').eq('id', id)
