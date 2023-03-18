@@ -86,6 +86,25 @@ const awardQuestBonus = async (
   newCount: number
 ) => {
   return await firestore.runTransaction(async (trans) => {
+    // make sure we don't already have a txn for this user/questType
+    const previousTxns = firestore
+      .collection('txns')
+      .where('toId', '==', user.id)
+      .where('category', '==', 'QUEST_REWARD')
+      .where('data.questType', '==', questType)
+      .where('data.questCount', '==', newCount)
+      .where('createdTime', '>=', dayjs().subtract(1, 'day').valueOf())
+      .limit(1)
+    const previousTxn = (await previousTxns.get()).docs[0]
+    if (previousTxn) {
+      const data = previousTxn.data() as QuestRewardTxn
+      return {
+        message: 'Already awarded quest bonus',
+        txn: data,
+        status: 'SUCCESS',
+        bonusAmount: data.amount,
+      }
+    }
     const fromUserId = isProd()
       ? HOUSE_LIQUIDITY_PROVIDER_ID
       : DEV_HOUSE_LIQUIDITY_PROVIDER_ID

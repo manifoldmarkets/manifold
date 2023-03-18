@@ -1276,10 +1276,10 @@ export const createQuestPayoutNotification = async (
     'quest_payout'
   )
   if (!sendToBrowser) return
-
   const notificationRef = firestore
     .collection(`/users/${user.id}/notifications`)
-    .doc()
+    .doc(txnId)
+
   const notification: Notification = {
     id: notificationRef.id,
     userId: user.id,
