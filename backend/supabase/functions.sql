@@ -110,9 +110,13 @@ returns table (data jsonb, score real)
 immutable parallel safe
 language sql
 as $$
-  with recommended_contracts as (
-    select data, score
+  with recommendation_scores as materialized (
+    select contract_id, score
     from get_recommended_contract_scores_unseen(uid)
+    order by score desc
+  ), recommended_contracts as not materialized (
+    select data, score
+    from recommendation_scores
     left join contracts
     on contracts.id = contract_id
     where is_valid_contract(data)
@@ -228,7 +232,7 @@ create or replace function is_valid_contract(data jsonb)
     stable parallel safe
 as $$
 select not (data->>'isResolved')::boolean
-       and (data->>'visibility') != 'unlisted'
+       and (data->>'visibility') = 'public'
        and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '10 minutes')
 $$ language sql;
 

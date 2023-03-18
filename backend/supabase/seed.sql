@@ -166,6 +166,13 @@ create index if not exists contracts_unique_bettors on contracts (((data->'uniqu
 /* serves API recent markets endpoint */
 create index if not exists contracts_created_time on contracts ((to_jsonb(data)->>'createdTime') desc);
 create index if not exists contracts_close_time on contracts ((to_jsonb(data)->>'closeTime') desc);
+/* serves the criteria used to find valid contracts in get_recommended_contract_set */
+create index if not exists contracts_recommended_criteria on contracts (
+  ((data->>'createdTime')::bigint) desc,
+  (data->>'visibility'),
+  (data->>'outcomeType'),
+  ((data->>'isResolved')::boolean),
+  ((data->>'closeTime')::bigint));
 
 alter table contracts cluster on contracts_creator_id;
 
