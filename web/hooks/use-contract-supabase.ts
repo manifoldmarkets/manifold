@@ -62,9 +62,6 @@ export const useContractParams = (contract: Contract) => {
 
 export function useRealtimeContracts(limit: number) {
   const [contracts, setContracts] = useState<Contract[]>([])
-  const [newContract, setNewContract] = useState<Contract | undefined>(
-    undefined
-  )
 
   useEffect(() => {
     getContracts({ limit, order: 'desc' })
@@ -84,18 +81,21 @@ export function useRealtimeContracts(limit: number) {
       (payload) => {
         if (payload) {
           const payloadContract = payload.new.data as Contract
-          setNewContract(payloadContract)
+          setContracts((contracts) => {
+            if (
+              payloadContract &&
+              !contracts.some((c) => c.id == payloadContract.id)
+            ) {
+              return [payloadContract].concat(contracts.slice(0, -1))
+            } else {
+              return contracts
+            }
+          })
         }
       }
     )
     channel.subscribe(async (status) => {})
   }, [db])
 
-  useEffect(() => {
-    // if new bet exists, and is not already in bets, pushes it to front
-    if (newContract && !contracts.some((c) => c.id == newContract.id)) {
-      setContracts([newContract].concat(contracts.slice(0, -1)))
-    }
-  }, [newContract, contracts])
   return contracts
 }

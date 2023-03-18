@@ -1,15 +1,12 @@
 import { Bet } from 'common/bet'
-import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { BetFilter } from 'web/lib/firebase/bets'
 import { getBets, getTotalBetCount } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { CONTRACT_BET_FILTER } from 'web/pages/[username]/[contractSlug]'
-import { useEffectCheckEquality } from './use-effect-check-equality'
 
 export function useRealtimeBets(limit: number, options?: BetFilter) {
   const [bets, setBets] = useState<Bet[]>([])
-  const [newBet, setNewBet] = useState<Bet | undefined>(undefined)
 
   useEffect(() => {
     getBets({ limit, order: 'desc', ...options })
@@ -30,20 +27,19 @@ export function useRealtimeBets(limit: number, options?: BetFilter) {
         if (payload) {
           const payloadBet = payload.new.data as Bet
           if (!betShouldBeFiltered(payloadBet, options)) {
-            setNewBet(payloadBet)
+            setBets((bets) => {
+              if (payloadBet && !bets.some((c) => c.id == payloadBet.id)) {
+                return [payloadBet].concat(bets.slice(0, -1))
+              } else {
+                return bets
+              }
+            })
           }
         }
       }
     )
     channel.subscribe(async (status) => {})
   }, [db])
-
-  useEffect(() => {
-    // if new bet exists, and is not already in bets, pushes it to front
-    if (newBet && !bets.some((bet) => bet.id == newBet.id)) {
-      setBets([newBet].concat(bets.slice(0, -1)))
-    }
-  }, [newBet, bets])
   return bets
 }
 

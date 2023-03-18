@@ -18,7 +18,6 @@ export function useComments(contractId: string, limit: number) {
 
 export function useRealtimeComments(limit: number) {
   const [comments, setComments] = useState<Comment[]>([])
-  const [newComment, setNewComment] = useState<Comment | undefined>(undefined)
 
   useEffect(() => {
     getComments(limit)
@@ -38,18 +37,21 @@ export function useRealtimeComments(limit: number) {
       (payload) => {
         if (payload) {
           const payloadComment = payload.new.data as Comment
-          setNewComment(payloadComment)
+          setComments((comments) => {
+            if (
+              payloadComment &&
+              !comments.some((c) => c.id == payloadComment.id)
+            ) {
+              return [payloadComment].concat(comments.slice(0, -1))
+            } else {
+              return comments
+            }
+          })
         }
       }
     )
     channel.subscribe(async (status) => {})
   }, [db])
 
-  useEffect(() => {
-    // if new bet exists, and is not already in bets, pushes it to front
-    if (newComment && !comments.some((c) => c.id == newComment.id)) {
-      setComments([newComment].concat(comments.slice(0, -1)))
-    }
-  }, [newComment, comments])
   return comments
 }
