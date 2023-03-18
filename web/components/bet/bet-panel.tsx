@@ -358,8 +358,11 @@ export function BuyPanel(props: {
           'rounded-lg px-4 py-2'
         )}
       >
-        <Row className="text-ink-500 mt-2 mb-1 justify-between text-left text-sm">
-          Amount
+        <Row className="text-ink-500 mt-2 mb-1 items-center justify-between text-left text-sm">
+          Amount{' '}
+          <span className="ml-4 text-xs">
+            Balance: {formatMoney(user?.balance ?? 0)}
+          </span>
         </Row>
 
         <BuyAmountInput
