@@ -58,10 +58,12 @@ export const DailyProfit = memo(function DailyProfit(props: {
     if (open) refreshContractMetrics().then(setData)
   }, [open, refreshContractMetrics, setData])
 
-  const dailyProfit = useMemo(() => {
-    if (!data) return 0
-    return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
-  }, [data])
+  const dailyProfit = Math.round(
+    useMemo(() => {
+      if (!data) return 0
+      return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
+    }, [data])
+  )
   // const dailyProfit = 10
   const [seenToday, setSeenToday] = useHasSeen(
     user,
@@ -85,19 +87,21 @@ export const DailyProfit = memo(function DailyProfit(props: {
         <Tooltip text={'Daily profit'}>
           <Row className={clsx(dailyStatsClass, 'items-center')}>
             <span className={clsx()}>{formatMoney(user.balance)}</span>
-            <span
-              className={clsx(
-                'ml-1 text-xs',
-                seenToday
-                  ? dailyProfit > 0
-                    ? 'text-teal-600'
-                    : 'text-ink-500'
-                  : ''
-              )}
-            >
-              {dailyProfit > 0 ? '+' : ''}
-              {Math.round(dailyProfit)}
-            </span>
+            {dailyProfit !== 0 && (
+              <span
+                className={clsx(
+                  'ml-1 text-xs',
+                  seenToday
+                    ? dailyProfit > 0
+                      ? 'text-teal-600'
+                      : 'text-ink-500'
+                    : ''
+                )}
+              >
+                {dailyProfit > 0 ? '+' : ''}
+                {dailyProfit}
+              </span>
+            )}
           </Row>
         </Tooltip>
       </button>
