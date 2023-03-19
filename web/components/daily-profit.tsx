@@ -5,7 +5,11 @@ import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
-import { formatMoney, formatPercent } from 'common/util/format'
+import {
+  formatMoney,
+  formatPercent,
+  shortFormatNumber,
+} from 'common/util/format'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMBinaryContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
@@ -92,14 +96,14 @@ export const DailyProfit = memo(function DailyProfit(props: {
                 className={clsx(
                   'ml-1 text-xs',
                   seenToday
-                    ? dailyProfit > 0
+                    ? dailyProfit >= 0
                       ? 'text-teal-600'
-                      : 'text-ink-500'
+                      : 'text-scarlet-600'
                     : ''
                 )}
               >
-                {dailyProfit > 0 ? '+' : ''}
-                {dailyProfit}
+                {dailyProfit >= 0 ? '+' : '-'}
+                {shortFormatNumber(Math.abs(dailyProfit))}
               </span>
             )}
           </Row>
@@ -111,6 +115,8 @@ export const DailyProfit = memo(function DailyProfit(props: {
           open={open}
           metrics={data?.metrics}
           contracts={data?.contracts}
+          dailyProfit={dailyProfit}
+          balance={user.balance}
         />
       )}
     </>
@@ -122,19 +128,38 @@ function DailyProfitModal(props: {
   setOpen: (open: boolean) => void
   metrics?: ContractMetrics[]
   contracts?: CPMMBinaryContract[]
+  dailyProfit: number
+  balance: number
 }) {
-  const { open, setOpen, metrics, contracts } = props
+  const { open, setOpen, metrics, contracts, dailyProfit, balance } = props
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
         <Col className={'mb-4'}>
           <Title className={'mb-1'}>💰 Daily profit</Title>
-          <span className="text-ink-500 text-sm">
+
+          <span className="text-ink-500 mb-4 text-sm">
             Change in the value of your Yes/No positions over the last 24 hours.
             (Updates every 30 min)
           </span>
+
+          <Row>
+            Daily profit{' '}
+            <span
+              className={clsx(
+                'ml-2',
+                dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+              )}
+            >
+              {formatMoney(dailyProfit)}
+            </span>
+          </Row>
+          <Row>
+            Balance <span className="ml-10">{formatMoney(balance)}</span>
+          </Row>
         </Col>
+
         {!metrics || !contracts ? (
           <LoadingIndicator />
         ) : (
