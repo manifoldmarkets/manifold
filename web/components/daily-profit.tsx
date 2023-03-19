@@ -144,19 +144,21 @@ function DailyProfitModal(props: {
             (Updates every 30 min)
           </span>
 
-          <Row>
-            Daily profit{' '}
-            <span
-              className={clsx(
-                'ml-2',
-                dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-              )}
-            >
-              {formatMoney(dailyProfit)}
-            </span>
-          </Row>
-          <Row>
-            Balance <span className="ml-10">{formatMoney(balance)}</span>
+          <Row className="gap-2">
+            <Col className="gap-2">
+              <div>Balance</div>
+              <div>Daily profit</div>
+            </Col>
+            <Col className="items-end gap-2">
+              <div>{formatMoney(balance)}</div>
+              <div
+                className={clsx(
+                  dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                )}
+              >
+                {formatMoney(dailyProfit)}
+              </div>
+            </Col>
           </Row>
         </Col>
 
