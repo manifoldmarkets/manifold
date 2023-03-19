@@ -184,7 +184,7 @@ const CornerDetails = (props: {
         </div>
       </Row>
 
-      <div className="text-ink-400 flex items-center rounded-full">
+      <div className="flex items-center rounded-full text-white">
         <DailyStats user={user} showLoans={false} />
         {toggleView && (
           <SwitchHorizontalIcon className="ml-2 h-6 w-6" onClick={toggleView} />

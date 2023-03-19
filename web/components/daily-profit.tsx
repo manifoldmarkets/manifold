@@ -81,33 +81,35 @@ export const DailyProfit = memo(function DailyProfit(props: {
       <button
         className={clsx(
           'rounded-md text-center',
-          seenToday ? '' : unseenDailyStatsClass
+          seenToday || Math.abs(dailyProfit) < 1 ? '' : unseenDailyStatsClass
         )}
         onClick={withTracking(() => {
           setOpen(true)
           setSeenToday(true)
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
-        <Tooltip text={'Balance'}>
-          <Row className={clsx(dailyStatsClass, 'items-center')}>
-            <span className={clsx()}>{formatMoney(user.balance)}</span>
-            {dailyProfit !== 0 && (
-              <span
-                className={clsx(
-                  'ml-1 text-xs',
-                  seenToday
-                    ? dailyProfit >= 0
-                      ? 'text-teal-600'
-                      : 'text-scarlet-600'
-                    : ''
-                )}
-              >
-                {dailyProfit >= 0 ? '+' : '-'}
-                {shortFormatNumber(Math.abs(dailyProfit))}
-              </span>
-            )}
-          </Row>
-        </Tooltip>
+        <Row className={clsx(dailyStatsClass)}>
+          <Col className="justify-start">
+            <div className={clsx()}>{formatMoney(user.balance)}</div>
+            <div className="text-sm opacity-70">Balance</div>
+          </Col>
+
+          {dailyProfit !== 0 && (
+            <span
+              className={clsx(
+                'ml-1 text-xs',
+                seenToday
+                  ? dailyProfit >= 0
+                    ? 'text-teal-600'
+                    : 'text-scarlet-600'
+                  : ''
+              )}
+            >
+              {dailyProfit >= 0 ? '+' : '-'}
+              {shortFormatNumber(Math.abs(dailyProfit))}
+            </span>
+          )}
+        </Row>
       </button>
       {user && (
         <DailyProfitModal

@@ -29,7 +29,7 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 const MS_TO_STOP_CHECKING = 1679378400000
 export const dailyStatsClass = 'text-lg py-1'
 export const unseenDailyStatsClass =
-  'px-1.5 text-blue-600 shadow shadow-blue-700 transition-colors transition-all hover:from-blue-400 hover:via-blue-100 hover:to-blue-200 enabled:bg-gradient-to-tr'
+  'px-1.5 shadow shadow-blue-700 transition-colors transition-all hover:from-blue-400 hover:via-blue-100 hover:to-blue-200 enabled:bg-gradient-to-tr'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -75,11 +75,7 @@ export function DailyStats(props: {
 
   const [showQuestsModal, setShowQuestsModal] = useState(false)
 
-  // hide daily stats if user created in last 24 hours
-  const justCreated =
-    (user?.createdTime ?? 0) > Date.now() - 1000 * 60 * 60 * 24
-
-  if (justCreated || !user) return <></>
+  if (!user) return <></>
   const { allQuestsComplete, totalQuestsCompleted, totalQuests } =
     getQuestCompletionStatus(user)
 
@@ -87,42 +83,40 @@ export function DailyStats(props: {
     <Row className={'z-30 flex-shrink-0 items-center gap-4'}>
       <DailyProfit user={user} />
 
-      {allQuestsComplete ? (
+      {/* {allQuestsComplete ? (
         <Col
           className="cursor-pointer"
           onClick={() => setShowQuestsModal(true)}
         >
-          <Tooltip text={'Prediction streak'}>
-            <Row
-              className={clsx(
-                dailyStatsClass,
-                user && !hasCompletedStreakToday(user) && 'grayscale'
-              )}
-            >
-              <span>🔥 {user?.currentBettingStreak ?? 0}</span>
-            </Row>
-          </Tooltip>
+          <Col
+            className={clsx(
+              dailyStatsClass,
+              user && !hasCompletedStreakToday(user) && 'grayscale',
+              'items-center'
+            )}
+          >
+            <span>🔥 {user?.currentBettingStreak ?? 0}</span>
+            <span className="text-ink-600 text-sm">Streak</span>
+          </Col>
         </Col>
-      ) : (
-        <button
-          className={clsx(
-            'cursor-pointer rounded-md py-1',
-            dailyStatsClass,
-            seenToday ? '' : unseenDailyStatsClass
-          )}
-          onClick={() => {
-            setShowQuestsModal(true)
-            track(QUEST_STATS_CLICK_EVENT)
-            setSeenToday(true)
-          }}
-        >
-          <Tooltip text={'Your quests'}>
-            <Row>
-              <span>🧭 {`${totalQuestsCompleted}/${totalQuests}`}</span>
-            </Row>
-          </Tooltip>
-        </button>
-      )}
+      ) : ( */}
+      <button
+        className={clsx(
+          'cursor-pointer rounded-md py-1',
+          dailyStatsClass,
+          seenToday || allQuestsComplete ? '' : unseenDailyStatsClass
+        )}
+        onClick={() => {
+          setShowQuestsModal(true)
+          track(QUEST_STATS_CLICK_EVENT)
+          setSeenToday(true)
+        }}
+      >
+        <Col>
+          <span>🧭 {`${totalQuestsCompleted}/${totalQuests}`}</span>
+          <span className="text-sm opacity-70">Quests</span>
+        </Col>
+      </button>
       {showLoans && (
         <Col
           className="flex cursor-pointer"
