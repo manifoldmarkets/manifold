@@ -207,12 +207,15 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
   contracts: CPMMContract[] | undefined
 }) {
   const { contracts } = props
-  if (contracts?.length === 0) return <></>
+  const changedContracts = contracts
+    ? contracts.filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01)
+    : undefined
+  if (!changedContracts || changedContracts.length === 0) return <></>
 
   return (
     <Col>
       <HomeSectionHeader label="Today's updates" icon="📊" />
-      <ProbChangeTable changes={contracts as CPMMContract[]} />
+      <ProbChangeTable changes={changedContracts as CPMMContract[]} />
     </Col>
   )
 })
