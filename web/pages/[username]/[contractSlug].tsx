@@ -57,10 +57,7 @@ import {
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
-import {
-  getContractParams,
-  getContractVisibilityFromSlug,
-} from 'web/lib/supabase/contracts'
+import { getContractParams } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 
@@ -89,22 +86,28 @@ export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = ctx.params
-  const visibility = await getContractVisibilityFromSlug(contractSlug)
-  if (
-    visibility === 'private'
-    // Note (James): Removed the below condition so that new contracts which are not yet
-    // replicated to supabase will still render as public contracts.
-    // We should think of a better solution.
-    // || !visibility
-  ) {
+  // Fetched from Firebase to avoid replicator delay on first create.
+  // TODO: Switch to Supabase once contracts are created in supabase.
+  const contract = (await getContractFromSlug(contractSlug)) ?? null
+
+  if (contract === null) {
     return {
       props: {
-        visibility,
         contractSlug,
+        visibility: null,
+      },
+    }
+  }
+
+  const visibility = contract ? contract.visibility : null
+  if (visibility === 'private') {
+    return {
+      props: {
+        contractSlug,
+        visibility: 'private',
       },
     }
   } else {
-    const contract = (await getContractFromSlug(contractSlug)) || null
     const contractParams = await getContractParams(contract)
 
     return {
@@ -122,7 +125,7 @@ export async function getStaticPaths() {
 }
 
 export default function ContractPage(props: {
-  visibility: visibility
+  visibility: visibility | null
   contractSlug: string
   contractParams?: ContractParams
 }) {

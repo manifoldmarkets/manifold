@@ -136,22 +136,7 @@ export async function getContractVisibilityFromSlug(contractSlug: string) {
   return undefined
 }
 
-export async function getContractParams(contract: Contract | null) {
-  if (!contract) {
-    return {
-      contract: null,
-      historyData: {
-        bets: [],
-        points: [],
-      },
-      comments: [],
-      userPositionsByOutcome: {},
-      totalPositions: 0,
-      totalBets: 0,
-      topContractMetrics: [],
-      relatedContracts: [],
-    }
-  }
+export async function getContractParams(contract: Contract) {
   const contractId = contract?.id
 
   const totalBets = contractId ? await getTotalBetCount(contractId) : 0
