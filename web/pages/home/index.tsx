@@ -52,6 +52,7 @@ export default function Home() {
   const isClient = useIsClient()
   const isMobile = useIsMobile()
   useTracking('view home', { kind: isMobile ? 'swipe' : 'desktop' })
+  useRedirectIfSignedOut()
 
   if (!isClient)
     return (
@@ -68,7 +69,6 @@ export default function Home() {
 
 function HomeDashboard() {
   const user = useUser()
-  useRedirectIfSignedOut()
   useSaveReferral()
 
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
