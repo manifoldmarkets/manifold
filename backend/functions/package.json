@@ -41,10 +41,12 @@
     "expo-server-sdk": "3.6.0",
     "firebase-admin": "11.5.0",
     "firebase-functions": "4.2.1",
+    "kysely": "0.23.5",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "marked": "4.1.1",
     "openai": "3.2.1",
+    "pg": "8.10.0",
     "pg-promise": "11.4.1"
   },
   "devDependencies": {

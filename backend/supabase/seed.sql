@@ -388,6 +388,11 @@ create policy "admin write access" on user_embeddings
   as PERMISSIVE FOR ALL
   to service_role;
 
+create index if not exists user_embeddings_interest_embedding on user_embeddings 
+  using ivfflat (interest_embedding vector_cosine_ops)
+  with (lists = 100);
+
+
 create table if not exists contract_embeddings (
     contract_id text not null primary key,
     created_at timestamp not null default now(),

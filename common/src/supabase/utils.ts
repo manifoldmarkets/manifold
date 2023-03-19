@@ -20,6 +20,11 @@ export type Tables = Schema['Tables']
 export type PlainTables = {
   [table in keyof Tables]: Tables[table]['Row']
 }
+export type Views = Schema['Views']
+export type PlainViews = {
+  [view in keyof Views]: Views[view]['Row']
+}
+export type PlainTablesAndViews = PlainTables & PlainViews
 export type TableName = keyof Tables
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
 

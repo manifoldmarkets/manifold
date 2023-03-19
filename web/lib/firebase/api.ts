@@ -190,3 +190,7 @@ export function registerDiscordId(params: any) {
 export function getUserIsGroupMember(params: { groupSlug: string }) {
   return call(getApiUrl('getuserisgroupmember'), 'POST', params)
 }
+
+export function getRecommendedContracts(params: { excludedContractIds: string[] }) {
+  return call(getApiUrl('get-recommended-contracts'), 'POST', params)
+}
