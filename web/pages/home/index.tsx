@@ -35,7 +35,6 @@ import { track } from 'web/lib/service/analytics'
 import { Title } from 'web/components/widgets/title'
 import {
   MobileSearchButton,
-  SearchButton,
 } from 'web/components/nav/search-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'

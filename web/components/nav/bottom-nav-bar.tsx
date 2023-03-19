@@ -5,7 +5,6 @@ import {
   MenuAlt3Icon,
   XIcon,
   BookOpenIcon,
-  ScaleIcon,
 } from '@heroicons/react/outline'
 import {
   DeviceMobileIcon,
