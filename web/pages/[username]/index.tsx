@@ -428,6 +428,8 @@ function ProfilePublicStats(props: {
     setFollowsTab(tabName)
   }
 
+  const [showMore, setShowMore] = useState(false)
+
   return (
     <Row
       className={clsx(
@@ -435,33 +437,46 @@ function ProfilePublicStats(props: {
         className
       )}
     >
-      <span>{`Joined ${createdTime}`}</span>
+      <span onClick={() => setShowMore(true)} className="cursor-pointer">
+        {`Joined ${createdTime}`}{' '}
+      </span>
+      {showMore && (
+        <>
+          <TextButton
+            onClick={() => openDialog('following')}
+            className={className}
+          >
+            <span className={clsx('font-semibold')}>
+              {followingIds?.length ?? ''}
+            </span>{' '}
+            Following
+          </TextButton>
+          <TextButton
+            onClick={() => openDialog('followers')}
+            className={className}
+          >
+            <span className={clsx('font-semibold')}>
+              {followerIds?.length ?? ''}
+            </span>{' '}
+            Followers
+          </TextButton>
 
-      <TextButton onClick={() => openDialog('following')} className={className}>
-        <span className={clsx('font-semibold')}>
-          {followingIds?.length ?? ''}
-        </span>{' '}
-        Following
-      </TextButton>
-      <TextButton onClick={() => openDialog('followers')} className={className}>
-        <span className={clsx('font-semibold')}>
-          {followerIds?.length ?? ''}
-        </span>{' '}
-        Followers
-      </TextButton>
-
-      <FollowsDialog
-        user={user}
-        defaultTab={followsTab}
-        followingIds={followingIds}
-        followerIds={followerIds}
-        isOpen={isOpen}
-        setIsOpen={setIsOpen}
-      />
-      {isCurrentUser && <GroupsButton user={user} className={className} />}
-      {isCurrentUser && <ReferralsButton user={user} className={className} />}
-      {isCurrentUser && (
-        <UserLikedContractsButton user={user} className={className} />
+          <FollowsDialog
+            user={user}
+            defaultTab={followsTab}
+            followingIds={followingIds}
+            followerIds={followerIds}
+            isOpen={isOpen}
+            setIsOpen={setIsOpen}
+          />
+          {isCurrentUser && <GroupsButton user={user} className={className} />}
+          {isCurrentUser && (
+            <ReferralsButton user={user} className={className} />
+          )}
+          {isCurrentUser && (
+            <UserLikedContractsButton user={user} className={className} />
+          )}
+        </>
       )}
     </Row>
   )
