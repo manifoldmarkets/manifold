@@ -231,7 +231,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-4'
                 }
               >
-                {isCurrentUser && <DailyStats user={user} showLoans />}
+                {isCurrentUser && <DailyStats user={user} />}
                 {!isCurrentUser && <UserFollowButton userId={user.id} />}
                 {!isCurrentUser && <MoreOptionsUserButton user={user} />}
               </Row>

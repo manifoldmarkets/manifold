@@ -25,11 +25,14 @@ import { sum } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { completeQuest } from 'web/lib/firebase/api'
 import { useIsAuthorized } from 'web/hooks/use-user'
+
 const MS_TO_STOP_CHECKING = 1679378400000
 export const dailyStatsClass = 'text-lg py-1'
 export const unseenDailyStatsClass =
   'px-1.5 text-blue-600 shadow shadow-blue-700 transition-colors transition-all hover:from-blue-400 hover:via-blue-100 hover:to-blue-200 enabled:bg-gradient-to-tr'
+
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
+
 export function DailyStats(props: {
   user: User | null | undefined
   showLoans?: boolean
