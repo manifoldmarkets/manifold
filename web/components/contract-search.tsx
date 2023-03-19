@@ -401,7 +401,7 @@ function ContractSearchControls(props: {
         value={query}
         onChange={(e) => updateQuery(e.target.value)}
         onBlur={trackCallback('search', { query: query })}
-        placeholder="Filter markets"
+        placeholder="Search markets"
         className="w-full"
         autoFocus={autoFocus}
       />

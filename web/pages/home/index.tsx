@@ -80,7 +80,6 @@ function HomeDashboard() {
       <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
         <Row className={'w-full items-center justify-between gap-4'}>
           <Title children="Home" className="!my-0 hidden sm:block" />
-          <SearchButton className="hidden flex-1 md:flex lg:hidden" />
           <MobileSearchButton className="flex-1 md:hidden" />
           <DailyStats user={user} />
         </Row>
@@ -111,7 +110,8 @@ function MobileHome() {
     <Page>
       <Col className="gap-6 py-2 pb-8 sm:px-2">
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <MobileSearchButton className="flex-1" />
+          <Title children="Home" className="!my-0" />
+
           <Row className="items-center gap-4">
             <DailyStats user={user} />
             {isNative && (

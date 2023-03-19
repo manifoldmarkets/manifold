@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { ReactNode } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 
@@ -6,6 +6,7 @@ import { trackCallback } from 'web/lib/service/analytics'
 
 export type Item = {
   name: string
+  postName?: ReactNode
   trackingEventName?: string
   href?: string
   onClick?: () => void
@@ -38,7 +39,7 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
           aria-hidden="true"
         />
       )}
-      <span className="truncate">{item.name}</span>
+      <span className="truncate">{item.name}{item.postName}</span>
     </div>
   )
 

@@ -7,7 +7,6 @@ import { useRouter } from 'next/router'
 import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { useMemberGroupsSubscription } from 'web/hooks/use-group'
-import { Title } from 'web/components/widgets/title'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export default function Search() {
@@ -33,7 +32,6 @@ export default function Search() {
   return (
     <Page>
       <Col className="mx-auto w-full p-2">
-        <Title className="hidden lg:flex">Markets</Title>
         <ContractSearch
           persistPrefix="search"
           autoFocus={autoFocus}

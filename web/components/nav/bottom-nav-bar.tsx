@@ -7,7 +7,11 @@ import {
   BookOpenIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
-import { DeviceMobileIcon, UserCircleIcon } from '@heroicons/react/solid'
+import {
+  DeviceMobileIcon,
+  SearchIcon,
+  UserCircleIcon,
+} from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment, useEffect } from 'react'
 import Sidebar from './sidebar'
@@ -36,7 +40,7 @@ const touchItemClass = 'bg-primary-100'
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Markets', href: '/markets', icon: ScaleIcon },
+    { name: 'Search', href: '/search', icon: SearchIcon },
     {
       name: 'Profile',
       href: `/${user.username}?tab=portfolio`,
@@ -51,7 +55,7 @@ function getNavigation(user: User) {
 
 const signedOutNavigation = (appStoreUrl: string) => [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Markets', href: '/markets', icon: ScaleIcon },
+  { name: 'Search', href: '/search', icon: SearchIcon },
   {
     name: 'Get app',
     href: appStoreUrl,
