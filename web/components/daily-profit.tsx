@@ -3,7 +3,6 @@ import { User } from 'common/user'
 import { HOUR_MS } from 'common/util/time'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
 import {
   formatMoney,
