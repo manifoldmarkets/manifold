@@ -475,8 +475,6 @@ export interface Database {
       user_portfolio_history: {
         Row: {
           balance: number | null
-          data: Json | null
-          fs_updated_time: string | null
           investment_value: number | null
           portfolio_id: string
           total_deposits: number | null
@@ -485,8 +483,6 @@ export interface Database {
         }
         Insert: {
           balance?: number | null
-          data?: Json | null
-          fs_updated_time?: string | null
           investment_value?: number | null
           portfolio_id: string
           total_deposits?: number | null
@@ -495,8 +491,6 @@ export interface Database {
         }
         Update: {
           balance?: number | null
-          data?: Json | null
-          fs_updated_time?: string | null
           investment_value?: number | null
           portfolio_id?: string
           total_deposits?: number | null
@@ -650,6 +644,13 @@ export interface Database {
           id?: string | null
         }
       }
+      user_contract_distance: {
+        Row: {
+          contract_id: string | null
+          distance: number | null
+          user_id: string | null
+        }
+      }
       user_groups: {
         Row: {
           avatarurl: string | null
@@ -658,6 +659,14 @@ export interface Database {
           id: string | null
           name: string | null
           username: string | null
+        }
+      }
+      user_trending_contract: {
+        Row: {
+          contract_id: string | null
+          distance: number | null
+          freshness_score: number | null
+          user_id: string | null
         }
       }
     }

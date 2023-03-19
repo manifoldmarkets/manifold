@@ -42,7 +42,7 @@ export const useFeed = (user: User | null | undefined, key: string) => {
     setTimeout(loadMore, 1000)
   }, [loadMore])
 
-  const shouldBlockDestiny = useShouldBlockDestiny(user?.id)
+  const shouldBlockDestiny = false // useShouldBlockDestiny(user?.id)
   const filteredContracts = savedContracts?.filter(
     (c) =>
       !isContractBlocked(privateUser, c) &&
