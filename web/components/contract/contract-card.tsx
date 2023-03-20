@@ -554,7 +554,7 @@ export function ContractCardNew(props: {
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'border-ink-300 group my-4 flex flex-col gap-2 overflow-hidden whitespace-nowrap rounded-md border pt-2',
+        'border-ink-300 group my-4 flex flex-col gap-2 overflow-hidden whitespace-nowrap rounded-sm border-[0.5px] pt-2',
         'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
         className
       )}
