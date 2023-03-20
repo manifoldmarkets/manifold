@@ -359,10 +359,7 @@ export function BuyPanel(props: {
         )}
       >
         <Row className="text-ink-500 mt-2 mb-1 items-center justify-between text-left text-sm">
-          Amount{' '}
-          <span className="ml-4 text-xs">
-            Balance: {formatMoney(user?.balance ?? 0)}
-          </span>
+          Amount
         </Row>
 
         <BuyAmountInput
@@ -376,6 +373,7 @@ export function BuyPanel(props: {
           sliderOptions={{ show: true, wrap: false }}
           binaryOutcome={outcome}
           hideInput={hideInput}
+          showBalance
         />
 
         <Row className="mt-8 w-full">
@@ -751,9 +749,6 @@ function LimitOrderPanel(props: {
         <span>
           Max amount<span className="text-scarlet-500 ml-1">*</span>
         </span>
-        <span className={'xl:hidden'}>
-          Balance: {formatMoney(user?.balance ?? 0)}
-        </span>
       </Row>
 
       <BuyAmountInput
@@ -764,6 +759,7 @@ function LimitOrderPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         sliderOptions={{ show: true, wrap: false }}
+        showBalance
       />
 
       <Col className="mt-8 w-full gap-3">

@@ -102,6 +102,7 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   disabled?: boolean
+  showBalance?: boolean
   hideInput?: boolean
   className?: string
   inputClassName?: string
@@ -120,6 +121,7 @@ export function BuyAmountInput(props: {
     setError,
     sliderOptions,
     disabled,
+    showBalance,
     className,
     inputClassName,
     minimumAmount,
@@ -187,10 +189,17 @@ export function BuyAmountInput(props: {
             />
           )}
         </Row>
-        {hideInput && error && (
+        {hideInput && error ? (
           <div className="text-scarlet-500 whitespace-nowrap text-xs font-medium tracking-wide">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
+        ) : (
+          showBalance &&
+          user && (
+            <div className="text-ink-500 whitespace-nowrap text-xs font-medium tracking-wide">
+              Balance: {formatMoney(user.balance)}
+            </div>
+          )
         )}
       </Col>
     </>

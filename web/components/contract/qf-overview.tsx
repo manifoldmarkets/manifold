@@ -186,6 +186,7 @@ function QfPayPanel(props: {
         }}
         error={undefined}
         setError={() => {}}
+        showBalance
       />
 
       {deltaMatch > 0 && (
