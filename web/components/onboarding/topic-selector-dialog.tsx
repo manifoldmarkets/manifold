@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
-import { useMemberGroupIds } from 'web/hooks/use-group'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
@@ -10,7 +9,7 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 
-export default function GroupSelectorDialog(props: {
+export function TopicSelectorDialog(props: {
   open: boolean
   setOpen: (open: boolean) => void
 }) {
@@ -22,21 +21,6 @@ export default function GroupSelectorDialog(props: {
   const [selectedTopic, setSelectedTopic] = useState<string | undefined>(
     undefined
   )
-
-  // TODO: replace group following with setting user interest vector
-  const memberGroupIds = useMemberGroupIds(user) || []
-  useEffect(() => {
-    if (memberGroupIds.length === 0) return
-
-    const followedTopics = Object.entries(GROUP_IDs)
-      .filter(
-        ([topic, groupId]) =>
-          memberGroupIds.includes(groupId) && allTopics.includes(topic)
-      )
-      .map(([topic]) => topic)
-
-    setSelectedTopics(followedTopics)
-  }, [memberGroupIds])
 
   return (
     <Modal open={open} setOpen={setOpen}>

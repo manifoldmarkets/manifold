@@ -11,7 +11,7 @@ import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import GroupSelectorDialog from './group-selector-dialog'
+import { TopicSelectorDialog } from './topic-selector-dialog'
 
 export default function Welcome() {
   const user = useUser()
@@ -77,7 +77,7 @@ export default function Welcome() {
 
   if (groupSelectorOpen)
     return (
-      <GroupSelectorDialog
+      <TopicSelectorDialog
         open={groupSelectorOpen}
         setOpen={() => setGroupSelectorOpen(false)}
       />
