@@ -65,7 +65,6 @@ const App = () => {
   useFonts({ ReadexPro_400Regular })
 
   // Auth
-  const [waitingForAuth, setWaitingForAuth] = useState(false)
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
   // Auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
   auth.onAuthStateChanged((user) => {
@@ -74,29 +73,13 @@ const App = () => {
   useEffect(() => {
     getData<FirebaseUser>('user').then((user) => {
       if (!user) return
-      log('Got user from storage', user.email)
+      log('Got user from storage:', user.email)
       setFbUser(user)
       webview.current?.postMessage(
         JSON.stringify({ type: 'nativeFbUser', data: user })
       )
     })
   }, [hasLoadedWebView])
-
-  useEffect(() => {
-    log(`Webview has loaded ${hasLoadedWebView}. user: ${fbUser?.uid}`)
-    // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
-    if (hasLoadedWebView && !fbUser) {
-      log('Has loaded webview with no user, waiting for auth')
-      const timeout = setTimeout(() => {
-        log('Still no cached users, redirecting to sign in')
-        setWaitingForAuth(false)
-      }, 2000)
-      return () => {
-        log('clearing auth timeout')
-        clearTimeout(timeout)
-      }
-    }
-  }, [hasLoadedWebView, fbUser])
 
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(
@@ -114,7 +97,7 @@ const App = () => {
 
   const setUrlWithNativeQuery = (endpoint?: string) => {
     const newUrl = baseUri + (endpoint ?? '/home') + nativeQuery
-    log('Setting new url', newUrl)
+    log('Setting new url:', newUrl)
     // React native doesn't come with Url, so we may want to use a library
     setUrlToLoad(newUrl)
   }
@@ -147,11 +130,11 @@ const App = () => {
       'Running lastNotificationInMemory effect, has loaded webview:',
       hasLoadedWebView
     )
-    log('last notification in memory', lastNotificationInMemory)
+    log('last notification in memory:', lastNotificationInMemory)
     // If there's a notification in memory and the webview has not loaded, set it as the url to load
     if (lastNotificationInMemory && !hasLoadedWebView) {
       log(
-        'Setting url to load from last notification in memory',
+        'Setting url to load from last notification in memory:',
         lastNotificationInMemory
       )
       setUrlWithNativeQuery(getSourceUrl(lastNotificationInMemory))
@@ -186,7 +169,7 @@ const App = () => {
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
-      log('Initial url', url, 'has loaded webview:', hasLoadedWebView)
+      log('Initial url:', url, '- has loaded webview:', hasLoadedWebView)
       if (url) {
         setUrlToLoad(url)
       }
@@ -421,7 +404,7 @@ const App = () => {
 
   return (
     <>
-      {!webViewAndUserLoaded && waitingForAuth ? (
+      {!hasLoadedWebView ? (
         <SplashLoading
           height={height}
           width={width}
@@ -429,10 +412,7 @@ const App = () => {
         />
       ) : (
         hasLoadedWebView &&
-        !fbUser &&
-        !waitingForAuth && (
-          <AuthPage webview={webview} height={height} width={width} />
-        )
+        !fbUser && <AuthPage webview={webview} height={height} width={width} />
       )}
       {Platform.OS === 'ios' && Device.isDevice && webViewAndUserLoaded && (
         <IosIapListener
