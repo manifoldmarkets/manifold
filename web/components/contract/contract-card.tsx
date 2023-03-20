@@ -637,7 +637,7 @@ export function ContractCardNew(props: {
           />
         </div>
       ) : (
-        <Spacer h={4} />
+        <Spacer h={1} />
       )}
     </Link>
   )
