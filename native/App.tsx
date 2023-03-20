@@ -17,6 +17,7 @@ import {
   Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
+import { User as FirebaseUser } from 'firebase/auth'
 // @ts-ignore
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
@@ -45,6 +46,7 @@ import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Constants from 'expo-constants'
 import { NativeShareData } from 'common/src/native-share-data'
+import { clearData, getData, storeData } from './lib/auth'
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
@@ -63,8 +65,22 @@ const App = () => {
   useFonts({ ReadexPro_400Regular })
 
   // Auth
-  const [waitingForAuth, setWaitingForAuth] = useState(true)
-  const [fbUser, setFbUser] = useState(auth.currentUser)
+  const [waitingForAuth, setWaitingForAuth] = useState(false)
+  const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
+  // Auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
+  auth.onAuthStateChanged((user) => {
+    if (user) setFbUser(user)
+  })
+  useEffect(() => {
+    getData<FirebaseUser>('user').then((user) => {
+      if (!user) return
+      console.log('Got user from storage', user.email)
+      setFbUser(user)
+      webview.current?.postMessage(
+        JSON.stringify({ type: 'nativeFbUser', data: user })
+      )
+    })
+  }, [hasLoadedWebView])
 
   useEffect(() => {
     log(`Webview has loaded ${hasLoadedWebView}. user: ${fbUser?.uid}`)
@@ -81,12 +97,6 @@ const App = () => {
       }
     }
   }, [hasLoadedWebView, fbUser])
-
-  // Auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
-  useEffect(() => {
-    log('Auth user changed', fbUser?.uid)
-    auth.onAuthStateChanged(setFbUser)
-  }, [auth])
 
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(
@@ -133,8 +143,10 @@ const App = () => {
   }
 
   useEffect(() => {
-    log('Running lastNotificationInMemory effect')
-    log('has loaded webview', hasLoadedWebView)
+    log(
+      'Running lastNotificationInMemory effect, has loaded webview:',
+      hasLoadedWebView
+    )
     log('last notification in memory', lastNotificationInMemory)
     // If there's a notification in memory and the webview has not loaded, set it as the url to load
     if (lastNotificationInMemory && !hasLoadedWebView) {
@@ -158,7 +170,6 @@ const App = () => {
   }, [lastNotificationInMemory, hasLoadedWebView])
 
   useEffect(() => {
-    log('Setting up notification listener')
     // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
     notificationResponseListener.current =
       Notifications.addNotificationResponseReceivedListener(
@@ -175,9 +186,7 @@ const App = () => {
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
-      log('Initial url', url)
-      log('Has loaded webview', hasLoadedWebView)
-      log('webview', webview.current)
+      log('Initial url', url, 'has loaded webview:', hasLoadedWebView)
       if (url) {
         setUrlToLoad(url)
       }
@@ -195,7 +204,7 @@ const App = () => {
     if (!linkedUrl) return
     log('Linked url', linkedUrl)
     log('Has loaded webview', hasLoadedWebView)
-    log('webview', webview.current)
+    log('webview:', webview.current)
 
     const { hostname, path, queryParams } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
@@ -325,8 +334,10 @@ const App = () => {
       try {
         const fbUserAndPrivateUser = JSON.parse(payload)
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
+          const fbUser = fbUserAndPrivateUser.fbUser as FirebaseUser
           log('Signing in fb user from webview cache')
-          await setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app)
+          await setFirebaseUserViaJson(fbUser, app)
+          await storeData('user', fbUser)
         }
       } catch (e) {
         Sentry.Native.captureException(e, {
@@ -369,6 +380,12 @@ const App = () => {
         extra: { message: errorMessage },
       })
     }
+    await clearData('user').catch((err) => {
+      log('Error clearing user data', err)
+      Sentry.Native.captureException(err, {
+        extra: { message: 'error clearing user data' },
+      })
+    })
   }
 
   const communicateWithWebview = (
