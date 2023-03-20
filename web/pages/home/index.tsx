@@ -217,13 +217,14 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
   )
 })
 
-const LiveSection = memo(function LiveSection() {
+const LiveSection = memo(function LiveSection(props: { className?: string }) {
+  const { className } = props
   return (
-    <Col className="relative">
+    <Col className={clsx('relative mt-4', className)}>
       {/* <HomeSectionHeader label="Live feed" href="/live" icon="🔴" /> */}
       <ActivityLog
         count={30}
-        showPills={false}
+        showPills
         // className="h-[380px] overflow-hidden"
       />
       <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
@@ -231,9 +232,12 @@ const LiveSection = memo(function LiveSection() {
   )
 })
 
-const YourFeedSection = memo(function YourFeedSection() {
+const YourFeedSection = memo(function YourFeedSection(props: {
+  className?: string
+}) {
+  const { className } = props
   return (
-    <Col>
+    <Col className={className}>
       {/* <HomeSectionHeader label={'Your feed'} icon={'📖'} /> */}
       <ContractsFeed />
     </Col>
@@ -241,8 +245,6 @@ const YourFeedSection = memo(function YourFeedSection() {
 })
 
 const MainContent = () => {
-  const sections = [<YourFeedSection />, <LiveSection />]
-
   const [section, setSection] = usePersistentState<number>(0, {
     key: 'main-content-section',
     store: inMemoryStore(),
@@ -261,7 +263,8 @@ const MainContent = () => {
         color="indigo"
       />
 
-      {sections[section]}
+      <YourFeedSection className={clsx(section === 0 ? '' : 'hidden')} />
+      <LiveSection className={clsx(section === 1 ? '' : 'hidden')} />
     </Col>
   )
 }
