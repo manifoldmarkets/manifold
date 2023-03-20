@@ -74,7 +74,7 @@ const App = () => {
   useEffect(() => {
     getData<FirebaseUser>('user').then((user) => {
       if (!user) return
-      console.log('Got user from storage', user.email)
+      log('Got user from storage', user.email)
       setFbUser(user)
       webview.current?.postMessage(
         JSON.stringify({ type: 'nativeFbUser', data: user })
@@ -252,7 +252,7 @@ const App = () => {
 
   const getPushToken = async () => {
     const projectId = Constants.expoConfig?.extra?.eas.projectId
-    console.log('projectId', projectId)
+    log('projectId', projectId)
     const token = (
       await Notifications.getExpoPushTokenAsync({
         projectId,
