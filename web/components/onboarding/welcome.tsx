@@ -124,7 +124,7 @@ function WhatIsManifoldPage() {
     <>
       <img
         className="h-1/3 w-1/3 place-self-center object-contain sm:h-1/2 sm:w-1/2 "
-        src="/welcome/manipurple.png"
+        src="/logo.svg"
       />
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-xl font-normal">
         Welcome to Manifold Markets
