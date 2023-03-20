@@ -218,7 +218,11 @@ export function ProfitChangeTable(props: {
   ]
 
   if (positive.length === 0 && negative.length === 0)
-    return <div className="text-ink-500 px-4">None</div>
+    return (
+      <div className="text-ink-500 px-4">
+        No profit changes found. Return later after making a few bets.
+      </div>
+    )
 
   const marketRow = (c: CPMMBinaryContract) =>
     r(

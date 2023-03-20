@@ -26,7 +26,7 @@ export const dailyStatsClass = 'text-lg py-1'
 
 // still not that pretty...
 export const unseenDailyStatsClass =
-  'px-1.5 shadow shadow-blue-700 transition-colors transition-all hover:from-blue-400 hover:via-ink-100 hover:to-blue-400 enabled:bg-gradient-to-tr'
+  'px-1.5 shadow shadow-blue-700 transition-colors transition-all hover:bg-blue-700/10 '
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -51,7 +51,7 @@ export function DailyStats(props: {
     <Row className={'z-30 flex-shrink-0 items-center gap-4'}>
       <DailyProfit user={user} />
 
-      {/* {allQuestsComplete ? (
+      {allQuestsComplete ? (
         <Col
           className="cursor-pointer"
           onClick={() => setShowQuestsModal(true)}
@@ -67,24 +67,25 @@ export function DailyStats(props: {
             <span className="text-ink-600 text-sm">Streak</span>
           </Col>
         </Col>
-      ) : ( */}
-      <button
-        className={clsx(
-          'cursor-pointer rounded-md py-1',
-          dailyStatsClass,
-          seenToday || allQuestsComplete ? '' : unseenDailyStatsClass
-        )}
-        onClick={() => {
-          setShowQuestsModal(true)
-          track(QUEST_STATS_CLICK_EVENT)
-          setSeenToday(true)
-        }}
-      >
-        <Col>
-          <span>🧭 {`${totalQuestsCompleted}/${totalQuests}`}</span>
-          <span className="text-sm opacity-70">Quests</span>
-        </Col>
-      </button>
+      ) : (
+        <button
+          className={clsx(
+            'cursor-pointer rounded-md py-1',
+            dailyStatsClass,
+            seenToday || allQuestsComplete ? '' : unseenDailyStatsClass
+          )}
+          onClick={() => {
+            setShowQuestsModal(true)
+            track(QUEST_STATS_CLICK_EVENT)
+            setSeenToday(true)
+          }}
+        >
+          <Col>
+            <span>🧭 {`${totalQuests - totalQuestsCompleted}`}</span>
+            <span className="text-sm opacity-70">Quests</span>
+          </Col>
+        </button>
+      )}
       {showLoans && (
         <Col
           className="flex cursor-pointer"
@@ -137,7 +138,7 @@ export function QuestsModal(props: {
     <Modal open={open} setOpen={setOpen} size={'lg'}>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg p-3">
         <Col className={'mb-6 items-center justify-center gap-2'}>
-          <Title className={'!mb-1'}> Your Quests </Title>
+          <Title className={'!mb-1'}> Your quests</Title>
           <span className="text-ink-700 text-sm">
             {`🧭 ${totalQuestsCompleted}/${totalQuests}`} completed
           </span>
