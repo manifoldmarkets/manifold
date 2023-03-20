@@ -3,14 +3,7 @@ import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
-import {
-  useEffect,
-  useRef,
-  useMemo,
-  useState,
-  createContext,
-  useContext,
-} from 'react'
+import { useEffect, useRef, useMemo, createContext, useContext } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useEvent } from 'web/hooks/use-event'
 import {
@@ -136,7 +129,10 @@ export function ContractSearch(props: {
   const searchParams = useRef<SearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SearchParameters>()
   const requestId = useRef(0)
-  const [asList, setAsList] = useState(!listViewDisabled)
+  const [asList, setAsList] = usePersistentState(!listViewDisabled, {
+    key: 'contract-search-as-list',
+    store: inMemoryStore(),
+  })
 
   useSafeLayoutEffect(() => {
     if (persistPrefix) {

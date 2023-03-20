@@ -30,7 +30,9 @@ const withURLParam = (location: Location, k: string, v?: string) => {
   return newUrl
 }
 
-export const storageStore = <T>(storage?: Backend): PersistentStore<T> => ({
+export const storageStore = <T>(
+  storage: Backend | undefined
+): PersistentStore<T> => ({
   get: (k: string) => {
     if (!storage) {
       return undefined
