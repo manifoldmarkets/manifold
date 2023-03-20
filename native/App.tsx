@@ -64,11 +64,12 @@ const App = () => {
 
   // Auth
   const [waitingForAuth, setWaitingForAuth] = useState(true)
-  const [user, setUser] = useState(auth.currentUser)
+  const [fbUser, setFbUser] = useState(auth.currentUser)
+
   useEffect(() => {
-    log(`Webview has loaded ${hasLoadedWebView}. user: ${user?.uid}`)
+    log(`Webview has loaded ${hasLoadedWebView}. user: ${fbUser?.uid}`)
     // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
-    if (hasLoadedWebView && !user) {
+    if (hasLoadedWebView && !fbUser) {
       log('Has loaded webview with no user, waiting for auth')
       const timeout = setTimeout(() => {
         log('Still no cached users, redirecting to sign in')
@@ -79,12 +80,12 @@ const App = () => {
         clearTimeout(timeout)
       }
     }
-  }, [hasLoadedWebView, user])
+  }, [hasLoadedWebView, fbUser])
 
   // Auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
   useEffect(() => {
-    log('Auth user changed', user?.uid)
-    auth.onAuthStateChanged(setUser)
+    log('Auth user changed', fbUser?.uid)
+    auth.onAuthStateChanged(setFbUser)
   }, [auth])
 
   // Url management
@@ -265,7 +266,7 @@ const App = () => {
       if (finalStatus !== 'granted') {
         communicateWithWebview('pushNotificationPermissionStatus', {
           status: finalStatus,
-          userId: user?.uid,
+          userId: fbUser?.uid,
         })
         return null
       }
@@ -279,25 +280,15 @@ const App = () => {
     }
   }
 
-  const handleMessageFromWebview = ({ nativeEvent }: any) => {
+  const handleMessageFromWebview = async ({ nativeEvent }: any) => {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
-    log('Received message from webview: ', type)
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
-    } else if (type === 'loginClicked') {
-      if (user || auth.currentUser) {
-        setUser(null)
-        try {
-          // Let's start from a clean slate if the webview and native auths are out of sync
-          auth.signOut()
-        } catch (err) {
-          log('Error signing out before sign in :', err)
-          Sentry.Native.captureException(err, {
-            extra: { message: 'sign out before sign in' },
-          })
-        }
-      }
+    }
+    // We handle auth with a custom screen, so if the user sees a login button on the client, we're out of sync
+    else if (type === 'loginClicked') {
+      await signOutUsers('Error on sign out before sign in')
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -306,12 +297,12 @@ const App = () => {
           if (token)
             communicateWithWebview('pushToken', {
               token,
-              userId: user?.uid,
+              userId: fbUser?.uid,
             })
         } else
           communicateWithWebview('pushNotificationPermissionStatus', {
             status,
-            userId: user?.uid,
+            userId: fbUser?.uid,
           })
       })
     } else if (type === 'copyToClipboard') {
@@ -323,32 +314,23 @@ const App = () => {
         if (token)
           communicateWithWebview('pushToken', {
             token,
-            userId: user?.uid,
+            userId: fbUser?.uid,
           })
       })
     } else if (type === 'signOut') {
-      setUser(null)
-      try {
-        auth.signOut()
-      } catch (err) {
-        log('Error on sign out:', err)
-        Sentry.Native.captureException(err, {
-          extra: { message: 'sign out' },
-        })
-      }
+      await signOutUsers('Error on sign out')
     }
     // Receiving cached firebase user from webview cache
     else if (type === 'users') {
       try {
         const fbUserAndPrivateUser = JSON.parse(payload)
-        // Passing us a signed-in user object
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
           log('Signing in fb user from webview cache')
-          setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app)
+          await setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app)
         }
       } catch (e) {
         Sentry.Native.captureException(e, {
-          extra: { message: 'error parsing nativeEvent.data' },
+          extra: { message: 'error parsing users from client' },
         })
       }
     } else if (type == 'onPageVisit') {
@@ -358,8 +340,8 @@ const App = () => {
       setAllowSystemBack(page !== 'swipe')
     } else if (type === 'share') {
       const { url, title, message } = payload as NativeShareData
-      log('Sharing url:', url)
-      Share.share({
+      log('Sharing:', message, url, title)
+      await Share.share({
         url,
         title,
         message,
@@ -368,8 +350,24 @@ const App = () => {
       const { theme, backgroundColor } = payload
       setBackgroundColor(backgroundColor)
       setTheme(theme)
+    } else if (type === 'log') {
+      const { args } = payload
+      log('[Web Console]', ...args)
     } else {
-      log('Unhandled nativeEvent.data: ', data)
+      log('Unhandled message from web type: ', type)
+      log('Unhandled message from web data: ', data)
+    }
+  }
+
+  const signOutUsers = async (errorMessage: string) => {
+    setFbUser(null)
+    try {
+      await auth.signOut()
+    } catch (err) {
+      log(errorMessage, err)
+      Sentry.Native.captureException(err, {
+        extra: { message: errorMessage },
+      })
     }
   }
 
@@ -385,7 +383,7 @@ const App = () => {
     )
   }
 
-  const webViewAndUserLoaded = hasLoadedWebView && user
+  const webViewAndUserLoaded = hasLoadedWebView && fbUser
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
@@ -414,7 +412,7 @@ const App = () => {
         />
       ) : (
         hasLoadedWebView &&
-        !user &&
+        !fbUser &&
         !waitingForAuth && (
           <AuthPage webview={webview} height={height} width={width} />
         )
@@ -475,7 +473,13 @@ const App = () => {
             onContentProcessDidTerminate={(e) =>
               handleWebviewCrash(webview, e, () => setHasLoadedWebView(false))
             }
-            onMessage={handleMessageFromWebview}
+            onMessage={async (m) => {
+              try {
+                await handleMessageFromWebview(m)
+              } catch (e) {
+                log('Error in handleMessageFromWebview', e)
+              }
+            }}
           />
         </View>
       </SafeAreaView>

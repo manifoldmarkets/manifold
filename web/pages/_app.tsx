@@ -6,14 +6,31 @@ import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import { DarkModeProvider } from 'web/components/dark-mode-provider'
-import { NativeMessageListener } from 'web/components/native-message-listener'
+import {
+  NativeMessageListener,
+  postMessageToNative,
+} from 'web/components/native-message-listener'
 import Welcome from 'web/components/onboarding/welcome'
 import { SearchProvider } from 'web/components/search/search-context'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
+import { getIsNative } from 'web/lib/native/is-native'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
+}
+
+// It can be very hard to see client logs on native, so send them manually
+if (getIsNative()) {
+  const log = console.log.bind(console)
+  console.log = (...args) => {
+    postMessageToNative('log', { args })
+    log(...args)
+  }
+  console.error = (...args) => {
+    postMessageToNative('log', { args })
+    log(...args)
+  }
 }
 
 function printBuildInfo() {
