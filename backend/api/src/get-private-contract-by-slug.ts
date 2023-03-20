@@ -13,11 +13,14 @@ export const getprivatecontractbyslug = authEndpoint(async (req, auth) => {
   }
   const pg = createSupabaseDirectClient()
 
-  const contract = (
-    await pg.one("select data from contracts where data->>'slug' = $1", [
-      contractSlug,
-    ])
-  ).data
+  const contract = // await pg.one(
+    //   `select data from contracts where data @> '{"slug":"${contractSlug}"}'`
+    // )
+    (
+      await pg.one(
+        `select data from contracts where data @> '{"slug": "${contractSlug}"}'`
+      )
+    ).data
 
   if (!contract) {
     throw new APIError(400, 'This contract does not exist!')
