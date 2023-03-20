@@ -16,9 +16,10 @@ export const resetQuestStats = functions
 
 const resetQuestStatsInternal = async () => {
   const usersSnap = await firestore.collection('users').get()
+  console.log(`Resetting quest stats for ${usersSnap.docs.length} users`)
 
   await Promise.all(
-    usersSnap.docs.map((doc) => {
+    usersSnap.docs.map((doc) =>
       firestore
         .collection('users')
         .doc(doc.id)
@@ -26,6 +27,6 @@ const resetQuestStatsInternal = async () => {
           sharesThisWeek: 0,
           marketsCreatedThisWeek: 0,
         } as User)
-    })
+    )
   )
 }
