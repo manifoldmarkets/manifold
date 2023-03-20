@@ -415,6 +415,23 @@ export interface Database {
           user_id?: string
         }
       }
+      user_embeddings: {
+        Row: {
+          created_at: string
+          interest_embedding: unknown
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          interest_embedding: unknown
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          interest_embedding?: unknown
+          user_id?: string
+        }
+      }
       user_events: {
         Row: {
           data: Json
@@ -610,6 +627,40 @@ export interface Database {
           username: string | null
         }
       }
+      public_open_contracts: {
+        Row: {
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+        }
+        Insert: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+        Update: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+      }
+      trending_contracts: {
+        Row: {
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+        }
+        Insert: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+        Update: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+      }
       user_groups: {
         Row: {
           avatarurl: string | null
@@ -650,14 +701,6 @@ export interface Database {
           similarity: number
           data: Json
         }[]
-      }
-      closest_contract_embeddings_mqp: {
-        Args: {
-          input_contract_id: string
-          similarity_threshold: number
-          match_count: number
-        }
-        Returns: number
       }
       closest_contract_embeddings2: {
         Args: {
@@ -1020,17 +1063,6 @@ export interface Database {
         }[]
       }
       search_contract_embeddings: {
-        Args: {
-          query_embedding: unknown
-          similarity_threshold: number
-          match_count: number
-        }
-        Returns: {
-          contract_id: string
-          similarity: number
-        }[]
-      }
-      search_contract_embeddings_mqp: {
         Args: {
           query_embedding: unknown
           similarity_threshold: number
