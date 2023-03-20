@@ -34,7 +34,10 @@ import { getPost } from 'web/lib/firebase/posts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { track } from 'web/lib/service/analytics'
 import { Title } from 'web/components/widgets/title'
-import { MobileSearchButton } from 'web/components/nav/search-button'
+import {
+  MobileSearchButton,
+  SearchButton,
+} from 'web/components/nav/search-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
@@ -78,8 +81,7 @@ function HomeDashboard() {
     <Page>
       <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
         <Row className={'w-full items-center justify-between gap-4'}>
-          <Title children="Home" className="!my-0 hidden sm:block" />
-          <MobileSearchButton className="flex-1 md:hidden" />
+          <Title children="Home" className="!my-0" />
           <DailyStats user={user} />
         </Row>
 

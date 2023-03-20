@@ -4,6 +4,7 @@ import {
   DeviceMobileIcon,
   HomeIcon,
   LogoutIcon,
+  ScaleIcon,
   SearchIcon,
   MapIcon,
   MoonIcon,
@@ -24,23 +25,23 @@ import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-ge
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import NotificationsIcon from 'web/components/notifications-icon'
 import { DarkModeContext, useIsDarkMode } from 'web/hooks/dark-mode-context'
-import { useIsClient } from 'web/hooks/use-is-client'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { withTracking } from 'web/lib/service/analytics'
-import { isMac } from 'web/lib/util/device'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SignInButton } from '../buttons/sign-in-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-menu'
+import { SearchButton } from './search-button'
 import { SidebarItem } from './sidebar-item'
 
 export default function Sidebar(props: {
   className?: string
+  logoSubheading?: string
   isMobile?: boolean
 }) {
-  const { className, isMobile } = props
+  const { className, logoSubheading, isMobile } = props
   const router = useRouter()
   const currentPage = router.pathname
 
@@ -54,11 +55,9 @@ export default function Sidebar(props: {
     changeTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
 
-  const showMac = useIsClient() && isMac()
-
   const navOptions = isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true), showMac)
+    : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(
     !!user,
@@ -81,6 +80,8 @@ export default function Sidebar(props: {
       {user === undefined && <div className="h-[56px]" />}
 
       {user && !isMobile && <ProfileSummary user={user} />}
+
+      {user && !isMobile && <SearchButton className="mb-5" />}
 
       <div className="mb-4 flex flex-col gap-1">
         {navOptions.map((item) => (
@@ -120,20 +121,11 @@ const logout = async () => {
   await Router.replace(Router.asPath)
 }
 
-const getDesktopNav = (
-  loggedIn: boolean,
-  openDownloadApp: () => void,
-  showMac: boolean
-) => {
+const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
-      {
-        name: 'Search',
-        postName: showMac && <span className="text-xs"> ⌘K</span>,
-        href: '/search',
-        icon: SearchIcon,
-      },
+      { name: 'Markets', href: '/markets', icon: ScaleIcon },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -153,12 +145,7 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Home', href: '/', icon: HomeIcon },
-    {
-      name: 'Search',
-      postName: showMac && <span className="text-xs"> ⌘K</span>,
-      href: '/search',
-      icon: SearchIcon,
-    },
+    { name: 'Markets', href: '/markets', icon: ScaleIcon },
     {
       name: 'About',
       href: '/?showHelpModal=true',
@@ -171,6 +158,7 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
+    { name: 'Search', href: '/find', icon: SearchIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: TrophyIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
