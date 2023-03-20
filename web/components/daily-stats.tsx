@@ -28,8 +28,10 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 
 const MS_TO_STOP_CHECKING = 1679378400000
 export const dailyStatsClass = 'text-lg py-1'
+
+// still not that pretty...
 export const unseenDailyStatsClass =
-  'px-1.5 shadow shadow-blue-700 transition-colors transition-all hover:from-blue-400 hover:via-blue-100 hover:to-blue-200 enabled:bg-gradient-to-tr'
+  'px-1.5 shadow shadow-blue-700 transition-colors transition-all hover:from-blue-400 hover:via-ink-100 hover:to-blue-400 enabled:bg-gradient-to-tr'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
