@@ -12,6 +12,7 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
+import { User } from 'common/user'
 
 export function SwipeComments(props: {
   contract: Contract
@@ -67,10 +68,11 @@ export function SwipeComments(props: {
 
 export function CommentsButton(props: {
   contract: Contract
+  user: User | null | undefined
   color: 'gray' | 'white'
   size?: 'md' | 'lg'
 }) {
-  const { contract, color, size } = props
+  const { contract, color, size, user } = props
   const [open, setOpen] = useState(false)
 
   const comments = useComments(contract.id) ?? []
@@ -78,6 +80,7 @@ export function CommentsButton(props: {
   return (
     <Tooltip text={`Comments`} placement="bottom" className={'z-10'}>
       <button
+        disabled={comments.length === 0 && !user}
         className={clsx(
           'hover:text-ink-600 disabled:opacity-50',
           color === 'white' ? 'text-ink-1000' : 'text-ink-500'

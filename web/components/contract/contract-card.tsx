@@ -617,7 +617,12 @@ export function ContractCardNew(props: {
               className={'!mx-0 gap-2 drop-shadow-sm'}
             />
 
-            <CommentsButton contract={contract} color="gray" size="md" />
+            <CommentsButton
+              contract={contract}
+              color="gray"
+              size="md"
+              user={user}
+            />
           </Row>
         </Row>
 
