@@ -554,7 +554,7 @@ export function ContractCardNew(props: {
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'group flex flex-col gap-2 whitespace-nowrap rounded-sm pt-6',
+        'group flex flex-col gap-2 whitespace-nowrap rounded-md pt-2 my-4 border border-ink-300 overflow-hidden',
         'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
         className
       )}
@@ -632,7 +632,7 @@ export function ContractCardNew(props: {
             fill
             alt={descriptionString}
             sizes="100vw"
-            className="object-cover opacity-80 group-hover:opacity-40"
+            className="object-cover opacity-80 group-hover:opacity-40 round-b-md"
             src={coverImageUrl ?? ''}
           />
         </div>
