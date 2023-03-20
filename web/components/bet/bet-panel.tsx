@@ -316,11 +316,6 @@ export function BuyPanel(props: {
       ? `Are you sure you want to move the market by ${displayedDifference}?`
       : undefined
 
-  // hide input on mobile for new users for first week
-  const hideInput =
-    mobileView &&
-    (user?.createdTime ?? 0) > Date.now() - 7 * 24 * 60 * 60 * 1000
-
   const displayError = !!outcome
 
   return (
@@ -372,7 +367,6 @@ export function BuyPanel(props: {
           inputRef={inputRef}
           sliderOptions={{ show: true, wrap: false }}
           binaryOutcome={outcome}
-          hideInput={hideInput}
           showBalance
         />
 

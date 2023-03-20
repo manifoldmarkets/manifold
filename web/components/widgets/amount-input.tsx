@@ -103,7 +103,6 @@ export function BuyAmountInput(props: {
   minimumAmount?: number
   disabled?: boolean
   showBalance?: boolean
-  hideInput?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -127,7 +126,6 @@ export function BuyAmountInput(props: {
     minimumAmount,
     inputRef,
     binaryOutcome,
-    hideInput,
   } = props
   const { show, wrap } = sliderOptions ?? {}
 
@@ -158,29 +156,26 @@ export function BuyAmountInput(props: {
         <Row
           className={clsx(
             'items-center justify-between gap-x-4 gap-y-1 sm:justify-start',
-            hideInput ? 'mb-4' : '',
             wrap ? 'flex-wrap' : ''
           )}
         >
-          {!hideInput && (
-            <AmountInput
-              amount={amount}
-              onChange={onAmountChange}
-              label={ENV_CONFIG.moneyMoniker}
-              error={error}
-              disabled={disabled}
-              className={className}
-              inputClassName={clsx('pr-12', inputClassName)}
-              inputRef={inputRef}
-              quickAddClassName={
-                binaryOutcome === 'YES'
-                  ? 'text-teal-500 hover:bg-teal-100'
-                  : binaryOutcome === 'NO'
-                  ? 'text-scarlet-300 hover:bg-scarlet-50'
-                  : 'text-ink-500 hover:bg-ink-200'
-              }
-            />
-          )}
+          <AmountInput
+            amount={amount}
+            onChange={onAmountChange}
+            label={ENV_CONFIG.moneyMoniker}
+            error={error}
+            disabled={disabled}
+            className={className}
+            inputClassName={clsx('pr-12', inputClassName)}
+            inputRef={inputRef}
+            quickAddClassName={
+              binaryOutcome === 'YES'
+                ? 'text-teal-500 hover:bg-teal-100'
+                : binaryOutcome === 'NO'
+                ? 'text-scarlet-300 hover:bg-scarlet-50'
+                : 'text-ink-500 hover:bg-ink-200'
+            }
+          />
           {show && (
             <BetSlider
               amount={amount}
@@ -189,7 +184,7 @@ export function BuyAmountInput(props: {
             />
           )}
         </Row>
-        {hideInput && error ? (
+        {error ? (
           <div className="text-scarlet-500 whitespace-nowrap text-xs font-medium tracking-wide">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
