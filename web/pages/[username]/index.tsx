@@ -11,9 +11,8 @@ import { difference } from 'lodash'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
 
-import { DOMAIN, ENV_CONFIG, PROJECT_ID } from 'common/envs/constants'
+import { PROJECT_ID } from 'common/envs/constants'
 import { Post } from 'common/post'
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import Custom404 from 'web/pages/404'
@@ -31,8 +30,7 @@ import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { usePrefetchUsers, useUser, useUserById } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
-import { track, trackShareEvent } from 'web/lib/service/analytics'
-import { copyToClipboard } from 'web/lib/util/copy'
+import { track } from 'web/lib/service/analytics'
 import { BetsList } from 'web/components/bet/bets-list'
 import { buttonClass } from 'web/components/buttons/button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -153,8 +151,6 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
       )
     }
   }, [])
-
-  const referralUrl = `https://${DOMAIN}?referrer=${user?.username}`
 
   return (
     <Page key={user.id}>
@@ -306,28 +302,6 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                   </span>
                 </Row>
               </SiteLink>
-            )}
-
-            {isCurrentUser && (
-              <div
-                className={clsx(
-                  linkClass,
-                  'text-ink-400 cursor-pointer text-sm'
-                )}
-                onClick={(e) => {
-                  e.preventDefault()
-                  copyToClipboard(referralUrl)
-                  toast.success('Copied your referral link!', {
-                    icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
-                  })
-                  trackShareEvent('copy referral link', referralUrl)
-                }}
-              >
-                <Row className="items-center gap-1">
-                  <LinkIcon className="h-4 w-4" />
-                  Referrals (earn {ENV_CONFIG.moneyMoniker}250)
-                </Row>
-              </div>
             )}
 
             <SiteLink
