@@ -5,7 +5,7 @@ import {
   MenuAlt3Icon,
   XIcon,
   BookOpenIcon,
-  ScaleIcon
+  ScaleIcon,
 } from '@heroicons/react/outline'
 import { DeviceMobileIcon, UserCircleIcon } from '@heroicons/react/solid'
 import { Transition, Dialog } from '@headlessui/react'
