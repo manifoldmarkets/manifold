@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react'
-import Router from 'next/router'
+import React, { useState } from 'react'
 import clsx from 'clsx'
 
 import { Col } from 'web/components/layout/col'
@@ -23,10 +22,6 @@ import { track } from 'web/lib/service/analytics'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { sum } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { completeQuest } from 'web/lib/firebase/api'
-import { useIsAuthorized } from 'web/hooks/use-user'
-
-const MS_TO_STOP_CHECKING = 1679378400000
 export const dailyStatsClass = 'text-lg py-1'
 
 // still not that pretty...
@@ -40,41 +35,12 @@ export function DailyStats(props: {
   showLoans?: boolean
 }) {
   const { user, showLoans } = props
-  const authorized = useIsAuthorized()
   const [seenToday, setSeenToday] = useHasSeen(
     user,
     [QUEST_STATS_CLICK_EVENT],
     'week'
   )
   const [showLoansModal, setShowLoansModal] = useState(false)
-  useEffect(() => {
-    const showLoansModel = Router.query['show'] === 'loans'
-    setShowLoansModal(showLoansModel)
-  }, [])
-
-  // We're just using this useEffect until the first real week starts, aka this Monday, 2023/03/21
-  const { incompleteQuestTypes } = user
-    ? getQuestCompletionStatus(user)
-    : { incompleteQuestTypes: [] }
-  useEffect(() => {
-    if (
-      incompleteQuestTypes.length === 0 ||
-      !authorized ||
-      Date.now() > MS_TO_STOP_CHECKING ||
-      !user?.id
-    )
-      return
-    Promise.all(
-      incompleteQuestTypes.map(
-        (questType) =>
-          questType !== 'BETTING_STREAK' &&
-          completeQuest({ questType }).catch((e) => {
-            console.log('error completing quest', e)
-          })
-      )
-    )
-  }, [JSON.stringify(incompleteQuestTypes), authorized, user?.id])
-
   const [showQuestsModal, setShowQuestsModal] = useState(false)
 
   if (!user) return <></>
@@ -152,7 +118,7 @@ export function DailyStats(props: {
   )
 }
 
-function QuestsModal(props: {
+export function QuestsModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   user: User

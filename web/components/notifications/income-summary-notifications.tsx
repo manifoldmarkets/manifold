@@ -25,6 +25,7 @@ import {
 import { MarketResolvedNotification } from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
 import { QUEST_DETAILS } from 'common/quest'
+import { QuestsModal } from 'web/components/daily-stats'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -248,6 +249,8 @@ export function QuestIncomeNotification(props: {
   const { notification, highlighted, setHighlighted } = props
   const { data } = notification
   const { questType } = data as QuestRewardTxn['data']
+  const user = useUser()
+  const [open, setOpen] = useState(false)
   return (
     <NotificationFrame
       notification={notification}
@@ -262,6 +265,7 @@ export function QuestIncomeNotification(props: {
           }
         />
       }
+      onClick={() => setOpen(true)}
     >
       <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
@@ -269,6 +273,7 @@ export function QuestIncomeNotification(props: {
           text={`completing the ${QUEST_DETAILS[questType].title} quest`}
         />
       </span>
+      {user && <QuestsModal open={open} setOpen={setOpen} user={user} />}
     </NotificationFrame>
   )
 }
