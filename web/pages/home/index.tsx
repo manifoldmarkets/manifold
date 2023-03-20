@@ -18,6 +18,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useTrendingGroups } from 'web/hooks/use-group'
 import {
+  inMemoryStore,
   storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
@@ -44,6 +45,7 @@ import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ContractCardNew } from 'web/components/contract/contract-card'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -85,8 +87,7 @@ function HomeDashboard() {
 
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <LiveSection />
-          <YourFeedSection />
+          <MainContent />
         </Col>
       </Col>
     </Page>
@@ -123,8 +124,7 @@ function MobileHome() {
         {isLoading && <LoadingIndicator />}
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <LiveSection />
-          <ContractsFeed />
+          <MainContent />
         </Col>
       </Col>
 
@@ -220,11 +220,11 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
 const LiveSection = memo(function LiveSection() {
   return (
     <Col className="relative">
-      <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
+      {/* <HomeSectionHeader label="Live feed" href="/live" icon="🔴" /> */}
       <ActivityLog
-        count={7}
+        count={30}
         showPills={false}
-        className="h-[380px] overflow-hidden"
+        // className="h-[380px] overflow-hidden"
       />
       <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
     </Col>
@@ -234,11 +234,36 @@ const LiveSection = memo(function LiveSection() {
 const YourFeedSection = memo(function YourFeedSection() {
   return (
     <Col>
-      <HomeSectionHeader label={'Your feed'} icon={'📖'} />
+      {/* <HomeSectionHeader label={'Your feed'} icon={'📖'} /> */}
       <ContractsFeed />
     </Col>
   )
 })
+
+const MainContent = () => {
+  const sections = [<YourFeedSection />, <LiveSection />]
+
+  const [section, setSection] = usePersistentState<number>(0, {
+    key: 'main-content-section',
+    store: inMemoryStore(),
+  })
+
+  return (
+    <Col>
+      <ChoicesToggleGroup
+        choicesMap={{
+          'For you': 0,
+          'Live feed': 1,
+        }}
+        currentChoice={section}
+        setChoice={setSection as any}
+        color="indigo"
+      />
+
+      {sections[section]}
+    </Col>
+  )
+}
 
 export const ContractsSection = memo(function ContractsSection(props: {
   contracts: Contract[]
@@ -246,10 +271,10 @@ export const ContractsSection = memo(function ContractsSection(props: {
   icon: string
   className?: string
 }) {
-  const { contracts, label, icon, className } = props
+  const { contracts, className } = props
   return (
     <Col className={className}>
-      <HomeSectionHeader label={label} icon={icon} />
+      {/* <HomeSectionHeader label={label} icon={icon} /> */}
       <Col className="divide-ink-300 border-ink-300 max-w-2xl divide-y rounded border">
         {contracts.map((contract) => (
           <ContractCardNew key={contract.id} contract={contract} />
