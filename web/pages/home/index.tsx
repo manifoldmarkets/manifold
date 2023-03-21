@@ -252,7 +252,7 @@ const MainContent = () => {
   return (
     <Col>
       <ChoicesToggleGroup
-        className="rounded-b-none rounded-t-sm border-[0.5px] border-b-0"
+        className="mb-2 border-0"
         choicesMap={{
           'For you': 0,
           'Live feed': 1,

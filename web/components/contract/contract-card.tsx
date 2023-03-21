@@ -2,7 +2,7 @@ import { memo, ReactNode } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ClockIcon, SparklesIcon, UserIcon } from '@heroicons/react/outline'
+import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 
 import { Row } from '../layout/row'
@@ -554,12 +554,12 @@ export function ContractCardNew(props: {
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'border-ink-300 group my-4 flex flex-col gap-2 overflow-hidden whitespace-nowrap rounded-xl border-[0.5px] pt-2',
+        'border-ink-300 group my-4 flex flex-col overflow-hidden rounded-xl border-[0.5px]',
         'bg-canvas-0 focus:bg-ink-300/10 lg:hover:bg-ink-300/10 transition-colors',
         className
       )}
     >
-      <div className="px-4">
+      <div className="my-2 px-4">
         <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
           <Row className="z-10 gap-2">
             <Avatar
@@ -593,36 +593,35 @@ export function ContractCardNew(props: {
           </div>
 
           {user !== null && isBinaryCpmm && (
-            <BetRow buttonClassName="z-10" contract={contract} />
+            <div className="z-10 flex gap-2">
+              <BetRow contract={contract} />
+            </div>
           )}
 
           <Row
-            className="ml-auto items-center gap-2"
+            className="ml-auto items-center gap-1"
             onClick={(e) => {
               // Don't navigate to the contract page when clicking buttons.
               e.preventDefault()
             }}
           >
-            <LikeButton
-              contentId={contract.id}
-              contentCreatorId={contract.creatorId}
-              user={user}
-              contentType={'contract'}
-              totalLikes={contract.likedByUserCount ?? 0}
-              contract={contract}
-              contentText={question}
-              showTotalLikesUnder
-              size="md"
-              color="gray"
-              className={'!mx-0 gap-2 drop-shadow-sm'}
-            />
+            <div className="flex items-center gap-1.5 p-1">
+              <LikeButton
+                contentId={contract.id}
+                contentCreatorId={contract.creatorId}
+                user={user}
+                contentType={'contract'}
+                totalLikes={contract.likedByUserCount ?? 0}
+                contract={contract}
+                contentText={question}
+                showTotalLikesUnder
+                size="md"
+                color="gray"
+                className="!mx-0"
+              />
+            </div>
 
-            <CommentsButton
-              contract={contract}
-              color="gray"
-              size="md"
-              user={user}
-            />
+            <CommentsButton contract={contract} user={user} />
           </Row>
         </Row>
 
@@ -631,18 +630,16 @@ export function ContractCardNew(props: {
         )}
       </div>
 
-      {!hideImage && coverImageUrl ? (
+      {!hideImage && coverImageUrl && (
         <div className="relative h-40">
           <Image
             fill
             alt={descriptionString}
             sizes="100vw"
-            className="round-b-md object-cover group-hover:opacity-80"
-            src={coverImageUrl ?? ''}
+            className="object-cover group-hover:opacity-80"
+            src={coverImageUrl}
           />
         </div>
-      ) : (
-        <Spacer h={1} />
       )}
     </Link>
   )
@@ -661,21 +658,19 @@ function ReasonChosen(props: { contract: Contract }) {
       : 'Trending'
 
   return (
-    <Row className="gap-2">
-      <div className="font-semibold">{reason}</div>{' '}
-      <Row className="shrink-0 items-center gap-1 whitespace-nowrap text-sm">
+    <Row className="gap-3">
+      <div className="flex items-center gap-1 font-semibold">
+        {reason}
+        {reason === 'New' && <StarIcon className="h-4 w-4" />}
+      </div>
+      <Row className="shrink-0 items-center gap-1 whitespace-nowrap">
         {reason === 'Closing soon' && (
           <>
-            <ClockIcon className="h-5 w-5" />
+            <ClockIcon className="h-4 w-4" />
             {fromNow(closeTime || 0)}
           </>
         )}
-        {reason === 'New' && (
-          <>
-            <SparklesIcon className="h-5 w-5" />
-            {fromNow(createdTime)}
-          </>
-        )}
+        {reason === 'New' && fromNow(createdTime)}
         {reason === 'Trending' && (
           <Tooltip
             text={`${uniqueBettorCount ?? 0} unique traders`}
@@ -683,7 +678,7 @@ function ReasonChosen(props: { contract: Contract }) {
             className={'z-10'}
           >
             <Row className={'shrink-0 items-center gap-1'}>
-              <UserIcon className="h-5 w-5" />
+              <UserIcon className="h-4 w-4" />
               <div>{uniqueBettorCount ?? 0}</div>
             </Row>
           </Tooltip>

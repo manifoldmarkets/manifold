@@ -69,10 +69,9 @@ export function SwipeComments(props: {
 export function CommentsButton(props: {
   contract: Contract
   user: User | null | undefined
-  color: 'gray' | 'white'
-  size?: 'md' | 'lg'
 }) {
-  const { contract, color, size, user } = props
+  const { contract, user } = props
+
   const [open, setOpen] = useState(false)
 
   const comments = useComments(contract.id) ?? []
@@ -81,32 +80,18 @@ export function CommentsButton(props: {
     <Tooltip text={`Comments`} placement="bottom" className={'z-10'}>
       <button
         disabled={comments.length === 0 && !user}
-        className={clsx(
-          'hover:text-ink-600 disabled:opacity-50',
-          color === 'white' ? 'text-ink-1000' : 'text-ink-500'
-        )}
+        className="hover:text-ink-600 text-ink-500 -mr-1 flex items-center gap-1.5 p-1 disabled:opacity-50"
         onClick={() => {
           setOpen(true)
-          track('view comments', {
-            contractId: contract.id,
-          })
+          track('view comments', { contractId: contract.id })
         }}
       >
-        <Row className="items-center gap-2 p-2">
-          <ChatIcon className={clsx(size === 'lg' ? 'h-8 w-8' : 'h-6 w-6')} />
-          {comments.length > 0 && (
-            <div
-              className={clsx(
-                'h-5 align-middle disabled:opacity-50',
-                size === 'md' ? 'text-sm' : '',
-                color === 'white' ? 'text-ink-1000' : 'text-ink-500'
-              )}
-            >
-              {comments.length}
-            </div>
-          )}
-        </Row>
-
+        <ChatIcon className="h-6 w-6" />
+        {comments.length > 0 && (
+          <div className="text-ink-500 h-5 align-middle text-sm disabled:opacity-50">
+            {comments.length}
+          </div>
+        )}
         <CommentsDialog
           contract={contract}
           open={open}

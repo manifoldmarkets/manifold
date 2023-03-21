@@ -18,7 +18,7 @@ export type ColorType =
   | 'gray-white'
   | 'yellow-outline'
 
-export const sizeClasses = {
+const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
   xs: 'px-2.5 py-1.5 text-sm',
   sm: 'px-3 py-2 text-sm',
@@ -28,7 +28,7 @@ export const sizeClasses = {
   '2xl': 'px-6 py-3 text-xl font-semibold',
 }
 
-export const baseButtonClasses =
+const baseButtonClasses =
   'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed text-center'
 
 export function buttonClass(size: SizeType, color: ColorType | 'override') {
