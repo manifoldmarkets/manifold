@@ -22,7 +22,10 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { MarketResolvedNotification } from './notification-types'
+import {
+  MarketResolvedNotification,
+  MultipleAvatarIcons,
+} from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
 import { QUEST_DETAILS } from 'common/quest'
 import { QuestsModal } from 'web/components/quests-or-streak'
@@ -74,7 +77,10 @@ export function combineAndSumIncomeNotifications(
         ...notificationsForSourceTitle[0],
         sourceText: sum.toString(),
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-        data: { uniqueUsers },
+        data: {
+          uniqueUsers,
+          relatedNotifications: notificationsForSourceTitle,
+        },
       }
       newNotifications.push(newNotification)
     }
@@ -210,14 +216,13 @@ export function BonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       icon={
-        <NotificationIcon
+        <MultipleAvatarIcons
+          notification={notification}
           symbol={'🎁'}
-          symbolBackgroundClass={
-            'bg-gradient-to-br from-primary-500 to-primary-300'
-          }
+          setOpen={setOpen}
         />
       }
-      onClick={() => setOpen(true)}
+      link={getSourceUrl(notification)}
     >
       <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}

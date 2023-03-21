@@ -25,12 +25,15 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { Linkify } from '../widgets/linkify'
 import {
   AvatarNotificationIcon,
+  NOTIFICATION_ICON_SIZE,
   NotificationFrame,
   NotificationIcon,
   NotificationTextLabel,
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
+import { Avatar } from 'web/components/widgets/avatar'
+import { sortBy } from 'lodash'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -763,6 +766,70 @@ function TaggedUserNotification(props: {
   )
 }
 
+export function MultipleAvatarIcons(props: {
+  notification: Notification
+  symbol: string
+  setOpen: (open: boolean) => void
+}) {
+  const { notification, symbol, setOpen } = props
+  const relatedNotifications: Notification[] = sortBy(
+    notification.data?.relatedNotifications ?? [notification],
+    (n) => n.createdTime
+  )
+
+  const combineAvatars = (notifications: Notification[]) => {
+    const totalAvatars = notifications.length
+    const maxToShow = Math.min(totalAvatars, 3)
+    const avatarsToCombine = notifications.slice(
+      totalAvatars - maxToShow,
+      totalAvatars
+    )
+    const max = avatarsToCombine.length
+    const startLeft = -0.35 * (max - 1)
+    return avatarsToCombine.map((n, index) => (
+      <div
+        key={index}
+        className={'absolute'}
+        style={
+          index === 0
+            ? {
+                left: `${startLeft}rem`,
+              }
+            : {
+                left: `${startLeft + index * 0.5}rem`,
+              }
+        }
+      >
+        <AvatarNotificationIcon
+          notification={n}
+          symbol={index === max - 1 ? symbol : ''}
+        />
+      </div>
+    ))
+  }
+
+  return (
+    <div
+      onClick={(event) => {
+        event.preventDefault()
+        setOpen(true)
+      }}
+    >
+      {relatedNotifications.length > 1 ? (
+        <Col
+          className={`pointer-events-none relative items-center justify-center`}
+        >
+          {/* placeholder avatar to set the proper size*/}
+          <Avatar size={NOTIFICATION_ICON_SIZE} />
+          {combineAvatars(relatedNotifications)}
+        </Col>
+      ) : (
+        <AvatarNotificationIcon notification={notification} symbol={symbol} />
+      )}
+    </div>
+  )
+}
+
 function UserLikeNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -774,12 +841,12 @@ function UserLikeNotification(props: {
   const { sourceUserName, sourceType, sourceText } = notification
   const relatedNotifications: Notification[] = notification.data
     ?.relatedNotifications ?? [notification]
-  const multipleReactions = relatedNotifications.length > 1
-  const reactorsText = multipleReactions
-    ? `${sourceUserName} & ${relatedNotifications.length - 1} other${
-        relatedNotifications.length > 2 ? 's' : ''
-      }`
-    : sourceUserName
+  const reactorsText =
+    relatedNotifications.length > 1
+      ? `${sourceUserName} & ${relatedNotifications.length - 1} other${
+          relatedNotifications.length > 2 ? 's' : ''
+        }`
+      : sourceUserName
   return (
     <NotificationFrame
       notification={notification}
@@ -787,16 +854,22 @@ function UserLikeNotification(props: {
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       icon={
-        <AvatarNotificationIcon notification={notification} symbol={'💖'} />
+        <MultipleAvatarIcons
+          notification={notification}
+          symbol={'💖'}
+          setOpen={setOpen}
+        />
       }
-      onClick={() => setOpen(true)}
+      link={getSourceUrl(notification)}
       subtitle={
         sourceType === 'comment_like' ? <Linkify text={sourceText} /> : <></>
       }
     >
       {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
       your
-      {sourceType === 'comment_like' ? ' comment on ' : ' market '}
+      {sourceType === 'comment_like'
+        ? ' comment ' + (isChildOfGroup ? '' : 'on ')
+        : ' market '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal
         similarNotifications={relatedNotifications}
