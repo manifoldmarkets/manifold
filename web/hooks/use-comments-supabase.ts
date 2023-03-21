@@ -1,7 +1,12 @@
-import { Comment } from 'common/comment'
+import { Comment, ContractComment } from 'common/comment'
 import { Json } from 'common/supabase/schema'
 import { useEffect, useState } from 'react'
-import { getAllComments, getComments } from 'web/lib/supabase/comments'
+import {
+  getAllComments,
+  getComments,
+  getNumUserComments,
+  getUserComments,
+} from 'web/lib/supabase/comments'
 import { db } from 'web/lib/supabase/db'
 
 export function useComments(contractId: string, limit: number) {
@@ -14,6 +19,18 @@ export function useComments(contractId: string, limit: number) {
   }, [contractId])
 
   return comments
+}
+
+export function useNumUserComments(userId: string) {
+  const [num, setNum] = useState<number>(0)
+
+  useEffect(() => {
+    if (userId) {
+      getNumUserComments(userId).then((result) => setNum(result))
+    }
+  }, [userId])
+
+  return num
 }
 
 export function useRealtimeComments(limit: number) {
