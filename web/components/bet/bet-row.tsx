@@ -16,7 +16,7 @@ export function BetRow(props: { contract: CPMMBinaryContract }) {
         color="gray-outline"
         className="!ring-1"
         onClick={(e) => {
-          e.stopPropagation()
+          e.preventDefault()
           setOutcome('YES')
           setBetDialogOpen(true)
         }}
@@ -28,7 +28,7 @@ export function BetRow(props: { contract: CPMMBinaryContract }) {
         color="gray-outline"
         className="!ring-1"
         onClick={(e) => {
-          e.stopPropagation()
+          e.preventDefault()
           setOutcome('NO')
           setBetDialogOpen(true)
         }}
