@@ -15,7 +15,7 @@ export function ProfileSummary(props: { user: User }) {
 
   return (
     <Link
-      href={`/${user.username}?tab=portfolio`}
+      href={`/${user.username}`}
       onClick={trackCallback('sidebar: profile')}
       className="text-ink-500 hover:bg-ink-100 hover:text-ink-700 group mb-3 flex flex-shrink-0 flex-row items-center gap-4 rounded-md py-3"
     >

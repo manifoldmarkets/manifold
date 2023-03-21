@@ -39,7 +39,7 @@ function getNavigation(user: User) {
     { name: 'Markets', href: '/markets', icon: ScaleIcon },
     {
       name: 'Profile',
-      href: `/${user.username}?tab=portfolio`,
+      href: `/${user.username}`,
     },
     {
       name: 'Notifs',

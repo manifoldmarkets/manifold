@@ -351,16 +351,6 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
             tabs={[
               {
-                title: 'Markets',
-                stackedTabIcon: <ScaleIcon className="h-5" />,
-                content: (
-                  <>
-                    <Spacer h={4} />
-                    <UserContractsList creator={user} />
-                  </>
-                ),
-              },
-              {
                 title: 'Portfolio',
                 stackedTabIcon: <FolderIcon className="h-5" />,
                 content: (
@@ -369,6 +359,16 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                     <PortfolioValueSection userId={user.id} />
                     <Spacer h={8} />
                     <BetsList user={user} />
+                  </>
+                ),
+              },
+              {
+                title: 'Markets',
+                stackedTabIcon: <ScaleIcon className="h-5" />,
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <UserContractsList creator={user} />
                   </>
                 ),
               },
