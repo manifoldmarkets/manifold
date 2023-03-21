@@ -554,12 +554,13 @@ export function ContractCardNew(props: {
     <Link
       href={contractPath(contract)}
       className={clsx(
+        'relative',
         'border-ink-300 group my-4 flex flex-col overflow-hidden rounded-xl border-[0.5px]',
-        'bg-canvas-0 focus:bg-ink-300/10 lg:hover:bg-ink-300/10 transition-colors',
+        'focus:bg-ink-300/20 lg:hover:bg-ink-300/20 transition-colors',
         className
       )}
     >
-      <div className="my-2 px-4">
+      <div className="bg-canvas-0/90 py-2 px-4 backdrop-blur-sm">
         <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
           <Row className="z-10 gap-2">
             <Avatar
@@ -631,15 +632,18 @@ export function ContractCardNew(props: {
       </div>
 
       {!hideImage && coverImageUrl && (
-        <div className="relative h-40">
-          <Image
-            fill
-            alt={descriptionString}
-            sizes="100vw"
-            className="object-cover group-hover:opacity-80"
-            src={coverImageUrl}
-          />
-        </div>
+        <>
+          <div className="h-40" />
+          <div className="absolute inset-0 -z-10">
+            <Image
+              fill
+              alt={descriptionString}
+              sizes="100vw"
+              className="object-cover"
+              src={coverImageUrl}
+            />
+          </div>
+        </>
       )}
     </Link>
   )
