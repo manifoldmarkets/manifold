@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { TextButton } from 'web/components/buttons/text-button'
 import { Col } from 'web/components/layout/col'
-import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
@@ -19,15 +19,9 @@ import {
 } from 'web/lib/supabase/groups'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { GroupLinkItem } from 'web/pages/groups'
-import {
-  baseButtonClasses,
-  Button,
-  buttonClass,
-  sizeClasses,
-} from '../buttons/button'
+import { Button, buttonClass } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
-import { Title } from '../widgets/title'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -109,11 +103,10 @@ export function LeavePrivateGroupButton(props: {
   group: SearchGroupInfo
   user: User | undefined | null
   setIsMember: (isMember: boolean) => void
-  className?: string
   isMobile?: boolean
   disabled?: boolean
 }) {
-  const { group, className, user, setIsMember, isMobile, disabled } = props
+  const { group, user, setIsMember, isMobile, disabled } = props
   const leavePrivateGroup = user
     ? withTracking(() => {
         leaveGroup(group.id, user.id)
@@ -194,7 +187,6 @@ export function JoinOrLeaveGroupButton(props: {
         group={group}
         setIsMember={setIsMember}
         user={user}
-        className={className}
         isMobile={isMobile}
         disabled={disabled}
       />
