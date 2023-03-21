@@ -32,7 +32,7 @@ export function BetDialog(props: {
       )}
     >
       <Col>
-        <Subtitle className="!mt-0 !mb-4">{question}</Subtitle>
+        <Subtitle className="!mt-0 !mb-4 !text-xl">{question}</Subtitle>
         <BuyPanel
           contract={contract}
           user={user}

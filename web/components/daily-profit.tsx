@@ -146,7 +146,7 @@ function DailyProfitModal(props: {
               <div>Balance</div>
               <div>Daily profit</div>
             </Col>
-            <Col className="items-end gap-2">
+            <Col className="items-end gap-2 text-ink-600">
               <div>{formatMoney(balance)}</div>
               <div
                 className={clsx(
