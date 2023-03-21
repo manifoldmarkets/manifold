@@ -13,10 +13,6 @@ import { QuestsOrStreak } from 'web/components/quests-or-streak'
 
 export const dailyStatsClass = 'text-lg py-1'
 
-// still not that pretty...
-export const unseenDailyStatsClass =
-  'px-1.5 shadow shadow-blue-700 transition-colors transition-all hover:bg-blue-700/10 '
-
 export function DailyStats(props: {
   user: User | null | undefined
   showLoans?: boolean
