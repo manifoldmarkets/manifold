@@ -138,6 +138,9 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
   const [showConfetti, setShowConfetti] = useState(false)
   const userPosts = usePostsByUser(user.id) ?? props.posts
   const [showPublicStats, setShowPublicStats] = useState(!isCurrentUser)
+  useEffect(() => {
+    setShowPublicStats(!isCurrentUser)
+  }, [isCurrentUser])
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
