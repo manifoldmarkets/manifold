@@ -8,7 +8,6 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 export function BetRow(props: {
   contract: CPMMBinaryContract
   noUser?: boolean
-
 }) {
   const { contract, noUser } = props
   const [outcome, setOutcome] = useState<binaryOutcomes>()
