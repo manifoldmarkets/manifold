@@ -593,9 +593,9 @@ export function ContractCardNew(props: {
             <ContractStatusLabel contract={contract} chanceLabel />
           </div>
 
-          {user !== null && isBinaryCpmm && (
+          {isBinaryCpmm && (
             <div className="z-10 flex gap-2">
-              <BetRow contract={contract} />
+              <BetRow contract={contract} noUser={!user} />
             </div>
           )}
 

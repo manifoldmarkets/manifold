@@ -3,9 +3,14 @@ import { CPMMBinaryContract } from 'common/contract'
 import { Button } from '../buttons/button'
 import { BetDialog } from './bet-dialog'
 import { binaryOutcomes } from './bet-panel'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
-export function BetRow(props: { contract: CPMMBinaryContract }) {
-  const { contract } = props
+export function BetRow(props: {
+  contract: CPMMBinaryContract
+  noUser?: boolean
+
+}) {
+  const { contract, noUser } = props
   const [outcome, setOutcome] = useState<binaryOutcomes>()
   const [betDialogOpen, setBetDialogOpen] = useState(false)
 
@@ -17,6 +22,10 @@ export function BetRow(props: { contract: CPMMBinaryContract }) {
         className="!ring-1"
         onClick={(e) => {
           e.preventDefault()
+          if (noUser) {
+            firebaseLogin()
+            return
+          }
           setOutcome('YES')
           setBetDialogOpen(true)
         }}
@@ -29,6 +38,10 @@ export function BetRow(props: { contract: CPMMBinaryContract }) {
         className="!ring-1"
         onClick={(e) => {
           e.preventDefault()
+          if (noUser) {
+            firebaseLogin()
+            return
+          }
           setOutcome('NO')
           setBetDialogOpen(true)
         }}
