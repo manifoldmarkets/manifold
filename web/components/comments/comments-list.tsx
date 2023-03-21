@@ -34,11 +34,11 @@ export function UserCommentsList(props: { user: User }) {
   const [pageComments, setPageComments] = useState<
     {
       key: {
-        contractId: any
-        contractQuestion: any
-        contractSlug: any
+        contractId: string
+        contractQuestion: string
+        contractSlug: string
       }
-      items: unknown[]
+      items: ContractComment[]
     }[]
   >([])
   const [isLoading, setIsLoading] = useState(false)
