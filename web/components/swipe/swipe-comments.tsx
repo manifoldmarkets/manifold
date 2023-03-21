@@ -10,7 +10,6 @@ import { CommentsTabContent } from '../contract/contract-tabs'
 import { ContractComment } from 'common/comment'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
-import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { User } from 'common/user'
 
