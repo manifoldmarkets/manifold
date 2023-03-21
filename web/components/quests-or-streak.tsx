@@ -7,9 +7,7 @@ import { formatMoney } from 'common/util/format'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { sum } from 'lodash'
-import {
-  dailyStatsClass,
-} from 'web/components/daily-stats'
+import { dailyStatsClass } from 'web/components/daily-stats'
 import { InfoTooltip } from './widgets/info-tooltip'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { Title } from 'web/components/widgets/title'
@@ -55,10 +53,7 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
         </button>
       ) : (
         <button
-          className={clsx(
-            'cursor-pointer rounded-md',
-            dailyStatsClass
-          )}
+          className={clsx('cursor-pointer rounded-md', dailyStatsClass)}
           onClick={() => {
             setShowQuestsModal(true)
             track(QUEST_STATS_CLICK_EVENT)
