@@ -91,7 +91,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
         <Row>
           <Col className="justify-start">
             <div className={clsx()}>{formatMoney(user.balance)}</div>
-            <div className="text-sm opacity-70">Balance</div>
+            <div className="text-ink-600 text-sm ">Balance</div>
           </Col>
 
           {dailyProfit !== 0 && (
