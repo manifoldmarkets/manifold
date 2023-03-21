@@ -1,22 +1,18 @@
 import { ContractComment } from 'common/comment'
-import { groupConsecutive } from 'common/util/array'
-import { getUserCommentsQuery } from 'web/lib/firebase/comments'
-import { usePagination } from 'web/hooks/use-pagination'
-import { SiteLink } from '../widgets/site-link'
-import { Row } from '../layout/row'
-import { Avatar } from '../widgets/avatar'
-import { RelativeTimestamp } from '../relative-timestamp'
 import { User } from 'common/user'
+import { groupConsecutive } from 'common/util/array'
+import { useEffect, useState } from 'react'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useNumUserComments } from 'web/hooks/use-comments-supabase'
+import { getUserComments } from 'web/lib/supabase/comments'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { RelativeTimestamp } from '../relative-timestamp'
+import { Avatar } from '../widgets/avatar'
 import { Content } from '../widgets/editor'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { UserLink } from 'web/components/widgets/user-link'
-import { Pagination, PaginationNextPrev } from '../widgets/pagination'
-import {
-  useNumUserComments,
-  useUserComments,
-} from 'web/hooks/use-comments-supabase'
-import { useEffect, useState } from 'react'
+import { Pagination } from '../widgets/pagination'
+import { SiteLink } from '../widgets/site-link'
 
 type ContractKey = {
   contractId: string
@@ -45,24 +41,24 @@ export function UserCommentsList(props: { user: User }) {
       items: unknown[]
     }[]
   >([])
-  // const comments = useUserComments(user.id, pageSize, pageNum)
-  const comments = useUserComments(user.id, pageSize, pageNum)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    setPageComments(
-      groupConsecutive(comments, (c) => {
-        return {
-          contractId: c.contractId,
-          contractQuestion: c.contractQuestion,
-          contractSlug: c.contractSlug,
-        }
-      })
-    )
-  }, [comments])
-
-  // if (isLoading) {
-  //   return <LoadingIndicator className="mt-4" />
-  // }
+    setIsLoading(true)
+    getUserComments(user.id, pageSize, pageNum)
+      .then((result) =>
+        setPageComments(
+          groupConsecutive(result, (c) => {
+            return {
+              contractId: c.contractId,
+              contractQuestion: c.contractQuestion,
+              contractSlug: c.contractSlug,
+            }
+          })
+        )
+      )
+      .finally(() => setIsLoading(false))
+  }, [pageNum])
 
   if (pageComments.length === 0) {
     if (pageNum == 0) {
@@ -73,30 +69,32 @@ export function UserCommentsList(props: { user: User }) {
     }
   }
 
-  console.log(numComments)
   return (
     <Col className={'bg-canvas-50'}>
-      {pageComments.map(({ key, items }, i) => {
-        return (
-          <ProfileCommentGroup
-            key={i}
-            groupKey={key}
-            items={items as ContractComment[]}
-          />
-        )
-      })}
-      {/* <nav
+      {isLoading && <LoadingIndicator className="mt-4" />}
+      {!isLoading &&
+        pageComments.map(({ key, items }, i) => {
+          return (
+            <ProfileCommentGroup
+              key={i}
+              groupKey={key}
+              items={items as ContractComment[]}
+            />
+          )
+        })}
+
+      <nav
         className="border-ink-200 border-t px-4 py-3 sm:px-6"
         aria-label="Pagination"
-      > */}
-      {/* <div className="h-12 w-full bg-blue-300"></div> */}
-      {/* </nav> */}
-      <Pagination
-        page={pageNum}
-        itemsPerPage={pageSize}
-        totalItems={numComments}
-        setPage={setPageNum}
-      />
+      >
+        <Pagination
+          page={pageNum}
+          itemsPerPage={pageSize}
+          totalItems={numComments}
+          setPage={setPageNum}
+          scrollToTop={true}
+        />
+      </nav>
     </Col>
   )
 }

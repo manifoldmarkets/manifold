@@ -21,19 +21,6 @@ export function useComments(contractId: string, limit: number) {
   return comments
 }
 
-export function useUserComments(userId: string, limit: number, page: number) {
-  const [comments, setComments] = useState<ContractComment[]>([])
-
-  useEffect(() => {
-    if (userId) {
-      getUserComments(userId, limit, page).then((result) => setComments(result))
-    }
-    console.log(comments)
-  }, [userId, limit, page])
-
-  return comments
-}
-
 export function useNumUserComments(userId: string) {
   const [num, setNum] = useState<number>(0)
 

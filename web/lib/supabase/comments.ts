@@ -38,7 +38,7 @@ export async function getUserComments(
       .order('data->>createdTime', { ascending: false } as any)
       .range(page * limit, page * limit + limit - 1)
   )
-  if (data && data.length > 0) {
+  if (data) {
     return data.map((c) => {
       return c.data as ContractComment
     })
