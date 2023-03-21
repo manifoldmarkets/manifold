@@ -41,16 +41,6 @@ look in here or in `components/` to find any specific piece of UI you are intere
 Modules under this route are specially interpreted by Next/Vercel as [functions that will be hosted by
 Vercel][vercel-functions]. This is where the public Manifold HTTP API lives.
 
-## Contributing
-
-Please format the code using [Prettier][prettier]; you can run `yarn format` to invoke it manually. It also runs by
-default as a pre-commit Git hook thanks to the pretty-quick package. You may wish to use some kind of fancy [editor
-integration][prettier-integrations] to format it in your editor.
-
-## Developer Experience TODOs
-
-- Prevent git pushing if there are Typescript errors?
-
 [react]: https://reactjs.org
 [nextjs]: https://nextjs.org
 [vercel]: https://vercel.com

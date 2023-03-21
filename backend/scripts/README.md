@@ -2,15 +2,23 @@
 
 Any code that people have found it convenient to write and run against our backend stuff.
 
-## Setting up authentication
+## Set up
 
-Generate private keys from the Google service account management page:
+Follow Setting up Authentication under [/functions/README](../functions/README.md#setting-up-authentication).
 
-- Dev: https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
+### Environment variables
 
-- Prod: https://console.firebase.google.com/u/0/project/dev-mantic-markets/settings/serviceaccounts/adminsdk
+Copy the keys from the google secrets page
 
-Set `GOOGLE_APPLICATION_CREDENTIALS_PROD` or `GOOGLE_APPLICATION_CREDENTIALS_DEV` in your shell to the path of the key file.
+- Dev: https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
+- Prod: https://console.cloud.google.com/security/secret-manager?project=mantic-markets
+
+Then, save them locally in e.g. `~/.zshrc` or `~/.bashrc`:
+
+```
+export SUPABASE_KEY=ABCDE12345
+export SUPABASE_PASSWORD=12345ABCD
+```
 
 ## Running a script
 
@@ -31,19 +39,4 @@ Or if you don't want to use `ts-node` you can compile and run them with Node:
 
 ```shell
 $ yarn build && node lib/script.js
-```
-
-## Environment variables
-
-Copy the keys from the google secrets page:
-
-Dev: https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
-Prod: https://console.cloud.google.com/security/secret-manager?project=mantic-markets
-
-
-Then, save them locally in e.g. `~/.zshrc` or `~/.bashrc`:
-
-```
-export SUPABASE_KEY=ABCDE12345
-export SUPABASE_PASSWORD=12345ABCD
 ```
