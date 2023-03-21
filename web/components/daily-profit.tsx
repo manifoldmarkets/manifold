@@ -35,8 +35,12 @@ const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
   user: User | null | undefined
+  isCurrentUser?: boolean
 }) {
   const { user } = props
+  const isCurrentUser =
+    props.isCurrentUser === undefined ? true : props.isCurrentUser
+
   const [open, setOpen] = useState(false)
 
   const refreshContractMetrics = useCallback(async () => {
@@ -67,12 +71,10 @@ export const DailyProfit = memo(function DailyProfit(props: {
       return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
     }, [data])
   )
-  // const dailyProfit = 10
-  const [seenToday, setSeenToday] = useHasSeen(
-    user,
-    [DAILY_PROFIT_CLICK_EVENT],
-    'day'
-  )
+  const [seenToday, setSeenToday] = isCurrentUser
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useHasSeen(user, [DAILY_PROFIT_CLICK_EVENT], 'day')
+    : [true, () => {}]
   if (!user) return <div />
 
   return (

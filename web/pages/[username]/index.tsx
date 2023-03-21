@@ -217,6 +217,11 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                 @{user.username}
               </span>
             </Col>
+            {!isCurrentUser && (
+              <div className={'ml-2 sm:mt-0.5'}>
+                <DailyProfit user={user} isCurrentUser={isCurrentUser} />
+              </div>
+            )}
           </Row>
           {isCurrentUser && <DailyProfit user={user} />}
           {isCurrentUser && <QuestsOrStreak user={user} />}

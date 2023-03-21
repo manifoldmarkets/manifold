@@ -17,7 +17,6 @@ export async function getPortfolioHistory(
   }
   const { data } = await run(query)
   return sortBy(data, 'ts').map((d) => {
-    console.log(d.ts)
     return {
       timestamp: tsToMillis(d.ts!),
       investmentValue: d.investment_value!,
