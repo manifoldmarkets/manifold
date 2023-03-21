@@ -274,7 +274,7 @@ export function NewContractPanel(props: {
                     PSEUDO_NUMERIC:
                       '[EXPERIMENTAL] Predict the value of a number.',
                     CERT: '[EXPERIMENTAL] Tradeable shares of a stock.',
-                    QUADRATIC_FUNDING: '',
+                    // QUADRATIC_FUNDING: '',
                     // '[EXPERIMENTAL] Radically fund projects. ',
                   }[choice] ?? ''
                 setMarketInfoText(text)
@@ -285,7 +285,7 @@ export function NewContractPanel(props: {
                 'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
-                'Quadratic Funding': 'QUADRATIC_FUNDING',
+                // 'Quadratic Funding': 'QUADRATIC_FUNDING',
                 // Only show cert option in dev, for now
                 ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
               }}
