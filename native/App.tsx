@@ -497,7 +497,7 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
-      {/*<ExportLogsButton />*/}
+      <ExportLogsButton />
     </>
   )
 }
