@@ -560,7 +560,7 @@ export function ContractCardNew(props: {
         className
       )}
     >
-      <div className="bg-canvas-0/90 py-2 px-4 backdrop-blur-sm">
+      <div className="bg-canvas-0/[0.95] py-2 px-4 backdrop-blur-sm">
         <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
           <Row className="z-10 gap-2">
             <Avatar
