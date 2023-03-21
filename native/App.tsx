@@ -48,8 +48,8 @@ import Constants from 'expo-constants'
 import { NativeShareData } from 'common/src/native-share-data'
 import { clearData, getData, storeData } from './lib/auth'
 
-// no other uri works for API requests due to CORS
-// const uri = 'http://localhost:3000/'
+// NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
+// const baseUri = 'https://10cd-71-218-107-193.ngrok.io/'
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const nativeQuery = `?nativePlatform=${Platform.OS}`
@@ -57,6 +57,7 @@ const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
   const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
+  const [listeningToNative, setListeningToNative] = useState(false)
   const [lastNotificationInMemory, setLastNotificationInMemory] = useState<
     Notification | undefined
   >()
@@ -66,20 +67,21 @@ const App = () => {
 
   // Auth
   const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
-  // Auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
-  auth.onAuthStateChanged((user) => {
-    if (user) setFbUser(user)
-  })
+  // Auth.currentUser didn't update, so we track the state manually
+  auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
+
   useEffect(() => {
     getData<FirebaseUser>('user').then((user) => {
       if (!user) return
       log('Got user from storage:', user.email)
       setFbUser(user)
-      webview.current?.postMessage(
-        JSON.stringify({ type: 'nativeFbUser', data: user })
-      )
     })
-  }, [hasLoadedWebView])
+  }, [])
+
+  useEffect(() => {
+    if (listeningToNative && fbUser)
+      communicateWithWebview('nativeFbUser', fbUser)
+  }, [listeningToNative, fbUser])
 
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(
@@ -111,11 +113,18 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
-    log('Push notification tapped, has loaded webview:', hasLoadedWebView)
+    log(
+      'Push notification tapped, has loaded webview:',
+      hasLoadedWebView,
+      'is listening to native:',
+      listeningToNative
+    )
     log('webview.current:', webview.current)
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
     const notification = response.notification.request.content
       .data as Notification
+
+    // TODO: this should check if the webview is listening to native, not if it's loaded
     if (hasLoadedWebView) {
       communicateWithWebview(
         'notification',
@@ -185,9 +194,7 @@ const App = () => {
   // Handle deep links
   useEffect(() => {
     if (!linkedUrl) return
-    log('Linked url', linkedUrl)
-    log('Has loaded webview', hasLoadedWebView)
-    log('webview:', webview.current)
+    log('Linked url', linkedUrl, '- has loaded webview:', hasLoadedWebView)
 
     const { hostname, path, queryParams } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
@@ -319,6 +326,7 @@ const App = () => {
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
           const fbUser = fbUserAndPrivateUser.fbUser as FirebaseUser
           log('Signing in fb user from webview cache')
+          // We don't actually use the firebase auth for anything right now, but in case we do in the future...
           await setFirebaseUserViaJson(fbUser, app)
           await storeData('user', fbUser)
         }
@@ -347,6 +355,9 @@ const App = () => {
     } else if (type === 'log') {
       const { args } = payload
       log('[Web Console]', ...args)
+    } else if (type === 'startedListening') {
+      log('Client started listening')
+      setListeningToNative(true)
     } else {
       log('Unhandled message from web type: ', type)
       log('Unhandled message from web data: ', data)
@@ -375,12 +386,18 @@ const App = () => {
     type: nativeToWebMessageType,
     data: object
   ) => {
+    log('Sending message to webview', type, 'is listening:', listeningToNative)
     webview.current?.postMessage(
       JSON.stringify({
         type,
         data,
       } as nativeToWebMessage)
     )
+  }
+
+  const resetWebViewStatus = () => {
+    setHasLoadedWebView(false)
+    setListeningToNative(false)
   }
 
   const webViewAndUserLoaded = hasLoadedWebView && fbUser
@@ -465,10 +482,10 @@ const App = () => {
               }
             }}
             onRenderProcessGone={(e) =>
-              handleWebviewCrash(webview, e, () => setHasLoadedWebView(false))
+              handleWebviewCrash(webview, e, resetWebViewStatus)
             }
             onContentProcessDidTerminate={(e) =>
-              handleWebviewCrash(webview, e, () => setHasLoadedWebView(false))
+              handleWebviewCrash(webview, e, resetWebViewStatus)
             }
             onMessage={async (m) => {
               try {
