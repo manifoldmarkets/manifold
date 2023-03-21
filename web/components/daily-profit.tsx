@@ -17,7 +17,10 @@ import { Col } from 'web/components/layout/col'
 import { keyBy, partition, sortBy, sum } from 'lodash'
 import { _ as r, Grid } from 'gridjs-react'
 import { ContractMention } from 'web/components/contract/contract-mention'
-import { dailyStatsClass } from 'web/components/daily-stats'
+import {
+  dailyStatsClass,
+  unseenDailyStatsClass,
+} from 'web/components/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
 import {
   storageStore,
@@ -26,6 +29,7 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
+import { useHasSeen } from 'web/hooks/use-has-seen'
 import { InfoTooltip } from './widgets/info-tooltip'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -34,6 +38,8 @@ export const DailyProfit = memo(function DailyProfit(props: {
   isCurrentUser?: boolean
 }) {
   const { user } = props
+  const isCurrentUser =
+    props.isCurrentUser === undefined ? true : props.isCurrentUser
 
   const [open, setOpen] = useState(false)
 
@@ -65,15 +71,23 @@ export const DailyProfit = memo(function DailyProfit(props: {
       return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
     }, [data])
   )
-
+  const [seenToday, setSeenToday] = isCurrentUser
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useHasSeen(user, [DAILY_PROFIT_CLICK_EVENT], 'day')
+    : [true, () => {}]
   if (!user) return <div />
 
   return (
     <>
       <button
-        className={clsx(dailyStatsClass, 'rounded-md text-center')}
+        className={clsx(
+          dailyStatsClass,
+          'rounded-md text-center',
+          seenToday || Math.abs(dailyProfit) < 1 ? '' : unseenDailyStatsClass
+        )}
         onClick={withTracking(() => {
           setOpen(true)
+          setSeenToday(true)
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Row>
@@ -86,7 +100,11 @@ export const DailyProfit = memo(function DailyProfit(props: {
             <span
               className={clsx(
                 'ml-1 mt-1 text-xs',
-                dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                seenToday
+                  ? dailyProfit >= 0
+                    ? 'text-teal-600'
+                    : 'text-scarlet-600'
+                  : ''
               )}
             >
               {dailyProfit >= 0 ? '+' : '-'}

@@ -7,7 +7,11 @@ import { formatMoney } from 'common/util/format'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { sum } from 'lodash'
-import { dailyStatsClass } from 'web/components/daily-stats'
+import {
+  dailyStatsClass,
+  unseenDailyStatsClass,
+} from 'web/components/daily-stats'
+import { useHasSeen } from 'web/hooks/use-has-seen'
 import { InfoTooltip } from './widgets/info-tooltip'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { Title } from 'web/components/widgets/title'
@@ -25,7 +29,11 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   user: User | null | undefined
 }) {
   const { user } = props
-
+  const [seenToday, setSeenToday] = useHasSeen(
+    user,
+    [QUEST_STATS_CLICK_EVENT],
+    'week'
+  )
   const [showQuestsModal, setShowQuestsModal] = useState(false)
 
   if (!user) return <></>
@@ -53,10 +61,15 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
         </button>
       ) : (
         <button
-          className={clsx('cursor-pointer rounded-md', dailyStatsClass)}
+          className={clsx(
+            'cursor-pointer rounded-md',
+            dailyStatsClass,
+            seenToday || allQuestsComplete ? '' : unseenDailyStatsClass
+          )}
           onClick={() => {
             setShowQuestsModal(true)
             track(QUEST_STATS_CLICK_EVENT)
+            setSeenToday(true)
           }}
         >
           <Col>
