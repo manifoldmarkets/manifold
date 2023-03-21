@@ -30,6 +30,7 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
 
   return (
     <Col className={clsx(className, 'flex-1')}>
+      <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related markets</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts
           .filter((c) => c.coverImageUrl)
