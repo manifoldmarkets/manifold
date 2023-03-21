@@ -873,7 +873,7 @@ function UserLikeNotification(props: {
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal
         similarNotifications={relatedNotifications}
-        modalLabel={'Who dunnit?'}
+        modalLabel={'Who liked it?'}
         open={open}
         setOpen={setOpen}
       />
