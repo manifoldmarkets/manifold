@@ -23,6 +23,10 @@ export const NativeMessageListener = () => {
   const privateUser = usePrivateUser()
 
   useEffect(() => {
+    postMessageToNative('startedListening', {})
+  }, [])
+
+  useEffect(() => {
     const { nativePlatform } = router.query
     if (nativePlatform !== undefined) {
       const platform = nativePlatform as string
@@ -36,6 +40,7 @@ export const NativeMessageListener = () => {
       setIsNative(true, data.platform)
       if (privateUser) setInstalledAppPlatform(privateUser, data.platform)
     } else if (type === 'nativeFbUser') {
+      console.log('received nativeFbUser')
       await setFirebaseUserViaJson(data, app, true)
     } else if (type === 'pushNotificationPermissionStatus') {
       const { status, userId } = data
