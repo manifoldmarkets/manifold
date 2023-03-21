@@ -20,21 +20,21 @@ Operations with complicated contracts (e.g. buying shares) are provided in a sep
 
 ## Directory overview
 
-- `web/`: UI and business logic for the client. Where most of the site lives. The public API endpoints are also in here.
+- [web/](./web/): UI and business logic for the client. Where most of the site lives. The public API endpoints are also in here.
 
-- `backend/`: All the rest of the stuff we run on GCP.
+- [backend/](./backend/): All the rest of the stuff we run on GCP.
 
-- `common/`: Typescript library code shared between `web/` & `backend/`. If you want to look at how the market math
+- [common/](./common/): Typescript library code shared between `web/` & `backend/`. If you want to look at how the market math
   works, most of that's in here (it gets called from the `placeBet` and `sellBet` endpoints in `functions/`.) Also
   contains in `common/envs` configuration for the different environments (i.e. prod, dev, Manifold for Teams instances.)
 
-- `docs/`: Manifold's public documentation that lives at https://docs.manifold.markets.
+- [docs/](./docs/): Manifold's public documentation that lives at https://docs.manifold.markets.
 
 ## Contributing
 
 Since we are just now open-sourcing things, we will see how things go. Feel free to open issues, submit PRs, and chat about the process on [Discord][discord]. We would prefer [small PRs][small-prs] that we can effectively evaluate and review -- maybe check in with us first if you are thinking to work on a big change.
 
-By contributing to this codebase, you are agreeing to the terms of the [Manifold CLA](https://github.com/manifoldmarkets/manifold/blob/main/.github/CONTRIBUTING.md).
+By contributing to this codebase, you are agreeing to the terms of the [Manifold CLA](./.github/CONTRIBUTING.md).
 
 If you need additional access to any infrastructure in order to work on something (e.g. Vercel, Firebase) let us know about that on [Discord][discord] as well.
 
@@ -42,8 +42,8 @@ If you need additional access to any infrastructure in order to work on somethin
 [jamstack]: https://jamstack.org/
 [monorepo]: https://semaphoreci.com/blog/what-is-monorepo
 [yarn]: https://classic.yarnpkg.com/lang/en/docs/install/
-[web-readme]: https://github.com/manifoldmarkets/manifold/blob/main/web/README.md
-[functions-readme]: https://github.com/manifoldmarkets/manifold/blob/main/functions/README.md
+[web-readme]: ./web/README.md
+[functions-readme]: ./backend/functions/README.md
 [cloud-firestore]: https://firebase.google.com/docs/firestore
 [cloud-functions]: https://firebase.google.com/docs/functions
 [small-prs]: https://google.github.io/eng-practices/review/developer/small-cls.html

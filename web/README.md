@@ -51,4 +51,4 @@ Vercel][vercel-functions]. This is where the public Manifold HTTP API lives.
 [next-static-files]: https://nextjs.org/docs/basic-features/static-file-serving
 [next-pages]: https://nextjs.org/docs/basic-features/pages
 [vercel-functions]: https://vercel.com/docs/concepts/functions/serverless-functions
-[functions-readme]: https://github.com/manifoldmarkets/manifold/blob/main/functions/README.md
+[functions-readme]: ./backend/functions/README.md
