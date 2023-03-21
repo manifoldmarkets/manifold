@@ -32,7 +32,7 @@ import {
 } from 'web/hooks/use-notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { usePrivateUser } from 'web/hooks/use-user'
+import { useIsAuthorized, usePrivateUser } from 'web/hooks/use-user'
 import { XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
@@ -194,25 +194,26 @@ function RenderNotificationGroups(props: {
 
 function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
-  const allGroupedNotifications =
+  const { groupedNotifications, mostRecentNotification } =
     useGroupedNonBalanceChangeNotifications(privateUser)
+  const isAuthorized = useIsAuthorized()
 
   const [page, setPage] = useState(0)
 
   const paginatedGroupedNotifications = useMemo(() => {
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
-    return allGroupedNotifications.slice(start, end)
-  }, [allGroupedNotifications, page])
+    return groupedNotifications.slice(start, end)
+  }, [groupedNotifications, page])
 
   const isPageVisible = useIsPageVisible()
 
-  // Mark all notifications as seen.
+  // Mark all notifications as seen. Rerun as new notifications come in.
   useEffect(() => {
-    if (privateUser != null && isPageVisible) {
+    if (privateUser && isPageVisible && isAuthorized) {
       markAllNotifications({ seen: true })
     }
-  }, [privateUser, isPageVisible])
+  }, [privateUser, isPageVisible, mostRecentNotification?.id, isAuthorized])
 
   return (
     <Col className={'min-h-[100vh] gap-0 text-sm'}>
@@ -225,13 +226,13 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
       <PushNotificationsModal
         privateUser={privateUser}
         totalNotifications={
-          allGroupedNotifications.map((ng) => ng.notifications).flat().length
+          groupedNotifications.map((ng) => ng.notifications).flat().length
         }
       />
 
       <RenderNotificationGroups
         notificationGroups={paginatedGroupedNotifications}
-        totalItems={allGroupedNotifications.length}
+        totalItems={groupedNotifications.length}
         page={page}
         setPage={setPage}
       />
