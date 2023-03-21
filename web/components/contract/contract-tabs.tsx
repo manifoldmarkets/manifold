@@ -243,7 +243,7 @@ const BinaryUserPositionsTabContent = memo(
         : noPositionsSorted.length
 
     return (
-      <Col className={'w-full '}>
+      <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
           {sortBy === 'profit' && contractMetricsByProfit === undefined && (
             <LoadingIndicator spinnerClassName={'border-ink-500'} size={'sm'} />
@@ -257,7 +257,7 @@ const BinaryUserPositionsTabContent = memo(
           />
         </Row>
 
-        <Row className={'gap-8'}>
+        <Row className={'gap-1 sm:gap-8'}>
           <Col className={'w-full max-w-sm gap-2'}>
             <Row className={'text-ink-500 justify-end px-2'}>
               {sortBy === 'profit' ? (
