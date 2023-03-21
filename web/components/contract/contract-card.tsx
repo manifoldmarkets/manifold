@@ -2,7 +2,7 @@ import { memo, ReactNode } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ClockIcon, FireIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
+import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 
 import { Row } from '../layout/row'
@@ -663,11 +663,6 @@ function ReasonChosen(props: { contract: Contract }) {
 
   return (
     <Row className="gap-3">
-      {!!(contract.elasticity < 0.5) && (
-        <Tooltip text={'High-stakes market'} className={'z-10'}>
-          <FireIcon className="h-5 w-5 text-blue-700" />
-        </Tooltip>
-      )}
       <div className="flex items-center gap-1 font-semibold">
         {reason}
         {reason === 'New' && <StarIcon className="h-4 w-4" />}

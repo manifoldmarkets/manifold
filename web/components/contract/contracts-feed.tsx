@@ -16,11 +16,7 @@ export function ContractsFeed() {
     <Col>
       <Col>
         {contracts.map((contract) => (
-          <ContractCardNew
-            key={contract.id}
-            contract={contract}
-            hideImage={!(contract.elasticity < 0.5)}
-          />
+          <ContractCardNew key={contract.id} contract={contract} />
         ))}
       </Col>
 
