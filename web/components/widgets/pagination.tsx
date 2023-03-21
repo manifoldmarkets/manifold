@@ -40,6 +40,8 @@ export function PaginationNextPrev(props: {
   )
 }
 
+export function usePagination(props: {}) {}
+
 export function Pagination(props: {
   page: number
   itemsPerPage: number

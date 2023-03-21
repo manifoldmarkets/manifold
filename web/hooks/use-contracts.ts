@@ -12,7 +12,7 @@ import {
 import { trendingIndex } from 'web/lib/service/algolia'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useStore, useStoreItems } from './use-store'
-import { useUser } from './use-user'
+import { useIsAuthorized, useUser } from './use-user'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -79,23 +79,18 @@ export function usePrivateContract(contractSlug: string, delay: number) {
   const [privateContract, setPrivateContract] = useState<
     Contract<AnyContractType> | undefined | null
   >(undefined)
-  const user = useUser()
+  const isAuthorized = useIsAuthorized()
   useEffect(() => {
     // if there is no user
-    if (user === null) {
+    if (isAuthorized === null) {
       setPrivateContract(null)
-    } else if (user) {
-      // need this timeout (1 sec works) or else get "must be signed in to make API calls" error
-      setTimeout(
-        () =>
-          getPrivateContractBySlug({ contractSlug: contractSlug }).then(
-            (result) => {
-              setPrivateContract(result as Contract<AnyContractType>)
-            }
-          ),
-        delay
+    } else if (isAuthorized) {
+      getPrivateContractBySlug({ contractSlug: contractSlug }).then(
+        (result) => {
+          setPrivateContract(result as Contract<AnyContractType>)
+        }
       )
     }
-  }, [contractSlug, user])
+  }, [contractSlug, isAuthorized])
   return privateContract
 }
