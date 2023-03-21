@@ -1,3 +1,4 @@
+import { ContractComment } from 'common/comment'
 import { run, selectJson } from 'common/supabase/utils'
 import { db } from './db'
 
@@ -22,4 +23,36 @@ export async function getComments(limit: number) {
     .limit(limit)
   const { data } = await run(q)
   return data.map((c) => c.data)
+}
+
+export async function getUserComments(
+  userId: string,
+  limit: number,
+  page: number
+) {
+  const { data } = await run(
+    db
+      .from('contract_comments')
+      .select('data')
+      .contains('data', { userId: userId })
+      .order('data->>createdTime', { ascending: false } as any)
+      .range(page * limit, page * limit + limit - 1)
+  )
+  if (data && data.length > 0) {
+    return data.map((c) => {
+      return c.data as ContractComment
+    })
+  } else {
+    return []
+  }
+}
+
+export async function getNumUserComments(userId: string) {
+  const { count } = await run(
+    db
+      .from('contract_comments')
+      .select('*', { head: true, count: 'exact' })
+      .contains('data', { userId: userId })
+  )
+  return count as number
 }

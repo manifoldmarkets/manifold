@@ -11,7 +11,12 @@ import { Col } from '../layout/col'
 import { Content } from '../widgets/editor'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from 'web/components/widgets/user-link'
-import { PaginationNextPrev } from '../widgets/pagination'
+import { Pagination, PaginationNextPrev } from '../widgets/pagination'
+import {
+  useNumUserComments,
+  useUserComments,
+} from 'web/hooks/use-comments-supabase'
+import { useEffect, useState } from 'react'
 
 type ContractKey = {
   contractId: string
@@ -27,24 +32,40 @@ function contractPath(slug: string) {
 
 export function UserCommentsList(props: { user: User }) {
   const { user } = props
+  const pageSize = 50
+  const [pageNum, setPageNum] = useState(0)
+  const numComments = useNumUserComments(user.id)
+  const [pageComments, setPageComments] = useState<
+    {
+      key: {
+        contractId: any
+        contractQuestion: any
+        contractSlug: any
+      }
+      items: unknown[]
+    }[]
+  >([])
+  // const comments = useUserComments(user.id, pageSize, pageNum)
+  const comments = useUserComments(user.id, pageSize, pageNum)
 
-  const page = usePagination({ q: getUserCommentsQuery(user.id), pageSize: 50 })
-  const { isStart, isEnd, getNext, getPrev, getItems, isLoading } = page
+  useEffect(() => {
+    setPageComments(
+      groupConsecutive(comments, (c) => {
+        return {
+          contractId: c.contractId,
+          contractQuestion: c.contractQuestion,
+          contractSlug: c.contractSlug,
+        }
+      })
+    )
+  }, [comments])
 
-  const pageComments = groupConsecutive(getItems(), (c) => {
-    return {
-      contractId: c.contractId,
-      contractQuestion: c.contractQuestion,
-      contractSlug: c.contractSlug,
-    }
-  })
-
-  if (isLoading) {
-    return <LoadingIndicator className="mt-4" />
-  }
+  // if (isLoading) {
+  //   return <LoadingIndicator className="mt-4" />
+  // }
 
   if (pageComments.length === 0) {
-    if (isStart && isEnd) {
+    if (pageNum == 0) {
       return <p className="text-ink-500 mt-4">No comments yet</p>
     } else {
       // this can happen if their comment count is a multiple of page size
@@ -52,23 +73,30 @@ export function UserCommentsList(props: { user: User }) {
     }
   }
 
+  console.log(numComments)
   return (
     <Col className={'bg-canvas-50'}>
       {pageComments.map(({ key, items }, i) => {
-        return <ProfileCommentGroup key={i} groupKey={key} items={items} />
+        return (
+          <ProfileCommentGroup
+            key={i}
+            groupKey={key}
+            items={items as ContractComment[]}
+          />
+        )
       })}
-      <nav
+      {/* <nav
         className="border-ink-200 border-t px-4 py-3 sm:px-6"
         aria-label="Pagination"
-      >
-        <PaginationNextPrev
-          prev={!isStart ? 'Previous' : null}
-          next={!isEnd ? 'Next' : null}
-          onClickPrev={getPrev}
-          onClickNext={getNext}
-          scrollToTop={true}
-        />
-      </nav>
+      > */}
+      {/* <div className="h-12 w-full bg-blue-300"></div> */}
+      {/* </nav> */}
+      <Pagination
+        page={pageNum}
+        itemsPerPage={pageSize}
+        totalItems={numComments}
+        setPage={setPageNum}
+      />
     </Col>
   )
 }
