@@ -151,9 +151,6 @@ const TOPICS: { [key: string]: string[] } = {
   Communities: ['ACX', 'Effective Altruism', 'Destiny.gg', 'Proofniks'],
 }
 
-const topLevel = Object.keys(TOPICS)
-const allTopics = [...topLevel, ...topLevel.flatMap((t) => TOPICS[t])]
-
 const GROUP_IDs: { [key: string]: string } = {
   Politics: 'UCnpxVUdLOZYgoMsDlHD',
   Technology: 'IlzY3moWwOcpsVZXCVej',

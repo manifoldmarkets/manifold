@@ -38,10 +38,9 @@ import { SidebarItem } from './sidebar-item'
 
 export default function Sidebar(props: {
   className?: string
-  logoSubheading?: string
   isMobile?: boolean
 }) {
-  const { className, logoSubheading, isMobile } = props
+  const { className, isMobile } = props
   const router = useRouter()
   const currentPage = router.pathname
 
