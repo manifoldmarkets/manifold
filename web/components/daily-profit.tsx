@@ -31,6 +31,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
 import { useHasSeen } from 'web/hooks/use-has-seen'
+import { InfoTooltip } from './widgets/info-tooltip'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -138,14 +139,9 @@ function DailyProfitModal(props: {
     <Modal open={open} setOpen={setOpen} size={'lg'}>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
         <Col className={'mb-4'}>
-          <Title className={'mb-1'}>💰 Daily profit</Title>
+          {/* <Title className={'mb-1'}>💰 Daily profit</Title> */}
 
-          <span className="text-ink-500 mb-4 text-sm">
-            Change in the value of your Yes/No positions over the last 24 hours.
-            (Updates every 30 min)
-          </span>
-
-          <Row className="gap-2">
+          <Row className="gap-2 text-2xl">
             <Col className="gap-2">
               <div>Balance</div>
               <div>Daily profit</div>
@@ -161,6 +157,14 @@ function DailyProfitModal(props: {
               </div>
             </Col>
           </Row>
+
+          <div className="text-ink-500 mt-4 text-sm">
+            Change in profit over the last 24 hours.{' '}
+            <InfoTooltip
+              text="I.e. the change in the value of your
+            shares in Yes/No markets. (Updates every 30 min)"
+            />
+          </div>
         </Col>
 
         {!metrics || !contracts ? (
@@ -170,7 +174,7 @@ function DailyProfitModal(props: {
             contracts={contracts}
             metrics={metrics}
             from={'day'}
-            rowsPerSection={5}
+            rowsPerSection={4}
             showPagination={true}
           />
         )}
