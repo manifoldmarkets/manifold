@@ -25,7 +25,7 @@ import {
 import { MarketResolvedNotification } from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
 import { QUEST_DETAILS } from 'common/quest'
-import { QuestsModal } from 'web/components/daily-stats'
+import { QuestsModal } from 'web/components/quests-or-streak'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(

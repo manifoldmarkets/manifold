@@ -79,6 +79,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
     <>
       <button
         className={clsx(
+          dailyStatsClass,
           'rounded-md text-center',
           seenToday || Math.abs(dailyProfit) < 1 ? '' : unseenDailyStatsClass
         )}
@@ -87,7 +88,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
           setSeenToday(true)
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
-        <Row className={clsx(dailyStatsClass)}>
+        <Row>
           <Col className="justify-start">
             <div className={clsx()}>{formatMoney(user.balance)}</div>
             <div className="text-sm opacity-70">Balance</div>

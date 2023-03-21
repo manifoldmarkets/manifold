@@ -2,8 +2,10 @@ import React from 'react'
 import {
   ChatAlt2Icon,
   FolderIcon,
+  GlobeIcon,
   PencilIcon,
   ScaleIcon,
+  UserIcon,
 } from '@heroicons/react/outline'
 import { LinkIcon, PresentationChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -22,7 +24,6 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { Title } from 'web/components/widgets/title'
 import { getPostsByUser } from 'web/lib/firebase/posts'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
-import { DailyStats } from 'web/components/daily-stats'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -59,6 +60,9 @@ import {
 } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
+import IconToggle from 'web/components/widgets/icon-toggle'
+import { DailyProfit } from 'web/components/daily-profit'
+import { QuestsOrStreak } from 'web/components/quests-or-streak'
 
 export const getStaticProps = async (props: {
   params: {
@@ -133,6 +137,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
   const userPosts = usePostsByUser(user.id) ?? props.posts
+  const [showPublicStats, setShowPublicStats] = useState(!isCurrentUser)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -164,157 +169,175 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
       )}
 
       <Col>
-        <Row className="px-4 pt-4">
-          <div className="relative">
-            <ImageWithBlurredShadow
-              image={
-                <Avatar
-                  username={user.username}
-                  avatarUrl={user.avatarUrl}
-                  size={24}
-                  className="bg-ink-1000"
-                  noLink
-                />
-              }
-            />
-            {isCurrentUser && (
-              <Link
-                className="bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute right-0 bottom-0 rounded-full p-2 shadow-sm"
-                href="/profile"
-              >
-                <PencilIcon className="text-ink-0 h-5 w-5" />
-              </Link>
-            )}
-          </div>
-
-          <Col className="w-full gap-4 pl-5">
-            <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
-              <Col>
-                <div className="inline-flex flex-row items-center gap-1">
-                  <span className="break-anywhere text-lg font-bold sm:text-2xl">
-                    {user.name}
-                  </span>
-                  {
-                    <UserBadge
-                      username={user.username}
-                      fresh={isFresh(user.createdTime)}
-                    />
-                  }
-                  {user.isBannedFromPosting && <PostBanBadge />}
-                </div>
-                <Row className="sm:text-md items-center gap-4 text-sm ">
-                  <span className={' text-ink-400'}>@{user.username}</span>
-                  {isAdmin && (
-                    <span>
-                      <a
-                        className="text-primary-400 mr-2 text-sm hover:underline"
-                        href={firestoreUserConsolePath(user.id)}
-                      >
-                        firestore user
-                      </a>
-                      <a
-                        className="text-primary-400 text-sm hover:underline"
-                        href={firestorePrivateConsolePath(user.id)}
-                      >
-                        private user
-                      </a>
-                    </span>
-                  )}
-                </Row>
-              </Col>
-              <Row
-                className={
-                  'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-4'
-                }
-              >
-                {isCurrentUser && <DailyStats user={user} />}
-                {!isCurrentUser && <UserFollowButton userId={user.id} />}
-                {!isCurrentUser && <MoreOptionsUserButton user={user} />}
-              </Row>
-            </div>
-            <div className={'hidden md:block'}>
-              <ProfilePublicStats user={user} isCurrentUser={isCurrentUser} />
-            </div>
-          </Col>
-        </Row>
-        <Col className="mx-4 mt-2">
-          <Spacer h={1} />
-          <ProfilePublicStats
-            className="md:hidden"
-            user={user}
-            isCurrentUser={isCurrentUser}
-          />
-          <Spacer h={1} />
-          {user.bio && (
-            <>
-              <div className="sm:text-md mt-2 text-sm sm:mt-0">
-                <Linkify text={user.bio}></Linkify>
-              </div>
-              <Spacer h={2} />
-            </>
+        <Row
+          className={clsx(
+            'flex-wrap justify-between p-1',
+            isCurrentUser ? ' sm:justify-start sm:gap-4' : ''
           )}
-          <Row className="mb-2 flex-wrap items-center gap-2 sm:gap-4">
-            {user.website && (
-              <SiteLink
-                href={
-                  'https://' +
-                  user.website.replace('http://', '').replace('https://', '')
+        >
+          <Row className={'gap-2'}>
+            <Col className={'relative max-h-14'}>
+              <ImageWithBlurredShadow
+                image={
+                  <Avatar
+                    username={user.username}
+                    avatarUrl={user.avatarUrl}
+                    size={12}
+                    className="bg-ink-1000"
+                    noLink
+                  />
                 }
-              >
-                <Row className="items-center gap-1">
-                  <LinkIcon className="h-4 w-4" />
-                  <span className="text-ink-400 text-sm">{user.website}</span>
-                </Row>
-              </SiteLink>
-            )}
-
-            {user.twitterHandle && (
-              <SiteLink
-                href={`https://twitter.com/${user.twitterHandle
-                  .replace('https://www.twitter.com/', '')
-                  .replace('https://twitter.com/', '')
-                  .replace('www.twitter.com/', '')
-                  .replace('twitter.com/', '')}`}
-              >
-                <Row className="items-center gap-1">
-                  <img
-                    src="/twitter-logo.svg"
-                    className="h-4 w-4"
-                    alt="Twitter"
+              />
+              {isCurrentUser && (
+                <Link
+                  className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute right-0 bottom-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
+                  href="/profile"
+                >
+                  <PencilIcon className="text-ink-0 h-3.5 w-3.5 " />
+                </Link>
+              )}
+            </Col>
+            <Col>
+              <div className={'inline-flex flex-row items-center gap-1 pt-1'}>
+                <span className="break-anywhere font-bold sm:text-xl">
+                  {user.name}
+                </span>
+                {
+                  <UserBadge
+                    username={user.username}
+                    fresh={isFresh(user.createdTime)}
                   />
-                  <span className="text-ink-400 text-sm">
-                    {user.twitterHandle}
-                  </span>
-                </Row>
-              </SiteLink>
-            )}
-
-            {user.discordHandle && (
-              <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
-                <Row className="items-center gap-1">
-                  <img
-                    src="/discord-logo.svg"
-                    className="h-4 w-4"
-                    alt="Discord"
-                  />
-                  <span className="text-ink-400 text-sm">
-                    {user.discordHandle}
-                  </span>
-                </Row>
-              </SiteLink>
-            )}
-
-            <SiteLink
-              href={'/' + user.username + '/calibration'}
-              className={clsx(linkClass, 'text-ink-400 cursor-pointer text-sm')}
-            >
-              <Row className="items-center gap-1">
-                <PresentationChartBarIcon className="h-4 w-4" />
-                Calibration
-              </Row>
-            </SiteLink>
+                }
+                {user.isBannedFromPosting && <PostBanBadge />}
+              </div>
+              <span className={'text-ink-400 text-sm sm:text-lg'}>
+                @{user.username}
+              </span>
+            </Col>
           </Row>
+          {isCurrentUser && <DailyProfit user={user} />}
+          {isCurrentUser && <QuestsOrStreak user={user} />}
+          {!isCurrentUser && (
+            <Row className={'gap-2'}>
+              <MoreOptionsUserButton user={user} />
+              <UserFollowButton userId={user.id} />
+            </Row>
+          )}
+          {isCurrentUser && (
+            <Col className={'mt-1 items-center justify-center'}>
+              <IconToggle
+                on={showPublicStats}
+                setOn={setShowPublicStats}
+                onIcon={GlobeIcon}
+                offIcon={UserIcon}
+                className={''}
+              />
+              <span className={'text-ink-600 mt-0.5 text-sm'}>Public</span>
+            </Col>
+          )}
+        </Row>
+        {isAdmin && (
+          <Row className={'px-1'}>
+            <span>
+              <a
+                className="text-primary-400 mr-2 text-sm hover:underline"
+                href={firestoreUserConsolePath(user.id)}
+              >
+                firestore user
+              </a>
+              <a
+                className="text-primary-400 text-sm hover:underline"
+                href={firestorePrivateConsolePath(user.id)}
+              >
+                private user
+              </a>
+            </span>
+          </Row>
+        )}
+        {showPublicStats && (
+          <Col className={'px-1'}>
+            <Spacer h={1} />
+            <ProfilePublicStats
+              className=""
+              user={user}
+              isCurrentUser={isCurrentUser}
+            />
+            <Spacer h={1} />
+            {user.bio && (
+              <>
+                <div className="sm:text-md mt-2 text-sm sm:mt-0">
+                  <Linkify text={user.bio}></Linkify>
+                </div>
+                <Spacer h={2} />
+              </>
+            )}
+            <Row className="mb-2 flex-wrap items-center gap-2 sm:gap-4">
+              {user.website && (
+                <SiteLink
+                  href={
+                    'https://' +
+                    user.website.replace('http://', '').replace('https://', '')
+                  }
+                >
+                  <Row className="items-center gap-1">
+                    <LinkIcon className="h-4 w-4" />
+                    <span className="text-ink-400 text-sm">{user.website}</span>
+                  </Row>
+                </SiteLink>
+              )}
 
+              {user.twitterHandle && (
+                <SiteLink
+                  href={`https://twitter.com/${user.twitterHandle
+                    .replace('https://www.twitter.com/', '')
+                    .replace('https://twitter.com/', '')
+                    .replace('www.twitter.com/', '')
+                    .replace('twitter.com/', '')}`}
+                >
+                  <Row className="items-center gap-1">
+                    <img
+                      src="/twitter-logo.svg"
+                      className="h-4 w-4"
+                      alt="Twitter"
+                    />
+                    <span className="text-ink-400 text-sm">
+                      {user.twitterHandle}
+                    </span>
+                  </Row>
+                </SiteLink>
+              )}
+
+              {user.discordHandle && (
+                <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
+                  <Row className="items-center gap-1">
+                    <img
+                      src="/discord-logo.svg"
+                      className="h-4 w-4"
+                      alt="Discord"
+                    />
+                    <span className="text-ink-400 text-sm">
+                      {user.discordHandle}
+                    </span>
+                  </Row>
+                </SiteLink>
+              )}
+
+              <SiteLink
+                href={'/' + user.username + '/calibration'}
+                className={clsx(
+                  linkClass,
+                  'text-ink-400 cursor-pointer text-sm'
+                )}
+              >
+                <Row className="items-center gap-1">
+                  <PresentationChartBarIcon className="h-4 w-4" />
+                  Calibration
+                </Row>
+              </SiteLink>
+            </Row>
+          </Col>
+        )}
+        <Col className="mx-4 mt-2">
           <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
@@ -402,8 +425,6 @@ function ProfilePublicStats(props: {
     setFollowsTab(tabName)
   }
 
-  const [showMore, setShowMore] = useState(false)
-
   return (
     <Row
       className={clsx(
@@ -411,46 +432,32 @@ function ProfilePublicStats(props: {
         className
       )}
     >
-      <span onClick={() => setShowMore(true)} className="cursor-pointer">
-        {`Joined ${createdTime}`}{' '}
-      </span>
-      {showMore && (
-        <>
-          <TextButton
-            onClick={() => openDialog('following')}
-            className={className}
-          >
-            <span className={clsx('font-semibold')}>
-              {followingIds?.length ?? ''}
-            </span>{' '}
-            Following
-          </TextButton>
-          <TextButton
-            onClick={() => openDialog('followers')}
-            className={className}
-          >
-            <span className={clsx('font-semibold')}>
-              {followerIds?.length ?? ''}
-            </span>{' '}
-            Followers
-          </TextButton>
+      <span>{`Joined ${createdTime}`} </span>
+      <TextButton onClick={() => openDialog('following')} className={className}>
+        <span className={clsx('font-semibold')}>
+          {followingIds?.length ?? ''}
+        </span>{' '}
+        Following
+      </TextButton>
+      <TextButton onClick={() => openDialog('followers')} className={className}>
+        <span className={clsx('font-semibold')}>
+          {followerIds?.length ?? ''}
+        </span>{' '}
+        Followers
+      </TextButton>
 
-          <FollowsDialog
-            user={user}
-            defaultTab={followsTab}
-            followingIds={followingIds}
-            followerIds={followerIds}
-            isOpen={isOpen}
-            setIsOpen={setIsOpen}
-          />
-          {isCurrentUser && <GroupsButton user={user} className={className} />}
-          {isCurrentUser && (
-            <ReferralsButton user={user} className={className} />
-          )}
-          {isCurrentUser && (
-            <UserLikedContractsButton user={user} className={className} />
-          )}
-        </>
+      <FollowsDialog
+        user={user}
+        defaultTab={followsTab}
+        followingIds={followingIds}
+        followerIds={followerIds}
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+      />
+      {isCurrentUser && <GroupsButton user={user} className={className} />}
+      {isCurrentUser && <ReferralsButton user={user} className={className} />}
+      {isCurrentUser && (
+        <UserLikedContractsButton user={user} className={className} />
       )}
     </Row>
   )
