@@ -235,7 +235,9 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                 offIcon={UserIcon}
                 className={''}
               />
-              <span className={'text-ink-600 mt-0.5 text-sm'}>Public</span>
+              <span className={'text-ink-600  mt-[0.1rem] text-sm'}>
+                Public
+              </span>
             </Col>
           )}
         </Row>

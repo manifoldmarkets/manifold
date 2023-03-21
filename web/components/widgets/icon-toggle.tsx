@@ -17,7 +17,7 @@ export default function IconToggle(props: {
       onChange={setOn}
       className={clsx(
         on ? 'bg-primary-600' : 'bg-ink-200',
-        'relative inline-flex h-6 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2',
+        'relative inline-flex h-[1.45rem] w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out',
         className
       )}
     >
@@ -25,7 +25,7 @@ export default function IconToggle(props: {
       <span
         className={clsx(
           on ? 'translate-x-4' : 'translate-x-0',
-          'bg-canvas-0 pointer-events-none relative inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
+          'bg-canvas-0 pointer-events-none relative inline-block h-[1.2rem] w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out'
         )}
       >
         <span
@@ -37,7 +37,7 @@ export default function IconToggle(props: {
           )}
           aria-hidden="true"
         >
-          {<props.offIcon className={'text-ink-600 h-4 w-4'} />}
+          {<props.offIcon className={'text-ink-600 h-4'} />}
         </span>
         <span
           className={clsx(
@@ -48,7 +48,7 @@ export default function IconToggle(props: {
           )}
           aria-hidden="true"
         >
-          {<props.onIcon className={'text-primary-700 h-5 w-5'} />}
+          {<props.onIcon className={'text-primary-700 h-[1.7rem]'} />}
         </span>
       </span>
     </Switch>
