@@ -220,7 +220,6 @@ export function useIsGroupMember(groupSlug: string) {
       store: inMemoryStore(),
     }
   )
-  // const [isMember, setIsMember] = useState<any>(undefined)
   const isAuthorized = useIsAuthorized()
   useEffect(() => {
     // if there is no user
