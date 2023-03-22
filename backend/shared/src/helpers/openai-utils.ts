@@ -100,7 +100,7 @@ export const getImagePrompt = async (question: string) => {
   let response
   try {
     response = await openai.createCompletion({
-      model: 'text-davinci-002',
+      model: 'text-davinci-003',
       prompt: `The following are some examples of prompts for titles to be fed into the Dalle-2 image generation model:\n\n
       Title: "Will the new BART Transbay tube be completed by 2040"\n
       Prompt: “A futuristic looking train seen from above the water crossing the SF bay area, with a sunny sky and a view of the Bay area in the background".\n
