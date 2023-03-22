@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext } from 'react'
 
 export type theme_option = 'light' | 'dark' | 'auto'
 
@@ -14,15 +14,10 @@ export const DarkModeContext = createContext<DarkModeContextProps>({
 
 export const useIsDarkMode = () => {
   const { theme } = useContext(DarkModeContext)
-  // calculate system theme client-side
-  const [isSystemDark, setIsSystemDark] = useState(false)
-  useEffect(
-    () =>
-      setIsSystemDark(
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-      ),
-    []
+  return (
+    theme === 'dark' ||
+    (theme === 'auto' &&
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
   )
-
-  return theme === 'dark' || (theme === 'auto' && isSystemDark)
 }
