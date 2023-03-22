@@ -16,8 +16,9 @@ export const getsupabasetoken = authEndpoint(async (_req, auth) => {
   if (!instanceId) {
     throw new APIError(500, 'No Supabase instance ID in config.')
   }
+  const payload = { role: 'anon' } // postgres role
   return {
-    jwt: sign({}, jwtSecret, {
+    jwt: sign(payload, jwtSecret, {
       algorithm: 'HS256', // same as what supabase uses for its auth tokens
       expiresIn: '1d',
       audience: `db.${getInstanceHostname(instanceId)}`,
