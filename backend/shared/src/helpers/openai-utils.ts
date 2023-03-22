@@ -18,7 +18,10 @@ export const generateEmbeddings = async (question: string) => {
       input: question,
     })
   } catch (e: any) {
-    console.error('Error generating embeddings. Do you have an OpenAI API key?', e.message)
+    console.error(
+      'Error generating embeddings. Do you have an OpenAI API key?',
+      e.message
+    )
     return undefined
   }
 
@@ -35,7 +38,7 @@ export const getGroupForMarket = async (question: string) => {
   let response
   try {
     response = await openai.createCompletion({
-      model: 'text-davinci-003',
+      model: 'gpt-3.5-turbo',
       prompt: `Categories:\n\n${groupsList}\n\nQuestion: ${question}\nSelected category:`,
       temperature: 0.4,
       max_tokens: 3,
@@ -69,7 +72,7 @@ export const getCloseDate = async (question: string) => {
   let response
   try {
     response = await openai.createCompletion({
-      model: 'text-davinci-002',
+      model: 'gpt-3.5-turbo',
       prompt: `Question: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2025 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
       temperature: 0.4,
       max_tokens: 15,
@@ -100,7 +103,7 @@ export const getImagePrompt = async (question: string) => {
   let response
   try {
     response = await openai.createCompletion({
-      model: 'text-davinci-003',
+      model: 'gpt-3.5-turbo',
       prompt: `The following are some examples of prompts for titles to be fed into the Dalle-2 image generation model:\n\n
       Title: "Will the new BART Transbay tube be completed by 2040"\n
       Prompt: “A futuristic looking train seen from above the water crossing the SF bay area, with a sunny sky and a view of the Bay area in the background".\n
