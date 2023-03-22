@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { capitalize, groupBy, last, partition, sortBy } from 'lodash'
+import { groupBy, last, partition, sortBy } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
 import { db } from 'web/lib/supabase/db'
@@ -47,7 +47,6 @@ import { ContractMetric } from 'common/contract-metric'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
 import {
   formatMoney,
-  formatWithCommas,
   shortFormatNumber,
 } from 'common/util/format'
 import { useBets } from 'web/hooks/use-bets'

@@ -9,7 +9,6 @@ import { Row } from '../layout/row'
 import {
   formatLargeNumber,
   formatMoney,
-  formatWithCommas,
 } from 'common/util/format'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'

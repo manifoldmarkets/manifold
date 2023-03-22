@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { APIError } from 'common/api'
 import { Bet, LimitBet } from 'common/bet'
 import { getContractBetMetrics, getProbability } from 'common/calculate'
