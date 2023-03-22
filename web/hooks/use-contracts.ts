@@ -12,7 +12,7 @@ import {
 import { trendingIndex } from 'web/lib/service/algolia'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useStore, useStoreItems } from './use-store'
-import { useIsAuthorized, useUser } from './use-user'
+import { useIsAuthorized } from './use-user'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
