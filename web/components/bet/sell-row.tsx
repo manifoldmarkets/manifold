@@ -9,9 +9,7 @@ import { useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import {
-  formatLargeNumber,
   formatMoney,
-  formatMoneyNumber,
   formatWithCommas,
 } from 'common/util/format'
 import { OutcomeLabel } from '../outcome-label'
