@@ -22,7 +22,11 @@ import { useQuery } from 'react-query'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { limit, query } from 'firebase/firestore'
 import { useTrendingContracts } from './use-contracts'
-import { storageStore, usePersistentState } from './use-persistent-state'
+import {
+  inMemoryStore,
+  storageStore,
+  usePersistentState,
+} from './use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useStoreItems } from './use-store'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
@@ -209,7 +213,14 @@ export function useGroups(groupIds: string[]) {
 }
 
 export function useIsGroupMember(groupSlug: string) {
-  const [isMember, setIsMember] = useState<any>(undefined)
+  const [isMember, setIsMember] = usePersistentState<any | undefined>(
+    undefined,
+    {
+      key: 'is-member-' + groupSlug,
+      store: inMemoryStore(),
+    }
+  )
+  // const [isMember, setIsMember] = useState<any>(undefined)
   const isAuthorized = useIsAuthorized()
   useEffect(() => {
     // if there is no user
