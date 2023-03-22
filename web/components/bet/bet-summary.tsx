@@ -69,9 +69,7 @@ export function BetsSummary(props: {
           <Col>
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Position{' '}
-              <InfoTooltip
-                text={`Your payout if ${exampleOutcome} wins`}
-              />
+              <InfoTooltip text={`Your payout if ${exampleOutcome} wins`} />
             </div>
             <div className="whitespace-nowrap">
               {position > 1e-7 ? (

@@ -45,10 +45,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetric } from 'common/contract-metric'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
-import {
-  formatMoney,
-  shortFormatNumber,
-} from 'common/util/format'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { useBets } from 'web/hooks/use-bets'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'

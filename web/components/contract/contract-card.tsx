@@ -6,10 +6,7 @@ import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 
 import { Row } from '../layout/row'
-import {
-  formatLargeNumber,
-  formatMoney,
-} from 'common/util/format'
+import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
