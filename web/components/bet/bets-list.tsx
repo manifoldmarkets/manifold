@@ -584,7 +584,7 @@ export function ContractBetsTable(props: {
               <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             )}
             {isDPM && !isResolved && <th>Payout if chosen</th>}
-            <th>Shares</th>
+            <th>Max payout</th>
             {!isPseudoNumeric && <th>Probability</th>}
             <th>Date</th>
           </tr>
@@ -710,7 +710,7 @@ function BetRow(props: {
       </td>
       {isDPM && !isNumeric && <td>{saleDisplay}</td>}
       {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
-      <td>{formatWithCommas(sharesOrShortSellShares)}</td>
+      <td>{formatMoney(sharesOrShortSellShares)}</td>
       {!isPseudoNumeric && (
         <td>
           {outcomeType === 'FREE_RESPONSE' || hadPoolMatch ? (

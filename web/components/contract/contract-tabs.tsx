@@ -249,7 +249,7 @@ const BinaryUserPositionsTabContent = memo(
             <LoadingIndicator spinnerClassName={'border-ink-500'} size={'sm'} />
           )}
           <SortRow
-            sort={capitalize(sortBy)}
+            sort={sortBy === 'profit' ? 'profit' : 'position'}
             onSortClick={() => {
               setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
               setPage(0)
@@ -264,7 +264,7 @@ const BinaryUserPositionsTabContent = memo(
                 <span className={'text-ink-500'}>Profit</span>
               ) : (
                 <span>
-                  <YesLabel /> shares
+                  <YesLabel /> positions
                 </span>
               )}
             </Row>
@@ -279,9 +279,7 @@ const BinaryUserPositionsTabContent = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatWithCommas(
-                          Math.floor(position.totalShares[outcome] ?? 0)
-                        )
+                      ? formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />
@@ -294,7 +292,7 @@ const BinaryUserPositionsTabContent = memo(
                 <span className={'text-ink-500'}>Loss</span>
               ) : (
                 <span>
-                  <NoLabel /> shares
+                  <NoLabel /> positions
                 </span>
               )}
             </Row>
@@ -309,9 +307,7 @@ const BinaryUserPositionsTabContent = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatWithCommas(
-                          Math.floor(position.totalShares[outcome] ?? 0)
-                        )
+                      ? formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />

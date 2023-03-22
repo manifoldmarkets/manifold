@@ -478,11 +478,10 @@ function LoadedMetricsFooter(props: {
         <div className="text-ink-600 text-sm">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
-              ? formatWithCommas(yesShares)
-              : formatWithCommas(noShares)}{' '}
+              ? formatMoney(yesShares)
+              : formatMoney(noShares)}{' '}
           </span>
-          {maxSharesOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
-          {' shares'}
+          on {maxSharesOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
         </div>
       </Col>
       <Col>
@@ -704,10 +703,10 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
         <div className="text-ink-600">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
-              ? formatWithCommas(yesShares)
-              : formatWithCommas(noShares)}{' '}
+              ? formatMoney(yesShares)
+              : formatMoney(noShares)}{' '}
           </span>
-          {maxSharesOutcome} shares
+          on {maxSharesOutcome}
         </div>
       </Row>
       <Row className="ml-auto items-center gap-2">

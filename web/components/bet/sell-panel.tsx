@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { APIError } from 'common/api'
 import { Bet, LimitBet } from 'common/bet'
 import { getContractBetMetrics, getProbability } from 'common/calculate'
@@ -66,6 +67,7 @@ export function SellPanel(props: {
   const soldShares = Math.min(sellQuantity, shares)
   const saleFrac = soldShares / shares
   const loanPaid = saleFrac * loanAmount
+  const isLoadPaid = loanPaid === 0
 
   const { invested } = getContractBetMetrics(contract, userBets)
   const costBasis = invested * saleFrac
@@ -160,7 +162,7 @@ export function SellPanel(props: {
             : Math.floor(amount)
         }
         onChange={onAmountChange}
-        label="Qty"
+        label="Ṁ"
         error={error}
         disabled={isSubmitting}
         inputClassName="w-full ml-1"
@@ -168,9 +170,17 @@ export function SellPanel(props: {
 
       <Col className="mt-3 w-full gap-3 text-sm">
         <Row className="text-ink-500 items-center justify-between gap-2">
-          Sale amount
+          Sale value
           <span className="text-ink-700">{formatMoney(saleValue)}</span>
         </Row>
+        {!isLoadPaid && (
+          <Row className="text-ink-500  items-center justify-between gap-2">
+            Loan repayment
+            <span className="text-ink-700">
+              {formatMoney(Math.floor(-loanPaid))}
+            </span>
+          </Row>
+        )}
         <Row className="text-ink-500 items-center justify-between gap-2">
           Profit
           <span className="text-ink-700">{formatMoney(profit)}</span>
@@ -185,18 +195,11 @@ export function SellPanel(props: {
             {getFormattedMappedValue(contract, resultProb)}
           </div>
         </Row>
-        {loanPaid !== 0 && (
-          <>
-            <Row className="text-ink-500 mt-6 items-center justify-between gap-2">
-              Loan repayment
-              <span className="text-ink-700">{formatMoney(-loanPaid)}</span>
-            </Row>
-            <Row className="text-ink-500 items-center justify-between gap-2">
-              Net proceeds
-              <span className="text-ink-700">{formatMoney(netProceeds)}</span>
-            </Row>
-          </>
-        )}
+
+        <Row className="text-ink-1000 mt-4 items-center justify-between gap-2 text-xl">
+          Payout
+          <span className="text-ink-700">{formatMoney(netProceeds)}</span>
+        </Row>
       </Col>
 
       <Spacer h={8} />
@@ -210,7 +213,7 @@ export function SellPanel(props: {
         disabled={!!betDisabled}
         size="xl"
         color="indigo"
-        actionLabel={`Sell ${Math.floor(soldShares)} shares`}
+        actionLabel={`Sell`}
       />
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}

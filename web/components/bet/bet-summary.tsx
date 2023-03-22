@@ -71,17 +71,17 @@ export function BetsSummary(props: {
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Position{' '}
               <InfoTooltip
-                text={`Number of shares you own on net. 1 ${exampleOutcome} share = ${ENV_CONFIG.moneyMoniker}1 if the market resolves ${exampleOutcome}.`}
+                text={`Your payout if ${exampleOutcome} wins`}
               />
             </div>
             <div className="whitespace-nowrap">
               {position > 1e-7 ? (
                 <>
-                  {formatWithCommas(position)} <YesLabel />
+                  {formatMoney(position)} on <YesLabel />
                 </>
               ) : position < -1e-7 ? (
                 <>
-                  {formatWithCommas(-position)} <NoLabel />
+                  {formatMoney(-position)} on <NoLabel />
                 </>
               ) : (
                 '——'
