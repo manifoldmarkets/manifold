@@ -8,7 +8,12 @@ import { getContractBetMetrics } from 'common/calculate'
 import { useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { formatMoney } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatMoneyNumber,
+  formatWithCommas,
+} from 'common/util/format'
 import { OutcomeLabel } from '../outcome-label'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
@@ -39,7 +44,7 @@ export function SellRow(props: {
       <Col className={className}>
         <Row className="items-center justify-between gap-4">
           <div>
-            You have {formatMoney(shares)} on{' '}
+            You'll get {formatMoney(shares)} on{' '}
             <OutcomeLabel
               outcome={sharesOutcome}
               contract={contract}
@@ -109,12 +114,14 @@ function SellSharesModal(props: {
         <Title>Sell position</Title>
 
         <div className="mb-6">
-          You have {formatMoney(shares)} on{' '}
+          You have {formatWithCommas(shares)} shares worth {formatMoney(shares)}{' '}
+          if this market resolves{' '}
           <OutcomeLabel
             outcome={sharesOutcome}
             contract={contract}
             truncate={'short'}
           />
+          .
         </div>
 
         <SellPanel

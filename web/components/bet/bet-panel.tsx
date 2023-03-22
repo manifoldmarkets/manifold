@@ -375,7 +375,7 @@ export function BuyPanel(props: {
             <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
               <div>
                 {isPseudoNumeric ? (
-                  'Max payout'
+                  'Shares'
                 ) : (
                   <>Payout if {outcome ?? 'YES'}</>
                 )}
@@ -804,7 +804,7 @@ function LimitOrderPanel(props: {
             <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
               <div>
                 {isPseudoNumeric ? (
-                  'Max payout'
+                  'Shares'
                 ) : (
                   <>
                     Max <BinaryOutcomeLabel outcome={'YES'} /> payout
@@ -828,7 +828,7 @@ function LimitOrderPanel(props: {
             <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
               <div>
                 {isPseudoNumeric ? (
-                  'Max payout'
+                  'Shares'
                 ) : (
                   <>
                     Max <BinaryOutcomeLabel outcome={'NO'} /> payout

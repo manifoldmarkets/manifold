@@ -470,7 +470,7 @@ function LoadedMetricsFooter(props: {
   return (
     <div className="bg-ink-100 columns-2 items-center gap-4 rounded-b-[7px] px-4 pt-1 pb-2 text-sm">
       <Col>
-        <span className="text-ink-400 text-xs">Your position</span>
+        <span className="text-ink-400 text-xs">Payout</span>
         <div className="text-ink-600 text-sm">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
@@ -483,7 +483,7 @@ function LoadedMetricsFooter(props: {
       <Col>
         <div className="text-ink-400 text-xs">
           {' '}
-          Your {showDailyProfit ? 'daily' : 'total'} profit{' '}
+          {showDailyProfit ? 'daily' : 'total'} Profit{' '}
         </div>
         <div className={clsx('text-ink-600 text-sm font-semibold')}>
           {profit ? formatMoney(profit) : '--'}
@@ -695,18 +695,15 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   return (
     <Row className=" border-ink-200 items-center gap-4 rounded border p-2 text-sm">
       <Row className="items-center gap-2">
-        <span className="text-ink-500">Your position</span>
-        <div className="text-ink-600">
-          <span className="font-semibold">
-            {maxSharesOutcome === 'YES'
-              ? formatMoney(yesShares)
-              : formatMoney(noShares)}{' '}
-          </span>
-          on {maxSharesOutcome}
-        </div>
+        <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
+        <span className="text-ink-600 font-semibold">
+          {maxSharesOutcome === 'YES'
+            ? formatMoney(yesShares)
+            : formatMoney(noShares)}{' '}
+        </span>
       </Row>
       <Row className="ml-auto items-center gap-2">
-        <div className="text-ink-500">Your profit </div>
+        <div className="text-ink-500">Profit </div>
         <div className={clsx('text-ink-600 font-semibold')}>
           {profit ? formatMoney(profit) : '--'}
         </div>

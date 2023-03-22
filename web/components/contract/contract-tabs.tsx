@@ -260,7 +260,7 @@ const BinaryUserPositionsTabContent = memo(
                 <span className={'text-ink-500'}>Profit</span>
               ) : (
                 <span>
-                  <YesLabel /> positions
+                  <YesLabel /> payouts
                 </span>
               )}
             </Row>
@@ -288,7 +288,7 @@ const BinaryUserPositionsTabContent = memo(
                 <span className={'text-ink-500'}>Loss</span>
               ) : (
                 <span>
-                  <NoLabel /> positions
+                  <NoLabel /> payouts
                 </span>
               )}
             </Row>
