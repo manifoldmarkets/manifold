@@ -8,10 +8,7 @@ import { getContractBetMetrics } from 'common/calculate'
 import { useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import {
-  formatMoney,
-  formatWithCommas,
-} from 'common/util/format'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 import { OutcomeLabel } from '../outcome-label'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
