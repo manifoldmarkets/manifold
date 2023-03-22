@@ -18,6 +18,7 @@ import {
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { User as FirebaseUser } from 'firebase/auth'
+import * as WebBrowser from 'expo-web-browser'
 // @ts-ignore
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
@@ -37,11 +38,10 @@ import {
 } from 'common/src/native-message'
 import {
   handleWebviewCrash,
-  ExternalWebView,
   sharedWebViewProps,
   handleWebviewError,
   handleRenderError,
-} from 'components/external-web-view'
+} from 'components/web-view-utils'
 import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Constants from 'expo-constants'
@@ -49,7 +49,7 @@ import { NativeShareData } from 'common/src/native-share-data'
 import { clearData, getData, storeData } from './lib/auth'
 
 // NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
-// const baseUri = 'https://10cd-71-218-107-193.ngrok.io/'
+// const baseUri = 'https://bbe3-181-41-206-141.jp.ngrok.io'
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const nativeQuery = `?nativePlatform=${Platform.OS}`
@@ -70,24 +70,39 @@ const App = () => {
   // Auth.currentUser didn't update, so we track the state manually
   auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
 
-  useEffect(() => {
-    getData<FirebaseUser>('user').then((user) => {
-      if (!user) return
-      log('Got user from storage:', user.email)
-      setFbUser(user)
-    })
-  }, [])
+  const signInUserFromStorage = async () => {
+    const user = await getData<FirebaseUser>('user')
+    if (!user) return
+    log('Got user from storage:', user.email)
+    setFbUser(user)
+    setFirebaseUserViaJson(user, app)
+      .catch((e) => {
+        log('Error setting user:', e)
+      })
+      .then(() => {
+        log('User set succesfully')
+      })
+  }
 
   useEffect(() => {
-    if (listeningToNative && fbUser)
-      communicateWithWebview('nativeFbUser', fbUser)
+    signInUserFromStorage()
+  }, [])
+
+  // Sends the saved user to the web client to make the log in process faster
+  useEffect(() => {
+    if (listeningToNative && fbUser) {
+      // We use a timeout because sometimes the auth persistence manager is still undefined on the client side
+      setTimeout(() => {
+        log('Sending fbUser to webview:', fbUser.email)
+        communicateWithWebview('nativeFbUser', fbUser)
+      }, 250)
+    }
   }, [listeningToNative, fbUser])
 
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(
     baseUri + '/home' + nativeQuery
   )
-  const [externalUrl, setExternalUrl] = useState<string | undefined>(undefined)
   const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     isIOS ? LinkingManager.default : null
@@ -447,12 +462,6 @@ const App = () => {
         />
 
         <View style={[styles.container, { position: 'relative' }]}>
-          <ExternalWebView
-            url={externalUrl}
-            height={height}
-            width={width}
-            setUrl={setExternalUrl}
-          />
           <WebView
             {...sharedWebViewProps}
             allowsBackForwardNavigationGestures={allowSystemBack}
@@ -475,10 +484,8 @@ const App = () => {
                 !url.startsWith(baseUri) ||
                 EXTERNAL_REDIRECTS.some((u) => url.endsWith(u))
               ) {
-                setExternalUrl(url)
+                WebBrowser.openBrowserAsync(url)
                 webview.current?.stopLoading()
-              } else {
-                setExternalUrl(undefined)
               }
             }}
             onRenderProcessGone={(e) =>
@@ -497,7 +504,7 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
-      <ExportLogsButton />
+      {/*<ExportLogsButton />*/}
     </>
   )
 }
