@@ -39,9 +39,10 @@ export const onCreateContract = functions
     const coverImageUrl = await dalleWithDefaultParams(
       imagePrompt ?? contract.question
     )
-    await snapshot.ref.update({
-      coverImageUrl,
-    })
+    if (coverImageUrl)
+      await snapshot.ref.update({
+        coverImageUrl,
+      })
 
     const embedding = await generateEmbeddings(contract.question)
     if (!embedding) return

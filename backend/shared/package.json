@@ -20,7 +20,7 @@
     "mailgun-js": "0.22.0",
     "pg-promise": "11.4.1",
     "dayjs": "1.11.4",
-    "openai": "3.0.1"
+    "openai": "3.2.1"
   },
   "devDependencies": {
     "@types/mailgun-js": "0.22.12"

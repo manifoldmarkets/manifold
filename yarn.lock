@@ -8259,14 +8259,6 @@ onetime@^5.1.2:
   dependencies:
     mimic-fn "^2.1.0"
 
-openai@3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/openai/-/openai-3.0.1.tgz#4a6021e5bf32dfaa56e346b7a4830a80a479dd9c"
-  integrity sha512-5O9t7dBcUOIhzK5764nS/8WtkX812l8Uz0uoIHT8mczN2IUUUe7FsGbIxYGEkGBKA4GY1blT8QaWJVNZLG2cwA==
-  dependencies:
-    axios "^0.26.0"
-    form-data "^4.0.0"
-
 openai@3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/openai/-/openai-3.2.1.tgz#1fa35bdf979cbde8453b43f2dd3a7d401ee40866"
