@@ -86,17 +86,14 @@ export function usePrivateContract(contractSlug: string, delay: number) {
   useEffect(() => {
     // if there is no user
     if (isAuthorized === null) {
-      console.log('not authorized')
       setPrivateContract(null)
     } else if (isAuthorized) {
-      console.log('authorized, set contract')
       getPrivateContractBySlug({ contractSlug: contractSlug }).then(
         (result) => {
           setPrivateContract(result as Contract<AnyContractType>)
         }
       )
     }
-    console.log('isAuth', isAuthorized)
   }, [contractSlug, isAuthorized])
   return privateContract
 }
