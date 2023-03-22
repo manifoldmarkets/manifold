@@ -3,21 +3,24 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
-import { keyBy, range, groupBy, sortBy } from 'lodash'
+import { groupBy, keyBy, partition, range, sortBy, uniq } from 'lodash'
 import { memo, useEffect, useState } from 'react'
-import { useLiveBets } from 'web/hooks/use-bets'
-import { useLiveComments } from 'web/hooks/use-comments'
-import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
+import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
+import {
+  useContracts,
+  useRealtimeContracts,
+} from 'web/hooks/use-contract-supabase'
 import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import {
-  useShouldBlockDestiny,
   usePrivateUser,
+  useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
-import { getGroupBySlug, getGroupContractIds } from 'web/lib/firebase/groups'
+import { getGroupContractIds, getGroupFromSlug } from 'web/lib/supabase/group'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -54,7 +57,7 @@ export function ActivityLog(props: {
       shouldBlockDestiny && DESTINY_GROUP_SLUGS
     )
 
-    Promise.all(blockedGroupSlugs.map(getGroupBySlug))
+    Promise.all(blockedGroupSlugs.map(getGroupFromSlug))
       .then((groups) =>
         Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
       )
@@ -67,7 +70,7 @@ export function ActivityLog(props: {
   )
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
-  const rawBets = useLiveBets(count * 3 + 20, {
+  const rawBets = useRealtimeBets(count * 3 + 20, {
     filterRedemptions: true,
     filterAntes: true,
   })
@@ -78,7 +81,7 @@ export function ActivityLog(props: {
       !BOT_USERNAMES.includes(bet.userUsername) &&
       !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
   )
-  const rawComments = useLiveComments(count * 3)
+  const rawComments = useRealtimeComments(count * 3)
   const comments = (rawComments ?? []).filter(
     (c) =>
       c.commentType === 'contract' &&
@@ -86,15 +89,28 @@ export function ActivityLog(props: {
       !blockedUserIds.includes(c.userId)
   ) as ContractComment[]
 
-  const rawContracts = useLiveContracts(count * 3)
+  const rawContracts = useRealtimeContracts(count * 3)
   const newContracts = (rawContracts ?? []).filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&
-      !blockedUserIds.includes(c.creatorId)
+      !blockedUserIds.includes(c.creatorId) &&
+      c.visibility === 'public'
   )
 
   const [pill, setPill] = useState<'all' | 'markets' | 'comments' | 'trades'>(
     'all'
+  )
+
+  const allContracts = useContracts(
+    uniq([
+      ...bets.map((b) => b.contractId),
+      ...comments.map((c) => c.contractId),
+    ])
+  )
+
+  const [contracts, unlistedContracts] = partition(
+    filterDefined(allContracts).concat(newContracts ?? []),
+    (c) => c.visibility === 'public'
   )
 
   const items = sortBy(
@@ -108,14 +124,14 @@ export function ActivityLog(props: {
     (i) => i.createdTime
   )
     .reverse()
-    .filter((i) => i.createdTime < Date.now())
+    .filter(
+      (i) =>
+        i.createdTime < Date.now() &&
+        ('contractId' in i
+          ? !unlistedContracts.some((c) => c.id === i.contractId)
+          : true)
+    )
 
-  const contracts = filterDefined(
-    useContracts([
-      ...bets.map((b) => b.contractId),
-      ...comments.map((c) => c.contractId),
-    ])
-  ).concat(newContracts ?? [])
   const contractsById = keyBy(contracts, 'id')
 
   const startIndex =

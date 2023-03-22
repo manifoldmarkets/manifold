@@ -1,19 +1,5 @@
-import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { useEffect, useState } from 'react'
-import {
-  Bet,
-  USER_BET_FILTER,
-  getBetsQuery,
-  listenForBets,
-} from 'web/lib/firebase/bets'
-
-export const useUserBets = (userId: string) => {
-  const result = useFirestoreQueryData(
-    ['bets', userId],
-    getBetsQuery({ userId, ...USER_BET_FILTER })
-  )
-  return result.data
-}
+import { Bet, listenForBets } from 'web/lib/firebase/bets'
 
 export const useUserContractBets = (
   userId: string | undefined,

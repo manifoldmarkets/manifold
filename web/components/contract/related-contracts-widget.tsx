@@ -1,10 +1,9 @@
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import Link from 'next/link'
 import { memo } from 'react'
 import clsx from 'clsx'
 
 import { useEvent } from 'web/hooks/use-event'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { VisibilityObserver } from '../widgets/visibility-observer'
@@ -31,6 +30,7 @@ export const RelatedContractsList = memo(function RelatedContractsList(props: {
 
   return (
     <Col className={clsx(className, 'flex-1')}>
+      <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related markets</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts
           .filter((c) => c.coverImageUrl)

@@ -1,22 +1,26 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
-import { getUserEvents } from 'web/lib/supabase/user-events'
+import { HOUR_MS } from 'common/util/time'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
-import { formatMoney, formatPercent } from 'common/util/format'
+import {
+  formatMoney,
+  formatPercent,
+  shortFormatNumber,
+} from 'common/util/format'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMBinaryContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { Title } from 'web/components/widgets/title'
 import { keyBy, partition, sortBy, sum } from 'lodash'
 import { _ as r, Grid } from 'gridjs-react'
 import { ContractMention } from 'web/components/contract/contract-mention'
-import { dailyStatsClass } from 'web/components/daily-stats'
+import {
+  dailyStatsClass,
+  unseenDailyStatsClass,
+} from 'web/components/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
 import {
   storageStore,
@@ -25,14 +29,19 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
+import { useHasSeen } from 'web/hooks/use-has-seen'
+import { InfoTooltip } from './widgets/info-tooltip'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
   user: User | null | undefined
+  isCurrentUser?: boolean
 }) {
   const { user } = props
+  const isCurrentUser =
+    props.isCurrentUser === undefined ? true : props.isCurrentUser
+
   const [open, setOpen] = useState(false)
-  const [seen, setSeen] = useState(true)
 
   const refreshContractMetrics = useCallback(async () => {
     if (user)
@@ -56,47 +65,53 @@ export const DailyProfit = memo(function DailyProfit(props: {
     if (open) refreshContractMetrics().then(setData)
   }, [open, refreshContractMetrics, setData])
 
-  const dailyProfit = useMemo(() => {
-    if (!data) return 0
-    return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
-  }, [data])
+  const dailyProfit = Math.round(
+    useMemo(() => {
+      if (!data) return 0
+      return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
+    }, [data])
+  )
+  const [seenToday, setSeenToday] = isCurrentUser
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useHasSeen(user, [DAILY_PROFIT_CLICK_EVENT], 'day')
+    : [true, () => {}]
+  if (!user) return <div />
 
-  useEffect(() => {
-    if (!user) return
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayMs = today.getTime()
-    const todayMsEnd = todayMs + DAY_MS
-    getUserEvents(user.id, DAILY_PROFIT_CLICK_EVENT, todayMs, todayMsEnd).then(
-      (events) => setSeen(events.length > 0)
-    )
-  }, [user])
-
-  // Other emoji options: ⌛ 💰 🕛
   return (
     <>
       <button
         className={clsx(
-          'rounded-md py-1 text-center transition-colors disabled:cursor-not-allowed',
-          !seen
-            ? 'from-amber-400 via-yellow-200 to-amber-400 px-1.5 text-yellow-600 transition-all hover:from-yellow-400 hover:via-yellow-100 hover:to-yellow-400 enabled:bg-gradient-to-tr'
-            : ''
+          dailyStatsClass,
+          'rounded-md text-center',
+          seenToday || Math.abs(dailyProfit) < 1 ? '' : unseenDailyStatsClass
         )}
         onClick={withTracking(() => {
           setOpen(true)
-          setSeen(true)
+          setSeenToday(true)
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
-        <Tooltip text={'Daily profit'}>
-          <Row
-            className={clsx(
-              dailyStatsClass,
-              dailyProfit > 0 && seen && 'text-teal-500'
-            )}
-          >
-            <span>💰 {formatMoney(dailyProfit)}</span>
-          </Row>
-        </Tooltip>
+        <Row>
+          <Col className="justify-start">
+            <div className={clsx()}>{formatMoney(user.balance)}</div>
+            <div className="text-ink-600 text-sm ">Balance</div>
+          </Col>
+
+          {dailyProfit !== 0 && (
+            <span
+              className={clsx(
+                'ml-1 mt-1 text-xs',
+                seenToday
+                  ? dailyProfit >= 0
+                    ? 'text-teal-600'
+                    : 'text-scarlet-600'
+                  : ''
+              )}
+            >
+              {dailyProfit >= 0 ? '+' : '-'}
+              {shortFormatNumber(Math.abs(dailyProfit))}
+            </span>
+          )}
+        </Row>
       </button>
       {user && (
         <DailyProfitModal
@@ -104,6 +119,8 @@ export const DailyProfit = memo(function DailyProfit(props: {
           open={open}
           metrics={data?.metrics}
           contracts={data?.contracts}
+          dailyProfit={dailyProfit}
+          balance={user.balance}
         />
       )}
     </>
@@ -115,19 +132,43 @@ function DailyProfitModal(props: {
   setOpen: (open: boolean) => void
   metrics?: ContractMetrics[]
   contracts?: CPMMBinaryContract[]
+  dailyProfit: number
+  balance: number
 }) {
-  const { open, setOpen, metrics, contracts } = props
+  const { open, setOpen, metrics, contracts, dailyProfit, balance } = props
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
         <Col className={'mb-4'}>
-          <Title className={'mb-1'}>💰 Daily profit</Title>
-          <span className="text-ink-500 text-sm">
-            Change in the value of your Yes/No positions over the last 24 hours.
-            (Updates every 30 min)
-          </span>
+          {/* <Title className={'mb-1'}>💰 Daily profit</Title> */}
+
+          <Row className="gap-2 text-2xl">
+            <Col className="gap-2">
+              <div>Balance</div>
+              <div>Daily profit</div>
+            </Col>
+            <Col className="text-ink-600 items-end gap-2">
+              <div>{formatMoney(balance)}</div>
+              <div
+                className={clsx(
+                  dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                )}
+              >
+                {formatMoney(dailyProfit)}
+              </div>
+            </Col>
+          </Row>
+
+          <div className="text-ink-500 mt-4 text-sm">
+            Change in profit over the last 24 hours.{' '}
+            <InfoTooltip
+              text="I.e. the change in the value of your
+            shares in Yes/No markets. (Updates every 30 min)"
+            />
+          </div>
         </Col>
+
         {!metrics || !contracts ? (
           <LoadingIndicator />
         ) : (
@@ -135,7 +176,7 @@ function DailyProfitModal(props: {
             contracts={contracts}
             metrics={metrics}
             from={'day'}
-            rowsPerSection={5}
+            rowsPerSection={4}
             showPagination={true}
           />
         )}
@@ -183,7 +224,11 @@ export function ProfitChangeTable(props: {
   ]
 
   if (positive.length === 0 && negative.length === 0)
-    return <div className="text-ink-500 px-4">None</div>
+    return (
+      <div className="text-ink-500 px-4">
+        No profit changes found. Return later after making a few bets.
+      </div>
+    )
 
   const marketRow = (c: CPMMBinaryContract) =>
     r(
@@ -245,6 +290,7 @@ export function ProfitChangeTable(props: {
             itemsPerPage={rowsPerSection * 2}
             totalItems={contracts.length}
             setPage={setPage}
+            scrollToTop={true}
           />
         )}
       </Col>

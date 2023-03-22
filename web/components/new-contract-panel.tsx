@@ -8,6 +8,8 @@ import clsx from 'clsx'
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
+  Contract,
+  contractPath,
   outcomeType,
   visibility,
 } from 'common/contract'
@@ -32,7 +34,6 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { createMarket } from 'web/lib/firebase/api'
-import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { getGroup } from 'web/lib/firebase/groups'
 import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -273,7 +274,7 @@ export function NewContractPanel(props: {
                     PSEUDO_NUMERIC:
                       '[EXPERIMENTAL] Predict the value of a number.',
                     CERT: '[EXPERIMENTAL] Tradeable shares of a stock.',
-                    QUADRATIC_FUNDING: '',
+                    // QUADRATIC_FUNDING: '',
                     // '[EXPERIMENTAL] Radically fund projects. ',
                   }[choice] ?? ''
                 setMarketInfoText(text)
@@ -284,7 +285,7 @@ export function NewContractPanel(props: {
                 'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
-                'Quadratic Funding': 'QUADRATIC_FUNDING',
+                // 'Quadratic Funding': 'QUADRATIC_FUNDING',
                 // Only show cert option in dev, for now
                 ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
               }}
@@ -381,7 +382,7 @@ export function NewContractPanel(props: {
               </div>
             </>
           )}
-          {!fromGroup && (
+          {!fromGroup && visibility != 'private' && (
             <>
               <Spacer h={4} />
               <Row className={'items-end gap-x-2'}>
@@ -449,23 +450,27 @@ export function NewContractPanel(props: {
               />
             </Row>
           </div>
-          <Spacer h={6} />
-          <Row className="items-center gap-2">
-            <span>
-              Publicly listed{' '}
-              <InfoTooltip
-                text={
-                  visibility === 'public'
-                    ? 'Visible on home page and search results'
-                    : "Only visible via link. Won't notify followers"
-                }
-              />
-            </span>
-            <ShortToggle
-              on={visibility === 'public'}
-              setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
-            />
-          </Row>
+          {visibility != 'private' && (
+            <>
+              <Spacer h={6} />
+              <Row className="items-center gap-2">
+                <span>
+                  Publicly listed{' '}
+                  <InfoTooltip
+                    text={
+                      visibility === 'public'
+                        ? 'Visible on home page and search results'
+                        : "Only visible via link. Won't notify followers"
+                    }
+                  />
+                </span>
+                <ShortToggle
+                  on={visibility === 'public'}
+                  setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
+                />
+              </Row>
+            </>
+          )}
           <Spacer h={6} />
         </>
       )}

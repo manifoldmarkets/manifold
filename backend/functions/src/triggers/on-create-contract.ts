@@ -11,6 +11,7 @@ import { dreamWithDefaultParams } from 'shared/dream-utils'
 import { getImagePrompt, generateEmbeddings } from 'shared/helpers/openai-utils'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { secrets } from 'functions/secrets'
+import { completeQuestInternal } from 'shared/quest'
 
 export const onCreateContract = functions
   .runWith({
@@ -27,7 +28,6 @@ export const onCreateContract = functions
     const desc = contract.description as JSONContent
     const mentioned = parseMentions(desc)
     await addUserToContractFollowers(contract.id, contractCreator.id)
-
     await createNewContractNotification(
       contractCreator,
       contract,
@@ -49,4 +49,6 @@ export const onCreateContract = functions
     await createSupabaseClient()
       .from('contract_embeddings')
       .insert({ contract_id: contract.id, embedding })
+
+    await completeQuestInternal(contractCreator, 'MARKETS_CREATED')
   })

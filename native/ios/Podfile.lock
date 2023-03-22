@@ -17,7 +17,7 @@ PODS:
     - EXJSONUtils
   - EXNotifications (0.18.1):
     - ExpoModulesCore
-  - Expo (48.0.4):
+  - Expo (48.0.7):
     - ExpoModulesCore
   - expo-dev-client (2.1.4):
     - EXManifests
@@ -99,7 +99,7 @@ PODS:
     - ExpoModulesCore
   - ExpoKeepAwake (12.0.1):
     - ExpoModulesCore
-  - ExpoModulesCore (1.2.3):
+  - ExpoModulesCore (1.2.5):
     - React-Core
     - React-RCTAppDelegate
     - ReactCommon/turbomodule/core
@@ -354,6 +354,8 @@ PODS:
   - React-jsinspector (0.71.3)
   - React-logger (0.71.3):
     - glog
+  - react-native-cookies (6.2.1):
+    - React-Core
   - react-native-webview (11.26.0):
     - React-Core
   - React-perflogger (0.71.3)
@@ -437,6 +439,8 @@ PODS:
     - React-jsi (= 0.71.3)
     - React-logger (= 0.71.3)
     - React-perflogger (= 0.71.3)
+  - RNCAsyncStorage (1.17.11):
+    - React-Core
   - RNCClipboard (1.11.1):
     - React-Core
   - RNIap (12.4.2):
@@ -493,6 +497,7 @@ DEPENDENCIES:
   - React-jsiexecutor (from `../node_modules/react-native/ReactCommon/jsiexecutor`)
   - React-jsinspector (from `../node_modules/react-native/ReactCommon/jsinspector`)
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
+  - "react-native-cookies (from `../node_modules/@react-native-cookies/cookies`)"
   - react-native-webview (from `../node_modules/react-native-webview`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
   - React-RCTActionSheet (from `../node_modules/react-native/Libraries/ActionSheetIOS`)
@@ -507,6 +512,7 @@ DEPENDENCIES:
   - React-RCTVibration (from `../node_modules/react-native/Libraries/Vibration`)
   - React-runtimeexecutor (from `../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
   - RNIap (from `../node_modules/react-native-iap`)
   - "RNSentry (from `../node_modules/@sentry/react-native`)"
@@ -607,6 +613,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/jsinspector"
   React-logger:
     :path: "../node_modules/react-native/ReactCommon/logger"
+  react-native-cookies:
+    :path: "../node_modules/@react-native-cookies/cookies"
   react-native-webview:
     :path: "../node_modules/react-native-webview"
   React-perflogger:
@@ -635,6 +643,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/runtimeexecutor"
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  RNCAsyncStorage:
+    :path: "../node_modules/@react-native-async-storage/async-storage"
   RNCClipboard:
     :path: "../node_modules/@react-native-clipboard/clipboard"
   RNIap:
@@ -656,7 +666,7 @@ SPEC CHECKSUMS:
   EXJSONUtils: 48b1e764ac35160e6f54d21ab60d7d9501f3e473
   EXManifests: 500666d48e8dd7ca5a482c9e729e4a7a6c34081b
   EXNotifications: dd628737af60fc8cc62dccebacd326b0fbbc0dcb
-  Expo: aae5eb5ed076ff163eb909a003b2be1b85f832dd
+  Expo: 707f9b0039eacc6a1dce90c08c9e37b9c417bba2
   expo-dev-client: 71c7a10806a324e4312c1cac34d4a439670d2c3b
   expo-dev-launcher: 53556b0670fe41380948d5010a3bf7dd5274c946
   expo-dev-menu: d4369e74d8d21a0ccdee35f7c732e7118b0fee16
@@ -665,7 +675,7 @@ SPEC CHECKSUMS:
   ExpoCrypto: 477dfe89c81527b376f2c344ca1d2a01244b243c
   ExpoDevice: e0bebf68f978b3d353377ce42e73c20c0a070215
   ExpoKeepAwake: 69f5f627670d62318410392d03e0b5db0f85759a
-  ExpoModulesCore: f11d8a16e8d3f26c183da2541d75edc6aa9cf8eb
+  ExpoModulesCore: 397fc99e9d6c9dcc010f36d5802097c17b90424c
   ExpoRandom: 7ee07d62e7003b74d0536e0495e3a653fe1b2a74
   ExpoWebBrowser: 033d34c478d9986da2f1679729041423837626e0
   EXSharing: 5a28af9de0884c255f401e1f1f0bea269e9c9bb9
@@ -691,6 +701,7 @@ SPEC CHECKSUMS:
   React-jsiexecutor: 891dad49e50d35fba97eeb43a35ae7470a8e10b2
   React-jsinspector: 9f7c9137605e72ca0343db4cea88006cb94856dd
   React-logger: 957e5dc96d9dbffc6e0f15e0ee4d2b42829ff207
+  react-native-cookies: f54fcded06bb0cda05c11d86788020b43528a26c
   react-native-webview: 994b9f8fbb504d6314dc40d83f94f27c6831b3bf
   React-perflogger: af8a3d31546077f42d729b949925cc4549f14def
   React-RCTActionSheet: 57cc5adfefbaaf0aae2cf7e10bccd746f2903673
@@ -705,6 +716,7 @@ SPEC CHECKSUMS:
   React-RCTVibration: 5199a180d04873366a83855de55ac33ce60fe4d5
   React-runtimeexecutor: 7bf0dafc7b727d93c8cb94eb00a9d3753c446c3e
   ReactCommon: 5768a505f0bc7b798dc2becdd3ee6442224f796c
+  RNCAsyncStorage: 8616bd5a58af409453ea4e1b246521bb76578d60
   RNCClipboard: 2834e1c4af68697089cdd455ee4a4cdd198fa7dd
   RNIap: e17233fe11083a71e0420682b0b09d497861faa1
   RNSentry: 6503a8ec616947dbe98be828307c8f49e7686674

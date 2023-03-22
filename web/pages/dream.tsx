@@ -49,7 +49,10 @@ export default function App() {
               {/* Show the current imageUrl */}
               <Col className="p-6">
                 {/* TODO: Make the sharing experience more viral; use a nicer URL */}
-                <CopyLinkButton url={imageUrl} />
+                <CopyLinkButton
+                  url={imageUrl}
+                  eventTrackingName={'copy dream link'}
+                />
               </Col>
             </>
           ) : (

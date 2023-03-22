@@ -84,12 +84,6 @@ export function AmountInput(props: {
             )}
           </div>
         </label>
-
-        {error && (
-          <div className="text-scarlet-500 absolute -bottom-5 whitespace-nowrap text-xs font-medium tracking-wide">
-            {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
-          </div>
-        )}
       </Col>
     </>
   )
@@ -102,7 +96,7 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   disabled?: boolean
-  hideInput?: boolean
+  showBalance?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -120,12 +114,12 @@ export function BuyAmountInput(props: {
     setError,
     sliderOptions,
     disabled,
+    showBalance,
     className,
     inputClassName,
     minimumAmount,
     inputRef,
     binaryOutcome,
-    hideInput,
   } = props
   const { show, wrap } = sliderOptions ?? {}
 
@@ -156,29 +150,26 @@ export function BuyAmountInput(props: {
         <Row
           className={clsx(
             'items-center justify-between gap-x-4 gap-y-1 sm:justify-start',
-            hideInput ? 'mb-4' : '',
             wrap ? 'flex-wrap' : ''
           )}
         >
-          {!hideInput && (
-            <AmountInput
-              amount={amount}
-              onChange={onAmountChange}
-              label={ENV_CONFIG.moneyMoniker}
-              error={error}
-              disabled={disabled}
-              className={className}
-              inputClassName={clsx('pr-12', inputClassName)}
-              inputRef={inputRef}
-              quickAddClassName={
-                binaryOutcome === 'YES'
-                  ? 'text-teal-500 hover:bg-teal-100'
-                  : binaryOutcome === 'NO'
-                  ? 'text-scarlet-300 hover:bg-scarlet-50'
-                  : 'text-ink-500 hover:bg-ink-200'
-              }
-            />
-          )}
+          <AmountInput
+            amount={amount}
+            onChange={onAmountChange}
+            label={ENV_CONFIG.moneyMoniker}
+            error={error}
+            disabled={disabled}
+            className={className}
+            inputClassName={clsx('pr-12', inputClassName)}
+            inputRef={inputRef}
+            quickAddClassName={
+              binaryOutcome === 'YES'
+                ? 'text-teal-500 hover:bg-teal-100'
+                : binaryOutcome === 'NO'
+                ? 'text-scarlet-300 hover:bg-scarlet-50'
+                : 'text-ink-500 hover:bg-ink-200'
+            }
+          />
           {show && (
             <BetSlider
               amount={amount}
@@ -187,10 +178,17 @@ export function BuyAmountInput(props: {
             />
           )}
         </Row>
-        {hideInput && error && (
+        {error ? (
           <div className="text-scarlet-500 whitespace-nowrap text-xs font-medium tracking-wide">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
+        ) : (
+          showBalance &&
+          user && (
+            <div className="text-ink-500 whitespace-nowrap text-xs font-medium tracking-wide">
+              Balance: {formatMoney(user.balance)}
+            </div>
+          )
         )}
       </Col>
     </>

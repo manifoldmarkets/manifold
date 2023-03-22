@@ -50,17 +50,17 @@ alter table users cluster on users_pkey;
 create table if not exists user_portfolio_history (
     user_id text not null,
     portfolio_id text not null,
-    data jsonb not null,
-    fs_updated_time timestamp not null,
+    ts timestamp not null,
+    investment_value numeric not null,
+    balance numeric not null,
+    total_deposits numeric not null,
     primary key(user_id, portfolio_id)
 );
 alter table user_portfolio_history enable row level security;
 drop policy if exists "public read" on user_portfolio_history;
 create policy "public read" on user_portfolio_history for select using (true);
-create index if not exists user_portfolio_history_gin on user_portfolio_history using GIN (data);
-create index if not exists user_portfolio_history_timestamp on user_portfolio_history (user_id, (to_jsonb(data->'timestamp')) desc);
-create index if not exists user_portfolio_history_user_timestamp on user_portfolio_history (user_id, ((data->'timestamp')::bigint) desc);
-alter table user_portfolio_history cluster on user_portfolio_history_user_timestamp;
+create index if not exists user_portfolio_history_user_ts on user_portfolio_history (user_id, ts desc);
+alter table user_portfolio_history cluster on user_portfolio_history_user_ts;
 
 create table if not exists user_contract_metrics (
     user_id text not null,
@@ -166,6 +166,13 @@ create index if not exists contracts_unique_bettors on contracts (((data->'uniqu
 /* serves API recent markets endpoint */
 create index if not exists contracts_created_time on contracts ((to_jsonb(data)->>'createdTime') desc);
 create index if not exists contracts_close_time on contracts ((to_jsonb(data)->>'closeTime') desc);
+/* serves the criteria used to find valid contracts in get_recommended_contract_set */
+create index if not exists contracts_recommended_criteria on contracts (
+  ((data->>'createdTime')::bigint) desc,
+  (data->>'visibility'),
+  (data->>'outcomeType'),
+  ((data->>'isResolved')::boolean),
+  ((data->>'closeTime')::bigint));
 
 alter table contracts cluster on contracts_creator_id;
 
@@ -401,7 +408,7 @@ create policy "admin write access" on contract_embeddings
   as PERMISSIVE FOR ALL
   to service_role;
 
-create index if not exists contract_embeddings_embedding on contract_embeddings 
+create index if not exists contract_embeddings_embedding on contract_embeddings
   using ivfflat (embedding vector_cosine_ops)
   with (lists = 100);
 
@@ -491,7 +498,6 @@ begin
     when 'manalinks' then cast((null, 'id') as table_spec)
     when 'posts' then cast((null, 'id') as table_spec)
     when 'test' then cast((null, 'id') as table_spec)
-    when 'user_portfolio_history' then cast(('user_id', 'portfolio_id') as table_spec)
     when 'user_contract_metrics' then cast(('user_id', 'contract_id') as table_spec)
     else null
   end;

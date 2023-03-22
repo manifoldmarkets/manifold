@@ -19,19 +19,20 @@ import TestimonialsPanel from './testimonials-panel'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
-import { CPMMBinaryContract } from 'common/contract'
-import { getTrendingContracts } from 'web/lib/firebase/contracts'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { LogoSEO } from 'web/components/LogoSEO'
+import { db } from 'web/lib/supabase/db'
 
 const excluded = HOME_BLOCKED_GROUP_SLUGS.concat(DESTINY_GROUP_SLUGS)
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
-  const contracts = await getTrendingContracts(20)
+  const { data } = await db.from('trending_contracts').select('data').limit(20)
+  const contracts = (data ?? []).map((d) => d.data) as Contract[]
 
   const trendingContracts = contracts.filter(
     (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug))

@@ -12,19 +12,18 @@ export function CreatorSharePanel(props: { contract: Contract }) {
 
   return (
     <GradientContainer className="mb-8 p-4">
-      <div className="mb-6">Share your market</div>
+      <div className="mb-4 text-lg">Share your market</div>
 
       <div className="text-ink-500 mb-2 text-base">
-        Earn a {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new sign
-        up and {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each unique trader
-        that bets in your market using your share link.
+        Earn {formatMoney(REFERRAL_AMOUNT)} for each sign up and{' '}
+        {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each trader.
       </div>
 
       <CopyLinkButton
         url={getShareUrl(contract, contract.creatorUsername)}
-        tracking="copy creator share link"
+        eventTrackingName="copy creator market link"
       />
-      <Spacer h={8} />
+      <Spacer h={2} />
       <TweetButton
         tweetText={
           'I created a market. ' +

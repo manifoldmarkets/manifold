@@ -59,6 +59,7 @@ export type notification_source_types =
   | 'comment_like'
   | 'contract_like'
   | 'weekly_portfolio_update'
+  | 'quest_reward'
 
 export type notification_source_update_types =
   | 'created'
@@ -140,7 +141,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   },
   betting_streaks: {
     simple: `For prediction streaks`,
-    detailed: `Bonuses for predictions made over consecutive days (Prediction streaks)})`,
+    detailed: `Bonuses for predictions made over consecutive days (Prediction streaks))`,
+  },
+  quest_payout: {
+    simple: `For quest completion rewards`,
+    detailed: `Bonuses paid out for completing quests`,
   },
   comments_by_followed_users_on_watched_markets: {
     simple: 'Only comments by users you follow',
@@ -379,4 +384,5 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'you_referred_user',
   'user_joined_to_bet_on_your_market',
   'user_joined_from_your_group_invite',
+  'quest_payout',
 ]

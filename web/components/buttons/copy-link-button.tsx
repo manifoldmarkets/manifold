@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { track } from 'web/lib/service/analytics'
+import { trackShareEvent } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import clsx from 'clsx'
@@ -13,17 +13,18 @@ import { NativeShareData } from 'common/native-share-data'
 import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
 import { getIsNative } from 'web/lib/native/is-native'
+import { ShareEventName } from 'common/events'
 
 export function CopyLinkButton(props: {
   url: string
+  eventTrackingName: ShareEventName
   linkIconOnlyProps?: {
     tooltip: string
     className?: string
   }
   displayUrl?: string
-  tracking?: string
 }) {
-  const { url, displayUrl, tracking, linkIconOnlyProps } = props
+  const { url, displayUrl, eventTrackingName, linkIconOnlyProps } = props
   const { className, tooltip } = linkIconOnlyProps ?? {}
   // TODO: this is resulting in hydration errors on mobile dev
   const isNative = getIsNative()
@@ -48,7 +49,7 @@ export function CopyLinkButton(props: {
       setTimeout(() => setIconPressed(false), 1000)
       copyToClipboard(url)
     }
-    track(tracking ?? 'copy share link')
+    trackShareEvent(eventTrackingName, url)
   }
 
   const Button = (props: { onClick: () => void }) => {
@@ -81,9 +82,7 @@ export function CopyLinkButton(props: {
         bgPressed ? 'bg-primary-50 text-primary-500 transition-none' : ''
       )}
     >
-      <div className="ml-3 w-full max-w-xs select-all truncate sm:max-w-full">
-        {displayUrl ?? url}
-      </div>
+      <div className="ml-3 w-full select-all truncate">{displayUrl ?? url}</div>
       <Button onClick={onClick} />
     </Row>
   )

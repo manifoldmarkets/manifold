@@ -15,7 +15,7 @@ import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { PostCommentsActivity } from '../post/[slug]'
 import { UserLink } from 'web/components/widgets/user-link'
-import { redeemAd } from 'web/lib/firebase/api'
+import { APIError, redeemAd } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
@@ -24,6 +24,7 @@ import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { postPath } from 'web/lib/firebase/posts'
+import toast from 'react-hot-toast'
 
 export async function getStaticProps() {
   const ads = await getAllAds()
@@ -43,7 +44,7 @@ export default function AdsPage(props: { ads: AdType[] }) {
   }, [user?.id])
 
   const isLoading = oldAdIds == undefined
-  const newAds = props.ads.filter((ad) => !oldAdIds?.includes(ad.id))
+  const newAds = props.ads
 
   const [i, next] = useReducer((num) => num + 1, 0)
   const current = newAds[i]
@@ -91,6 +92,7 @@ function Ad(props: { ad: AdType; onNext: () => void }) {
         <CopyLinkButton
           url={shareUrl}
           linkIconOnlyProps={{ tooltip: 'Copy link to ad' }}
+          eventTrackingName={'copy ad link'}
         />
       </div>
 
@@ -119,8 +121,10 @@ export const TimerClaimBox = (props: {
   }
 
   const claim = async () => {
-    track('Redeem ad', { adId: ad.id })
     redeemAd({ adId: ad.id })
+      .catch((e: APIError) => toast.error(e.message))
+      .then(() => track('Redeem ad', { adId: ad.id }))
+
     onNext()
   }
 

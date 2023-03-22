@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { getContractMetricsForContractId } from 'common/supabase/contract-metrics'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { capitalize, groupBy, last, partition, sortBy } from 'lodash'
+import { groupBy, last, partition, sortBy } from 'lodash'
 
 import { Pagination } from 'web/components/widgets/pagination'
 import { db } from 'web/lib/supabase/db'
@@ -45,11 +45,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useFollows } from 'web/hooks/use-follows'
 import { ContractMetric } from 'common/contract-metric'
 import { useContractMetrics } from 'web/hooks/use-contract-metrics'
-import {
-  formatMoney,
-  formatWithCommas,
-  shortFormatNumber,
-} from 'common/util/format'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { useBets } from 'web/hooks/use-bets'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { CertTrades, CertInfo } from './cert-overview'
@@ -243,13 +239,13 @@ const BinaryUserPositionsTabContent = memo(
         : noPositionsSorted.length
 
     return (
-      <Col className={'w-full '}>
+      <Col className={'w-full'}>
         <Row className={'mb-2 items-center justify-end gap-2'}>
           {sortBy === 'profit' && contractMetricsByProfit === undefined && (
             <LoadingIndicator spinnerClassName={'border-ink-500'} size={'sm'} />
           )}
           <SortRow
-            sort={capitalize(sortBy)}
+            sort={sortBy === 'profit' ? 'profit' : 'position'}
             onSortClick={() => {
               setSortBy(sortBy === 'shares' ? 'profit' : 'shares')
               setPage(0)
@@ -257,14 +253,14 @@ const BinaryUserPositionsTabContent = memo(
           />
         </Row>
 
-        <Row className={'gap-8'}>
+        <Row className={'gap-1 sm:gap-8'}>
           <Col className={'w-full max-w-sm gap-2'}>
             <Row className={'text-ink-500 justify-end px-2'}>
               {sortBy === 'profit' ? (
                 <span className={'text-ink-500'}>Profit</span>
               ) : (
                 <span>
-                  <YesLabel /> shares
+                  <YesLabel /> positions
                 </span>
               )}
             </Row>
@@ -279,9 +275,7 @@ const BinaryUserPositionsTabContent = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatWithCommas(
-                          Math.floor(position.totalShares[outcome] ?? 0)
-                        )
+                      ? formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />
@@ -294,7 +288,7 @@ const BinaryUserPositionsTabContent = memo(
                 <span className={'text-ink-500'}>Loss</span>
               ) : (
                 <span>
-                  <NoLabel /> shares
+                  <NoLabel /> positions
                 </span>
               )}
             </Row>
@@ -309,9 +303,7 @@ const BinaryUserPositionsTabContent = memo(
                   followedUsers={followedUsers}
                   numberToShow={
                     sortBy === 'shares'
-                      ? formatWithCommas(
-                          Math.floor(position.totalShares[outcome] ?? 0)
-                        )
+                      ? formatMoney(position.totalShares[outcome] ?? 0)
                       : formatMoney(position.profit)
                   }
                 />

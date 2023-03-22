@@ -7,10 +7,10 @@ import {
   FreeResponseContract,
   MultipleChoiceContract,
   RESOLUTIONS,
+  contractPath,
 } from 'common/contract'
 import { Bet } from 'common/bet'
 import {
-  getContractPath,
   getUser,
   getValues,
   isProd,
@@ -196,7 +196,7 @@ export const resolveMarket = async (
 
   await updateContractMetricsForUsers(contract, bets)
   await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
-  await revalidateStaticProps(getContractPath(contract))
+  await revalidateStaticProps(contractPath(contract))
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
 

@@ -33,7 +33,10 @@ export function DreamModal(props: {
             {/* Show the current imageUrl */}
             {/* TODO: Keep the other generated images, so the user can play with different attempts. */}
             <Col className="gap-2 p-6">
-              <CopyLinkButton url={imageUrl} />
+              <CopyLinkButton
+                url={imageUrl}
+                eventTrackingName={'copy dream link'}
+              />
 
               <Row className="gap-2">
                 <Button

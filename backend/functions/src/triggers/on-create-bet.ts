@@ -40,6 +40,7 @@ import { runTxn, TxnData } from 'shared/run-txn'
 import { Group } from 'common/group'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'functions/secrets'
+import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -94,7 +95,7 @@ export const onCreateBet = functions
       bettor
     )
     await updateContractMetrics(contract, [bettor, ...(notifiedUsers ?? [])])
-    // await updateUserInterestEmbedding(pg, bettor.id)
+    await updateUserInterestEmbedding(pg, bettor.id)
     // Referrals should always be handled before the betting streak bc they both use lastBetTime
     handleReferral(bettor, eventId).then(async () => {
       await updateBettingStreak(bettor, bet, contract, eventId)

@@ -47,7 +47,7 @@ export default function ReferralsPage() {
             if they sign up and place a trade!
           </div>
 
-          <CopyLinkButton url={url} tracking="copy referral link" />
+          <CopyLinkButton url={url} eventTrackingName="copy referral link" />
 
           <QRCode url={url} className="mt-4 self-center" />
 

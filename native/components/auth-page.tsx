@@ -90,7 +90,7 @@ export const AuthPage = (props: {
         JSON.stringify({ type: 'nativeFbUser', data: fbUser })
       )
     } catch (error: any) {
-      console.error(error)
+      log('login with apple error:', error)
     }
     setLoading(false)
   }

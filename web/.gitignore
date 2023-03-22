@@ -5,5 +5,9 @@ out
 tsconfig.tsbuildinfo
 .env*
 .vercel
+<<<<<<< HEAD
 pages/testing
 
+=======
+testing
+>>>>>>> main

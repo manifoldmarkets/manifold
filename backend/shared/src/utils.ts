@@ -1,6 +1,6 @@
 import { generateJSON } from '@tiptap/html'
 import { getCloudRunServiceUrl } from 'common/api'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
 import { PrivateUser, User } from 'common/user'
@@ -310,12 +310,8 @@ export const payUsers = (
   }
 }
 
-export const getContractPath = (contract: Contract) => {
-  return `/${contract.creatorUsername}/${contract.slug}`
-}
-
 export function contractUrl(contract: Contract) {
-  return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
+  return `https://manifold.markets${contractPath(contract)}`
 }
 
 export async function getTrendingContracts() {

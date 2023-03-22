@@ -18,6 +18,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { useTrendingGroups } from 'web/hooks/use-group'
 import {
+  inMemoryStore,
   storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
@@ -33,10 +34,7 @@ import { getPost } from 'web/lib/firebase/posts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { track } from 'web/lib/service/analytics'
 import { Title } from 'web/components/widgets/title'
-import {
-  MobileSearchButton,
-  SearchButton,
-} from 'web/components/nav/search-button'
+
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
@@ -47,12 +45,17 @@ import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ContractCardNew } from 'web/components/contract/contract-card'
+<<<<<<< HEAD
 import { useContract } from 'web/hooks/use-contracts'
+=======
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+>>>>>>> main
 
 export default function Home() {
   const isClient = useIsClient()
   const isMobile = useIsMobile()
   useTracking('view home', { kind: isMobile ? 'swipe' : 'desktop' })
+  useRedirectIfSignedOut()
 
   if (!isClient)
     return (
@@ -69,7 +72,6 @@ export default function Home() {
 
 function HomeDashboard() {
   const user = useUser()
-  useRedirectIfSignedOut()
   useSaveReferral()
 
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
@@ -78,11 +80,9 @@ function HomeDashboard() {
 
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-6 py-2 pb-8 sm:px-2 lg:pr-4">
+      <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
         <Row className={'w-full items-center justify-between gap-4'}>
-          <Title children="Home" className="!my-0 hidden sm:block" />
-          <SearchButton className="hidden flex-1 md:flex lg:hidden" />
-          <MobileSearchButton className="flex-1 md:hidden" />
+          <Title children="Home" className="!my-0" />
           <DailyStats user={user} />
         </Row>
 
@@ -90,8 +90,7 @@ function HomeDashboard() {
 
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <LiveSection />
-          <YourFeedSection />
+          <MainContent />
         </Col>
       </Col>
     </Page>
@@ -112,7 +111,8 @@ function MobileHome() {
     <Page>
       <Col className="gap-6 py-2 pb-8 sm:px-2">
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <MobileSearchButton className="flex-1" />
+          <Title children="Home" className="!my-0" />
+
           <Row className="items-center gap-4">
             <DailyStats user={user} />
             {isNative && (
@@ -127,8 +127,7 @@ function MobileHome() {
         {isLoading && <LoadingIndicator />}
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <LiveSection />
-          <ContractsFeed />
+          <MainContent />
         </Col>
       </Col>
 
@@ -182,7 +181,7 @@ function HomeSectionHeader(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-900 sticky top-0 z-20 my-1 mx-2 items-center justify-between pb-2 pl-1 lg:-ml-1',
+        'text-ink-900 sticky top-0 z-20 items-center justify-between px-1 pb-3 sm:px-0',
         BACKGROUND_COLOR
       )}
     >
@@ -208,38 +207,70 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
   contracts: CPMMContract[] | undefined
 }) {
   const { contracts } = props
-  if (contracts?.length === 0) return <></>
+  const changedContracts = contracts
+    ? contracts.filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01)
+    : undefined
+  if (!changedContracts || changedContracts.length === 0) return <></>
 
   return (
     <Col>
       <HomeSectionHeader label="Today's updates" icon="📊" />
-      <ProbChangeTable changes={contracts as CPMMContract[]} />
+      <ProbChangeTable changes={changedContracts as CPMMContract[]} />
     </Col>
   )
 })
 
-const LiveSection = memo(function LiveSection() {
+const LiveSection = memo(function LiveSection(props: { className?: string }) {
+  const { className } = props
   return (
-    <Col className="relative">
-      <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
+    <Col className={clsx('relative mt-4', className)}>
+      {/* <HomeSectionHeader label="Live feed" href="/live" icon="🔴" /> */}
       <ActivityLog
-        count={7}
-        showPills={false}
-        className="h-[380px] overflow-hidden"
+        count={30}
+        showPills
+        // className="h-[380px] overflow-hidden"
       />
       <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
     </Col>
   )
 })
 
-const YourFeedSection = memo(function YourFeedSection() {
+const YourFeedSection = memo(function YourFeedSection(props: {
+  className?: string
+}) {
+  const { className } = props
   return (
-    <Col>
-      <HomeSectionHeader label={'Your feed'} icon={'📖'} />
+    <Col className={className}>
+      {/* <HomeSectionHeader label={'Your feed'} icon={'📖'} /> */}
       <ContractsFeed />
     </Col>
   )
 })
+
+const MainContent = () => {
+  const [section, setSection] = usePersistentState<number>(0, {
+    key: 'main-content-section',
+    store: inMemoryStore(),
+  })
+
+  return (
+    <Col>
+      <ChoicesToggleGroup
+        className="mb-2 border-0"
+        choicesMap={{
+          'For you': 0,
+          'Live feed': 1,
+        }}
+        currentChoice={section}
+        setChoice={setSection as any}
+        color="indigo"
+      />
+
+      <YourFeedSection className={clsx(section === 0 ? '' : 'hidden')} />
+      <LiveSection className={clsx(section === 1 ? '' : 'hidden')} />
+    </Col>
+  )
+}
 
 export const ContractsSection = memo(function ContractsSection(props: {
   contracts: Contract[]
@@ -247,13 +278,12 @@ export const ContractsSection = memo(function ContractsSection(props: {
   icon: string
   className?: string
 }) {
-  const { contracts, label, icon, className } = props
+  const { contracts, className } = props
   return (
     <Col className={className}>
-      <HomeSectionHeader label={label} icon={icon} />
-      <Col className="divide-ink-300 border-ink-300 max-w-2xl divide-y rounded border">
+      <Col className="max-w-2xl">
         {contracts.map((contract) => (
-          <ContractCardNew key={contract.id} contract={contract} hideImage />
+          <ContractCardNew key={contract.id} contract={contract} />
         ))}
       </Col>
     </Col>

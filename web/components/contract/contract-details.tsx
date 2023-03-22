@@ -2,6 +2,7 @@ import { ClockIcon, UserGroupIcon } from '@heroicons/react/outline'
 import {
   DotsCircleHorizontalIcon,
   FireIcon,
+  LockClosedIcon,
   PencilIcon,
   PlusIcon,
 } from '@heroicons/react/solid'
@@ -105,12 +106,27 @@ export function ContractDetails(props: { contract: Contract }) {
   const { contract } = props
 
   return (
-    <Row className="flex-wrap gap-4 sm:flex-nowrap">
-      <MarketSubheader contract={contract} />
-      <MarketGroups contract={contract} />
-      <ExtraContractActionsRow contract={contract} />
-    </Row>
+    <Col className="gap-2">
+      <Row className="justify-between">
+        <MarketSubheader contract={contract} />
+        <ExtraContractActionsRow contract={contract} />
+      </Row>
+      {contract.visibility != 'private' && <MarketGroups contract={contract} />}
+      {contract.visibility == 'private' && (
+        <PrivateMarketGroups contract={contract} />
+      )}
+    </Col>
   )
+}
+
+export function PrivateMarketGroups(props: { contract: Contract }) {
+  const { contract } = props
+  if (contract.groupLinks) {
+    return (
+      <GroupDisplay groupToDisplay={contract.groupLinks[0]} isPrivate={true} />
+    )
+  }
+  return <></>
 }
 
 export function MarketSubheader(props: { contract: Contract }) {
@@ -226,17 +242,26 @@ function MarketGroups(props: { contract: Contract }) {
   )
 }
 
-function GroupDisplay(props: { groupToDisplay: GroupLink }) {
-  const { groupToDisplay } = props
+function GroupDisplay(props: {
+  groupToDisplay: GroupLink
+  isPrivate?: boolean
+}) {
+  const { groupToDisplay, isPrivate } = props
 
   return (
     <Link prefetch={false} href={groupPath(groupToDisplay.slug)} legacyBehavior>
       <a
         className={clsx(
-          'bg-ink-400 text-ink-0 max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs font-light sm:max-w-[250px]'
+          'w-fit max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs font-light sm:max-w-[250px]',
+          isPrivate
+            ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
+            : 'bg-ink-400 text-ink-0'
         )}
       >
-        {groupToDisplay.name}
+        <Row className="gap-0.5">
+          {isPrivate && <LockClosedIcon className="my-auto h-3 w-3" />}
+          {groupToDisplay.name}
+        </Row>
       </a>
     </Link>
   )

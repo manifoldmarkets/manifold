@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 
-import { formatMoney, formatWithCommas } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
@@ -9,7 +9,6 @@ import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
@@ -70,18 +69,16 @@ export function BetsSummary(props: {
           <Col>
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Position{' '}
-              <InfoTooltip
-                text={`Number of shares you own on net. 1 ${exampleOutcome} share = ${ENV_CONFIG.moneyMoniker}1 if the market resolves ${exampleOutcome}.`}
-              />
+              <InfoTooltip text={`Your payout if ${exampleOutcome} wins`} />
             </div>
             <div className="whitespace-nowrap">
               {position > 1e-7 ? (
                 <>
-                  {formatWithCommas(position)} <YesLabel />
+                  {formatMoney(position)} on <YesLabel />
                 </>
               ) : position < -1e-7 ? (
                 <>
-                  {formatWithCommas(-position)} <NoLabel />
+                  {formatMoney(-position)} on <NoLabel />
                 </>
               ) : (
                 '——'

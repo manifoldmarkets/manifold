@@ -1,6 +1,10 @@
 import { Ad } from 'common/ad'
+import { AdRedeemTxn } from 'common/txn'
+import { DAY_MS } from 'common/util/time'
 import * as admin from 'firebase-admin'
+import { sumBy } from 'lodash'
 import { runRedeemAdRewardTxn } from 'shared/run-txn'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
 
@@ -25,11 +29,35 @@ export const redeemad = authEndpoint(async (req, auth) => {
     throw new APIError(404, 'Could not find ad')
   }
 
-  const data = post.data() as Ad
+  const ad = post.data() as Ad
 
-  // TODO: calculate this from the txns instead
-  const { funds, costPerView } = data
-  if (funds < costPerView) {
+  // calculate total funds from txns
+  const pg = createSupabaseDirectClient()
+  const txns = await pg.map(
+    `select data from txns
+       where data->>'category' = 'AD_REDEEM'
+       and data->>'fromId' = $1`,
+    [ad.id],
+    (r) => r.data as AdRedeemTxn
+  )
+
+  const hasRedeemed = txns.some((txn) => txn.toId === user.id)
+  if (hasRedeemed) {
+    throw new APIError(403, 'Not allowed to redeem ad more than once')
+  }
+
+  const spent = sumBy(txns, 'amount')
+
+  const { funds, totalCost, costPerView } = ad
+  const calcFunds = totalCost - spent
+
+  if (funds != calcFunds) {
+    console.warn(
+      `funds was ${funds} but according to txns but ${spent} spent and there's ${calcFunds} left`
+    )
+  }
+
+  if (calcFunds < costPerView) {
     throw new APIError(403, 'Ad does not have enough funds to pay out')
   }
 

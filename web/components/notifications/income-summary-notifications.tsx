@@ -22,7 +22,13 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { MarketResolvedNotification } from './notification-types'
+import {
+  MarketResolvedNotification,
+  MultipleAvatarIcons,
+} from './notification-types'
+import { QuestRewardTxn } from 'common/txn'
+import { QUEST_DETAILS } from 'common/quest'
+import { QuestsModal } from 'web/components/quests-or-streak'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -71,7 +77,10 @@ export function combineAndSumIncomeNotifications(
         ...notificationsForSourceTitle[0],
         sourceText: sum.toString(),
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-        data: { uniqueUsers },
+        data: {
+          uniqueUsers,
+          relatedNotifications: notificationsForSourceTitle,
+        },
       }
       newNotifications.push(newNotification)
     }
@@ -98,6 +107,14 @@ export function IncomeNotificationItem(props: {
   } else if (sourceType === 'bonus') {
     return (
       <BonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'quest_reward') {
+    return (
+      <QuestIncomeNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -199,14 +216,13 @@ export function BonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       icon={
-        <NotificationIcon
+        <MultipleAvatarIcons
+          notification={notification}
           symbol={'🎁'}
-          symbolBackgroundClass={
-            'bg-gradient-to-br from-primary-500 to-primary-300'
-          }
+          setOpen={setOpen}
         />
       }
-      onClick={() => setOpen(true)}
+      link={getSourceUrl(notification)}
     >
       <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
@@ -227,6 +243,42 @@ export function BonusIncomeNotification(props: {
         open={open}
         setOpen={setOpen}
       />
+    </NotificationFrame>
+  )
+}
+export function QuestIncomeNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const { data } = notification
+  const { questType } = data as QuestRewardTxn['data']
+  const user = useUser()
+  const [open, setOpen] = useState(false)
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      isChildOfGroup={true}
+      icon={
+        <NotificationIcon
+          symbol={'🧭'}
+          symbolBackgroundClass={
+            'bg-gradient-to-br from-primary-500 to-primary-300'
+          }
+        />
+      }
+      onClick={() => setOpen(true)}
+    >
+      <span className="line-clamp-3">
+        <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
+        <PrimaryNotificationLink
+          text={`completing the ${QUEST_DETAILS[questType].title} quest`}
+        />
+      </span>
+      {user && <QuestsModal open={open} setOpen={setOpen} user={user} />}
     </NotificationFrame>
   )
 }

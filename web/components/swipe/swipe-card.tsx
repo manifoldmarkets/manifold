@@ -4,12 +4,11 @@ import {
   getDisplayProbability,
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
-import { BinaryContract, Contract } from 'common/contract'
+import { BinaryContract, Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { Dispatch, memo, SetStateAction, useEffect, useState } from 'react'
 import { LikeButton } from 'web/components/contract/like-button'
 import { useContract } from 'web/hooks/use-contracts'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -185,7 +184,7 @@ const CornerDetails = (props: {
         </div>
       </Row>
 
-      <div className="text-ink-400 flex items-center rounded-full">
+      <div className="flex items-center rounded-full text-white">
         <DailyStats user={user} showLoans={false} />
         {toggleView && (
           <SwitchHorizontalIcon className="ml-2 h-6 w-6" onClick={toggleView} />

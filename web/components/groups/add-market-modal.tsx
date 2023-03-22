@@ -22,9 +22,7 @@ export function AddMarketToGroupModal(props: {
   const { group, user, open, setOpen, onAddMarkets, addPermission } = props
   const [groupContractIds, setGroupContractIds] = useState<string[]>([])
   useEffect(() => {
-    getGroupContractIds(group.id).then((ids) =>
-      setGroupContractIds(ids.map((contractId: any) => contractId.contract_id))
-    )
+    getGroupContractIds(group.id).then((ids) => setGroupContractIds(ids))
   }, [group.id])
   return (
     <Modal open={open} setOpen={setOpen} size="lg">
@@ -34,7 +32,7 @@ export function AddMarketToGroupModal(props: {
         </div>
         {addPermission == 'private' && (
           <Col className="w-full pt-4">
-            <NewPrivateContractFromGroup />
+            <NewContractFromGroup group={group} user={user} />
           </Col>
         )}
         {addPermission == 'new' && (
@@ -86,15 +84,11 @@ export function NewContractFromGroup(props: { group: Group; user: User }) {
         description: '',
         closeTime: '',
         outcomeType: 'BINARY',
-        visibility: 'public',
+        visibility: group.privacyStatus === 'private' ? 'private' : 'public',
         groupId: group.id,
       }}
       creator={user}
       fromGroup={true}
     />
   )
-}
-
-export function NewPrivateContractFromGroup() {
-  return <>Coming soon to a city near you!</>
 }

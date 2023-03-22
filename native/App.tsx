@@ -17,6 +17,7 @@ import {
   Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
+import { User as FirebaseUser } from 'firebase/auth'
 // @ts-ignore
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
@@ -45,9 +46,10 @@ import { ExportLogsButton, log } from 'components/logger'
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
 import Constants from 'expo-constants'
 import { NativeShareData } from 'common/src/native-share-data'
+import { clearData, getData, storeData } from './lib/auth'
 
-// no other uri works for API requests due to CORS
-// const uri = 'http://localhost:3000/'
+// NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
+// const baseUri = 'https://10cd-71-218-107-193.ngrok.io/'
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const nativeQuery = `?nativePlatform=${Platform.OS}`
@@ -55,6 +57,7 @@ const isIOS = Platform.OS === 'ios'
 const App = () => {
   // Init
   const [hasLoadedWebView, setHasLoadedWebView] = useState(false)
+  const [listeningToNative, setListeningToNative] = useState(false)
   const [lastNotificationInMemory, setLastNotificationInMemory] = useState<
     Notification | undefined
   >()
@@ -63,29 +66,22 @@ const App = () => {
   useFonts({ ReadexPro_400Regular })
 
   // Auth
-  const [waitingForAuth, setWaitingForAuth] = useState(true)
-  const [user, setUser] = useState(auth.currentUser)
-  useEffect(() => {
-    log(`Webview has loaded ${hasLoadedWebView}. user: ${user?.uid}`)
-    // Wait a couple seconds after webview has loaded to see if we get a cached user from the client
-    if (hasLoadedWebView && !user) {
-      log('Has loaded webview with no user, waiting for auth')
-      const timeout = setTimeout(() => {
-        log('Still no cached users, redirecting to sign in')
-        setWaitingForAuth(false)
-      }, 2000)
-      return () => {
-        log('clearing auth timeout')
-        clearTimeout(timeout)
-      }
-    }
-  }, [hasLoadedWebView, user])
+  const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
+  // Auth.currentUser didn't update, so we track the state manually
+  auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
 
-  // Auth.currentUser wasn't updating (probably due to our hacky auth solution), so tracking the state manually
   useEffect(() => {
-    log('Auth user changed', user?.uid)
-    auth.onAuthStateChanged(setUser)
-  }, [auth])
+    getData<FirebaseUser>('user').then((user) => {
+      if (!user) return
+      log('Got user from storage:', user.email)
+      setFbUser(user)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (listeningToNative && fbUser)
+      communicateWithWebview('nativeFbUser', fbUser)
+  }, [listeningToNative, fbUser])
 
   // Url management
   const [urlToLoad, setUrlToLoad] = useState<string>(
@@ -103,7 +99,7 @@ const App = () => {
 
   const setUrlWithNativeQuery = (endpoint?: string) => {
     const newUrl = baseUri + (endpoint ?? '/home') + nativeQuery
-    log('Setting new url', newUrl)
+    log('Setting new url:', newUrl)
     // React native doesn't come with Url, so we may want to use a library
     setUrlToLoad(newUrl)
   }
@@ -117,11 +113,18 @@ const App = () => {
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
-    log('Push notification tapped, has loaded webview:', hasLoadedWebView)
+    log(
+      'Push notification tapped, has loaded webview:',
+      hasLoadedWebView,
+      'is listening to native:',
+      listeningToNative
+    )
     log('webview.current:', webview.current)
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
     const notification = response.notification.request.content
       .data as Notification
+
+    // TODO: this should check if the webview is listening to native, not if it's loaded
     if (hasLoadedWebView) {
       communicateWithWebview(
         'notification',
@@ -132,13 +135,15 @@ const App = () => {
   }
 
   useEffect(() => {
-    log('Running lastNotificationInMemory effect')
-    log('has loaded webview', hasLoadedWebView)
-    log('last notification in memory', lastNotificationInMemory)
+    log(
+      'Running lastNotificationInMemory effect, has loaded webview:',
+      hasLoadedWebView
+    )
+    log('last notification in memory:', lastNotificationInMemory)
     // If there's a notification in memory and the webview has not loaded, set it as the url to load
     if (lastNotificationInMemory && !hasLoadedWebView) {
       log(
-        'Setting url to load from last notification in memory',
+        'Setting url to load from last notification in memory:',
         lastNotificationInMemory
       )
       setUrlWithNativeQuery(getSourceUrl(lastNotificationInMemory))
@@ -157,7 +162,6 @@ const App = () => {
   }, [lastNotificationInMemory, hasLoadedWebView])
 
   useEffect(() => {
-    log('Setting up notification listener')
     // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
     notificationResponseListener.current =
       Notifications.addNotificationResponseReceivedListener(
@@ -174,9 +178,7 @@ const App = () => {
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
-      log('Initial url', url)
-      log('Has loaded webview', hasLoadedWebView)
-      log('webview', webview.current)
+      log('Initial url:', url, '- has loaded webview:', hasLoadedWebView)
       if (url) {
         setUrlToLoad(url)
       }
@@ -192,9 +194,7 @@ const App = () => {
   // Handle deep links
   useEffect(() => {
     if (!linkedUrl) return
-    log('Linked url', linkedUrl)
-    log('Has loaded webview', hasLoadedWebView)
-    log('webview', webview.current)
+    log('Linked url', linkedUrl, '- has loaded webview:', hasLoadedWebView)
 
     const { hostname, path, queryParams } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
@@ -242,7 +242,7 @@ const App = () => {
 
   const getPushToken = async () => {
     const projectId = Constants.expoConfig?.extra?.eas.projectId
-    console.log('projectId', projectId)
+    log('projectId', projectId)
     const token = (
       await Notifications.getExpoPushTokenAsync({
         projectId,
@@ -265,7 +265,7 @@ const App = () => {
       if (finalStatus !== 'granted') {
         communicateWithWebview('pushNotificationPermissionStatus', {
           status: finalStatus,
-          userId: user?.uid,
+          userId: fbUser?.uid,
         })
         return null
       }
@@ -279,25 +279,15 @@ const App = () => {
     }
   }
 
-  const handleMessageFromWebview = ({ nativeEvent }: any) => {
+  const handleMessageFromWebview = async ({ nativeEvent }: any) => {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
-    log('Received message from webview: ', type)
     if (type === 'checkout') {
       setCheckoutAmount(payload.amount)
-    } else if (type === 'loginClicked') {
-      if (user || auth.currentUser) {
-        setUser(null)
-        try {
-          // Let's start from a clean slate if the webview and native auths are out of sync
-          auth.signOut()
-        } catch (err) {
-          log('Error signing out before sign in :', err)
-          Sentry.Native.captureException(err, {
-            extra: { message: 'sign out before sign in' },
-          })
-        }
-      }
+    }
+    // We handle auth with a custom screen, so if the user sees a login button on the client, we're out of sync
+    else if (type === 'loginClicked') {
+      await signOutUsers('Error on sign out before sign in')
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -306,12 +296,12 @@ const App = () => {
           if (token)
             communicateWithWebview('pushToken', {
               token,
-              userId: user?.uid,
+              userId: fbUser?.uid,
             })
         } else
           communicateWithWebview('pushNotificationPermissionStatus', {
             status,
-            userId: user?.uid,
+            userId: fbUser?.uid,
           })
       })
     } else if (type === 'copyToClipboard') {
@@ -323,32 +313,26 @@ const App = () => {
         if (token)
           communicateWithWebview('pushToken', {
             token,
-            userId: user?.uid,
+            userId: fbUser?.uid,
           })
       })
     } else if (type === 'signOut') {
-      setUser(null)
-      try {
-        auth.signOut()
-      } catch (err) {
-        log('Error on sign out:', err)
-        Sentry.Native.captureException(err, {
-          extra: { message: 'sign out' },
-        })
-      }
+      await signOutUsers('Error on sign out')
     }
     // Receiving cached firebase user from webview cache
     else if (type === 'users') {
       try {
         const fbUserAndPrivateUser = JSON.parse(payload)
-        // Passing us a signed-in user object
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
+          const fbUser = fbUserAndPrivateUser.fbUser as FirebaseUser
           log('Signing in fb user from webview cache')
-          setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app)
+          // We don't actually use the firebase auth for anything right now, but in case we do in the future...
+          await setFirebaseUserViaJson(fbUser, app)
+          await storeData('user', fbUser)
         }
       } catch (e) {
         Sentry.Native.captureException(e, {
-          extra: { message: 'error parsing nativeEvent.data' },
+          extra: { message: 'error parsing users from client' },
         })
       }
     } else if (type == 'onPageVisit') {
@@ -358,8 +342,8 @@ const App = () => {
       setAllowSystemBack(page !== 'swipe')
     } else if (type === 'share') {
       const { url, title, message } = payload as NativeShareData
-      log('Sharing url:', url)
-      Share.share({
+      log('Sharing:', message, url, title)
+      await Share.share({
         url,
         title,
         message,
@@ -368,15 +352,41 @@ const App = () => {
       const { theme, backgroundColor } = payload
       setBackgroundColor(backgroundColor)
       setTheme(theme)
+    } else if (type === 'log') {
+      const { args } = payload
+      log('[Web Console]', ...args)
+    } else if (type === 'startedListening') {
+      log('Client started listening')
+      setListeningToNative(true)
     } else {
-      log('Unhandled nativeEvent.data: ', data)
+      log('Unhandled message from web type: ', type)
+      log('Unhandled message from web data: ', data)
     }
+  }
+
+  const signOutUsers = async (errorMessage: string) => {
+    setFbUser(null)
+    try {
+      await auth.signOut()
+    } catch (err) {
+      log(errorMessage, err)
+      Sentry.Native.captureException(err, {
+        extra: { message: errorMessage },
+      })
+    }
+    await clearData('user').catch((err) => {
+      log('Error clearing user data', err)
+      Sentry.Native.captureException(err, {
+        extra: { message: 'error clearing user data' },
+      })
+    })
   }
 
   const communicateWithWebview = (
     type: nativeToWebMessageType,
     data: object
   ) => {
+    log('Sending message to webview', type, 'is listening:', listeningToNative)
     webview.current?.postMessage(
       JSON.stringify({
         type,
@@ -385,7 +395,12 @@ const App = () => {
     )
   }
 
-  const webViewAndUserLoaded = hasLoadedWebView && user
+  const resetWebViewStatus = () => {
+    setHasLoadedWebView(false)
+    setListeningToNative(false)
+  }
+
+  const webViewAndUserLoaded = hasLoadedWebView && fbUser
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
@@ -406,7 +421,7 @@ const App = () => {
 
   return (
     <>
-      {!webViewAndUserLoaded && waitingForAuth ? (
+      {!hasLoadedWebView ? (
         <SplashLoading
           height={height}
           width={width}
@@ -414,10 +429,7 @@ const App = () => {
         />
       ) : (
         hasLoadedWebView &&
-        !user &&
-        !waitingForAuth && (
-          <AuthPage webview={webview} height={height} width={width} />
-        )
+        !fbUser && <AuthPage webview={webview} height={height} width={width} />
       )}
       {Platform.OS === 'ios' && Device.isDevice && webViewAndUserLoaded && (
         <IosIapListener
@@ -470,16 +482,22 @@ const App = () => {
               }
             }}
             onRenderProcessGone={(e) =>
-              handleWebviewCrash(webview, e, () => setHasLoadedWebView(false))
+              handleWebviewCrash(webview, e, resetWebViewStatus)
             }
             onContentProcessDidTerminate={(e) =>
-              handleWebviewCrash(webview, e, () => setHasLoadedWebView(false))
+              handleWebviewCrash(webview, e, resetWebViewStatus)
             }
-            onMessage={handleMessageFromWebview}
+            onMessage={async (m) => {
+              try {
+                await handleMessageFromWebview(m)
+              } catch (e) {
+                log('Error in handleMessageFromWebview', e)
+              }
+            }}
           />
         </View>
       </SafeAreaView>
-      {/*<ExportLogsButton />*/}
+      <ExportLogsButton />
     </>
   )
 }

@@ -27,7 +27,10 @@ import GroupPrivacyStatusWidget, {
 } from 'web/components/groups/group-page-items'
 import { GroupPostSection } from 'web/components/groups/group-post-section'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
-import { PrivateGroupPage } from 'web/components/groups/private-group'
+import {
+  InaccessiblePrivateThing,
+  PrivateGroupPage,
+} from 'web/components/groups/private-group'
 import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -198,7 +201,16 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404Content />
   }
+
+  if (group.privacyStatus == 'private' && !userRole) {
+    return <InaccessiblePrivateThing thing={'group'} />
+  }
+
   const groupUrl = `https://${ENV_CONFIG.domain}${groupPath(group.slug)}`
+  const contractVisibilityFilter =
+    group.privacyStatus == 'private'
+      ? 'visibility:private'
+      : 'visibility:public'
   return (
     <>
       <AddContractButton
@@ -293,7 +305,10 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
                   defaultFilter="all"
                   additionalFilter={{
                     groupSlug: group.slug,
-                    facetFilters: getUsersBlockFacetFilters(privateUser, true),
+                    facetFilters: [
+                      ...getUsersBlockFacetFilters(privateUser, true),
+                      contractVisibilityFilter,
+                    ],
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts

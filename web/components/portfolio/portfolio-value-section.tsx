@@ -193,7 +193,7 @@ export function PortfolioValueSkeleton(props: {
             onClickNumber('profit')
           }}
         >
-          <div className="text-ink-600 text-xs sm:text-sm">Profit</div>
+          <div className="text-ink-600 text-xs sm:text-sm">Trading profits</div>
           {profitElement}
         </Col>
 

@@ -182,6 +182,7 @@ export default function RangePerformancePage(props: {
           <CopyLinkButton
             url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDateSlug}`}
             linkIconOnlyProps={{ tooltip: 'Copy link to this week' }}
+            eventTrackingName={'copy weekly profit link'}
           />
         </Row>
 
@@ -224,7 +225,7 @@ export default function RangePerformancePage(props: {
         <Title children="Also betting on" />
         {relatedMarkets ? (
           <ContractsGrid
-            contracts={relatedMarkets ?? []}
+            contracts={relatedMarkets}
             trackingPostfix=" weekly update related"
             loadMore={loadMore}
           />
