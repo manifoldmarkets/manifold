@@ -68,8 +68,14 @@ export function BetsSummary(props: {
         ) : isBinary ? (
           <Col>
             <div className="text-ink-500 whitespace-nowrap text-sm">
-              Position{' '}
-              <InfoTooltip text={`Your payout if ${exampleOutcome} wins`} />
+              Payout{' '}
+              <InfoTooltip
+                text={`You'll get ${formatMoney(
+                  Math.abs(position)
+                )} if this market resolves ${exampleOutcome} (and ${formatMoney(
+                  0
+                )} otherwise).`}
+              />
             </div>
             <div className="whitespace-nowrap">
               {position > 1e-7 ? (
@@ -88,8 +94,8 @@ export function BetsSummary(props: {
         ) : (
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
-              Expectation{''}
-              <InfoTooltip text="The estimated payout of your position using the current market probability." />
+              Expected value{' '}
+              <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
             </div>
             <div className="whitespace-nowrap">{formatMoney(payout)}</div>
           </Col>
@@ -97,8 +103,8 @@ export function BetsSummary(props: {
 
         <Col>
           <div className="text-ink-500 whitespace-nowrap text-sm">
-            Cost basis{' '}
-            <InfoTooltip text="Cash originally invested in this market, using average cost accounting." />
+            Spent{' '}
+            <InfoTooltip text="Cost basis. Cash originally invested in this market, using average cost accounting." />
           </div>
           <div className="whitespace-nowrap">{formatMoney(invested)}</div>
         </Col>
@@ -106,8 +112,8 @@ export function BetsSummary(props: {
         {isBinary && !resolution && (
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
-              Expectation{' '}
-              <InfoTooltip text="The estimated payout of your position using the current market probability." />
+              Expected value{' '}
+              <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
             </div>
             <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
           </Col>
@@ -116,7 +122,7 @@ export function BetsSummary(props: {
         <Col>
           <div className="text-ink-500 whitespace-nowrap text-sm">
             Profit{' '}
-            <InfoTooltip text="Includes both realized & unrealized gains/losses." />
+            <InfoTooltip text="How much you've made or lost (includes both realized & unrealized profits)." />
           </div>
           <div className="whitespace-nowrap">
             {formatMoney(profit)}

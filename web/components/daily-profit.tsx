@@ -100,11 +100,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
             <span
               className={clsx(
                 'ml-1 mt-1 text-xs',
-                seenToday
-                  ? dailyProfit >= 0
-                    ? 'text-teal-600'
-                    : 'text-scarlet-600'
-                  : ''
+                dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
               )}
             >
               {dailyProfit >= 0 ? '+' : '-'}

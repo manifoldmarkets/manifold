@@ -13,7 +13,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getAll } from 'shared/supabase/utils'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 
 export const updateContractMetrics = functions
   .runWith({

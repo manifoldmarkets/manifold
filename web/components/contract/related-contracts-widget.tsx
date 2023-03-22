@@ -10,6 +10,7 @@ import { VisibilityObserver } from '../widgets/visibility-observer'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { ContractStatusLabel } from './contracts-list-entry'
 
 export const RelatedContractsList = memo(function RelatedContractsList(props: {
   contracts: Contract[]
@@ -94,11 +95,14 @@ const RelatedContractCard = memo(function RelatedContractCard(props: {
           noLink={!isClient}
         />
       </Row>
-      <Row className="gap-2">
-        <div className={clsx('break-anywhere whitespace-normal font-medium')}>
+      <div>
+        <span className={clsx('break-anywhere whitespace-normal font-medium')}>
           {question}
-        </div>
-      </Row>
+        </span>
+        <span className="float-right ml-2 font-semibold">
+          <ContractStatusLabel contract={contract} />
+        </span>
+      </div>
     </Link>
   )
 })

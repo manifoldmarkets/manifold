@@ -1093,6 +1093,13 @@
     lodash.snakecase "^4.1.1"
     p-defer "^3.0.0"
 
+"@google-cloud/secret-manager@4.2.1":
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/@google-cloud/secret-manager/-/secret-manager-4.2.1.tgz#c2f04af967e4c70612077816bd4d3af5f85c6edf"
+  integrity sha512-PU7unr+L0Zx2ZErUzyfZ6VxgNQ2t1YfxSWZ1ELaObpRvoeLzsxQaeXH5dsNt0p5XEFu/tTyjDUfyF/64RxbFyQ==
+  dependencies:
+    google-gax "^3.5.2"
+
 "@google-cloud/storage@^6.5.2":
   version "6.6.0"
   resolved "https://registry.yarnpkg.com/@google-cloud/storage/-/storage-6.6.0.tgz#01f64bf706acc98dc2787e490afe878ad9f64250"
@@ -8258,14 +8265,6 @@ onetime@^5.1.2:
   integrity sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==
   dependencies:
     mimic-fn "^2.1.0"
-
-openai@3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/openai/-/openai-3.0.1.tgz#4a6021e5bf32dfaa56e346b7a4830a80a479dd9c"
-  integrity sha512-5O9t7dBcUOIhzK5764nS/8WtkX812l8Uz0uoIHT8mczN2IUUUe7FsGbIxYGEkGBKA4GY1blT8QaWJVNZLG2cwA==
-  dependencies:
-    axios "^0.26.0"
-    form-data "^4.0.0"
 
 openai@3.2.1:
   version "3.2.1"

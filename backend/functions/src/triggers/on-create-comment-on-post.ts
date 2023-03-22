@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 import { getPost } from 'shared/utils'
 
 export const onCreateCommentOnPost = functions

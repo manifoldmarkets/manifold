@@ -66,7 +66,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
 // Loosely copied from web/lib/firebase/storage.ts
 const ONE_YEAR_SECS = 60 * 60 * 24 * 365
 
-async function upload(buffer: Buffer) {
+export async function upload(buffer: Buffer) {
   const filename = `${nanoid(10)}.png`
   const storageRef = ref(storage, `dream/${filename}`)
 

@@ -7,10 +7,10 @@ import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 
-import { dreamWithDefaultParams } from 'shared/dream-utils'
+import { dalleWithDefaultParams } from 'shared/dream-utils'
 import { getImagePrompt, generateEmbeddings } from 'shared/helpers/openai-utils'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 import { completeQuestInternal } from 'shared/quest'
 
 export const onCreateContract = functions
@@ -36,12 +36,13 @@ export const onCreateContract = functions
       mentioned
     )
     const imagePrompt = await getImagePrompt(contract.question)
-    const coverImageUrl = await dreamWithDefaultParams(
+    const coverImageUrl = await dalleWithDefaultParams(
       imagePrompt ?? contract.question
     )
-    await snapshot.ref.update({
-      coverImageUrl,
-    })
+    if (coverImageUrl)
+      await snapshot.ref.update({
+        coverImageUrl,
+      })
 
     const embedding = await generateEmbeddings(contract.question)
     if (!embedding) return

@@ -9,7 +9,6 @@ const configuration = new Configuration({
 })
 
 const openai = new OpenAIApi(configuration)
-
 export const generateEmbeddings = async (question: string) => {
   let response
   try {
@@ -18,7 +17,11 @@ export const generateEmbeddings = async (question: string) => {
       input: question,
     })
   } catch (e: any) {
-    console.error('Error generating embeddings. Do you have an OpenAI API key?', e.message)
+    console.error(
+      'Error generating embeddings',
+      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
+      e.message
+    )
     return undefined
   }
 
@@ -45,7 +48,8 @@ export const getGroupForMarket = async (question: string) => {
     })
   } catch (e: any) {
     console.error(
-      'Error generating group for market. Do you have an OpenAI API key?',
+      'Error generating group',
+      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
       e.message
     )
     return undefined
@@ -69,7 +73,7 @@ export const getCloseDate = async (question: string) => {
   let response
   try {
     response = await openai.createCompletion({
-      model: 'text-davinci-002',
+      model: 'text-davinci-003',
       prompt: `Question: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2025 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
       temperature: 0.4,
       max_tokens: 15,
@@ -79,7 +83,8 @@ export const getCloseDate = async (question: string) => {
     })
   } catch (e: any) {
     console.error(
-      'Error generating close date. Do you have an OpenAI API key?',
+      'Error generating close date',
+      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
       e.message
     )
     return undefined
@@ -100,7 +105,7 @@ export const getImagePrompt = async (question: string) => {
   let response
   try {
     response = await openai.createCompletion({
-      model: 'text-davinci-002',
+      model: 'text-davinci-003',
       prompt: `The following are some examples of prompts for titles to be fed into the Dalle-2 image generation model:\n\n
       Title: "Will the new BART Transbay tube be completed by 2040"\n
       Prompt: “A futuristic looking train seen from above the water crossing the SF bay area, with a sunny sky and a view of the Bay area in the background".\n
@@ -116,7 +121,7 @@ export const getImagePrompt = async (question: string) => {
       Prompt: "An old and wise-looking person sitting in a cozy, futuristic house with glowing lights hovering around the scene."\n
       Title: "28. Will Twitter's net income be higher in 2023 than in 2022?"\n
       Prompt: "A flock of colorful twitter logos above a city skyline with dollar signs in the background."\n
-      Please take the following title and create an image generator prompt that conveys a related concept:\n
+      Please take the following title and create an image generator prompt, being very specific and detailed, that conveys a related concept:\n
       Title: ${question}\n
       Prompt:`,
       temperature: 1,
@@ -127,7 +132,8 @@ export const getImagePrompt = async (question: string) => {
     })
   } catch (e: any) {
     console.error(
-      'Error generating image prompt. Do you have an OpenAI API key?',
+      'Error generating image prompt',
+      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
       e.message
     )
     return undefined

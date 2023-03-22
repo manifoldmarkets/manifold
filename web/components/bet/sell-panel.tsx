@@ -161,7 +161,7 @@ export function SellPanel(props: {
             : Math.floor(amount)
         }
         onChange={onAmountChange}
-        label="Ṁ"
+        label="Qty"
         error={error}
         disabled={isSubmitting}
         inputClassName="w-full ml-1"
@@ -212,7 +212,7 @@ export function SellPanel(props: {
         disabled={!!betDisabled}
         size="xl"
         color="indigo"
-        actionLabel={`Sell`}
+        actionLabel={`Sell ${formatWithCommas(sellQuantity)} shares`}
       />
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
