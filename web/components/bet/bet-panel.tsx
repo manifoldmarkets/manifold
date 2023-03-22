@@ -374,11 +374,7 @@ export function BuyPanel(props: {
           <Col className="w-1/2 text-sm">
             <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
               <div>
-                {isPseudoNumeric ? (
-                  'Shares'
-                ) : (
-                  <>Payout if {outcome ?? 'YES'}</>
-                )}
+                {isPseudoNumeric ? 'Shares' : <>Payout if {outcome ?? 'YES'}</>}
               </div>
             </Col>
             <div>
