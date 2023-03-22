@@ -13,7 +13,7 @@ import {
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { logit } from 'common/util/math'
 import { bulkUpdate } from 'shared/supabase/utils'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 
 export const scoreContracts = functions
   .runWith({

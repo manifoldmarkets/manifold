@@ -20,7 +20,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 
 const firestore = admin.firestore()
 

@@ -6,7 +6,7 @@ import * as admin from 'firebase-admin'
 
 import { GroupContractDoc } from 'common/group'
 import { isEqual } from 'lodash'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 
 export const onUpdateContract = functions
   .runWith({ secrets })

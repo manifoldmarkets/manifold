@@ -18,7 +18,7 @@ import { mapAsync } from 'common/util/promise'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 
 const firestore = admin.firestore()
 

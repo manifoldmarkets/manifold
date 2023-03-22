@@ -5,7 +5,7 @@ import { groupBy, mapValues, sortBy } from 'lodash'
 import { log } from 'shared/utils'
 import { getIds } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 
 export const updateGroupMetrics = functions
   .runWith({ timeoutSeconds: 540, secrets })
