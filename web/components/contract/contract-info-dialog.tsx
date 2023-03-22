@@ -294,6 +294,7 @@ export function ContractInfoDialog(props: {
 }) {
   const { contract, user } = props
   const isCreator = user?.id === contract.creatorId
+  const isAdmin = useAdmin()
 
   const [open, setOpen] = useState(false)
   const [dreaming, setDreaming] = useState(false)
@@ -347,7 +348,7 @@ export function ContractInfoDialog(props: {
                             No image
                           </div>
                         )}
-                        {isCreator && (
+                        {(isCreator || isAdmin) && (
                           <div className="absolute bottom-0 right-0">
                             <Row className="gap-1">
                               <ChangeCoverImageButton contract={contract} />
