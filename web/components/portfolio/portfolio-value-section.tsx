@@ -110,10 +110,10 @@ export const PortfolioValueSection = memo(
                   ? graphDisplayNumber.toString().includes('-')
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
-                  : totalProfit > 0
+                  : totalProfit >= 0
                   ? 'text-teal-500'
                   : 'text-scarlet-500'
-                : totalProfit > 0
+                : totalProfit >= 0
                 ? 'text-teal-500'
                 : 'text-scarlet-500',
               'text-lg sm:text-xl'
