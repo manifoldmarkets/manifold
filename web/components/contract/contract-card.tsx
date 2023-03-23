@@ -550,7 +550,7 @@ export function ContractCardNew(props: {
       href={contractPath(contract)}
       className={clsx(
         'relative',
-        'border-ink-300 group my-4 flex flex-col overflow-hidden rounded-xl border-[0.5px]',
+        'border-ink-300 group my-2 flex flex-col overflow-hidden rounded-xl border-[0.5px]',
         'focus:bg-ink-300/20 lg:hover:bg-ink-300/20 transition-colors',
         className
       )}
