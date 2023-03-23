@@ -295,7 +295,7 @@ const CurrentUserProfile = (props: { user: User }) => {
   const { user } = props
   const router = useRouter()
   return (
-    <>
+    <Col className={'sm:p-2'}>
       <Row>
         <Col className={'w-full'}>
           <Row
@@ -351,7 +351,7 @@ const CurrentUserProfile = (props: { user: User }) => {
         </Col>
       </Row>
       <UserBioLinks user={user} isCurrentUser={true} />
-    </>
+    </Col>
   )
 }
 
