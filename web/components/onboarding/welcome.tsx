@@ -1,5 +1,4 @@
 import { STARTING_BALANCE } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
