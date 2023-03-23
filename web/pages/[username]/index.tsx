@@ -1,7 +1,7 @@
 import React from 'react'
 import {
   ChatAlt2Icon,
-  FolderIcon,
+  CurrencyDollarIcon,
   GlobeIcon,
   PencilIcon,
   ScaleIcon,
@@ -352,7 +352,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
             tabs={[
               {
                 title: 'Portfolio',
-                stackedTabIcon: <FolderIcon className="h-5" />,
+                stackedTabIcon: <CurrencyDollarIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
