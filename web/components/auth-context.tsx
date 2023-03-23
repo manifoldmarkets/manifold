@@ -18,6 +18,8 @@ import { UserAndPrivateUser } from 'common/user'
 import { nativePassUsers, nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
+import { getSupabaseToken } from 'web/lib/firebase/api'
+import { updateSupabaseAuth } from 'web/lib/supabase/db'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -96,22 +98,28 @@ export function AuthProvider(props: {
       async (fbUser) => {
         if (fbUser) {
           setUserCookie(fbUser.toJSON())
-          let current = await getUserAndPrivateUser(fbUser.uid)
-          if (!current.user || !current.privateUser) {
+          const [currentAuthUser, supabaseJwt] = await Promise.all([
+            getUserAndPrivateUser(fbUser.uid),
+            getSupabaseToken(),
+          ])
+          updateSupabaseAuth(supabaseJwt.jwt)
+          if (!currentAuthUser.user || !currentAuthUser.privateUser) {
             const deviceToken = ensureDeviceToken()
             const adminToken = getAdminToken()
-            current = (await createUser({
+            const newUser = (await createUser({
               deviceToken,
               adminToken,
               visitedContractIds: getSavedContractVisitsLocally(),
             })) as UserAndPrivateUser
-            setCachedReferralInfoForUser(current.user)
+            setCachedReferralInfoForUser(currentAuthUser.user)
+            setAuthUser({ ...newUser, authLoaded: true })
+          } else {
+            setAuthUser({ ...currentAuthUser, authLoaded: true })
           }
-          setAuthUser({ ...current, authLoaded: true })
           nativePassUsers(
             JSON.stringify({
               fbUser: fbUser.toJSON(),
-              privateUser: current.privateUser,
+              privateUser: currentAuthUser.privateUser,
             })
           )
         } else {

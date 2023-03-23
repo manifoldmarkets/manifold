@@ -531,3 +531,11 @@ as $$
   order by similarity * similarity * log(coalesce((data->>'popularityScore')::real, 0.0) + 100) desc
   limit match_count;
 $$;
+
+create or replace function firebase_uid()
+  returns text
+  language sql
+  stable parallel safe
+as $$
+  select nullif(current_setting('request.jwt.claims', true)::json->>'sub', '')::text;
+$$;

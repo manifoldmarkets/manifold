@@ -9,7 +9,7 @@ import { PrivacyStatusType } from 'common/group'
 import { HideCommentReq } from 'web/pages/api/v0/hide-comment'
 export { APIError } from 'common/api'
 
-export async function call(url: string, method: string, params: any) {
+export async function call(url: string, method: string, params?: any) {
   const user = auth.currentUser
   if (user == null) {
     throw new Error('Must be signed in to make API calls.')
@@ -21,7 +21,7 @@ export async function call(url: string, method: string, params: any) {
       'Content-Type': 'application/json',
     },
     method: method,
-    body: JSON.stringify(params),
+    body: params != null ? JSON.stringify(params) : undefined,
   })
   return await fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
@@ -197,4 +197,8 @@ export function completeQuest(params: any) {
 
 export function getPrivateContractBySlug(params: { contractSlug: string }) {
   return call(getApiUrl('getprivatecontractbyslug'), 'POST', params)
+}
+
+export function getSupabaseToken() {
+  return call(getApiUrl('getsupabasetoken'), 'GET')
 }

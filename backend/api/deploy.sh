@@ -34,6 +34,7 @@ yarn build && \
          --set-secrets OPENAI_API_KEY=OPENAI_API_KEY:latest \
          --set-secrets MAILGUN_KEY=MAILGUN_KEY:latest \
          --set-secrets SUPABASE_KEY=SUPABASE_KEY:latest \
+         --set-secrets SUPABASE_JWT_SECRET=SUPABASE_JWT_SECRET:latest \
          --set-secrets SUPABASE_PASSWORD=SUPABASE_PASSWORD:latest \
          --set-secrets STRIPE_APIKEY=STRIPE_APIKEY:latest \
          --set-secrets STRIPE_WEBHOOKSECRET=STRIPE_WEBHOOKSECRET:latest \
