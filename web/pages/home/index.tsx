@@ -3,34 +3,19 @@ import clsx from 'clsx'
 
 import { Contract, CPMMContract } from 'common/contract'
 import { BACKGROUND_COLOR } from 'common/envs/constants'
-import { GlobalConfig } from 'common/globalConfig'
-import { Group } from 'common/group'
-import { Post } from 'common/post'
 import Router from 'next/router'
 import { memo, ReactNode } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
 import { DailyStats } from 'web/components/daily-stats'
-import { PinnedItems } from 'web/components/groups/group-post-section'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { useTrendingGroups } from 'web/hooks/use-group'
-import {
-  inMemoryStore,
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { useAllPosts } from 'web/hooks/use-post'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
-import { getContractFromId } from 'web/lib/firebase/contracts'
-import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
-import { getGroup } from 'web/lib/firebase/groups'
-import { getPost } from 'web/lib/firebase/posts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { track } from 'web/lib/service/analytics'
 import { Title } from 'web/components/widgets/title'
@@ -43,9 +28,10 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { ContractCardNew } from 'web/components/contract/contract-card'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export default function Home() {
   const isClient = useIsClient()
@@ -105,18 +91,20 @@ function MobileHome() {
 
   return (
     <Page>
-      <Col className="gap-6 py-2 pb-8 sm:px-2">
+      <Col className="gap-2 py-2 pb-8 sm:px-2">
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <Title children="Home" className="!my-0" />
-
-          <Row className="items-center gap-4">
-            <DailyStats user={user} />
+          <Row className="items-center gap-2">
+            <Title children="Home" className="!my-0" />
             {isNative && (
               <SwitchHorizontalIcon
                 className="h-5 w-5"
                 onClick={toggleView(true)}
               />
             )}
+          </Row>
+
+          <Row className="items-center gap-4">
+            <DailyStats user={user} />
           </Row>
         </Row>
 
@@ -147,17 +135,7 @@ function MobileHome() {
 const useViewToggle = () => {
   const isNative = getIsNative()
 
-  const defaultShowSwipe =
-    typeof window === 'undefined'
-      ? false
-      : safeLocalStorage?.getItem('show-swipe')
-      ? safeLocalStorage?.getItem('show-swipe') === 'true'
-      : isNative
-
-  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
-    key: 'show-swipe',
-    store: storageStore(safeLocalStorage),
-  })
+  const [showSwipe, setShowSwipe] = usePersistentLocalState(false, 'show-swipe')
 
   const toggleView = (showSwipe: boolean) => () => {
     setShowSwipe(showSwipe)
@@ -220,12 +198,7 @@ const LiveSection = memo(function LiveSection(props: { className?: string }) {
   const { className } = props
   return (
     <Col className={clsx('relative mt-4', className)}>
-      {/* <HomeSectionHeader label="Live feed" href="/live" icon="🔴" /> */}
-      <ActivityLog
-        count={30}
-        showPills
-        // className="h-[380px] overflow-hidden"
-      />
+      <ActivityLog count={30} showPills />
       <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
     </Col>
   )
@@ -244,10 +217,10 @@ const YourFeedSection = memo(function YourFeedSection(props: {
 })
 
 const MainContent = () => {
-  const [section, setSection] = usePersistentState<number>(0, {
-    key: 'main-content-section',
-    store: inMemoryStore(),
-  })
+  const [section, setSection] = usePersistentInMemoryState(
+    0,
+    'main-content-section'
+  )
 
   return (
     <Col>
@@ -285,70 +258,3 @@ export const ContractsSection = memo(function ContractsSection(props: {
     </Col>
   )
 })
-
-export function FeaturedSection(props: {
-  globalConfig: GlobalConfig
-  pinned: JSX.Element[]
-  isAdmin: boolean
-}) {
-  const { globalConfig, pinned, isAdmin } = props
-  const posts = useAllPosts()
-  const groups = useTrendingGroups()
-
-  async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
-    if (globalConfig == null) return
-    const pinnedItems = await Promise.all(
-      selectedItems
-        .map(async (item) => {
-          if (item.type === 'post') {
-            const post = await getPost(item.itemId)
-            if (post == null) return null
-
-            return { item: post, type: 'post' }
-          } else if (item.type === 'contract') {
-            const contract = await getContractFromId(item.itemId)
-            if (contract == null) return null
-
-            return { item: contract, type: 'contract' }
-          } else if (item.type === 'group') {
-            const group = await getGroup(item.itemId)
-            if (group == null) return null
-            return { item: group, type: 'group' }
-          }
-        })
-        .filter((item) => item != null)
-    )
-    await updateGlobalConfig(globalConfig, {
-      pinnedItems: [
-        ...(globalConfig?.pinnedItems ?? []),
-        ...(pinnedItems as {
-          item: Contract | Post | Group
-          type: 'contract' | 'post' | 'group'
-        }[]),
-      ],
-    })
-  }
-
-  function onDeleteClicked(index: number) {
-    if (globalConfig == null) return
-    const newPinned = globalConfig.pinnedItems.filter((item) => {
-      return item.item.id !== globalConfig.pinnedItems[index].item.id
-    })
-    updateGlobalConfig(globalConfig, { pinnedItems: newPinned })
-  }
-
-  return (
-    <Col className="relative">
-      <HomeSectionHeader label={'Featured'} icon={'📌'} />
-      <PinnedItems
-        posts={posts}
-        isEditable={isAdmin}
-        pinned={pinned}
-        onDeleteClicked={onDeleteClicked}
-        onSubmit={onSubmit}
-        modalMessage={'Pin posts or markets to the overview of this group.'}
-        groups={groups}
-      />
-    </Col>
-  )
-}
