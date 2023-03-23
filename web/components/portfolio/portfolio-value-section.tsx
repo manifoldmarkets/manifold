@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
-import { memo, ReactNode, useState, useMemo } from 'react'
+import React, { memo, ReactNode, useState, useMemo } from 'react'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -224,7 +224,7 @@ export function PortfolioValueSkeleton(props: {
           {valueElement}
         </Col>
 
-        <AddFundsButton userId={userId} className="self-center max-sm:hidden" />
+        <AddFundsButton userId={userId} className="self-center" />
 
         {!placement && (
           <TimeRangePicker
