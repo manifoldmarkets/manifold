@@ -9,6 +9,7 @@ import { getServiceAccountCredentials } from './init-admin'
 export const secrets = [
   'API_SECRET',
   'SUPABASE_KEY',
+  'SUPABASE_JWT_SECRET',
   'SUPABASE_PASSWORD',
   'MAILGUN_KEY',
   'DREAM_KEY',
