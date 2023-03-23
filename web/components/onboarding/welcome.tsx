@@ -167,11 +167,12 @@ function ThankYouPage() {
       />
       <p className="text-lg">
         As a thank you for signing up, we sent you{' '}
-        <strong className='text-xl'>{formatMoney(STARTING_BALANCE)}</strong> in mana, our play money!
+        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
+        mana, our play money!
       </p>
       <p className={'my-3 text-lg '}>
-        Mana can't be converted into cash, but can
-        be purchased at a ratio of <strong className='text-xl'>{formatMoney(100)} : $1</strong>.
+        Mana can't be converted into cash, but can be purchased at a ratio of{' '}
+        <strong className="text-xl">{formatMoney(100)} : $1</strong>.
       </p>
     </>
   )
