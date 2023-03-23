@@ -72,7 +72,6 @@ export function ActivityLog(props: {
 
   const rawBets = useRealtimeBets(count * 3 + 20, {
     filterRedemptions: true,
-    filterAntes: true,
   })
   const bets = (rawBets ?? []).filter(
     (bet) =>
