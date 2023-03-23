@@ -168,11 +168,12 @@ function ThankYouPage() {
       />
       <p className="text-lg">
         As a thank you for signing up, we sent you{' '}
-        {formatMoney(STARTING_BALANCE)} in play money!
+        <strong className='text-xl'>{formatMoney(STARTING_BALANCE)}</strong> in mana, our play money!
       </p>
-      <Row className={'text-ink-600 my-3 text-sm'}>
-        Note that mana ({ENV_CONFIG.moneyMoniker}) can't be converted into cash.
-      </Row>
+      <p className={'my-3 text-lg '}>
+        Mana can't be converted into cash, but can
+        be purchased at a ratio of <strong className='text-xl'>{formatMoney(100)} : $1</strong>.
+      </p>
     </>
   )
 }
