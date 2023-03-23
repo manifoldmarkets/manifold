@@ -1,102 +1,81 @@
 import React, { useState } from 'react'
 
 import { Col } from 'web/components/layout/col'
-import { Title } from 'web/components/widgets/title'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
-
+import { useMemberGroupIds } from 'web/hooks/use-group'
+import { uniq } from 'lodash'
 export function TopicSelectorDialog(props: {
   open: boolean
   setOpen: (open: boolean) => void
 }) {
   const { open, setOpen } = props
-
+  const cleanTopic = (topic: string) => topic.split(' ')[1].trim()
   const user = useUser()
+  const memberGroupIds = useMemberGroupIds(user)
+  const topicsToIgnore = ['Communities', 'Knowledge']
 
+  // TODO: these should affect the users' initial interests vector
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
-  const [selectedTopic, setSelectedTopic] = useState<string | undefined>(
-    undefined
-  )
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className="bg-canvas-0 h-[32rem] rounded-md px-8 py-6 text-sm font-light md:text-lg">
-        <Title children="What interests you?" />
+      <Col className="bg-canvas-0 h-[32rem] rounded-md px-8 py-6 text-sm font-light md:text-base">
+        <span
+          className={'text-primary-700 mb-2 text-2xl'}
+          children="What interests you?"
+        />
         <p className="mb-4">
           Select a few topics you're interested in to personalize your Manifold
           experience.
         </p>
 
-        <div className="scrollbar-hide h-full items-start overflow-x-auto">
-          {Object.keys(TOPICS).map((topic) => (
-            <PillButton
-              key={topic}
-              selected={selectedTopics.includes(topic)}
-              onSelect={() => {
-                const groupId = GROUP_IDs[topic]
-
-                if (selectedTopics.includes(topic)) {
-                  setSelectedTopic(undefined)
-                  setSelectedTopics(
-                    selectedTopics.filter(
-                      (t) => t !== topic && !TOPICS[topic].includes(t)
-                    )
-                  )
-                  if (groupId && user) leaveGroup(groupId, user.id)
-                } else {
-                  setSelectedTopic(topic)
-                  setSelectedTopics([...selectedTopics, topic])
-                  if (groupId && user) joinGroup(groupId, user.id)
-                }
-              }}
-              className="mr-1 mb-2 max-w-[12rem] truncate"
-            >
-              {topic}
-            </PillButton>
-          ))}
-
-          {selectedTopic && (
-            <>
-              <div key="divider">
-                <hr />
-                <br />
-                <div className="mb-2 text-sm">
-                  {selectedTopic === 'Communities'
-                    ? 'Communities on Manifold'
-                    : `More from ${selectedTopic}`}
-                </div>
-              </div>
+        <div className="h-full items-start overflow-x-auto">
+          {Object.keys(TOPICS_TO_SUBTOPICS).map((topic) => (
+            <Col>
+              <span className={'text-primary-700 mb-2 text-lg'}>{topic}</span>
               <div className="ml-4">
-                {TOPICS[selectedTopic].map((subtopic) => (
-                  <PillButton
-                    key={subtopic}
-                    selected={selectedTopics.includes(subtopic)}
-                    onSelect={() => {
-                      const groupId = GROUP_IDs[subtopic]
-
-                      if (selectedTopics.includes(subtopic)) {
-                        setSelectedTopics(
-                          selectedTopics.filter((t) => t !== subtopic)
-                        )
-                        if (groupId && user) leaveGroup(groupId, user.id)
-                      } else {
-                        setSelectedTopics([...selectedTopics, subtopic])
-                        if (groupId && user) joinGroup(groupId, user.id)
-                      }
-                    }}
-                    xs
-                    className="mr-1 mb-2 max-w-[12rem] truncate"
-                  >
-                    {subtopic}
-                  </PillButton>
-                ))}
+                {TOPICS_TO_SUBTOPICS[topic]
+                  .concat(topic)
+                  .map((subtopicWithEmoji) => {
+                    const subtopic = cleanTopic(subtopicWithEmoji)
+                    if (topicsToIgnore.includes(subtopic)) return null
+                    const groupId = GROUP_IDs[subtopic]
+                    if (
+                      memberGroupIds?.includes(groupId) &&
+                      !selectedTopics.includes(subtopic)
+                    ) {
+                      setSelectedTopics(uniq([...selectedTopics, subtopic]))
+                    }
+                    return (
+                      <PillButton
+                        key={subtopic}
+                        selected={selectedTopics.includes(subtopic)}
+                        onSelect={() => {
+                          if (selectedTopics.includes(subtopic)) {
+                            setSelectedTopics(
+                              selectedTopics.filter((t) => t !== subtopic)
+                            )
+                            if (groupId && user) leaveGroup(groupId, user.id)
+                          } else {
+                            setSelectedTopics([...selectedTopics, subtopic])
+                            if (groupId && user) joinGroup(groupId, user.id)
+                          }
+                        }}
+                        xs
+                        className="mr-1 mb-2 max-w-[12rem] truncate"
+                      >
+                        {subtopicWithEmoji}
+                      </PillButton>
+                    )
+                  })}
               </div>
-            </>
-          )}
+            </Col>
+          ))}
         </div>
 
         <Row className={'justify-end'}>
@@ -107,48 +86,85 @@ export function TopicSelectorDialog(props: {
   )
 }
 
-const TOPICS: { [key: string]: string[] } = {
-  Politics: [
-    '2024 US Presidential election',
-    'Local elections',
-    'Public policy',
+const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
+  '🗳️ Politics': [
+    '🙋 2024 US Presidential Election',
+    '🇺🇸 US Politics',
+    '🏛️ Local Elections',
+    '🗳️ Public Policy',
+    '🟠 Trump',
   ],
-  Sports: ['Football', 'Basketball', 'Baseball', 'Soccer', 'Cricket', 'Tennis'],
-  Business: ['Finance', 'Economics', 'Startups'],
-  Technology: [
-    'AI',
-    'Crypto',
-    'Climate',
-    'Health',
-    'Biotech',
-    'Programming',
-    'Science',
-    'Engineering',
-    'Math',
-    'Nuclear',
-    'Space',
+  '🏟️ Sports': [
+    '🏀 Basketball',
+    '🏈 Football',
+    '🏐 Volleyball',
+    '🏒 Ice Hockey',
+    '⚾ Baseball',
+    '🎾 Tennis',
+    '⚽ Soccer',
+    '♟️ Chess',
+    '🏎️ Racing',
   ],
-  Entertainment: [
-    'Movies',
-    'TV',
-    'Gaming',
-    'Music',
-    'Books',
-    'Internet culture',
-    'Art',
-    'Celebrities',
+  '💼 Business': [
+    '📈 Stocks',
+    '🪙 Crypto',
+    '💵 Finance',
+    '💰 Economics',
+    '🚀 Startups',
+    '👔 Careers',
+    '🎰 Wall Street Bets',
+    '🚘 Elon musk',
   ],
-  World: [
-    'Russia / Ukraine',
-    'China',
-    'India',
-    'Africa',
-    'Asia',
-    'Europe',
-    'Latin America',
-    'Middle East',
+  '💻 Technology': [
+    '🤖 AI',
+    '🪙 Crypto',
+    '🌍🌡️ Climate',
+    '🏃 Health',
+    '🏥 Medicine',
+    '🧬 Biotech',
+    '💻 Programming',
+    '🔬 Science',
+    '🔧 Engineering',
+    '🧮 Math',
+    '☢️ Nuclear',
+    '🚀 Space',
   ],
-  Communities: ['ACX', 'Effective Altruism', 'Destiny.gg', 'Proofniks'],
+  '🧠 Knowledge': [
+    '📚 Books',
+    '📝 Writing',
+    '👨‍🎓 Education',
+    '💪 Personal Development',
+    '️📜 History',
+    '🤔 Philosophy',
+    '⛪ Religion',
+  ],
+  '🍿 Culture': [
+    '🎬 Movies',
+    '📺 TV',
+    '🎮 Gaming',
+    '🎵 Music',
+    '📚 Books',
+    '🌐 Internet Culture',
+    '🎨 Art',
+    '👥 Celebrities',
+    '❤️ Sex and love',
+  ],
+  '🌍 World': [
+    '🇷🇺🇺🇦 Russia & Ukraine',
+    '🇨🇳 China',
+    '🇮🇳 India',
+    '🌍 Africa',
+    '🌏 Asia',
+    '🌍 Europe',
+    '🌎 Latin America',
+    '🌍 Middle East',
+  ],
+  '👥 Communities': [
+    '📜 ACX',
+    '💗 Effective Altruism',
+    '🎮 Destiny.gg',
+    '💡 Proofniks',
+  ],
 }
 
 const GROUP_IDs: { [key: string]: string } = {
