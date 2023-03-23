@@ -12,10 +12,17 @@ export const DarkModeProvider = (props: { children: any }) => {
     key: 'theme',
     store: storageStore(safeLocalStorage),
   })
-  //init theme state. TODO: fix/replace usePersistentState to do this
+
   useEffect(() => {
-    safeLocalStorage &&
-      changeTheme(JSON.parse(safeLocalStorage.getItem('theme') as any))
+    if (safeLocalStorage) {
+      const savedTheme = safeParse(safeLocalStorage.getItem('theme'))
+
+      const validatedTheme = ['auto', 'dark', 'light'].includes(savedTheme)
+        ? savedTheme
+        : 'auto'
+
+      changeTheme(validatedTheme as theme_option)
+    }
   }, [])
 
   const reRenderTheme = () => {
@@ -49,4 +56,12 @@ export const DarkModeProvider = (props: { children: any }) => {
       {props.children}
     </DarkModeContext.Provider>
   )
+}
+
+const safeParse = (json: any) => {
+  try {
+    return JSON.parse(json ?? '')
+  } catch (e) {
+    return null
+  }
 }
