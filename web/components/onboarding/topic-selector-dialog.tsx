@@ -24,7 +24,7 @@ export function TopicSelectorDialog(props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className="bg-canvas-0 h-[32rem] rounded-md px-8 py-6 text-sm font-light md:text-base">
+      <Col className="bg-canvas-0 h-[42rem] rounded-md px-8 py-6 text-sm font-light md:text-base">
         <span
           className={'text-primary-700 mb-2 text-2xl'}
           children="What interests you?"
@@ -34,7 +34,7 @@ export function TopicSelectorDialog(props: {
           experience.
         </p>
 
-        <div className="h-full items-start overflow-x-auto">
+        <div className="scrollbar-hide h-full items-start overflow-x-auto">
           {Object.keys(TOPICS_TO_SUBTOPICS).map((topic) => (
             <Col>
               <span className={'text-primary-700 mb-2 text-lg'}>{topic}</span>
@@ -66,8 +66,7 @@ export function TopicSelectorDialog(props: {
                             if (groupId && user) joinGroup(groupId, user.id)
                           }
                         }}
-                        xs
-                        className="mr-1 mb-2 max-w-[12rem] truncate"
+                        className="bg-ink-100 mr-1 mb-2 max-w-[16rem] truncate"
                       >
                         {subtopicWithEmoji}
                       </PillButton>
