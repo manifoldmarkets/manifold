@@ -415,26 +415,11 @@ create index if not exists contract_embeddings_embedding on contract_embeddings
 begin;
   drop publication if exists supabase_realtime;
   create publication supabase_realtime;
-  alter publication supabase_realtime add table users;
-  alter publication supabase_realtime add table user_follows;
-  alter publication supabase_realtime add table user_reactions;
-  alter publication supabase_realtime add table user_events;
-  alter publication supabase_realtime add table user_seen_markets;
   alter publication supabase_realtime add table contracts;
-  alter publication supabase_realtime add table contract_answers;
   alter publication supabase_realtime add table contract_bets;
   alter publication supabase_realtime add table contract_comments;
-  alter publication supabase_realtime add table contract_follows;
-  alter publication supabase_realtime add table contract_liquidity;
-  alter publication supabase_realtime add table groups;
-  alter publication supabase_realtime add table group_contracts;
   alter publication supabase_realtime add table group_members;
-  alter publication supabase_realtime add table txns;
-  alter publication supabase_realtime add table manalinks;
   alter publication supabase_realtime add table posts;
-  alter publication supabase_realtime add table test;
-  alter publication supabase_realtime add table user_portfolio_history;
-  alter publication supabase_realtime add table user_contract_metrics;
 commit;
 
 /***************************************************************/
