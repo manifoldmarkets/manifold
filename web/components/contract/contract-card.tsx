@@ -700,7 +700,7 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className=" border-ink-200 mt-4 items-center gap-4 rounded border p-2 text-sm">
+    <Row className="border-ink-200 my-2 items-center gap-4 rounded border p-2 text-sm">
       <Row className="items-center gap-2">
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
         <span className="text-ink-600 font-semibold">
