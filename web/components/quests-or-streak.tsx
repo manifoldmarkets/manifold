@@ -169,7 +169,7 @@ export function QuestsModal(props: {
             status={`(${archeologistStatus.currentCount}/${archeologistStatus.requiredCount})`}
             reward={QUEST_DETAILS.ARCHAEOLOGIST.rewardAmount}
             info={
-              'This has to be a market that no other user has bet on in the last 6 months'
+              'This has to be a market that no other user has bet on in the last 3 months'
             }
           />
         </Col>

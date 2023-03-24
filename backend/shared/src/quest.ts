@@ -68,9 +68,8 @@ export const completeArchaeologyQuest = async (
   )
   const lastBetTime =
     sortedBets.length === 1 ? contract.createdTime : sortedBets[1].createdTime
-  // if the most recent bet is older than the second most recent bet by 6 months, then they have completed the quest
-  const sixMonthsAgo = dayjs().subtract(6, 'month').valueOf()
-  if (lastBetTime <= sixMonthsAgo) {
+  const threeMonthsAgo = dayjs().subtract(3, 'month').valueOf()
+  if (lastBetTime <= threeMonthsAgo) {
     const db = createSupabaseClient()
     const oldEntry = await getQuestScore(user.id, 'ARCHAEOLOGIST', db)
     if (oldEntry.idempotencyKey === idempotencyKey) return

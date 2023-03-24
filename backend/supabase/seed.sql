@@ -314,7 +314,7 @@ create table if not exists user_sets (
     user_id text not null,
     set_id text not null,
     primary key(user_id, set_id)
-)
+);
 alter table user_sets enable row level security;
 drop policy if exists "public read" on user_sets;
 create policy "public read" on user_sets for select using (true);
