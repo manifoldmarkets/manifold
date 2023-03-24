@@ -153,6 +153,17 @@ alter table user_seen_markets cluster on user_seen_markets_pkey;
 
 create table if not exists contracts (
     id text not null primary key,
+    slug text,
+    question text,
+    creator_id text,
+    visibility text,
+    mechanism text,
+    outcome_type text,
+    created_time timestamptz,
+    close_time timestamptz,
+    resolution_time timestamptz,
+    resolution_probability numeric,
+    resolution text,
     data jsonb not null,
     fs_updated_time timestamp not null
 );
