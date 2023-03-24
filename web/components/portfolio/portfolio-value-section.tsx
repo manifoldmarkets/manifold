@@ -187,10 +187,10 @@ export function PortfolioValueSkeleton(props: {
     placement,
   } = props
   return (
-    <>
+    <Col className={'gap-4'}>
       <Row
         className={clsx(
-          'mb-1 items-start gap-2 sm:mb-2',
+          'mb-1 items-center justify-start gap-2 sm:mb-2',
           placement === 'bottom' ? 'ml-2 gap-8' : ''
         )}
       >
@@ -236,11 +236,11 @@ export function PortfolioValueSkeleton(props: {
           />
         )}
       </Row>
-      <SizedContainer fullHeight={200} mobileHeight={150}>
+      <SizedContainer fullHeight={200} mobileHeight={175}>
         {graphElement}
       </SizedContainer>
       {placement === 'bottom' && (
-        <Col className={' mx-2 mt-1'}>
+        <Col className={' mx-2 -mt-1 mb-1'}>
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setCurrentTimePeriod}
@@ -250,6 +250,6 @@ export function PortfolioValueSkeleton(props: {
           />
         </Col>
       )}
-    </>
+    </Col>
   )
 }

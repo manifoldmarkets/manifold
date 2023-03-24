@@ -166,21 +166,22 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
       )}
 
       <Col>
-        {!isCurrentUser && <NonCurrentUserProfile user={user} />}
-        {isCurrentUser && !isMobile && <CurrentUserProfile user={user} />}
+        <Col className={'p-2'}>
+          {!isCurrentUser && <NonCurrentUserProfile user={user} />}
+          {isCurrentUser && !isMobile && <CurrentUserProfile user={user} />}
+          <PortfolioValueSection userId={user.id} />
+        </Col>
         <Col className={clsx('relative mx-4 mt-2 sm:mt-0')}>
           <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
             tabs={[
               {
-                title: 'Portfolio',
+                title: 'Trades',
                 stackedTabIcon: <CurrencyDollarIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
-                    <PortfolioValueSection userId={user.id} />
-                    <Spacer h={8} />
                     <BetsList user={user} />
                   </>
                 ),
@@ -200,6 +201,8 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                 stackedTabIcon: <UserIcon className="h-5" />,
                 content: (
                   <Col>
+                    <Spacer h={2} />
+
                     {isCurrentUser && isMobile && (
                       <CurrentUserProfile user={user} />
                     )}
@@ -244,7 +247,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
 const NonCurrentUserProfile = (props: { user: User }) => {
   const { user } = props
   return (
-    <Col className={'p-2'}>
+    <Col>
       <Row className={clsx('flex-wrap justify-between p-1')}>
         <Row className={'gap-2'}>
           <Col className={'relative max-h-14'}>
@@ -295,7 +298,7 @@ const CurrentUserProfile = (props: { user: User }) => {
   const { user } = props
   const router = useRouter()
   return (
-    <Col className={'sm:p-2'}>
+    <Col className={'sm:mb-2'}>
       <Row>
         <Col className={'w-full'}>
           <Row

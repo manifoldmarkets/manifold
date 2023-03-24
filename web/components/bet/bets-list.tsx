@@ -247,6 +247,7 @@ export function BetsList(props: { user: User }) {
               user={user}
               className={'py-0'}
               profitBadgeClassName={'pt-3'}
+              isCurrentUser={user.id === signedInUser?.id}
             >
               <Col className={' items-start'}>
                 <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
