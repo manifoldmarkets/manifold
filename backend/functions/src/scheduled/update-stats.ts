@@ -89,12 +89,12 @@ async function getDailyContracts(
 ) {
   const contracts = await pg.manyOrNone(
     `select
-      extract(day from millis_interval((data->'createdTime')::bigint, $2)) as day,
-      (data->'createdTime')::bigint as ts,
-      data->>'creatorId' as user_id,
+      extract(day from (created_time - millis_to_ts($2))) as day,
+      created_time as ts,
+      creator_id as user_id,
       id
     from contracts
-    where (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
+    where created_time >= millis_to_ts($1) and created_time < millis_to_ts($2)`,
     [startTime, startTime + numberOfDays * DAY_MS]
   )
   const contractsByDay: StatEvent[][] = range(0, numberOfDays).map((_) => [])

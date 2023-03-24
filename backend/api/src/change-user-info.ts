@@ -72,7 +72,7 @@ export const changeUser = async (
 
   log('Updating denormalized user data on contracts...')
   const contractRows = await pg.manyOrNone(
-    `select id from contracts where data->>'creatorId' = $1`,
+    `select id from contracts where creator_id = $1`,
     [user.id]
   )
   const contractUpdate: Partial<Contract> = removeUndefinedProps({
