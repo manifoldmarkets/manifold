@@ -1,5 +1,5 @@
 import { Group, PrivacyStatusType } from 'common/group'
-import { run } from 'common/supabase/utils'
+import { run, SupabaseClient } from 'common/supabase/utils'
 import { uniqBy } from 'lodash'
 import { groupRoleType as GroupRoleType } from 'web/components/groups/group-member-modal'
 import { User } from '../firebase/users'
