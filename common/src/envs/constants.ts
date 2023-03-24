@@ -82,6 +82,7 @@ export const BOT_USERNAMES = [
   'ShifraGazsi',
   'Bot',
   'Catnee',
+  'Mason',
 ]
 
 export const CORE_USERNAMES = [
