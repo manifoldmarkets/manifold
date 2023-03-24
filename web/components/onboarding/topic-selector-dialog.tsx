@@ -29,7 +29,6 @@ export function TopicSelectorDialog(props: {
       .flatMap(getSubtopics)
       .filter(([, , groupId]) => memberGroupIds?.includes(groupId))
       .map(([, subtopic]) => subtopic)
-    console.log(newTopics)
 
     setSelectedTopics(uniq([...selectedTopics, ...newTopics]))
   }, [memberGroupIds, selectedTopics])
