@@ -553,13 +553,13 @@ export function ContractCardNew(props: {
       className={clsx(
         'relative',
         'border-ink-300 group my-2 flex flex-col overflow-hidden rounded-xl border-[0.5px]',
-        'focus:bg-ink-300/20 lg:hover:bg-ink-300/20 transition-colors',
+        'focus:bg-ink-400/20 lg:hover:bg-ink-400/20 transition-colors',
         className
       )}
     >
       <div
         className={clsx(
-          showImage && 'bg-canvas-0/[0.95]',
+          showImage ? 'bg-canvas-0/95' : 'bg-canvas-0/70',
           'py-2 px-4 backdrop-blur-sm'
         )}
       >
@@ -700,7 +700,7 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className=" border-ink-200 items-center gap-4 rounded border p-2 text-sm">
+    <Row className=" border-ink-200 mt-4 items-center gap-4 rounded border p-2 text-sm">
       <Row className="items-center gap-2">
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
         <span className="text-ink-600 font-semibold">
