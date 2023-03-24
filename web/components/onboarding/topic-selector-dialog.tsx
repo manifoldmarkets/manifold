@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { uniq } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
@@ -8,19 +9,30 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useMemberGroupIds } from 'web/hooks/use-group'
-import { uniq } from 'lodash'
+
 export function TopicSelectorDialog(props: {
   open: boolean
   setOpen: (open: boolean) => void
 }) {
   const { open, setOpen } = props
-  const cleanTopic = (topic: string) => topic.split(' ')[1].trim()
   const user = useUser()
-  const memberGroupIds = useMemberGroupIds(user)
-  const topicsToIgnore = ['Communities', 'Knowledge']
 
-  // TODO: these should affect the users' initial interests vector
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+
+  // TODO: replace group following with user interst vector stuff
+  const memberGroupIds = useMemberGroupIds(user)
+  useEffect(() => {
+    if (!memberGroupIds || !memberGroupIds.length) return
+    if (selectedTopics.length) return
+
+    const newTopics = Object.keys(TOPICS_TO_SUBTOPICS)
+      .flatMap(getSubtopics)
+      .filter(([, , groupId]) => memberGroupIds?.includes(groupId))
+      .map(([, subtopic]) => subtopic)
+    console.log(newTopics)
+
+    setSelectedTopics(uniq([...selectedTopics, ...newTopics]))
+  }, [memberGroupIds, selectedTopics])
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -36,42 +48,32 @@ export function TopicSelectorDialog(props: {
 
         <div className="scrollbar-hide h-full items-start overflow-x-auto">
           {Object.keys(TOPICS_TO_SUBTOPICS).map((topic) => (
-            <Col>
+            <Col className="mb-4" key={topic + '-section'}>
               <span className={'text-primary-700 mb-2 text-lg'}>{topic}</span>
+
               <div className="ml-4">
-                {TOPICS_TO_SUBTOPICS[topic]
-                  .concat(topic)
-                  .map((subtopicWithEmoji) => {
-                    const subtopic = cleanTopic(subtopicWithEmoji)
-                    if (topicsToIgnore.includes(subtopic)) return null
-                    const groupId = GROUP_IDs[subtopic]
-                    if (
-                      memberGroupIds?.includes(groupId) &&
-                      !selectedTopics.includes(subtopic)
-                    ) {
-                      setSelectedTopics(uniq([...selectedTopics, subtopic]))
-                    }
-                    return (
-                      <PillButton
-                        key={subtopic}
-                        selected={selectedTopics.includes(subtopic)}
-                        onSelect={() => {
-                          if (selectedTopics.includes(subtopic)) {
-                            setSelectedTopics(
-                              selectedTopics.filter((t) => t !== subtopic)
-                            )
-                            if (groupId && user) leaveGroup(groupId, user.id)
-                          } else {
-                            setSelectedTopics([...selectedTopics, subtopic])
-                            if (groupId && user) joinGroup(groupId, user.id)
-                          }
-                        }}
-                        className="bg-ink-100 mr-1 mb-2 max-w-[16rem] truncate"
-                      >
-                        {subtopicWithEmoji}
-                      </PillButton>
-                    )
-                  })}
+                {getSubtopics(topic).map(
+                  ([subtopicWithEmoji, subtopic, groupId]) => (
+                    <PillButton
+                      key={subtopic}
+                      selected={selectedTopics.includes(subtopic)}
+                      onSelect={() => {
+                        if (selectedTopics.includes(subtopic)) {
+                          setSelectedTopics(
+                            selectedTopics.filter((t) => t !== subtopic)
+                          )
+                          if (groupId && user) leaveGroup(groupId, user.id)
+                        } else {
+                          setSelectedTopics(uniq([...selectedTopics, subtopic]))
+                          if (groupId && user) joinGroup(groupId, user.id)
+                        }
+                      }}
+                      className="bg-ink-100 mr-1 mb-2 max-w-[16rem] truncate"
+                    >
+                      {subtopicWithEmoji}
+                    </PillButton>
+                  )
+                )}
               </div>
             </Col>
           ))}
@@ -85,35 +87,24 @@ export function TopicSelectorDialog(props: {
   )
 }
 
+const cleanTopic = (topic: string) => topic.substring(3)
+
+const topicsToIgnore = ['Communities', 'Knowledge']
+
+const getSubtopics = (topic: string) =>
+  TOPICS_TO_SUBTOPICS[topic]
+    .concat(topic)
+    .map(
+      (subtopicWithEmoji) =>
+        [
+          subtopicWithEmoji,
+          cleanTopic(subtopicWithEmoji),
+          GROUP_IDs[cleanTopic(subtopicWithEmoji)],
+        ] as const
+    )
+    .filter(([, subtopic]) => !topicsToIgnore.includes(subtopic))
+
 const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
-  '🗳️ Politics': [
-    '🙋 2024 US Presidential Election',
-    '🇺🇸 US Politics',
-    '🏛️ Local Elections',
-    '🗳️ Public Policy',
-    '🟠 Trump',
-  ],
-  '🏟️ Sports': [
-    '🏀 Basketball',
-    '🏈 Football',
-    '🏐 Volleyball',
-    '🏒 Ice Hockey',
-    '⚾ Baseball',
-    '🎾 Tennis',
-    '⚽ Soccer',
-    '♟️ Chess',
-    '🏎️ Racing',
-  ],
-  '💼 Business': [
-    '📈 Stocks',
-    '🪙 Crypto',
-    '💵 Finance',
-    '💰 Economics',
-    '🚀 Startups',
-    '👔 Careers',
-    '🎰 Wall Street Bets',
-    '🚘 Elon musk',
-  ],
   '💻 Technology': [
     '🤖 AI',
     '🪙 Crypto',
@@ -128,14 +119,23 @@ const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '☢️ Nuclear',
     '🚀 Space',
   ],
-  '🧠 Knowledge': [
-    '📚 Books',
-    '📝 Writing',
-    '👨‍🎓 Education',
-    '💪 Personal Development',
-    '️📜 History',
-    '🤔 Philosophy',
-    '⛪ Religion',
+  '🗳️ Politics': [
+    '🟠 Trump',
+    '🙋 2024 US Presidential Election',
+    '🇺🇸 US Politics',
+    '🏛️ Local Elections',
+    '🗳️ Public Policy',
+  ],
+  '🏟️ Sports': [
+    '🏀 Basketball',
+    '🏈 Football',
+    '🏐 Volleyball',
+    '🏒 Ice Hockey',
+    '⚾ Baseball',
+    '🎾 Tennis',
+    '⚽ Soccer',
+    '♟️ Chess',
+    '🏎️ Racing',
   ],
   '🍿 Culture': [
     '🎬 Movies',
@@ -146,8 +146,28 @@ const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '🌐 Internet Culture',
     '🎨 Art',
     '👥 Celebrities',
+  ],
+  '💼 Business': [
+    '📈 Stocks',
+    '🪙 Crypto',
+    '💵 Finance',
+    '💰 Economics',
+    '🚀 Startups',
+    '👔 Careers',
+    '🚘 Elon musk',
+  ],
+
+  '🧠 Knowledge': [
+    '📚 Books',
+    '📝 Writing',
+    '👨‍🎓 Education',
+    '️📜 History',
+    '🤔 Philosophy',
+    '⛪ Religion',
+    '💪 Personal Development',
     '❤️ Sex and love',
   ],
+
   '🌍 World': [
     '🇷🇺🇺🇦 Russia & Ukraine',
     '🇨🇳 China',
@@ -163,6 +183,7 @@ const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '💗 Effective Altruism',
     '🎮 Destiny.gg',
     '💡 Proofniks',
+    '🎰 Wall Street Bets',
   ],
 }
 
