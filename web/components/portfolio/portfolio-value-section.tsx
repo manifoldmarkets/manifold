@@ -240,7 +240,7 @@ export function PortfolioValueSkeleton(props: {
         {graphElement}
       </SizedContainer>
       {placement === 'bottom' && (
-        <Col className={' mx-2 -mt-1 mb-1'}>
+        <Col className={' mx-2 -mt-2 mb-1'}>
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setCurrentTimePeriod}

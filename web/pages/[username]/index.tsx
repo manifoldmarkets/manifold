@@ -247,7 +247,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
 const NonCurrentUserProfile = (props: { user: User }) => {
   const { user } = props
   return (
-    <Col>
+    <Col className={'mb-2'}>
       <Row className={clsx('flex-wrap justify-between p-1')}>
         <Row className={'gap-2'}>
           <Col className={'relative max-h-14'}>
