@@ -172,18 +172,11 @@ drop policy if exists "public read" on contracts;
 create policy "public read" on contracts for select using (true);
 create index if not exists contracts_data_gin on contracts using GIN (data);
 create index if not exists contracts_group_slugs_gin on contracts using GIN ((data->'groupSlugs'));
-create index if not exists contracts_creator_id on contracts ((data->>'creatorId'));
+create index if not exists contracts_slug on contracts (slug);
+create index if not exists contracts_creator_id on contracts (creator_id, created_time);
+create index if not exists contracts_created_time on contracts (created_time desc);
+create index if not exists contracts_close_time on contracts (close_time desc);
 create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
-/* serves API recent markets endpoint */
-create index if not exists contracts_created_time on contracts ((to_jsonb(data)->>'createdTime') desc);
-create index if not exists contracts_close_time on contracts ((to_jsonb(data)->>'closeTime') desc);
-/* serves the criteria used to find valid contracts in get_recommended_contract_set */
-create index if not exists contracts_recommended_criteria on contracts (
-  ((data->>'createdTime')::bigint) desc,
-  (data->>'visibility'),
-  (data->>'outcomeType'),
-  ((data->>'isResolved')::boolean),
-  ((data->>'closeTime')::bigint));
 
 alter table contracts cluster on contracts_creator_id;
 

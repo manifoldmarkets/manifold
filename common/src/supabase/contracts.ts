@@ -1,5 +1,5 @@
 import { chunk } from 'lodash'
-import { run, selectJson, SupabaseClient } from './utils'
+import { run, millisToTs, selectJson, SupabaseClient } from './utils'
 import { Contract } from '../contract'
 
 export const getContracts = async (
@@ -25,11 +25,9 @@ export const getUnresolvedContractsCount = async (
     db
       .from('contracts')
       .select('*', { head: true, count: 'exact' })
-      .contains('data', {
-        creatorId: creatorId,
-        isResolved: false,
-      })
-      .lt('data->>closeTime', Date.now())
+      .eq('creator_id', creatorId)
+      .is('resolution_time', null)
+      .lt('close_time', millisToTs(Date.now()))
   )
   return count
 }
@@ -43,8 +41,8 @@ export const getRecentContractsCount = async (
     db
       .from('contracts')
       .select('*', { head: true, count: 'exact' })
-      .eq('data->>creatorId', creatorId)
-      .gte('data->>createdTime', startDate)
+      .eq('creator_id', creatorId)
+      .gte('created_time', millisToTs(startDate))
   )
   return count
 }
