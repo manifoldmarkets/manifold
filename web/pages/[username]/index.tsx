@@ -61,8 +61,6 @@ import {
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import IconToggle from 'web/components/widgets/icon-toggle'
-import { DailyProfit } from 'web/components/daily-profit'
-import { QuestsOrStreak } from 'web/components/quests-or-streak'
 
 export const getStaticProps = async (props: {
   params: {
@@ -217,14 +215,8 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
                 @{user.username}
               </span>
             </Col>
-            {!isCurrentUser && (
-              <div className={'ml-2 sm:mt-0.5'}>
-                <DailyProfit user={user} isCurrentUser={isCurrentUser} />
-              </div>
-            )}
           </Row>
-          {isCurrentUser && <DailyProfit user={user} />}
-          {isCurrentUser && <QuestsOrStreak user={user} />}
+      
           {!isCurrentUser && (
             <Row className={'gap-2'}>
               <MoreOptionsUserButton user={user} />
