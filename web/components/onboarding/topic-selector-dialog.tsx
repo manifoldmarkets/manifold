@@ -181,7 +181,7 @@ const TOPICS_TO_SUBTOPICS: { [key: string]: string[] } = {
     '📜 ACX',
     '💗 Effective Altruism',
     '🎮 Destiny.gg',
-    '💡 Proofniks',
+    '🦔 Proofniks',
     '🎰 Wall Street Bets',
   ],
 }
