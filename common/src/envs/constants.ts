@@ -131,6 +131,7 @@ export const CHECK_USERNAMES = [
   'Tetraspace',
   'BoltonBailey',
   'MatthewBarnett',
+  'JacyAnthis',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
