@@ -65,7 +65,7 @@ type GroupParams = {
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
   const groupSlug = slugs[0]
-  const group = await getGroupFromSlug(groupSlug[0], 'admin')
+  const group = await getGroupFromSlug(groupSlug, 'admin')
   if (!group) {
     return {
       props: {
