@@ -133,14 +133,14 @@ export const TimerClaimBox = (props: {
   return (
     <div
       className={clsx(
-        'to-primary-400 relative flex w-full justify-center overflow-hidden rounded-md bg-yellow-200 bg-gradient-to-r from-pink-300 via-purple-300',
+        'relative flex w-full justify-center overflow-hidden rounded-md',
         className
       )}
     >
       {timeLeft < 0 ? (
         <button
           onClick={claim}
-          className="flex w-full justify-center p-6 transition-colors hover:bg-slate-900/20"
+          className="to-primary-400 bg-primary-700 flex w-full justify-center bg-gradient-to-r from-pink-300 via-purple-300 p-6 transition-all hover:opacity-80 dark:from-pink-600"
         >
           Claim {formatMoney(ad.costPerView)} and continue
         </button>
@@ -176,12 +176,11 @@ const TimerBar = (props: { duration: number }) => {
   const { duration } = props
 
   return (
-    <div className="absolute inset-0 flex overflow-hidden">
+    <div className="bg-canvas-0 absolute inset-0 flex overflow-hidden">
       <div
-        className="animate-progress"
+        className="animate-progress bg-canvas-100"
         style={{ animationDuration: `${duration}s` }}
       />
-      <div className="bg-canvas-0 grow" />
     </div>
   )
 }
