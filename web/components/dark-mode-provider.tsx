@@ -41,4 +41,3 @@ export const DarkModeProvider = (props: { children: any }) => {
     </DarkModeContext.Provider>
   )
 }
-
