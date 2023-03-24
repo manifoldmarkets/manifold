@@ -13,11 +13,8 @@ import { BlockUser } from 'web/components/profile/block-user'
 import { ReportUser } from 'web/components/profile/report-user'
 import { Title } from 'web/components/widgets/title'
 
-export function MoreOptionsUserButton(props: {
-  user: User
-  className?: string
-}) {
-  const { user, className } = props
+export function MoreOptionsUserButton(props: { user: User }) {
+  const { user } = props
   const { id: userId, name } = user
   const currentUser = usePrivateUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -26,11 +23,7 @@ export function MoreOptionsUserButton(props: {
 
   return (
     <>
-      <Button
-        color={'gray-white'}
-        className={className}
-        onClick={() => setIsModalOpen(true)}
-      >
+      <Button color={'gray-white'} onClick={() => setIsModalOpen(true)}>
         <DotsHorizontalIcon
           className={clsx('h-5 w-5 flex-shrink-0')}
           aria-hidden="true"

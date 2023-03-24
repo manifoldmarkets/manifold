@@ -54,6 +54,7 @@ import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { Input } from 'web/components/widgets/input'
 import { searchInAny } from 'common/util/parse'
 import { useContract } from 'web/hooks/use-contracts'
+import { AddFundsButton } from '../profile/add-funds-button'
 import { db } from 'web/lib/supabase/db'
 
 type BetSort =
@@ -241,11 +242,7 @@ export function BetsList(props: { user: User }) {
   return (
     <Col>
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
-        <Row className="mr-2 flex-wrap justify-start gap-6">
-          <Col className={'shrink-0'}>
-            <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
-            <div className="text-lg">{formatMoney(user.balance)}</div>
-          </Col>
+        <Row className="mr-2 gap-4">
           <Col className={'shrink-0'}>
             <div className="text-ink-600 text-xs sm:text-sm">
               Investment value
@@ -259,6 +256,11 @@ export function BetsList(props: { user: User }) {
             <div className="text-ink-600 text-xs sm:text-sm">Total loans</div>
             <div className="text-lg">{formatMoney(currentLoan)}</div>
           </Col>
+
+          <AddFundsButton
+            userId={user.id}
+            className="ml-2 self-center sm:hidden"
+          />
         </Row>
 
         <div className="flex grow gap-2 max-[480px]:flex-col">
