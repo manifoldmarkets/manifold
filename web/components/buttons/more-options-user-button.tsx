@@ -97,7 +97,6 @@ export function MoreOptionsUserButton(props: { user: User }) {
   )
 }
 
-
 function firestoreUserConsolePath(userId: string) {
   return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fusers~2F${userId}`
 }
