@@ -4,11 +4,7 @@ import { HOUR_MS } from 'common/util/time'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import {
-  formatMoney,
-  formatPercent,
-  shortFormatNumber,
-} from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMBinaryContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
@@ -31,13 +27,17 @@ import { LoadingIndicator } from './widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
 import { useHasSeen } from 'web/hooks/use-has-seen'
 import { InfoTooltip } from './widgets/info-tooltip'
+import { FloatingProfitBadgeMana } from 'web/components/profit-badge'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
   user: User | null | undefined
   isCurrentUser?: boolean
+  children?: React.ReactNode
+  className?: string
+  profitBadgeClassName?: string
 }) {
-  const { user } = props
+  const { user, children, className, profitBadgeClassName } = props
   const isCurrentUser =
     props.isCurrentUser === undefined ? true : props.isCurrentUser
 
@@ -83,7 +83,8 @@ export const DailyProfit = memo(function DailyProfit(props: {
         className={clsx(
           dailyStatsClass,
           'rounded-md text-center',
-          seenToday || Math.abs(dailyProfit) < 1 ? '' : unseenDailyStatsClass
+          seenToday || Math.abs(dailyProfit) < 1 ? '' : unseenDailyStatsClass,
+          className
         )}
         onClick={withTracking(() => {
           setOpen(true)
@@ -91,22 +92,19 @@ export const DailyProfit = memo(function DailyProfit(props: {
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Row>
-          <Col className="justify-start">
-            <div className={clsx()}>{formatMoney(user.balance)}</div>
-            <div className="text-ink-600 text-sm ">Balance</div>
-          </Col>
-
-          {dailyProfit !== 0 && (
-            <span
-              className={clsx(
-                'ml-1 mt-1 text-xs',
-                dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-              )}
-            >
-              {dailyProfit >= 0 ? '+' : '-'}
-              {shortFormatNumber(Math.abs(dailyProfit))}
-            </span>
+          {children ? (
+            children
+          ) : (
+            <Col className="justify-start">
+              <div className={'text-lg'}>{formatMoney(user.balance)}</div>
+              <div className="text-ink-600 text-sm">Balance</div>
+            </Col>
           )}
+
+          <FloatingProfitBadgeMana
+            amount={dailyProfit}
+            className={clsx('mt-1', profitBadgeClassName)}
+          />
         </Row>
       </button>
       {user && (

@@ -1,5 +1,7 @@
 import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { shortFormatNumber } from 'common/util/format'
+import React from 'react'
 
 export function ProfitBadge(props: {
   profitPercent: number
@@ -54,4 +56,26 @@ export function ProfitBadgeMana(props: {
       {formatted}
     </span>
   )
+}
+
+export function FloatingProfitBadgeMana(props: {
+  amount: number
+  className?: string
+}) {
+  const { amount, className } = props
+
+  if (amount !== 0)
+    return (
+      <span
+        className={clsx(
+          'ml-1 text-xs',
+          amount >= 0 ? 'text-teal-600' : 'text-scarlet-600',
+          className
+        )}
+      >
+        {amount >= 0 ? '+' : '-'}
+        {shortFormatNumber(Math.abs(amount))}
+      </span>
+    )
+  return <span />
 }
