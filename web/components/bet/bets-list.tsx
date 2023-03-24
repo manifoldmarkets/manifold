@@ -246,7 +246,7 @@ export function BetsList(props: { user: User }) {
             <DailyProfit
               user={user}
               className={'py-0'}
-              profitBadgeClassName={'pt-3'}
+              profitBadgeClassName={'pt-5'}
               isCurrentUser={user.id === signedInUser?.id}
             >
               <Col className={' items-start'}>
@@ -261,7 +261,10 @@ export function BetsList(props: { user: User }) {
             </div>
             <Row className="text-lg">
               {formatMoney(currentBetsValue)}{' '}
-              <FloatingProfitBadgeMana amount={investedProfitPercent} />
+              <FloatingProfitBadgeMana
+                amount={investedProfitPercent}
+                className={'pt-1'}
+              />
             </Row>
           </Col>
           <Col className={'shrink-0'}>
