@@ -187,6 +187,29 @@ create index if not exists contracts_recommended_criteria on contracts (
 
 alter table contracts cluster on contracts_creator_id;
 
+create or replace function contract_populate_cols()
+  returns trigger
+  language plpgsql
+as $$ begin
+  if new.data is not null then
+    new.slug := (new.data)->>'slug';
+    new.question := (new.data)->>'question';
+    new.creator_id := (new.data)->>'creatorId';
+    new.visibility := (new.data)->>'visibility';
+    new.mechanism := (new.data)->>'mechanism';
+    new.outcome_type := (new.data)->>'outcomeType';
+    new.created_time := case when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint) else null end;
+    new.close_time := case when new.data ? 'closeTime' then millis_to_ts(((new.data)->>'closeTime')::bigint) else null end;
+    new.resolution_time := case when new.data ? 'resolutionTime' then millis_to_ts(((new.data)->>'resolutionTime')::bigint) else null end;
+    new.resolution_probability := ((new.data)->>'resolutionProbability')::numeric;
+    new.resolution := (new.data)->>'resolution';
+  end if;
+  return new;
+end $$;
+
+create trigger contract_populate before insert or update on contracts
+for each row execute function contract_populate_cols();
+
 create table if not exists contract_answers (
     contract_id text not null,
     answer_id text not null,
