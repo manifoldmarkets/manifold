@@ -1,39 +1,44 @@
-import { User } from 'common/user'
-
+export const QUEST_SET_ID = 'quests'
 export const QUEST_TYPES = [
   'BETTING_STREAK',
   'SHARES',
   'MARKETS_CREATED',
+  'ARCHAEOLOGIST',
 ] as const
 export type QuestType = typeof QUEST_TYPES[number]
+
 export const QUEST_DETAILS: Record<
   QuestType,
   {
     requiredCount: number
     rewardAmount: number
-    userKey: keyof Pick<
-      User,
-      'currentBettingStreak' | 'sharesThisWeek' | 'marketsCreatedThisWeek'
-    >
+    scoreId: string
     title: string
   }
 > = {
   BETTING_STREAK: {
     requiredCount: 1,
     rewardAmount: 25,
-    userKey: 'currentBettingStreak',
+    scoreId: 'currentBettingStreak',
     title: 'Prediction Streak',
   },
   SHARES: {
     requiredCount: 3,
     rewardAmount: 25,
-    userKey: 'sharesThisWeek',
+    scoreId: 'sharesThisWeek',
     title: 'Sharing',
   },
   MARKETS_CREATED: {
     requiredCount: 1,
     rewardAmount: 25,
-    userKey: 'marketsCreatedThisWeek',
+    scoreId: 'marketsCreatedThisWeek',
     title: 'Market Creation',
   },
+  ARCHAEOLOGIST: {
+    requiredCount: 1,
+    rewardAmount: 25,
+    scoreId: 'oldContractsBetOn',
+    title: 'Archaeologist',
+  },
 }
+export const QUEST_SCORE_IDS = QUEST_TYPES.map((t) => QUEST_DETAILS[t].scoreId)

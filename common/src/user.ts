@@ -45,12 +45,8 @@ export type User = {
   shouldShowWelcome?: boolean
   lastBetTime?: number
 
-  // Quest related activities:
   currentBettingStreak?: number
   streakForgiveness: number
-  marketsCreatedThisWeek?: number
-  // Number of times user has shared something
-  sharesThisWeek?: number
 
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean

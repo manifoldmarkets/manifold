@@ -41,6 +41,7 @@ import { Group } from 'common/group'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'shared/secrets'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
+import { completeArchaeologyQuest } from 'shared/quest'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -100,6 +101,7 @@ export const onCreateBet = functions
     handleReferral(bettor, eventId).then(async () => {
       await updateBettingStreak(bettor, bet, contract, eventId)
     })
+    await completeArchaeologyQuest(bet, bettor, contract, eventId)
   })
 
 const updateBettingStreak = async (

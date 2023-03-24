@@ -22,6 +22,9 @@ import {
 } from 'common/economy'
 import { QUEST_DETAILS, QUEST_TYPES } from 'common/quest'
 import { filterDefined } from 'common/util/array'
+import { getQuestScores } from 'common/supabase/set-scores'
+import { useQuestStatus } from 'web/hooks/use-quest-status'
+import { db } from 'web/lib/supabase/db'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -35,12 +38,13 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
     'week'
   )
   const [showQuestsModal, setShowQuestsModal] = useState(false)
-
-  if (!user) return <></>
-  const { allQuestsComplete, totalQuestsCompleted, totalQuests } =
-    getQuestCompletionStatus(user)
-
+  const questStatus = useQuestStatus(user)
   if (!user) return <div />
+  const { totalQuestsCompleted, totalQuests, allQuestsComplete } =
+    questStatus ?? {
+      totalQuestsCompleted: 0,
+      totalQuests: 0,
+    }
 
   return (
     <>
@@ -78,11 +82,12 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
           </Col>
         </button>
       )}
-      {showQuestsModal && (
+      {showQuestsModal && questStatus && (
         <QuestsModal
           open={showQuestsModal}
           setOpen={setShowQuestsModal}
           user={user}
+          questStatus={questStatus}
         />
       )}
     </>
@@ -93,16 +98,20 @@ export function QuestsModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   user: User
+  questStatus: Awaited<ReturnType<typeof getQuestCompletionStatus>>
 }) {
-  const { open, setOpen, user } = props
+  const { open, setOpen, user, questStatus } = props
   const { totalQuestsCompleted, totalQuests, questToCompletionStatus } =
-    getQuestCompletionStatus(user)
+    questStatus
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
   const streakComplete = streakStatus.currentCount >= streakStatus.requiredCount
   const shareStatus = questToCompletionStatus['SHARES']
   const shareComplete = shareStatus.currentCount >= shareStatus.requiredCount
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
   const createComplete = createStatus.currentCount >= createStatus.requiredCount
+  const archeologistStatus = questToCompletionStatus['ARCHAEOLOGIST']
+  const archeologistComplete =
+    archeologistStatus.currentCount >= archeologistStatus.requiredCount
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -152,6 +161,16 @@ export function QuestsModal(props: {
             complete={createComplete}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
+          />
+          <QuestRow
+            emoji={'🏺'}
+            title={`Trade on ${archeologistStatus.requiredCount} ancient market this week`}
+            complete={archeologistComplete}
+            status={`(${archeologistStatus.currentCount}/${archeologistStatus.requiredCount})`}
+            reward={QUEST_DETAILS.ARCHAEOLOGIST.rewardAmount}
+            info={
+              'This has to be a market that no other user has bet on in the last 6 months'
+            }
           />
         </Col>
       </div>
@@ -206,12 +225,14 @@ const QuestRow = (props: {
     </Row>
   )
 }
-const getQuestCompletionStatus = (user: User) => {
+export const getQuestCompletionStatus = async (user: User) => {
   const questToCompletionStatus = Object.fromEntries(
     QUEST_TYPES.map((t) => [t, { requiredCount: 0, currentCount: 0 }])
   )
+  const keys = QUEST_TYPES.map((questType) => QUEST_DETAILS[questType].scoreId)
+  const scores = await getQuestScores(user.id, keys, db)
 
-  for (const questType of QUEST_TYPES) {
+  QUEST_TYPES.forEach((questType) => {
     const questData = QUEST_DETAILS[questType]
     if (questType === 'BETTING_STREAK')
       questToCompletionStatus[questType] = {
@@ -221,9 +242,10 @@ const getQuestCompletionStatus = (user: User) => {
     else
       questToCompletionStatus[questType] = {
         requiredCount: questData.requiredCount,
-        currentCount: user[questData.userKey] ?? 0,
+        currentCount: scores[questData.scoreId].score,
       }
-  }
+  })
+
   const totalQuestsCompleted = sum(
     Object.values(questToCompletionStatus).map((v) =>
       v.currentCount >= v.requiredCount ? 1 : 0

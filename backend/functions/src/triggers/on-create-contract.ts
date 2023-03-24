@@ -11,7 +11,7 @@ import { dalleWithDefaultParams } from 'shared/dream-utils'
 import { getImagePrompt, generateEmbeddings } from 'shared/helpers/openai-utils'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { secrets } from 'shared/secrets'
-import { completeQuestInternal } from 'shared/quest'
+import { completeCalculatedQuest } from 'shared/quest'
 
 export const onCreateContract = functions
   .runWith({
@@ -51,5 +51,5 @@ export const onCreateContract = functions
       .from('contract_embeddings')
       .insert({ contract_id: contract.id, embedding })
 
-    await completeQuestInternal(contractCreator, 'MARKETS_CREATED')
+    await completeCalculatedQuest(contractCreator, 'MARKETS_CREATED', eventId)
   })

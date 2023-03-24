@@ -2,7 +2,9 @@
 
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { User } from 'common/user'
+import { setScoreValue } from 'common/supabase/set-scores'
+import { QUEST_SCORE_IDS } from 'common/quest'
+import { createSupabaseClient } from 'shared/supabase/init'
 const firestore = admin.firestore()
 
 export const resetQuestStats = functions
@@ -17,16 +19,13 @@ export const resetQuestStats = functions
 const resetQuestStatsInternal = async () => {
   const usersSnap = await firestore.collection('users').get()
   console.log(`Resetting quest stats for ${usersSnap.docs.length} users`)
-
+  const db = createSupabaseClient()
   await Promise.all(
     usersSnap.docs.map((doc) =>
-      firestore
-        .collection('users')
-        .doc(doc.id)
-        .update({
-          sharesThisWeek: 0,
-          marketsCreatedThisWeek: 0,
-        } as User)
+      // TODO: this will spam the db too much? - should chunk these updates
+      QUEST_SCORE_IDS.map(
+        async (scoreId) => await setScoreValue(doc.id, 'quests', scoreId, 0, db)
+      )
     )
   )
 }

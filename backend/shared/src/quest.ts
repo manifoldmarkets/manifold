@@ -1,8 +1,8 @@
 import * as admin from 'firebase-admin'
 const firestore = admin.firestore()
 import { User } from 'common/user'
-import { QUEST_DETAILS, QuestType } from 'common/quest'
-import { isProd } from 'shared/utils'
+import { QUEST_DETAILS, QUEST_SET_ID, QuestType } from 'common/quest'
+import { getValues, isProd } from 'shared/utils'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -17,6 +17,11 @@ import { createQuestPayoutNotification } from 'shared/create-notification'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
+import { getQuestScore, setScoreValue } from 'common/supabase/set-scores'
+import { SupabaseClient } from 'common/supabase/utils'
+import { Bet } from 'common/bet'
+import { Contract } from 'common/contract'
+import { sortBy } from 'lodash'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -24,48 +29,80 @@ dayjs.extend(timezone)
 dayjs.tz.setDefault('America/Los_Angeles')
 // the start of the week is 12am on Monday Pacific time
 const START_OF_WEEK = dayjs().startOf('week').add(1, 'day').valueOf()
-export const completeQuestInternal = async (
+
+const QUESTS_INTERNALLY_CALCULATED: QuestType[] = ['MARKETS_CREATED', 'SHARES']
+export const completeCalculatedQuest = async (
   user: User,
-  questType: QuestType
+  questType: typeof QUESTS_INTERNALLY_CALCULATED[number],
+  // idempotencyKey is used to prevent duplicate quest completions from triggers firing multiple times
+  idempotencyKey?: string
 ) => {
-  // We already handle betting streak rewards in the onCreateBet trigger
-  if (questType === 'BETTING_STREAK')
-    return { count: user.currentBettingStreak }
-
-  const questDetails = QUEST_DETAILS[questType]
-  const currentCount = user[questDetails.userKey] ?? 0
-  if (currentCount > questDetails.requiredCount) {
-    return { message: 'Quest already completed' }
-  }
   const db = createSupabaseClient()
-  let count = 0
+  const count = await getQuestCount(user, questType, db)
+  const oldEntry = await getQuestScore(user.id, questType, db)
+  if (idempotencyKey && oldEntry.idempotencyKey === idempotencyKey)
+    return { count: oldEntry.score }
+  return await completeQuestInternal(
+    user,
+    questType,
+    oldEntry.score,
+    count,
+    idempotencyKey
+  )
+}
 
-  if (questType === 'MARKETS_CREATED') {
-    count = await getRecentContractsCount(user.id, START_OF_WEEK, db)
-    if (user.marketsCreatedThisWeek !== count)
-      await firestore
-        .collection('users')
-        .doc(user.id)
-        .update({
-          marketsCreatedThisWeek: count,
-        } as Partial<User>)
-  } else if (questType === 'SHARES') {
-    count = await getUniqueUserShareEventsCount(
-      user.id,
-      START_OF_WEEK,
-      Date.now(),
-      db
+export const completeArchaeologyQuest = async (
+  mostRecentBet: Bet,
+  user: User,
+  contract: Contract,
+  idempotencyKey: string
+) => {
+  if (mostRecentBet.isRedemption) return
+  const bets = await getValues<Bet>(
+    firestore.collection('contracts').doc(contract.id).collection('bets')
+  )
+  if (bets.length === 0) return
+  const sortedBets = sortBy(
+    bets.filter((b) => !b.isRedemption),
+    (bet) => -bet.createdTime
+  )
+  const lastBetTime =
+    sortedBets.length === 1 ? contract.createdTime : sortedBets[1].createdTime
+  // if the most recent bet is older than the second most recent bet by 6 months, then they have completed the quest
+  const sixMonthsAgo = dayjs().subtract(6, 'month').valueOf()
+  if (lastBetTime <= sixMonthsAgo) {
+    const db = createSupabaseClient()
+    const oldEntry = await getQuestScore(user.id, 'ARCHAEOLOGIST', db)
+    if (oldEntry.idempotencyKey === idempotencyKey) return
+    await completeQuestInternal(
+      user,
+      'ARCHAEOLOGIST',
+      oldEntry.score,
+      oldEntry.score + 1,
+      idempotencyKey
     )
-    await firestore
-      .collection('users')
-      .doc(user.id)
-      .update({
-        sharesThisWeek: count,
-      } as Partial<User>)
   }
+}
 
+const completeQuestInternal = async (
+  user: User,
+  questType: QuestType,
+  oldScore: number,
+  count: number,
+  idempotencyKey?: string
+) => {
+  const db = createSupabaseClient()
+  const questDetails = QUEST_DETAILS[questType]
+  await setScoreValue(
+    user.id,
+    QUEST_SET_ID,
+    questDetails.scoreId,
+    count,
+    db,
+    idempotencyKey
+  )
   // If they have created the required amounts, send them a quest txn reward
-  if (count === QUEST_DETAILS[questType].requiredCount) {
+  if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
     const resp = await awardQuestBonus(user, questType, count)
     if (!resp.txn)
       throw new APIError(400, resp.message ?? 'Could not award quest bonus')
@@ -80,6 +117,24 @@ export const completeQuestInternal = async (
   }
   return { count }
 }
+
+const getQuestCount = async (
+  user: User,
+  questType: typeof QUESTS_INTERNALLY_CALCULATED[number],
+  db: SupabaseClient
+): Promise<number> => {
+  if (questType === 'MARKETS_CREATED') {
+    return await getRecentContractsCount(user.id, START_OF_WEEK, db)
+  } else if (questType === 'SHARES') {
+    return await getUniqueUserShareEventsCount(
+      user.id,
+      START_OF_WEEK,
+      Date.now(),
+      db
+    )
+  } else return 0
+}
+
 const awardQuestBonus = async (
   user: User,
   questType: QuestType,
@@ -97,12 +152,9 @@ const awardQuestBonus = async (
       .limit(1)
     const previousTxn = (await previousTxns.get()).docs[0]
     if (previousTxn) {
-      const data = previousTxn.data() as QuestRewardTxn
       return {
+        error: true,
         message: 'Already awarded quest bonus',
-        txn: data,
-        status: 'SUCCESS',
-        bonusAmount: data.amount,
       }
     }
     const fromUserId = isProd()
