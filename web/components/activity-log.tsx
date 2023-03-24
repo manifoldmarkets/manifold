@@ -57,7 +57,9 @@ export function ActivityLog(props: {
       shouldBlockDestiny && DESTINY_GROUP_SLUGS
     )
 
-    Promise.all(blockedGroupSlugs.map(getGroupFromSlug))
+    Promise.all(
+      blockedGroupSlugs.map((slug) => getGroupFromSlug(slug, 'client'))
+    )
       .then((groups) =>
         Promise.all(filterDefined(groups).map((g) => getGroupContractIds(g.id)))
       )

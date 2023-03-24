@@ -139,9 +139,15 @@ export async function getGroupPrivacyBySlug(
     .privacyStatus
 }
 
-export async function getGroupFromSlug(groupSlug: string) {
+export async function getGroupFromSlug(
+  groupSlug: string,
+  permission: 'admin' | 'client'
+) {
   const { data: group } = await run(
-    db.from('groups').select('data').contains('data', { slug: groupSlug })
+    initSupabaseClient(permission)
+      .from('groups')
+      .select('data')
+      .contains('data', { slug: groupSlug })
   )
   if (group && group.length > 0) {
     return group[0].data as Group
