@@ -1,3 +1,4 @@
+import { safeJsonParse } from 'common/util/json'
 import { useEffect, useState } from 'react'
 
 const store: { [key: string]: any } = {}
@@ -6,8 +7,7 @@ export const usePersistentInMemoryState = <T>(initialValue: T, key: string) => {
   const [state, setState] = useState<T>(initialValue)
 
   useEffect(() => {
-    const storedJson = store.hasOwnProperty(key) ? JSON.parse(store[key]) : null
-    const storedValue = storedJson ?? initialValue
+    const storedValue = safeJsonParse(store[key]) ?? initialValue
     setState(storedValue as T)
   }, [key])
 
