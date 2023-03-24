@@ -284,10 +284,12 @@ const NonCurrentUserProfile = (props: { user: User }) => {
             <DailyProfit user={user} isCurrentUser={false} />
           </div>
         </Row>
-        <Row className={' items-center sm:gap-2'}>
+        <Row className={' hidden items-center sm:inline-flex sm:gap-2'}>
           <MoreOptionsUserButton user={user} />
           <UserFollowButton userId={user.id} />
         </Row>
+        <MoreOptionsUserButton user={user} className={'block sm:hidden'} />
+        <UserFollowButton userId={user.id} className={'block sm:hidden'} />
       </Row>
       <UserBioLinks user={user} isCurrentUser={false} />
     </Col>
