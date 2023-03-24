@@ -1,29 +1,13 @@
 import { useEffect } from 'react'
 import { DarkModeContext, theme_option } from 'web/hooks/dark-mode-context'
-import {
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { postMessageToNative } from './native-message-listener'
 
 export const DarkModeProvider = (props: { children: any }) => {
-  const [theme, changeTheme] = usePersistentState<theme_option>('auto', {
-    key: 'theme',
-    store: storageStore(safeLocalStorage),
-  })
-
-  useEffect(() => {
-    if (safeLocalStorage) {
-      const savedTheme = safeParse(safeLocalStorage.getItem('theme'))
-
-      const validatedTheme = ['auto', 'dark', 'light'].includes(savedTheme)
-        ? savedTheme
-        : 'auto'
-
-      changeTheme(validatedTheme as theme_option)
-    }
-  }, [])
+  const [theme, changeTheme] = usePersistentLocalState<theme_option>(
+    'auto',
+    'theme'
+  )
 
   const reRenderTheme = () => {
     const autoDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -58,10 +42,3 @@ export const DarkModeProvider = (props: { children: any }) => {
   )
 }
 
-const safeParse = (json: any) => {
-  try {
-    return JSON.parse(json ?? '')
-  } catch (e) {
-    return null
-  }
-}
