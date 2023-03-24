@@ -216,7 +216,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
               </span>
             </Col>
           </Row>
-      
+
           {!isCurrentUser && (
             <Row className={'gap-2'}>
               <MoreOptionsUserButton user={user} />
