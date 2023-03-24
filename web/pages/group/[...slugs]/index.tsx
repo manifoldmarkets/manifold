@@ -45,9 +45,14 @@ import { usePosts } from 'web/hooks/use-post'
 import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listPosts } from 'web/lib/firebase/posts'
-import { getGroupFromSlug, getGroupPrivacyBySlug } from 'web/lib/supabase/group'
+import {
+  adminGetGroupPrivacyBySlug,
+  getGroupFromSlug,
+  getGroupPrivacyBySlug,
+} from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
+import { adminDb } from 'web/lib/supabase/db'
 
 export const groupButtonClass = 'text-ink-700 hover:text-ink-800'
 const MAX_LEADERBOARD_SIZE = 50
@@ -65,7 +70,7 @@ type GroupParams = {
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
   const groupSlug = slugs[0]
-  const groupPrivacy = await getGroupPrivacyBySlug(groupSlug)
+  const groupPrivacy = await adminGetGroupPrivacyBySlug(groupSlug, 'admin')
   if (groupPrivacy === 'private') {
     return {
       props: {
