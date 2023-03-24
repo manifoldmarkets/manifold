@@ -47,7 +47,9 @@ export function PrivateGroupPage(props: { slugs: string[] }) {
   const isMember = useIsGroupMember(slugs[0])
   if (isMember === undefined) {
     return <LoadingPrivateThing />
-  } else if (isMember === false)
+  }
+  if (isMember === false) {
     return <InaccessiblePrivateThing thing="group" />
-  else return <GroupPageContent />
+  }
+  return <GroupPageContent />
 }

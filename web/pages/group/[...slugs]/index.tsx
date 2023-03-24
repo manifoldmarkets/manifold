@@ -77,7 +77,7 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
   if (group.privacyStatus === 'private') {
     return {
       props: {
-        groupPrivacy: group.privacyStatus,
+        groupPrivacy: 'private',
         slugs,
       },
     }

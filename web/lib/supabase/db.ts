@@ -12,6 +12,7 @@ export function initSupabaseClient(permission: 'admin' | 'client') {
         ? process.env.PROD_ADMIN_SUPABASE_KEY
         : ENV_CONFIG.supabaseAnonKey
       : ENV_CONFIG.supabaseAnonKey
+
   if (!ENV_CONFIG.supabaseInstanceId || !key) {
     throw new Error("No Supabase config present; Supabase stuff won't work.")
   }
@@ -32,4 +33,3 @@ export function updateSupabaseAuth(token?: string) {
 }
 
 export const db = initSupabaseClient('client')
-export const adminDb = initSupabaseClient('admin')
