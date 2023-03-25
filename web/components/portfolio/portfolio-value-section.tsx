@@ -25,16 +25,19 @@ export const PortfolioValueSection = memo(
     const [graphMode, setGraphMode] = useState<GraphMode>('profit')
     const graphPoints = useMemo(
       () =>
-        portfolioHistory?.map((p) => ({
-          x: p.timestamp,
-          y:
-            graphMode === 'balance'
-              ? p.balance
-              : p.balance +
-                p.investmentValue -
-                (graphMode === 'profit' ? p.totalDeposits : 0),
-          obj: p,
-        })),
+        portfolioHistory
+          ?.map((p) => ({
+            x: p.timestamp,
+            y:
+              graphMode === 'balance'
+                ? p.balance
+                : p.balance +
+                  p.investmentValue -
+                  (graphMode === 'profit' ? p.totalDeposits : 0),
+            obj: p,
+          }))
+          // timestamp filled with NaNs 
+          .filter((p) => isFinite(p.x)),
       [portfolioHistory, graphMode]
     )
 
