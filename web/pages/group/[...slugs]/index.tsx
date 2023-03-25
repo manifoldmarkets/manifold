@@ -45,7 +45,7 @@ import { usePosts } from 'web/hooks/use-post'
 import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listPosts } from 'web/lib/firebase/posts'
-import { adminGetGroupFromSlug, getGroupFromSlug } from 'web/lib/supabase/group'
+import { adminGetGroupFromSlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 
