@@ -248,7 +248,7 @@ export async function setTranslatedMemberRole(
 export function useGroupFromSlug(groupSlug: string) {
   const [group, setGroup] = useState<Group | null>(null)
   useEffect(() => {
-    getGroupFromSlug(groupSlug, 'client')
+    getGroupFromSlug(groupSlug)
       .then((result) => {
         setGroup(result)
       })

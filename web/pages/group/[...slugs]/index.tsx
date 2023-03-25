@@ -45,7 +45,7 @@ import { usePosts } from 'web/hooks/use-post'
 import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listPosts } from 'web/lib/firebase/posts'
-import { getGroupFromSlug } from 'web/lib/supabase/group'
+import { adminGetGroupFromSlug, getGroupFromSlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 
@@ -65,7 +65,7 @@ type GroupParams = {
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
   const groupSlug = slugs[0]
-  const group = await getGroupFromSlug(groupSlug, 'admin')
+  const group = await adminGetGroupFromSlug(groupSlug)
   if (!group) {
     return {
       props: {
@@ -163,7 +163,6 @@ export function NonPrivateGroupPage(props: { groupParams: GroupParams }) {
 
 export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const { groupParams } = props
-
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
   const page = slugs?.[1] as typeof groupSubpages[number]
@@ -186,7 +185,6 @@ export function GroupPageContent(props: { groupParams?: GroupParams }) {
   const bannerVisible = useIntersection(bannerRef, '-120px', useRef(null))
   const aboutPost =
     useRealtimePost(group?.aboutPostId) ?? groupParams?.aboutPost
-
   const groupPosts = usePosts(group?.postIds ?? []) ?? groupParams?.posts ?? []
   const creator = useGroupCreator(group) ?? groupParams?.creator
 

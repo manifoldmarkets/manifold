@@ -37,6 +37,7 @@ export function createSupabaseDirectClient(
       "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."
     )
   }
+  console.log(process.env.SUPABASE_PASSWORD)
   password = password ?? process.env.SUPABASE_PASSWORD
   if (!password) {
     throw new Error(
