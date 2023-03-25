@@ -36,7 +36,7 @@ export const PortfolioValueSection = memo(
                   (graphMode === 'profit' ? p.totalDeposits : 0),
             obj: p,
           }))
-          // timestamp filled with NaNs 
+          // timestamp filled with NaNs
           .filter((p) => isFinite(p.x)),
       [portfolioHistory, graphMode]
     )
