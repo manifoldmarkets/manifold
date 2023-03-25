@@ -43,11 +43,6 @@ export async function updateContractMetricsCore() {
     [yesterday, weekAgo, monthAgo].map((t) => getContractProbsAt(pg, t))
   )
 
-  log('Loading unique bettors...')
-  const [yesterdayBettors, weekAgoBettors, monthAgoBettors] = await Promise.all(
-    [yesterday, weekAgo, monthAgo].map((t) => getBettorsSince(pg, t))
-  )
-
   log('Loading volume...')
   const volume = await getVolumeSince(pg, yesterday)
 
@@ -74,9 +69,6 @@ export async function updateContractMetricsCore() {
     const update = {
       volume24Hours: volume[contract.id] ?? 0,
       elasticity: isClosed ? 0 : elasticity,
-      uniqueBettors24Hours: yesterdayBettors[contract.id] ?? 0,
-      uniqueBettors7Days: weekAgoBettors[contract.id] ?? 0,
-      uniqueBettors30Days: monthAgoBettors[contract.id] ?? 0,
       ...cpmmFields,
     }
 
@@ -116,19 +108,6 @@ const getVolumeSince = async (pg: SupabaseDirectClient, since: number) => {
       group by contract_id`,
       [since],
       (r) => [r.contract_id as string, parseFloat(r.volume as string)]
-    )
-  )
-}
-
-const getBettorsSince = async (pg: SupabaseDirectClient, since: number) => {
-  return Object.fromEntries(
-    await pg.map(
-      `select contract_id, count(*)::int as n
-      from user_contract_metrics
-      where (data->'lastBetTime')::bigint > $1
-      group by contract_id`,
-      [since],
-      (r) => [r.contract_id as string, r.n as number]
     )
   )
 }
