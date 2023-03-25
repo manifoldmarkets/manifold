@@ -221,3 +221,17 @@ export async function getContractParams(contract: Contract) {
     relatedContracts,
   }) as ContractParams
 }
+
+export async function searchContract(query: string) {
+  const { data } = await run(
+    db
+      .from('contracts')
+      .select('data')
+      .textSearch('data->>question', `${query}`)
+  )
+  if (data && data.length > 0) {
+    return data.map((d) => d.data as Contract)
+  } else {
+    return []
+  }
+}
