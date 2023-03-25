@@ -45,7 +45,7 @@ import { usePosts } from 'web/hooks/use-post'
 import { useRealtimePost } from 'web/hooks/use-post-supabase'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { listPosts } from 'web/lib/firebase/posts'
-import { adminGetGroupFromSlug } from 'web/lib/supabase/group'
+import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { getPost } from 'web/lib/supabase/post'
 import { getUser, getUsers } from 'web/lib/supabase/user'
 
@@ -65,7 +65,7 @@ type GroupParams = {
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
   const groupSlug = slugs[0]
-  const group = await adminGetGroupFromSlug(groupSlug)
+  const group = await getGroupFromSlug(groupSlug, 'admin')
   if (!group) {
     return {
       props: {

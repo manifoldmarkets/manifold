@@ -139,19 +139,13 @@ export async function getGroupPrivacyBySlug(
     .privacyStatus
 }
 
-export async function getGroupFromSlug(groupSlug: string) {
+export async function getGroupFromSlug(
+  groupSlug: string,
+  permission?: 'admin'
+) {
+  const client = permission == 'admin' ? adminDb : db
   const { data: group } = await run(
-    db.from('groups').select('data').contains('data', { slug: groupSlug })
-  )
-  if (group && group.length > 0) {
-    return group[0].data as Group
-  }
-  return null
-}
-
-export async function adminGetGroupFromSlug(groupSlug: string) {
-  const { data: group } = await run(
-    adminDb.from('groups').select('data').contains('data', { slug: groupSlug })
+    client.from('groups').select('data').contains('data', { slug: groupSlug })
   )
   if (group && group.length > 0) {
     return group[0].data as Group
