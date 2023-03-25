@@ -12,8 +12,6 @@ export function initSupabaseClient(permission: 'admin' | 'client') {
         ? process.env.PROD_ADMIN_SUPABASE_KEY
         : ENV_CONFIG.supabaseAnonKey
       : ENV_CONFIG.supabaseAnonKey
-
-  console.log(key)
   if (!ENV_CONFIG.supabaseInstanceId || !key) {
     throw new Error("No Supabase config present; Supabase stuff won't work.")
   }
