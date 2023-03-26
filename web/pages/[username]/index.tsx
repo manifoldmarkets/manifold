@@ -53,6 +53,7 @@ import {
 } from 'web/components/widgets/user-link'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
+import { DailyStats } from 'web/components/daily-stats'
 
 export const getStaticProps = async (props: {
   params: {
@@ -156,7 +157,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
 
-      <Col>
+      <Col className='mx-4 mt-1'>
         <Row
           className={clsx(
             'flex-wrap justify-between p-1',
@@ -205,7 +206,9 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
             </Col>
           </Row>
 
-          {!isCurrentUser && (
+          {isCurrentUser ? (
+            <DailyStats user={user} />
+          ) : (
             <Row className={'gap-2'}>
               <MoreOptionsUserButton user={user} />
               <UserFollowButton userId={user.id} />
@@ -280,7 +283,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
           </Row>
         </Col>
 
-        <Col className="mx-4 mt-2">
+        <Col className="mt-2">
           <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
