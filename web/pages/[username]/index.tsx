@@ -157,7 +157,7 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
 
-      <Col className='mx-4 mt-1'>
+      <Col className="mx-4 mt-1">
         <Row
           className={clsx(
             'flex-wrap justify-between p-1',
