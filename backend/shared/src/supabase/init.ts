@@ -1,20 +1,12 @@
 import * as pgPromise from 'pg-promise'
-import {
-  createClient,
-  getInstanceHostname,
-  PlainTablesAndViews,
-} from 'common/supabase/utils'
+import { createClient, getInstanceHostname } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { isProd } from '../utils'
-import { Pool } from 'pg'
-import { Kysely, PostgresDialect, QueryCreator } from 'kysely'
 
 export const pgp = pgPromise()
 
 export type SupabaseDirectClient = ReturnType<typeof createSupabaseDirectClient>
-export type KyselyClient = ReturnType<typeof createKyselyClient>
-export type KyselyQuery = QueryCreator<PlainTablesAndViews>
 
 export function createSupabaseClient() {
   const instanceId =
@@ -64,12 +56,4 @@ export function createSupabaseDirectClient(
   password?: string
 ) {
   return pgp(getPostgresConnectionInfo(instanceId, password))
-}
-
-export function createKyselyClient(instanceId?: string, password?: string) {
-  return new Kysely<PlainTablesAndViews>({
-    dialect: new PostgresDialect({
-      pool: new Pool(getPostgresConnectionInfo(instanceId, password)),
-    }),
-  })
 }

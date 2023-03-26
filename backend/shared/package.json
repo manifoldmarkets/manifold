@@ -18,7 +18,6 @@
     "dayjs": "1.11.4",
     "expo-server-sdk": "3.6.0",
     "firebase-admin": "11.5.0",
-    "kysely": "0.23.5",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "pg-promise": "11.4.1",

@@ -30,7 +30,6 @@
     "@tiptap/html": "2.0.0-beta.204",
     "@tiptap/starter-kit": "2.0.0-beta.204",
     "@tiptap/suggestion": "2.0.0-beta.204",
-    "@types/pg": "8.6.6",
     "cors": "2.8.5",
     "dayjs": "1.11.4",
     "expo-server-sdk": "3.6.0",
@@ -41,7 +40,6 @@
     "mailgun-js": "0.22.0",
     "marked": "4.1.1",
     "openai": "3.2.1",
-    "pg": "8.10.0",
     "pg-promise": "11.4.1",
     "stripe": "8.194.0",
     "zod": "3.17.2"
