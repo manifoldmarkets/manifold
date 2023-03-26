@@ -4,7 +4,7 @@ import {
   NotificationReason,
 } from 'common/notification'
 import { PrivateUser } from 'common/user'
-import { groupBy, sortBy } from 'lodash'
+import { first, groupBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 import {
   listenForNotifications,
@@ -77,9 +77,14 @@ export function useGroupedNonBalanceChangeNotifications(
   const notifications = useNotifications(privateUser) ?? []
   const balanceChangeOnlyReasons: NotificationReason[] = ['loan_income']
   return useMemo(() => {
-    return groupNotifications(
+    const groupedNotifications = groupNotifications(
       notifications.filter((n) => !balanceChangeOnlyReasons.includes(n.reason))
     )
+    const mostRecentNotification = first(notifications)
+    return {
+      groupedNotifications,
+      mostRecentNotification,
+    }
   }, [notifications])
 }
 

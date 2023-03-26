@@ -41,12 +41,9 @@ export const redeemad = authEndpoint(async (req, auth) => {
     (r) => r.data as AdRedeemTxn
   )
 
-  const lastRedeemTime = Math.max(
-    ...txns.filter((txn) => txn.toId === user.id).map((txn) => txn.createdTime)
-  )
-
-  if (Date.now() - lastRedeemTime < DAY_MS) {
-    throw new APIError(403, 'Not allowed to redeem ad more than once a day')
+  const hasRedeemed = txns.some((txn) => txn.toId === user.id)
+  if (hasRedeemed) {
+    throw new APIError(403, 'Not allowed to redeem ad more than once')
   }
 
   const spent = sumBy(txns, 'amount')

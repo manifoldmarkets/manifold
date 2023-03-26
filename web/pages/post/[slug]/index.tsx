@@ -60,8 +60,8 @@ export async function getStaticProps(props: { params: { slug: string } }) {
       post,
       creator,
       comments,
-      watchedCount: watched.length,
-      skippedCount: skipped.length,
+      watched,
+      skipped,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -76,10 +76,10 @@ export default function PostPage(props: {
   post: Post | null
   creator: User
   comments: PostComment[]
-  watchedCount?: number
-  skippedCount?: number
+  watched?: string[] //user ids
+  skipped?: string[] //user ids
 }) {
-  const { creator, watchedCount, skippedCount } = props
+  const { creator, watched = [], skipped = [] } = props
   const postId = props.post?.id ?? '_'
   const post = usePost(postId) ?? props.post
 
@@ -142,9 +142,13 @@ export default function PostPage(props: {
         {post.type === 'ad' && (
           <AdSection
             ad={post as Ad}
-            watchedCount={watchedCount ?? 0}
-            skippedCount={skippedCount ?? 0}
-            user={user}
+            watchedCount={watched.length}
+            skippedCount={skipped.length}
+            userCanClaim={
+              !!user &&
+              post.creatorId !== user.id &&
+              !watched.includes(user.id ?? '')
+            }
           />
         )}
 
@@ -161,14 +165,14 @@ function AdSection(props: {
   ad: Ad
   skippedCount: number
   watchedCount: number
-  user: User | null | undefined
+  userCanClaim: boolean
 }) {
-  const { ad, skippedCount, watchedCount, user } = props
+  const { ad, skippedCount, watchedCount, userCanClaim } = props
   const router = useRouter()
 
   return (
     <>
-      {ad.creatorId !== user?.id && ad.funds > ad.costPerView && (
+      {userCanClaim && ad.funds > ad.costPerView && (
         <>
           <div className="mt-4 w-full text-center">
             This post is promoted! Reward for reading:

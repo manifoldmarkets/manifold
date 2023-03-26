@@ -274,7 +274,7 @@ export function NewContractPanel(props: {
                     PSEUDO_NUMERIC:
                       '[EXPERIMENTAL] Predict the value of a number.',
                     CERT: '[EXPERIMENTAL] Tradeable shares of a stock.',
-                    QUADRATIC_FUNDING: '',
+                    // QUADRATIC_FUNDING: '',
                     // '[EXPERIMENTAL] Radically fund projects. ',
                   }[choice] ?? ''
                 setMarketInfoText(text)
@@ -285,7 +285,7 @@ export function NewContractPanel(props: {
                 'Multi choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
-                'Quadratic Funding': 'QUADRATIC_FUNDING',
+                // 'Quadratic Funding': 'QUADRATIC_FUNDING',
                 // Only show cert option in dev, for now
                 ...(ENV !== 'PROD' ? { Cert: 'CERT' } : {}),
               }}
@@ -382,7 +382,7 @@ export function NewContractPanel(props: {
               </div>
             </>
           )}
-          {!fromGroup && (
+          {!fromGroup && visibility != 'private' && (
             <>
               <Spacer h={4} />
               <Row className={'items-end gap-x-2'}>
@@ -450,23 +450,27 @@ export function NewContractPanel(props: {
               />
             </Row>
           </div>
-          <Spacer h={6} />
-          <Row className="items-center gap-2">
-            <span>
-              Publicly listed{' '}
-              <InfoTooltip
-                text={
-                  visibility === 'public'
-                    ? 'Visible on home page and search results'
-                    : "Only visible via link. Won't notify followers"
-                }
-              />
-            </span>
-            <ShortToggle
-              on={visibility === 'public'}
-              setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
-            />
-          </Row>
+          {visibility != 'private' && (
+            <>
+              <Spacer h={6} />
+              <Row className="items-center gap-2">
+                <span>
+                  Publicly listed{' '}
+                  <InfoTooltip
+                    text={
+                      visibility === 'public'
+                        ? 'Visible on home page and search results'
+                        : "Only visible via link. Won't notify followers"
+                    }
+                  />
+                </span>
+                <ShortToggle
+                  on={visibility === 'public'}
+                  setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
+                />
+              </Row>
+            </>
+          )}
           <Spacer h={6} />
         </>
       )}

@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
-import { memo, ReactNode, useState, useMemo } from 'react'
+import React, { memo, ReactNode, useState, useMemo } from 'react'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -14,6 +14,8 @@ import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { useSingleValueHistoryChartViewScale } from '../charts/generic-charts'
 import { AddFundsButton } from '../profile/add-funds-button'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { track } from 'web/lib/service/analytics'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -47,6 +49,7 @@ export const PortfolioValueSection = memo(
       graphView.setViewYScale(undefined)
     })
     const graphView = useSingleValueHistoryChartViewScale()
+    const isMobile = useIsMobile()
 
     //zooms out of graph if zoomed in upon time selection change
     const setTimePeriod = useEvent((timePeriod: Period) => {
@@ -85,6 +88,7 @@ export const PortfolioValueSection = memo(
             </div>
           )}
           disabled={true}
+          placement={isMobile ? 'bottom' : undefined}
         />
       )
     }
@@ -110,10 +114,10 @@ export const PortfolioValueSection = memo(
                   ? graphDisplayNumber.toString().includes('-')
                     ? 'text-scarlet-500'
                     : 'text-teal-500'
-                  : totalProfit > 0
+                  : totalProfit >= 0
                   ? 'text-teal-500'
                   : 'text-scarlet-500'
-                : totalProfit > 0
+                : totalProfit >= 0
                 ? 'text-teal-500'
                 : 'text-scarlet-500',
               'text-lg sm:text-xl'
@@ -150,6 +154,7 @@ export const PortfolioValueSection = memo(
                 />
               )
         }
+        placement={isMobile ? 'bottom' : undefined}
       />
     )
   }
@@ -166,6 +171,7 @@ export function PortfolioValueSkeleton(props: {
   switcherColor?: ColorType
   userId?: string
   disabled?: boolean
+  placement?: 'bottom'
 }) {
   const {
     graphMode,
@@ -178,10 +184,16 @@ export function PortfolioValueSkeleton(props: {
     switcherColor,
     userId,
     disabled,
+    placement,
   } = props
   return (
-    <>
-      <Row className="mb-1 items-start gap-2 sm:mb-2">
+    <Col className={'gap-4'}>
+      <Row
+        className={clsx(
+          'mb-1 items-center justify-start gap-2 sm:mb-2',
+          placement === 'bottom' ? 'ml-2 gap-8' : ''
+        )}
+      >
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
@@ -191,9 +203,10 @@ export function PortfolioValueSkeleton(props: {
           )}
           onClick={() => {
             onClickNumber('profit')
+            track('Trading Profits Clicked')
           }}
         >
-          <div className="text-ink-600 text-xs sm:text-sm">Profit</div>
+          <div className="text-ink-600 text-xs sm:text-sm">Trading profits</div>
           {profitElement}
         </Col>
 
@@ -204,25 +217,39 @@ export function PortfolioValueSkeleton(props: {
           )}
           onClick={() => {
             onClickNumber('value')
+            track('Portfolio Value Clicked')
           }}
         >
           <div className="text-ink-600 text-xs sm:text-sm">Portfolio value</div>
           {valueElement}
         </Col>
 
-        <AddFundsButton userId={userId} className="self-center max-sm:hidden" />
+        <AddFundsButton userId={userId} className="self-center" />
 
-        <TimeRangePicker
-          currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={setCurrentTimePeriod}
-          color={switcherColor}
-          disabled={disabled}
-          className="ml-auto"
-        />
+        {!placement && (
+          <TimeRangePicker
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setCurrentTimePeriod}
+            color={switcherColor}
+            disabled={disabled}
+            className="ml-auto"
+          />
+        )}
       </Row>
-      <SizedContainer fullHeight={200} mobileHeight={100}>
+      <SizedContainer fullHeight={200} mobileHeight={175}>
         {graphElement}
       </SizedContainer>
-    </>
+      {placement === 'bottom' && (
+        <Col className={' mx-2 -mt-2 mb-1'}>
+          <TimeRangePicker
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setCurrentTimePeriod}
+            color={switcherColor}
+            disabled={disabled}
+            className="justify-around"
+          />
+        </Col>
+      )}
+    </Col>
   )
 }

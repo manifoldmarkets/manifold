@@ -30,7 +30,9 @@ const withURLParam = (location: Location, k: string, v?: string) => {
   return newUrl
 }
 
-export const storageStore = <T>(storage?: Backend): PersistentStore<T> => ({
+export const storageStore = <T>(
+  storage: Backend | undefined
+): PersistentStore<T> => ({
   get: (k: string) => {
     if (!storage) {
       return undefined
@@ -108,6 +110,7 @@ export const inMemoryStore = <T>(): PersistentStore<T> => ({
   },
 })
 
+/** @deprecated  - use usePersistentLocalState or write new hook */
 export const usePersistentState = <T>(
   initial: T,
   persist?: PersistenceOptions<T>
@@ -148,6 +151,7 @@ export const usePersistentState = <T>(
   return [state, setState] as const
 }
 
+/** @deprecated  - use usePersistentLocalState or write new hook */
 export const usePersistentRevalidatedState = <T>(
   initial: T,
   persist: PersistenceOptions<T>,

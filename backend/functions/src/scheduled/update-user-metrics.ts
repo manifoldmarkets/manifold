@@ -10,18 +10,17 @@ import { DAY_MS } from 'common/util/time'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import {
   calculateNewPortfolioMetrics,
-  calculateNewProfit,
   calculateCreatorTraders,
   calculateMetricsByContract,
 } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
 import { filterDefined } from 'common/util/array'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { secrets } from 'functions/secrets'
+import { bulkInsert } from 'shared/supabase/utils'
+import { secrets } from 'shared/secrets'
 
 const firestore = admin.firestore()
 
@@ -31,7 +30,7 @@ export const updateUserMetrics = functions
     timeoutSeconds: 540,
     secrets,
   })
-  .pubsub.schedule('every 1 minutes')
+  .pubsub.schedule('every 5 minutes')
   .onRun(async () => {
     await updateUserMetricsCore()
   })
@@ -46,7 +45,7 @@ export async function updateUserMetricsCore() {
 
   log('Loading users...')
   const users = await pg.map(
-    `select data from users order by data->'metricsLastUpdated' asc nulls first limit 500`,
+    `select data from users order by data->'metricsLastUpdated' asc nulls first limit 5000`,
     [],
     (r) => r.data as User
   )
@@ -57,18 +56,17 @@ export async function updateUserMetricsCore() {
   }
   log(`Loaded ${userIds.length} users.`)
 
-  log('Loading portfolio history snapshots...')
-  const [
-    currentPortfolioSnapshots,
-    yesterdayPortfolioSnapshots,
-    weekAgoPortfolioSnapshots,
-    monthAgoPortfolioSnapshots,
-  ] = await Promise.all(
-    [now, yesterday, weekAgo, monthAgo].map((t) =>
-      getPortfolioHistorySnapshots(pg, userIds, t)
+  log('Loading current portfolio snapshot...')
+  const currPortfolios = await getPortfolioSnapshot(pg, userIds)
+  log(`Loaded current portfolio snapshot.`)
+
+  log('Loading portfolio historical profits...')
+  const [yesterdayProfits, weeklyProfits, monthlyProfits] = await Promise.all(
+    [yesterday, weekAgo, monthAgo].map((t) =>
+      getPortfolioHistoricalProfits(pg, userIds, t)
     )
   )
-  log(`Loaded portfolio history snapshots.`)
+  log(`Loaded portfolio historical profits.`)
 
   log('Loading bets...')
   const metricRelevantBets = await getMetricRelevantUserBets(
@@ -94,35 +92,37 @@ export async function updateUserMetricsCore() {
 
   log('Computing metric updates...')
   const userUpdates = []
+  const portfolioUpdates = []
   for (const user of users) {
     const userContracts = contractsByCreator[user.id] ?? []
-    const newMetricRelevantBets = metricRelevantBets[user.id] ?? []
-
-    const newPortfolioHistory = {
-      current: currentPortfolioSnapshots[user.id],
-      day: yesterdayPortfolioSnapshots[user.id],
-      week: weekAgoPortfolioSnapshots[user.id],
-      month: monthAgoPortfolioSnapshots[user.id],
-    }
-
-    const newCreatorTraders = calculateCreatorTraders(userContracts)
+    const userMetricRelevantBets = metricRelevantBets[user.id] ?? []
+    const currPortfolio = currPortfolios[user.id]
+    const creatorTraders = calculateCreatorTraders(userContracts)
 
     const newPortfolio = calculateNewPortfolioMetrics(
       user,
       contractsById,
-      newMetricRelevantBets
+      userMetricRelevantBets
     )
-    const currPortfolio = newPortfolioHistory.current
     const didPortfolioChange =
       currPortfolio === undefined ||
       currPortfolio.balance !== newPortfolio.balance ||
       currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
       currPortfolio.investmentValue !== newPortfolio.investmentValue
 
-    const newProfit = calculateNewProfit(newPortfolioHistory, newPortfolio)
+    const allTimeProfit =
+      newPortfolio.balance +
+      newPortfolio.investmentValue -
+      newPortfolio.totalDeposits
+    const newProfit = {
+      daily: allTimeProfit - (yesterdayProfits[user.id] ?? allTimeProfit),
+      weekly: allTimeProfit - (weeklyProfits[user.id] ?? allTimeProfit),
+      monthly: allTimeProfit - (monthlyProfits[user.id] ?? allTimeProfit),
+      allTime: allTimeProfit,
+    }
 
     const metricRelevantBetsByContract = groupBy(
-      newMetricRelevantBets,
+      userMetricRelevantBets,
       (b) => b.contractId
     )
 
@@ -138,7 +138,14 @@ export async function updateUserMetricsCore() {
 
     const userDoc = firestore.collection('users').doc(user.id)
     if (didPortfolioChange) {
-      writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
+      portfolioUpdates.push({
+        user_id: user.id,
+        portfolio_id: userDoc.collection('portfolioHistory').doc().id,
+        ts: new Date(newPortfolio.timestamp).toISOString(),
+        investment_value: newPortfolio.investmentValue,
+        balance: newPortfolio.balance,
+        total_deposits: newPortfolio.totalDeposits,
+      })
     }
 
     const contractMetricsCollection = userDoc.collection('contract-metrics')
@@ -149,7 +156,7 @@ export async function updateUserMetricsCore() {
     userUpdates.push({
       user: user,
       fields: {
-        creatorTraders: newCreatorTraders,
+        creatorTraders: creatorTraders,
         profitCached: newProfit,
         nextLoanCached: nextLoanPayout ?? 0,
       },
@@ -162,7 +169,12 @@ export async function updateUserMetricsCore() {
     }
   }
 
-  log('Committing writes...')
+  log('Inserting Supabase portfolio history entries...')
+  if (portfolioUpdates.length > 0) {
+    await bulkInsert(pg, 'user_portfolio_history', portfolioUpdates)
+  }
+
+  log('Committing Firestore writes...')
   await writer.close()
 
   await revalidateStaticProps('/leaderboards')
@@ -207,19 +219,43 @@ const getMetricRelevantUserBets = async (
   )
 }
 
-const getPortfolioHistorySnapshots = async (
+const getPortfolioSnapshot = async (
+  pg: SupabaseDirectClient,
+  userIds: string[]
+) => {
+  return Object.fromEntries(
+    await pg.map(
+      `select distinct on (user_id) user_id, investment_value, balance, total_deposits
+      from user_portfolio_history
+      where user_id in ($1:list)
+      order by user_id, ts desc`,
+      [userIds],
+      (r) => [
+        r.user_id as string,
+        {
+          userId: r.user_id as string,
+          investmentValue: parseFloat(r.investment_value as string),
+          balance: parseFloat(r.balance as string),
+          totalDeposits: parseFloat(r.total_deposits as string),
+        },
+      ]
+    )
+  )
+}
+
+const getPortfolioHistoricalProfits = async (
   pg: SupabaseDirectClient,
   userIds: string[],
   when: number
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select distinct on (user_id) user_id, data
+      `select distinct on (user_id) user_id, investment_value + balance - total_deposits as profit
       from user_portfolio_history
-      where (data->'timestamp')::bigint < $2 and user_id in ($1:list)
-      order by user_id, (data->'timestamp')::bigint desc`,
-      [userIds, when],
-      (r) => [r.user_id as string, r.data as PortfolioMetrics]
+      where ts < $2 and user_id in ($1:list)
+      order by user_id, ts desc`,
+      [userIds, new Date(when).toISOString()],
+      (r) => [r.user_id as string, parseFloat(r.profit as string)]
     )
   )
 }

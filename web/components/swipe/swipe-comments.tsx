@@ -10,8 +10,8 @@ import { CommentsTabContent } from '../contract/contract-tabs'
 import { ContractComment } from 'common/comment'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
-import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
+import { User } from 'common/user'
 
 export function SwipeComments(props: {
   contract: Contract
@@ -67,10 +67,10 @@ export function SwipeComments(props: {
 
 export function CommentsButton(props: {
   contract: Contract
-  color: 'gray' | 'white'
-  size?: 'md' | 'lg'
+  user: User | null | undefined
 }) {
-  const { contract, color, size } = props
+  const { contract, user } = props
+
   const [open, setOpen] = useState(false)
 
   const comments = useComments(contract.id) ?? []
@@ -78,32 +78,19 @@ export function CommentsButton(props: {
   return (
     <Tooltip text={`Comments`} placement="bottom" className={'z-10'}>
       <button
-        className={clsx(
-          'hover:text-ink-600 disabled:opacity-50',
-          color === 'white' ? 'text-ink-1000' : 'text-ink-500'
-        )}
+        disabled={comments.length === 0 && !user}
+        className="hover:text-ink-600 text-ink-500 -mr-1 flex items-center gap-1.5 p-1 disabled:opacity-50"
         onClick={() => {
           setOpen(true)
-          track('view comments', {
-            contractId: contract.id,
-          })
+          track('view comments', { contractId: contract.id })
         }}
       >
-        <Row className="items-center gap-2 p-2">
-          <ChatIcon className={clsx(size === 'lg' ? 'h-8 w-8' : 'h-5 w-5')} />
-          {comments.length > 0 && (
-            <div
-              className={clsx(
-                'h-5 align-middle disabled:opacity-50',
-                size === 'md' ? 'text-sm' : '',
-                color === 'white' ? 'text-ink-1000' : 'text-ink-500'
-              )}
-            >
-              {comments.length}
-            </div>
-          )}
-        </Row>
-
+        <ChatIcon className="h-6 w-6" />
+        {comments.length > 0 && (
+          <div className="text-ink-500 h-5 align-middle text-sm disabled:opacity-50">
+            {comments.length}
+          </div>
+        )}
         <CommentsDialog
           contract={contract}
           open={open}

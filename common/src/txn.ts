@@ -1,6 +1,8 @@
 // A txn (pronounced "texan") respresents a payment between two ids on Manifold
 // Shortened from "transaction" to distinguish from Firebase transactions (and save chars)
 
+import { QuestType } from 'common/quest'
+
 type AnyTxnType =
   | Donation
   | Tip
@@ -22,6 +24,7 @@ type AnyTxnType =
   | QfDividend
   | AdCreate
   | AdRedeem
+  | QuestReward
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -221,6 +224,16 @@ type AdRedeem = {
   toType: 'USER'
 }
 
+type QuestReward = {
+  category: 'QUEST_REWARD'
+  fromType: 'BANK'
+  toType: 'USER'
+  data: {
+    questType: QuestType
+    questCount: number
+  }
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -244,3 +257,4 @@ export type QfAddPoolTxn = QfTxn & QfAddPool
 export type QfDividendTxn = QfTxn & QfDividend
 export type AdCreateTxn = Txn & AdCreate
 export type AdRedeemTxn = Txn & AdRedeem
+export type QuestRewardTxn = Txn & QuestReward

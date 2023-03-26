@@ -10,7 +10,7 @@ export type SearchGroupInfo = Pick<
   | 'about'
   | 'totalContracts'
   | 'totalMembers'
-  | 'anyoneCanJoin'
+  | 'privacyStatus'
 >
 
 // functions called for multiple groups
@@ -24,7 +24,7 @@ export async function searchGroups(prompt: string, limit: number) {
     'slug',
     'totalMembers',
     'totalContracts',
-    'anyoneCanJoin'
+    'privacyStatus'
   )
     .order('data->totalMembers', { ascending: false } as any)
     .limit(limit)
@@ -45,7 +45,7 @@ export async function getMemberGroups(userId: string) {
     'slug',
     'totalMembers',
     'totalContracts',
-    'anyoneCanJoin'
+    'privacyStatus'
   ).in(
     'id',
     groupIds.map((d: { group_id: string }) => d.group_id)

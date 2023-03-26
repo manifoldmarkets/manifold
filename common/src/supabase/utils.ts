@@ -13,7 +13,6 @@ import { Bet } from '../bet'
 import { ContractMetrics } from '../calculate-metrics'
 import { Group, GroupMemberDoc, GroupContractDoc } from '../group'
 import { UserEvent } from '../events'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 export type Schema = Database['public']
 export type Tables = Schema['Tables']
@@ -44,7 +43,6 @@ export type SubcollectionTableMapping = {
 }
 export const subcollectionTables: SubcollectionTableMapping = {
   users: {
-    portfolioHistory: 'user_portfolio_history',
     'contract-metrics': 'user_contract_metrics',
     follows: 'user_follows',
     reactions: 'user_reactions',
@@ -104,7 +102,6 @@ type TableJsonTypes = {
   users: User
   user_events: UserEvent
   user_contract_metrics: ContractMetrics
-  user_portfolio_history: PortfolioMetrics
   contracts: Contract
   contract_bets: Bet
   groups: Group
@@ -129,4 +126,15 @@ export function selectFrom<
   const query = fields.map((f) => `data->${f}`).join(', ')
   const builder = db.from(table).select<string, TResult>(query)
   return builder
+}
+
+export function millisToTs(millis: number) {
+  return new Date(millis).toISOString()
+}
+
+export function tsToMillis(ts: string) {
+  // mqp: hack for temporary unwise choice of postgres timestamp without time zone type
+  // -- we have to make it look like an ISO9601 date or the JS date constructor will
+  // assume that it's in local time. will fix this up soon
+  return Date.parse(ts + '+0000')
 }

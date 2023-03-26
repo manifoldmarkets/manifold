@@ -133,7 +133,6 @@ export function AnswerBetPanel(props: {
       </Row>
       <Row className="text-ink-500 my-3 justify-between text-left text-sm">
         Amount
-        <span>Balance: {formatMoney(user?.balance ?? 0)}</span>
       </Row>
 
       <BuyAmountInput
@@ -144,6 +143,7 @@ export function AnswerBetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         sliderOptions={{ show: true, wrap: false }}
+        showBalance
       />
 
       <Col className="mt-8 w-full gap-3">

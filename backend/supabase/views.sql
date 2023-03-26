@@ -5,6 +5,11 @@ create or replace view public_open_contracts as (
        and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '10 minutes')
 );
 
+create or replace view trending_contracts as (
+  select * from public_open_contracts
+  order by (data->>'popularityScore')::numeric desc
+);
+       
 create or replace view user_contract_distance as (
   select
     user_id,
@@ -27,8 +32,7 @@ create or replace view user_trending_contract as (
   -- Experimentally determined threshold.
   where distance < 0.14
   order by freshness_score desc
-);
-       
+
 create or replace view group_role as (
   select
     member_id,

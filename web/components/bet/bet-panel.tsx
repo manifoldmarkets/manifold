@@ -316,11 +316,6 @@ export function BuyPanel(props: {
       ? `Are you sure you want to move the market by ${displayedDifference}?`
       : undefined
 
-  // hide input on mobile for new users for first week
-  const hideInput =
-    mobileView &&
-    (user?.createdTime ?? 0) > Date.now() - 7 * 24 * 60 * 60 * 1000
-
   const displayError = !!outcome
 
   return (
@@ -358,7 +353,7 @@ export function BuyPanel(props: {
           'rounded-lg px-4 py-2'
         )}
       >
-        <Row className="text-ink-500 mt-2 mb-1 justify-between text-left text-sm">
+        <Row className="text-ink-500 mt-2 mb-1 items-center justify-between text-left text-sm">
           Amount
         </Row>
 
@@ -372,18 +367,14 @@ export function BuyPanel(props: {
           inputRef={inputRef}
           sliderOptions={{ show: true, wrap: false }}
           binaryOutcome={outcome}
-          hideInput={hideInput}
+          showBalance
         />
 
         <Row className="mt-8 w-full">
           <Col className="w-1/2 text-sm">
             <Col className="text-ink-500 flex-nowrap whitespace-nowrap text-sm">
               <div>
-                {isPseudoNumeric ? (
-                  'Max payout'
-                ) : (
-                  <>Payout if {outcome ?? 'YES'}</>
-                )}
+                {isPseudoNumeric ? 'Shares' : <>Payout if {outcome ?? 'YES'}</>}
               </div>
             </Col>
             <div>
@@ -748,9 +739,6 @@ function LimitOrderPanel(props: {
         <span>
           Max amount<span className="text-scarlet-500 ml-1">*</span>
         </span>
-        <span className={'xl:hidden'}>
-          Balance: {formatMoney(user?.balance ?? 0)}
-        </span>
       </Row>
 
       <BuyAmountInput
@@ -761,6 +749,7 @@ function LimitOrderPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         sliderOptions={{ show: true, wrap: false }}
+        showBalance
       />
 
       <Col className="mt-8 w-full gap-3">
@@ -811,7 +800,7 @@ function LimitOrderPanel(props: {
             <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
               <div>
                 {isPseudoNumeric ? (
-                  'Max payout'
+                  'Shares'
                 ) : (
                   <>
                     Max <BinaryOutcomeLabel outcome={'YES'} /> payout
@@ -835,7 +824,7 @@ function LimitOrderPanel(props: {
             <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
               <div>
                 {isPseudoNumeric ? (
-                  'Max payout'
+                  'Shares'
                 ) : (
                   <>
                     Max <BinaryOutcomeLabel outcome={'NO'} /> payout

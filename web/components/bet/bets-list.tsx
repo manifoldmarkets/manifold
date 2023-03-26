@@ -33,7 +33,7 @@ import { Pagination } from '../widgets/pagination'
 import { OrderTable } from './limit-bets'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BetsSummary } from './bet-summary'
-import { ProfitBadge } from '../profit-badge'
+import { FloatingProfitBadgeMana, ProfitBadge } from '../profit-badge'
 import {
   inMemoryStore,
   usePersistentState,
@@ -54,8 +54,8 @@ import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
 import { Input } from 'web/components/widgets/input'
 import { searchInAny } from 'common/util/parse'
 import { useContract } from 'web/hooks/use-contracts'
-import { AddFundsButton } from '../profile/add-funds-button'
 import { db } from 'web/lib/supabase/db'
+import { DailyProfit } from 'web/components/daily-profit'
 
 type BetSort =
   | 'newest'
@@ -236,31 +236,41 @@ export function BetsList(props: { user: User }) {
     (c) => nullableMetricsByContract[c.id].loan
   )
 
-  const investedProfitPercent =
-    ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
+  const investedProfitPercent = currentBetsValue - currentInvested
 
   return (
     <Col>
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
-        <Row className="mr-2 gap-4">
+        <Row className="mr-2 flex-wrap justify-start gap-6">
+          <Col className={'shrink-0'}>
+            <DailyProfit
+              user={user}
+              className={'py-0'}
+              profitBadgeClassName={'pt-5'}
+              isCurrentUser={user.id === signedInUser?.id}
+            >
+              <Col className={' items-start'}>
+                <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
+                <div className="text-lg">{formatMoney(user.balance)}</div>
+              </Col>
+            </DailyProfit>
+          </Col>
           <Col className={'shrink-0'}>
             <div className="text-ink-600 text-xs sm:text-sm">
               Investment value
             </div>
-            <div className="text-lg">
+            <Row className="text-lg">
               {formatMoney(currentBetsValue)}{' '}
-              <ProfitBadge profitPercent={investedProfitPercent} />
-            </div>
+              <FloatingProfitBadgeMana
+                amount={investedProfitPercent}
+                className={'pt-1'}
+              />
+            </Row>
           </Col>
           <Col className={'shrink-0'}>
             <div className="text-ink-600 text-xs sm:text-sm">Total loans</div>
             <div className="text-lg">{formatMoney(currentLoan)}</div>
           </Col>
-
-          <AddFundsButton
-            userId={user.id}
-            className="ml-2 self-center sm:hidden"
-          />
         </Row>
 
         <div className="flex grow gap-2 max-[480px]:flex-col">

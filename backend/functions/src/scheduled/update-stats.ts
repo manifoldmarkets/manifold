@@ -15,7 +15,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 
 const firestore = admin.firestore()
 

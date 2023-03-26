@@ -2,15 +2,11 @@ import { memo, ReactNode } from 'react'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ClockIcon, SparklesIcon, UserIcon } from '@heroicons/react/outline'
+import { ClockIcon, StarIcon, UserIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 
 import { Row } from '../layout/row'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatWithCommas,
-} from 'common/util/format'
+import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
@@ -474,21 +470,20 @@ function LoadedMetricsFooter(props: {
   return (
     <div className="bg-ink-100 columns-2 items-center gap-4 rounded-b-[7px] px-4 pt-1 pb-2 text-sm">
       <Col>
-        <span className="text-ink-400 text-xs">Your position</span>
+        <span className="text-ink-400 text-xs">Payout</span>
         <div className="text-ink-600 text-sm">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
-              ? formatWithCommas(yesShares)
-              : formatWithCommas(noShares)}{' '}
+              ? formatMoney(yesShares)
+              : formatMoney(noShares)}{' '}
           </span>
-          {maxSharesOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
-          {' shares'}
+          on {maxSharesOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
         </div>
       </Col>
       <Col>
         <div className="text-ink-400 text-xs">
           {' '}
-          Your {showDailyProfit ? 'daily' : 'total'} profit{' '}
+          {showDailyProfit ? 'daily' : 'total'} Profit{' '}
         </div>
         <div className={clsx('text-ink-600 text-sm font-semibold')}>
           {profit ? formatMoney(profit) : '--'}
@@ -550,89 +545,107 @@ export function ContractCardNew(props: {
       ? description
       : richTextToString(description)
 
+  const showImage = !hideImage && coverImageUrl
+
   return (
     <Link
       href={contractPath(contract)}
       className={clsx(
-        'group flex flex-col gap-2 whitespace-nowrap rounded-sm py-3 px-4',
-        'bg-canvas-0 focus:bg-ink-300/30 lg:hover:bg-ink-300/30 transition-colors',
+        'relative',
+        'border-ink-300 group my-2 flex flex-col overflow-hidden rounded-xl border-[0.5px]',
+        'focus:bg-ink-400/20 lg:hover:bg-ink-400/20 transition-colors',
         className
       )}
     >
-      <Row className="text-ink-500 items-center gap-3 text-sm">
-        <Row className="z-10 gap-2">
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size="xs"
-          />
-          <UserLink
-            name={creatorName}
-            username={creatorUsername}
-            className="text-ink-500 h-[24px] text-sm"
-            createdTime={creatorCreatedTime}
-          />
-        </Row>
-        <div className="flex-1" />
-        <ReasonChosen contract={contract} />
-      </Row>
-
       <div
         className={clsx(
-          'break-anywhere whitespace-normal font-medium',
-          textColor
+          showImage ? 'bg-canvas-0/95' : 'bg-canvas-0/70',
+          'py-2 px-4 backdrop-blur-sm'
         )}
       >
-        {question}
+        <Row className="text-ink-500 items-center gap-3 overflow-hidden text-sm">
+          <Row className="z-10 gap-2">
+            <Avatar
+              username={creatorUsername}
+              avatarUrl={creatorAvatarUrl}
+              size="xs"
+            />
+            <UserLink
+              name={creatorName}
+              username={creatorUsername}
+              className="text-ink-500 h-[24px] text-sm"
+              createdTime={creatorCreatedTime}
+            />
+          </Row>
+          <div className="flex-1" />
+          <ReasonChosen contract={contract} />
+        </Row>
+
+        <div
+          className={clsx(
+            'break-anywhere my-2 whitespace-normal font-medium',
+            textColor
+          )}
+        >
+          {question}
+        </div>
+
+        <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
+          <div className="text-base font-semibold">
+            <ContractStatusLabel contract={contract} chanceLabel />
+          </div>
+
+          {isBinaryCpmm && (
+            <div className="z-10 flex gap-2">
+              <BetRow contract={contract} noUser={!user} />
+            </div>
+          )}
+
+          <Row
+            className="ml-auto items-center gap-1"
+            onClick={(e) => {
+              // Don't navigate to the contract page when clicking buttons.
+              e.preventDefault()
+            }}
+          >
+            <div className="flex items-center gap-1.5 p-1">
+              <LikeButton
+                contentId={contract.id}
+                contentCreatorId={contract.creatorId}
+                user={user}
+                contentType={'contract'}
+                totalLikes={contract.likedByUserCount ?? 0}
+                contract={contract}
+                contentText={question}
+                showTotalLikesUnder
+                size="md"
+                color="gray"
+                className="!mx-0"
+              />
+            </div>
+
+            <CommentsButton contract={contract} user={user} />
+          </Row>
+        </Row>
+
+        {isBinaryCpmm && metrics && metrics.hasShares && (
+          <YourMetricsFooter metrics={metrics} />
+        )}
       </div>
 
-      {!hideImage && coverImageUrl && (
-        <div className="relative h-36">
-          <Image
-            fill
-            alt={descriptionString}
-            sizes="100vw"
-            className="object-cover opacity-90"
-            src={coverImageUrl ?? ''}
-          />
-        </div>
-      )}
-
-      <Row ref={ref} className="text-ink-500 items-center gap-3 text-sm">
-        <div className="text-base font-semibold">
-          <ContractStatusLabel contract={contract} chanceLabel />
-        </div>
-
-        {user !== null && isBinaryCpmm && (
-          <BetRow buttonClassName="z-10" contract={contract} />
-        )}
-
-        <Row
-          className="z-20 ml-auto items-center gap-2"
-          onClick={(e) => {
-            // Don't navigate to the contract page when clicking buttons.
-            e.preventDefault()
-          }}
-        >
-          <CommentsButton contract={contract} color="gray" size="md" />
-          <LikeButton
-            contentId={contract.id}
-            contentCreatorId={contract.creatorId}
-            user={user}
-            contentType={'contract'}
-            totalLikes={contract.likedByUserCount ?? 0}
-            contract={contract}
-            contentText={question}
-            showTotalLikesUnder
-            size="md"
-            color="gray"
-            className={'!mx-0 gap-2 drop-shadow-sm'}
-          />
-        </Row>
-      </Row>
-
-      {isBinaryCpmm && metrics && metrics.hasShares && (
-        <YourMetricsFooter metrics={metrics} />
+      {showImage && (
+        <>
+          <div className="h-40" />
+          <div className="absolute inset-0 -z-10">
+            <Image
+              fill
+              alt={descriptionString}
+              sizes="100vw"
+              className="object-cover"
+              src={coverImageUrl}
+            />
+          </div>
+        </>
       )}
     </Link>
   )
@@ -651,21 +664,19 @@ function ReasonChosen(props: { contract: Contract }) {
       : 'Trending'
 
   return (
-    <Row className="gap-2">
-      <div className="font-semibold">{reason}</div>{' '}
-      <Row className="shrink-0 items-center gap-1 whitespace-nowrap text-sm">
+    <Row className="gap-3">
+      <div className="flex items-center gap-1 font-semibold">
+        {reason}
+        {reason === 'New' && <StarIcon className="h-4 w-4" />}
+      </div>
+      <Row className="shrink-0 items-center gap-1 whitespace-nowrap">
         {reason === 'Closing soon' && (
           <>
-            <ClockIcon className="h-5 w-5" />
+            <ClockIcon className="h-4 w-4" />
             {fromNow(closeTime || 0)}
           </>
         )}
-        {reason === 'New' && (
-          <>
-            <SparklesIcon className="h-5 w-5" />
-            {fromNow(createdTime)}
-          </>
-        )}
+        {reason === 'New' && fromNow(createdTime)}
         {reason === 'Trending' && (
           <Tooltip
             text={`${uniqueBettorCount ?? 0} unique traders`}
@@ -673,7 +684,7 @@ function ReasonChosen(props: { contract: Contract }) {
             className={'z-10'}
           >
             <Row className={'shrink-0 items-center gap-1'}>
-              <UserIcon className="h-5 w-5" />
+              <UserIcon className="h-4 w-4" />
               <div>{uniqueBettorCount ?? 0}</div>
             </Row>
           </Tooltip>
@@ -689,20 +700,17 @@ function YourMetricsFooter(props: { metrics: ContractMetrics }) {
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="bg-canvas-50 items-center gap-4 rounded p-2 text-sm">
+    <Row className="border-ink-200 my-2 items-center gap-4 rounded border p-2 text-sm">
       <Row className="items-center gap-2">
-        <span className="text-ink-500">Your position</span>
-        <div className="text-ink-600">
-          <span className="font-semibold">
-            {maxSharesOutcome === 'YES'
-              ? formatWithCommas(yesShares)
-              : formatWithCommas(noShares)}{' '}
-          </span>
-          {maxSharesOutcome} shares
-        </div>
+        <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
+        <span className="text-ink-600 font-semibold">
+          {maxSharesOutcome === 'YES'
+            ? formatMoney(yesShares)
+            : formatMoney(noShares)}{' '}
+        </span>
       </Row>
       <Row className="ml-auto items-center gap-2">
-        <div className="text-ink-500">Your profit </div>
+        <div className="text-ink-500">Profit </div>
         <div className={clsx('text-ink-600 font-semibold')}>
           {profit ? formatMoney(profit) : '--'}
         </div>

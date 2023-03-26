@@ -283,6 +283,159 @@ Requires no authorization.
     textDescription: string // string description without formatting, images, or embeds
   }
   ```
+  
+### `GET /v0/market/[marketId]/positions`
+
+Get positions information about a single market by ID. 
+
+Parameters:
+- `sort` - Optional. The field to sort results by. Default: `profit`. Options: `shares` or `profit`,
+- `top` - Optional. The number of top positions (sorted by `sort`) to return. Default: `null`.
+- `bottom` - Optional. The number of bottom positions (sorted by `sort`) to return. Default: `null`.
+- `userId` - Optional. The user ID to query by. Default: `null`. If provided, only the position for this user will be returned.
+
+
+Requires no authorization.
+
+- Example request
+
+  ```
+  https://manifold.markets/api/v0/market/kupKInoLsjMuiDiNfogm/positions?top=1&bottom=1
+  ```
+
+- <details><summary>Example response</summary><p>
+
+  ```json
+  [
+    {
+        "from": {
+            "day": {
+                "value": 23.479030029570662,
+                "profit": 0,
+                "invested": 23.479030029570662,
+                "prevValue": 23.479030029570662,
+                "profitPercent": 0
+            },
+            "week": {
+                "value": 0,
+                "profit": 8.479030029570673,
+                "invested": 15,
+                "prevValue": 0,
+                "profitPercent": 56.52686686380448
+            },
+            "month": {
+                "value": 0,
+                "profit": 8.479030029570673,
+                "invested": 15,
+                "prevValue": 0,
+                "profitPercent": 56.52686686380448
+            }
+        },
+        "loan": 1.7123642870400002,
+        "payout": 23.479030029570673,
+        "profit": 8.479030029570673,
+        "userId": "IpTiwOTs96VIzeoxu66tfitUcBZ2",
+        "invested": 15,
+        "userName": "Lucas Goldfein",
+        "hasShares": true,
+        "contractId": "kupKInoLsjMuiDiNfogm",
+        "hasNoShares": true,
+        "lastBetTime": 1678924706057,
+        "totalShares": {
+            "NO": 89.17418492518308
+        },
+        "hasYesShares": false,
+        "userUsername": "LucasGoldfein56b1",
+        "profitPercent": 56.52686686380448,
+        "userAvatarUrl": "https://lh3.googleusercontent.com/a/AEdFTp5e7cFzq1moc91CKqaAgyEleoNTjtEL9ke8emzV=s96-c",
+        "maxSharesOutcome": "NO"
+    },
+    {
+        "from": {
+            "day": {
+                "value": 5.008090894597479,
+                "profit": 0,
+                "invested": 5.008090894597479,
+                "prevValue": 5.008090894597479,
+                "profitPercent": 0
+            },
+            "week": {
+                "value": 0,
+                "profit": -4.991909105402519,
+                "invested": 10,
+                "prevValue": 0,
+                "profitPercent": -49.919091054025195
+            },
+            "month": {
+                "value": 0,
+                "profit": -4.991909105402519,
+                "invested": 10,
+                "prevValue": 0,
+                "profitPercent": -49.919091054025195
+            }
+        },
+        "loan": 1.14157619136,
+        "payout": 5.008090894597481,
+        "profit": -4.991909105402519,
+        "userId": "JNkmw38JICdw6ySJ9RgWK7WyBdE2",
+        "invested": 10,
+        "userName": "Sylvie",
+        "hasShares": true,
+        "contractId": "kupKInoLsjMuiDiNfogm",
+        "hasNoShares": true,
+        "lastBetTime": 1678914591730,
+        "totalShares": {
+            "NO": 19.020906016751987
+        },
+        "hasYesShares": false,
+        "userUsername": "sylv",
+        "profitPercent": -49.919091054025195,
+        "userAvatarUrl": "https://lh3.googleusercontent.com/a/AATXAJyoOZtkrJBItDvRE0HvcRDn8txM-_v033jFIifZ=s96-c",
+        "maxSharesOutcome": "NO"
+    }
+  ]
+  ```
+
+    </p>
+  </details>
+
+- Response type: An array of `ContractMetric`
+
+  ```tsx
+  // A single position in a market
+  type ContractMetric = {
+  contractId: string
+  from:
+    | { 
+        // includes, day, week,month
+        [period: string]: {
+          profit: number
+          profitPercent: number
+          invested: number
+          prevValue: number
+          value: number
+        }
+      }
+    | undefined
+  hasNoShares: boolean
+  hasShares: boolean
+  hasYesShares: boolean
+  invested: number
+  loan: number
+  maxSharesOutcome: string | null
+  payout: number
+  profit: number
+  profitPercent: number
+  totalShares: {
+    [outcome: string]: number
+  }
+  userId: string
+  userUsername: string
+  userName: string
+  userAvatarUrl: string
+  lastBetTime: number
+  }
+  ```
 
 ### `GET /v0/slug/[marketSlug]`
 
@@ -295,6 +448,119 @@ Requires no authorization.
   https://manifold.markets/api/v0/slug/will-carrick-flynn-win-the-general
   ```
 - Response type: A `FullMarket` ; same as above.
+
+### `GET /v0/search-markets`
+
+Search markets by keywords, limited to 100 results.  
+Parameters:
+
+- `terms`: Optional. A space-separated list of keywords to search for.
+
+Requires no authorization.
+
+- Example request
+
+  ```
+  https://manifold.markets/api/v0/search-markets?terms=biden poop
+  ```
+
+- <details><summary>Example response</summary><p>
+
+  ```json
+  [
+    {
+        "id": "qr759sZOfNCBV9o0cIDg",
+        "creatorId": "2e6vTEJPk1dVs3xGvOBM2xkK2Q02",
+        "creatorUsername": "frostmourn",
+        "creatorName": "frostmourn",
+        "createdTime": 1671067643426,
+        "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Ffrostmourn%2FbpATR5uUGb.cloudfront?alt=media&token=ff031d9c-26e8-4b83-972f-ad1795633fac",
+        "closeTime": 1672531140000,
+        "question": "Will Biden poop in his pants again by EOY 2022?",
+        "tags": [],
+        "url": "https://manifold.markets/frostmourn/will-biden-poop-in-his-pants-again",
+        "pool": {
+            "NO": 199.4604480014367,
+            "YES": 958.0024251946996
+        },
+        "probability": 0.0480391000210468,
+        "p": 0.1950892350158,
+        "totalLiquidity": 290,
+        "outcomeType": "BINARY",
+        "mechanism": "cpmm-1",
+        "volume": 1165.294619742559,
+        "volume24Hours": 0,
+        "isResolved": true,
+        "resolution": "NO",
+        "resolutionTime": 1675498119366,
+        "resolutionProbability": 0.05,
+        "lastUpdatedTime": 1675498117432,
+        "description": {
+            "content": [
+                {
+                    "content": [
+                        {
+                            "marks": [
+                                {
+                                    "attrs": {
+                                        "href": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/",
+                                        "target": "_blank"
+                                    },
+                                    "type": "link"
+                                }
+                            ],
+                            "text": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/",
+                            "type": "text"
+                        }
+                    ],
+                    "type": "paragraph"
+                },
+                {
+                    "attrs": {
+                        "src": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2FagMgCBTkIa.jpg?alt=media&token=4d57e1c1-8264-45f7-bda5-db43b23f398e"
+                    },
+                    "type": "image"
+                },
+                {
+                    "content": [
+                        {
+                            "text": "Market resolves to \"yes\" if Biden pooped in his pants again by the end of 2022",
+                            "type": "text"
+                        }
+                    ],
+                    "type": "paragraph"
+                },
+                {
+                    "content": [
+                        {
+                            "text": "Market resolves to \"no\" if Biden has not pooped in his pants again by the end of 2022",
+                            "type": "text"
+                        }
+                    ],
+                    "type": "paragraph"
+                }
+            ],
+            "type": "doc"
+        },
+        "coverImageUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2FxPIOqK99-m.png?alt=media&token=30a61355-fc83-4d98-9197-f99db72e8b54",
+        "textDescription": "https://www.opindia.com/2021/10/poopypantsbiden-trend-twitter-rumours-joe-biden-suffering-bathroom-accident-vatican/\n\n[image]Market resolves to \"yes\" if Biden pooped in his pants again by the end of 2022\n\nMarket resolves to \"no\" if Biden has not pooped in his pants again by the end of 2022"
+    }]
+  ```
+
+    </p>
+  </details>
+
+- Response type: Array of `FullMarket`.
+
+  ```tsx
+  // A complete market, along with answers (for free response markets)
+  type FullMarket = LiteMarket & {
+    answers?: Answer[] // dpm-2 markets only
+    description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
+    textDescription: string // string description without formatting, images, or embeds
+  }
+  ```
+
 
 ### `GET /v0/users`
 
@@ -654,7 +920,7 @@ Requires no authorization.
   </details>
 
 ## Changelog
-
+- 2023-03-21: Add `/market/[marketId]/positions` and `/search-markets` endpoints
 - 2022-11-22: Update /market GET to remove `bets` and `comments`
 - 2022-10-17: Update /market POST to allow `visibility` and `groupId`; mark `closeTime` as optional; remove `tags`
 - 2022-09-24: Expand market POST docs to include new market types (`PSEUDO_NUMERIC`, `MULTIPLE_CHOICE`)

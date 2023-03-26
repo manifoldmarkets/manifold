@@ -110,9 +110,13 @@ returns table (data jsonb, score real)
 immutable parallel safe
 language sql
 as $$
-  with recommended_contracts as (
-    select data, score
+  with recommendation_scores as materialized (
+    select contract_id, score
     from get_recommended_contract_scores_unseen(uid)
+    order by score desc
+  ), recommended_contracts as not materialized (
+    select data, score
+    from recommendation_scores
     left join contracts
     on contracts.id = contract_id
     where is_valid_contract(data)
@@ -196,7 +200,7 @@ create or replace function ts_to_millis(ts timestamptz)
     language sql
     immutable parallel safe
 as $$
-select extract(epoch from ts)::bigint * 1000
+select (extract(epoch from ts) * 1000)::bigint
 $$;
 
 create or replace function millis_to_ts(millis bigint)
@@ -204,7 +208,7 @@ create or replace function millis_to_ts(millis bigint)
     language sql
     immutable parallel safe
 as $$
-select to_timestamp(millis / 1000)
+select to_timestamp(millis / 1000.0)
 $$;
 
 create or replace function millis_interval(start_millis bigint, end_millis bigint)
@@ -228,7 +232,7 @@ create or replace function is_valid_contract(data jsonb)
     stable parallel safe
 as $$
 select not (data->>'isResolved')::boolean
-       and (data->>'visibility') != 'unlisted'
+       and (data->>'visibility') = 'public'
        and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '10 minutes')
 $$ language sql;
 
@@ -527,4 +531,12 @@ as $$
   where contract_id != input_contract_id and not (data->>'isResolved')::boolean
   order by similarity * similarity * log(coalesce((data->>'popularityScore')::real, 0.0) + 100) desc
   limit match_count;
+$$;
+
+create or replace function firebase_uid()
+  returns text
+  language sql
+  stable parallel safe
+as $$
+  select nullif(current_setting('request.jwt.claims', true)::json->>'sub', '')::text;
 $$;

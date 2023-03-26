@@ -13,7 +13,7 @@ export const useNativeMessages = (
       return
     }
     const { type, data } = event
-    console.log('Received native event: ', event)
+    console.log('Received native event type: ', type)
     if (messageTypes.includes(type)) {
       onMessageReceived(type, data)
     }

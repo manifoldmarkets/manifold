@@ -1,4 +1,4 @@
-import { run, selectFrom, SupabaseClient } from './utils'
+import { run, millisToTs, tsToMillis, SupabaseClient } from './utils'
 import { sortBy } from 'lodash'
 
 export async function getPortfolioHistory(
@@ -7,19 +7,21 @@ export async function getPortfolioHistory(
   db: SupabaseClient,
   end?: number
 ) {
-  let query = selectFrom(
-    db,
-    'user_portfolio_history',
-    'timestamp',
-    'investmentValue',
-    'totalDeposits',
-    'balance'
-  )
+  let query = db
+    .from('user_portfolio_history')
+    .select('ts, investment_value, total_deposits, balance')
     .eq('user_id', userId)
-    .gt('data->>timestamp', start)
+    .gt('ts', millisToTs(start))
   if (end) {
-    query = query.lt('data->>timestamp', end)
+    query = query.lt('ts', new Date(end).toISOString())
   }
   const { data } = await run(query)
-  return sortBy(data, 'timestamp')
+  return sortBy(data, 'ts').map((d) => {
+    return {
+      timestamp: tsToMillis(d.ts!),
+      investmentValue: d.investment_value!,
+      totalDeposits: d.total_deposits!,
+      balance: d.balance!,
+    }
+  })
 }

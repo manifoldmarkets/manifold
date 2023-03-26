@@ -46,6 +46,7 @@ export type notification_preferences = {
   tips_on_your_comments: notification_destination_types[]
   tips_on_your_markets: notification_destination_types[]
   limit_order_fills: notification_destination_types[]
+  quest_payout: notification_destination_types[]
 
   // Groups
   group_role_changed: notification_destination_types[]
@@ -153,6 +154,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     tipped_comments_on_watched_markets: constructPref(true, true, false),
     tips_on_your_markets: constructPref(true, true, false),
     limit_order_fills: constructPref(true, false, false),
+    quest_payout: constructPref(true, false, false),
 
     // Groups
     group_role_changed: constructPref(true, false, false),

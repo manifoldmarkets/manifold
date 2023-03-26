@@ -2,15 +2,26 @@
 
 Any code that people have found it convenient to write and run against our backend stuff.
 
-## Setting up authentication
+## Set up
 
-Generate private keys from the Google service account management page:
+Follow Setting up Authentication under [/functions/README](../functions/README.md#setting-up-authentication).
 
-- Dev: https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
+## Example script
 
-- Prod: https://console.firebase.google.com/u/0/project/dev-mantic-markets/settings/serviceaccounts/adminsdk
+Simply import `runScript` and pass it a function.
 
-Set `GOOGLE_APPLICATION_CREDENTIALS_PROD` or `GOOGLE_APPLICATION_CREDENTIALS_DEV` in your shell to the path of the key file.
+```typescript
+import { runScript } from 'run-script'
+import { DAY_MS } from 'common/util/time'
+import { getRecentContractLikes } from 'shared/supabase/likes'
+
+if (require.main === module) {
+  runScript(async ({ db }) => {
+    const weekAgo = Date.now() - 7 * DAY_MS
+    console.log(await getRecentContractLikes(db, weekAgo))
+  })
+}
+```
 
 ## Running a script
 
@@ -33,17 +44,6 @@ Or if you don't want to use `ts-node` you can compile and run them with Node:
 $ yarn build && node lib/script.js
 ```
 
-## Environment variables
+### Environment variables
 
-Copy the keys from the google secrets page:
-
-Dev: https://console.cloud.google.com/security/secret-manager?project=dev-mantic-markets
-Prod: https://console.cloud.google.com/security/secret-manager?project=mantic-markets
-
-
-Then, save them locally in e.g. `~/.zshrc` or `~/.bashrc`:
-
-```
-export SUPABASE_KEY=ABCDE12345
-export SUPABASE_PASSWORD=12345ABCD
-```
+Secret keys are automatically loaded into `process.env` when you use the `runScript` function.

@@ -29,6 +29,7 @@
     "@amplitude/node": "1.10.0",
     "@google-cloud/functions-framework": "3.1.2",
     "@google-cloud/pubsub": "3.2.1",
+    "@google-cloud/secret-manager": "4.2.1",
     "@supabase/supabase-js": "2.2.0",
     "@tiptap/core": "2.0.0-beta.204",
     "@tiptap/extension-image": "2.0.0-beta.204",

@@ -3,14 +3,7 @@ import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
-import {
-  useEffect,
-  useRef,
-  useMemo,
-  useState,
-  createContext,
-  useContext,
-} from 'react'
+import { useEffect, useRef, useMemo, createContext, useContext } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useEvent } from 'web/hooks/use-event'
 import {
@@ -37,6 +30,7 @@ import { groupRoleType } from './groups/group-member-modal'
 import { Group } from 'common/group'
 import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
 import { ContractsList } from './contract/contracts-list'
+import { SiteLink } from './widgets/site-link'
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },
@@ -135,7 +129,10 @@ export function ContractSearch(props: {
   const searchParams = useRef<SearchParameters | null>(null)
   const searchParamsStore = inMemoryStore<SearchParameters>()
   const requestId = useRef(0)
-  const [asList, setAsList] = useState(true)
+  const [asList, setAsList] = usePersistentState(!listViewDisabled, {
+    key: 'contract-search-as-list',
+    store: inMemoryStore(),
+  })
 
   useSafeLayoutEffect(() => {
     if (persistPrefix) {
@@ -214,38 +211,6 @@ export function ContractSearch(props: {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
   }
 
-  if (listViewDisabled) {
-    return (
-      <Col>
-        <ContractSearchControls
-          className={headerClassName}
-          defaultSort={defaultSort}
-          defaultFilter={defaultFilter}
-          additionalFilter={additionalFilter}
-          persistPrefix={persistPrefix}
-          hideOrderSelector={hideOrderSelector}
-          useQueryUrlParam={isWholePage}
-          includeProbSorts={includeProbSorts}
-          onSearchParametersChanged={onSearchParametersChanged}
-          autoFocus={autoFocus}
-          listViewDisabled={listViewDisabled}
-        />
-        {renderedContracts && renderedContracts.length === 0 && profile ? (
-          <p className="text-ink-500 mx-2">No markets found</p>
-        ) : (
-          <ContractsGrid
-            contracts={renderedContracts}
-            showTime={state.showTime ?? undefined}
-            onContractClick={onContractClick}
-            highlightContractIds={highlightContractIds}
-            cardUIOptions={cardUIOptions}
-            loadMore={performQuery}
-            fromGroupProps={fromGroupProps}
-          />
-        )}
-      </Col>
-    )
-  }
   return (
     <AsListContext.Provider value={{ asList, setAsList }}>
       <Col>
@@ -260,9 +225,19 @@ export function ContractSearch(props: {
           includeProbSorts={includeProbSorts}
           onSearchParametersChanged={onSearchParametersChanged}
           autoFocus={autoFocus}
+          listViewDisabled={listViewDisabled}
         />
-        {renderedContracts && renderedContracts.length === 0 && profile ? (
-          <p className="text-ink-500 mx-2">No markets found</p>
+        {renderedContracts && renderedContracts.length === 0 ? (
+          profile ? (
+            <p className="text-ink-500 mx-2">No markets found</p>
+          ) : (
+            <p className="text-ink-500 mx-2">
+              No markets found. Why not{' '}
+              <SiteLink href="/create" className="text-ink-700 font-bold">
+                create one?
+              </SiteLink>
+            </p>
+          )
         ) : asList ? (
           <ContractsList
             contracts={renderedContracts}

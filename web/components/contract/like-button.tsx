@@ -133,9 +133,8 @@ export const LikeButton = memo(function LikeButton(props: {
           disabled={disabled}
           className={clsx(
             'transition-transform disabled:cursor-not-allowed',
-            color === 'white'
-              ? 'text-ink-0 disabled:opacity-50'
-              : 'text-ink-500',
+            color === 'white' ? 'text-ink-0' : 'text-ink-500 ',
+            totalLikes === 0 && !user && 'disabled:opacity-50',
             !disabled && color === 'gray' ? 'hover:text-ink-600' : ''
           )}
           onClick={(e) => e.preventDefault()}
@@ -159,7 +158,7 @@ export const LikeButton = memo(function LikeButton(props: {
             )}
             <HeartIcon
               className={clsx(
-                size === 'md' && 'h-5 w-5',
+                size === 'md' && 'h-6 w-6',
                 size === 'lg' && 'h-8 w-8',
                 size === 'xl' && 'h-12 w-12',
                 liked ? 'fill-pink-400 stroke-pink-400' : '',

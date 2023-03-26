@@ -81,6 +81,7 @@ export function BettingStreakModal(props: {
 }
 
 export function hasCompletedStreakToday(user: User) {
+  if (user.currentBettingStreak === 0) return false
   const now = dayjs().utc()
   const utcTodayAtResetHour = now
     .hour(BETTING_STREAK_RESET_HOUR)

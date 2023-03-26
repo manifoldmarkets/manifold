@@ -156,6 +156,7 @@ function NumericBuyPanel(props: {
       />
 
       <div className="text-ink-500 my-3 text-left text-sm">Bet amount</div>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -163,6 +164,7 @@ function NumericBuyPanel(props: {
         error={displayError ? error : undefined}
         setError={setError}
         disabled={isSubmitting}
+        showBalance
       />
 
       <Col className="mt-3 w-full gap-3">

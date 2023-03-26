@@ -19,7 +19,7 @@ import {
 import { APIError } from 'common/api'
 import { userOptedOutOfBrowserNotifications } from 'common/user-notification-preferences'
 import { runTxn, TxnData } from 'shared/run-txn'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 
 // TODO: delete email mana signup bonus
 export const manasignupbonus = functions

@@ -22,11 +22,15 @@ import { useQuery } from 'react-query'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { limit, query } from 'firebase/firestore'
 import { useTrendingContracts } from './use-contracts'
-import { storageStore, usePersistentState } from './use-persistent-state'
+import {
+  inMemoryStore,
+  storageStore,
+  usePersistentState,
+} from './use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useStoreItems } from './use-store'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
-import { useUser } from './use-user'
+import { useIsAuthorized } from './use-user'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -208,23 +212,24 @@ export function useGroups(groupIds: string[]) {
   return useStoreItems(groupIds, listenForGroup, { loadOnce: true })
 }
 
-export function useIsGroupMember(groupSlug: string, delay: number) {
-  const [isMember, setIsMember] = useState<any>(undefined)
-  const user = useUser()
+export function useIsGroupMember(groupSlug: string) {
+  const [isMember, setIsMember] = usePersistentState<any | undefined>(
+    undefined,
+    {
+      key: 'is-member-' + groupSlug,
+      store: inMemoryStore(),
+    }
+  )
+  const isAuthorized = useIsAuthorized()
   useEffect(() => {
     // if there is no user
-    if (user === null) {
+    if (isAuthorized === null) {
       setIsMember(false)
-    } else if (user) {
-      // need this timeout (1 sec works) or else get "must be signed in to make API calls" error
-      setTimeout(
-        () =>
-          getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
-            setIsMember(result)
-          }),
-        delay
-      )
+    } else if (isAuthorized) {
+      getUserIsGroupMember({ groupSlug: groupSlug }).then((result) => {
+        setIsMember(result)
+      })
     }
-  }, [groupSlug, user])
+  }, [groupSlug, isAuthorized])
   return isMember
 }

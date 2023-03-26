@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 
-import { formatMoney, formatWithCommas } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
@@ -9,7 +9,6 @@ import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
@@ -69,19 +68,23 @@ export function BetsSummary(props: {
         ) : isBinary ? (
           <Col>
             <div className="text-ink-500 whitespace-nowrap text-sm">
-              Position{' '}
+              Payout{' '}
               <InfoTooltip
-                text={`Number of shares you own on net. 1 ${exampleOutcome} share = ${ENV_CONFIG.moneyMoniker}1 if the market resolves ${exampleOutcome}.`}
+                text={`You'll get ${formatMoney(
+                  Math.abs(position)
+                )} if this market resolves ${exampleOutcome} (and ${formatMoney(
+                  0
+                )} otherwise).`}
               />
             </div>
             <div className="whitespace-nowrap">
               {position > 1e-7 ? (
                 <>
-                  {formatWithCommas(position)} <YesLabel />
+                  {formatMoney(position)} on <YesLabel />
                 </>
               ) : position < -1e-7 ? (
                 <>
-                  {formatWithCommas(-position)} <NoLabel />
+                  {formatMoney(-position)} on <NoLabel />
                 </>
               ) : (
                 '——'
@@ -91,8 +94,8 @@ export function BetsSummary(props: {
         ) : (
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
-              Expectation{''}
-              <InfoTooltip text="The estimated payout of your position using the current market probability." />
+              Expected value{' '}
+              <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
             </div>
             <div className="whitespace-nowrap">{formatMoney(payout)}</div>
           </Col>
@@ -100,8 +103,8 @@ export function BetsSummary(props: {
 
         <Col>
           <div className="text-ink-500 whitespace-nowrap text-sm">
-            Cost basis{' '}
-            <InfoTooltip text="Cash originally invested in this market, using average cost accounting." />
+            Spent{' '}
+            <InfoTooltip text="Cost basis. Cash originally invested in this market, using average cost accounting." />
           </div>
           <div className="whitespace-nowrap">{formatMoney(invested)}</div>
         </Col>
@@ -109,8 +112,8 @@ export function BetsSummary(props: {
         {isBinary && !resolution && (
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
-              Expectation{' '}
-              <InfoTooltip text="The estimated payout of your position using the current market probability." />
+              Expected value{' '}
+              <InfoTooltip text="How much your position in the market is worth right now according to the current market probability." />
             </div>
             <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
           </Col>
@@ -119,7 +122,7 @@ export function BetsSummary(props: {
         <Col>
           <div className="text-ink-500 whitespace-nowrap text-sm">
             Profit{' '}
-            <InfoTooltip text="Includes both realized & unrealized gains/losses." />
+            <InfoTooltip text="How much you've made or lost (includes both realized & unrealized profits)." />
           </div>
           <div className="whitespace-nowrap">
             {formatMoney(profit)}

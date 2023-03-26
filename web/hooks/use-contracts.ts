@@ -1,16 +1,18 @@
+import { AnyContractType, CPMMBinaryContract } from 'common/contract'
+import { filterDefined } from 'common/util/array'
 import { useEffect, useState } from 'react'
+import { useQuery } from 'react-query'
+import { getPrivateContractBySlug } from 'web/lib/firebase/api'
 import {
   Contract,
-  listenForContracts,
   listenForContract,
+  listenForContracts,
   listenForLiveContracts,
 } from 'web/lib/firebase/contracts'
-import { useQuery } from 'react-query'
 import { trendingIndex } from 'web/lib/service/algolia'
-import { CPMMBinaryContract } from 'common/contract'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 import { useStore, useStoreItems } from './use-store'
-import { filterDefined } from 'common/util/array'
+import { useIsAuthorized } from './use-user'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -71,4 +73,27 @@ export const useContracts = (
   options: { loadOnce?: boolean } = {}
 ) => {
   return useStoreItems(filterDefined(contractIds), listenForContract, options)
+}
+
+export function usePrivateContract(contractSlug: string, delay: number) {
+  const [privateContract, setPrivateContract] = usePersistentState<
+    Contract<AnyContractType> | undefined | null
+  >(undefined, {
+    key: 'private-contract-' + contractSlug,
+    store: inMemoryStore(),
+  })
+  const isAuthorized = useIsAuthorized()
+  useEffect(() => {
+    // if there is no user
+    if (isAuthorized === null) {
+      setPrivateContract(null)
+    } else if (isAuthorized) {
+      getPrivateContractBySlug({ contractSlug: contractSlug }).then(
+        (result) => {
+          setPrivateContract(result as Contract<AnyContractType>)
+        }
+      )
+    }
+  }, [contractSlug, isAuthorized])
+  return privateContract
 }

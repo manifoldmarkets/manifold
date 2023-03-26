@@ -7,7 +7,7 @@ prohibit us from implementing it like that.
 
 ## To deploy
 
-The `gcloud` command line tool needs to be set up and authenticated on your machine.
+You must have set up the `gcloud` cli following the [functions/README](../functions/README.md#installing-for-local-development).
 
 `./deploy.sh [dev|prod]` will deploy to the respective environments.
 

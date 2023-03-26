@@ -3,40 +3,23 @@ import clsx from 'clsx'
 
 import { Contract, CPMMContract } from 'common/contract'
 import { BACKGROUND_COLOR } from 'common/envs/constants'
-import { GlobalConfig } from 'common/globalConfig'
-import { Group } from 'common/group'
-import { Post } from 'common/post'
 import Router from 'next/router'
 import { memo, ReactNode } from 'react'
 import { ActivityLog } from 'web/components/activity-log'
 import { DailyStats } from 'web/components/daily-stats'
-import { PinnedItems } from 'web/components/groups/group-post-section'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { useTrendingGroups } from 'web/hooks/use-group'
-import {
-  storageStore,
-  usePersistentState,
-} from 'web/hooks/use-persistent-state'
-import { useAllPosts } from 'web/hooks/use-post'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
-import { getContractFromId } from 'web/lib/firebase/contracts'
-import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
-import { getGroup } from 'web/lib/firebase/groups'
-import { getPost } from 'web/lib/firebase/posts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { track } from 'web/lib/service/analytics'
 import { Title } from 'web/components/widgets/title'
-import {
-  MobileSearchButton,
-  SearchButton,
-} from 'web/components/nav/search-button'
+
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { ContractsFeed } from '../../components/contract/contracts-feed'
@@ -45,13 +28,16 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-contracts'
 import { db } from '../../lib/supabase/db'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { ContractCardNew } from 'web/components/contract/contract-card'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export default function Home() {
   const isClient = useIsClient()
   const isMobile = useIsMobile()
   useTracking('view home', { kind: isMobile ? 'swipe' : 'desktop' })
+  useRedirectIfSignedOut()
 
   if (!isClient)
     return (
@@ -68,7 +54,6 @@ export default function Home() {
 
 function HomeDashboard() {
   const user = useUser()
-  useRedirectIfSignedOut()
   useSaveReferral()
 
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
@@ -77,11 +62,9 @@ function HomeDashboard() {
 
   return (
     <Page>
-      <Col className="mx-auto w-full max-w-2xl gap-6 py-2 pb-8 sm:px-2 lg:pr-4">
+      <Col className="mx-auto w-full max-w-2xl gap-6 pb-8 sm:px-2 lg:pr-4">
         <Row className={'w-full items-center justify-between gap-4'}>
-          <Title children="Home" className="!my-0 hidden sm:block" />
-          <SearchButton className="hidden flex-1 md:flex lg:hidden" />
-          <MobileSearchButton className="flex-1 md:hidden" />
+          <Title children="Home" className="!my-0" />
           <DailyStats user={user} />
         </Row>
 
@@ -89,8 +72,7 @@ function HomeDashboard() {
 
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <LiveSection />
-          <YourFeedSection />
+          <MainContent />
         </Col>
       </Col>
     </Page>
@@ -109,11 +91,10 @@ function MobileHome() {
 
   return (
     <Page>
-      <Col className="gap-6 py-2 pb-8 sm:px-2">
+      <Col className="gap-2 py-2 pb-8 sm:px-2">
         <Row className="mx-4 mb-2 items-center justify-between gap-4">
-          <MobileSearchButton className="flex-1" />
-          <Row className="items-center gap-4">
-            <DailyStats user={user} />
+          <Row className="items-center gap-2">
+            <Title children="Home" className="!my-0" />
             {isNative && (
               <SwitchHorizontalIcon
                 className="h-5 w-5"
@@ -121,13 +102,16 @@ function MobileHome() {
               />
             )}
           </Row>
+
+          <Row className="items-center gap-4">
+            <DailyStats user={user} />
+          </Row>
         </Row>
 
         {isLoading && <LoadingIndicator />}
         <Col className={clsx('gap-6', isLoading && 'hidden')}>
           <YourDailyUpdates contracts={dailyChangedContracts} />
-          <LiveSection />
-          <ContractsFeed />
+          <MainContent />
         </Col>
       </Col>
 
@@ -151,17 +135,7 @@ function MobileHome() {
 const useViewToggle = () => {
   const isNative = getIsNative()
 
-  const defaultShowSwipe =
-    typeof window === 'undefined'
-      ? false
-      : safeLocalStorage?.getItem('show-swipe')
-      ? safeLocalStorage?.getItem('show-swipe') === 'true'
-      : isNative
-
-  const [showSwipe, setShowSwipe] = usePersistentState(defaultShowSwipe, {
-    key: 'show-swipe',
-    store: storageStore(safeLocalStorage),
-  })
+  const [showSwipe, setShowSwipe] = usePersistentLocalState(false, 'show-swipe')
 
   const toggleView = (showSwipe: boolean) => () => {
     setShowSwipe(showSwipe)
@@ -181,7 +155,7 @@ function HomeSectionHeader(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-900 sticky top-0 z-20 my-1 mx-2 items-center justify-between pb-2 pl-1 lg:-ml-1',
+        'text-ink-900 sticky top-0 z-20 items-center justify-between px-1 pb-3 sm:px-0',
         BACKGROUND_COLOR
       )}
     >
@@ -207,38 +181,65 @@ const YourDailyUpdates = memo(function YourDailyUpdates(props: {
   contracts: CPMMContract[] | undefined
 }) {
   const { contracts } = props
-  if (contracts?.length === 0) return <></>
+  const changedContracts = contracts
+    ? contracts.filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01)
+    : undefined
+  if (!changedContracts || changedContracts.length === 0) return <></>
 
   return (
     <Col>
       <HomeSectionHeader label="Today's updates" icon="📊" />
-      <ProbChangeTable changes={contracts as CPMMContract[]} />
+      <ProbChangeTable changes={changedContracts as CPMMContract[]} />
     </Col>
   )
 })
 
-const LiveSection = memo(function LiveSection() {
+const LiveSection = memo(function LiveSection(props: { className?: string }) {
+  const { className } = props
   return (
-    <Col className="relative">
-      <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
-      <ActivityLog
-        count={7}
-        showPills={false}
-        className="h-[380px] overflow-hidden"
-      />
+    <Col className={clsx('relative mt-4', className)}>
+      <ActivityLog count={30} showPills />
       <div className="from-canvas-50 pointer-events-none absolute bottom-0 h-5 w-full select-none bg-gradient-to-t to-transparent" />
     </Col>
   )
 })
 
-const YourFeedSection = memo(function YourFeedSection() {
+const YourFeedSection = memo(function YourFeedSection(props: {
+  className?: string
+}) {
+  const { className } = props
   return (
-    <Col>
-      <HomeSectionHeader label={'Your feed'} icon={'📖'} />
+    <Col className={className}>
+      {/* <HomeSectionHeader label={'Your feed'} icon={'📖'} /> */}
       <ContractsFeed />
     </Col>
   )
 })
+
+const MainContent = () => {
+  const [section, setSection] = usePersistentInMemoryState(
+    0,
+    'main-content-section'
+  )
+
+  return (
+    <Col>
+      <ChoicesToggleGroup
+        className="mb-2 border-0"
+        choicesMap={{
+          'For you': 0,
+          'Live feed': 1,
+        }}
+        currentChoice={section}
+        setChoice={setSection as any}
+        color="indigo"
+      />
+
+      <YourFeedSection className={clsx(section === 0 ? '' : 'hidden')} />
+      <LiveSection className={clsx(section === 1 ? '' : 'hidden')} />
+    </Col>
+  )
+}
 
 export const ContractsSection = memo(function ContractsSection(props: {
   contracts: Contract[]
@@ -246,82 +247,14 @@ export const ContractsSection = memo(function ContractsSection(props: {
   icon: string
   className?: string
 }) {
-  const { contracts, label, icon, className } = props
+  const { contracts, className } = props
   return (
     <Col className={className}>
-      <HomeSectionHeader label={label} icon={icon} />
-      <Col className="divide-ink-300 border-ink-300 max-w-2xl divide-y rounded border">
+      <Col className="max-w-2xl">
         {contracts.map((contract) => (
-          <ContractCardNew key={contract.id} contract={contract} hideImage />
+          <ContractCardNew key={contract.id} contract={contract} />
         ))}
       </Col>
     </Col>
   )
 })
-
-export function FeaturedSection(props: {
-  globalConfig: GlobalConfig
-  pinned: JSX.Element[]
-  isAdmin: boolean
-}) {
-  const { globalConfig, pinned, isAdmin } = props
-  const posts = useAllPosts()
-  const groups = useTrendingGroups()
-
-  async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
-    if (globalConfig == null) return
-    const pinnedItems = await Promise.all(
-      selectedItems
-        .map(async (item) => {
-          if (item.type === 'post') {
-            const post = await getPost(item.itemId)
-            if (post == null) return null
-
-            return { item: post, type: 'post' }
-          } else if (item.type === 'contract') {
-            const contract = await getContractFromId(item.itemId)
-            if (contract == null) return null
-
-            return { item: contract, type: 'contract' }
-          } else if (item.type === 'group') {
-            const group = await getGroup(item.itemId)
-            if (group == null) return null
-            return { item: group, type: 'group' }
-          }
-        })
-        .filter((item) => item != null)
-    )
-    await updateGlobalConfig(globalConfig, {
-      pinnedItems: [
-        ...(globalConfig?.pinnedItems ?? []),
-        ...(pinnedItems as {
-          item: Contract | Post | Group
-          type: 'contract' | 'post' | 'group'
-        }[]),
-      ],
-    })
-  }
-
-  function onDeleteClicked(index: number) {
-    if (globalConfig == null) return
-    const newPinned = globalConfig.pinnedItems.filter((item) => {
-      return item.item.id !== globalConfig.pinnedItems[index].item.id
-    })
-    updateGlobalConfig(globalConfig, { pinnedItems: newPinned })
-  }
-
-  return (
-    <Col className="relative">
-      <HomeSectionHeader label={'Featured'} icon={'📌'} />
-      <PinnedItems
-        posts={posts}
-        isEditable={isAdmin}
-        pinned={pinned}
-        onDeleteClicked={onDeleteClicked}
-        onSubmit={onSubmit}
-        modalMessage={'Pin posts or markets to the overview of this group.'}
-        groups={groups}
-      />
-    </Col>
-  )
-}

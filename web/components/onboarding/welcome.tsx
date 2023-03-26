@@ -1,5 +1,4 @@
 import { STARTING_BALANCE } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
@@ -11,7 +10,7 @@ import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import GroupSelectorDialog from './group-selector-dialog'
+import { TopicSelectorDialog } from './topic-selector-dialog'
 
 export default function Welcome() {
   const user = useUser()
@@ -77,7 +76,7 @@ export default function Welcome() {
 
   if (groupSelectorOpen)
     return (
-      <GroupSelectorDialog
+      <TopicSelectorDialog
         open={groupSelectorOpen}
         setOpen={() => setGroupSelectorOpen(false)}
       />
@@ -124,7 +123,7 @@ function WhatIsManifoldPage() {
     <>
       <img
         className="h-1/3 w-1/3 place-self-center object-contain sm:h-1/2 sm:w-1/2 "
-        src="/welcome/manipurple.png"
+        src="/logo.svg"
       />
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-xl font-normal">
         Welcome to Manifold Markets
@@ -168,11 +167,13 @@ function ThankYouPage() {
       />
       <p className="text-lg">
         As a thank you for signing up, we sent you{' '}
-        {formatMoney(STARTING_BALANCE)} in play money!
+        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
+        mana, our play money!
       </p>
-      <Row className={'text-ink-600 my-3 text-sm'}>
-        Note that mana ({ENV_CONFIG.moneyMoniker}) can't be converted into cash.
-      </Row>
+      <p className={'my-3 text-lg '}>
+        Mana can't be converted into cash, but can be purchased at a ratio of{' '}
+        <strong className="text-xl">{formatMoney(100)} : $1</strong>.
+      </p>
     </>
   )
 }

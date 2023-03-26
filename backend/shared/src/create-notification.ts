@@ -35,6 +35,8 @@ import { ContractFollow } from 'common/follow'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
 import { GroupMember } from 'common/group-member'
+import { QuestType } from 'common/quest'
+import { QuestRewardTxn } from 'common/txn'
 
 const firestore = admin.firestore()
 
@@ -1256,6 +1258,46 @@ export const createAddedToGroupNotification = async (
     sourceSlug: group.slug,
     sourceTitle: group.name,
     sourceContractId: 'group' + group.id,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export const createQuestPayoutNotification = async (
+  user: User,
+  txnId: string,
+  payoutAmount: number,
+  questCount: number,
+  questType: QuestType
+) => {
+  const privateUser = await getPrivateUser(user.id)
+  if (!privateUser) return
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'quest_payout'
+  )
+  if (!sendToBrowser) return
+  const notificationRef = firestore
+    .collection(`/users/${user.id}/notifications`)
+    .doc(txnId)
+
+  const notification: Notification = {
+    id: notificationRef.id,
+    userId: user.id,
+    reason: 'quest_payout',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'quest_reward',
+    sourceUpdateType: 'created',
+    sourceUserName: user.name,
+    sourceUserUsername: user.username,
+    sourceUserAvatarUrl: user.avatarUrl,
+    sourceText: payoutAmount.toString(),
+    sourceTitle: 'Quests',
+    data: {
+      questType,
+      questCount,
+    } as QuestRewardTxn['data'],
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }

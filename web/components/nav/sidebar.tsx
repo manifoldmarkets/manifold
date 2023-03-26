@@ -24,15 +24,13 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import NotificationsIcon from 'web/components/notifications-icon'
-import { DarkModeContext } from 'web/hooks/dark-mode-context'
+import { DarkModeContext, useIsDarkMode } from 'web/hooks/dark-mode-context'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SignInButton } from '../buttons/sign-in-button'
-import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-menu'
 import { SearchButton } from './search-button'
@@ -40,10 +38,9 @@ import { SidebarItem } from './sidebar-item'
 
 export default function Sidebar(props: {
   className?: string
-  logoSubheading?: string
   isMobile?: boolean
 }) {
-  const { className, logoSubheading, isMobile } = props
+  const { className, isMobile } = props
   const router = useRouter()
   const currentPage = router.pathname
 
@@ -61,7 +58,12 @@ export default function Sidebar(props: {
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
-  const bottomNavOptions = bottomNav(!!user, theme, toggleTheme)
+  const bottomNavOptions = bottomNav(
+    !!user,
+    theme,
+    useIsDarkMode(),
+    toggleTheme
+  )
 
   const createMarketButton = user && !user.isBannedFromPosting && (
     <CreateQuestionButton key="create-market-button" />
@@ -72,13 +74,7 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col xl:ml-2', className)}
     >
-      <ManifoldLogo className="pt-6" twoLine />
-      {logoSubheading && (
-        <Row className="text-primary-700 pl-2 text-2xl sm:mt-3">
-          {logoSubheading}
-        </Row>
-      )}
-      <Spacer h={6} />
+      <ManifoldLogo className="py-6" twoLine />
 
       {user === undefined && <div className="h-[56px]" />}
 
@@ -176,11 +172,15 @@ const getMobileNav = (toggleModal: () => void) => {
 const bottomNav = (
   loggedIn: boolean,
   theme: 'light' | 'dark' | 'auto',
+  isDarkMode: boolean,
   toggleTheme: () => void
 ) =>
   buildArray(
     {
-      name: theme === 'auto' ? 'System theme' : capitalize(theme) + ' theme',
+      name:
+        theme === 'auto'
+          ? `Auto (${isDarkMode ? 'dark' : 'light'})`
+          : capitalize(theme),
       icon:
         theme === 'light'
           ? SunIcon

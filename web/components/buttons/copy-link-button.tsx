@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { track } from 'web/lib/service/analytics'
+import { trackShareEvent } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import clsx from 'clsx'
@@ -13,27 +13,11 @@ import { NativeShareData } from 'common/native-share-data'
 import { CheckIcon, DuplicateIcon } from '@heroicons/react/outline'
 import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon'
 import { getIsNative } from 'web/lib/native/is-native'
-
-// This list makes it easier to track all the different share/copy link events, esp. for the quests flow
-const CopyLinkEventNames = [
-  'copy market link',
-  'copy creator market link',
-  'copy dream link',
-  'copy group link',
-  'copy manalink',
-  'copy ad link',
-  'copy post link',
-  'copy referral link',
-  'copy weekly profit link',
-  'copy twitch link',
-  'copy styles link',
-] as const
-
-type CopyLinkEvent = typeof CopyLinkEventNames[number]
+import { ShareEventName } from 'common/events'
 
 export function CopyLinkButton(props: {
   url: string
-  eventTrackingName: CopyLinkEvent
+  eventTrackingName: ShareEventName
   linkIconOnlyProps?: {
     tooltip: string
     className?: string
@@ -65,7 +49,7 @@ export function CopyLinkButton(props: {
       setTimeout(() => setIconPressed(false), 1000)
       copyToClipboard(url)
     }
-    track(eventTrackingName, { url, type: 'copy sharing link' })
+    trackShareEvent(eventTrackingName, url)
   }
 
   const Button = (props: { onClick: () => void }) => {
@@ -98,9 +82,7 @@ export function CopyLinkButton(props: {
         bgPressed ? 'bg-primary-50 text-primary-500 transition-none' : ''
       )}
     >
-      <div className="ml-3 w-full max-w-xs select-all truncate sm:max-w-full">
-        {displayUrl ?? url}
-      </div>
+      <div className="ml-3 w-full select-all truncate">{displayUrl ?? url}</div>
       <Button onClick={onClick} />
     </Row>
   )

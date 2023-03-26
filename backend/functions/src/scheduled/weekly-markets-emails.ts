@@ -18,7 +18,7 @@ import { Follow } from 'common/follow'
 import { countBy, uniq, uniqBy } from 'lodash'
 import { sendInterestingMarketsEmail } from 'shared/emails'
 import { getTrendingContracts } from 'shared/utils'
-import { secrets } from 'functions/secrets'
+import { secrets } from 'shared/secrets'
 
 const GROUP_SLUGS_TO_IGNORE_IN_TRENDING = [
   'manifold-features',

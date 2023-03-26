@@ -1,9 +1,8 @@
 import * as functions from 'firebase-functions'
 import { onRequest } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
-import { groupBy, keyBy, sortBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import {
-  getValues,
   invokeFunction,
   loadPaginated,
   log,
@@ -15,10 +14,11 @@ import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import { createLoanIncomeNotification } from 'shared/create-notification'
-import { filterDefined } from 'common/util/array'
 import { mapAsync } from 'common/util/promise'
 import { CollectionReference, Query } from 'firebase-admin/firestore'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { secrets } from 'shared/secrets'
 
 const firestore = admin.firestore()
 
@@ -35,7 +35,7 @@ export const scheduleUpdateLoans = functions.pubsub
   })
 
 export const updateloans = onRequest(
-  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
+  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0, secrets },
   async (_req, res) => {
     await updateLoansCore()
     res.status(200).json({ success: true })
@@ -43,6 +43,8 @@ export const updateloans = onRequest(
 )
 
 export async function updateLoansCore() {
+  const pg = createSupabaseDirectClient()
+
   log('Updating loans...')
 
   const [users, contracts] = await Promise.all([
@@ -53,7 +55,6 @@ export async function updateLoansCore() {
         .where('isResolved', '==', false) as Query<Contract>
     ),
   ])
-
   log(`Loaded ${users.length} users, ${contracts.length} contracts.`)
 
   const contractBets = await mapAsync(contracts, (contract) =>
@@ -65,23 +66,26 @@ export async function updateLoansCore() {
     )
   )
   const bets = sortBy(contractBets.flat(), (b) => b.createdTime)
-
   log(`Loaded ${bets.length} bets.`)
-  const userPortfolios = filterDefined(
-    await Promise.all(
-      users.map(async (user) => {
-        const portfolio = await getValues<PortfolioMetrics>(
-          firestore
-            .collection(`users/${user.id}/portfolioHistory`)
-            .orderBy('timestamp', 'desc')
-            .limit(1)
-        )
-        return portfolio[0]
-      })
+
+  const userPortfolios = Object.fromEntries(
+    await pg.map(
+      `select distinct on (user_id) user_id, ts, investment_value, balance, total_deposits
+       from user_portfolio_history order by user_id, ts desc`,
+      [],
+      (r) => [
+        r.user_id as string,
+        {
+          userId: r.user_id as string,
+          timestamp: Date.parse(r.ts as string),
+          investmentValue: parseFloat(r.investment_value as string),
+          balance: parseFloat(r.balance as string),
+          totalDeposits: parseFloat(r.total_deposits as string),
+        } as PortfolioMetrics,
+      ]
     )
   )
-  log(`Loaded ${userPortfolios.length} portfolios`)
-  const portfolioByUser = keyBy(userPortfolios, (portfolio) => portfolio.userId)
+  log(`Loaded ${users.length} portfolios.`)
 
   const contractsById = Object.fromEntries(
     contracts.map((contract) => [contract.id, contract])
@@ -89,7 +93,7 @@ export async function updateLoansCore() {
   const betsByUser = groupBy(bets, (bet) => bet.userId)
 
   const eligibleUsers = users.filter((u) =>
-    isUserEligibleForLoan(portfolioByUser[u.id])
+    isUserEligibleForLoan(userPortfolios[u.id])
   )
   const userUpdates = eligibleUsers.map((user) => {
     const userContractBets = groupBy(

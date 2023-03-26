@@ -10,6 +10,10 @@ import {
 import { filterDefined } from 'common/util/array'
 
 const firestore = admin.firestore()
+
+// Add your new pref here, and be sure to add the default as well
+const NEW_PREFERENCE_KEY: notification_preference = 'quest_payout'
+
 async function main() {
   const privateUsers = filterDefined(await getAllPrivateUsers())
   const defaults = getDefaultNotificationPreferences(!isProd())
@@ -21,19 +25,22 @@ async function main() {
       const currentUserPreferences = privateUser.notificationPreferences
         ? privateUser.notificationPreferences
         : defaults
-      // Add your new pref here, and be sure to add the default as well
-      const newPref: notification_preference =
-        'some_comments_on_watched_markets'
-      if (currentUserPreferences[newPref] === undefined) {
-        currentUserPreferences[newPref] = defaults[newPref]
-        await firestore
-          .collection('private-users')
-          .doc(privateUser.id)
-          .update({
-            notificationPreferences: {
-              ...currentUserPreferences,
-            },
-          })
+      if (currentUserPreferences[NEW_PREFERENCE_KEY] === undefined) {
+        currentUserPreferences[NEW_PREFERENCE_KEY] =
+          defaults[NEW_PREFERENCE_KEY]
+        try {
+          await firestore
+            .collection('private-users')
+            .doc(privateUser.id)
+            .update({
+              notificationPreferences: {
+                ...currentUserPreferences,
+              },
+            })
+        } catch (e) {
+          console.log(e)
+          console.log('Error updating user', privateUser.id)
+        }
       }
       count++
       if (count % 100 === 0)

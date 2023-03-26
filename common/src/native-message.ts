@@ -31,6 +31,8 @@ export type webToNativeMessageType =
   | 'onPageVisit'
   | 'share'
   | 'theme'
+  | 'log'
+  | 'startedListening'
 
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'

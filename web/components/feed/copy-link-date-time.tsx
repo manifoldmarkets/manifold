@@ -6,6 +6,7 @@ import { fromNow } from 'web/lib/util/time'
 import { LinkIcon } from '@heroicons/react/outline'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { toast } from 'react-hot-toast'
+import { trackShareEvent } from 'web/lib/service/analytics'
 
 export function copyLinkToComment(
   contractCreatorUsername: string,
@@ -17,6 +18,7 @@ export function copyLinkToComment(
   commentUrl.hash = commentId
   copyToClipboard(commentUrl.toString())
   toast('Link copied to clipboard!')
+  trackShareEvent('copy comment link', commentUrl.toString())
 }
 
 export function CopyLinkDateTimeComponent(props: {

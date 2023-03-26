@@ -28,16 +28,9 @@ export function ProbChangeTable(props: {
 
   if (!changes) return <LoadingIndicator />
 
-  const biggestChanges = sortBy(changes, (c) =>
+  const contracts = sortBy(changes, (c) =>
     Math.abs(c.probChanges?.day ?? 0)
   ).reverse()
-
-  const contracts = [
-    ...biggestChanges.slice(0, 3),
-    ...biggestChanges
-      .slice(3)
-      .filter((c) => Math.abs(c.probChanges?.day ?? 0) >= 0.01),
-  ]
 
   if (contracts.length === 0)
     return <div className="text-ink-500 px-4">None</div>

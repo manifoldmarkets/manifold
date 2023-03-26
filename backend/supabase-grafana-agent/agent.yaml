@@ -9,13 +9,13 @@ integrations:
 
 metrics:
   wal_directory: /tmp/wal
-  global:
-    scrape_interval: 5s
   configs:
     - name: supa_prom_scraper
       scrape_configs:
         - job_name: supa_prom_scraper
           metrics_path: '/customer/v1/privileged/metrics'
+          scrape_timeout: 30s
+          scrape_interval: 30s
           basic_auth:
             username: service_role
             password: ${SUPABASE_KEY}

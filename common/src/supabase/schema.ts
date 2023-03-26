@@ -651,6 +651,23 @@ export interface Database {
           user_id: string | null
         }
       }
+      trending_contracts: {
+        Row: {
+          data: Json | null
+          fs_updated_time: string | null
+          id: string | null
+        }
+        Insert: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+        Update: {
+          data?: Json | null
+          fs_updated_time?: string | null
+          id?: string | null
+        }
+      }
       user_groups: {
         Row: {
           avatarurl: string | null

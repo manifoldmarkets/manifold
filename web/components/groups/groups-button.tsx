@@ -19,7 +19,9 @@ import {
 } from 'web/lib/supabase/groups'
 import { groupButtonClass } from 'web/pages/group/[...slugs]'
 import { GroupLinkItem } from 'web/pages/groups'
-import { Button } from '../buttons/button'
+import { Button, buttonClass } from '../buttons/button'
+import { ConfirmationButton } from '../buttons/confirmation-button'
+import { Subtitle } from '../widgets/subtitle'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -97,6 +99,75 @@ function GroupsDialog(props: {
   )
 }
 
+export function LeavePrivateGroupButton(props: {
+  group: SearchGroupInfo
+  user: User | undefined | null
+  setIsMember: (isMember: boolean) => void
+  isMobile?: boolean
+  disabled?: boolean
+}) {
+  const { group, user, setIsMember, isMobile, disabled } = props
+  const leavePrivateGroup = user
+    ? withTracking(() => {
+        leaveGroup(group.id, user.id)
+          .then(() => setIsMember(false))
+          .catch(() => {
+            toast.error('Failed to unfollow group')
+          })
+      }, 'leave group')
+    : firebaseLogin
+
+  return (
+    <>
+      <ConfirmationButton
+        openModalBtn={{
+          className: clsx(
+            isMobile
+              ? 'bg-inherit hover:bg-inherit inline-flex items-center justify-center disabled:cursor-not-allowed shadow-none px-1 '
+              : buttonClass('md', 'dark-gray')
+          ),
+          disabled: disabled,
+          icon: (
+            <UserRemoveIcon
+              className={clsx(
+                'h-5 w-5',
+                isMobile
+                  ? 'disabled:text-ink-200 text-ink-500 hover:text-ink-900 transition-colors '
+                  : ''
+              )}
+            />
+          ),
+          label: isMobile ? '' : ' Leave',
+        }}
+        cancelBtn={{
+          label: 'Cancel',
+        }}
+        submitBtn={{
+          label: 'Leave group',
+          color: 'red',
+        }}
+        onSubmit={() => {
+          leavePrivateGroup()
+        }}
+      >
+        <LeavePrivateGroupModal />
+      </ConfirmationButton>
+    </>
+  )
+}
+
+export function LeavePrivateGroupModal() {
+  return (
+    <>
+      <Subtitle>Are you sure?</Subtitle>
+      <p className="text-sm">
+        You can't rejoin this group unless invited back. You also won't be able
+        to access any markets you have shares in.
+      </p>
+    </>
+  )
+}
+
 export function JoinOrLeaveGroupButton(props: {
   group: SearchGroupInfo
   isMember: boolean | undefined
@@ -110,6 +181,17 @@ export function JoinOrLeaveGroupButton(props: {
   // Handle both non-live and live updating isMember state
   const [isMember, setIsMember] = useState(props.isMember)
   useEffect(() => setIsMember(props.isMember), [props.isMember])
+  if (group.privacyStatus === 'private') {
+    return (
+      <LeavePrivateGroupButton
+        group={group}
+        setIsMember={setIsMember}
+        user={user}
+        isMobile={isMobile}
+        disabled={disabled}
+      />
+    )
+  }
 
   const unfollow = user
     ? withTracking(() => {
