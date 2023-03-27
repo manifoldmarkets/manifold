@@ -18,7 +18,7 @@ export async function getSetScore(
   const scoreIdsToValue: {
     [key: string]: {
       score: number
-      idempotencyKey: string|undefined
+      idempotencyKey: string | undefined
     }
   } = {}
   scoreIds.forEach((scoreId) => {
@@ -48,6 +48,29 @@ export async function setScoreValue(
       idempotency_key: idempotencyKey,
     })
   )
+  return data
+}
+export async function setScoreValueOnUsers(
+  userIds: string[],
+  setId: string,
+  scoreIds: string[],
+  scoreValue: number,
+  db: SupabaseClient,
+  idempotencyKey?: string
+) {
+  const values = scoreIds
+    .map((scoreId) =>
+      userIds.map((userId) => ({
+        user_id: userId,
+        set_id: setId,
+        score_id: scoreId,
+        score_value: scoreValue,
+        idempotency_key: idempotencyKey,
+      }))
+    )
+    .flat()
+
+  const { data } = await run(db.from('user_set_scores').upsert(values))
   return data
 }
 

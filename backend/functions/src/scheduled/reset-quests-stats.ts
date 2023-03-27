@@ -2,9 +2,10 @@
 
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { setScoreValue } from 'common/supabase/set-scores'
-import { QUEST_SCORE_IDS } from 'common/quest'
+import { setScoreValueOnUsers } from 'common/supabase/set-scores'
+import { QUEST_SCORE_IDS, QUEST_SET_ID } from 'common/quest'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { chunk } from 'lodash'
 const firestore = admin.firestore()
 
 export const resetQuestStats = functions
@@ -23,13 +24,13 @@ export const resetQuestStats = functions
 export const resetQuestStatsInternal = async () => {
   const usersSnap = await firestore.collection('users').get()
   console.log(`Resetting quest stats for ${usersSnap.docs.length} users`)
+  const userIds = usersSnap.docs.map((d) => d.id)
   const db = createSupabaseClient()
+  // TODO: test on prod
+  const chunks = chunk(userIds, 1000)
   await Promise.all(
-    usersSnap.docs.map((doc) =>
-      // TODO: this will spam the db too much? - should chunk these updates
-      QUEST_SCORE_IDS.map(
-        async (scoreId) => await setScoreValue(doc.id, 'quests', scoreId, 0, db)
-      )
-    )
+    chunks.map(async (chunk) => {
+      await setScoreValueOnUsers(chunk, QUEST_SET_ID, QUEST_SCORE_IDS, 0, db)
+    })
   )
 }
