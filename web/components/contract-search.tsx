@@ -348,7 +348,7 @@ function ContractSearchControls(props: {
     ...additionalFilters,
     ...(!query ? additionalFilter?.nonQueryFacetFilters ?? [] : []),
     additionalFilter?.creatorId || additionalFilter?.groupSlug
-      ? ''
+      ? 'visibility:-private'
       : 'visibility:public',
 
     filter === 'open' ? 'isResolved:false' : '',
