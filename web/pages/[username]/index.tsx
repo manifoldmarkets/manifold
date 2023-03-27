@@ -54,6 +54,7 @@ import {
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { DailyStats } from 'web/components/daily-stats'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getStaticProps = async (props: {
   params: {
@@ -89,6 +90,7 @@ export default function UserPage(props: {
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
 
   useTracking('view user profile', { username })
+  useSaveReferral()
 
   if (!user) return <Custom404 />
   else if (user.userDeleted) return <DeletedUser />

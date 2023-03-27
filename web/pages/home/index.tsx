@@ -36,8 +36,10 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 export default function Home() {
   const isClient = useIsClient()
   const isMobile = useIsMobile()
-  useTracking('view home', { kind: isMobile ? 'swipe' : 'desktop' })
+
   useRedirectIfSignedOut()
+  useSaveReferral()
+  useTracking('view home', { kind: isMobile ? 'swipe' : 'desktop' })
 
   if (!isClient)
     return (
@@ -54,7 +56,6 @@ export default function Home() {
 
 function HomeDashboard() {
   const user = useUser()
-  useSaveReferral()
 
   const dailyChangedContracts = useYourDailyChangedContracts(db, user?.id)
 
