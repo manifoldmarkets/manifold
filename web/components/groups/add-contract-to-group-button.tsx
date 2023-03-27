@@ -1,5 +1,6 @@
 import {
   CheckCircleIcon,
+  LockClosedIcon,
   PlusCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
@@ -84,6 +85,9 @@ export function AddContractButton(props: {
         >
           <div className="bg-canvas-0 relative h-12 w-12 rounded-full">
             <PlusCircleIcon className="text-primary-700 absolute -left-2 -top-2 h-16 w-16 drop-shadow" />
+            {group.privacyStatus == 'private' && (
+              <LockClosedIcon className="text-canvas-0 absolute right-[6px] bottom-[4px] h-[16px] w-[16px]" />
+            )}
           </div>
         </IconButton>
         <AddMarketToGroupModal
