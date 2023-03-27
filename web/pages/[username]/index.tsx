@@ -54,6 +54,8 @@ import {
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { DailyStats } from 'web/components/daily-stats'
+import { useAdmin } from 'web/hooks/use-admin'
+import { PROJECT_ID } from 'common/envs/constants'
 
 export const getStaticProps = async (props: {
   params: {
@@ -121,7 +123,7 @@ const DeletedUser = () => {
 
 export function UserProfile(props: { user: User; posts: Post[] }) {
   const user = useUserById(props.user.id) ?? props.user
-
+  const isAdmin = useAdmin()
   const router = useRouter()
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
@@ -276,6 +278,24 @@ export function UserProfile(props: { user: User; posts: Post[] }) {
               </SiteLink>
             )}
           </Row>
+          {isAdmin && (
+            <Row className={'px-1'}>
+              <span>
+                <a
+                  className="text-primary-400 mr-2 text-sm hover:underline"
+                  href={firestoreUserConsolePath(user.id)}
+                >
+                  firestore user
+                </a>
+                <a
+                  className="text-primary-400 text-sm hover:underline"
+                  href={firestorePrivateConsolePath(user.id)}
+                >
+                  private user
+                </a>
+              </span>
+            </Row>
+          )}
         </Col>
 
         <Col className="mt-2">
@@ -481,4 +501,12 @@ function FollowsDialog(props: {
       </Col>
     </Modal>
   )
+}
+
+function firestoreUserConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fusers~2F${userId}`
+}
+
+function firestorePrivateConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fprivate-users~2F${userId}`
 }
