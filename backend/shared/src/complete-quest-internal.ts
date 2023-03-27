@@ -30,12 +30,22 @@ dayjs.tz.setDefault('America/Los_Angeles')
 // the start of the week is 12am on Monday Pacific time
 const START_OF_WEEK = dayjs().startOf('week').add(1, 'day').valueOf()
 
-const QUESTS_INTERNALLY_CALCULATED: QuestType[] = ['MARKETS_CREATED', 'SHARES']
+type QUESTS_INTERNALLY_CALCULATED = 'MARKETS_CREATED' | 'SHARES'
 export const completeCalculatedQuest = async (
   user: User,
-  questType: typeof QUESTS_INTERNALLY_CALCULATED[number],
+  questType: 'SHARES'
+) => {
+  const db = createSupabaseClient()
+  const count = await getQuestCount(user, questType, db)
+  const oldEntry = await getQuestScore(user.id, questType, db)
+  return await completeQuestInternal(user, questType, oldEntry.score, count)
+}
+
+export const completeCalculatedQuestFromTrigger = async (
+  user: User,
+  questType: 'MARKETS_CREATED',
   // idempotencyKey is used to prevent duplicate quest completions from triggers firing multiple times
-  idempotencyKey?: string
+  idempotencyKey: string
 ) => {
   const db = createSupabaseClient()
   const count = await getQuestCount(user, questType, db)
@@ -119,7 +129,7 @@ const completeQuestInternal = async (
 
 const getQuestCount = async (
   user: User,
-  questType: typeof QUESTS_INTERNALLY_CALCULATED[number],
+  questType: QUESTS_INTERNALLY_CALCULATED,
   db: SupabaseClient
 ): Promise<number> => {
   if (questType === 'MARKETS_CREATED') {
