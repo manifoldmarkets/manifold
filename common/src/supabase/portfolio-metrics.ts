@@ -18,7 +18,10 @@ export async function getPortfolioHistory(
   const { data } = await run(query)
   return sortBy(data, 'ts').map((d) => {
     return {
-      timestamp: tsToMillis(d.ts!),
+      // mqp: hack for temporary unwise choice of postgres timestamp without time zone type
+      // -- we have to make it look like an ISO9601 date or the JS date constructor will
+      // assume that it's in local time. will fix this up soon
+      timestamp: tsToMillis(d.ts! + '+0000'),
       investmentValue: d.investment_value!,
       totalDeposits: d.total_deposits!,
       balance: d.balance!,

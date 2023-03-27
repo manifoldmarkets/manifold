@@ -162,7 +162,7 @@ const getMobileNav = (toggleModal: () => void) => {
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     {
-      name: `Ads - earn ${formatMoney(10)} per view!`,
+      name: `Ads - earn ${formatMoney(5)} per view!`,
       icon: SpeakerphoneIcon,
       href: '/ad',
     }

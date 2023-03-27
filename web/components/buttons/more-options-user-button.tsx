@@ -12,12 +12,11 @@ import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { BlockUser } from 'web/components/profile/block-user'
 import { ReportUser } from 'web/components/profile/report-user'
 import { Title } from 'web/components/widgets/title'
+import { Row } from '../layout/row'
+import { PROJECT_ID } from 'common/envs/constants'
 
-export function MoreOptionsUserButton(props: {
-  user: User
-  className?: string
-}) {
-  const { user, className } = props
+export function MoreOptionsUserButton(props: { user: User }) {
+  const { user } = props
   const { id: userId, name } = user
   const currentUser = usePrivateUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -26,11 +25,7 @@ export function MoreOptionsUserButton(props: {
 
   return (
     <>
-      <Button
-        color={'gray-white'}
-        className={className}
-        onClick={() => setIsModalOpen(true)}
-      >
+      <Button color={'gray-white'} onClick={() => setIsModalOpen(true)}>
         <DotsHorizontalIcon
           className={clsx('h-5 w-5 flex-shrink-0')}
           aria-hidden="true"
@@ -53,6 +48,24 @@ export function MoreOptionsUserButton(props: {
               </Button>
             )}
           </Title>
+          {isAdmin && (
+            <Row className={'px-1'}>
+              <span>
+                <a
+                  className="text-primary-400 mr-2 text-sm hover:underline"
+                  href={firestoreUserConsolePath(user.id)}
+                >
+                  firestore user
+                </a>
+                <a
+                  className="text-primary-400 text-sm hover:underline"
+                  href={firestorePrivateConsolePath(user.id)}
+                >
+                  private user
+                </a>
+              </span>
+            </Row>
+          )}
           <UncontrolledTabs
             className={'mb-4'}
             tabs={[
@@ -82,4 +95,12 @@ export function MoreOptionsUserButton(props: {
       </Modal>
     </>
   )
+}
+
+function firestoreUserConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fusers~2F${userId}`
+}
+
+function firestorePrivateConsolePath(userId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fprivate-users~2F${userId}`
 }

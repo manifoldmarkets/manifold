@@ -13,10 +13,14 @@ export const resetQuestStats = functions
   .pubsub.schedule(`0 0 * * 1`)
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
-    await resetQuestStatsInternal()
+    try {
+      await resetQuestStatsInternal()
+    } catch (e) {
+      console.error(e)
+    }
   })
 
-const resetQuestStatsInternal = async () => {
+export const resetQuestStatsInternal = async () => {
   const usersSnap = await firestore.collection('users').get()
   console.log(`Resetting quest stats for ${usersSnap.docs.length} users`)
   const db = createSupabaseClient()

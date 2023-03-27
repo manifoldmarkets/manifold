@@ -11,33 +11,40 @@ export function FollowButton(props: {
   isFollowing: boolean | undefined
   onFollow: () => void
   onUnfollow: () => void
-  className?: string
 }) {
-  const { isFollowing, onFollow, onUnfollow, className } = props
+  const { isFollowing, onFollow, onUnfollow } = props
 
   const user = useUser()
 
   if (!user || isFollowing === undefined) return <></>
+
+  if (isFollowing) {
+    return (
+      <Button
+        size="sm"
+        color="dark-gray"
+        className="my-auto"
+        onClick={withTracking(onUnfollow, 'unfollow')}
+      >
+        Following
+      </Button>
+    )
+  }
+
   return (
     <Button
       size="sm"
-      color={isFollowing ? 'dark-gray' : 'indigo'}
-      className={clsx('my-auto', className)}
-      onClick={withTracking(
-        isFollowing ? onUnfollow : onFollow,
-        isFollowing ? 'unfollow' : 'follow'
-      )}
+      color="indigo"
+      className="my-auto"
+      onClick={withTracking(onFollow, 'follow')}
     >
-      {isFollowing ? 'Following' : 'Follow'}
+      Follow
     </Button>
   )
 }
 
-export function UserFollowButton(props: {
-  userId: string
-  className?: string
-}) {
-  const { userId, className } = props
+export function UserFollowButton(props: { userId: string }) {
+  const { userId } = props
   const user = useUser()
   const following = useFollows(user?.id)
   const isFollowing = following?.includes(userId)
@@ -47,7 +54,6 @@ export function UserFollowButton(props: {
 
   return (
     <FollowButton
-      className={className}
       isFollowing={isFollowing}
       onFollow={() => follow(user.id, userId)}
       onUnfollow={() => unfollow(user.id, userId)}

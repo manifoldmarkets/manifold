@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
-import React, { memo, ReactNode, useState, useMemo } from 'react'
+import { memo, ReactNode, useState, useMemo } from 'react'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -28,9 +28,11 @@ export const PortfolioValueSection = memo(
         portfolioHistory?.map((p) => ({
           x: p.timestamp,
           y:
-            p.balance +
-            p.investmentValue -
-            (graphMode === 'profit' ? p.totalDeposits : 0),
+            graphMode === 'balance'
+              ? p.balance
+              : p.balance +
+                p.investmentValue -
+                (graphMode === 'profit' ? p.totalDeposits : 0),
           obj: p,
         })),
       [portfolioHistory, graphMode]
@@ -58,6 +60,10 @@ export const PortfolioValueSection = memo(
       graphView.setViewYScale(undefined)
     })
 
+    const placeholderSection = (
+      <div className="text-ink-500 animate-pulse text-lg sm:text-xl">---</div>
+    )
+
     // placeholder when loading
     if (graphPoints === undefined || !lastPortfolioMetrics) {
       return (
@@ -67,16 +73,9 @@ export const PortfolioValueSection = memo(
           onClickNumber={onClickNumber}
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
-          profitElement={
-            <div className="text-ink-500 animate-pulse text-lg sm:text-xl">
-              ---
-            </div>
-          }
-          valueElement={
-            <div className="text-ink-500 animate-pulse text-lg sm:text-xl">
-              ---
-            </div>
-          }
+          profitElement={placeholderSection}
+          balanceElement={placeholderSection}
+          valueElement={placeholderSection}
           graphElement={(_width, height) => (
             <div
               style={{
@@ -104,7 +103,11 @@ export const PortfolioValueSection = memo(
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
         switcherColor={
-          graphMode === 'value' ? 'indigo' : totalProfit > 0 ? 'green' : 'red'
+          graphMode === 'profit'
+            ? totalProfit > 0
+              ? 'green'
+              : 'red'
+            : 'indigo'
         }
         profitElement={
           <div
@@ -128,6 +131,15 @@ export const PortfolioValueSection = memo(
                 ? graphDisplayNumber
                 : formatMoney(totalProfit)
               : formatMoney(totalProfit)}
+          </div>
+        }
+        balanceElement={
+          <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
+            {graphMode === 'balance'
+              ? graphDisplayNumber
+                ? graphDisplayNumber
+                : formatMoney(balance)
+              : formatMoney(balance)}
           </div>
         }
         valueElement={
@@ -166,6 +178,7 @@ export function PortfolioValueSkeleton(props: {
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
   profitElement: ReactNode
+  balanceElement: ReactNode
   valueElement: ReactNode
   graphElement: (width: number, height: number) => ReactNode
   switcherColor?: ColorType
@@ -179,6 +192,7 @@ export function PortfolioValueSkeleton(props: {
     currentTimePeriod,
     setCurrentTimePeriod,
     profitElement,
+    balanceElement,
     valueElement,
     graphElement,
     switcherColor,
@@ -187,10 +201,10 @@ export function PortfolioValueSkeleton(props: {
     placement,
   } = props
   return (
-    <Col className={'gap-4'}>
+    <>
       <Row
         className={clsx(
-          'mb-1 items-center justify-start gap-2 sm:mb-2',
+          'mb-1 items-start gap-2 sm:mb-2',
           placement === 'bottom' ? 'ml-2 gap-8' : ''
         )}
       >
@@ -212,6 +226,22 @@ export function PortfolioValueSkeleton(props: {
 
         <Col
           className={clsx(
+            'w-24 cursor-pointer sm:w-28 ',
+            graphMode != 'balance'
+              ? 'cursor-pointer opacity-40 hover:opacity-80'
+              : ''
+          )}
+          onClick={() => {
+            onClickNumber('balance')
+            track('Graph Balance Clicked')
+          }}
+        >
+          <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
+          {balanceElement}
+        </Col>
+
+        <Col
+          className={clsx(
             'w-24 cursor-pointer sm:w-28',
             graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
           )}
@@ -220,11 +250,11 @@ export function PortfolioValueSkeleton(props: {
             track('Portfolio Value Clicked')
           }}
         >
-          <div className="text-ink-600 text-xs sm:text-sm">Portfolio value</div>
+          <div className="text-ink-600 text-xs sm:text-sm">Portfolio</div>
           {valueElement}
         </Col>
 
-        <AddFundsButton userId={userId} className="self-center" />
+        <AddFundsButton userId={userId} className="self-center max-sm:hidden" />
 
         {!placement && (
           <TimeRangePicker
@@ -236,11 +266,11 @@ export function PortfolioValueSkeleton(props: {
           />
         )}
       </Row>
-      <SizedContainer fullHeight={200} mobileHeight={175}>
+      <SizedContainer fullHeight={200} mobileHeight={150}>
         {graphElement}
       </SizedContainer>
       {placement === 'bottom' && (
-        <Col className={' mx-2 -mt-2 mb-1'}>
+        <Col className={' mx-2 mt-1'}>
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setCurrentTimePeriod}
@@ -250,6 +280,6 @@ export function PortfolioValueSkeleton(props: {
           />
         </Col>
       )}
-    </Col>
+    </>
   )
 }
