@@ -55,10 +55,6 @@ export function CreateGroupButton(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
   const [privacy, setPrivacy] = useState<PrivacyStatusType>('public')
-  const [newGroupRedirect, setNewGroupRedirect] = useState<Group | undefined>(
-    undefined
-  )
-
   const router = useRouter()
 
   const editor = useTextEditor({
