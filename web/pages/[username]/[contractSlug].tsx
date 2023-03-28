@@ -20,7 +20,6 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import {
   AuthorInfo,
   CloseOrResolveTime,
-  ContractLike,
   MarketGroups,
 } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
@@ -66,6 +65,8 @@ import { getContractParams } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
+import { UserIcon } from '@heroicons/react/solid'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -247,6 +248,7 @@ export function ContractPageContent(props: {
     closeTime,
     creatorId,
     coverImageUrl,
+    uniqueBettorCount,
   } = contract
 
   const isAdmin = useAdmin()
@@ -306,7 +308,6 @@ export function ContractPageContent(props: {
           </div>
         )}
         <BackButton />
-        <ExtraContractActionsRow contract={contract} />
       </div>
 
       <Row className="w-full items-start gap-8 self-center">
@@ -319,14 +320,28 @@ export function ContractPageContent(props: {
         >
           <Col className="gap-3 sm:gap-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="text-ink-600 flex gap-6 text-sm font-light">
+              <div className="text-ink-600 flex gap-4 text-sm font-light">
                 <AuthorInfo contract={contract} />
+
                 <CloseOrResolveTime
                   contract={contract}
                   editable={user?.id === creatorId}
                 />
+
+                <Tooltip
+                  text="Traders"
+                  placement="bottom"
+                  noTap
+                  className="hidden flex-row sm:flex"
+                >
+                  <Row className={'shrink-0 items-center gap-1'}>
+                    <UserIcon className="h-4 w-4" />
+                    <div>{uniqueBettorCount ?? 0}</div>
+                  </Row>
+                </Tooltip>
               </div>
-              <ContractLike contract={contract} />
+
+              <ExtraContractActionsRow contract={contract} />
             </div>
             <Linkify
               className="text-primary-700 text-lg sm:text-2xl"

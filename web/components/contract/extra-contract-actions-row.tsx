@@ -7,6 +7,7 @@ import { useUser } from 'web/hooks/use-user'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import { useState } from 'react'
 import { Tooltip } from '../widgets/tooltip'
+import { ContractLike } from './contract-details'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
@@ -14,24 +15,26 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
-    <Row className="gap-2">
+    <Row className="gap-4">
+      <ContractLike contract={contract} />
+
       <CopyLinkButton
         url={getShareUrl(contract, user?.username)}
         linkIconOnlyProps={{
           tooltip: 'Copy link to market',
           //TODO: less spaghetti way of styling the button and icon
-          className:
-            'rounded-full bg-black/60 !p-2 !text-white hover:bg-black/80 [&_svg]:h-4 [&_svg]:w-4',
+          // className:
+          //   'rounded-full bg-black/60 !p-2 !text-white hover:bg-black/80 [&_svg]:h-4 [&_svg]:w-4',
         }}
         eventTrackingName="copy market link"
       />
 
       <Tooltip text="Market details" placement="bottom" noTap>
         <button
-          className="rounded-full bg-black/60 p-2 transition-colors hover:bg-black/80"
+          // className="rounded-full bg-black/60 p-2 transition-colors hover:bg-black/80"
           onClick={() => setDialogOpen(true)}
         >
-          <DotsHorizontalIcon className="h-4 w-4 text-white" aria-hidden />
+          <DotsHorizontalIcon className="h-4 w-4" aria-hidden />
         </button>
       </Tooltip>
       <ContractInfoDialog
