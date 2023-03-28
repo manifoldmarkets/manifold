@@ -659,7 +659,7 @@ function ReasonChosen(props: { contract: Contract }) {
   const reason =
     createdTime > now - DAY_MS
       ? 'New'
-      : closeTime && closeTime < now + 3 * DAY_MS
+      : closeTime && closeTime < now + DAY_MS
       ? 'Closing soon'
       : !uniqueBettorCount || uniqueBettorCount <= 5
       ? 'For you'

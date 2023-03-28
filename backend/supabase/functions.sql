@@ -203,36 +203,36 @@ with available_contracts as (
     select *, row_number() over (order by distance) as row_num
     from available_contracts
     where created_time > (now() - interval '1 day')
-    and close_time > (now() + interval '3 days')
+    and close_time > (now() + interval '1 day')
     and distance < 0.14
     order by distance
-    limit n / 4
+    limit n / 5
   ), closing_soon_contracts as (
     select *, row_number() over (order by distance) as row_num
     from available_contracts
-    where close_time < (now() + interval '3 days')
+    where close_time < (now() + interval '1 day')
     and distance < 0.14
     order by distance
-    limit n / 4
+    limit n / 5
   ), trending_contracts as (
     select * from available_contracts
     where created_time < (now() - interval '1 day')
-    and close_time > (now() + interval '3 days')
+    and close_time > (now() + interval '1 day')
   ), results1 as (
     select *, row_number() over (order by popularity_score desc) as row_num
     from trending_contracts
     where distance < 0.10
-    limit n / 6
+    limit n / 5
   ), results2 as (
     select *, row_number() over (order by popularity_score desc) as row_num
     from trending_contracts
     where distance >= 0.10 and distance < 0.12
-    limit n / 6
+    limit n / 5
   ), results3 as (
     select *, row_number() over (order by popularity_score desc) as row_num
     from trending_contracts
     where distance >= 0.12 and distance < 0.14
-    limit n / 6
+    limit n / 5
   ), combined_trending as (
     select *, 1 as result_id from results1
     union all
