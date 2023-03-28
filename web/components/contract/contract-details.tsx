@@ -352,19 +352,18 @@ function EditableCloseDate(props: {
           placement="bottom-start"
           noTap
         >
-          <span suppressHydrationWarning>
-            {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}{' '}
-          </span>
-          {isSameDay ? (
-            <span className={'capitalize'} suppressHydrationWarning>
-              {' '}
-              {fromNow(closeTime)}
-            </span>
-          ) : isSameYear ? (
-            dayJsCloseTime.format('MMM D')
-          ) : (
-            dayJsCloseTime.format('MMM D, YYYY')
-          )}
+          <Row>
+            {dayjs().isBefore(closeTime) ? (
+              <ClockIcon className="flex h-5 w-5 mr-1" />
+            ) : (
+              'closed'
+            )}{' '}
+            {isSameDay
+              ? fromNow(closeTime)
+              : isSameYear
+              ? dayJsCloseTime.format('MMM D')
+              : dayJsCloseTime.format('MMM D, YYYY')}
+          </Row>
         </DateTimeTooltip>
         {editable && <PencilIcon className="h-4 w-4" />}
       </Row>

@@ -325,7 +325,7 @@ export function ContractPageContent(props: {
 
           <Col className="mb-4 p-4 md:px-8 md:pb-8">
             <Col className="gap-3 sm:gap-4">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between">
                 <div className="text-ink-600 flex gap-4 text-sm">
                   <AuthorInfo contract={contract} />
 
@@ -340,8 +340,8 @@ export function ContractPageContent(props: {
                     noTap
                     className="hidden flex-row sm:flex"
                   >
-                    <Row className={'shrink-0 items-center gap-1'}>
-                      <UserIcon className="h-4 w-4" />
+                    <Row className={'shrink-0 items-center gap-1 font-light'}>
+                      <UserIcon className="text-ink-500 h-4 w-4" />
                       <div>{uniqueBettorCount ?? 0}</div>
                     </Row>
                   </Tooltip>
@@ -349,10 +349,12 @@ export function ContractPageContent(props: {
 
                 <ExtraContractActionsRow contract={contract} />
               </div>
+
               <Linkify
                 className="text-primary-700 text-lg sm:text-2xl"
                 text={contract.question}
               />
+
               <ContractOverview
                 contract={contract}
                 bets={bets}
