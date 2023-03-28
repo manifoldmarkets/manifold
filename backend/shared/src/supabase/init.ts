@@ -24,9 +24,9 @@ export function createSupabaseClient() {
   return createClient(instanceId, key)
 }
 
-function getPostgresConnectionInfo(
-  instanceId: string | undefined,
-  password: string | undefined
+export function createSupabaseDirectClient(
+  instanceId?: string,
+  password?: string
 ) {
   instanceId =
     instanceId ??
@@ -43,17 +43,10 @@ function getPostgresConnectionInfo(
       "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
     )
   }
-  return {
+  return pgp({
     host: `db.${getInstanceHostname(instanceId)}`,
     port: 5432,
     user: 'postgres',
     password: password,
-  }
-}
-
-export function createSupabaseDirectClient(
-  instanceId?: string,
-  password?: string
-) {
-  return pgp(getPostgresConnectionInfo(instanceId, password))
+  })
 }
