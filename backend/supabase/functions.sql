@@ -103,98 +103,6 @@ as $$
   limit count
 $$;
 
-create or replace function get_recommended_trending(uid text, n int, excluded_contract_ids text[])
-returns table (data jsonb, distance numeric, freshness_score numeric)
-immutable parallel safe
-language sql
-as $$
-  with available_contracts as (
-    select user_trending_contract.contract_id, distance, freshness_score, created_time, close_time from user_trending_contract
-    where user_trending_contract.user_id = uid
-    and not exists (
-      select 1 from unnest(excluded_contract_ids) as w
-      where w = contract_id
-    )
-    -- That has not been viewed.
-    and not exists (
-      select 1
-      from user_events
-      where user_events.user_id = uid
-        and user_events.data ->> 'name' = 'view market'
-        and user_events.data ->> 'contractId' = contract_id
-    )
-    -- That has not been swiped on.
-    and not exists(
-      select 1
-      from user_seen_markets
-      where user_seen_markets.user_id = uid
-        and user_seen_markets.contract_id = user_trending_contract.contract_id
-    )
-    -- That has not been viewed as a card recently.
-    and not exists(
-      select 1
-      from user_events
-      where user_events.user_id = uid
-        and user_events.data ->> 'name' = 'view market card'
-        and user_events.data ->> 'contractId' = contract_id
-        and (user_events.data -> 'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
-    )
-  ), new_contracts as (
-    select *, row_number() over (order by distance) as row_num
-    from available_contracts
-    where created_time > (now() - interval '1 day')
-    and close_time > (now() + interval '3 day')
-    order by distance
-    limit n / 4
-  ), closing_soon_contracts as (
-    select *, row_number() over (order by distance) as row_num
-    from available_contracts
-    where close_time < (now() + interval '3 day')
-    order by distance
-    limit n / 4
-  ), trending_contracts as (
-    select * from available_contracts
-    where created_time < (now() - interval '1 day')
-    and close_time > (now() + interval '3 day')
-  ), results1 as (
-    select *, row_number() over (order by freshness_score desc) as row_num
-    from trending_contracts
-    where distance < 0.10
-    limit n / 6
-  ), results2 as (
-    select *, row_number() over (order by freshness_score desc) as row_num
-    from trending_contracts
-    where distance >= 0.10 and distance < 0.12
-    limit n / 6
-  ), results3 as (
-    select *, row_number() over (order by freshness_score desc) as row_num
-    from trending_contracts
-    where distance >= 0.12 and distance < 0.14
-    limit n / 6
-  ), combined_trending as (
-    select *, 1 as result_id from results1
-    union all
-    select *, 2 as result_id from results2
-    union all
-    select *, 3 as result_id from results3
-    order by row_num, result_id
-  ), combined_new_closing_soon as (
-    select *, 4 as result_id from new_contracts
-    union all
-    select *, 5 as result_id from closing_soon_contracts
-    order by row_num, result_id
-  ), combined_results as (
-    select *, 1 as result_id2, row_number() over (order by row_num, result_id) as row_num2 from combined_trending
-    union all
-    select *, 2 as result_id2, row_number() over (order by row_num, result_id) as row_num2 from combined_new_closing_soon
-    order by row_num2, result_id2
-  )
-  select data, distance, freshness_score
-  from combined_results
-  join contracts on contracts.id = combined_results.contract_id
-$$;
-
-
 create or replace function get_recommended_contract_set(uid text, n int, excluded_contract_ids text[])
 returns table (data jsonb, score real)
 immutable parallel safe
@@ -254,6 +162,98 @@ as $$ begin
     );
   end if;
 end $$;
+
+create or replace function get_recommended_contracts_embeddings(uid text, n int, excluded_contract_ids text[])
+  returns table (data jsonb, distance numeric, freshness_score numeric)
+  immutable parallel safe
+  language sql
+as $$
+with available_contracts as (
+  select user_trending_contract.contract_id, distance, freshness_score, created_time, close_time from user_trending_contract
+  where user_trending_contract.user_id = uid
+    and not exists (
+      select 1 from unnest(excluded_contract_ids) as w
+      where w = contract_id
+    )
+    -- That has not been viewed.
+    and not exists (
+      select 1
+      from user_events
+      where user_events.user_id = uid
+        and user_events.data ->> 'name' = 'view market'
+        and user_events.data ->> 'contractId' = contract_id
+    )
+    -- That has not been swiped on.
+    and not exists(
+      select 1
+      from user_seen_markets
+      where user_seen_markets.user_id = uid
+        and user_seen_markets.contract_id = user_trending_contract.contract_id
+    )
+    -- That has not been viewed as a card recently.
+    and not exists(
+      select 1
+      from user_events
+      where user_events.user_id = uid
+        and user_events.data ->> 'name' = 'view market card'
+        and user_events.data ->> 'contractId' = contract_id
+        and (user_events.data -> 'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
+    )
+), new_contracts as (
+  select *, row_number() over (order by distance) as row_num
+  from available_contracts
+  where created_time > (now() - interval '1 day')
+    and close_time > (now() + interval '3 day')
+  order by distance
+  limit n / 4
+), closing_soon_contracts as (
+  select *, row_number() over (order by distance) as row_num
+  from available_contracts
+  where close_time < (now() + interval '3 day')
+  order by distance
+  limit n / 4
+), trending_contracts as (
+  select * from available_contracts
+  where created_time < (now() - interval '1 day')
+    and close_time > (now() + interval '3 day')
+), results1 as (
+  select *, row_number() over (order by freshness_score desc) as row_num
+  from trending_contracts
+  where distance < 0.10
+  limit n / 6
+), results2 as (
+  select *, row_number() over (order by freshness_score desc) as row_num
+  from trending_contracts
+  where distance >= 0.10 and distance < 0.12
+  limit n / 6
+), results3 as (
+  select *, row_number() over (order by freshness_score desc) as row_num
+  from trending_contracts
+  where distance >= 0.12 and distance < 0.14
+  limit n / 6
+), combined_trending as (
+  select *, 1 as result_id from results1
+  union all
+  select *, 2 as result_id from results2
+  union all
+  select *, 3 as result_id from results3
+  order by row_num, result_id
+), combined_new_closing_soon as (
+  select *, 4 as result_id from new_contracts
+  union all
+  select *, 5 as result_id from closing_soon_contracts
+  order by row_num, result_id
+), combined_results as (
+  select *, 1 as result_id2, row_number() over (order by row_num, result_id) as row_num2 from combined_trending
+  union all
+  select *, 2 as result_id2, row_number() over (order by row_num, result_id) as row_num2 from combined_new_closing_soon
+  order by row_num2, result_id2
+)
+select data, distance, freshness_score
+from combined_results
+       join contracts on contracts.id = combined_results.contract_id
+$$;
+
 
 create or replace function get_cpmm_pool_prob(pool jsonb, p numeric)
     returns numeric

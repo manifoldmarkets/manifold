@@ -30,7 +30,7 @@ export const useFeed = (
 
   const loadMore = useEvent(() => {
     if (userId) {
-      db.rpc('get_recommended_trending', {
+      db.rpc('get_recommended_contracts_embeddings', {
         uid: userId,
         n: PAGE_SIZE,
         excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],

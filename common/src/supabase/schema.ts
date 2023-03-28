@@ -999,18 +999,7 @@ export interface Database {
           score: number
         }[]
       }
-      get_recommended_new_contracts: {
-        Args: {
-          uid: string
-          n: number
-          start: number
-        }
-        Returns: {
-          data: Json
-          score: number
-        }[]
-      }
-      get_recommended_trending: {
+      get_recommended_contracts_embeddings: {
         Args: {
           uid: string
           n: number
