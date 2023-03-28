@@ -1,5 +1,5 @@
 import { uniqBy } from 'lodash'
-import { CPMMBinaryContract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useEffect } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
@@ -11,9 +11,15 @@ import { db } from 'web/lib/supabase/db'
 
 const PAGE_SIZE = 20
 
-export const useFeed = (user: User | null | undefined, key: string) => {
+export const useFeed = (
+  user: User | null | undefined,
+  key: string,
+  options?: {
+    binaryOnly?: boolean
+  }
+) => {
   const [savedContracts, setSavedContracts] = usePersistentState<
-    CPMMBinaryContract[] | undefined
+    Contract[] | undefined
   >(undefined, {
     key: `recommended-contracts-${user?.id}-${key}`,
     store: inMemoryStore(),
@@ -33,7 +39,7 @@ export const useFeed = (user: User | null | undefined, key: string) => {
           console.log('got', res)
           const newContracts =
             (res.data as any).map(
-              (row: any) => row.data as CPMMBinaryContract | undefined
+              (row: any) => row.data as Contract | undefined
             ) ?? []
           setSavedContracts((contracts) =>
             uniqBy(buildArray(contracts, newContracts), (c) => c.id)
@@ -48,7 +54,9 @@ export const useFeed = (user: User | null | undefined, key: string) => {
   }, [loadMore])
 
   const filteredContracts = savedContracts?.filter(
-    (c) => !isContractBlocked(privateUser, c)
+    (c) =>
+      !isContractBlocked(privateUser, c) &&
+      (!options?.binaryOnly || c.outcomeType === 'BINARY')
   )
 
   return {

@@ -40,10 +40,8 @@ export function Swipe(props: { toggleView?: () => void }) {
   const { toggleView } = props
 
   const user = useUser()
-  const { contracts, loadMore } = useFeed(user, 'swipe')
-  const feed = contracts?.filter((c) => c.outcomeType === 'BINARY') as
-    | BinaryContract[]
-    | undefined
+  const { contracts, loadMore } = useFeed(user, 'swipe', { binaryOnly: true })
+  const feed = contracts as BinaryContract[] | undefined
 
   const [index, setIndex] = usePersistentState(0, {
     key: 'swipe-index',
