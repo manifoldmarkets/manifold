@@ -98,20 +98,25 @@ export function AuthProvider(props: {
       async (fbUser) => {
         if (fbUser) {
           setUserCookie(fbUser.toJSON())
+
           const [currentAuthUser, supabaseJwt] = await Promise.all([
             getUserAndPrivateUser(fbUser.uid),
             getSupabaseToken(),
           ])
+
           updateSupabaseAuth(supabaseJwt.jwt)
+
           if (!currentAuthUser.user || !currentAuthUser.privateUser) {
             const deviceToken = ensureDeviceToken()
             const adminToken = getAdminToken()
+
             const newUser = (await createUser({
               deviceToken,
               adminToken,
               visitedContractIds: getSavedContractVisitsLocally(),
             })) as UserAndPrivateUser
-            setCachedReferralInfoForUser(currentAuthUser.user)
+
+            setCachedReferralInfoForUser(newUser.user)
             setAuthUser({ ...newUser, authLoaded: true })
           } else {
             setAuthUser({ ...currentAuthUser, authLoaded: true })
