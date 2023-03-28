@@ -1,42 +1,45 @@
 import { Row } from '../layout/row'
 import { Contract } from 'web/lib/firebase/contracts'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { LikeButton } from 'web/components/contract/like-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { getShareUrl } from 'common/util/share'
-import clsx from 'clsx'
 import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
+import { useUser } from 'web/hooks/use-user'
+import { DotsHorizontalIcon } from '@heroicons/react/outline'
+import { useState } from 'react'
+import { Tooltip } from '../widgets/tooltip'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
   const user = useUser()
-  const privateUser = usePrivateUser()
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
-    <Row className="gap-1">
-      <LikeButton
-        contentId={contract.id}
-        contentCreatorId={contract.creatorId}
-        user={user}
-        contentType={'contract'}
-        totalLikes={contract.likedByUserCount ?? 0}
-        contract={contract}
-        contentText={contract.question}
-        className={clsx(
-          'mt-1 !items-start',
-          isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
-        )}
-      />
-
+    <Row className="gap-2">
       <CopyLinkButton
         url={getShareUrl(contract, user?.username)}
         linkIconOnlyProps={{
           tooltip: 'Copy link to market',
+          //TODO: less spaghetti way of styling the button and icon
+          className:
+            'rounded-full bg-black/60 !p-2 !text-white hover:bg-black/80 [&_svg]:h-4 [&_svg]:w-4',
         }}
         eventTrackingName="copy market link"
       />
 
-      <ContractInfoDialog contract={contract} user={user} />
+      <Tooltip text="Market details" placement="bottom" noTap>
+        <button
+          className="rounded-full bg-black/60 p-2 transition-colors hover:bg-black/80"
+          onClick={() => setDialogOpen(true)}
+        >
+          <DotsHorizontalIcon className="h-4 w-4 text-white" aria-hidden />
+        </button>
+      </Tooltip>
+      <ContractInfoDialog
+        contract={contract}
+        user={user}
+        open={dialogOpen}
+        setOpen={setDialogOpen}
+      />
     </Row>
   )
 }

@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react'
+import React, { memo, useEffect, useState } from 'react'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
@@ -33,56 +33,47 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   user: User | null | undefined
 }) {
   const { user } = props
-  const [seenToday, setSeenToday] = useHasSeen(
+  const [seenThisWeek, setSeenThisWeek] = useHasSeen(
     user,
     [QUEST_STATS_CLICK_EVENT],
     'week'
   )
   const [showQuestsModal, setShowQuestsModal] = useState(false)
   const questStatus = useQuestStatus(user)
-  if (!user) return <div />
   const { totalQuestsCompleted, totalQuests, allQuestsComplete } =
     questStatus ?? {
       totalQuestsCompleted: 0,
       totalQuests: 0,
     }
 
+  useEffect(() => {
+    if (showQuestsModal) {
+      track(QUEST_STATS_CLICK_EVENT)
+      setSeenThisWeek(true)
+    }
+  }, [showQuestsModal])
+  if (!user) return <></>
+
   return (
     <>
-      {allQuestsComplete ? (
-        <button
-          className={clsx('cursor-pointer', dailyStatsClass)}
-          onClick={() => setShowQuestsModal(true)}
-        >
-          <Col
-            className={clsx(
-              user && !hasCompletedStreakToday(user) && 'grayscale',
-              'items-center'
-            )}
-          >
-            <span>🔥 {user?.currentBettingStreak ?? 0}</span>
-            <span className="text-ink-600 text-sm">Streak</span>
-          </Col>
-        </button>
-      ) : (
-        <button
+      <button
+        className={clsx(
+          'cursor-pointer rounded-md',
+          dailyStatsClass,
+          seenThisWeek || allQuestsComplete ? '' : unseenDailyStatsClass
+        )}
+        onClick={() => setShowQuestsModal(true)}
+      >
+        <Col
           className={clsx(
-            'cursor-pointer rounded-md',
-            dailyStatsClass,
-            seenToday || allQuestsComplete ? '' : unseenDailyStatsClass
+            user && !hasCompletedStreakToday(user) && 'grayscale',
+            'items-center'
           )}
-          onClick={() => {
-            setShowQuestsModal(true)
-            track(QUEST_STATS_CLICK_EVENT)
-            setSeenToday(true)
-          }}
         >
-          <Col>
-            <span>🧭 {`${totalQuests - totalQuestsCompleted}`}</span>
-            <span className="text-sm opacity-70">Quests</span>
-          </Col>
-        </button>
-      )}
+          <span>🔥 {user?.currentBettingStreak ?? 0}</span>
+          <span className="text-ink-600 text-sm">Streak</span>
+        </Col>
+      </button>
       {showQuestsModal && (
         <QuestsModal
           open={showQuestsModal}

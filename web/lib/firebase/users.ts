@@ -186,14 +186,15 @@ export async function setCachedReferralInfoForUser(user: User | null) {
             referredByContractId: cachedReferralContractId,
             referredByGroupId: cachedReferralGroupId,
           })
+
+          local?.removeItem(CACHED_REFERRAL_GROUP_ID_KEY)
+          local?.removeItem(CACHED_REFERRAL_USERNAME_KEY)
+          local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
+
+          if (cachedReferralGroupId)
+            addUserToGroupViaId(cachedReferralGroupId, user.id)
         })
     })
-
-  if (cachedReferralGroupId) addUserToGroupViaId(cachedReferralGroupId, user.id)
-
-  local?.removeItem(CACHED_REFERRAL_GROUP_ID_KEY)
-  local?.removeItem(CACHED_REFERRAL_USERNAME_KEY)
-  local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
 }
 
 export async function firebaseLogin() {

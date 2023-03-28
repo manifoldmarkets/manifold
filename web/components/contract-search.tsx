@@ -31,6 +31,7 @@ import { Group } from 'common/group'
 import { ViewGridIcon, ViewListIcon } from '@heroicons/react/outline'
 import { ContractsList } from './contract/contracts-list'
 import { SiteLink } from './widgets/site-link'
+import { useUser } from 'web/hooks/use-user'
 
 export const SORTS = [
   { label: 'Relevance', value: 'relevance' },
@@ -288,6 +289,8 @@ function ContractSearchControls(props: {
     listViewDisabled,
   } = props
 
+  const user = useUser()
+
   const router = useRouter()
   const [query, setQuery] = usePersistentState(
     '',
@@ -347,8 +350,12 @@ function ContractSearchControls(props: {
   const facetFilters = [
     ...additionalFilters,
     ...(!query ? additionalFilter?.nonQueryFacetFilters ?? [] : []),
-    additionalFilter?.creatorId || additionalFilter?.groupSlug
+    additionalFilter?.groupSlug
       ? ''
+      : additionalFilter?.creatorId
+      ? additionalFilter?.creatorId == user?.id
+        ? ''
+        : 'visibility:-private'
       : 'visibility:public',
 
     filter === 'open' ? 'isResolved:false' : '',

@@ -270,15 +270,14 @@ export function PortfolioValueSkeleton(props: {
         {graphElement}
       </SizedContainer>
       {placement === 'bottom' && (
-        <Col className={' mx-2 mt-1'}>
-          <TimeRangePicker
-            currentTimePeriod={currentTimePeriod}
-            setCurrentTimePeriod={setCurrentTimePeriod}
-            color={switcherColor}
-            disabled={disabled}
-            className="justify-around"
-          />
-        </Col>
+        <TimeRangePicker
+          currentTimePeriod={currentTimePeriod}
+          setCurrentTimePeriod={setCurrentTimePeriod}
+          color={switcherColor}
+          disabled={disabled}
+          className="mx-2 mt-1"
+          toggleClassName="grow justify-center"
+        />
       )}
     </>
   )
