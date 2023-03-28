@@ -1,10 +1,6 @@
 import { Editor } from '@tiptap/core'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import {
-  groupPath,
-  MAX_GROUP_NAME_LENGTH,
-  PrivacyStatusType,
-} from 'common/group'
+import { Group, MAX_GROUP_NAME_LENGTH, PrivacyStatusType } from 'common/group'
 import { User } from 'common/user'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -59,6 +55,9 @@ export function CreateGroupButton(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
   const [privacy, setPrivacy] = useState<PrivacyStatusType>('public')
+  const [newGroupRedirect, setNewGroupRedirect] = useState<Group | undefined>(
+    undefined
+  )
 
   const router = useRouter()
 
@@ -88,7 +87,6 @@ export function CreateGroupButton(props: {
       console.error(e)
       return e
     })
-    console.log(result.details)
 
     if (editorHasContent(editor)) {
       savePost(editor, result.group, null)
@@ -96,12 +94,9 @@ export function CreateGroupButton(props: {
     editor?.commands.clearContent(true)
 
     if (result.group) {
-      if (goToGroupOnSubmit)
-        router.push(groupPath(result.group.slug)).catch((e) => {
-          console.log(e)
-          setErrorText(e.message)
-        })
-      else if (addGroupIdParamOnSubmit) {
+      if (goToGroupOnSubmit) {
+        router.push(`/group/loading/${result.group.id}`)
+      } else if (addGroupIdParamOnSubmit) {
         router.replace({
           pathname: router.pathname,
           query: { ...router.query, groupId: result.group.id },

@@ -152,3 +152,12 @@ export async function getGroupFromSlug(
   }
   return null
 }
+
+export async function getGroup(groupId: string) {
+  const { data } = await run(db.from('groups').select('data').eq('id', groupId))
+  if (data && data.length > 0) {
+    return data[0].data as Group
+  } else {
+    return null
+  }
+}
