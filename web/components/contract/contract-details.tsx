@@ -114,7 +114,9 @@ function PrivateMarketGroups(props: { contract: Contract }) {
   const { contract } = props
   if (contract.groupLinks) {
     return (
-      <GroupDisplay groupToDisplay={contract.groupLinks[0]} isPrivate={true} />
+      <div className="flex">
+        <GroupDisplay groupToDisplay={contract.groupLinks[0]} isPrivate />
+      </div>
     )
   }
   return <></>
