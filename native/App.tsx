@@ -49,7 +49,8 @@ import { NativeShareData } from 'common/src/native-share-data'
 import { clearData, getData, storeData } from './lib/auth'
 
 // NOTE: URIs other than manifold.markets and localhost:3000 won't work for API requests due to CORS
-// const baseUri = 'https://bbe3-181-41-206-141.jp.ngrok.io'
+// this means no supabase jwt, placing bets, creating markets, etc.
+// const baseUri = 'http://192.168.0.74:3000/'
 const baseUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 const nativeQuery = `?nativePlatform=${Platform.OS}`
@@ -514,7 +515,7 @@ const App = () => {
           />
         </View>
       </SafeAreaView>
-      {/*<ExportLogsButton />*/}
+      <ExportLogsButton />
     </>
   )
 }

@@ -117,6 +117,7 @@ export function AuthProvider(props: {
               return null
             }),
           ])
+          // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
           if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
 
           if (!currentAuthUser.user || !currentAuthUser.privateUser) {
