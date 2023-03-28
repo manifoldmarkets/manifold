@@ -28,6 +28,7 @@ import {
 } from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
 import { QUEST_DETAILS } from 'common/quest'
+import { QuestsModal } from '../quests-or-streak'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -277,7 +278,7 @@ export function QuestIncomeNotification(props: {
           text={`completing the ${QUEST_DETAILS[questType].title} quest`}
         />
       </span>
-      {/*{user && <QuestsModal open={open} setOpen={setOpen} user={user} />}*/}
+      {user && <QuestsModal open={open} setOpen={setOpen} user={user} />}
     </NotificationFrame>
   )
 }

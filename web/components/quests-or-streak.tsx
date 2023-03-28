@@ -25,6 +25,7 @@ import { filterDefined } from 'common/util/array'
 import { getQuestScores } from 'common/supabase/set-scores'
 import { useQuestStatus } from 'web/hooks/use-quest-status'
 import { db } from 'web/lib/supabase/db'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -82,12 +83,11 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
           </Col>
         </button>
       )}
-      {showQuestsModal && questStatus && (
+      {showQuestsModal && (
         <QuestsModal
           open={showQuestsModal}
           setOpen={setShowQuestsModal}
           user={user}
-          questStatus={questStatus}
         />
       )}
     </>
@@ -98,20 +98,22 @@ export function QuestsModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   user: User
-  questStatus: Awaited<ReturnType<typeof getQuestCompletionStatus>>
 }) {
-  const { open, setOpen, user, questStatus } = props
+  const { open, setOpen, user } = props
+  const questStatus = useQuestStatus(user)
+
   const { totalQuestsCompleted, totalQuests, questToCompletionStatus } =
-    questStatus
+    questStatus ?? { questToCompletionStatus: null }
+  if (!questToCompletionStatus)
+    return (
+      <Modal open={open} setOpen={setOpen} size={'lg'}>
+        <LoadingIndicator />
+      </Modal>
+    )
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
-  const streakComplete = streakStatus.currentCount >= streakStatus.requiredCount
   const shareStatus = questToCompletionStatus['SHARES']
-  const shareComplete = shareStatus.currentCount >= shareStatus.requiredCount
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
-  const createComplete = createStatus.currentCount >= createStatus.requiredCount
   const archeologistStatus = questToCompletionStatus['ARCHAEOLOGIST']
-  const archeologistComplete =
-    archeologistStatus.currentCount >= archeologistStatus.requiredCount
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -137,7 +139,7 @@ export function QuestsModal(props: {
                 ? `Continue your ${user.currentBettingStreak}-day prediction streak`
                 : 'Make a prediction once per day'
             }
-            complete={streakComplete}
+            complete={streakStatus.currentCount >= streakStatus.requiredCount}
             status={`(${streakStatus.currentCount}/${streakStatus.requiredCount})`}
             reward={Math.min(
               BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
@@ -148,7 +150,7 @@ export function QuestsModal(props: {
           <QuestRow
             emoji={'📤'}
             title={`Share ${shareStatus.requiredCount} markets this week`}
-            complete={shareComplete}
+            complete={shareStatus.currentCount >= shareStatus.requiredCount}
             status={`(${shareStatus.currentCount}/${shareStatus.requiredCount})`}
             reward={QUEST_DETAILS.SHARES.rewardAmount}
             info={
@@ -158,14 +160,17 @@ export function QuestsModal(props: {
           <QuestRow
             emoji={'📈'}
             title={`Create ${createStatus.requiredCount} market this week`}
-            complete={createComplete}
+            complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
           />
           <QuestRow
             emoji={'🏺'}
             title={`Trade on ${archeologistStatus.requiredCount} ancient market this week`}
-            complete={archeologistComplete}
+            complete={
+              archeologistStatus.currentCount >=
+              archeologistStatus.requiredCount
+            }
             status={`(${archeologistStatus.currentCount}/${archeologistStatus.requiredCount})`}
             reward={QUEST_DETAILS.ARCHAEOLOGIST.rewardAmount}
             info={
