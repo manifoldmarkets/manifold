@@ -11,7 +11,7 @@ const firestore = admin.firestore()
 export const resetQuestStats = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB' })
   // 12am midnight on Monday Pacific time
-  .pubsub.schedule(`0 0 * * 1`)
+  .pubsub.schedule(`0 0 * * 0`)
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
     try {
