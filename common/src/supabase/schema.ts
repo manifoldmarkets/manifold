@@ -531,6 +531,26 @@ export interface Database {
           user_id?: string
         }
       }
+      user_quest_metrics: {
+        Row: {
+          idempotency_key: string | null
+          score_id: string
+          score_value: number
+          user_id: string
+        }
+        Insert: {
+          idempotency_key?: string | null
+          score_id: string
+          score_value: number
+          user_id: string
+        }
+        Update: {
+          idempotency_key?: string | null
+          score_id?: string
+          score_value?: number
+          user_id?: string
+        }
+      }
       user_reactions: {
         Row: {
           data: Json

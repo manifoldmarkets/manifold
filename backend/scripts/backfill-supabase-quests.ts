@@ -5,8 +5,8 @@ import { START_OF_WEEK } from 'shared/complete-quest-internal'
 import { getAllUsers } from 'shared/utils'
 import { getRecentContractsCount } from 'common/supabase/contracts'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { setScoreValue } from 'common/supabase/set-scores'
-import { QUEST_DETAILS, QUEST_SET_ID } from 'common/quest'
+import { setQuestScoreValue } from 'common/supabase/set-scores'
+import { QUEST_DETAILS } from 'common/quest'
 import { getReferralCount } from 'common/supabase/referrals'
 
 async function backfillSupabaseQuests() {
@@ -26,9 +26,8 @@ async function backfillSupabaseQuests() {
           db
         )
         if (marketsCreatedCount > 0) {
-          await setScoreValue(
+          await setQuestScoreValue(
             user.id,
-            QUEST_SET_ID,
             QUEST_DETAILS['MARKETS_CREATED'].scoreId,
             marketsCreatedCount,
             db
@@ -40,9 +39,8 @@ async function backfillSupabaseQuests() {
           db
         )
         if (referralsCount > 0) {
-          await setScoreValue(
+          await setQuestScoreValue(
             user.id,
-            QUEST_SET_ID,
             QUEST_DETAILS['REFERRALS'].scoreId,
             referralsCount,
             db

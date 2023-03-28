@@ -1,4 +1,3 @@
-export const QUEST_SET_ID = 'quests'
 export const QUEST_TYPES = [
   'BETTING_STREAK',
   'SHARES',

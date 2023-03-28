@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 const firestore = admin.firestore()
 import { User } from 'common/user'
-import { QUEST_DETAILS, QUEST_SET_ID, QuestType } from 'common/quest'
+import { QUEST_DETAILS, QuestType } from 'common/quest'
 import { getValues, isProd } from 'shared/utils'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -17,7 +17,7 @@ import { createQuestPayoutNotification } from 'shared/create-notification'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
-import { getQuestScore, setScoreValue } from 'common/supabase/set-scores'
+import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { SupabaseClient } from 'common/supabase/utils'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -70,9 +70,8 @@ export const completeReferralsQuest = async (
   const db = createSupabaseClient()
   const questDetails = QUEST_DETAILS['REFERRALS']
   const count = await getCurrentCountForQuest(user, 'REFERRALS', db)
-  await setScoreValue(
+  await setQuestScoreValue(
     user.id,
-    QUEST_SET_ID,
     questDetails.scoreId,
     count,
     db,
@@ -122,9 +121,8 @@ const completeQuestInternal = async (
 ) => {
   const db = createSupabaseClient()
   const questDetails = QUEST_DETAILS[questType]
-  await setScoreValue(
+  await setQuestScoreValue(
     user.id,
-    QUEST_SET_ID,
     questDetails.scoreId,
     count,
     db,

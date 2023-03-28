@@ -2,8 +2,8 @@
 
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { setScoreValueOnUsers } from 'common/supabase/set-scores'
-import { QUEST_SCORE_IDS, QUEST_SET_ID } from 'common/quest'
+import { setQuestScoreValueOnUsers } from 'common/supabase/set-scores'
+import { QUEST_SCORE_IDS } from 'common/quest'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { chunk } from 'lodash'
 const firestore = admin.firestore()
@@ -42,9 +42,8 @@ export const resetWeeklyQuestStatsInternal = async () => {
   const chunks = chunk(userIds, 1000)
   await Promise.all(
     chunks.map(async (chunk) => {
-      await setScoreValueOnUsers(
+      await setQuestScoreValueOnUsers(
         chunk,
-        QUEST_SET_ID,
         QUEST_SCORE_IDS.filter((id) => !DAILY_QUEST_SCORE_IDS.includes(id)),
         0,
         db
@@ -61,9 +60,8 @@ export const resetDailyQuestStatsInternal = async () => {
   const chunks = chunk(userIds, 1000)
   await Promise.all(
     chunks.map(async (chunk) => {
-      await setScoreValueOnUsers(
+      await setQuestScoreValueOnUsers(
         chunk,
-        QUEST_SET_ID,
         // resetBettingStreaksForUsers handles the betting streak quest
         ['sharesToday'],
         0,

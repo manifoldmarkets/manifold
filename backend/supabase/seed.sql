@@ -337,28 +337,17 @@ create policy "public read" on group_members for select using (true);
 create index if not exists group_members_data_gin on group_members using GIN (data);
 alter table group_members cluster on group_members_pkey;
 
-create table if not exists user_sets (
+create table if not exists user_quest_metrics (
     user_id text not null,
-    set_id text not null,
-    primary key(user_id, set_id)
-);
-alter table user_sets enable row level security;
-drop policy if exists "public read" on user_sets;
-create policy "public read" on user_sets for select using (true);
-alter table user_sets cluster on user_sets_pkey;
-
-create table if not exists user_set_scores (
-    user_id text not null,
-    set_id text not null,
     score_id text not null,
     score_value numeric not null,
     idempotency_key text,
-    primary key(user_id, set_id, score_id)
+    primary key(user_id, score_id)
 );
-alter table user_set_scores enable row level security;
-drop policy if exists "public read" on user_set_scores;
-create policy "public read" on user_set_scores for select using (true);
-alter table user_set_scores cluster on user_set_scores_pkey;
+alter table user_quest_metrics enable row level security;
+drop policy if exists "public read" on user_quest_metrics;
+create policy "public read" on user_quest_metrics for select using (true);
+alter table user_quest_metrics cluster on user_quest_metrics_pkey;
 
 create table if not exists txns (
     id text not null primary key,
