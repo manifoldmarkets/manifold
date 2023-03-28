@@ -366,18 +366,18 @@ function UserJoinedNotification(props: {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { sourceUserName, sourceUserUsername, sourceSlug, reason, sourceText } =
     notification
-  let reasonBlock = <span>because of you</span>
-  if (sourceSlug && reason) {
+  let reasonBlock = <span>because of a link you shared</span>
+  if (sourceSlug && reason == 'user_joined_to_bet_on_your_market') {
     reasonBlock = (
       <>
-        to bet on your market{' '}
+        to bet on the market{' '}
         <QuestionOrGroupLink
           notification={notification}
           truncatedLength={'xl'}
         />
       </>
     )
-  } else if (sourceSlug) {
+  } else if (sourceSlug && reason === 'user_joined_from_your_group_invite') {
     reasonBlock = (
       <>
         because you shared{' '}
@@ -416,7 +416,7 @@ function UserJoinedNotification(props: {
           username={sourceUserUsername || ''}
           className={'hover:text-primary-500 relative flex-shrink-0'}
         />{' '}
-        joined Manifold Markets {reasonBlock}
+        joined Manifold {reasonBlock}
       </div>
     </NotificationFrame>
   )
