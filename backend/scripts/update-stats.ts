@@ -1,15 +1,10 @@
-import { initAdmin } from 'shared/init-admin'
-initAdmin()
-
-import { log, logMemory } from 'shared/utils'
+import { runScript } from './run-script'
+import { log } from 'shared/utils'
 import { updateStatsCore } from 'functions/scheduled/update-stats'
 
-async function updateStats() {
-  logMemory()
-  log('Updating stats...')
-  await updateStatsCore()
-}
-
 if (require.main === module) {
-  updateStats().then(() => process.exit())
+  runScript(async () => {
+    log('Updating stats...')
+    await updateStatsCore()
+  })
 }

@@ -1,6 +1,5 @@
 import { AddFundsModal } from '../add-funds-modal'
 import { Button } from '../buttons/button'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useState } from 'react'
 
@@ -16,9 +15,9 @@ export function AddFundsButton(props: { userId?: string; className?: string }) {
         className={className}
         color="indigo"
         onClick={() => setOpen(true)}
-        size="2xs"
+        size="xs"
       >
-        Get {ENV_CONFIG.moneyMoniker}
+        Get Ṁ
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />
     </>

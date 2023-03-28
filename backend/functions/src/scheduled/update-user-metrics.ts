@@ -188,10 +188,7 @@ const getRelevantContracts = async (
 ) => {
   const betContractIds = uniq(bets.map((b) => b.contractId))
   return await pg.map(
-    `select data
-    from contracts
-    where data->>'creatorId' in ($1:list)
-    or id in ($2:list)`,
+    `select data from contracts where creator_id in ($1:list) or id in ($2:list)`,
     [userIds, betContractIds],
     (r) => r.data as Contract
   )
@@ -208,8 +205,7 @@ const getMetricRelevantUserBets = async (
     join contracts as c on cb.contract_id = c.id
     where
       cb.data->>'userId' in ($1:list) and
-      (not (c.data ? 'resolutionTime') or c.data->>'resolutionTime' > $2::text) and
-      c.data->'uniqueBettorIds' ? (cb.data->>'userId')::text
+      (c.resolution_time is null or c.resolution_time > millis_to_ts($2))
     order by (cb.data->'createdTime')::bigint asc`,
     [userIds, since]
   )

@@ -146,7 +146,7 @@ export const OtherWaysToGetMana = () => {
     <ul className="border-ink-100 border-t">
       <Item url="/ad">
         👀 Read ads for
-        <span className={'mx-1 font-bold'}>{formatMoney(10)}</span>per ad
+        <span className={'mx-1 font-bold'}>{formatMoney(5)}</span>per ad
       </Item>
       <Item>
         🔥 Streak bonus (up to

@@ -25,12 +25,12 @@ export async function updateGroupMetricsCore() {
   const groupCreatorScores = await pg.manyOrNone(
     `with creator_scores as (
       select
-        gc.group_id, c.data->>'creatorId' as user_id, count(*) as score,
+        gc.group_id, c.creator_id, count(*) as score,
         row_number() over (partition by gc.group_id order by count(*) desc) as nth
       from group_contracts as gc
       join contracts as c on gc.contract_id = c.id
       join user_contract_metrics as ucm on ucm.contract_id = gc.contract_id
-      group by gc.group_id, c.data->>'creatorId'
+      group by gc.group_id, c.creator_id
     )
     select * from creator_scores where nth <= 50`
   )
@@ -38,7 +38,7 @@ export async function updateGroupMetricsCore() {
     groupBy(groupCreatorScores, (r) => r.group_id as string),
     (rows) =>
       rows.map((r) => ({
-        userId: r.user_id as string,
+        userId: r.creator_id as string,
         score: parseFloat(r.score as string),
       }))
   )

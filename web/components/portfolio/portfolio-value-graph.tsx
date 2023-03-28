@@ -16,7 +16,7 @@ const MARGIN = { top: 12, right: 48, bottom: 20, left: 12 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
-export type GraphMode = 'profit' | 'value'
+export type GraphMode = 'profit' | 'value' | 'balance'
 
 export const PortfolioTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
   const { x, xScale } = props
@@ -32,7 +32,7 @@ export const PortfolioTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
 }
 
 export const PortfolioGraph = (props: {
-  mode: 'profit' | 'value'
+  mode: 'profit' | 'value' | 'balance'
   points: HistoryPoint<Partial<PortfolioMetrics>>[]
   width: number
   height: number
@@ -66,9 +66,9 @@ export const PortfolioGraph = (props: {
       Tooltip={PortfolioTooltip}
       onMouseOver={onMouseOver}
       color={
-        mode === 'value'
-          ? '#4f46e5'
-          : (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
+        mode === 'profit'
+          ? (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
+          : '#4f46e5'
       }
     />
   )

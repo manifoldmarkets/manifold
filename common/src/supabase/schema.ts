@@ -157,19 +157,52 @@ export interface Database {
       }
       contracts: {
         Row: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
           data: Json
           fs_updated_time: string
           id: string
+          mechanism: string | null
+          outcome_type: string | null
+          question: string | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          visibility: string | null
         }
         Insert: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
           data: Json
           fs_updated_time: string
           id: string
+          mechanism?: string | null
+          outcome_type?: string | null
+          question?: string | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
         }
         Update: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
           data?: Json
           fs_updated_time?: string
           id?: string
+          mechanism?: string | null
+          outcome_type?: string | null
+          question?: string | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
         }
       }
       discord_messages_markets: {

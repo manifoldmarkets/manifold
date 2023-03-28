@@ -147,15 +147,15 @@ const getContractProbsAt = async (pg: SupabaseDirectClient, when: number) => {
         where to_jsonb(data)->>'createdTime' >= $1::text
         order by contract_id, to_jsonb(data)->>'createdTime' asc
       ), current_probs as (
-        select id, data,
+        select id, resolution_time,
           get_cpmm_resolved_prob(data) as resolved_prob,
           get_cpmm_pool_prob(data->'pool', (data->>'p')::numeric) as pool_prob
         from contracts
-        where data->>'mechanism' = 'cpmm-1'
+        where mechanism = 'cpmm-1'
       )
       select id, coalesce(cp.resolved_prob, cp.pool_prob) as current_prob,
         case
-          when data ? 'resolutionTime' and data->>'resolutionTime' <= $1::text
+          when resolution_time is not null and resolution_time <= millis_to_ts($1)
           then coalesce(cp.resolved_prob, cp.pool_prob)
           else coalesce(pa.prob, pb.prob, cp.pool_prob)
         end as historical_prob

@@ -1,10 +1,10 @@
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
-import { saveWeeklyContractMetricsInternal } from 'functions/scheduled/weekly-portfolio-updates'
+import { resetQuestStatsInternal } from 'functions/scheduled/reset-quests-stats'
 
 async function testScheduledFunction() {
   try {
-    await saveWeeklyContractMetricsInternal()
+    await resetQuestStatsInternal()
   } catch (e) {
     console.error(e)
   }

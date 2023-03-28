@@ -16,6 +16,7 @@ import { completeQuestInternal } from 'shared/quest'
 export const onCreateContract = functions
   .runWith({
     secrets,
+    timeoutSeconds: 540,
   })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
@@ -28,6 +29,7 @@ export const onCreateContract = functions
     const desc = contract.description as JSONContent
     const mentioned = parseMentions(desc)
     await addUserToContractFollowers(contract.id, contractCreator.id)
+    await completeQuestInternal(contractCreator, 'MARKETS_CREATED')
     await createNewContractNotification(
       contractCreator,
       contract,
@@ -50,6 +52,4 @@ export const onCreateContract = functions
     await createSupabaseClient()
       .from('contract_embeddings')
       .insert({ contract_id: contract.id, embedding })
-
-    await completeQuestInternal(contractCreator, 'MARKETS_CREATED')
   })

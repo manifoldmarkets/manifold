@@ -7,7 +7,12 @@ import {
   visibility,
 } from 'common/contract'
 import { getTotalContractMetrics } from 'common/supabase/contract-metrics'
-import { run, selectJson, SupabaseClient } from 'common/supabase/utils'
+import {
+  run,
+  millisToTs,
+  selectJson,
+  SupabaseClient,
+} from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { compressPoints, pointsToBase64 } from 'common/util/og'
@@ -50,11 +55,11 @@ export const getContracts = async (options: {
   order?: 'asc' | 'desc'
 }) => {
   let q = selectJson(db, 'contracts')
-  q = q.order('data->>createdTime', {
+  q = q.order('created_time', {
     ascending: options?.order === 'asc',
   } as any)
   if (options.beforeTime) {
-    q = q.lt('data->>createdTime', options.beforeTime)
+    q = q.lt('created_time', millisToTs(options.beforeTime))
   }
   q = q.limit(options.limit)
   const { data } = await run(q)
@@ -113,7 +118,7 @@ export async function getYourTrendingContracts(
 
 export async function getContractFromSlug(contractSlug: string) {
   const { data: contract } = await run(
-    db.from('contracts').select('data').contains('data', { slug: contractSlug })
+    db.from('contracts').select('data').eq('slug', contractSlug)
   )
   if (contract && contract.length > 0) {
     return (contract[0] as unknown as { data: Contract }).data
@@ -123,10 +128,7 @@ export async function getContractFromSlug(contractSlug: string) {
 
 export async function getContractVisibilityFromSlug(contractSlug: string) {
   const { data: contractVisibility } = await run(
-    db
-      .from('contracts')
-      .select('data->>visibility')
-      .contains('data', { slug: contractSlug })
+    db.from('contracts').select('visibility').eq('slug', contractSlug)
   )
 
   if (contractVisibility && contractVisibility.length > 0) {

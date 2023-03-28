@@ -93,10 +93,8 @@ language sql
 as $$
   select data, score
   from get_recommended_contract_scores_unseen(uid)
-  left join contracts
-  on contracts.id = contract_id
-  where is_valid_contract(data)
-  and data->>'outcomeType' = 'BINARY'
+  left join contracts on contracts.id = contract_id
+  where is_valid_contract(contracts) and outcome_type = 'BINARY'
   -- Not in the list of contracts to exclude.
   and not exists (
     select 1 from unnest(excluded_contract_ids) as w
@@ -190,12 +188,10 @@ as $$
     from get_recommended_contract_scores_unseen(uid)
     order by score desc
   ), recommended_contracts as not materialized (
-    select data, score
+    select data, created_time, score
     from recommendation_scores
-    left join contracts
-    on contracts.id = contract_id
-    where is_valid_contract(data)
-    and data->>'outcomeType' = 'BINARY'
+    left join contracts on contracts.id = contract_id
+    where is_valid_contract(contracts) and outcome_type = 'BINARY'
     and not exists (
       select 1 from unnest(excluded_contract_ids) as w
       where w = contract_id
@@ -204,13 +200,13 @@ as $$
   ), new_contracts as (
     select data, score
     from recommended_contracts
-    where (data->>'createdTime')::bigint > ts_to_millis(now() - interval '1 day')
+    where created_time > now() - interval '1 day'
     order by score desc
     limit floor(n / 3)
   ), trending_contracts as (
     select data, score
     from recommended_contracts
-    where (data->>'createdTime')::bigint < ts_to_millis(now() - interval '1 day')
+    where created_time < now() - interval '1 day'
     order by score desc
     limit n - (select count(*) from new_contracts)
   )
@@ -302,13 +298,13 @@ as $$
 select ts_to_millis(now())
 $$;
 
-create or replace function is_valid_contract(data jsonb)
+create or replace function is_valid_contract(ct contracts)
     returns boolean
     stable parallel safe
 as $$
-select not (data->>'isResolved')::boolean
-       and (data->>'visibility') = 'public'
-       and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '10 minutes')
+select ct.resolution_time is null
+       and ct.visibility = 'public'
+       and ct.close_time > now() + interval '10 minutes'
 $$ language sql;
 
 create or replace function get_related_contract_ids(source_id text)
@@ -337,7 +333,7 @@ select array_agg(data) from (
   from get_related_contract_ids(cid)
     left join contracts
     on contracts.id = contract_id
-    where is_valid_contract(data)
+    where is_valid_contract(contracts)
   limit lim
   offset start
   ) as rel_contracts
@@ -352,13 +348,13 @@ select array_agg(data) from (
     select data
     from contracts
     where data->'groupSlugs' ?| group_slugs
-    and is_valid_contract(data)
+    and is_valid_contract(contracts)
     order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
     ) as search_contracts
 $$;
 
-create or replace function search_contracts_by_group_slugs_for_creator(creator_id text,group_slugs text[], lim int, start int)
+create or replace function search_contracts_by_group_slugs_for_creator(creator_id text, group_slugs text[], lim int, start int)
     returns jsonb[]
     immutable parallel safe
     language sql
@@ -367,8 +363,8 @@ select array_agg(data) from (
     select data
     from contracts
     where data->'groupSlugs' ?| group_slugs
-      and is_valid_contract(data)
-      and data->>'creatorId' = creator_id
+      and is_valid_contract(contracts)
+      and contracts.creator_id = $1
     order by (data->'uniqueBettors7Days')::int desc, data->'slug'
     offset start limit lim
 ) as search_contracts
@@ -421,7 +417,7 @@ from (
      ) as bets
  join contracts
  on contracts.id = bets.contract_id
- where (contracts.data->>'isResolved')::boolean = true and (contracts.data->>'outcomeType')::text = 'BINARY'
+ where contracts.resolution_time is not null and contracts.outcome_type = 'BINARY'
 limit count
 offset start
 $$;
@@ -432,10 +428,9 @@ returns table(creator_id text, contracts jsonb)
     immutable parallel safe
     language sql
 as $$
-    select data->>'creatorId' as creator_id, jsonb_agg(data) as contracts
+    select creator_id, jsonb_agg(data) as contracts
     from contracts
-    where data->>'creatorId' = any(creator_ids)
-    and (data->>'createdTime')::bigint > created_time
+    where creator_id = any(creator_ids) and contracts.created_time > millis_to_ts($2)
     group by creator_id;
 $$;
 
@@ -485,9 +480,8 @@ language sql
 as $$
   select data, coalesce((data->>'dailyScore')::real, 0.0) as daily_score
   from get_your_contract_ids(uid)
-  left join contracts
-  on contracts.id = contract_id
-  and data->>'outcomeType' = 'BINARY'
+  left join contracts on contracts.id = contract_id
+  where contracts.outcome_type = 'BINARY'
   order by daily_score desc
   limit n
   offset start
@@ -500,10 +494,8 @@ language sql
 as $$
   select data, coalesce((data->>'popularityScore')::real, 0.0) as score
   from get_your_contract_ids(uid)
-  left join contracts
-  on contracts.id = contract_id
-  where is_valid_contract(data)
-  and data->>'outcomeType' = 'BINARY'
+  left join contracts on contracts.id = contract_id
+  where is_valid_contract(contracts) and contracts.outcome_type = 'BINARY'
   order by score desc
   limit n
   offset start
@@ -603,7 +595,7 @@ as $$
   )
   join contracts
   on contract_id = contracts.id
-  where contract_id != input_contract_id and not (data->>'isResolved')::boolean
+  where contract_id != input_contract_id and resolution_time is null
   order by similarity * similarity * log(coalesce((data->>'popularityScore')::real, 0.0) + 100) desc
   limit match_count;
 $$;

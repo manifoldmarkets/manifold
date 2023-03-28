@@ -1,8 +1,8 @@
 create or replace view public_open_contracts as (
   select * from contracts
-  where not (data->>'isResolved')::boolean
-       and (data->>'visibility') != 'unlisted'
-       and (data->>'closeTime')::bigint > ts_to_millis(now() + interval '10 minutes')
+  where resolution_time is null
+       and visibility != 'unlisted'
+       and close_time > now() + interval '10 minutes'
 );
 
 create or replace view trending_contracts as (

@@ -251,6 +251,24 @@ export function NewContractPanel(props: {
         </label>
         <TextEditor editor={editor} />
       </div>
+      <Spacer h={6} />
+      {!fromGroup && visibility != 'private' && (
+        <>
+          <Row className={'items-end gap-x-2'}>
+            <GroupSelector
+              selectedGroup={selectedGroup}
+              setSelectedGroup={setSelectedGroup}
+              options={{ showSelector: true, showLabel: true }}
+              isContractCreator={true}
+            />
+            {selectedGroup && (
+              <a target="_blank" href={groupPath(selectedGroup.slug)}>
+                <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
+              </a>
+            )}
+          </Row>
+        </>
+      )}
 
       {hideOptions ? (
         <Row className="mt-4 justify-end">
@@ -380,25 +398,6 @@ export function NewContractPanel(props: {
                     </div>
                   )}
               </div>
-            </>
-          )}
-          {!fromGroup && visibility != 'private' && (
-            <>
-              <Spacer h={4} />
-              <Row className={'items-end gap-x-2'}>
-                <GroupSelector
-                  selectedGroup={selectedGroup}
-                  setSelectedGroup={setSelectedGroup}
-                  options={{ showSelector: true, showLabel: true }}
-                  isContractCreator={true}
-                />
-                {selectedGroup && (
-                  <a target="_blank" href={groupPath(selectedGroup.slug)}>
-                    <ExternalLinkIcon className=" text-ink-500 ml-1 mb-3 h-5 w-5" />
-                  </a>
-                )}
-              </Row>
-              <Spacer h={6} />
             </>
           )}
           <div className="mb-1 flex flex-col items-start">

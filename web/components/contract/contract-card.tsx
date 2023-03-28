@@ -620,7 +620,7 @@ export function ContractCardNew(props: {
                 showTotalLikesUnder
                 size="md"
                 color="gray"
-                className="!mx-0"
+                className="!px-0"
               />
             </div>
 

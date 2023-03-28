@@ -153,6 +153,17 @@ alter table user_seen_markets cluster on user_seen_markets_pkey;
 
 create table if not exists contracts (
     id text not null primary key,
+    slug text,
+    question text,
+    creator_id text,
+    visibility text,
+    mechanism text,
+    outcome_type text,
+    created_time timestamptz,
+    close_time timestamptz,
+    resolution_time timestamptz,
+    resolution_probability numeric,
+    resolution text,
     data jsonb not null,
     fs_updated_time timestamp not null
 );
@@ -161,20 +172,36 @@ drop policy if exists "public read" on contracts;
 create policy "public read" on contracts for select using (true);
 create index if not exists contracts_data_gin on contracts using GIN (data);
 create index if not exists contracts_group_slugs_gin on contracts using GIN ((data->'groupSlugs'));
-create index if not exists contracts_creator_id on contracts ((data->>'creatorId'));
+create index if not exists contracts_slug on contracts (slug);
+create index if not exists contracts_creator_id on contracts (creator_id, created_time);
+create index if not exists contracts_created_time on contracts (created_time desc);
+create index if not exists contracts_close_time on contracts (close_time desc);
 create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
-/* serves API recent markets endpoint */
-create index if not exists contracts_created_time on contracts ((to_jsonb(data)->>'createdTime') desc);
-create index if not exists contracts_close_time on contracts ((to_jsonb(data)->>'closeTime') desc);
-/* serves the criteria used to find valid contracts in get_recommended_contract_set */
-create index if not exists contracts_recommended_criteria on contracts (
-  ((data->>'createdTime')::bigint) desc,
-  (data->>'visibility'),
-  (data->>'outcomeType'),
-  ((data->>'isResolved')::boolean),
-  ((data->>'closeTime')::bigint));
 
 alter table contracts cluster on contracts_creator_id;
+
+create or replace function contract_populate_cols()
+  returns trigger
+  language plpgsql
+as $$ begin
+  if new.data is not null then
+    new.slug := (new.data)->>'slug';
+    new.question := (new.data)->>'question';
+    new.creator_id := (new.data)->>'creatorId';
+    new.visibility := (new.data)->>'visibility';
+    new.mechanism := (new.data)->>'mechanism';
+    new.outcome_type := (new.data)->>'outcomeType';
+    new.created_time := case when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint) else null end;
+    new.close_time := case when new.data ? 'closeTime' then millis_to_ts(((new.data)->>'closeTime')::bigint) else null end;
+    new.resolution_time := case when new.data ? 'resolutionTime' then millis_to_ts(((new.data)->>'resolutionTime')::bigint) else null end;
+    new.resolution_probability := ((new.data)->>'resolutionProbability')::numeric;
+    new.resolution := (new.data)->>'resolution';
+  end if;
+  return new;
+end $$;
+
+create trigger contract_populate before insert or update on contracts
+for each row execute function contract_populate_cols();
 
 create table if not exists contract_answers (
     contract_id text not null,
