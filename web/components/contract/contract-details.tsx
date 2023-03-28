@@ -155,7 +155,7 @@ export function CloseOrResolveTime(props: {
 
   if (!!closeTime || !!isResolved) {
     return (
-      <Row className="select-none items-center">
+      <Row className="select-none items-center font-light">
         {isResolved && resolutionTime && (
           <DateTimeTooltip
             className="whitespace-nowrap"

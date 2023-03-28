@@ -326,7 +326,7 @@ export function ContractPageContent(props: {
           <Col className="mb-4 p-4 md:px-8 md:pb-8">
             <Col className="gap-3 sm:gap-4">
               <div className="flex items-center justify-between gap-4">
-                <div className="text-ink-600 flex gap-4 text-sm font-light">
+                <div className="text-ink-600 flex gap-4 text-sm">
                   <AuthorInfo contract={contract} />
 
                   <CloseOrResolveTime
