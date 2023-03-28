@@ -30,7 +30,14 @@ export const resetQuestStatsInternal = async () => {
   const chunks = chunk(userIds, 1000)
   await Promise.all(
     chunks.map(async (chunk) => {
-      await setScoreValueOnUsers(chunk, QUEST_SET_ID, QUEST_SCORE_IDS, 0, db)
+      await setScoreValueOnUsers(
+        chunk,
+        QUEST_SET_ID,
+        // resetBettingStreaksForUsers handles the betting streak quest
+        QUEST_SCORE_IDS.filter((id) => id !== 'currentBettingStreak'),
+        0,
+        db
+      )
     })
   )
 }
