@@ -204,14 +204,14 @@ with available_contracts as (
     from available_contracts
     where created_time > (now() - interval '1 day')
     and close_time > (now() + interval '3 days')
-    and distance < 0.16
+    and distance < 0.14
     order by distance
     limit n / 4
   ), closing_soon_contracts as (
     select *, row_number() over (order by distance) as row_num
     from available_contracts
     where close_time < (now() + interval '3 days')
-    and distance < 0.16
+    and distance < 0.14
     order by distance
     limit n / 4
   ), trending_contracts as (
