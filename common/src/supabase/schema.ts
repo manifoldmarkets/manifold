@@ -662,36 +662,109 @@ export interface Database {
       }
       public_open_contracts: {
         Row: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
           data: Json | null
           fs_updated_time: string | null
           id: string | null
+          mechanism: string | null
+          outcome_type: string | null
+          question: string | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          visibility: string | null
         }
         Insert: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          question?: string | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
         }
         Update: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          question?: string | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
         }
       }
       trending_contracts: {
         Row: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
           data: Json | null
           fs_updated_time: string | null
           id: string | null
+          mechanism: string | null
+          outcome_type: string | null
+          question: string | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          visibility: string | null
         }
         Insert: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          question?: string | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
         }
         Update: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           id?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          question?: string | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          visibility?: string | null
+        }
+      }
+      user_contract_distance: {
+        Row: {
+          contract_id: string | null
+          distance: number | null
+          user_id: string | null
         }
       }
       user_groups: {
@@ -702,6 +775,16 @@ export interface Database {
           id: string | null
           name: string | null
           username: string | null
+        }
+      }
+      user_trending_contract: {
+        Row: {
+          close_time: string | null
+          contract_id: string | null
+          created_time: string | null
+          distance: number | null
+          freshness_score: number | null
+          user_id: string | null
         }
       }
     }
@@ -916,15 +999,16 @@ export interface Database {
           score: number
         }[]
       }
-      get_recommended_new_contracts: {
+      get_recommended_contracts_embeddings: {
         Args: {
           uid: string
           n: number
-          start: number
+          excluded_contract_ids: string[]
         }
         Returns: {
           data: Json
-          score: number
+          distance: number
+          freshness_score: number
         }[]
       }
       get_related_contract_ids: {
@@ -1048,7 +1132,7 @@ export interface Database {
       }
       is_valid_contract: {
         Args: {
-          data: Json
+          ct: unknown
         }
         Returns: boolean
       }

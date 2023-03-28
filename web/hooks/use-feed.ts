@@ -1,20 +1,25 @@
-import { uniqBy, shuffle } from 'lodash'
-import { CPMMBinaryContract } from 'common/contract'
+import { uniqBy } from 'lodash'
+import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useEffect } from 'react'
 import { usePersistentState, inMemoryStore } from './use-persistent-state'
-import { db } from 'web/lib/supabase/db'
 import { buildArray } from 'common/util/array'
-import { useShouldBlockDestiny, usePrivateUser } from './use-user'
+import { usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { useEvent } from './use-event'
-import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { db } from 'web/lib/supabase/db'
 
 const PAGE_SIZE = 20
 
-export const useFeed = (user: User | null | undefined, key: string) => {
+export const useFeed = (
+  user: User | null | undefined,
+  key: string,
+  options?: {
+    binaryOnly?: boolean
+  }
+) => {
   const [savedContracts, setSavedContracts] = usePersistentState<
-    CPMMBinaryContract[] | undefined
+    Contract[] | undefined
   >(undefined, {
     key: `recommended-contracts-${user?.id}-${key}`,
     store: inMemoryStore(),
@@ -25,17 +30,21 @@ export const useFeed = (user: User | null | undefined, key: string) => {
 
   const loadMore = useEvent(() => {
     if (userId) {
-      db.rpc('get_recommended_contracts' as any, {
+      db.rpc('get_recommended_contracts_embeddings', {
         uid: userId,
         n: PAGE_SIZE,
         excluded_contract_ids: savedContracts?.map((c) => c.id) ?? [],
       }).then((res) => {
-        const newContracts = shuffle(
-          (res.data as CPMMBinaryContract[] | undefined) ?? []
-        )
-        setSavedContracts((contracts) =>
-          uniqBy(buildArray(contracts, newContracts), (c) => c.id)
-        )
+        if (res.data) {
+          console.log('got', res)
+          const newContracts =
+            (res.data as any).map(
+              (row: any) => row.data as Contract | undefined
+            ) ?? []
+          setSavedContracts((contracts) =>
+            uniqBy(buildArray(contracts, newContracts), (c) => c.id)
+          )
+        }
       })
     }
   })
@@ -44,12 +53,10 @@ export const useFeed = (user: User | null | undefined, key: string) => {
     loadMore()
   }, [loadMore])
 
-  const shouldBlockDestiny = useShouldBlockDestiny(user?.id)
   const filteredContracts = savedContracts?.filter(
     (c) =>
       !isContractBlocked(privateUser, c) &&
-      (!shouldBlockDestiny ||
-        !c.groupSlugs?.some((s) => DESTINY_GROUP_SLUGS.includes(s)))
+      (!options?.binaryOnly || c.outcomeType === 'BINARY')
   )
 
   return {

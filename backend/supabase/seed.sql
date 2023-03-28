@@ -177,6 +177,7 @@ create index if not exists contracts_creator_id on contracts (creator_id, create
 create index if not exists contracts_created_time on contracts (created_time desc);
 create index if not exists contracts_close_time on contracts (close_time desc);
 create index if not exists contracts_unique_bettors on contracts (((data->'uniqueBettors7Days')::int) desc);
+create index if not exists contracts_popularity_score on contracts (((data->>'popularityScore')::real) desc);
 
 alter table contracts cluster on contracts_creator_id;
 
@@ -427,6 +428,11 @@ drop policy if exists "admin write access" on user_embeddings;
 create policy "admin write access" on user_embeddings
   as PERMISSIVE FOR ALL
   to service_role;
+
+create index if not exists user_embeddings_interest_embedding on user_embeddings 
+  using ivfflat (interest_embedding vector_cosine_ops)
+  with (lists = 100);
+
 
 create table if not exists contract_embeddings (
     contract_id text not null primary key,

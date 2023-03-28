@@ -1,13 +1,37 @@
 create or replace view public_open_contracts as (
   select * from contracts
   where resolution_time is null
-       and visibility != 'unlisted'
+       and visibility = 'public'
        and close_time > now() + interval '10 minutes'
 );
 
 create or replace view trending_contracts as (
   select * from public_open_contracts
+  where (public_open_contracts.data->>'popularityScore')::real >= 0
   order by (data->>'popularityScore')::numeric desc
+);
+       
+create or replace view user_contract_distance as (
+  select
+    user_id,
+    contract_id,
+    user_embeddings.interest_embedding <=> contract_embeddings.embedding as distance
+  from user_embeddings
+  cross join contract_embeddings
+);
+
+create or replace view user_trending_contract as (
+  select
+    user_contract_distance.user_id,
+    user_contract_distance.contract_id,
+    distance,
+    (public_open_contracts.data->>'popularityScore')::real as popularity_score,
+    public_open_contracts.created_time,
+    public_open_contracts.close_time
+  from user_contract_distance
+  join public_open_contracts on public_open_contracts.id = user_contract_distance.contract_id
+  where (public_open_contracts.data->>'popularityScore')::real >= 0
+  order by popularity_score desc
 );
 
 create or replace view group_role as (
