@@ -40,11 +40,7 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   )
   const [showQuestsModal, setShowQuestsModal] = useState(false)
   const questStatus = useQuestStatus(user)
-  const { totalQuestsCompleted, totalQuests, allQuestsComplete } =
-    questStatus ?? {
-      totalQuestsCompleted: 0,
-      totalQuests: 0,
-    }
+  const { allQuestsComplete } = questStatus ?? { allQuestsComplete: true }
 
   useEffect(() => {
     if (showQuestsModal) {
