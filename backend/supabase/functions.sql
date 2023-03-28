@@ -164,12 +164,12 @@ as $$ begin
 end $$;
 
 create or replace function get_recommended_contracts_embeddings(uid text, n int, excluded_contract_ids text[])
-  returns table (data jsonb, distance numeric, freshness_score numeric)
+  returns table (data jsonb, distance numeric, popularity_score numeric)
   immutable parallel safe
   language sql
 as $$
 with available_contracts as (
-  select user_trending_contract.contract_id, distance, freshness_score, created_time, close_time from user_trending_contract
+  select user_trending_contract.contract_id, distance, popularity_score, created_time, close_time from user_trending_contract
   where user_trending_contract.user_id = uid
     and not exists (
       select 1 from unnest(excluded_contract_ids) as w
@@ -219,17 +219,17 @@ with available_contracts as (
     where created_time < (now() - interval '1 day')
     and close_time > (now() + interval '3 days')
   ), results1 as (
-    select *, row_number() over (order by freshness_score desc) as row_num
+    select *, row_number() over (order by popularity_score desc) as row_num
     from trending_contracts
     where distance < 0.10
     limit n / 6
   ), results2 as (
-    select *, row_number() over (order by freshness_score desc) as row_num
+    select *, row_number() over (order by popularity_score desc) as row_num
     from trending_contracts
     where distance >= 0.10 and distance < 0.12
     limit n / 6
   ), results3 as (
-    select *, row_number() over (order by freshness_score desc) as row_num
+    select *, row_number() over (order by popularity_score desc) as row_num
     from trending_contracts
     where distance >= 0.12 and distance < 0.14
     limit n / 6
@@ -251,7 +251,7 @@ with available_contracts as (
     select *, 2 as result_id2, row_number() over (order by row_num, result_id) as row_num2 from combined_new_closing_soon
     order by row_num2, result_id2
   )
-  select data, distance, freshness_score
+  select data, distance, popularity_score
   from combined_results
   join contracts on contracts.id = combined_results.contract_id
 $$;

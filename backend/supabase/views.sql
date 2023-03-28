@@ -25,13 +25,13 @@ create or replace view user_trending_contract as (
     user_contract_distance.user_id,
     user_contract_distance.contract_id,
     distance,
-    (public_open_contracts.data->>'popularityScore')::real as freshness_score,
+    (public_open_contracts.data->>'popularityScore')::real as popularity_score,
     public_open_contracts.created_time,
     public_open_contracts.close_time
   from user_contract_distance
   join public_open_contracts on public_open_contracts.id = user_contract_distance.contract_id
   where (public_open_contracts.data->>'popularityScore')::real >= 0
-  order by freshness_score desc
+  order by popularity_score desc
 );
 
 create or replace view group_role as (
