@@ -112,10 +112,12 @@ export function AuthProvider(props: {
 
           const [currentAuthUser, supabaseJwt] = await Promise.all([
             getUserAndPrivateUser(fbUser.uid),
-            getSupabaseToken(),
+            getSupabaseToken().catch((e) => {
+              console.error('Error getting supabase token', e)
+              return null
+            }),
           ])
-
-          updateSupabaseAuth(supabaseJwt.jwt)
+          if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
 
           if (!currentAuthUser.user || !currentAuthUser.privateUser) {
             const deviceToken = ensureDeviceToken()
