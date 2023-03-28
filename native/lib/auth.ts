@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { log } from 'components/logger'
 
 export type keys = 'user'
 export const storeData = async (key: keys, value: object) => {
@@ -6,22 +7,17 @@ export const storeData = async (key: keys, value: object) => {
     const jsonValue = JSON.stringify(value)
     await AsyncStorage.setItem(key, jsonValue)
   } catch (e) {
-    // saving error
+    log('error saving value', e)
   }
 }
 export const clearData = async (key: keys) => {
-  try {
-    await AsyncStorage.setItem(key, '')
-  } catch (e) {
-    // saving error
-  }
+  await AsyncStorage.setItem(key, '')
 }
 export const getData = async <T>(key: keys) => {
   try {
     const jsonValue = await AsyncStorage.getItem(key)
     return jsonValue != null ? (JSON.parse(jsonValue) as T) : null
   } catch (e) {
-    // error reading value
-    console.log('error reading value', e)
+    log('error reading value', e)
   }
 }
