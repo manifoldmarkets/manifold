@@ -37,6 +37,39 @@ import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { QfExplainer } from './contract/qf-overview'
 
+import { Contract, contractPath } from 'common/contract'
+import { debounce } from 'lodash'
+import { useRouter } from 'next/router'
+import { useRef } from 'react'
+import { getContract } from 'web/lib/supabase/contracts'
+import { LOADING_PING_INTERVAL } from 'web/pages/group/loading/[groupId]'
+import LoadingNewContract from './contract/waiting-for-supabase-button'
+
+// export default function LoadingNewContract(props: { contractId: string }) {
+//   const { contractId } = props
+//   const router = useRouter()
+//   const waitForContract = useRef(
+//     debounce(fetchContract, LOADING_PING_INTERVAL)
+//   ).current
+
+//   async function fetchContract() {
+//     const newContract = await getContract(contractId)
+//     if (newContract) {
+//       console.log(newContract as Contract)
+//       router.replace(contractPath(newContract as Contract)).catch((e) => {
+//         console.log(e)
+//       })
+//     } else {
+//       waitForContract()
+//     }
+//   }
+//   useEffect(() => {
+//     waitForContract()
+//   }, [])
+
+//   return <LoadingNewThing thing={'contract'} />
+// }
+
 export type NewQuestionParams = {
   groupId?: string
   q: string
@@ -71,6 +104,9 @@ export function NewContractPanel(props: {
   const [initialValueString, setInitialValueString] = useState(initValue)
   const [visibility, setVisibility] = useState<visibility>(
     (params?.visibility as visibility) ?? 'public'
+  )
+  const [newContract, setNewContract] = useState<Contract | undefined>(
+    undefined
   )
   // for multiple choice, init to 3 empty answers
   const [answers, setAnswers] = useState(['', '', ''])
@@ -206,7 +242,7 @@ export function NewContractPanel(props: {
       editor?.commands.clearContent(true)
       // force clear save, because it can fail if editor unrenders
       safeLocalStorage?.removeItem(`text create market`)
-      await router.push(`/loading/${result.id}`)
+      setNewContract(result as Contract)
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
       setErrorText(
@@ -523,22 +559,27 @@ export function NewContractPanel(props: {
       </Row>
 
       <Spacer h={6} />
-      <Row className="w-full justify-center">
-        <Button
-          className="w-full"
-          type="submit"
-          color="indigo"
-          size="xl"
-          loading={isSubmitting}
-          disabled={!isValid || editor?.storage.upload.mutation.isLoading}
-          onClick={(e) => {
-            e.preventDefault()
-            submit()
-          }}
-        >
-          {isSubmitting ? 'Creating...' : 'Create market'}
-        </Button>
-      </Row>
+      {newContract && (
+        <LoadingNewContract contractId={newContract.id} router={router} />
+      )}
+      {!newContract && (
+        <Row className="w-full justify-center">
+          <Button
+            className="w-full"
+            type="submit"
+            color="indigo"
+            size="xl"
+            loading={isSubmitting}
+            disabled={!isValid || editor?.storage.upload.mutation.isLoading}
+            onClick={(e) => {
+              e.preventDefault()
+              submit()
+            }}
+          >
+            {isSubmitting ? 'Creating...' : 'Create market'}
+          </Button>
+        </Row>
+      )}
 
       <Spacer h={6} />
     </div>
