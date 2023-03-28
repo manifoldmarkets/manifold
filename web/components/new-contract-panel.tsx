@@ -44,6 +44,7 @@ import { useRef } from 'react'
 import { getContract } from 'web/lib/supabase/contracts'
 import { LOADING_PING_INTERVAL } from 'web/pages/group/loading/[groupId]'
 import LoadingNewContract from './contract/waiting-for-supabase-button'
+import WaitingForSupabaseButton from './contract/waiting-for-supabase-button'
 
 // export default function LoadingNewContract(props: { contractId: string }) {
 //   const { contractId } = props
@@ -560,7 +561,7 @@ export function NewContractPanel(props: {
 
       <Spacer h={6} />
       {newContract && (
-        <LoadingNewContract contractId={newContract.id} router={router} />
+        <WaitingForSupabaseButton contractId={newContract.id} router={router} />
       )}
       {!newContract && (
         <Row className="w-full justify-center">
