@@ -354,7 +354,7 @@ function EditableCloseDate(props: {
         >
           <Row>
             {dayjs().isBefore(closeTime) ? (
-              <ClockIcon className="flex h-5 w-5 mr-1" />
+              <ClockIcon className="mr-1 flex h-5 w-5" />
             ) : (
               'closed'
             )}{' '}
