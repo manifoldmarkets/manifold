@@ -227,7 +227,7 @@ function GroupDisplay(props: {
     <Link prefetch={false} href={groupPath(groupToDisplay.slug)} legacyBehavior>
       <a
         className={clsx(
-          'w-fit max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs font-light sm:max-w-[250px]',
+          'w-fit max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-sm font-light sm:max-w-[250px]',
           isPrivate
             ? 'text-ink-1000 bg-indigo-200 dark:bg-indigo-700'
             : 'bg-ink-400 text-ink-0'
@@ -305,9 +305,13 @@ function EditableCloseDate(props: {
         setOpen={setIsEditingCloseTime}
         position="top"
       >
-        <Col className="bg-canvas-0 items-center rounded p-8">
-          <Title className="!text-2xl">Change when this market closes</Title>
-          <Row className="flex-wrap items-center justify-center gap-2">
+        <Col className="bg-canvas-0 rounded p-8">
+          <Title className="!text-2xl">Market close time</Title>
+          <div className="mb-4">
+            Change when this market closes. All trading will be halted at this
+            time.
+          </div>
+          <Row className="flex-wrap items-center justify-end gap-2">
             <Input
               type="date"
               className="w-full shrink-0 sm:w-fit"
@@ -330,14 +334,17 @@ function EditableCloseDate(props: {
           </Row>
 
           {(contract.closeTime ?? Date.now() + 1) > Date.now() && (
-            <Button
-              className="mt-8"
-              size={'sm'}
-              color="gray-white"
-              onClick={() => onSave(Date.now())}
-            >
-              (Or, close this market now)
-            </Button>
+            <Row className="align-center mt-8">
+              <div className="mt-1 mr-2">Or close market now:</div>
+              <Button
+                className=""
+                size={'xs'}
+                color="gray"
+                onClick={() => onSave(Date.now())}
+              >
+                Close market
+              </Button>
+            </Row>
           )}
         </Col>
       </Modal>
