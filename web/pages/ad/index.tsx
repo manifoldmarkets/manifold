@@ -32,7 +32,8 @@ export async function getStaticProps() {
 }
 
 export default function AdsPage(props: { ads: AdType[] }) {
-  const user = useUser()
+  // const user = useUser()
+  const user = { id: 'ZB5wm6TsZbfYNWOoAWIjDpzjEz72' }
 
   const [oldAdIds, setOldAdIds] = useState<string[]>()
   useEffect(() => {
