@@ -11,7 +11,7 @@ async function testScheduledFunction() {
     // await resetDailyQuestStatsInternal()
     const user = await getUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')
     if (!user) throw new Error('Could not find user')
-    await completeReferralsQuest(user, 'asdnaowe89h293875h')
+    await completeReferralsQuest(user)
     // const contract = await getContract('TXqpswOSxT7WtbSq7bKG')
     // if (!user || !contract) throw new Error('Could not find user or contract')
     // await completeArchaeologyQuest(

@@ -452,6 +452,6 @@ async function handleReferral(staleUser: User, eventId: string) {
       referredByContract,
       referredByGroup
     )
-    await completeReferralsQuest(user, txn.id)
+    await completeReferralsQuest(user)
   })
 }

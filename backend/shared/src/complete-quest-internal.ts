@@ -63,21 +63,12 @@ export const completeCalculatedQuestFromTrigger = async (
   )
 }
 
-export const completeReferralsQuest = async (
-  user: User,
-  idempotencyKey: string
-) => {
+export const completeReferralsQuest = async (user: User) => {
+  // Bc we don't issue a payout here, (onCreateBet does that) we don't need an idempotency key
   const db = createSupabaseClient()
   const questDetails = QUEST_DETAILS['REFERRALS']
   const count = await getCurrentCountForQuest(user, 'REFERRALS', db)
-  await setQuestScoreValue(
-    user.id,
-    questDetails.scoreId,
-    count,
-    db,
-    idempotencyKey
-  )
-  // onCreateBet handles the referral payout
+  await setQuestScoreValue(user.id, questDetails.scoreId, count, db)
 }
 
 export const completeArchaeologyQuest = async (
