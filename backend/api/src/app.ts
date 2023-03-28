@@ -43,7 +43,6 @@ import { registerdiscordid } from './register-discord-id'
 import { getuserisgroupmember } from './get-user-is-group-member'
 import { getprivatecontractbyslug } from './get-private-contract-by-slug'
 import { redeemad } from './redeem-ad-reward'
-import { getRecommendedContracts } from './get-recommended-contracts'
 import { completequest } from './complete-quest'
 import { getsupabasetoken } from './get-supabase-token'
 
@@ -114,7 +113,6 @@ app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/getprivatecontractbyslug', ...apiRoute(getprivatecontractbyslug))
 app.post('/redeemad', ...apiRoute(redeemad))
-app.post('/get-recommended-contracts', ...apiRoute(getRecommendedContracts))
 app.post('/completequest', ...apiRoute(completequest))
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
 
