@@ -5,7 +5,6 @@ import { useEffect, useRef } from 'react'
 import { getContract } from 'web/lib/supabase/contracts'
 import { LOADING_PING_INTERVAL } from 'web/pages/group/loading/[groupId]'
 import { Button } from '../buttons/button'
-import { Row } from '../layout/row'
 
 export default function WaitingForSupabaseButton(props: {
   contractId: string
