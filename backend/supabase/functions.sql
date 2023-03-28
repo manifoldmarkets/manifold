@@ -140,37 +140,54 @@ as $$
         and (user_events.data -> 'timestamp')::bigint > ts_to_millis(now() - interval '1 day')
     )
   ), new_contracts as (
-    select * from available_contracts
+    select *, row_number() over (order by distance) as row_num
+    from available_contracts
     where created_time > (now() - interval '1 day')
---     and close_time < (now() + interval '1 day')
-    order by distance desc
+    and close_time > (now() + interval '1 day')
+    order by distance
     limit floor(n / 4)
---   ), closing_soon_contracts as (
---     select * from available_contracts
---     where created_time > (now() - interval '1 day')
---     order by distance desc
---     limit floor(n / 4)
+  ), closing_soon_contracts as (
+    select *, row_number() over (order by distance) as row_num
+    from available_contracts
+    where close_time < (now() + interval '1 day')
+    order by distance
+    limit floor(n / 4)
+  ), trending_contracts as (
+    select * from available_contracts
+    where created_time < (now() - interval '1 day')
+    and close_time > (now() + interval '1 day')
   ), results1 as (
     select *, row_number() over (order by freshness_score desc) as row_num
-    from available_contracts
+    from trending_contracts
     where distance < 0.10
-    limit n / 3
+    limit n / 6
   ), results2 as (
     select *, row_number() over (order by freshness_score desc) as row_num
-    from available_contracts
+    from trending_contracts
     where distance >= 0.10 and distance < 0.12
-    limit n / 3
+    limit n / 6
   ), results3 as (
     select *, row_number() over (order by freshness_score desc) as row_num
-    from available_contracts
+    from trending_contracts
     where distance >= 0.12 and distance < 0.14
-    limit n / 3
-  ), combined_results as (
+    limit n / 6
+  ), combined_trending as (
     select *, 1 as result_id from results1
     union all
     select *, 2 as result_id from results2
     union all
     select *, 3 as result_id from results3
+    order by row_num, result_id
+  ), combined_new_closing_soon as (
+    select *, 4 as result_id from new_contracts
+    union all
+    select *, 5 as result_id from closing_soon_contracts
+    order by row_num, result_id
+  ), combined_results as (
+    select *, 1 as result_id2, row_number() over (order by row_num, result_id) as row_num2 from combined_trending
+    union all
+    select *, 2 as result_id2, row_number() over (order by row_num, result_id) as row_num2 from combined_new_closing_soon
+    order by row_num2, result_id2
   )
   select data, distance, freshness_score
   from combined_results

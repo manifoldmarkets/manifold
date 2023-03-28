@@ -1,7 +1,7 @@
 create or replace view public_open_contracts as (
   select * from contracts
   where resolution_time is null
-       and visibility != 'unlisted'
+       and visibility = 'public'
        and close_time > now() + interval '10 minutes'
 );
 
