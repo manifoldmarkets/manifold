@@ -529,11 +529,14 @@ export function NewContractPanel(props: {
       </Row>
 
       <Spacer h={6} />
-      {newContract && (
-        <WaitingForSupabaseButton contractId={newContract.id} router={router} />
-      )}
-      {!newContract && (
-        <Row className="w-full justify-center">
+      <Row className="w-full justify-center">
+        {newContract && (
+          <WaitingForSupabaseButton
+            contractId={newContract.id}
+            router={router}
+          />
+        )}
+        {!newContract && (
           <Button
             className="w-full"
             type="submit"
@@ -548,8 +551,8 @@ export function NewContractPanel(props: {
           >
             {isSubmitting ? 'Creating...' : 'Create market'}
           </Button>
-        </Row>
-      )}
+        )}
+      </Row>
 
       <Spacer h={6} />
     </div>

@@ -33,16 +33,14 @@ export default function WaitingForSupabaseButton(props: {
   }, [])
 
   return (
-    <Row className="w-full justify-center">
-      <Button
-        className="w-full"
-        type="submit"
-        color="indigo"
-        size="xl"
-        loading={true}
-      >
-        Creating...
-      </Button>
-    </Row>
+    <Button
+      className="w-full"
+      type="submit"
+      color="indigo"
+      size="xl"
+      loading={true}
+    >
+      Creating...
+    </Button>
   )
 }
