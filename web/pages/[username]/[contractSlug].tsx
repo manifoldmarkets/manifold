@@ -295,162 +295,169 @@ export function ContractPageContent(props: {
         </Head>
       )}
 
-      <div className="relative flex h-[80px] max-w-3xl items-start justify-between py-2 px-4">
-        {coverImageUrl && (
-          <div className="absolute bottom-0 left-0 right-0 -top-10 -z-10">
-            <Image
-              fill
-              alt=""
-              sizes="100vw"
-              className="object-cover"
-              src={coverImageUrl}
-            />
-          </div>
-        )}
-        <BackButton />
-      </div>
-
       <Row className="w-full items-start gap-8 self-center">
         <Col
           className={clsx(
-            'bg-canvas-0 mb-4 w-full max-w-3xl rounded-b p-4 md:px-8 md:pb-8 xl:w-[70%]',
+            'bg-canvas-0 w-full max-w-3xl rounded-b  xl:w-[70%]',
             // Keep content in view when scrolling related markets on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}
         >
-          <Col className="gap-3 sm:gap-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-ink-600 flex gap-4 text-sm font-light">
-                <AuthorInfo contract={contract} />
-
-                <CloseOrResolveTime
-                  contract={contract}
-                  editable={user?.id === creatorId}
+          <div
+            className={clsx(
+              'relative flex max-w-3xl items-start justify-between py-2 px-4',
+              !coverImageUrl ? 'bg-canvas-100 flex sm:hidden' : 'h-[80px]'
+            )}
+          >
+            {coverImageUrl && (
+              <div className="absolute bottom-0 left-0 right-0 -top-10 -z-10">
+                <Image
+                  fill
+                  alt=""
+                  sizes="100vw"
+                  className="object-cover"
+                  src={coverImageUrl}
                 />
-
-                <Tooltip
-                  text="Traders"
-                  placement="bottom"
-                  noTap
-                  className="hidden flex-row sm:flex"
-                >
-                  <Row className={'shrink-0 items-center gap-1'}>
-                    <UserIcon className="h-4 w-4" />
-                    <div>{uniqueBettorCount ?? 0}</div>
-                  </Row>
-                </Tooltip>
               </div>
+            )}
+            <BackButton />
+          </div>
 
-              <ExtraContractActionsRow contract={contract} />
+          <Col className="mb-4 p-4 md:px-8 md:pb-8">
+            <Col className="gap-3 sm:gap-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="text-ink-600 flex gap-4 text-sm font-light">
+                  <AuthorInfo contract={contract} />
+
+                  <CloseOrResolveTime
+                    contract={contract}
+                    editable={user?.id === creatorId}
+                  />
+
+                  <Tooltip
+                    text="Traders"
+                    placement="bottom"
+                    noTap
+                    className="hidden flex-row sm:flex"
+                  >
+                    <Row className={'shrink-0 items-center gap-1'}>
+                      <UserIcon className="h-4 w-4" />
+                      <div>{uniqueBettorCount ?? 0}</div>
+                    </Row>
+                  </Tooltip>
+                </div>
+
+                <ExtraContractActionsRow contract={contract} />
+              </div>
+              <Linkify
+                className="text-primary-700 text-lg sm:text-2xl"
+                text={contract.question}
+              />
+              <ContractOverview
+                contract={contract}
+                bets={bets}
+                betPoints={betPoints}
+              />
+            </Col>
+
+            <ContractDescription
+              className="mt-2 xl:mt-6"
+              contract={contract}
+              toggleResolver={() => setShowResolver(!showResolver)}
+            />
+
+            <div className="my-4">
+              <MarketGroups contract={contract} />
             </div>
-            <Linkify
-              className="text-primary-700 text-lg sm:text-2xl"
-              text={contract.question}
-            />
-            <ContractOverview
+
+            {showResolver &&
+              user &&
+              !resolution &&
+              (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
+                <NumericResolutionPanel
+                  isAdmin={!!isAdmin}
+                  creator={user}
+                  isCreator={!isAdmin}
+                  contract={contract}
+                />
+              ) : outcomeType === 'BINARY' ? (
+                <ResolutionPanel
+                  isAdmin={!!isAdmin}
+                  creator={user}
+                  isCreator={!isAdmin}
+                  contract={contract}
+                />
+              ) : outcomeType === 'QUADRATIC_FUNDING' ? (
+                <QfResolutionPanel contract={contract} />
+              ) : null)}
+
+            {(outcomeType === 'FREE_RESPONSE' ||
+              outcomeType === 'MULTIPLE_CHOICE') && (
+              <>
+                <Spacer h={4} />
+                <AnswersPanel
+                  contract={contract}
+                  onAnswerCommentClick={onAnswerCommentClick}
+                  showResolver={showResolver}
+                />
+                <Spacer h={4} />
+              </>
+            )}
+
+            {outcomeType === 'NUMERIC' && (
+              <AlertBox
+                title="Warning"
+                text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
+              />
+            )}
+
+            {isCreator && !isResolved && !isClosed && (
+              <>
+                {showResolver && <Spacer h={4} />}
+                <CreatorSharePanel contract={contract} />
+              </>
+            )}
+
+            {outcomeType === 'NUMERIC' && allowTrade && (
+              <NumericBetPanel className="xl:hidden" contract={contract} />
+            )}
+
+            {isResolved && resolution !== 'CANCEL' && (
+              <>
+                <ContractLeaderboard
+                  topContractMetrics={topContractMetrics.filter(
+                    (metric) => metric.userUsername !== HOUSE_BOT_USERNAME
+                  )}
+                  contractId={contract.id}
+                  currentUser={user}
+                  currentUserMetrics={contractMetrics}
+                />
+                <Spacer h={12} />
+              </>
+            )}
+
+            <UserBetsSummary
+              className="mt-4 mb-2 px-2"
               contract={contract}
-              bets={bets}
-              betPoints={betPoints}
+              initialMetrics={contractMetrics}
             />
+
+            <div ref={tabsContainerRef}>
+              <ContractTabs
+                contract={contract}
+                bets={bets}
+                totalBets={totalBets}
+                comments={comments}
+                userPositionsByOutcome={userPositionsByOutcome}
+                totalPositions={totalPositions}
+                answerResponse={answerResponse}
+                onCancelAnswerResponse={onCancelAnswerResponse}
+                blockedUserIds={blockedUserIds}
+                activeIndex={activeTabIndex}
+                setActiveIndex={setActiveTabIndex}
+              />
+            </div>
           </Col>
-
-          <ContractDescription
-            className="mt-2 xl:mt-6"
-            contract={contract}
-            toggleResolver={() => setShowResolver(!showResolver)}
-          />
-
-          <div className="my-4">
-            <MarketGroups contract={contract} />
-          </div>
-
-          {showResolver &&
-            user &&
-            !resolution &&
-            (outcomeType === 'NUMERIC' || outcomeType === 'PSEUDO_NUMERIC' ? (
-              <NumericResolutionPanel
-                isAdmin={!!isAdmin}
-                creator={user}
-                isCreator={!isAdmin}
-                contract={contract}
-              />
-            ) : outcomeType === 'BINARY' ? (
-              <ResolutionPanel
-                isAdmin={!!isAdmin}
-                creator={user}
-                isCreator={!isAdmin}
-                contract={contract}
-              />
-            ) : outcomeType === 'QUADRATIC_FUNDING' ? (
-              <QfResolutionPanel contract={contract} />
-            ) : null)}
-
-          {(outcomeType === 'FREE_RESPONSE' ||
-            outcomeType === 'MULTIPLE_CHOICE') && (
-            <>
-              <Spacer h={4} />
-              <AnswersPanel
-                contract={contract}
-                onAnswerCommentClick={onAnswerCommentClick}
-                showResolver={showResolver}
-              />
-              <Spacer h={4} />
-            </>
-          )}
-
-          {outcomeType === 'NUMERIC' && (
-            <AlertBox
-              title="Warning"
-              text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
-            />
-          )}
-
-          {isCreator && !isResolved && !isClosed && (
-            <>
-              {showResolver && <Spacer h={4} />}
-              <CreatorSharePanel contract={contract} />
-            </>
-          )}
-
-          {outcomeType === 'NUMERIC' && allowTrade && (
-            <NumericBetPanel className="xl:hidden" contract={contract} />
-          )}
-
-          {isResolved && resolution !== 'CANCEL' && (
-            <>
-              <ContractLeaderboard
-                topContractMetrics={topContractMetrics.filter(
-                  (metric) => metric.userUsername !== HOUSE_BOT_USERNAME
-                )}
-                contractId={contract.id}
-                currentUser={user}
-                currentUserMetrics={contractMetrics}
-              />
-              <Spacer h={12} />
-            </>
-          )}
-
-          <UserBetsSummary
-            className="mt-4 mb-2 px-2"
-            contract={contract}
-            initialMetrics={contractMetrics}
-          />
-
-          <div ref={tabsContainerRef}>
-            <ContractTabs
-              contract={contract}
-              bets={bets}
-              totalBets={totalBets}
-              comments={comments}
-              userPositionsByOutcome={userPositionsByOutcome}
-              totalPositions={totalPositions}
-              answerResponse={answerResponse}
-              onCancelAnswerResponse={onCancelAnswerResponse}
-              blockedUserIds={blockedUserIds}
-              activeIndex={activeTabIndex}
-              setActiveIndex={setActiveTabIndex}
-            />
-          </div>
         </Col>
         <RelatedContractsList
           className="hidden min-h-full max-w-[375px] xl:flex"
