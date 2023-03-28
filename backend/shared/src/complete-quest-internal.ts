@@ -29,6 +29,7 @@ dayjs.extend(timezone)
 dayjs.tz.setDefault('America/Los_Angeles')
 // the start of the week is 12am on Monday Pacific time
 const START_OF_WEEK = dayjs().startOf('week').add(1, 'day').valueOf()
+const START_OF_DAY = dayjs().startOf('day').valueOf()
 
 type QUESTS_INTERNALLY_CALCULATED = 'MARKETS_CREATED' | 'SHARES'
 export const completeCalculatedQuest = async (
@@ -36,7 +37,7 @@ export const completeCalculatedQuest = async (
   questType: 'SHARES'
 ) => {
   const db = createSupabaseClient()
-  const count = await getQuestCount(user, questType, db)
+  const count = await getCurrentCountForQuest(user, questType, db)
   const oldEntry = await getQuestScore(user.id, questType, db)
   return await completeQuestInternal(user, questType, oldEntry.score, count)
 }
@@ -48,7 +49,7 @@ export const completeCalculatedQuestFromTrigger = async (
   idempotencyKey: string
 ) => {
   const db = createSupabaseClient()
-  const count = await getQuestCount(user, questType, db)
+  const count = await getCurrentCountForQuest(user, questType, db)
   const oldEntry = await getQuestScore(user.id, questType, db)
   if (idempotencyKey && oldEntry.idempotencyKey === idempotencyKey)
     return { count: oldEntry.score }
@@ -127,7 +128,7 @@ const completeQuestInternal = async (
   return { count }
 }
 
-const getQuestCount = async (
+const getCurrentCountForQuest = async (
   user: User,
   questType: QUESTS_INTERNALLY_CALCULATED,
   db: SupabaseClient
@@ -137,7 +138,7 @@ const getQuestCount = async (
   } else if (questType === 'SHARES') {
     return await getUniqueUserShareEventsCount(
       user.id,
-      START_OF_WEEK,
+      START_OF_DAY,
       Date.now(),
       db
     )
@@ -157,7 +158,7 @@ const awardQuestBonus = async (
       .where('category', '==', 'QUEST_REWARD')
       .where('data.questType', '==', questType)
       .where('data.questCount', '==', newCount)
-      .where('createdTime', '>=', dayjs().startOf('day').valueOf())
+      .where('createdTime', '>=', START_OF_DAY)
       .limit(1)
     const previousTxn = (await previousTxns.get()).docs[0]
     if (previousTxn) {

@@ -50,6 +50,8 @@ export async function setScoreValue(
   )
   return data
 }
+
+// TODO: To reduce writes, we could just reset quest stats where users already have a score saved
 export async function setScoreValueOnUsers(
   userIds: string[],
   setId: string,
