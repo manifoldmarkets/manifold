@@ -7,6 +7,7 @@ create or replace view public_open_contracts as (
 
 create or replace view trending_contracts as (
   select * from public_open_contracts
+  where (public_open_contracts.data->>'popularityScore')::real >= 0
   order by (data->>'popularityScore')::numeric desc
 );
        
@@ -29,8 +30,6 @@ create or replace view user_trending_contract as (
     public_open_contracts.close_time
   from user_contract_distance
   join public_open_contracts on public_open_contracts.id = user_contract_distance.contract_id
---     -- For getting the freshness score.
---   join contract_recommendation_features on contract_recommendation_features.contract_id = user_contract_distance.contract_id
   where (public_open_contracts.data->>'popularityScore')::real >= 0
   order by freshness_score desc
 );
