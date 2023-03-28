@@ -44,7 +44,7 @@ export const useFeed = (user: User | null | undefined, key: string) => {
   })
 
   useEffect(() => {
-    setTimeout(loadMore, 1000)
+    loadMore()
   }, [loadMore])
 
   const filteredContracts = savedContracts?.filter(

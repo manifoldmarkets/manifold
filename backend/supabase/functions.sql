@@ -145,13 +145,13 @@ as $$
     where created_time > (now() - interval '1 day')
     and close_time > (now() + interval '1 day')
     order by distance
-    limit floor(n / 4)
+    limit n / 4
   ), closing_soon_contracts as (
     select *, row_number() over (order by distance) as row_num
     from available_contracts
     where close_time < (now() + interval '1 day')
     order by distance
-    limit floor(n / 4)
+    limit n / 4
   ), trending_contracts as (
     select * from available_contracts
     where created_time < (now() - interval '1 day')
