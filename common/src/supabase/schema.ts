@@ -634,43 +634,6 @@ export interface Database {
           id?: string
         }
       }
-      user_set_scores: {
-        Row: {
-          score_id: string
-          score_value: number
-          set_id: string
-          user_id: string
-          idempotency_key?: string
-        }
-        Insert: {
-          score_id: string
-          score_value: number
-          set_id: string
-          user_id: string
-          idempotency_key?: string
-        }
-        Update: {
-          score_id?: string
-          score_value?: number
-          set_id?: string
-          user_id?: string
-          idempotency_key?: string
-        }
-      }
-      user_sets: {
-        Row: {
-          set_id: string
-          user_id: string
-        }
-        Insert: {
-          set_id: string
-          user_id: string
-        }
-        Update: {
-          set_id?: string
-          user_id?: string
-        }
-      }
     }
     Views: {
       contracts_view: {
