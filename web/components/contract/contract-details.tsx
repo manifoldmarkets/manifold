@@ -17,7 +17,7 @@ import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
 import { useState } from 'react'
 import { MiniUserFollowButton } from '../buttons/follow-button'
-import { useUser } from 'web/hooks/use-user'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -29,12 +29,12 @@ import {
 } from 'web/lib/firebase/groups'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { GroupLink, groupPath } from 'common/group'
 import { Title } from '../widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Input } from '../widgets/input'
 import { editorExtensions } from '../widgets/editor'
+import { LikeButton } from './like-button'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -102,24 +102,16 @@ export function MiscDetails(props: {
   )
 }
 
-export function ContractDetails(props: { contract: Contract }) {
+export function MarketGroups(props: { contract: Contract }) {
   const { contract } = props
-
-  return (
-    <Col className="gap-2">
-      <Row className="justify-between">
-        <MarketSubheader contract={contract} />
-        <ExtraContractActionsRow contract={contract} />
-      </Row>
-      {contract.visibility != 'private' && <MarketGroups contract={contract} />}
-      {contract.visibility == 'private' && (
-        <PrivateMarketGroups contract={contract} />
-      )}
-    </Col>
-  )
+  if (contract.visibility === 'private') {
+    return <PrivateMarketGroups contract={contract} />
+  } else {
+    return <PublicMarketGroups contract={contract} />
+  }
 }
 
-export function PrivateMarketGroups(props: { contract: Contract }) {
+function PrivateMarketGroups(props: { contract: Contract }) {
   const { contract } = props
   if (contract.groupLinks) {
     return (
@@ -129,43 +121,26 @@ export function PrivateMarketGroups(props: { contract: Contract }) {
   return <></>
 }
 
-export function MarketSubheader(props: { contract: Contract }) {
+export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
-  const {
-    creatorName,
-    creatorUsername,
-    creatorId,
-    creatorAvatarUrl,
-    creatorCreatedTime,
-  } = contract
-  const user = useUser()
-  const isEditable = user?.id === creatorId
+  const { creatorName, creatorUsername, creatorAvatarUrl, creatorCreatedTime } =
+    contract
 
   return (
-    <Row className="grow items-center gap-3">
+    <Row className="grow items-center gap-2">
       <div className="relative">
         <Avatar
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
-          size={9}
-        />
-        <MiniUserFollowButton
-          userId={creatorId}
-          className="absolute -bottom-1 -right-1"
+          size={6}
         />
       </div>
 
-      <Col className="whitespace-nowrap text-sm">
-        <UserLink
-          className="text-ink-600"
-          name={creatorName}
-          username={creatorUsername}
-          createdTime={creatorCreatedTime}
-        />
-        <span className="text-ink-400 text-xs font-light">
-          <CloseOrResolveTime contract={contract} editable={isEditable} />
-        </span>
-      </Col>
+      <UserLink
+        name={creatorName}
+        username={creatorUsername}
+        createdTime={creatorCreatedTime}
+      />
     </Row>
   )
 }
@@ -203,7 +178,7 @@ export function CloseOrResolveTime(props: {
   } else return <></>
 }
 
-function MarketGroups(props: { contract: Contract }) {
+function PublicMarketGroups(props: { contract: Contract }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const { contract } = props
@@ -211,8 +186,7 @@ function MarketGroups(props: { contract: Contract }) {
 
   return (
     <>
-      {/* Put after market action icons on mobile, but before them on desktop*/}
-      <Row className="order-last w-full flex-wrap items-end gap-1 sm:order-[unset]">
+      <Row className="w-full flex-wrap items-end gap-1">
         {groupsToDisplay.map((group) => (
           <GroupDisplay key={group.groupId} groupToDisplay={group} />
         ))}
@@ -394,5 +368,27 @@ function EditableCloseDate(props: {
         {editable && <PencilIcon className="h-4 w-4" />}
       </Row>
     </>
+  )
+}
+
+export const ContractLike = (props: { contract: Contract }) => {
+  const { contract } = props
+  const user = useUser()
+  const privateUser = usePrivateUser()
+
+  return (
+    <LikeButton
+      contentId={contract.id}
+      contentCreatorId={contract.creatorId}
+      user={user}
+      contentType={'contract'}
+      totalLikes={contract.likedByUserCount ?? 0}
+      contract={contract}
+      contentText={contract.question}
+      className={clsx(
+        '-mr-2',
+        isBlocked(privateUser, contract.creatorId) && 'pointer-events-none'
+      )}
+    />
   )
 }

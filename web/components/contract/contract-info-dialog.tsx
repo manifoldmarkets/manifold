@@ -1,4 +1,4 @@
-import { CheckIcon, DotsHorizontalIcon } from '@heroicons/react/outline'
+import { CheckIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { capitalize } from 'lodash'
@@ -15,9 +15,8 @@ import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { Row } from '../layout/row'
 import { BETTORS, User } from 'common/user'
-import { Button, IconButton } from '../buttons/button'
+import { Button } from '../buttons/button'
 import { AddLiquidityButton } from './add-liquidity-button'
-import { Tooltip } from '../widgets/tooltip'
 import { Table } from '../widgets/table'
 import { ShareEmbedButton } from '../buttons/share-embed-button'
 import { QRCode } from '../widgets/qr-code'
@@ -291,12 +290,13 @@ export const Stats = (props: {
 export function ContractInfoDialog(props: {
   contract: Contract
   user: User | null | undefined
+  open: boolean
+  setOpen: (open: boolean) => void
 }) {
-  const { contract, user } = props
+  const { contract, user, open, setOpen } = props
   const isCreator = user?.id === contract.creatorId
   const isAdmin = useAdmin()
 
-  const [open, setOpen] = useState(false)
   const [dreaming, setDreaming] = useState(false)
 
   const shareUrl = getShareUrl(contract, user?.username)
@@ -309,124 +309,110 @@ export function ContractInfoDialog(props: {
   }
 
   return (
-    <>
-      <Tooltip text="Market details" placement="bottom" noTap noFade>
-        <IconButton size="2xs" onClick={() => setOpen(true)}>
-          <DotsHorizontalIcon
-            className={clsx('h-6 w-6 flex-shrink-0')}
-            aria-hidden="true"
+    <Modal open={open} setOpen={setOpen}>
+      <Col className="bg-canvas-0 gap-4 rounded p-6">
+        <Row className={'items-center justify-between'}>
+          <Title className="!mb-0">This Market</Title>
+          <FollowMarketButton contract={contract} user={user} />
+        </Row>
+
+        <Tabs
+          tabs={[
+            {
+              title: 'Stats',
+              content: <Stats contract={contract} user={user} />,
+            },
+            {
+              title: 'Cover image',
+              content: (
+                <div className="flex justify-center">
+                  <div className="relative shrink">
+                    {contract.coverImageUrl ? (
+                      <Image
+                        src={contract.coverImageUrl}
+                        width={400}
+                        height={400}
+                        alt=""
+                      />
+                    ) : (
+                      <div className="bg-ink-100 flex aspect-square w-[300px] shrink items-center justify-center sm:w-[400px]">
+                        No image
+                      </div>
+                    )}
+                    {(isCreator || isAdmin) && (
+                      <div className="absolute bottom-0 right-0">
+                        <Row className="gap-1">
+                          <ChangeCoverImageButton contract={contract} />
+                          <button
+                            className="flex gap-1 bg-black/20 p-2 text-white transition-all [text-shadow:_0_1px_0_rgb(0_0_0)] hover:bg-black/40"
+                            onClick={redream}
+                          >
+                            {dreaming ? (
+                              <Row className="gap-2">
+                                Dreaming <LoadingIndicator size="md" />
+                              </Row>
+                            ) : (
+                              'Redream'
+                            )}
+                          </button>
+                        </Row>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              title: 'Share',
+              content: (
+                <Col className="max-h-[400px]">
+                  <QRCode
+                    url={shareUrl}
+                    width={250}
+                    height={250}
+                    className="self-center"
+                  />
+
+                  <div className="text-ink-500 mt-4 mb-2 text-base">
+                    Invite traders to participate in this market and earn a{' '}
+                    {formatMoney(REFERRAL_AMOUNT)} referral bonus for each new
+                    trader that signs up.
+                  </div>
+
+                  <CopyLinkButton
+                    url={getShareUrl(contract, user?.username)}
+                    eventTrackingName="copy market link"
+                  />
+                </Col>
+              ),
+            },
+          ]}
+        />
+
+        <Row className="flex-wrap gap-2">
+          {contract.mechanism === 'cpmm-1' && (
+            <AddLiquidityButton contract={contract} />
+          )}
+
+          <DuplicateContractButton contract={contract} />
+
+          <ShareEmbedButton contract={contract} className="hidden md:flex" />
+
+          <TweetButton tweetText={getShareUrl(contract, user?.username)} />
+        </Row>
+        <Row className={'mt-2 gap-2'}>
+          <ReportButton
+            report={{
+              contentId: contract.id,
+              contentType: 'contract',
+              contentOwnerId: contract.creatorId,
+            }}
           />
-        </IconButton>
-
-        <Modal open={open} setOpen={setOpen}>
-          <Col className="bg-canvas-0 gap-4 rounded p-6">
-            <Row className={'items-center justify-between'}>
-              <Title className="!mb-0">This Market</Title>
-              <FollowMarketButton contract={contract} user={user} />
-            </Row>
-
-            <Tabs
-              tabs={[
-                {
-                  title: 'Stats',
-                  content: <Stats contract={contract} user={user} />,
-                },
-                {
-                  title: 'Cover image',
-                  content: (
-                    <div className="flex justify-center">
-                      <div className="relative shrink">
-                        {contract.coverImageUrl ? (
-                          <Image
-                            src={contract.coverImageUrl}
-                            width={400}
-                            height={400}
-                            alt=""
-                          />
-                        ) : (
-                          <div className="bg-ink-100 flex aspect-square w-[300px] shrink items-center justify-center sm:w-[400px]">
-                            No image
-                          </div>
-                        )}
-                        {(isCreator || isAdmin) && (
-                          <div className="absolute bottom-0 right-0">
-                            <Row className="gap-1">
-                              <ChangeCoverImageButton contract={contract} />
-                              <button
-                                className="flex gap-1 bg-black/20 p-2 text-white transition-all [text-shadow:_0_1px_0_rgb(0_0_0)] hover:bg-black/40"
-                                onClick={redream}
-                              >
-                                {dreaming ? (
-                                  <Row className="gap-2">
-                                    Dreaming <LoadingIndicator size="md" />
-                                  </Row>
-                                ) : (
-                                  'Redream'
-                                )}
-                              </button>
-                            </Row>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  title: 'Share',
-                  content: (
-                    <Col className="max-h-[400px]">
-                      <QRCode
-                        url={shareUrl}
-                        width={250}
-                        height={250}
-                        className="self-center"
-                      />
-
-                      <div className="text-ink-500 mt-4 mb-2 text-base">
-                        Invite traders to participate in this market and earn a{' '}
-                        {formatMoney(REFERRAL_AMOUNT)} referral bonus for each
-                        new trader that signs up.
-                      </div>
-
-                      <CopyLinkButton
-                        url={getShareUrl(contract, user?.username)}
-                        eventTrackingName="copy market link"
-                      />
-                    </Col>
-                  ),
-                },
-              ]}
-            />
-
-            <Row className="flex-wrap gap-2">
-              {contract.mechanism === 'cpmm-1' && (
-                <AddLiquidityButton contract={contract} />
-              )}
-
-              <DuplicateContractButton contract={contract} />
-
-              <ShareEmbedButton
-                contract={contract}
-                className="hidden md:flex"
-              />
-
-              <TweetButton tweetText={getShareUrl(contract, user?.username)} />
-            </Row>
-            <Row className={'mt-2 gap-2'}>
-              <ReportButton
-                report={{
-                  contentId: contract.id,
-                  contentType: 'contract',
-                  contentOwnerId: contract.creatorId,
-                }}
-              />
-              <BlockMarketButton contract={contract} />
-            </Row>
-            <Row className="items-center justify-start gap-4 rounded-md "></Row>
-          </Col>
-        </Modal>
-      </Tooltip>
-    </>
+          <BlockMarketButton contract={contract} />
+        </Row>
+        <Row className="items-center justify-start gap-4 rounded-md "></Row>
+      </Col>
+    </Modal>
   )
 }
 

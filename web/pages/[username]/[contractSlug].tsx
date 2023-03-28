@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { first } from 'lodash'
 import { useEffect, useMemo, useRef, useState } from 'react'
-
 import { Answer } from 'common/answer'
 import { ContractComment } from 'common/comment'
 import { visibility } from 'common/contract'
@@ -10,14 +9,20 @@ import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import Head from 'next/head'
+import Image from 'next/image'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { HistoryPoint } from 'web/components/charts/generic-charts'
-import { BackRow } from 'web/components/contract/back-row'
+import { BackButton } from 'web/components/contract/back-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
-import { ContractDetails } from 'web/components/contract/contract-details'
+import {
+  AuthorInfo,
+  CloseOrResolveTime,
+  ContractLike,
+  MarketGroups,
+} from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
@@ -60,6 +65,7 @@ import { track } from 'web/lib/service/analytics'
 import { getContractParams } from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
+import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -234,7 +240,14 @@ export function ContractPageContent(props: {
     [contractParams.historyData.points, newBets]
   )
 
-  const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
+  const {
+    isResolved,
+    outcomeType,
+    resolution,
+    closeTime,
+    creatorId,
+    coverImageUrl,
+  } = contract
 
   const isAdmin = useAdmin()
   const isCreator = creatorId === user?.id
@@ -280,18 +293,41 @@ export function ContractPageContent(props: {
         </Head>
       )}
 
-      {user && <BackRow />}
+      <div className="relative flex h-[80px] max-w-3xl items-start justify-between py-2 px-4">
+        {coverImageUrl && (
+          <div className="absolute bottom-0 left-0 right-0 -top-10 -z-10">
+            <Image
+              fill
+              alt=""
+              sizes="100vw"
+              className="object-cover"
+              src={coverImageUrl}
+            />
+          </div>
+        )}
+        <BackButton />
+        <ExtraContractActionsRow contract={contract} />
+      </div>
 
       <Row className="w-full items-start gap-8 self-center">
         <Col
           className={clsx(
-            'bg-canvas-0 mb-4 w-full max-w-3xl rounded px-4 py-4 md:px-8 md:py-8 xl:w-[70%]',
+            'bg-canvas-0 mb-4 w-full max-w-3xl rounded-b p-4 md:px-8 md:pb-8 xl:w-[70%]',
             // Keep content in view when scrolling related markets on desktop.
             'sticky bottom-0 min-h-screen self-end'
           )}
         >
           <Col className="gap-3 sm:gap-4">
-            <ContractDetails contract={contract} />
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-ink-600 flex gap-6 text-sm font-light">
+                <AuthorInfo contract={contract} />
+                <CloseOrResolveTime
+                  contract={contract}
+                  editable={user?.id === creatorId}
+                />
+              </div>
+              <ContractLike contract={contract} />
+            </div>
             <Linkify
               className="text-primary-700 text-lg sm:text-2xl"
               text={contract.question}
@@ -308,6 +344,10 @@ export function ContractPageContent(props: {
             contract={contract}
             toggleResolver={() => setShowResolver(!showResolver)}
           />
+
+          <div className="mb-4">
+            <MarketGroups contract={contract} />
+          </div>
 
           {showResolver &&
             user &&
