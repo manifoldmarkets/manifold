@@ -345,7 +345,7 @@ export function ContractPageContent(props: {
             toggleResolver={() => setShowResolver(!showResolver)}
           />
 
-          <div className="mb-4">
+          <div className="my-4">
             <MarketGroups contract={contract} />
           </div>
 
