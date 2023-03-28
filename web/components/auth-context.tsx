@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useEffect } from 'react'
 import { pickBy } from 'lodash'
-import { onIdTokenChanged } from 'firebase/auth'
+import { onIdTokenChanged, User } from 'firebase/auth'
 import {
   auth,
   getUserAndPrivateUser,
@@ -92,6 +92,17 @@ export function AuthProvider(props: {
     }
   }, [authUser])
 
+  const onAuthLoad = (fbUser: User, newUser: UserAndPrivateUser) => {
+    setAuthUser({ ...newUser, authLoaded: true })
+
+    nativePassUsers(
+      JSON.stringify({
+        fbUser: fbUser.toJSON(),
+        privateUser: newUser.privateUser,
+      })
+    )
+  }
+
   useEffect(() => {
     return onIdTokenChanged(
       auth,
@@ -117,16 +128,10 @@ export function AuthProvider(props: {
             })) as UserAndPrivateUser
 
             setCachedReferralInfoForUser(newUser.user)
-            setAuthUser({ ...newUser, authLoaded: true })
+            onAuthLoad(fbUser, newUser)
           } else {
-            setAuthUser({ ...currentAuthUser, authLoaded: true })
+            onAuthLoad(fbUser, currentAuthUser)
           }
-          nativePassUsers(
-            JSON.stringify({
-              fbUser: fbUser.toJSON(),
-              privateUser: currentAuthUser.privateUser,
-            })
-          )
         } else {
           // User logged out; reset to null
           setUserCookie(undefined)
