@@ -44,9 +44,8 @@ export async function getContractIds(contractIds: string[]) {
 }
 
 export const getContract = async (id: string) => {
-  const q = selectJson(db, 'contracts').eq('id', id)
-  const { data } = await run(q)
-  return data.length > 0 ? data[0].data : null
+  const { data } = await run(db.from('contracts').select('data').eq('id', id))
+  return data && data.length > 0 ? (data[0].data as Contract) : null
 }
 
 export const getContracts = async (options: {

@@ -55,13 +55,12 @@ import {
   ContractMetricsByOutcome,
   getTopContractMetrics,
 } from 'web/lib/firebase/contract-metrics'
-import {
-  Contract,
-  getContractFromSlug,
-  tradingAllowed,
-} from 'web/lib/firebase/contracts'
+import { Contract, tradingAllowed } from 'web/lib/firebase/contracts'
 import { track } from 'web/lib/service/analytics'
-import { getContractParams } from 'web/lib/supabase/contracts'
+import {
+  getContractFromSlug,
+  getContractParams,
+} from 'web/lib/supabase/contracts'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
