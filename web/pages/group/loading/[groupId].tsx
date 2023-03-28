@@ -22,7 +22,7 @@ export default function LoadingNewGroup(props: { groupId: string }) {
   const router = useRouter()
   const pingInterval = 200
   useEffect(() => {
-    let interval: string | number | NodeJS.Timeout | undefined
+    const interval = setInterval(waitForGroup, pingInterval) // Adjust the interval as needed
 
     async function waitForGroup() {
       const newGroup = await getGroup(groupId)
@@ -33,9 +33,6 @@ export default function LoadingNewGroup(props: { groupId: string }) {
         })
       }
     }
-
-    interval = setInterval(waitForGroup, pingInterval) // Adjust the interval as needed
-
     return () => {
       clearInterval(interval)
     }

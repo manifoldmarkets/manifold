@@ -27,7 +27,7 @@ export default function LoadingNewContract(props: { contractId: string }) {
   const router = useRouter()
   const pingInterval = 200
   useEffect(() => {
-    let interval: string | number | NodeJS.Timeout | undefined
+    const interval = setInterval(waitForContract, pingInterval) // Adjust the interval as needed
 
     async function waitForContract() {
       const newContract = await getContract(contractId)
@@ -38,8 +38,6 @@ export default function LoadingNewContract(props: { contractId: string }) {
         })
       }
     }
-
-    interval = setInterval(waitForContract, pingInterval) // Adjust the interval as needed
 
     return () => {
       clearInterval(interval)
