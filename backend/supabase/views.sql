@@ -21,17 +21,19 @@ create or replace view user_contract_distance as (
 
 create or replace view user_trending_contract as (
   select
-    user_id,
+    user_contract_distance.user_id,
     user_contract_distance.contract_id,
     distance,
-    freshness_score
+    (public_open_contracts.data->>'popularityScore')::real as freshness_score,
+    public_open_contracts.created_time,
+    public_open_contracts.close_time
   from user_contract_distance
-  -- For getting the freshness score.
-  join contract_recommendation_features on contract_recommendation_features.contract_id = user_contract_distance.contract_id
   join public_open_contracts on public_open_contracts.id = user_contract_distance.contract_id
-  -- Experimentally determined threshold.
-  where distance < 0.14
+--     -- For getting the freshness score.
+--   join contract_recommendation_features on contract_recommendation_features.contract_id = user_contract_distance.contract_id
+  where (public_open_contracts.data->>'popularityScore')::real >= 0
   order by freshness_score desc
+);
 
 create or replace view group_role as (
   select
